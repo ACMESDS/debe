@@ -1,0 +1,21 @@
+//- UNCLASSIFIED
+
+extends jquery
+append jquery.help
+	Provides isotope-style tipsheet where:
+		src = source.db
+		pivots = channel,tip,links,label,ID,age,weight
+
+append jquery.parms
+	- Pivot = "Isotope"
+append jquery.body
+
+	- pivots = query.pivots || "channel,tip,links,label,ID,age,weight"
+	- src = query.src || "/tips.db"
+
+	#pivot.Tips(
+		path="#{query.src}",
+		page=25,dims="750,500",
+		pivots="#{pivots}")
+
+//- UNCLASSIFIED

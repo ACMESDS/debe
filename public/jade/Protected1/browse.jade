@@ -1,0 +1,35 @@
+//- UNCLASSIFIED
+
+extends site
+append siteparms
+	- view = "Browser"
+append sitearea
+
+	#accordion.Browser(wrap)
+		#pivot.Data(
+			path="/intake.db",
+			page=10,dims="#{dims}",check,help,track="#{type}",search,hold,refresh,
+			pivots="Bogus,App,Name,Tech",actions,kiss,
+			cols="Test,Condition(TRL,Track,Reason),General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
+		#post.Force(
+			path="/force.view?src=intake.db",
+			dims="#{dims}",
+			links="Browser")
+		#post.Cluster(
+			path="/cluster.view?src=intake.db",
+			dims="#{dims}",
+			links="Browser")
+		#post.Fan(
+			path="/treefan.view?src=intake.db",
+			dims="#{dims}",
+			links="Browser")
+		#post.Sankey(
+			path="/sankey.view?src=energy.json.data",
+			dims="#{dims}",
+			links="Browser")
+		#post.omg(
+			path="/omg.view?src=intake.db",
+			dims="#{dims}",
+			links="Browser")
+			
+//- UNCLASSIFIED

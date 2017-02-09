@@ -1,0 +1,16 @@
+extends site
+append siteparms
+	- view = "Nada"
+append sitearea
+
+	#grid.Chat(
+		path="/sockets.db",typical,crush,
+		page=25,dims="[600,100]",
+		cols="User,Org,Location,At,Joined.d,Message.x")
+
+	:markdown
+		#Blog
+		Now is the time when all good men should:
+		
+			come to the aid of their country
+			add more jpg ready feature detectors to SWAG

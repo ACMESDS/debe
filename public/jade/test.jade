@@ -1,0 +1,73 @@
+extends base
+append base_parms
+	- tech = "dojo"
+append base_body
+	#greeting
+		p some test
+//
+	extends site
+	append site_parms
+		- view = "Min"
+		- tech = "dojo"
+	append site_help
+		#grid.morenotes(path="/notes.db",crush,cols="Notes.h")
+		#grid.InfoTypes(
+		path="/json.db?key=apps.Totem.Info.b",nowrap,
+		crush,cols="NISTtype,NISTid,Confidentiality,Integrity,Availability" )
+
+	//
+		#grid.ASP.Reqts(
+		path="/aspreqts.db",
+		page=page,dims=dims,
+		cols="Num.t,Reqt.x,Baseline.c")
+
+	//
+		#post.test1(path="/shares/m1.jpg",dims="600,400",head="Refresh,Datasets")
+		#post.test2(path="/shares/",dims="600,400",head="Refresh,Datasets")
+
+	//
+		#grid.InfoTypes(
+		path="/json.db?key=apps.Totem.Info.b",
+		cols="NISTtype,NISTid,Confidentiality,Integrity,Availability" )
+
+	//
+		#grid.SI(
+		path="/sysinfo.db?app=app1,Key.b",
+		cols="NISTtype,NISTid")
+	//
+		#grid.Tips(
+		path="/tips.db",
+		dims=dims,page="25",
+		cols="label,row,col,Width,Height")
+
+	//
+		#grid.Quads(
+			path="/quads.db?Project=swag&Enabled=1&_kjade=QR",
+			dims=dims,head="Refresh,Print",
+			cols="QL.h,QR.h")
+
+		#grid.QNotes(
+			path="/quads.db",
+			page=page,dims=dims,
+			cols="Enabled.c,Project,Row.i,AsOf.d,QL.x,QR.x")
+
+	//
+		inline(src="/quads.db?Project=swag&Enabled=1&_jade=extjs,QL,QR",h=1000,w=2000)
+
+	//
+		#folder.End.Points(left)
+		#accordion.Views
+		
+			#fit.Routes
+				
+				:markdown
+					Views are [editable](/edit.view) [Jade skinning engines](/skinguide.view) that defines 
+					a client's view
+					
+	//
+		#grid.Search(
+		path="/CATALOG.db",
+		head="Search,Execute,Print,Refresh",
+		page=100,dims=dims,
+		search="Content",
+		cols="Ref,Name,Link.h,Dated.d,Searched")

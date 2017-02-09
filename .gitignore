@@ -1,0 +1,13 @@
+_*
+/htmls/
+/clients/
+/captcha/
+/node_modules/
+/certs/
+/doc/
+/shares/*/
+/public/dbs/
+/public/images/
+/public/uploads/
+/public/stores/
+/public/videos/

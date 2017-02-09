@@ -1,0 +1,84 @@
+// UNCLASSIFIED
+
+extends site
+append site.parms
+	- view = "Administrator"
+append site.help
+	:markdown
+		Provides an administrator view.
+append site.body
+
+	#fit.Service
+		:markdown
+			# [restart in single-core mode](/start?name=node1)
+			# [restart in multi-core mode](/start?name=node0)
+			# [test connection](/ping)
+			# [test http codes](/codes)
+			# [halt](/stop?msg=going down)
+			# [checkpoint](/checkpt)
+
+	#grid.News(
+		path="/news.db",
+		dims="#{dims}",page="#{page}",
+		cols="Message.t,Date.d,Category.t,To.t")
+
+	#grid.Apps(
+		path="/apps.db",
+		dims="#{dims}",page="#{page}",
+		cols="Name,Title,Nick,Host,Ver,Released.d,DB,Threads(Cores.n,Sessions.n),Switches(Enabled.c,Sockets.c,Protect.c,PKI.c,Proxy.c),Classif.h,Email(EmailHost,EmailUser),TTA(ASP,ISP,POC,Moderators,Hawk)")
+		
+	#grid.Jobs(
+		path="/queues.db",
+		dims="#{dims}",page="#{page}",
+		cols="Class,Classif,Client,Job,QoS.n,Priority.n,RunTime.n,Util.n,State,Work,Arrived.d,Departed.d,Notes.x")
+
+	#grid.Profiles(
+		path="profiles.db",
+		dims="#{dims}",page="#{page}",
+		cols="Client,Messages(Banned.h,Message.h,Admin.h),LikeUs.n,Liked.n,Billing(Credit.n,Charge.n),Flags(QoS.n,Challenge.c,IDs.h,Repoll.n,Timeout.n),Creation(uid,gid,Requested.d,Approved.d,Updated.d)")
+
+	#grid.Lookups(
+		path="lookups.db",
+		dims="#{dims}",page="#{page}",
+		cols="Enabled.c,Ref,Name,Path")
+
+	#grid.SWAPs(
+		path="swaps.db",
+		dims="#{dims}",page="#{page}",
+		cols="Automation(Enabled.c,Approved.c,Product.x,Submitted.d,Install_URL.h,Install_Path.h,Poll.n,Install_Shell.h),Software Info(SW_Name,SW_Version,SW_Type,SW_Platform,SW_Author,SW_Vendor,SW_Address,SW_URL),Program Info(Pgm_Office,Pgm_POC,Pgm_Name,Pgm_Phone,Pgm_Inno_POC,Pgm_Inno_Phone,Pgm_system_ISSO,Pgm_Phone_ISSO),Function(Fun_Function.h,Fun_ComDom.c,Fun_Bundled.c,Fun_SrcAvail.c,Fun_VendorSupported.c,Fun_LikeInKind.c,Fun_SPID,Fun_Users,Fun_Others.h)")
+
+	#grid.Tables(
+		path="/ADMIN.db",page="#{page}",dims="#{dims}",
+		cols="TABLE_NAME,TABLE_TYPE,ENGINE,VERSION,ROW_FORMAT,TABLE_ROWS,AVG_ROW_LENGTH,DATA_LENGTH,MAX_DATA_LENGTH,CREATE_TIME,UPDATE_TIME,TABLE_COMMENT")
+
+	#form.Config(
+		path="/CONFIG.db",page="#{page}",dims="#{dims}",head="select",
+		cols="classif,sw.h,services.h,disk.h,cpu.h,platform,memory.h,host")
+
+	#grid.Files(
+		path="/FILES.db",
+		dims="#{dims}",page="#{page}",
+		cols="Area,Name,Ref,Link,Address")
+
+	#grid.Searchs(
+		path="/searches.db",
+		dims="#{dims}",page="#{page}",
+		cols="Client,Dated.d,Searching.x,Tokens.x,Returned.n")
+
+	#grid.Emails(
+		path="/emails.db",
+		dims="#{dims}",page="#{page}",
+		cols="From,To,Made.d,Subject,SeqNum,Pending.c")
+
+	#grid.Roles(
+		path="/roles.db",
+		dims="#{dims}",page="#{page}",
+		cols="Table,Attrs(Expose.c,Journal.c,Log.c,Special),Actions(INSERT.c,UPDATE.c,DELETE.c,SELECT.c,IMPORT.c,EXPORT.c)")
+
+	#grid.Logs(
+		path="/dblogs.db",
+		dims="#{dims}",page="50",
+		sorts="Stamp,Client,Table,Action",
+		cols="Event,RecID,LinkSpeed.n,Overhead.n,Role,Impact,Fault,ThreadsRunning.n,ThreadsConnected.m,TempAvg")
+
+// UNCLASSIFIED

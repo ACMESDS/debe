@@ -1,0 +1,355 @@
+//- UNCLASSIFIED
+//- SWAG dashboard
+
+extends site
+
+append site_parms
+	- dock = "left"
+	- view = query.option || "Search"
+	- parms = {search:"Search", "search+":"Search+", dashboard:"dash", "dashboard+": "dash+", brief:"brief"}
+	- dims = "1800,1000"
+
+append site_body
+
+	block swag_parms
+		- more = parseInt(query.more)
+		- less = parseInt(query.less)
+
+	case query.option
+
+		when "Search"
+
+			append site_help
+
+				:markdown
+					Set your **QoS-Cost comfort zone** here.  Visit [detector developers](swag.view) if you want
+					to fine-tune your detectors and your policies.  Please
+					[likeus](likeus.view) to improve your QoS profile.  Other useful views:
+					[administrators](dmin.view), [security](files.view), [machine learner developers](engines.view),
+					[project scientist](project.view), [proof editors](files.view).  
+
+					Dont forget to check-out the [geoNode home](home.view) for other exciting **geoNode** products.
+
+				if more
+					#folder.More(dims="800,500")
+						#fit.H
+							:markdown
+								p $$ J_\alpha(x) = \sum\limits_{m=0}^\infty \frac{(-1)^m}{m! \, \Gamma(m + \alpha + 1)}{\left({\frac{x}{2}}\right)}^{2 m + \alpha} $$
+
+						#cesium.C(path="tips.db",dims="400,400")
+
+						#treefan.T(path="/files.db&pivots=L0,L1,L2,L3,L4,L5",dims="400,400")
+
+						#post.P(path="/uploads.test1040.pdf")
+
+				else
+					#post.Tutorial(path="/swag_brief.view",dims="600,400")
+
+		when "brief"
+			#swag_brief.Briefing(dims="1400,900")
+
+		when "dash"
+			#hold.Execute(path="/states.db?Class=Detector",cols="Name,Name")
+			#hold.Action(path="/states.db?Class=Action",cols="Name,Name")
+
+			#folder.SWAG
+
+				if more
+					#grid.News(
+						path="news.db",
+						sorts="Stay,Starts",page=30,dims="#{dims}",calc,head="Search,Print,Refresh",
+						cols="Message.h")
+
+						:markdown
+							The rules governing the periodic roll-off and update of these news items can 
+							be adjusted [here](home.view?option=newsedit).
+
+					#fit.Conops
+					
+						:markdown
+							When SWAG happens over an area with known ground truth (e.g. when a BE is encounted in
+							the NTM channel), SWAG updates the ROC (false-alarm, hit-rate) score of all detectors
+							in the same focus area.  By retaining detector ROC curves, SWAG can intelligently boosting
+							the hypothesis from all detectors, thus creating a stronger detector from a pool of
+							weaker detectors.
+							
+							Define your Areas of Interest (by country, BE, sensor, etc) in the [AOI Filter](swag.view?goto=AOI Filter),
+							then let the tipper deliver image chips over this AOI to [your detectors](swag.view?goto=Detectors).
+							[Detection events](swag.view?goto=Detections) can be consulted at any time.  The automatically populated
+							[training and detection jobs](swag.view?goto=Jobs) can be managed by your job queue strategies/priorites.
+							Try [liking us](likeus.view) to improve your priority in the job queues.
+							
+							Before you can attach a detector to an AOI, the detector will need to be trained.  If your detector (positive
+							feature over negative background) does not yet exists, clone or revise an existing detector, tune its
+							parameters, attach it to an AOI, then Execute (train) it to put it in the job queue.
+							
+							How are your detectors doing today?  Inpsect their [ROC performance](swag.view?goto=ROC).
+							
+							Find an under-performing detector?  Begone with thee!  Simply go to [your detector](swag.view?goto=Detectors)
+							and disconnect it from its AOI(s).  Or perhaps your feeling more kindly and would like to give
+							your detector a second chance?  Then, leave it connected, adjust more aggressive training parameters,
+							the Execute (train) it.  Most machine provide some form of "transfer leaning" and will thus continue
+							training your detector from its current state.
+							
+							Want to add a better machine learner?  Simply copy-and-paste your Python, Matlab-like, or 
+							JS code (or bind your C code) into one of SWAG's [language agnostic engines](engines.view).
+							Soon you will be able to use these engines in [workflows](nodeflow.view) as well.
+							
+							Consult the [FAQs]() for additional Heilmier related thoughts.
+
+					#fit.Status.and.POCs
+						:markdown
+							Please note that SWAG is non-operational and thus enjoys no funding of any kind.  NGA/IIG thus
+							reserves the exclusive right to terminate SWAG at and time without notice.
+							
+							Project status can be found [here](http://jira.dev.ic.gov/jira/browse/GRD-1527) and 
+							[here](http://jira.dev.ic.gov/jira/browse/GRD-1700) for the NTM and commerical systems, 
+							respectively.
+							
+							For additional information, please contact:  
+							*	[Brian James](mailto://brian.d.james@nga.ic.gov) 811-1285  or [low-side](mailto://brian.d.james@nga.mil) 571-721-3589  
+							*	[Duncan McCharthy](mailto://duncan.l.mccharthy@nga.ic.gov) 578-6240  
+							*	[David Castor](mailto://david.m.castor@nga.ic.gov) TBD  
+							*	[Scott VanDusen](mailto://scott.w.vandusen@nga.ic.gov) TBD  
+							*	[Will King](mailto://william.t.king@nga.ic.gov) 811-1384  
+
+							NGA/IIG is developing a SWAG prototype under a JIRA projects GRD-1527,1700 with intent to deliver
+							a machine learning service assessable with the [GIAT R&D infrastructure](http://intellipedia.intelink.ic.gov/wiki/GIAT):
+							GEOHUB, C2S, ILE, and AWS are just four [ISPs](requirements.view?goto=ISP) under
+							evaluation.  There are presently **NO** active plans to transition this technology
+							to an operational environment.
+
+					#fit.Disclaimers
+						:markdown
+							Please note that SWAG is non-operational and thus enjoys no funding of any kind.  NGA/IIG thus
+							reserves the exclusive right to terminate SWAG at and time without notice.
+					
+							NGA does not, under any circumstance, warrant, underwrite, endorse, promote or sell
+							any technologies used herein.  Use this service at your own risk.  Changes to 
+							[SWAG's build-to requirements](requirements.view) must be coordinated through
+							NGA IIG's [agile project management system](http://jira.dev.ic.gov/jira).  See
+							[SWAG's TTA/EULA](requirements.view?goto=TTA) for additional technology 
+							transfer and end-user agreement information.  SWAG welcomes your [issues, bugs, and 
+							ideas](issues.view).
+							
+					#fit.Architecture
+						:markdown
+							SWAG currently endores the OpenCV (low-power), Theano (high-power), and Caffe (high-power)
+							machine learning frameworks spanning low-high power compute clouds (w/o and w GPU support).
+
+							SWAG's classified (unclassified) systems ingests IDOPs tipped by HYDRA (Enhanced View),
+							then orthorectifed and chipped by OMAR (Enhanced View), then circulates jpgs to all 
+							detectors sharing that area of interest.  Detectors -- those automatically built
+							by the machine learners -- return to SWAG a JSON-formatted detection event list.
+							
+							SWAG integrates mature chipping (e.g. OMAR, JPIP streaming, Digital Globe Enhanced View), 
+							query (e.g. Hydra, DGEV) into mature [hyperthreaded workflows](exsite.view?options=workflows)
+							running language agnostic (Python, Matlab-like, JS, or C) engines.
+
+							While SWAG has currently consumed the OpenCV machine learning framework -- low-power
+							learners built by the Russians for future Chinese millitary sensors -- SWAG has reserved
+							the Theano LeNet and Caffe engines for its high-power (GPU CUDA assisted) 
+							learners.  SWAG also has interest in the Torch7 and OverFear learners.
+							
+							SWAG thus seeks to support a wide range of neural network machine learners including
+							decision, SVM and softmax capped convolutional, fully convolutional, attractor, and 
+							self organizing neural networks to provide detection and symantic segmentation
+							of NTM-commerical images.
+							
+							Data mining and workflow management are key concepts utilized by SWAG.  Architected 
+							around web-sockets, a JS-everywhere philosophy, and client-defined skins, SWAG 
+							suppports the OpenIT and Content Management goals of many organizations.  Consult
+							the [Briefing](\swag.view?goto=Briefing) for detailed architecture drawings.
+
+					#fit.FAQs
+
+					#fit.Configure
+						#form.Workflow.Parameters(
+							path="/config.db",
+							dims="#{dims}",crush,
+							head="Insert,Update,Delete,Select,Execute,Refresh,Restart",Restart="/start.sys",
+							cols="Hawks(SetPoint,MaxFaults.i,Hawks.c),Regulators(QoS0.n,QoS1.n,QoS2.n,QoS3.n,QoS4.n),Chip Cache(MaxAge.n),Services(WMS,WFS)")
+
+						#grid.Forecasting.Models(
+							path="/models.db",
+							dims="#{dims}",crush,
+							head="Insert,Update,Delete,Select,Execute,Refresh,Restart",Restart="/start.sys",
+							cols="enabled.c,name,srcs.x,rots.x,sizes.x,flips.x,levels.x")
+
+			#folder.Detectors
+			
+				:markdown
+					NGA does not, under any circumstance, warrant, underwrite, endorse, promote or sell
+					any technologies used herein.  Use this service at your own risk.  Changes to 
+					[SWAG's build-to requirements](requirements.view) must be coordinated through
+					NGA IIG's [agile project management system](http://jira.dev.ic.gov/jira).  See
+					[SWAG's TTA/EULA)(requirements.view?goto=TTA) for additional technology 
+					transfer and end-user agreement information.  SWAG welcomes your [issues, bugs, and 
+					ideas](issues.view).
+					
+				#grid.GMS(
+					path="/detectors.db", 
+					dims="#{dims}",page="#{page}",
+					cols="Enabled.c,Name,Execute.p,MaxDirty.n,Quality(Evaled.d,Dirty.n,Stars.n,Client),Proofs(Labels.h,Overhead.c),Sampling(Samples.i,ImageBg.i,ImageDev.i,Projections(xRotate.n,yRotate.n,zRotate.i)),Training(ROC(Data(MaxPos.i,MaxNeg.i),HAAR(Width.i,Height.i),MaxStages.i,MinTPR.n,MaxFPR.n),Tweak(MaxDepth.i,MaxWeak.i,TrimRate.n)),Detection(Channel,Pixels.i,Pack.i,Feature.n,Hits.i,SizeRange.n,SizeStep.n)")
+
+					:markdown
+						This is the Godel Mathematical Society (HAAR neural network) learning machine.
+
+				if more
+					#grid.CNN(
+						path="/detectors.db", 
+						dims="#{dims}",page="#{page}",
+						cols="Name")
+
+						:markdown
+							Reserved for Convolutional Neural Network learning machine.
+
+					#grid.FCN(
+						path="/detectors.db", 
+						dims="#{dims}",page="#{page}",
+						cols="Name)")
+
+						:markdown
+							Reserved for Fully Connected neural Network learning machine.
+
+					#grid.ANN(
+						path="/detectors.db", 
+						dims="#{dims}",page="#{page}",
+						cols="Name)")
+
+						:markdown
+							Reserved for Attractor Neural Network learning machine.
+
+					#grid.GET(
+						path="/detectors.db", 
+						dims="#{dims}",page="#{page}",
+						cols="Name)")
+
+						:markdown
+							Reserved for adhoc Good Edge to Track learning machine.
+
+					#grid.SOM(
+						path="/detectors.db", 
+						dims="#{dims}",page="#{page}",
+						cols="Name)")
+
+						:markdown
+							Reserved for Self Organizing Map learning machine.
+
+					#grid.HMM(
+						path="/detectors.db", 
+						dims="#{dims}",page="#{page}",
+						cols="Name)")
+
+						:markdown
+							Reserved for Hidden Markov Method learning machine.
+
+					#grid.ACE(
+						path="/detectors.db", 
+						dims="#{dims}",page="#{page}",
+						cols="Name)")
+
+						:markdown
+							Reserved for an Adaptive Cosine Estimator learning machine.
+
+			if more
+				#folder.Jobs
+			
+					:markdown
+						The job queue is automatically populated by [training, detection and user supervision 
+						jobs](swag.view?goto=Jobs).  Feel free to Hawk over this queue to insure that
+						your jobs complete in the strategy/priority you design.  Try [liking SWAG](likeus.view) 
+						to improve your job priority in these queues.
+					
+					#grid.Queue(
+						path="/queues.db",
+						dims="#{dims}",page="#{page}",refresh=60,
+						cols="Flagged.c,Classif,Client,Class,Job,QoS.i,State.i,Work.n,Util(Util0.n,Util1.n,Util2.n,Util3.n),Arrived.d,Departed.d,RunTime.n,Notes.h")
+
+					#grid.Hawks(
+						path="hawks.db",
+						links="Table.queues",
+						dims="#{dims}",page=30,
+						cols="Rule(Name,Enabled.c,Condition.h,Action.p,Period.n,Status(Status.h,Changed.i,Matched.i,Pulse.i,Faults.i)")
+
+						:markdown
+							Use these action-condition-table rules to hawk over your job queue with actions:
+
+								stop=halt=kill to kill matched jobs and update its queuing history
+								remove=destroy=delete to kill matched jobs and obliterate its queuing history
+								log=notify=flag=tip to email owner a status of matched jobs
+								improve=promote to increase priority of matched jobs
+								reduce=demote to reduce priority of matached jobs
+								start=run to create jobs from dirty records
+								set expression to revise queuing history of matched jobs
+
+					#accordion.Predictive.Look
+						#grid.Sim.Events(
+							path="/jobs.db",
+							crush,
+							cols="label,job,tDepart.n,tArrive.n,tWait.n,tDelay.n,tService.n,tStep.n,depth.i")
+							
+						#plot.QoS.Stats(
+							path="jobstats.db&index=delay,pr&init=0,0&ref=[0,0],[100,1]&marker=dot",refresh="1",
+							dims="#{dims}")
+
+					#accordion.Detects(head="none")
+				
+					#pivot.Events(
+						path="rocs.db",
+						dims="#{dims}",page="#{page}",
+						pivots="Name",head="Search,Print,Execute",
+						cols="detector,channel")
+
+						:markdown
+							Define your Areas of Interest (by country, BE, sensor, etc) in the [AOI Filter](swag.view?goto=AOI Filter),
+							then let the tipper deliver image chips over this AOI to [your detectors](swag.view?goto=Detectors).
+							[Detection events](swag.view?goto=Detections) can be consulted at any time.
+				
+					#folder.Visuals(top)
+						#post.Tip.Sheet(path="tipsheet.view?src=tips.db&pivots=channel,chip,links,label,count,Stars",dims="#{dims}")
+
+						#map.Tip.Map(
+							path="/maps.db&fill=Type&index=Name&details=Info",
+							dims="#{dims}",refresh="#{hold}",links="Browser")
+
+						#force.Pivot1(
+							path="/tips.db&pivots=channel,chip,label,count,Stars",
+							dims="#{dims}",refresh="1",links="Events")
+							
+						#cluster.Pivot2(
+							path="/tips.db&pivots=channel,chip,label,count,Stars",
+							dims="#{dims}",refresh="1",links="Events")
+							
+						#treefan.Pivot3(
+							path="/tips.db&pivots=channel,chip,label,count,Stars",
+							dims="#{dims}",refresh="1",links="Events")
+
+						#treemap.Pivot4(
+							path="/tips.db&pivots=channel,chip,label,count,Stars",
+							dims="#{dims}",refresh="1",links="Events")
+
+						#plot.ROC(
+							path="/rocs.db&index=FPR,TPR,model&_ref=[0,0],[1,1]&_min=0,0&max=1,1&marker=dot&legend=basic,hard,challenge&trace=1&_extra=[0,0]",
+							dims="#{dims}",refresh="1",links="Events")
+
+			#folder.AOIs
+			
+				:markdown
+					Define your Areas of Interest (by country, BE, sensor, etc) in the [Tipper](swag.view?goto=AOIs),
+					then let the tipper deliver image chips over this AOI to [your detectors](swag.view?goto=Detectors).
+					[Detection events](swag.view?goto=Detections) can be consulted at any time.  AOIs can
+					be connected to detectors (trained or not) at any time.  If you need multiple AOIs attached to a detector, 
+					simply clone (select-insert) the detector and attach to the AOI.
+					
+				#post.Tipper(path="https://hydra.ilabs.ic.gov",dims="[750,500]")
+
+				#grid.Override(
+					path="tests.db",
+					dims="#{dims}",page="#{page}",
+					cols="Name,Channel,FilePath")
+
+			if more
+				#nodeflow.Flows(path="&view=Kiss",dims="#{dims}",refresh="1")
+
+//- UNCLASSIFIED

@@ -1,0 +1,49 @@
+//- UNCLASSIFIED
+//- SWAG dashboard
+
+extends site
+append siteparms
+	- view = "Min"
+	- dock = "left"
+	- parms = {min:"more=0", more:"more=1"}
+	- dims = "[1000,500]"
+append sitearea
+
+	#grid.GMS.Train(
+		path="/haar.db",
+		dims="#{dims}",page="#{page}",typical,
+		cols="Prep(Sampling(Samples.n,Positives.n,Negatives.n),jpg Trainers(PosCases,NegCases,ImageDev),Projections(xRotate.n,yRotate.n,zRotate.n)),Learning(MaxStages.n,Target ROC(MinTPR.n,MaxFPR.n),Tweak(MaxDepth.n,MaxWeak.n,TrimRate.n),HAAR(Width.n,Height.n))")
+
+	#grid.Jobs(
+		path="/queues.db",
+		dims="#{dims}",page="#{page}",
+		cols="Classif,Owner,Class,JobID,State,Work,Arrived.d,Departed.d,Notes.x")
+
+	#plot.ROC(path="/ROCSUM.db&_index=FPR,TPR&_init=0,0&_ref=[0,0],[1,1]&_marker=dot&_legend=GMS&_trace=1",dims="#{dims}")
+
+	//
+		#post.Throughput(path="/plot.view?_src=queues.db&_json=Notes&_index=maxDelay,util&Class=probe&_max=60000,1&_min=50000,0",dims="#{dims}")
+
+		#post.Filter(path="http://www.w3schools.com/js",dims="[750,500]")
+
+		#grid.Test.Cases(
+			path="ROC.db",
+			dims="#{dims}",page="#{page}",help,kiss,actions,check,refresh,
+			cols="Parms(TestID,Enabled.c,Detector,Positives.n,ChipArea.n,FeatureArea.n,ResolvePower.n,Lat.n,Lon.n),Test(FileID,TimeStamp.d,Observations.n,Detects.n)")
+
+			:markdown
+				NGA does not, under any circumstance, warrent, underwrite, endorse, promote, fund, or sell any technologies
+				used herein. Use this software at your own risk.  Changes to [SWAG requirements](/requirements.view) 
+				must be coordinated through NGA IIG's rapid, agile project management system [JIRA](www.jira.com). IIG 
+				welcomes your [issues, bugs, and ideas](/issues.view).
+
+		#grid.Test.Summary(
+			path="ROCSUM.db?TestID=mytest&Detector=gms",
+			dims="#{dims}",page="#{page}",typical,
+			cols="ROC(ForecastLevel.n,FPR.n,TPR.n),Test(Observations.n,Detects.n,Negatives.n,Positives.n),Parms(TestID,ChipArea.n,FeatureArea.n,ResolvePower.n,Detector),Data(FileID,Lat.n,Lon.n)")
+
+		#post.Tip.Sheet(path="/tipsheet.view?src=",dims="#{dims}")
+
+		#post.Workflow(path="/workflow.view",dims="#{dims}")
+
+//- UNCLASSIFIED

@@ -1,0 +1,55 @@
+//- UNCLASSIFIED
+
+extends site
+
+append site_help
+	:markdown
+		The job queue is automatically populated by [training, detection and user supervision 
+		jobs](swag.view?goto=Jobs).  Feel free to Hawk over this queue to insure that
+		your jobs complete in the strategy/priority you design.  Try [liking SWAG](likeus.view) 
+		to improve your job priority in these queues.
+
+append site_parms
+	- dock = "left"
+	- view = "Min"
+	- parms = {min:"Min", less:"less", full:"full", brief:"brief"}
+	- dims = "1800,1000"
+	- page = 25
+
+append site_body
+
+	#grid.Queue(
+		path="/queues.db",
+		dims=dims,page=page,refresh=60,
+		cols="Classif,Client,Class,Name,QoS.i,Priority.i,State.n,Work.n,Util.n,Arrived.d,Departed.d,Age.n,Notes.h")
+
+	//
+		#grid.Hawks(
+			path="hawks.db",
+			links="Table.queues",
+			dims="#{dims}",page=30,
+			cols="Rule(Name,Enabled.c,Condition.h,Action.p,Period.n,Status(Status.h,Changed.i,Matched.i,Pulse.i,Faults.i)")
+
+			:markdown
+				Use these action-condition-table rules to hawk over your job queue with actions:
+
+					stop=halt=kill to kill matched jobs and update its queuing history
+					remove=destroy=delete to kill matched jobs and obliterate its queuing history
+					log=notify=flag=tip to email owner a status of matched jobs
+					improve=promote to increase priority of matched jobs
+					reduce=demote to reduce priority of matached jobs
+					start=run to create jobs from dirty records
+					set expression to revise queuing history of matched jobs
+
+		#accordion.Predictive.Look
+			#grid.Sim.Events(
+				path="/jobs.db",
+				crush,
+				cols="label,job,tDepart.n,tArrive.n,tWait.n,tDelay.n,tService.n,tStep.n,depth.i")
+				
+			#plot.QoS.Stats(
+				path="jobstats.db&index=delay,pr&init=0,0&ref=[0,0],[100,1]&marker=dot",refresh="1",
+				dims="#{dims}")
+								
+							
+//- UNCLASSIFIED

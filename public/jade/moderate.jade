@@ -1,0 +1,42 @@
+//- UNCLASSIFIED
+
+extends site.jade
+append site_help
+	p Welcome to #{title}.
+append site_parms
+	- view = query.option || "Min"
+	- parms = {}
+append site_body
+
+	#grid.Changes(
+		path="/history.db?return=changes",
+		head="Datasets,Print,Refresh",
+		page=100,dims=dims,wrap,
+		cols="Moderators,Activity.t")
+		
+	#grid.Signoffs(
+		path="/history.db?return=signoffs",
+		head="Datasets,Execute,Print,Refresh",
+		page=100,dims=dims,wrap,
+		links="Hawk,Datasets,Power,Comment,Approved",
+		cols="Approved.c,Moderator.t,Links.t,Fields.t,Comment.h,DetailedComment.t")
+
+	//
+		#grid.Itemized(
+			path="/history.db?return=itemized",
+			head="Datasets,Print,Refresh",
+			page=100,dims=dims,wrap,
+			cols="Moderators,Idx.t.Index")
+
+		#grid.Earnings(
+			path="/history.db?return=earnings",
+			head="Print,Refresh",
+			page=100,dims=dims,wrap,
+			cols="Client,Earnings.t,Comments.T")
+
+		#grid.Moderators(
+			path="/moderators.db",
+			page=100,dims=dims,wrap,
+			cols="Hawk.t.Role,Dataset,Field,Power.i")
+
+//- UNCLASSIFIED

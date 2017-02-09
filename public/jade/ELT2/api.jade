@@ -1,0 +1,703 @@
+//- UNCLASSIFIED
+
+extends site
+append siteparms
+	- help = "This is the application interface. See also the <a href='/skinguide.view'>skinning guide</a>."
+	- view = "Min"
+append sitearea
+
+	#folder.End.Points(dock="left")
+		#accordion.Views
+			#fit.Routes
+				:markdown
+					>	GET /AREA.SKIN.view	Render SKIN from AREA
+					>	GET /SKIN.view		Render SKIN from default area
+					>	GET /			Render home skin from default area
+
+			#fit.Parameters
+				:markdown
+					Views do not presently use any parameters.
+
+			#fit.Examples
+				:markdown
+					[view the intake table using this skin](/intake.view)  
+					[view the skinning guide](/skinguide.view)  
+					[view the api](/api.view)  
+					[view a sample application](/swag.view)  
+					[view models](/model.view)  
+					[view a sample briefing](/tutorial.view)  
+					[view briefing under the ELT1 area](/ELT1.tutorial.view)
+		
+		#accordion.Files
+			#fit.Routes
+				:markdown
+					>	GET /FILE.uploads	Return FILE by NLP from the unwatched area
+					>	GET /FILE.stores	Return FILE by NLP from the watched area
+					>	GET /FILE.shares	Return FILE by NLP from the static area
+					>	GET /FILE.data		Return FILE by NLP from the application area
+			#fit.Parameters
+				:markdown
+					There are presently no parameters to FILE routes.
+			#fit.Examples
+				:markdown
+					[download a file from the shares area](/welcome.pdf.shares)  
+					[return flare json file from data area](/flare.json.data)
+
+		#accordion.Tables
+			#fit.Routes
+				:markdown
+					> 	GET /TABLE.db		Return TABLE records using parameters
+					> 	PUT /TABLE.db		Update TABLE records using parameters
+					> 	POST /TABLE.db		Insert TABLE records using parameters
+					> 	DELETE /TABLE.db	Delete TABLE records using parameters
+					>	GET /TABLE.c	Import TABLE records using linked engine (or create TABLE schema)
+					>	GET /TABLE.export	Export TABLE records using linked engine (or report TABLE schema)
+					>	GET /TABLE.script	Return engine scripts associated with TABLE
+			#fit.Flag.Parameters
+				:markdown
+					>	_queue  	state queue field
+					>	_track		change tracking switch
+					>	_src 		source path redirect 
+					>	_search		search field list
+					>	_pattern 	search [mode][pattern] mode=*$#@=contains,nlp,boolean,query
+					>	_pivot		field list for grouping records
+					>	_browse		field list for browsing records
+					>	_select		field=expression list
+					>	_client 	flags to return to client
+					>	_lock		lock records switch
+					>	_index		field list to index records
+					>	_encap		field to encapsulate records into hash
+					>	_sort		field list to sort
+					>	_limit		page limit
+					>	_start		page start 
+					>	_page		page number 
+					>	_tree 		field list to convert records to name-children tree
+					>	_file		file navigation switch
+			#fit.Examples
+				:markdown
+					[return first 20 test records having x=123 and y is null sorted by u and b](/test.db?_start=0&_limit=10&x=123&y=null)   
+					[return test records having x=123 and order by u and v](/test.db?sort=[{"property":"u","direction":"asc"},{"property":"v","direction":"asc"}]&x=123)   
+					[return parms records](/parms.db)  
+					[return parms records having Parm=Band](/parms.db?Parm=Band)  
+					[insert test record x=123,y=null](POST/test.db?x=123&y=null})  
+					[update test record ID=10 with x=123,y=null ](PUT/test.db?x=123&y=null&ID=10)  
+					[delete test record ID=10](DELETE/test.db?ID:10)  
+					[return intake records](/intake.db)  
+					[return intake records pivoted by TRL and Ver](/intake.tree?_group=TRL,VER)
+
+			#fit.Special.Tables
+				#grid.Parameters.Table(
+					path="/parms.db",page="#{page}",dims="#{dims}",crush,
+					cols="ID.a,Parm,Label,Type,Special,By Inspect.c,By Analysis.c,By Demo.c")
+
+					p.
+						The [Parameters Table](/parms.db) defines how table fields are exposed to end 
+						clients: to each field corresponds a label name, verification methods, and access priviledges.
+
+				#grid.Roles.Table(
+					path="/roles.db",crush,
+					cols="Table.T,Special.H,INSERT.T,UPDATE.T,DELETE.T,SELECT.T,IMPORT.T,EXPORT.T")
+
+					p.
+						The [Role s Table](/roles.db) defines the roles assumed when clients insert, update, delete, and 
+						select records from a specific table. 
+
+				#grid.Database.Tables(
+					path="/TABLES.db",crush,
+					cols="Info.T")
+
+					:markdown
+						In addition to the SQL tables listed here, there are also the following Virtual Tables:
+
+						+	[FILES](/FILES.db)	files in the uploads, stores and shares area  
+						+	[UPLOADS](/UPLOADS.db) files in the uploads area  
+						+	[STORES](/STORES.db)	files in the stores area  
+						+	[THEMES](/THEMES.db)	themes available for switching  
+						+	[TABLES](/TABLES.db)	sql and emulated tables   
+						+	[DB](/DB.db)	current database status  
+						+	[VIEWS](/VIEWS.db)	jade views  
+						+	[USERS](/USERS.db)	current users  
+						+	[ENGINES](/ENGINES.db)	defined engines by state  
+						+	[QUEUES](/QUEUES.db)	queues by state  
+						+	[CLIQUES](/CLIQUES.db)	work cliques by state  
+						+	[HEALTH](/HEALTH.db)	system health  
+						+	[CONFIG](/CONFIG.db)	application configuration   
+						+	[ROCSUM](/ROCSUM.db) 	ROC contengency table summary  
+			
+		#accordion.Engines
+			#fit.Routes
+				:markdown
+					>	GET /ENGINE.db 		Read (compile and step) stateless ENGINE
+					>	PUT /ENGINE.db 		Compile stateful ENGINE
+					>	POST /ENGINE.db		Step stateful ENGINE
+					>	DELETE /ENGINE.db	Free stateful ENGINE
+					>	GET /ENGINE.import	Train ENGINE output ports
+					>	GET /ENGINE.export	Train ENGINE input ports
+					>	GET /ENGINE.script	Return ENGINE script
+					
+			#fit.Parameters
+				:markdown
+					## Stateful Engines
+					
+					Stateful engines executed in workflows using the step/PORT, init/PUT, and free/DELETE end-points
+					with the following parameters:
+
+						TAU.tau = [{tau}, ...] = input/output events to/from a port
+						TAU.port = input/output port to step ("" for init/kill)
+						TAU.thread = 0-base engine instance counter
+					
+					where an event token tau contains the following fields (they can be freely extended by the
+					engine during an output step):
+
+						job = "" 	= Current job thread N.N...
+						work = 0 	= Anticipated/delivered data volume (dims bits etc)
+						disem = "" 	= Disemination channel for this event
+						classif = ""	= Classification of this event
+						cost = ""	= Billing center
+						policy = ""	= Data retention policy
+						status = 0	= Status code
+						value = 0	= Flow calculation
+
+					During an init request, the engine's parameter hash {iPort: {...}, iPort: {...}, oPart: {...} }
+					and code are retrieved from the Vars and Code engines.db fields.  When stepped, an sql
+					connector is appended to the parameter hash.  See JS and Python engines for examples.
+					
+					## Stateless Engines
+
+					When a stateless engine is accessed at the read/GET end-point, they are passed the following
+					parameters:
+
+						TAU.e = {tau} = output event from the engine
+						TAU.p = { sql: {...}, query: {...} }
+						
+					where the query hash contain the passed url parameters.  See JS and Python engines for examples.
+											
+			#folder.Examples(wrap)
+				#fit.R
+					:markdown
+						R engines are not yet implemented.
+
+				#fit.Matlab
+					:markdown
+						Matlab engines are not yet implemented.
+
+				#fit.Ex
+					:markdown
+						Because Ex engines are defined by a bash/dos scripts, they can do anything,
+						at considerable overhead: for example, a 1 second overhead (in loading an 
+						engine's python/js/bash/perl/etc interpretor or in loading an engine's state),
+						will translate into a 6 hour delay (in a typical chipping workflow containing 
+						almost 20K chips).  When, however, workflows can be focused to a small 
+						area-of-interest, this overhead can be tollerated, and Ex engines can become
+						a viable option.
+						
+						Ex engines are supported in both the HYDRA and the SWAG framework.  In
+						the HYDRA framework, the engine's script is wrapped in a HYDRA proprietary 
+						soapUI (nonrestful XML) interface serviced by HYDRA's web service.  In
+						the SWAG framework, the engine's script is wrapped in a JSON (restful) interface
+						serviced by SWAG's web service.  SWAG's service supports workflow engines (to 
+						bypass the intrinsic overhead in calling Ex engines), as well as a mechanisims 
+						to directly interface with clients and other workflow engines. And whereas 
+						SWAG is PKI driven, HYDRA is login driven.
+
+				#fit.Jade
+					:markdown
+						Jade engines contain [Jade markdown](/skinguide.view) to manage client
+						views.  Jade engines are invoked at VIEW end-points with parameters as
+						defined by each Jade engine.
+
+				#fit.SQL
+					:markdown
+						Need to document SQL (select,update,delete,insert) engines here.
+
+				#fit.Proxy
+					:markdown
+						Proxy engines are JS builtin engines that run periodically based on its
+						engine Period parameter.
+						
+				#fit.Reader
+					:markdown
+						Readers (see the Readers tab) are builtin engines that automatically index a variety of 
+						document, graphics, presentation, and spreadsheet files when uploaded into
+						the #{title}.  Discovered text is checked for readibility, then indexed to the best
+						matching [intake entry](/intake.view) via [NLP training rules](/admins.view).
+
+				#fit.Model
+					:markdown
+						Model engines are used by the [workflow editor](/workflow.view) when systems are 
+						saved and loaded.  Model engines are always disabled to prevent execution.
+					
+				#fit.OpenCV
+					:markdown
+						OpenCV engines X=haar,res1,res2,... are defined by an X.h and an X.cpp under
+						$TAUIF/machines/opensv/src.  Unlike other engines, OpenCV (and all C) engines
+						must be bound to nodejs using the $TAUIF/gentau.sh after compiling them with
+						$TAUIF/opencv.sh (see Startup and Maintenance for further details).
+						
+						The X.h for engine X follows the temp.h pattern (see haar.h for an example):
+						
+							class PORT { 								 	// OPENCV port
+								public:
+									PORT(str Name, V8OBJECT Parm) { 		// Define port
+										// define states
+									};
+									
+									// Declare states
+							};
+
+							class FEATURE { 								// OPENCV feature output object
+								public:
+									FEATURE(void) { 						// Define default value
+										// define members
+									};
+									
+									FEATURE(int Depth,Rect Box,str Name,FRAME Frame,PORT &Port) {
+									};
+
+									// Declare members
+
+									int			features;
+									FEATURE 	*feature;
+							};
+						
+						An engine's X.cpp follows the temp.cpp pattern (see haar.cpp for an example):
+						
+							int CVMACHINE::latch(PORT &port, V8ARRAY tau) { 	// Latch tau input to OPENCV input port
+								return 0; // if successful
+							}
+
+							int CVMACHINE::latch(V8ARRAY tau, PORT &port) { 	// Latch OPENCV output port to tau output
+								return 0; // if successful
+							}
+								
+				#fit.Python
+					:markdown
+						## Stateless Example
+						
+						This standalone engine simply returns a data table as json:
+						
+							print 'Python output is displayed at service console'
+
+							TAU['e'] = {'x':[11,12],'y':[21,22]}
+
+						So if this "test" engine were created using the [engine editor](/engine.view), then a 
+						reference to "test.db" would return the tau event as a json data table which, for example, 
+						could be feed directly to a [grid](/skinguide.view).  Url parameters are passed 
+						along in the TAU['p']['query'] hash.
+						
+						## Stateless Example using SQL Connector
+
+						In this standlone example, we load regression data Htest from the app1 database:
+
+							TAU['cur0'].execute("SELECT * from app1.Htest", () )
+							for (Rec) in TAU['cur1']:
+								print Rec  # displays at service (not the client) console
+
+						Use the [engine editor](/engine.view) to save this python engine into, say, engine XX, then invoke
+						the engine at the /XX.db end-point.  Output to stdout is not reflected to the client: this
+						framework is not an IDE (debug before pasting the engine in).  Rather, all i/o is to be directed
+						to the desired SQL db by using the supplied SQL cursores ('cur0' and 'cur1').
+
+						### Stateful Example
+
+						Stateful engines are required to maximize data stationarity in a workflow.
+						In this example, we define several input/output ports for this workflow engine.  Engine
+						ports take a list of tau events and a parm parameter hash:
+
+							def InputA(tau,parm):
+								print "load state from input port A " + tau[0]['job']
+
+							def InputB(tau,parm):
+								print "load state from input port B " + tau[0]['job']
+
+							def OutoutA(tau,parm):
+								print "process state and drive output port A " + tau[0]['job']
+
+							def OutputB(tau,parm):
+								print "process state and drive output port B " + tau[0]['job']
+
+							def OutputC(tau,parm):
+								print "process state and drive output port C " + tau[0]['job']
+
+						One can use the [engine editor](/engine.view) to save this python code to, say, engine XX, then 
+						include engine XX in a [TAU workflow](/skinguide.view) as system XX having input ports
+						InputA, InputB, and output ports OutputA, OutputB, OutputC. Parameters to each port are defined by
+						the [engine vars](/engine.view) hash {InputA: {...}, ... , OutputA: {....}, ...}.
+
+				#fit.JS
+					:markdown
+						## Stateless Example
+
+						Return, for example, a spare matrix as a json data table:
+
+							TAU.e.x = [1,2,3];
+							TAU.e.y = [4,5];
+							TAU.e.z = 6;
+							
+						The returned json can be feed directly to, for example, a [grid](/skinguide.view).
+
+						## Standalone Example with Scientifc Computing
+
+						Here we will use the mathjs matrix module to do a regression analysis (there are dsp, 
+						lwip, encryption and a zillion other modules):
+
+							var MATH = require('../node_modules/mathjs');
+				
+						We acquire url parameters from the TAU.p parameter hash as follows:
+
+							var Case = TAU.p.query.case, M = TAU.p.query.M;
+				
+						then use the supplied sql connection to query the app1 database for regression 
+						data point, do the regression, then save results into app1:
+
+							TAU.p.sql.query("SELECT * FROM app1.Htest WHERE least(?)", {Name:Case,Used:1}, function (err,recs) {
+								var N = recs.length;
+								var X = new Array(N); y = new Array(N);
+							
+								console.log([Case,M,N]);
+							
+								for (var n=0;n<N;n++) {
+									var data = recs[n];
+									var Xn = X[n] = [1];
+
+									y[n] = data.FPR;
+									for (var m=1;m<M;m++) Xn[m] = data["p"+(m-1)];
+								}
+								
+								var scope = {X:X, y:y};
+							
+								MATH.eval("a = inv(X' * X) * X' * y",scope);
+								console.log(scope.a);
+							
+								var reg = {Name:Case,Tests:N,Computed:new Date()}, a=scope.a;
+								for (var n=0,N=a.length;n<N;n++) reg['a'+n] = a[n];
+							
+								TAU.p.sql.query("REPLACE INTO app1.Hreg SET ?",reg);
+							});
+
+						## Stateful Example
+
+						Here is an example of how engine i/o ports are defined for use in TAU workflows:
+
+							TAU.myi = function (tau,parm) { }
+							TAU.myo = function (tau,parm) { }
+				
+						The engine is called each time input events arrive to its myi port,
+						and when output events depart from its myo port.  Stateful engines are required
+						to maximize data stationarity in a workflow.  See the python 
+						workflow example for furhter details on how parm parameters are feed to ports, 
+						how engines are created, and how they are used in workflows.
+
+		#accordion.Misc
+			#fit.Routes
+				:markdown
+					> 	GET /SITE.yql 		Return data from YQL compliant SITE=select/from/where
+					>	GET /socket.io		Connect to socket.iovi
+					>	GET /COMMAND.sys	Send COMMAND to service
+					>	GET /service/algorithm/ENGINE Execute ENGINE with SOAP/XML parameters
+			#fit.Commands
+				:markdown
+					>	start	start service &name
+					>	ping	check client-server connectivity
+					>	codes	returns http error codes
+					>	alert	broadcast alert &msg to all clients
+					>	stop	stops the server with client alert &msg
+					>	bit	built-in test with &N client connections at rate &lambda=events/s
+
+	#folder.Startup.and.Maintenance(dock="left")
+		#fit.Startup
+			:markdown
+				To get a quick list on how to start the #{title} use 
+
+					node sigma --help
+
+				In a #{title} cluster, each service (node0, node1, ...) will start its own instance of sigma using:
+				
+					node sigma --name nodeX
+					
+				As noted by --help, service parameters are controlled in the OpEnv mysql database.  Service nodes
+				typically have the same parameters.
+				
+				You can also "admins/startup.sh" to start everying; this script looks like:
+				
+					node $SIGMA/sigma --name node0 & 		# start sigma service
+					node $NODE/share/cesium/server --port 8081 --public &  # start cesium service
+					node $NODE/share/node-red/red  &  # start node red service
+					acroread 		# starts adobe reader for scraping pdfs.  
+					openoffice4 	# starts openoffice server for scraping docs.  
+
+				If starting mysql produces a "The server quit without updating PID file (/var/lib/mysql/localhost.localdomain.pid)"
+				error, the problem lies with goofy selinux, and we must disable selinux (or somehow fix its rules):
+			
+					su
+					echo 0 > /selinux/enforce
+					service mysql start
+
+				If the mysql service fails to start using "sudo service mysqld start" then the VM may have been 
+				rebooted, so you will need to "sudo rm /var/lib/mysql/mysql.sock".  (Window daemons are painful -  
+				see winsw under the daemons directory if you must).
+			
+				Before starting the #{title} you must establish (via "setenv.sh") its global variables:
+
+					SIGMA	sigma nodejs server
+					DATA	engine data and jobs
+					IVA 	iva data file conversion and inspection tools
+					CONDA	python and its modules
+					NODE	nodejs, its bins, shares (and installs to fix node-gyp issue)
+					APPS	virtual-table-logic personallites for the sigma server
+					TAUIF 	the tau engine workflow interface
+					PYTAU 	python tau engines
+					CVTAU	opencv tau engines
+					LOCAL	local stuff
+					SHARE 	other nodejs servers
+					PATH	places to find all the bins
+					LD_LIBRARY_PATH 	libs for the tau engines and conda
+					PYTHONPATH 	python tau engines
+					PYTHONHOME	python and its modules
+
+		#fit.Programmers.Guide
+			:markdown
+				The programmers guide for the #{title} can be found [here](sigmaplm.htmls).  To regenerate
+				the guide, run jsduck (on a windows system) against a copy of the source:
+
+					jsduck -o duckout --builtin-classes --title="SIGMA Programmers Guide" ducksrc
+
+				then move the output folder to the public/htmls folder.
+
+		#fit.Site.Themeing
+			:markdown
+				Add notes on how SASS and compass are used to generate extjs styles.
+				
+		#fit.Software.configuration
+			:markdown
+				Database: ODBC, MySQL  
+				Server: NodeJS, Python, numerous NodeJS modules (SocketIO, MySQL-connect, node-xlxs, node-windows, ....)  
+				Themeing: Ruby, Compass and Sass gems (compile public/resources to generate CSS theme)  
+				Client:  jQuery+plugins, ExtJS+plugins, JointJS, Mathjax, Reveal, D3, browserify
+
+		#fit.Journalling.and.Roles
+			:markdown
+				Transations on a table X can be journalled by creating a mirror table jou.X with
+				the same fields as X plus a j_ID datatime field.  If journalling was enabled for
+				table X in the (roles table)[/roles.db) (and jou.X exists at the transaction
+				event), a journal record is retained.  Becase the roles table is considered quasi-static,
+				the server must be restarted when roles are changed.
+
+		#fit.PKI.Certs
+			:markdown
+				To create a cert, use OPENSSL to create a pem file containing both the private
+				key and the cert:
+
+					openssl req -x509 -nodes -days 365 -newkey rsa:1024 -keyout mycert.pem -out mycert.pem
+
+				NodeJS uses [this CA](http://mxr.mozilla.org/mozilla/source/security/nss/lib/ckfw/builtins/certdata.txt) as a default Certification Authority.
+
+		#fit.Workflow.Engines
+			:markdown
+				To rebuild a c++ engine (e.g. X = opencv, python), we need to rebind it to nodejs using
+				the $ADMIN/genX.sh scripts.  Ignore warnings during the build.  Most errors that cause the build to
+				fail are due to not having correctly defined the environment (see setenv.sh).
+
+	#accordion.Readers
+		#fit.Engines
+			:markdown
+				Readers are builtin workflow engines that automatically segment and index document, graphics, 
+				presentation, spreadsheet and special files when they are pushed (uploaded or presented) into
+				the #{title}.  Discovered text is checked for readibility, then indexed to the best
+				matching [intake entry](/intake.view) via [NLP training rules](/admins.view). Discovered
+				images are indexed by various feature extraction methods.  See OpenCV Engines for further
+				details.
+
+		#fit.Special.Files
+			code.
+				html	- Web site
+				rss	- News feed
+				idop	- NTM imagery
+				
+		#fit.Document.Files
+			code.
+				bib      - BibTeX [.bib]
+				doc      - Microsoft Word 97/2000/XP [.doc]
+				doc6     - Microsoft Word 6.0 [.doc]
+				doc95    - Microsoft Word 95 [.doc]
+				docbook  - DocBook [.xml]
+				docx     - Microsoft Office Open XML [.docx]
+				docx7    - Microsoft Office Open XML [.docx]
+				fodt     - OpenDocument Text (Flat XML) [.fodt]
+				html     - HTML Document (OpenOffice.org Writer) [.html]
+				latex    - LaTeX 2e [.ltx]
+				mediawiki - MediaWiki [.txt]
+				odt      - ODF Text Document [.odt]
+				ooxml    - Microsoft Office Open XML [.xml]
+				ott      - Open Document Text [.ott]
+				pdb      - AportisDoc (Palm) [.pdb]
+				pdf      - Portable Document Format [.pdf]
+				psw      - Pocket Word [.psw]
+				rtf      - Rich Text Format [.rtf]
+				sdw      - StarWriter 5.0 [.sdw]
+				sdw4     - StarWriter 4.0 [.sdw]
+				sdw3     - StarWriter 3.0 [.sdw]
+				stw      - Open Office.org 1.0 Text Document Template [.stw]
+				sxw      - Open Office.org 1.0 Text Document [.sxw]
+				text     - Text Encoded [.txt]
+				txt      - Text [.txt]
+				uot      - Unified Office Format text [.uot]
+				vor      - StarWriter 5.0 Template [.vor]
+				vor4     - StarWriter 4.0 Template [.vor]
+				vor3     - StarWriter 3.0 Template [.vor]
+				xhtml    - XHTML Document [.html]
+
+		#fit.Graphics.Files
+			code.
+				bmp      - Windows Bitmap [.bmp]
+				emf      - Enhanced Metafile [.emf]
+				eps      - Encapsulated PostScript [.eps]
+				fodg     - OpenDocument Drawing (Flat XML) [.fodg]
+				gif      - Graphics Interchange Format [.gif]
+				html     - HTML Document (OpenOffice.org Draw) [.html]
+				jpg      - Joint Photographic Experts Group [.jpg]
+				met      - OS/2 Metafile [.met]
+				odd      - OpenDocument Drawing [.odd]
+				otg      - OpenDocument Drawing Template [.otg]
+				pbm      - Portable Bitmap [.pbm]
+				pct      - Mac Pict [.pct]
+				pdf      - Portable Document Format [.pdf]
+				pgm      - Portable Graymap [.pgm]
+				png      - Portable Network Graphic [.png]
+				ppm      - Portable Pixelmap [.ppm]
+				ras      - Sun Raster Image [.ras]
+				std      - OpenOffice.org 1.0 Drawing Template [.std]
+				svg      - Scalable Vector Graphics [.svg]
+				svm      - StarView Metafile [.svm]
+				swf      - Macromedia Flash (SWF) [.swf]
+				sxd      - OpenOffice.org 1.0 Drawing [.sxd]
+				sxd3     - StarDraw 3.0 [.sxd]
+				sxd5     - StarDraw 5.0 [.sxd]
+				sxw      - StarOffice XML (Draw) [.sxw]
+				tiff     - Tagged Image File Format [.tiff]
+				vor      - StarDraw 5.0 Template [.vor]
+				vor3     - StarDraw 3.0 Template [.vor]
+				wmf      - Windows Metafile [.wmf]
+				xhtml    - XHTML [.xhtml]
+				xpm      - X PixMap [.xpm]
+
+		#fit.Presentation.Files
+			code.
+				bmp      - Windows Bitmap [.bmp]
+				emf      - Enhanced Metafile [.emf]
+				eps      - Encapsulated PostScript [.eps]
+				fodp     - OpenDocument Presentation (Flat XML) [.fodp]
+				gif      - Graphics Interchange Format [.gif]
+				html     - HTML Document (OpenOffice.org Impress) [.html]
+				jpg      - Joint Photographic Experts Group [.jpg]
+				met      - OS/2 Metafile [.met]
+				odg      - ODF Drawing (Impress) [.odg]
+				odp      - ODF Presentation [.odp]
+				otp      - ODF Presentation Template [.otp]
+				pbm      - Portable Bitmap [.pbm]
+				pct      - Mac Pict [.pct]
+				pdf      - Portable Document Format [.pdf]
+				pgm      - Portable Graymap [.pgm]
+				png      - Portable Network Graphic [.png]
+				potm     - Microsoft PowerPoint 2007/2010 XML Template [.potm]
+				pot      - Microsoft PowerPoint 97/2000/XP Template [.pot]
+				ppm      - Portable Pixelmap [.ppm]
+				pptx     - Microsoft PowerPoint 2007/2010 XML [.pptx]
+				pps      - Microsoft PowerPoint 97/2000/XP (Autoplay) [.pps]
+				ppt      - Microsoft PowerPoint 97/2000/XP [.ppt]
+				pwp      - PlaceWare [.pwp]
+				ras      - Sun Raster Image [.ras]
+				sda      - StarDraw 5.0 (OpenOffice.org Impress) [.sda]
+				sdd      - StarImpress 5.0 [.sdd]
+				sdd3     - StarDraw 3.0 (OpenOffice.org Impress) [.sdd]
+				sdd4     - StarImpress 4.0 [.sdd]
+				sxd      - OpenOffice.org 1.0 Drawing (OpenOffice.org Impress) [.sxd]
+				sti      - OpenOffice.org 1.0 Presentation Template [.sti]
+				svg      - Scalable Vector Graphics [.svg]
+				svm      - StarView Metafile [.svm]
+				swf      - Macromedia Flash (SWF) [.swf]
+				sxi      - OpenOffice.org 1.0 Presentation [.sxi]
+				tiff     - Tagged Image File Format [.tiff]
+				uop      - Unified Office Format presentation [.uop]
+				vor      - StarImpress 5.0 Template [.vor]
+				vor3     - StarDraw 3.0 Template (OpenOffice.org Impress) [.vor]
+				vor4     - StarImpress 4.0 Template [.vor]
+				vor5     - StarDraw 5.0 Template (OpenOffice.org Impress) [.vor]
+				wmf      - Windows Metafile [.wmf]
+				xhtml    - XHTML [.xml]
+				xpm      - X PixMap [.xpm]
+
+		#fit.Spreadsheet.Files
+			code.
+				csv      - Text CSV [.csv]
+				dbf      - dBASE [.dbf]
+				dif      - Data Interchange Format [.dif]
+				fods     - OpenDocument Spreadsheet (Flat XML) [.fods]
+				html     - HTML Document (OpenOffice.org Calc) [.html]
+				ods      - ODF Spreadsheet [.ods]
+				ooxml    - Microsoft Excel 2003 XML [.xml]
+				ots      - ODF Spreadsheet Template [.ots]
+				pdf      - Portable Document Format [.pdf]
+				pxl      - Pocket Excel [.pxl]
+				sdc      - StarCalc 5.0 [.sdc]
+				sdc4     - StarCalc 4.0 [.sdc]
+				sdc3     - StarCalc 3.0 [.sdc]
+				slk      - SYLK [.slk]
+				stc      - OpenOffice.org 1.0 Spreadsheet Template [.stc]
+				sxc      - OpenOffice.org 1.0 Spreadsheet [.sxc]
+				uos      - Unified Office Format spreadsheet [.uos]
+				vor3     - StarCalc 3.0 Template [.vor]
+				vor4     - StarCalc 4.0 Template [.vor]
+				vor      - StarCalc 5.0 Template [.vor]
+				xhtml    - XHTML [.xhtml]
+				xls      - Microsoft Excel 97/2000/XP [.xls]
+				xls5     - Microsoft Excel 5.0 [.xls]
+				xls95    - Microsoft Excel 95 [.xls]
+				xlt      - Microsoft Excel 97/2000/XP Template [.xlt]
+				xlt5     - Microsoft Excel 5.0 Template [.xlt]
+				xlt95    - Microsoft Excel 95 Template [.xlt]
+
+	#grid.Messages(
+		path="/issues.db?Status=System",
+		page="#{page}",dims="#{dims}",
+		cols="Issue.X,Action.X")
+	
+	#folder.Client.Interfaces(dock="left")
+		:markdown
+			## Content Management
+			As described in the [tutorial](/tutorial.view) and the [skinning guide](/skinguide.view), the #{title} 
+			allows its clients to manage their content with various views (and associated technologies): 
+			grid (extjs), nav (jquery), model (jointjs), typeset (mathjax), opendb (odbc), game (voxel engine), 
+			brief (reveal), chart (d3), gaming (voxel), and mobile (dojo).  
+
+			## Browser Compatibility
+			Works with Firefox (10.0.7 ESR and later), Chrome (22.0.1279.79m), Opera (12.02), and Safari (5.1.7). Can IE support anything?
+			Latest Chrome required to use the WebGL and Cesium engines.
+	
+			## ODBC Applications
+			ODBC compliant applications (like MySQL, MS Access, Excel, OpenOffice etc) can connect directly
+			to the #{title}.  Depending on the application, this connection can be r/o (MS Excel-like applications) or 
+			r/w (MS Access-like applications).  
+
+			MS Access provides a r/w connection to an ODBC table via its External Data | Link | ODBC option. 
+			The MySQL server is access via the [MySQL command](file://-/C:/Program_Files/MySQL/MySQL_Server_5.5/bin/mysql.exe)
+			under user root.  In addition to the application, one also needs to have the MqSQL ODBC connector 
+			installed.
+
+			To export a MS Access table to MYSQL:
+			
+				from MS Access, link to ODBC table X
+				copy the entire table (data and structure) to XCOPY
+				revise the fields in the XCOPY table as desired
+				from MySQL use `drop table X`
+				from MS Access, export table XCOPY to the ODBC table X (see MS Access export) 
+					 
+			To import a MYSQL table into MS Access:
+
+				from MS Access, select table X
+				right click and Export the table to ODBC table X    
+
+			Note that the record ID on MYSQL tables should be declared as FLOAT UNIQUE AUTO_INCREMENT
+			to interface with MS Access.
+
+//- UNCLASSIFIED

@@ -1,0 +1,137 @@
+//- UNCLASSIFIED
+//-
+	Provides a base layout framework with parameters:
+
+		banner = site banner
+		start = div name to start skinning
+		math = [false | true] mathjax plugin 
+		highlight = [zenburn | ...] code styling theme 
+		capture = [false | true] to add screen capture button
+		&inline = [/file.type &w=width &h=height] embed file with derived attributes
+
+block layout_parms
+	- banner = ""
+	- start = ""
+	- highlight = "zenburn"
+	- capture = false
+	- math = true
+
+html(lang="en")
+
+	head
+
+		meta(http-equiv="Content-Type",content="text/html; charset=utf-8;")
+
+		//- Tell IE to use the latest, best version (or Chrome Frame if pre-IE11).
+		meta(http-equiv="X-UA-Compatible", content="IE=Edge,chrome=1")
+		
+		//- Make the application on mobile take up the full browser screen and disable user scaling.
+		meta(name="viewport", content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no")
+
+		title #{source}
+
+		//-	Check browser compatibility. Requires javascript and JSON. Invalid browsers will crash or ignore startup scripts.
+
+		noscript
+			p Please enable Javascript and Cookies to access #{title}.
+
+		if (!JSON.parse)
+			script(src="/clients/json/json2.js")
+
+		script.
+			try {
+				var agent = navigator.userAgent,
+						agents = {Firefox:"Firefox/", Chrome: "Chrome/", Safari:"Safari/"};
+						
+				navigator.browser = null;
+				for (var n in agents)				
+					if (agent.indexOf(agents[n])>=0) {
+						navigator.browser = n;
+						break;
+					}
+
+				navigator.onLinux = navigator.platform.indexOf("Linux") == 0;
+				navigator.onWindows = navigator.platform.indexOf("Win") == 0;
+
+				if (!navigator.browser) 
+					alert("Use Firefox/Chrome browser");
+			}
+			catch (err) {
+				alert("Use Firefox/Chrome browser");
+			}
+
+		//-
+			Install socketio to sync changes amoungst clients.  This interface is establihed 
+			when the server does a require('socket.io') which creates a route #{sockets} = 
+			"/socket.io/socket.io.js" on which the client can source -- via a <script 
+			src="/socket.io/socket.io.js"> tag -- its io method.  
+
+		if socketio
+			script(src=socketio)
+		else
+			script.
+				var io = null;
+
+		//- Define code highlighter if needed
+
+		if highlight
+			link(rel='stylesheet',href='/clients/reveal/lib/css/#{highlight}.css')
+
+			style.
+				code  {
+					font-family: consolas, courier, monospace;
+					font-size: 1em;
+					line-height: 1.2em;
+					white-space: pre;
+					background-color: #acf; /* any colour's okay */
+					color: #000; /* likewise */
+					border: 1px solid #666;
+					-moz-border-radius: 0.5em;
+					-webkit-border-radius: 0.5em;
+					border-radius: 0.5em; /* just in case */
+					padding: 25px;
+					margin: 1.2em 1em;
+					width: 100%;
+					float: left;
+				}
+
+		//- Load mathjax preprocessor if needed
+
+		if math
+			script(src="/clients/mathjax/MathJax.js?config=default")
+
+		//- The capture plugin allows clients to capture their web canvas.
+
+		if capture
+			script(src="/clients/html2canvas/dist/html2canvas.min.js")
+			script(src="/clients/screen2canvas/capture.js")
+		else
+			script.
+				var 
+					html2canvas = null;
+
+		if math
+			script.
+				MathJax.Hub.Config({
+					extensions: ["tex2jax.js"],
+					jax: ["input/TeX","output/HTML-CSS"],
+					tex2jax: {inlineMath: [["$","$"],["\\(","\\)"]]}
+				});
+				//MathJax.Hub.Queue(["Paper",MathJax.Hub]);
+
+		block layout_head
+
+	body
+
+		//- Inject content div
+
+		#content(icons=icons,start=start,client=client,source=table,query=JSON.stringify(query),title=banner)
+
+			if query.inline
+				inline(src=query.inline,w="90%",h="90%",a="Classif",g="Edit",s="rd")
+				script.
+					BASE.start();
+
+			block layout_body
+			
+//- UNCLASSIFIED

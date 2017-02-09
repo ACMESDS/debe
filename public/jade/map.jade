@@ -1,0 +1,76 @@
+// UNCLASSIFIED
+//-
+	 Provides datamap chart given:
+		src = path to map data
+		index = field containing 2-3 letter county/state code
+		details = field containing detailed information
+		fill = field containing fill style
+		trace = display options
+
+extends base
+	- tech = "d3"
+	- map = "world"
+append base_head
+	style.
+		div {
+			width: 500px;
+			height: 300px;
+		}
+append base_body
+
+	script.
+		//var map = new Datamap({element: document.getElementById('content')});
+
+		var opts = {
+			src: "#{query.src}" || "maps.db",
+			index: "#{query.index}" || "name",
+			details: "#{query.details}" || "Info",
+			fill: "#{query.fill}" || "fillKey",
+			trace: "#{query.trace}" || false
+		};
+
+		if (opts.trace) alert(JSON.stringify(opts));
+
+		d3.json(opts.src, function(json) {
+			
+			var data = {};
+			
+			json.Each(function (n,rec) {
+				Copy(rec, data[rec[opts.index].toUpperCase()] = {
+					fillKey: rec[opts.fill] || "UNKNOWN",
+					Info: rec[opts.details] || ""
+				});
+			});
+
+			var map = new Datamap({
+				element: document.getElementById('content'),
+				
+				geographyConfig: {
+					popupTemplate: function (geo,data) {
+						return (geo.properties.name+"<BR>"+data.Info).tag("div",{class:"hoverinfo"});			
+					}
+				},
+				fills: {
+					HIGH: '#afafaf',
+					LOW: '#123456',
+					MEDIUM: 'blue',
+					UNKNOWN: 'rgb(0,0,0)',
+					defaultFill: 'green'
+				},
+				data: data || {
+					RUSSIA: {
+						fillKey: 'LOW',
+						Info: 2002
+					},
+					USA: {
+						fillKey: 'MEDIUM',
+						Info: 10381
+					}
+				}
+			});
+
+			//draw a legend for this map
+			map.legend();
+		});		
+		
+// UNCLASSIFIED

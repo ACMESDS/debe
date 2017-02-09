@@ -1,0 +1,12 @@
+//- UNCLASSIFIED
+
+extends site
+append sitearea
+
+	#pivot.Use.Cases(
+		path="/usecases.db",
+		page="#{page}",dims="#{dims}",actions,check,
+		pivots="Case",
+		cols="Scenario.h,Solution.h,Category(Tester.c,Creator.c,Developer.c,Moderator.c,Customer.c,Evaluator.c,Admin.c)")
+
+//- UNCLASSIFIED

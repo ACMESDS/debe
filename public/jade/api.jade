@@ -1,0 +1,930 @@
+// UNCLASSIFIED
+
+extends site
+append site_help
+	:markdown
+		See also the companion [skinning guide](/skinguide.jade) and the [programmers ref manual](/shares/doc/totem/index.html).
+append site_parms
+	- view = "Min"
+append site_body
+
+	#folder.End.Points(left)
+		#accordion.Intro
+		
+			:markdown
+				Multiple data nodes can be synchronized using these routes:
+
+					GET  /NODE $$ NODE $$  ...
+					PUT  /NODE $$ NODE $$  ...
+					DELETE  /NODE $$ NODE $$  ...
+					POST  /NODE $$ NODE $$  ...
+
+				where a data NODE can reference a
+
+					DATASET.TYPE ? PARAMS 
+					ENGINE.TYPE ? PARAMS
+					FILE.TYPE ? PARAMS
+
+		#accordion.Views
+		
+			#fit.Routes
+				
+				:markdown
+					Views are [editable](/edit.view) [Jade skinning engines](/skinguide.view) that defines 
+					a client's view, and are accessed at the following routes:
+
+						GET	/SKIN.view	Render SKIN from define skinning area
+						GET	/DATASET.view	Dynamically generate a skin for this DATASET
+
+			#fit.Parameters
+				:markdown
+					Views parameters are SKIN dependent. For example, the 
+					[plot.view](/plot.view) skin accepts these parameters:
+				
+						src = source url returns node tree { name:"label", size:Value, children: [ ... ]}
+						pivots = data pivot list = key,key,...
+						line = color1, color2, ...
+						marker = style1, style2, ... 
+						legend = name1, name2, ...
+						label = x-label, y-label
+						min = x-min, y-min
+						max = x-max, y-max
+						init = x-initial, y-initial
+						auto = x-autoscale, y-autoscale
+						ref = reference path [x,y], ...
+						trace = switch to enable point traces
+
+			#fit.Examples
+				:markdown
+					[view the intake dataset using this skin](/intake.view)  
+					[view the skinning guide](/skinguide.view)  
+					[view the api](/api.view)  
+					[view a sample application](/swag.view)  
+					[view models](/model.view)  
+					[view a sample briefing](/home_brief.view)  
+					[view briefing under the ELT1 area](/ELT1.home_brief.view)
+		
+		#accordion.Files
+			#fit.Routes
+				:markdown
+					File access is provided on the following end-points:
+					
+						GET	/AREA/FILE.TYPE ? PARMS	Return FILE from AREA using query parameters
+						GET	/ATTR/FILE.TYPE ? PARMS	Return ATTRribute of a FILE
+						GET	/AREA/	Return list of files in this AREA
+					
+					where TYPE = **pdf | txt | csv | json | html | ... ** associates the requested
+					file with the client's mime application, and where AREA references a #{nick} internal
+					file store or a one of its virtual stores:
+					
+						code	file pulled from the [engines db](/engines.view)
+						jade	file pulled from the [engines db](/engines.view) or (failing that) the jade file area
+						uploads	file pulled from delete-on-access area
+						stores	file pulled from long-term area
+						positives	file pulled from positive-proof area
+						negatives	file pulled from negative-proof area
+						cert	generates a PKI cert for the requested user
+						
+			#fit.Parameters
+				:markdown
+					File retrival parameters include:
+					
+						_has	find best file by string containment 
+						_nlp	find best file by nlp context 
+						_bin	find best file by binary expression 
+						_qex	find best file by query expansion 
+						_score	minimum score required
+						
+			#fit.Examples
+				:markdown
+					[download a file from the shares area](/shares/welcome.pdf)  
+					[return flare json file from data area](/data/flare.json)
+
+		#accordion.DataSets
+			#fit.Routes
+				:markdown
+					Both **database** and **emulated datasets** are reached	at the following end-points:
+					
+						GET	/DATASET.TYPE		Return data from DATASET
+						PUT	/DATASET.TYPE		Update DATASET with body parameters
+						POST	/DATASET.TYPE	Insert body parameters info DATASET
+						DELETE	/DATASET.TYPE	Delete from DATASET 
+						
+					where TYPE = **db | xml | csv | txt | ... | view** defines the 
+					returned format.  A "**view**" TYPE will dynamically skin the
+					requested DATASET.
+
+			#fit.Parameters
+				:markdown
+					The #{nick} recognizes the following parameters.
+					
+					# Query parameters
+							
+						KEY = value 		// matching test
+						KEY = [ ] 				// null test
+						KEY = [ min , max ] // inclusive range (if unsafe queries enabled)
+						KEY = [ x, y, z, ... ] // bounding box (reserved)
+						A.KEY = B.KEY 	// Join datasets A and B on specified KEYs (experimental)
+						expression 			// if unsafe queries enabled
+
+					# Body parameters
+					
+						These are JSON formatted parameters provided by the client
+						
+					# Searching parameters
+
+						_has	= search records by containment over fulltext keys
+						_nlp	= search records by nlp context over fulltext keys
+						_bin	= search records by binary expression over fulltext keys
+						_qex	= search records by query expansion over fulltext keys
+						_score	= minimum search score required
+
+					# Grouping parameters
+
+						_pivot	= KEY,KEY,... pivot records on KEYs with NodeID = "ID,ID,..." groups
+						_browse	= KEY,KEY,... browse records on KEYs with NodeID = "name/name/ ..." 
+						_group	= KEY,KEY,... group records on KEYs
+						_tree	= KEY,KEY,... return name-children-view-size tree 
+						_index	= KEY,KEY,expression as KEY... return specified KEYs
+						_sort	= KEY,KEY,... or [{property:KEY,sort:DIRECT}, ...] to sort records on KEYs
+
+					# Conversion parameters
+					
+						_queue	= KEY for queueing record state
+						_encap	= KEY to encapsulate records into hash
+						_delta = KEY to include baselined records for change comparisons
+						_mark	= KEY,KEY,... markdown these KEYs 
+						_jade	= KEY,KEY,... jadeify these KEYs (experimental - use _kjade)
+						_kjade	= KEY,KEY,... jadeify these KEYs (to be retired)
+						_json	= KEY,KEY,... json parse these KEYs
+						
+					# Auxillary parameters
+
+						_client	= name of client to broadcast to other clients
+						_lock	= enable record locking
+						_view 	= name of view to correlate with moderator datasets
+						_nav	= CMD,FROM folder navigation CMD=open|tree|rename|size FROM=root/A/B/...
+						_src	= orverride dataset path 
+
+					# Recrod sampling parameters
+
+						_limit	= number of records to return
+						_start	= record position to start returning records
+						_page	= page number (reserved)
+
+			#fit.Examples
+				:markdown
+					[return first 20 test records having x=123 and y is null sorted by u and b](/test.db?_start=0&_limit=10&x=123&y=null)   
+					[return test records having x=123 and order by u and v](/test.db?sort=[{"property":"u","direction":"asc"},{"property":"v","direction":"asc"}]&x=123)   
+					[return parms records](/parms.db)  
+					[return parms records having specified parm](/parms.db?Parm=Band)  
+					[return news records within certain age range](/news.db?age=690:693)  					
+					[insert test record x=123,y=null](POST/test.db?x=123&y=null})  
+					[update test record ID=10 with x=123,y=null ](PUT/test.db?x=123&y=null&ID=10)  
+					[delete test record ID=10](DELETE/test.db?ID:10)  
+					[return intake records](/intake.db)  
+					[return intake records pivoted by TRL and Ver](/intake.tree?_group=TRL,VER)
+
+			#fit.Virtual.Datasets
+				#grid.DS.Parms(
+					path="/parms.db",page=page,dims=dims,crush,
+					head="Print,Help",
+					cols="ID.a,Parm,Label,Type,Special,By Inspect.c,By Analysis.c,By Demo.c")
+
+					:markdown
+						The [parameter list](/parms.db) dataset defines how dataset fields are exposed to end 
+						clients in grids, forms, folders, etc used in **#{nick}** skins.  To each field corresponds a label name, verification 
+						methods, and access priviledges.
+
+				#grid.Roles(
+					path="/roles.db",page=page,dims=dims,crush,
+					head="Print,Help",
+					cols="Table.T,Special.H,INSERT.T,UPDATE.T,DELETE.T,SELECT.T,IMPORT.T,EXPORT.T")
+
+					:markdown
+						The [user roles](/roles.db) dataset defines the roles assumed when clients insert, update, delete, and 
+						select records from a specific dataset. 
+
+				#grid.Intrinsic(
+					path="/TABLES.db",page=page,dims=dims,crush,
+					head="Print,Help",
+					cols="Name.h")
+					
+					:markdown
+						The [TABLES](/TABLES.db) provides a list of **#{nick}** datasets.
+
+				#grid.Admin(
+					path="/ADMIN.db",page=page,dims=dims,crush,
+					head="Print,Help",
+					cols="TABLE_NAME,TABLE_TYPE,ENGINE,VERSION,ROW_FORMAT,TABLE_ROWS,AVG_ROW_LENGTH,DATA_LENGTH,MAX_DATA_LENGTH,CREATE_TIME,UPDATE_TIME,TABLE_COMMENT")
+
+					:markdown
+						The [ADMIN](/ADMIN.db) provides detailed storage and technical information on all **#{nick}** datasets.
+						
+				#grid.Sys.Config(
+					path="/CONFIG.db",page=page,dims=dims,crush,
+					head="Print,Help",
+					cols="classif,extnet,disk,cpu,cpuat,platform,totalmem,freemem,uptime,cpus,host,netif,temp")
+
+					:markdown
+						System configuration information is available at [CONFIG](/CONFIG.db).
+						
+				:markdown
+					The **#{nick}** supports *Virtual Datasets* through its CRUDE (*create*, *read*, *update*, *delete*, 
+					and *execute*) interface.  This CRUDE interface governs both *Database Datasets* and *Virtual Datasets*.
+					For example, an *execute* on dataset X will typically import/export the data to/from dataset 
+					X as controlled by its associated query parameters, a list of which might be returned by supplying a 
+					&help parameter.  Below are several important **emulated datasets**:
+
+					+	[return upload files](/uploads.FILES.db), [stores files](/stores.FILES.db), etc
+					+	[return jade views](/VIEWS.db)  
+					+	[return connected users](/USERS.db)  
+					+	[return engine summary](/ENGINES.db)  
+					+	[return queue summary](/QUEUES.db)  
+					+	[return work cliques](/CLIQUES.db)  
+					+	[return system health](/HEALTH.db)  
+					+	[return database activity](/ACTIVITY.db)  
+					+	[return system configuration](/CONFIG.db)  
+					+	[flatten searchable tables](/CATALOG.execute) for [search catalog](/CATALOG.db)  
+					+	[contengency data](/ROCSUM.db)  
+					+	[update](/events.execute) work predication [events](/events.db) and [stats](/jobstats.db)  
+					+	[reflect git change logs](/issues.execute) to [tracked issues](/issues.db)  
+					+	[broadcast messages](/sockets.execute) to [connected users](/sockets.db)  
+					+	[import milestones](/milestone.execute) from internal spreadsheet
+		
+		#accordion.Engines
+		
+			#fit.Routes
+				:markdown
+					Engines are language agnostic machines for processing/generating data.  *Stateless engines* can
+					be accssed directly from the CRUDE Routes (with Parameters noted herein).  *Statefull engines*
+					are executed from a [workflow](/nodeflow.view) and are defined following the [engine skinning guide](/skinguide.view).
+					Please note that **#{nick}** is not intended to be an interactive development environment; as such,
+					engine code should be throughly debugged before [inserting code](/engines.db) into **#{nick}**.
+					Engines are accessed on the following routes:
+ 
+						GET /ENGINE.TYPE 	Compile and step stateless ENGINE
+						PUT /ENGINE.TYPE 	Compile stateful ENGINE
+						POST /ENGINE.TYPE	Step stateful ENGINE 
+						DELETE /ENGINE.TYPE	Free stateful ENGINE 
+					
+					where TYPE = db | xml | csv | txt defines the response transfer mode.
+
+			#fit.Parameters
+				:markdown
+					Engine parameters are held in a context that is directly
+					assessible in both stateful or stateless (memoryless) 
+					workflows.  An engine's CRUD interface supports stateful
+					flows via step/POST, init/PUT, and free/DELETE endpoints.
+					Stateless flows are supported by its read/GET endpoint.
+					
+					During exectution, an engine's explict context:
+					
+						ports: {name1: {...}, name2: {...}, ... }, 
+						tau: [tau1, tau2, ... ],
+						f1: function () {}, f2: function() {}, ...
+						entry: {var1: "select", var2: "select", ... },
+						exit: {var1: "update", var2: "update, ... },
+						var1: value, var2: value, ...
+						
+					is extended by:
+					
+						query: {url1: parm, url2: parm, ...},  
+						sql: connector, 
+						lib1: module, lib2: module, ... 
+						
+					each time the engine is stepped.  Whereas stateless 
+					engines (being memoryless) are initialized at each 
+					step, stateful engines are initializedonly at the 
+					first workflow step.  
+					
+					When an engine is initialized, its context defines its i/o 
+					ports by nameX, its default i/o event tau tokens, and any
+					urlX parameters.  The context entry/exit is used to 
+					define/store context variables varX from/into the 
+					underlying sql database using their select/update statements.
+					
+					Each event **tau** typically contains the following:
+
+						job = "" 	# Fully qualified file path to jpg chip
+						work = 0 	# Anticipated/delivered data volume (dims bits etc)
+						disem = "" 	# Disemination channel for this event
+						classif = "" # Classification of this event
+						cost = ""	# Billing center
+						policy = ""	# Data retention policy
+						status = 0	# Status code
+						value = 0	# Flow calculation
+
+					As an engine is stepped, it may freely revise its context and
+					utilize the auto-imported sql connector (or SQL0, SQL1 python
+					cursors) and library libX modules (DSP, LWIP, CRYPTO, ...).
+					
+			#folder.Examples
+				#fit.URL
+					:markdown
+						Experimental URL engines provide a simple method to re-route request
+						based on URL parameters, ${req.PARM} and ${plugin.FN(req)} tags.  
+						These .url engines follow the pattern:
+						
+							Code:
+								"http://URL?PARM=${req.PARM}&PARM=${plugin.FN(req)}"
+							Context:
+								{ fn1: function (req) {...}, fn2: ... }
+								
+						For example, a **testeng** engine:
+				
+							Code:
+								"http://www.someservice.com/ogc?service=wfs&layer=${req.id+"xxx"}&arg=${plugin.angproj(req)}"
+							Context:
+								{ angproj: function (req) { 
+									return Math.cos(req.arg*Math.PI/180); 
+									} }
+								
+						would reroute "/testeng.xml?id=abc123&arg=45" to 
+						"http://www.someservice.com?service=wfs&layer=abc123xxx&arg=0.70710",
+						then return someservice's response in xml format.
+
+				#fit.R
+					:markdown
+						R engines are not yet implemented.
+
+				#fit.Matlab
+					:markdown
+						#Stateless Example1
+						[This](/engines.view?Engine=mat&Name=matdemo1) .mat-engine:
+
+							Code:
+								Z = [1,2;3,4];
+								X = A * A';
+								Y = B * B';
+
+							Context: {
+								"entry": {
+									"A": "SELECT a2,a3,a6 FROM app1.MATtest WHERE least(?,1)",
+									"B": "SELECT a1,a6 FROM app1.MATtest WHERE least(?,1)"
+								}
+							}
+							
+						illustrates how its context variables **A** and **B** are imported with the sql
+						**entry** hash.  The sql ?-tokens in the **entry** hash evaluate with the 
+						engine query, for example, [? = {Name:test}](/matdemo1.db?Name=test).
+						On [executing](/matdemo1.db?Name=test) this engine places  
+						variables **X**, **Y**, and **Z** into its context.  When an engine terminates,
+						it it free to store any context variables into the sql store with its sql
+						**exit** hash.
+						
+						#Stateless Example2
+						
+						[Executing](/matdemo2.db?Name=test) [this](/engines.view?Engine=mat&Name=matdemo2) engine
+
+							Code:
+								Z = [1,2;3,4];
+								X = A * A';
+								Y = B * B';
+								R = addIt(1,2);
+								
+							Context: {
+								"entry": {
+									"A": "SELECT a2,a3,a6 FROM app1.MATtest WHERE least(?,1)",
+									"B": "SELECT a1,a6 FROM app1.MATtest WHERE least(?,1)"
+								},
+
+								"require": {
+								   "addIt" :  function (a,b) { return a+b; }
+								}
+							}
+							
+						shows how Matlab-like engines can be readily extended with the **require** hash.
+						
+						#Stateful Example
+						
+						Stateful engines are operated in [workflows](/nodeflow.view) and extend 
+						stateless engines with the **ports** hash.  These ports are defined by 
+						functions that hold/latch its input/output events, thus maximizing data 
+						stationarity in a workflow.  (More documention required).
+
+				#fit.Bash
+					:markdown
+						The flexibility of Bash engines -- bash/dos scripts -- come with 
+						considerable overhead. These engines will suffer o(1) second of
+						overhead in loading/compiling a python/nodejs/etc module each time
+						the engine is called.  This translates into a 6 hour overhead in a 
+						typical chipping workflow containing 20K chips/footprint.  When, 
+						however, workflows can be focused to a small area-of-interest, Bash 
+						overhead can be tollerated.
+						
+						Bash engines are supported in both the HYDRA and **#{nick}** framework.  In
+						the HYDRA framework, the engine's script is wrapped in a HYDRA proprietary 
+						soapUI (nonrestful XML) interface serviced by HYDRA's web service.  In
+						**#{nick}** framework, the engine's script is wrapped in a JSON (restful) interface
+						serviced by **#{nick}**'s web service.  **#{nick}**'s service supports workflow engines (to 
+						bypass the intrinsic overhead in calling Ex engines), as well as a mechanisims 
+						to directly interface with clients and other workflow engines. And whereas 
+						**#{nick}** is PKI driven, HYDRA is login driven.
+						
+						This [exdemo engine](/engines.db) example (test [here](/exdemo.db)):
+						
+							Code:
+								ls
+								python mypgm.py
+							Context: {}
+							
+						illustates an engine that simply list the files in the current directory,
+						the call the mypgm python module.
+
+				#fit.Jade
+					:markdown
+						Jade engines contain [Jade markdown](/skinguide.view) to manage client
+						views.  A Jade engine is invoked at a **view end-point** with optional
+						parameters defined by the Jade engine.
+
+				#fit.Virtual
+					:markdown
+						Virtual-dataset engines are JS-engines that can be accessed and customized
+						ny right-clicking its corresponding action button from within
+						a view.  Virtual-dataset engines follow this pattern:
+						
+							Code:
+								function (req, res) {   		// request-callback
+									var sql = req.sql, 			// sql connector hash
+										query = req.query;		// request query parameters
+									
+									sql.query("...", 			// sql query with ?-tokens
+										query, 					// query parameters
+										function (err,data) {  	// query error and data
+											res(err || data);	// return error or data
+									});
+								}
+							Context:
+								{}
+						
+						The response callback **res** must be called, and must return either
+						an **Error** object, a **String** message, an **Array** list of
+						records, or an **Object** hash.
+						
+				#fit.SQL
+					:markdown
+						[This](/engines.view?Engine=SQL&Name=sqldemo) .sql engine:
+						
+							Code:
+								SQL.select = function (sql,recs,cb) {
+									var q = sql.query("SELECT * FROM ?? WHERE ?",["intake",{TRL:2}])
+									.on("result", function (rec) {
+										rec.Cat = rec.Name + rec.Tech;
+										recs.push(rec);
+									})
+									.on("end", function () {
+										CON.log("returning recs="+recs.length);
+										cb(recs);
+									});
+									CON.log("sql command="+q.sql);
+								}
+							Context:
+								{}
+
+						is a CRUD-select [simply selects)(/sqldemo.db) all records from the **intake** 
+						dataset whose **TRL** is at 2, and adds a **Cat** field to each record.  Note 
+						again that all i/o (here console.log) is sent to the **service** console.  Note 
+						too that when this engine is executed (read/GET) for the first time, the engine is 
+						simply added to **#{nick}**; subsequent executions return the desired records to 
+						the client.
+						
+				#fit.Proxy
+					:markdown
+						Proxy engines are [engines](/engines.view) that run periodically given a
+						run interval Period parameter.  A 0-period proxy is run once at **#{nick}** startup.
+						The [job hawkers](/admin.view) are proxy engines.
+						
+				#fit.Readers
+					:markdown
+						Reader engines automatically index a variety of documents, graphics, presentation, 
+						and spreadsheet files when uploaded into **#{nick}**.  Ingested text is checked for
+						readibility, indexed to the best
+						using [NLP training rules](/admins.view), then reflected into the [file stores](/files.view).
+
+				#fit.Model
+					:markdown
+						[Model engines](/engines.view) are used/defined by workflows when 
+						systems are referenced/saved from within the [workflow editor](/nodeflow.view).  
+						Model engines should remain disabled to prevent execution.
+					
+				#fit.OpenCV
+					:markdown
+						OpenCV [engines](/engines.view) X=haar,res1,res2,... are defined by an X.h and an X.cpp under
+						TAUIF/machines/opensv/src.  Unlike other engines, OpenCV (and all C) engines
+						must be bound to nodejs using the TAUIF/gentau.sh after compiling them with
+						TAUIF/opencv.sh (details [here](/api.view?goto=Startup and Maintenance)).
+						
+						The [haar](/engined.db) example ([tested here](/haar.db)) is defined by a
+						haar.h and haar.cpp, these following this template pattern:
+						
+							Code:
+								class PORT { 								 	// OPENCV port
+									public:
+										PORT(str Name, V8OBJECT Parm) { 		// Define port
+											// define states
+										};
+										// Declare states
+								};
+
+								class FEATURE { 								// OPENCV feature output object
+									public:
+										FEATURE(void) { 						// Define default value
+											// define members
+										};
+										
+										FEATURE(int Depth,Rect Box,str Name,FRAME Frame,PORT &Port) {
+										};
+
+										// Declare members
+										int			features;
+										FEATURE 	*feature;
+								};
+							Context:
+								{}
+						
+						An engine's X.cpp follows the temp.cpp pattern (see haar.cpp for an example):
+						
+							int CVMACHINE::latch(PORT &port, V8ARRAY tau) { 	// Latch tau input to OPENCV input port
+								return 0; // if successful
+							}
+
+							int CVMACHINE::latch(V8ARRAY tau, PORT &port) { 	// Latch OPENCV output port to tau output
+								return 0; // if successful
+							}
+								
+				#fit.Python
+					:markdown
+						## Stateless Example
+						
+						In this [pydemo1 engine](/engines.db?Engine=py&Name=pydemo1) .py engine:
+
+							Code:
+								print "welcome to python"
+								print tau
+								print query
+
+								tau = [{'x':[11,12],'y':[21,22]}]
+
+								SQL0.execute("SELECT * from Htest", () )
+								for (Rec) in SQL0:
+									print Rec
+
+							Context: {
+							}
+
+						we display **Htest** sql data at the service console, then return 
+						a **tau** JSON data to the client.  This **tau** could, for example, be 
+						brought to 
+						a [#grid(path="/pydemo1.db",cols="x,y") view](/skinguide.view).  As well as the 
+						standard import-export context support (not employed here), Python engines are 
+						provided two sql cursors -- **SQL0** and **SQL1** for read and write -- 
+						as [demonstrated here](/pydemo1.db).
+
+						## Stateful Example
+
+						Stateful engines are used to maximize data stationarity in workflows.  This
+						[pydemo2 engine](/engines.db?Engine=py&Name=pydemo2) example:
+
+							Code:
+								print "executing on port " + port
+
+								def f1(tau,parm):
+									print "in port f1"
+									return 0
+
+								def f2(tau,parm):
+									print "in port f2"
+									return 0
+									
+							Context: {
+								"ports" : { 
+									"f1": {"a":1, "b":2}, 
+									"f2": {"a":2, "b":1} 
+								}
+							}
+
+						defines input/output ports **f1** and **f1** to be called during the workflow 
+						with the incoming **tau** event token and the assoicated **parm** hash taken 
+						from the defined **ports** hash.  Although this engine would be typically used
+						in [stateful flows](/nodeflow.view), it can also be used in a stateless flow
+						by passing **port** (as demonstrated [here](/pydemo2.db?port=f1)).
+
+				#fit.JS
+					:markdown
+						## Stateless Example
+						
+						Consider [this](/engines.view?Engine=js&Name=jsdemo1) JS engine:
+							
+							Code:
+								CON.log("M = "+M+" Name="+query.Name);
+								CON.log("A="+A.length+" by "+A[0].length);
+								CON.log("B="+B.length+" by "+B[0].length);
+								tau[0].u = [M,M+1,M+2];
+
+							Context: {
+								"M":3, 
+								"case": "file1",
+								"entry": {
+									"A": "SELECT a2,a3,a6 FROM MATtest WHERE least(?,1)",
+									"B": "SELECT a1,a6 FROM MATtest WHERE least(?,1)"
+								},
+								"exit": {
+									"A": "INSERT INTO ?? SET ?"
+								}
+							}
+							
+						In this engine, the [json returned](/jsdemo1.db?Name=test) by tau[0].u can, 
+						for example, be fed to a [grid(path="/jsdemo1.db?Name=test",cols="u") view](/skinguide.view).  
+						Here, the engine Code is run in its context by importing context variable **A**
+						on entry, and exporting **B** on exit. 
+						
+						Because this engine did not define functions -- functions are associated
+						with workflow engine ports -- this stateless engine is [only accessible at an endpoint](/jsdemo1.db?Name=test).
+						As with all engines, stateless engines remain free to revise its context as needed.
+
+						## Stateless Example
+
+						This [jsdemo2 engine](/engines.view) example (test [here](/jsdemo2.db?Name=file1&Used=1)):
+						
+							Code:
+								var Name = query.Name;
+								var scope = {X:X, y:y};
+								var N = X.length;
+
+								MATH.eval("a = inv(X' * X) * X' * y",scope);
+								CON.log(scope.a);
+
+								var b = {Name:Name,Tests:N,Computed:new Date()}, a=scope.a;
+								for (var n=0,N=a.length;n<N;n++) b[n] = a[n];
+
+								CON.log(b);
+
+							Context: {
+								"M": 3,
+								"entry": {
+									"X": "SELECT p0,p1,p2 FROM Htest WHERE least(?,1)",
+									"y": "SELECT FPR from Htest WHERE least(?,1)"
+								}
+							}
+
+						makes use of the mathjs MATH module to do a Matlab-like regression 
+						analysis.  Here, the **Name**, **Used** and **M** parameters -- acquired 
+						from the URL query -- are used to retrieve data from the **Htest** 
+						dataset.  This data is then used to setup a regression companion matrix **X** 
+						and measurement vector **y**.  Regression results **a** are then saved into 
+						a **b** vector (which, for example, may be saved with a Context.entry sql).
+						
+						Automatically include modules include:
+					 
+							CON console [http://mathjs.org/docs]
+							MATH Matlab-like scripting [http://mathjs.org/docs]
+							DSP digital signals [https://www.npmjs.com/package/digitalsignals]
+							CRYPTO cryptological [http://nodejs.org/api]
+							LWIP light-weight imaging processing [https://github.com/EyalAr/lwip]
+							SQL mysql connector [https://www.npmjs.com/package/mysql]
+							JSON standard json parsing [w3schools.com]
+
+						Consult the Mat engine api for running Matlab-like engines directly in its 
+						native language.
+
+						## Stateful Example
+
+						This [jsdemo3 engine](/engines.db) example (test [here](/jsdemo3.db)):
+
+							Code:
+								x = 123;
+								function fi(tau,parm) {
+								  return 0;
+								}; 
+
+								function fo(tau,parm) {
+								  return 0;
+								};
+								
+							Context: { 
+								"ports": {
+									"fi" : {"x":10,"y":20},
+									"fo":{"x":11,"y":21} 
+								}
+							}
+				
+						places the **x** and ports **fi**, **fo** in its context.  Subsequent requests 
+						at the step/POST endpoint with **port** = "fi" or "fo" will call the
+						function with the current **tau** workflow events and the **parm**
+						set to the corresponding "ports" hash.
+
+		#accordion.System
+
+			#fit.Routes
+				:markdown
+					The **#{nick}** recognizes the **stores**, **uploads**, **chips**, **tips**, **shares**, **data**, **positives**, **negatives**, **proofs**, and **code** AREAs
+					used in the **Views**, **Files**, **Datasets**, **Engines** end-points.  The following special **#{nick}** command routes are also recognized:
+
+						GET /SITE.yql 	Return data from YQL compliant SITE=select/from/where
+						GET /socket.io	reserved client socket.io connections
+						GET /start	restart service &name
+						GET /ping	check client-server connectivity
+						GET /codes	returns http error codes
+						GET /alert	broadcast alert &msg to all clients
+						GET /stop	stops the server with alert &msg broadcasted to all clients
+						GET /kill	kill queued job &ID
+						GET /checkpt	checkpoint database
+						GET /bit	built-in test with &N client connections at rate &lambda=events/s
+						GET /service/algorithm/ENGINE Execute ENGINE with SOAP/XML parameters
+						GET /user 	select,delete,update,insert user profile
+						GET /wget	fetch data from wget endpoint using query parameters
+						GET /curl	fetch data from curl endpoint using query parameters
+						GET /http	fetch data from http endpoint using query parameters
+						GET /test	challenge response endpoint
+
+		#accordion.Jobs
+		
+			#fit.Routes
+				:markdown
+					One-time and scheduled jobs are initiated at the following endpoint:
+					
+						GET /JOB.exe
+						
+					where JOB will schedule:
+					
+						the execute logic for matched TABLEs
+						a run for matched ENGINEs
+						a reader (scan, index, parse) for matched FILEs
+						
+			#fit.Parameters
+				:markdown
+					qos = Desired QoS queue to use for this job (0=one-time)
+					priority = Desired job priority
+					on = TBD - event to cause job to run
+					
+			#fit.Examples
+				:markdown
+					TBD
+						
+	#accordion.Readers
+		#fit.Intro
+			:markdown
+				Readers are builtin [engines](/engines.view) that automatically index a variety of 
+				document, graphics, presentation, and spreadsheet files when uploaded into
+				**#{nick}**.  Ingested text is checked for readibility, indexed to the best
+				using [NLP training rules](/admins.view), then reflected into the [file stores](/files.view).
+
+		#fit.Special.Files
+			code.
+				html	- Web site
+				rss	- News feed
+				idop	- NTM imagery
+				
+		#fit.Document.Files
+			code.
+				bib      - BibTeX [.bib]
+				doc      - Microsoft Word 97/2000/XP [.doc]
+				doc6     - Microsoft Word 6.0 [.doc]
+				doc95    - Microsoft Word 95 [.doc]
+				docbook  - DocBook [.xml]
+				docx     - Microsoft Office Open XML [.docx]
+				docx7    - Microsoft Office Open XML [.docx]
+				fodt     - OpenDocument Text (Flat XML) [.fodt]
+				html     - HTML Document (OpenOffice.org Writer) [.html]
+				latex    - LaTeX 2e [.ltx]
+				mediawiki - MediaWiki [.txt]
+				odt      - ODF Text Document [.odt]
+				ooxml    - Microsoft Office Open XML [.xml]
+				ott      - Open Document Text [.ott]
+				pdb      - AportisDoc (Palm) [.pdb]
+				pdf      - Portable Document Format [.pdf]
+				psw      - Pocket Word [.psw]
+				rtf      - Rich Text Format [.rtf]
+				sdw      - StarWriter 5.0 [.sdw]
+				sdw4     - StarWriter 4.0 [.sdw]
+				sdw3     - StarWriter 3.0 [.sdw]
+				stw      - Open Office.org 1.0 Text Document Template [.stw]
+				sxw      - Open Office.org 1.0 Text Document [.sxw]
+				text     - Text Encoded [.txt]
+				txt      - Text [.txt]
+				uot      - Unified Office Format text [.uot]
+				vor      - StarWriter 5.0 Template [.vor]
+				vor4     - StarWriter 4.0 Template [.vor]
+				vor3     - StarWriter 3.0 Template [.vor]
+				xhtml    - XHTML Document [.html]
+
+		#fit.Graphics.Files
+			code.
+				bmp      - Windows Bitmap [.bmp]
+				emf      - Enhanced Metafile [.emf]
+				eps      - Encapsulated PostScript [.eps]
+				fodg     - OpenDocument Drawing (Flat XML) [.fodg]
+				gif      - Graphics Interchange Format [.gif]
+				html     - HTML Document (OpenOffice.org Draw) [.html]
+				jpg      - Joint Photographic Experts Group [.jpg]
+				met      - OS/2 Metafile [.met]
+				odd      - OpenDocument Drawing [.odd]
+				otg      - OpenDocument Drawing Template [.otg]
+				pbm      - Portable Bitmap [.pbm]
+				pct      - Mac Pict [.pct]
+				pdf      - Portable Document Format [.pdf]
+				pgm      - Portable Graymap [.pgm]
+				png      - Portable Network Graphic [.png]
+				ppm      - Portable Pixelmap [.ppm]
+				ras      - Sun Raster Image [.ras]
+				std      - OpenOffice.org 1.0 Drawing Template [.std]
+				svg      - Scalable Vector Graphics [.svg]
+				svm      - StarView Metafile [.svm]
+				swf      - Macromedia Flash (SWF) [.swf]
+				sxd      - OpenOffice.org 1.0 Drawing [.sxd]
+				sxd3     - StarDraw 3.0 [.sxd]
+				sxd5     - StarDraw 5.0 [.sxd]
+				sxw      - StarOffice XML (Draw) [.sxw]
+				tiff     - Tagged Image File Format [.tiff]
+				vor      - StarDraw 5.0 Template [.vor]
+				vor3     - StarDraw 3.0 Template [.vor]
+				wmf      - Windows Metafile [.wmf]
+				xhtml    - XHTML [.xhtml]
+				xpm      - X PixMap [.xpm]
+
+		#fit.Presentation.Files
+			code.
+				bmp      - Windows Bitmap [.bmp]
+				emf      - Enhanced Metafile [.emf]
+				eps      - Encapsulated PostScript [.eps]
+				fodp     - OpenDocument Presentation (Flat XML) [.fodp]
+				gif      - Graphics Interchange Format [.gif]
+				html     - HTML Document (OpenOffice.org Impress) [.html]
+				jpg      - Joint Photographic Experts Group [.jpg]
+				met      - OS/2 Metafile [.met]
+				odg      - ODF Drawing (Impress) [.odg]
+				odp      - ODF Presentation [.odp]
+				otp      - ODF Presentation Template [.otp]
+				pbm      - Portable Bitmap [.pbm]
+				pct      - Mac Pict [.pct]
+				pdf      - Portable Document Format [.pdf]
+				pgm      - Portable Graymap [.pgm]
+				png      - Portable Network Graphic [.png]
+				potm     - Microsoft PowerPoint 2007/2010 XML Template [.potm]
+				pot      - Microsoft PowerPoint 97/2000/XP Template [.pot]
+				ppm      - Portable Pixelmap [.ppm]
+				pptx     - Microsoft PowerPoint 2007/2010 XML [.pptx]
+				pps      - Microsoft PowerPoint 97/2000/XP (Autoplay) [.pps]
+				ppt      - Microsoft PowerPoint 97/2000/XP [.ppt]
+				pwp      - PlaceWare [.pwp]
+				ras      - Sun Raster Image [.ras]
+				sda      - StarDraw 5.0 (OpenOffice.org Impress) [.sda]
+				sdd      - StarImpress 5.0 [.sdd]
+				sdd3     - StarDraw 3.0 (OpenOffice.org Impress) [.sdd]
+				sdd4     - StarImpress 4.0 [.sdd]
+				sxd      - OpenOffice.org 1.0 Drawing (OpenOffice.org Impress) [.sxd]
+				sti      - OpenOffice.org 1.0 Presentation Template [.sti]
+				svg      - Scalable Vector Graphics [.svg]
+				svm      - StarView Metafile [.svm]
+				swf      - Macromedia Flash (SWF) [.swf]
+				sxi      - OpenOffice.org 1.0 Presentation [.sxi]
+				tiff     - Tagged Image File Format [.tiff]
+				uop      - Unified Office Format presentation [.uop]
+				vor      - StarImpress 5.0 Template [.vor]
+				vor3     - StarDraw 3.0 Template (OpenOffice.org Impress) [.vor]
+				vor4     - StarImpress 4.0 Template [.vor]
+				vor5     - StarDraw 5.0 Template (OpenOffice.org Impress) [.vor]
+				wmf      - Windows Metafile [.wmf]
+				xhtml    - XHTML [.xml]
+				xpm      - X PixMap [.xpm]
+
+		#fit.Spreadsheet.Files
+			code.
+				csv      - Text CSV [.csv]
+				dbf      - dBASE [.dbf]
+				dif      - Data Interchange Format [.dif]
+				fods     - OpenDocument Spreadsheet (Flat XML) [.fods]
+				html     - HTML Document (OpenOffice.org Calc) [.html]
+				ods      - ODF Spreadsheet [.ods]
+				ooxml    - Microsoft Excel 2003 XML [.xml]
+				ots      - ODF Spreadsheet Template [.ots]
+				pdf      - Portable Document Format [.pdf]
+				pxl      - Pocket Excel [.pxl]
+				sdc      - StarCalc 5.0 [.sdc]
+				sdc4     - StarCalc 4.0 [.sdc]
+				sdc3     - StarCalc 3.0 [.sdc]
+				slk      - SYLK [.slk]
+				stc      - OpenOffice.org 1.0 Spreadsheet Template [.stc]
+				sxc      - OpenOffice.org 1.0 Spreadsheet [.sxc]
+				uos      - Unified Office Format spreadsheet [.uos]
+				vor3     - StarCalc 3.0 Template [.vor]
+				vor4     - StarCalc 4.0 Template [.vor]
+				vor      - StarCalc 5.0 Template [.vor]
+				xhtml    - XHTML [.xhtml]
+				xls      - Microsoft Excel 97/2000/XP [.xls]
+				xls5     - Microsoft Excel 5.0 [.xls]
+				xls95    - Microsoft Excel 95 [.xls]
+				xlt      - Microsoft Excel 97/2000/XP Template [.xlt]
+				xlt5     - Microsoft Excel 5.0 Template [.xlt]
+				xlt95    - Microsoft Excel 95 Template [.xlt]
+
+	#accordion.Browsers
+		:markdown
+			As described in the [tutorial](/home_brief.view) and the [skinning guide](/skinguide.view), **#{nick}** 
+			allows its clients to manage their content with various technologies.  The #{nick}
+			works with Firefox (10.0.7 ESR and later), Chrome (22.0.1279.79m), Opera (12.02), and Safari (5.1.7). 
+			IE is not supported.  Latest Chrome is required to use WebGL and Cesium engines.
+			Known browser bugs are documented in the [issues](/issues.view).
+
+//- UNCLASSIFIED

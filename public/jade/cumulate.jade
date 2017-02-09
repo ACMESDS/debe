@@ -1,0 +1,188 @@
+// UNCLASSIFIED
+// Level-2 d3 cummulative chart over x,y for each sequence seq using /cumulate.jade?&_src=table&_pivots=pivotlist&_index=x,y,z
+
+extends layout
+append layoutparms
+	Layout = "charts"
+append layoutarea
+
+	style
+		body {
+			font: 12px sans-serif;
+		}
+		.axis path,
+		.axis line {
+			fill: none;
+			stroke: #000;
+			shape-rendering: crispEdges;
+		}
+		.dot {
+			stroke: #000;
+		}
+
+	script
+	
+		var margin = {top: 20, right: 20, bottom: 30, left: 40},
+			width = 800 - margin.left - margin.right,
+			height = 400 - margin.top - margin.bottom;
+
+		var x = d3.scale.linear()
+			.range([0, width]);
+
+		var y = d3.scale.linear()
+			.range([height, 0]);
+
+		var color = d3.scale.category10();
+
+		var xAxis = d3.svg.axis()
+			.scale(x)
+			.orient("bottom");
+
+		var yAxis = d3.svg.axis()
+			.scale(y)
+			.orient("left");
+
+		var svg = d3.select("#content").append("svg")
+			.attr("width", width + margin.left + margin.right)
+			.attr("height", height + margin.top + margin.bottom)
+			.append("g")
+			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+		//Load the data
+		d3.json("/#{query.src}?_tree=#{query.pivots}", function(json) {
+			var data = json.data;
+			var N = data.length;
+			
+			// Find all the sequences
+			var seqs = new Object();
+			for (var n=0; n<N; n++) {
+				var seq = data[n][2];
+				if (!seqs[seq]) seqs[seq] = []; 
+			}
+
+			// Calc cummulatives
+			for (var n=0;n<N;n++) {
+				var d = data[n];
+				var seq = seqs[d[2]];
+				var M = seq.length;
+
+				//if (d[2] == "NOMINAL") console.log("n="+n+" seq="+d[2]+" vals="+seq.join());
+
+				if (M) 
+					seq.push( [d[0],d[1]+seq[M-1][1]] );
+				else
+					seq.push( [d[0],d[1]] );
+			}
+			
+			// Reorg into an M x 3 array [state,cumcnt,seq]
+			var data = new Array();
+			for (var n in seqs) {
+				var seq = seqs[n];
+				var M = seq.length;
+				for (m=0;m<M;m++) {
+					var d = seq[m];
+					data.push( [d[0],d[1],n] );
+					//if (n == "NOMINAL") console.log( [d[0],d[1],n] );
+				}
+			}
+				
+			// Plot it
+			x.domain(d3.extent(data, function(d) { return d[0]; })).nice();
+			y.domain(d3.extent(data, function(d) { return d[1]; })).nice();
+
+			svg.append("g")
+			.attr("class", "x axis")
+			.attr("transform", "translate(0," + height + ")")
+			.call(xAxis)
+			.append("text")
+			.attr("class", "label")
+			.attr("x", width)
+			.attr("y", -6)
+			.style("text-anchor", "end")
+			.text("TRL");
+
+			svg.append("g")
+			.attr("class", "y axis")
+			.call(yAxis)
+			.append("text")
+			.attr("class", "label")
+			.attr("transform", "rotate(-90)")
+			.attr("y", 6)
+			.attr("dy", ".71em")
+			.style("text-anchor", "end")
+			.text("Age (days)")
+
+			svg.selectAll(".dot")
+			.data(data)
+			.enter().append("circle")
+			.attr("class", "dot")
+			.attr("r", 3.5)
+			.attr("cx", function(d) { return x(d[0]); })
+			.attr("cy", function(d) { return y(d[1]); })
+			.style("fill", function(d) { return color(d[2]); });
+
+			var legend = svg.selectAll(".legend")
+			.data(color.domain())
+			.enter().append("g")
+			.attr("class", "legend")
+			.attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+			legend.append("rect")
+			.attr("x", width + 5)
+			.attr("width", 18)
+			.attr("height", 18)
+			.style("fill", color);
+
+			legend.append("text")
+			.attr("x", width + 0)
+			.attr("y", 9)
+			.attr("dy", ".35em")
+			.style("text-anchor", "end")
+			.text(function(d) { return d; });
+			
+			//Create labels
+			switch (0) {
+				case 0:
+					break;
+					
+				case 1:
+					svg.selectAll("text")
+					.data(data)
+					.enter()
+					.append("text")
+					.text(function(d) {
+						return d[2];
+					})
+					.attr("x", function(d) {
+						return xScale(d[0]);
+					})
+					.attr("y", function(d) {
+						return yScale(d[1]);
+					})
+					.attr("font-family", "sans-serif")
+					.attr("font-size", "11px")
+					.attr("fill", "red");
+					break;
+					
+				case 2:
+					svg.selectAll("text")
+					.data(data)
+					.enter()
+					.append("text")
+					.text(function(d) {
+						return d[0] + "," + d[1];
+					})
+					.attr("x", function(d) {
+						return xScale(d[0]);
+					})
+					.attr("y", function(d) {
+						return yScale(d[1]);
+					})
+					.attr("font-family", "sans-serif")
+					.attr("font-size", "11px")
+					.attr("fill", "red");
+					break;
+			}			
+		});
+		
+// UNCLASSIFIED		

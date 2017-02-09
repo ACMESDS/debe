@@ -1,0 +1,51 @@
+//- UNCLASSIFIED
+
+extends site
+append site.help
+	:markdown
+		The job queue is automatically populated by [training, detection and user supervision 
+		jobs](/swag.view?goto=Jobs).  Feel free to Hawk over this queue to insure that
+		your jobs complete in the strategy/priority you design.  Try [liking SWAG](/likeus.view) 
+		to improve your job priority in these queues.
+
+append site.parms
+	- view = "Hawk"
+	- dock = "left"
+	- parms = {all: "all", mine: "mine", jobs: "jobs"}
+	- dims = "1000,800"
+append site.body
+
+	#hold.Action(path="/states.db?Class=Action",cols="Name")
+	
+	- Filter = ""
+	if query.option == "mine"
+		- Filter = "?Owner=" + user
+	if query.option == "jobs"
+		- Filter = "?Table=queues"
+
+	#grid.Queue(
+		path="/queues.db#{Filter}",
+		dims="#{dims}",page="#{page}",refresh=60,dock="top",
+		cols="Flagged.c,Classif,Owner,Class,JobID,State.n,Work.n,Arrived.d,Departed.d,Notes.h")
+
+	#grid.Hawk(
+		path="hawks.db#{Filter}",
+		dims="#{dims}",page=30,typical,dock="top",
+		cols="Rule(Enabled.c,Table,Condition.h,Action.p,Period.n),Status(Status.h,Changed.n,Matched.n,Pulse.n,Faults.n)")
+
+		:markdown
+			Use these action-condition-table rules to hawk over your job queue with actions:
+			
+				stop=halt=kill to kill matched jobs and update its queuing history
+				remove=destroy=delete to kill matched jobs and obliterate its queuing history
+				log=notify=flag=tip to email owner a status of matched jobs
+				improve=promote to increase priority of matched jobs
+				reduce=demote to reduce priority of matached jobs
+				start=run to create jobs from dirty records
+				set expression to revise queuing history of matched jobs
+				
+			Execute these rules to reset current running rules.
+
+	#plot.Throughput(path="queues.db#{Filter}&json=Notes&index=maxDelay,util&Class=probe&max=60000,1&min=50000,0",dims="#{dims}")
+
+//- UNCLASSIFIED

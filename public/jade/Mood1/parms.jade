@@ -1,0 +1,28 @@
+// UNCLASSIFIED
+// Level 2 skin provides a lifecycle Parameter view.
+//
+// Skinning guide: [URL]/skin.jade
+// API guide: [URL]/icd.jade
+// Parameters: [URL]/parms.jade
+// Skins mapdrive: [URL]/skins
+// Theme mapdrive: [URL]/css
+
+extends site
+append siteparms
+	view = "Lifecycle Parameters"
+append sitearea
+
+	#grid.roles(
+		path="/roles.db",
+		actions,help,page="#{page}",check,
+		cols="Table,Special,Roles(INSERT,UPDATE,DELETE,SELECT,IMPORT,EXPORT),Attribs(Journal.c,Expose.c,Log.c)")
+
+	#grid.parms(
+		path="/parms.db",
+		actions,help,page="#{page}",check,
+		cols="Parm.t.Name,Label.t,Type,Special,Verified(V*),Type(At Input.c,At Output.c,At System.c),Stakeholder(Org*)")
+
+	#grid.states(
+		path="/states.db",
+		actions,help,page="#{page}",check,
+		cols="Class,State.n,Name,Special,Supporting")

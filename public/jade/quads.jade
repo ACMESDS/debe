@@ -1,0 +1,6 @@
+extends layout
+append layoutparms
+	- Layout = View || "raw"
+append layoutarea
+
+	goto(src="code.#{query.src}.db",w="#{query.w}",h="#{query.h}")

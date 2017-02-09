@@ -1,0 +1,61 @@
+//- UNCLASSIFIED
+
+extends layout
+append layout_body
+
+	p 0.1. SYSTEM SECURITY PLAN PREPARED BY
+	
+	p 0.2. REVISION HISTORY
+		
+	table
+		th: p Date
+		th: p Description
+		th: p System Version
+		th: p Authors
+		tr
+		td: p #{released}
+		td: p Original
+		td: p #{ver}
+		td: p pms: !{distro.pm} users: !{distro.user}
+			
+	p 1. INFORMATION SYSTEM NAME/TITLE
+	
+	p This System Security Plan (SSP) ... blah blah
+	p!= get(pocs,{Role:"pm"},null,"table")
+	
+	p 1.1 All my apps
+	
+	p!= get(apps,null,"Released,Host,Nick","table")
+
+	table
+		th: p System Plan Identifier (SPID)
+		th: p Information System Name
+		th: p System Abbreviation
+		th: p System of Record Notice (SORN)
+		tr
+		td: p #{info.a[0].SPID}
+		td: p #{title}
+		td: p #{nick}
+		td: p #{info.a[0].SORN}
+		
+	p 1.1 SCOPE AND APPLICABILITY
+	
+	p This document applies to all NGA owned, controlled, outsourced, blah blah
+	
+	p 2. INFORMATION SYSTEM CATEGORIZATION
+	
+	p 2.1 INFORMATION TYPES
+	
+		#grid.InfoTypes(
+			path="/json.db",
+			cols="NISTtype,NISTid,Confidentiality,Integrity,Availability",
+			links=`key=apps.Totem.Info.b` )
+
+	//
+		each sec,idx in secs
+		#fit(class=`x${idx}. ${sec.title}`)
+			p= sec_body
+			if sec.grid
+				#grid(class=`g${idx}`,path=`/${sec.grid}.db`,cols="To,Message")
+				
+//- UNCLASSIFIED

@@ -1,0 +1,54 @@
+//- UNCLASSIFIED
+
+extends site
+append siteparms
+	- help = "Provide a landing page of the specified &look"
+	- view = "Engr"
+	- parms = {chat:"look=chat", news:"look=news", intake:"look=intake"}
+append sitearea
+
+	case query.look
+		when "chat"
+			#grid.Chat(
+				path="/sockets.db",typical,
+				page=25,dims="#{dims}",
+				cols="User,Org,Location,At,Message.x")
+
+		when "news"
+			#grid.News(
+				path="/news.db",typical,
+				page=25,dims="#{dims}",
+				cols="New.c,To.t,Starts.d,Stay.n,Age.n,Fuse.n,Message.x,Category.x")
+
+		when "immersion"
+			#folder.Gaming(dock="left")
+				#post.Blast(path="/cubeland.view",dims="#{dims}")
+				#post.Bounce(path="/spherebounce.view",dims="#{dims}")
+				#post.Anagylph(path="/anaglyph.view",dims="#{dims}")
+				#post.Build(path="/voxelpaint.view",dims="#{dims}")
+		
+		when "intake"
+			#null.TRLs(path="/states.db?Class=TRL",sync,cols="State,Name,Special")
+			
+			#folder.Intake(dims="#{dims}",dock="left")
+				#pivot.Find(
+					path="/intake.db",
+					page=50,dims="#{dims}",track="#{type}",typical,
+					pivots="App,Name",
+					menu="Search",
+					cols="TRL,Track,General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
+
+				#grid.List(
+					path="/intake.db",
+					page=50,actions,dims="#{dims}",track="#{type}",typical,
+					sorts="App,Name,TRL",
+					links="Name.Find.Name",
+					cols="App,Name,TRL,Track,General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
+											
+				#form.Edit(
+					path="/intake.db",
+					links="ID.List.ID",
+					page="#{page}",actions,dims="#{dims}",
+					cols="App,Name,TRL,Track,General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
+		
+//- UNCLASSIFIED

@@ -1,0 +1,10 @@
+extends layout
+append layoutparms
+	- Layout = "Guide"
+	- Feature = {Isotope:1}
+append layoutarea
+
+	#pivot.Tips(
+		path="#{flags._src}",pivots="Category,Starts,Stay",
+		page=25,actions,check,help,crush,refresh,dims="[750,500]",
+		cols="ID,Starts,Stay,Message,Category,To")

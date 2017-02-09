@@ -1,0 +1,1 @@
+mysql -u$SECRETS_DB_USER p$SECRETS_DB_PASS

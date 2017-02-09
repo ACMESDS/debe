@@ -1,0 +1,216 @@
+// UNCLASSIFIED
+//-
+	 Provides d3 scatter plot given:
+		_src = data path /table.db?parameters
+		_line = color1, color2, ...
+		_marker = style1, style2, ... 
+		_legend = name1, name2, ...
+		_label = x-label, y-label
+		_min = x-min, y-min
+		_max = x-max, y-max
+		_init = x-initial, y-initial
+		_auto = x-autoscale, y-autoscale
+		_ref = reference path [x,y], ...
+		_trace = switch to enable point traces
+
+extends layout
+append layoutparms
+	- Layout = "Chart"
+append layoutarea
+
+	style.
+		body { font: 18px sans-serif; }
+
+		.axis path, .axis line {
+			fill: none;
+			stroke: #777;
+			shape-rendering: crispEdges;
+		}
+
+		.dot { stroke: #000; }
+		
+		.legend { }
+
+		.text {}
+	script.
+		function split(x,def) {
+			return x ? x.split(",") : def || [];
+		}
+		
+		var margin = {top: 20, right: 20, bottom: 30, left: 40},
+			width = 800 - margin.left - margin.right,
+			height = 400 - margin.top - margin.bottom;
+
+		var x = d3.scale.linear()
+			.domain([0,1])
+			.range([0, width]);
+
+		var y = d3.scale.linear()
+			.domain([0,1])
+			.range([height, 0]);
+
+		var color = d3.scale.category10();
+
+		var xAxis = d3.svg.axis()
+			.scale(x)
+			.orient("bottom");
+
+		var yAxis = d3.svg.axis()
+			.scale(y)
+			.orient("left");
+
+		var vis = d3.select("#content");
+		
+		var svg = vis.append("svg")
+			.attr("width", width + margin.left + margin.right)
+			.attr("height", height + margin.top + margin.bottom)
+			.append("g")
+			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+		//Load the data
+		
+		var opts = {
+			src: unescape("#{url}") || "undefined.db",
+			trace: "#{flags._trace}",
+			
+			ref: eval("[#{flags._ref}]"),
+			min: eval("[#{flags._min}]"),
+			max: eval("[#{flags._max}]"),
+			init: eval("[#{flags._init}]"),
+
+			marker: split("#{flags._marker}" || "dot"),
+			line: split("#{flags._line}" || "blue"),
+
+			label: split("#{flags._label}"),
+			idx: split("#{flags._index}"),
+			auto: split("#{flags._auto}"),
+			legend: split("#{flags._legend}")
+		};
+
+		//alert(JSON.stringify(opts));
+						
+		d3.json(opts.src, function(json) {
+			var data = opts.init.length ? [opts.init].concat(json.data) : json.data;
+
+			if (opts.auto[0]) 
+				x.domain(d3.extent(data, function(d) { return d[0]; })).nice();
+			else
+				x.domain([opts.min[0] || 0, opts.max[0] || 1]);
+				
+			if (opts.auto[1]) 
+				y.domain(d3.extent(data, function(d) { return d[1]; })).nice();
+			else
+				y.domain([opts.min[1] || 0, opts.max[1] || 1]);
+			
+			var xaxis = svg
+			.append("g")
+			.attr("class", "x axis")
+			.attr("transform", "translate(0," + height + ")")
+			.call(xAxis)
+			.append("text")
+			.attr("class", "label")
+			.attr("x", width)
+			.attr("y", -25)
+			.attr("dy", "1em")
+			.style("text-anchor", "end")
+			.text(opts.label[0] || opts.idx[0]);
+
+			var yaxis = svg
+			.append("g")
+			.attr("class", "y axis")
+			.call(yAxis)
+			.append("text")
+			.attr("class", "label")
+			.attr("transform", "rotate(-90)")
+			.attr("y", 10)
+			.attr("dy", "1em")
+			.style("text-anchor", "end")
+			.text(opts.label[1] || opts.idx[1]);
+
+			var line = d3.svg.line();
+			
+			if (opts.marker.length)  			// add markers
+				for (var m=0,n=0,M=opts.marker.length; m<M; m++,n+=2) 
+					var dots = svg
+					.selectAll(".dot")
+					.data(data)
+					.enter()
+					.append("circle")
+					.attr("class", opts.marker[m])
+					.attr("r", 3.5)
+					.attr("cx", function(d) { return x(d[n]); })
+					.attr("cy", function(d) { return y(d[n+1]); });
+					//.style("fill", function(d) { return color(d[2]); });
+
+			if (opts.line.length) 				// add lines
+				for (var m=0,n=0,M=opts.line.length; m<M; m++,n+=2) {
+					line
+					.x(function (d) { return x(d[n]); })
+					.y(function (d) { return y(d[n+1]); })
+					.interpolate('linear');
+					
+					svg
+					.append('path')
+					.attr('d', line(data))
+					.attr('stroke', opts.line[m])
+					.attr('stroke-width', 2)
+					.attr('fill', 'none');
+				}
+			
+			if (opts.ref.length) {
+				line
+				.x(function (d) { return x(d[0]); })
+				.y(function (d) { return y(d[1]); })
+				.interpolate('linear');
+			
+				svg
+				.append('path')
+				.attr('d', line(opts.ref))
+				.attr('stroke', "black")
+				.attr('stroke-width', 2)
+				.attr('fill', 'none');
+			}
+
+			if (opts.legend.length) {   // add legend
+				var legend = svg
+				.selectAll(".legend")
+				.data(color.domain())
+				.enter()
+				.append("g")
+				.attr("class", "legend")
+				.attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+				
+				for (var m=0,M=opts.legend.length; m<M; m++) {
+					svg
+					.append("rect")
+					.attr("x", width - 18)
+					.attr("width", 25)
+					.attr("height", 25)
+					.style("fill", opts.line[m] || "black");
+
+					svg
+					.append("text")
+					.attr("x", width - 24)
+					.attr("y", 9)
+					.attr("dy", ".35em")
+					.style("text-anchor", "end")
+					.text(opts.legend[m]);
+				}
+			}
+			
+			if (opts.trace)
+				var trace = svg
+					.selectAll(".text")
+					.data(data)
+					.enter()
+					.append("text")
+					.text(function (d){ return d[0].toFixed(2)+" , "+d[1].toFixed(2); } )
+					.attr("x",function (d){ return x(d[0]); } )
+					.attr("y",function (d){ return y(d[1]); } )
+					.attr("dy", ".35em")
+					.attr("font-family", "sans-serif")
+					.attr("font-size", "11px")
+					.attr("fill", "red");
+		});
+		
+// UNCLASSIFIED

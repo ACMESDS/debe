@@ -1,0 +1,390 @@
+//- UNCLASSIFIED
+
+extends site
+append site_help
+	:markdown
+		Provides example sites via &option = example or the Options.
+
+append site_parms
+	- view = "Min"
+	- dock = "left"
+	- parms = {tipsheets: "tipsheets", blogs: "blogs", embeds: "embeds", workflows:"workflows", engines:"engines", odbc:"odbc", immersion:"immersion", finders:"finders", navigator:"navigator", techpub:"techpub", briefs:"briefs", visuals:"visuals"}
+
+append site_body
+	- hosts = {geohub: "https://sigma0.ilabs.ic.gov", me: "localhost", win: "http://200.100.50.101", aws: "http://172.31.76.130"}
+	- host = hosts.aws
+
+	case query.option
+		when "embeds"
+			#post.Simple.Service(path="http://www.w3schools.com",dims="750,500",refresh,head="Refresh,Help")
+
+				:markdown
+					Here is a sample service embed.  This was embedded with the "refresh" option, so you 
+					need to *refresh* to access the service.  If this was embedded w/o the "refresh" option,
+					the service would be already available.  The "refresh" option is particularly useful 
+					in [large briefings](/tutorial.view) so hold-off posts until they are needed.
+
+			#grid.Complex.Help(
+				path="/news.db",
+				page=page,dims=dims,
+				head="Edit,Help",
+				cols="Message,To,Category")
+
+				:markdown
+					this is a grid whose help button contains embedded widgets as well.
+
+					p.al The Lorenz Equations $x=y$
+					p.
+						\[
+						\begin{align}
+						\dot{x} & = \sigma(y-x) \\
+						\dot{y} & = \rho x - y - xz \\
+						\dot{z} & = -\beta z + xy
+						\end{align}
+						\]
+
+				#folder.Embeds
+					#expapers.Embedded.Paper(dims="300,300")
+
+					#minielt.Embedded.Editor(path="/uploads.Welcome9.jpg",dims="400,300")
+						:markdown
+							this is a test image containing a typeset popup
+					
+		when "odbc"
+			#grid.Excel(path="/test.db",cols="a,b,c,d")
+			#grid.ViaAccess(path="/linktest.db",cols="a,b,c,d,e")
+			#grid.WebSite(path="/somesite.db",cols="x1,x2,x3,x4")
+			#grid.Proxies(path="/proxies.db",
+				cols="Enabled.c,Name,File(Path,Sheet),Period.n,Special.x,Updates.i,Updated.d,Machine(Vars.x,Classif,Engine,Code.x)")
+
+		when "engines"
+
+			#accordion.JS
+			
+				#form.Engine(
+					path="engines.db?Name=jsdemo1&Engine=js",
+					cols="Name,Engine,Enabled.c,Program(Vars.x,Code.x)")
+
+					:markdown
+						To learn more about JS engines, consult the #{title}'s [api](/api.view?goto=Engines).
+
+				#grid.endpt(
+					path="/jsdemo1.db?Name=test&M=3",
+					dims=dims,page=page,
+					cols="u")
+				#grid.inputs(
+					path="/Htest.db",
+					dims=dims,page=page,
+					cols="Used.c,Name,Parameters(p0.n,p1.n,p2.n,p3.n,p4.n,p5.n),Observations(FPR.n,TPR.n)")
+				#grid.outputs(
+					path="/Hreg.db",
+					dims=dims,page=page,
+					cols="Name,Computed.d,Tests.n,Fits(a0.n,a1.n,a2.n,a3.n,a4.n,a5.n)")
+
+			#accordion.Python
+
+				#form.Engine(
+					path="engines.db?Name=pydemo1&Engine=py",
+					cols="Name,Engine,Enabled.c,Program(Vars.x,Code.x)")
+
+					:markdown
+						To learn more about Python engines, consult the #{title}'s [api](/api.view?goto=Engines).
+
+				#grid.endpt(path="pydemo1.db?Name=file1",cols="x,y,z")
+
+			#accordion.MatLike
+
+				#form.Engine(
+					path="engines.db?Name=matdemo1&Engine=mat",
+					cols="Name,Engine,Enabled.c,Program(Vars.x,Code.x)")
+
+					:markdown
+						To learn more about Matlab-like engines, consult the #{title}'s [api](/api.view?goto=Engines).
+
+				#grid.endpt(path="matdemo1.db",cols="x,y,z")
+
+		when "immersion"
+			#accordion.Immersion
+				#fit.Jade
+					pre: code.mysql.
+						extends site
+							- tech = "jquery"
+						append site_parms
+							- view = "Min"
+							- dock = "left"
+						append site_body
+						
+							#folder.Gaming(dock="left")
+								#cesium.Earth(path="HelloWorld",dims="750,500")
+								#voxel.Blast(path="cubeland",dims=dims)
+								#spherebounce.Bounce(path="/",dims=dims)
+								#anaglyph.Anagylph(path="/",dims=dims)
+								#voxelpaint.Build(path="/",dims=dims)
+
+				#fit.Render
+						
+					#folder.Gaming(dock="left")
+						#cesium.Earth(path="HelloWorld",dims="750,500")
+						#voxel.Blast(path="forest",dims=dims)
+						#spherebounce.Bounce(path="/",dims=dims)
+						#anaglyph.Anagylph(path="/",dims=dims)
+						#voxelpaint.Build(path="/",dims=dims)
+
+		when "blogs"
+			#accordion.Blog
+				#fit.Jade
+					pre: code.mysql.
+						extends site
+							- tech = "jquery"
+						append site_parms
+							- view = "Min"
+						append site_body
+
+						#grid.Blog(
+							path="news.db",refresh=300,
+							sorts="Stay,Starts",page=30,dims=dims,calc,head="Search,Print,Refresh",
+							cols="Message.h")
+
+					:markdown
+						To make a jade skin **hello**, create a **hello**  [jade engine](/engines.view) then
+						render it with **/hello.view**.  You can learn more about how to [skin #{title}](/skinguide.view) 
+						and the [#{title} API](/api.view).  
+
+				#fit.Render
+					#grid.Blog(
+						path="news.db",refresh=300,
+						sorts="Stay,Starts",page=30,dims=dims,calc,head="Search,Print,Refresh",
+						cols="Message.h")
+						
+					:markdown
+						The cool thing about blogging grids is that they can be printed.
+
+		when "finders"
+			#accordion.Finder
+				#fit.Jade
+					pre: code.mysql.
+						extends site
+							- tech = "jquery"
+						append site_parms
+							- view = "Min"
+						append site_body
+										
+							#pivot.Find(
+								path="/intake.db",
+								page=50,dims=dims,
+								pivots="App,Name,Tech",kiss,
+								cols="Condition(TRL,Track,Reason),General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
+
+							- fby = {"a":"A","b":"B"}
+							#null.FilterBy(path="#{JSON.stringify(fby)}",cols="Name,opt")
+
+							#grid.List(
+								path="/intake.db?Name=${xs('FIND').Name}",
+								page=50,dims=dims,
+								sorts="App,Name",menu="FilterBy,TestBy(a,b,c)",
+								cols="Name,App,Tech,TRL,Track,General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
+
+							#form.Edit(
+								path="/intake.db?ID=${xs('List').ID}",
+								dims=dims,
+								cols="Name,App,Tech,TRL,Track,General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
+
+					:markdown
+						To make a jade skin **hello**, create a **hello**  [jade engine](/engines.view) then
+						render it with **/hello.view**.  You can learn more about how to [skin #{title}](/skinguide.view) 
+						and the [#{title} API](/api.view).  
+					
+				#folder.Render
+					#pivot.Find(
+						path="/intake.db",
+						page=50,dims=dims,
+						pivots="App,Name,Tech",kiss,
+						cols="Condition(TRL,Track,Reason),General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
+
+					- fby = {"a":"A","b":"B"}
+					#null.FilterBy(path="#{JSON.stringify(fby)}",cols="Name,opt")
+
+					#grid.List(
+						path="/intake.db?Name=${xs('FIND').Name}",
+						page=50,dims=dims,
+						sorts="App,Name",menu="FilterBy,TestBy(a,b,c)",
+						cols="Name,App,Tech,TRL,Track,General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
+
+					#form.Edit(
+						path="/intake.db?ID=${xs('List').ID}",
+						dims=dims,
+						cols="Name,App,Tech,TRL,Track,General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
+
+		when "navigator"
+			#accordion.Navigator
+				#fit.Jade
+					pre: code.mysql.
+						extends base
+							- tech = "jquery"
+						append base_parms
+							- pivot = "elFinder"
+							- image = "Darkroom"
+						append base_body
+
+							#folder.Container
+								#fit.Welcome
+									p now is the time A
+									p when all good men should get the time B
+
+								#grid.News(
+									path="/news.db",
+									page=25,actions,check,help,crush,refresh,dims="750,500",
+									cols="ID,Starts,Stay,Message,Category,To")
+
+								#accordion.Info
+									#fit.X1
+										p now is the time A
+										p now is the time B
+									#fit.X2
+										p now is the time for X2
+									#fit.X3
+										p now is the time for X3
+
+								#pivot.elFinder(path="/intake.json",pivots="App,Tech,TRL")
+
+								#image.Light.Table(path="/shares/default.jpg")
+
+				#fit.Render
+					#exnav(dims=dims)
+
+		when "tipsheets"
+			#accordion.Tipsheet
+				#fit.Jade
+					pre: code.mysql.
+						extends base
+							- tech = "jquery"
+						append base_parms
+							- pivot = "Isotope"
+						append base_body
+
+							#pivot.Tips(
+								path="#{query.src}",
+								page=25,actions,check,help,crush,refresh,dims="750,500",
+								pivots="#{query.pivots}")
+
+				#fit.Render
+					#tipsheet(
+						path="/tips.db",
+						dims=dims,
+						pivots="cat,tip,name,symbol,lat,lon,nipf,nipf,links")
+
+		when "techpub"
+			#accordion.Paper
+				#fit.Jade
+					pre: code.mysql.
+						extends base
+							- tech = "nada"
+						append base_body
+							h1 Chapter 1
+							
+							p The Lorenz Equations \(x^2 = 0\)
+							p.
+								$$
+								\begin{align}
+								\dot{x} & = \sigma(y-x) \\
+								\dot{y} & = \rho x - y - xz \\
+								\dot{z} & = -\beta z + xy
+								\end{align}
+								$$
+							br
+							p Impressive 'eh
+							p.
+								\[
+								J_\alpha(x) = \sum\limits_{m=0}^\infty \frac{(-1)^m}{m! \, \Gamma(m + \alpha + 1)}{\left({\frac{x}{2}}\right)}^{2 m + \alpha}
+								\]
+								
+							h1 Chapter 2
+
+					:markdown
+						To make a jade skin **hello**, create a **hello**  [jade engine](/engines.view) then
+						render it with **/hello.view**.  You can learn more about how to [skin #{title}](/skinguide.view) 
+						and the [#{title} API](/api.view).
+										
+				#fit.Render
+					#expub(dims=dims)
+
+		when "mobiles"
+			p Pending
+
+		when "briefs"
+			#exbrief.Brief(dims=dims)
+
+		when "workflows"
+			#accordion
+				#nodered.Stateless(path="/",dims="1100,600")
+				#nodeflow.Stateful(path="Python2&view=Kiss",dims="1100,600")
+
+		when "ex"
+			//
+				#pivot.Browser(
+				path="/intake.db",
+				page=10,dims=dims,
+				pivots="TRL,Name",
+				cols="name")
+		
+			#pivot.Browser(
+				path="/intake.db",
+				page=10,dims=dims,
+				pivots="TRL,App",
+				cols="ID,App,TRL,Tech")
+
+		when "visuals"
+			- bpath = "/intake.json&pivots=${ds('Browser').pivots}"
+
+			#pivot.Browser(
+				path="/intake.db",kiss,
+				page=25,dims=dims,
+				pivots="TRL,App,Tech",
+				cols="ID,App,TRL,Tech")
+
+			#force.FP(
+				path=bpath,
+				dims=dims)
+			//
+			#sankey.SK(
+				path="/data/energy.json",
+				dims=dims)
+
+			#omg.OG(
+				path="/intake.json",
+				dims=dims)
+
+			#plot.RC(
+				path="/rocs.json?index=FPR,TPR&_ref=[0,0],[1,1]&marker=dot&legend=ROC&trace=1&_extra=[0,0]",
+				dims=dims)
+
+			#map.EM(
+				path="/maps.json&fill=Type&index=Name&details=Info&${xs('Browser')}",
+				dims=dims)
+
+				#grid.MapData(
+					path="/maps.json",
+					page=20,
+					cols="Name,Type,Info.x")
+
+			#treefan.TF(
+				path=bpath,
+				dims=dims)
+
+			#treemap.TM(
+				path=bpath,
+				dims=dims)
+
+			#cluster.DC(
+				path=bpath,
+				dims=dims)
+
+				#cpack.CP(
+					path=bpath,
+					dims=dims)
+
+				#chords.CH(
+					path="/bank.json",
+					dims=dims)
+
+//- UNCLASSIFIED

@@ -1,0 +1,46 @@
+//- UNCLASSIFIED
+
+extends site
+append siteparms
+	- help = "Provides a &view to the model library &lib [exlib,swaglib,...] at version &ver."
+	- lib = query.lib || "exlib"
+	case lib
+		when "exlib"
+			- parms = { default: "Python1", Threaded:"ver=Threaded",PetriNet:"ver=PetriNet",StateMachine1:"ver=StateMachine1",StateMachine2:"ver=StateMachine2",Python2:"ver=Python2",Python1:"ver=Python1",test5:"ver=test5",test4:"ver=test4",test3:"ver=test3",test2:"ver=test2",test1:"ver=test1",test6:"ver=test6",test7:"ver=test7",test8:"ver=test8",test9:"ver=test9",test10:"ver=test10" }
+		when "swaglib"
+			- parms = { default: "v1", v1:"ver=v1&lib=swag", v2:"ver=v2&lib=swag", v3:"ver=v3&lib=swag", v4:"ver=v4&lib=swag", v5:"ver=v5&lib=swag"}
+		default
+			- parms = { default: "Python1" }
+
+	- ver = query.ver || parms.default
+	- view = query.view || "Engr"
+append sitearea
+
+	#post.Model(path="/#{lib}.view?ver=#{ver}",dims="#{dims}")
+	#grid.Stats(
+		path="/simstats.db",
+		page=25,refresh,
+		cols="t.date,name,step.n,user,tokens,state,delay")
+	#grid.Options(
+		path="/simoptions.db",
+		page=25,actions,
+		cols="name,steps.n,t.n,delta.n,snappath,snapperiod.n,screen.x,url")
+	#grid.Apps(
+		path="/apps.db",
+		page=25,
+		cols="Name.t,Nick.t,Title.t,DB.t,Cores.n,Sockets.c,Domain.t,PKI.c,Port.n")
+	#grid.Cores(
+		path="/simcores.db",
+		page=25,actions,
+		cols="engine,timeout.n,type,client,name,thread.n,index.n")
+	#grid.Engines(
+		path="/engines.db",kiss,
+		page=25,actions,
+		cols="Name,Vars.x,Engine,Code.x,Classif")
+	#form.Engine(
+		path="/engines.db",
+		page=25,actions,
+		links="Name.Engines.Name",
+		cols="Name,Vars.x,Engine,Code.x,Classif")
+		
+//- UNCLASSIFIED

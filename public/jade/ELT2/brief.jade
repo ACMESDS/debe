@@ -1,0 +1,53 @@
+//- UNCLASSIFIED
+//-
+	Extends the layout view to provide a common briefing view with parameters:
+		Classif = [""] overall classification level
+
+extends layout
+append layoutparms
+	- Layout = "Brief"
+	- Feature = {Mathjax:1}
+append layoutarea
+
+	block briefparms
+		- Classif = "UNCLASSIFIED"
+
+	style.
+		section {width:1200 !important;}
+		header {position:relative;top:0;}
+		footer {position:relative;top:900;}
+		li {text-align:left;text-indent:50;}
+		table {border-spacing: 5px;border-collapse: separate;width:150%;}
+		p {font-size:20px !important;color:white;}
+		p.lg {font-size:40px !important;}
+		p.sm {font-size:15px !important;}
+		p.in {text-indent:50px !important;}
+		h2 {font-size:50px !important;color:blue !important;position:realtive !important;text-align:}
+		h3 {font-size:50px !important;color:blue !important;position:relative !important;text-align:left !important;top:-250 !important;}
+		h4 {font-size:50px !important;color:blue !important;position:relative !important;text-align:left !important;top:-200 !important;}
+		a {color:red;}
+		.al {text-align:left !important;}
+		.ar {text-align:right !important;}
+		.ac {margin-left:auto !important;margin-right:auto !important;}
+		.rd {color:red;}
+		img.ac {display:block;margin-left:auto;margin-right:auto;}
+		td {vertical-align:middle !important;}
+		td.gr {background-color:green;color:white;}
+		td.rd {background-color:red;color:white;}
+		td.bl {background-color:blue;color:white;}
+
+	header.ac
+		p.rd.ar #{Classif}
+		img.ac(src="shares/Header.jpg",width="90%",height="10%")
+
+	footer
+		img.ac(src="shares/Footer.jpg",width="90%",height="1%")
+		p.rd.al #{Classif}
+		
+	.reveal(style="width:1000;height:800;top:0;left:150;")
+		//- reserved for .progresss .control .state-background .pause-overlay .slides
+
+		.slides
+			block briefarea
+
+//- UNCLASSIFIED

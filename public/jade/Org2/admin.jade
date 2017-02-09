@@ -1,0 +1,65 @@
+// UNCLASSIFIED
+
+extends site
+append siteparms
+	- help = "Provides an administrator view."
+	- view = "Administrator"
+append sitearea
+
+	#fit.Service
+		:markdown
+			# [import intake](/intake.import)
+			# [import news](/news.import)
+			# [controlled server halt](/halt.sys)
+			# [stop server with notification](/stop.sys)
+			# [builtin test](/bit.sys)
+		
+	#grid.News(
+		path="/news.db",
+		dims="#{dims}",page="#{page}",
+		cols="Message.t,Date.d,Category.t,To.t")
+		
+	#grid.Jobs(
+		path="/queues.db",
+		dims="#{dims}",page="#{page}",
+		cols="Classif,Owner,Class,JobID,State,Work,Arrived.d,Departed.d,Notes.x")		
+
+	#grid.Banned(
+		path="leppers.db",
+		dims="#{dims}",page="#{page}",typical,
+		cols="PKIDN,Reason.x")
+		
+	#form.Config(
+		path="/CONFIG.db",
+		dims="#{dims}",page="#{page}",
+		cols="classif,extnet.x,disk.x,cpu,cpuat,platform,totalmem,freemem,uptime,cpus,host,netif,temp")
+
+	#grid.Aliases(
+		path="aliases.db",
+		dims="#{dims}",page="#{page}",typical,
+		cols="Path,Enabled.c,Special,Area")
+
+	#grid.Files(
+		path="/FILES.db",
+		dims="#{dims}",page="#{page}",
+		cols="link,area,name,dev,mode,size,atime,mtime,isdir,age")
+
+	#folder.Database(dock="left")
+		#grid.Roles(
+			path="/roles.db",
+			dims="#{dims}",page="#{page}",typical,
+			cols="Table,Attrs(Expose.c,Journal.c,Log.c,Special),Actions(INSERT.c,UPDATE.c,DELETE.c,SELECT.c,IMPORT.c,EXPORT.c)")
+	
+		#grid.DB.Tables(
+			path="/DB.db",
+			dims="#{dims}",page="#{page}",
+			cols="TABLE_NAME.t.Table,DATA_FREE.i.Free_B,MAX_DATA_LENGTH.i.Avail_B,Used.i.Used_B,TABLE_ROWS.i.Recs,AUTO_INCREMENT.i.NextID")
+
+		#pivot.Tx.Logs(
+			path="/dblogs.db",
+			dims="#{dims}",page="#{page}",
+			pivots="Stamp,User,Table,Action",
+			cols="Event,RecID,Response,Overhead,Field,Role,Impact,Fault,Disposition,VMs,Cores,TempAvg")
+			
+		
+// UNCLASSIFIED

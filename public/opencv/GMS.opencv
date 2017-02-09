@@ -1,0 +1,156 @@
+// HAAR feature detection machine
+
+#define MAXDEPTH 10
+
+class PORT { 								 	// HAAR port
+	public:
+		PORT(str Name, V8OBJECT Parm) {
+			query = ISQUERY(Name);
+			port = !(query || ISSQL(Name));
+			input = port ? (V8VAL(Parm,"sink")>0) ? true : false : false;
+			output = port ? !input : false;
+			
+			name = tau_strcat(Name);
+						
+//printf("haar port %s scale=%g\n",Name,V8VAL(Parm,"scale"));
+			
+			if ( output || query ) {
+				scale = V8VAL(Parm,"scale");
+				dim = V8VAL(Parm,"dim");
+				delta = V8VAL(Parm,"delta");
+				hits = V8VAL(Parm,"hits");
+				
+				min = Size(dim*(1-delta),dim*(1-delta));
+				max = Size(dim*(1+delta),dim*(1+delta));
+				
+				if (query) {
+					job = V8STR(Parm,"job");
+					maxdepth = 1;
+					cascade[0] = V8STR(Parm,"cascade");
+				}
+				else {
+					V8ARRAY Cascade = V8ARR(Parm,"cascade");
+					maxdepth = Cascade->Length();
+					
+					for (int n=0; n<maxdepth; n++) cascade[n] = V8TOSTR(Cascade->Get(n));
+				}
+
+printf("haar port scale=%g dim=%g delta=%g hits=%d depth=%d min=%d,%d max=%d,%d\n",
+	scale,dim,delta,hits,maxdepth,min.width,min.height,max.width,max.height);
+
+				for (int n=0; n<maxdepth; n++) {
+					str fparts[] = {"","","",0,".xml",0};
+					str fname = tau_strcat(fparts,3,cascade[n]);
+
+					if( !classif[n].load(fname) )
+						printf("haar rejected cascade %s\n",fname); 
+					else
+						printf("haar loaded cascade %s\n",fname);
+				}
+			}
+		};
+		
+		bool input,output,query,port;
+		int maxdepth;
+		str name,job;
+		float scale,dim,delta;
+		Size min,max;
+		int hits;
+		str cascade[MAXDEPTH];
+		CascadeClassifier classif[MAXDEPTH];
+};
+
+typedef Mat FRAME; 								// OpenCV detector input
+
+class FEATURE { 								// OpenCv detector output
+	public:
+		FEATURE(void) {
+			name=""; features=0; row=0; col=0; rows=0; cols=0;
+		};
+		
+		FEATURE(int Depth,Rect Box,str Name,FRAME Frame,PORT &Port) {
+			name = tau_strcat(Name);
+			box = Box;
+
+			if ( Depth < Port.maxdepth ) {	
+				std::vector<Rect> objs;
+
+				/*
+				// scaleFactor specifies how much the image size is reduced at each image scale step, and thus defines a 
+				// scale pyramid during the detection process.  E.g. 1.05 means reduce size by 5% when going to next image 
+				// scale step.  Smaller step sizes will thus increase the chance of detecting the features at diffrent scales. 
+				// 
+				// minNeighbors specifies number is required neighboring detects to declare a single detect.  A higher value
+				// results in less detections of higher quality. 3~6 is a good value.
+				// 
+				// minSize defines minimum possible feature size: features smaller than this size are simply ignored.
+				// 
+				// maxSize defines maximum possible feature size: features larger than this size are simply ignored.
+				*/
+				
+				Port.classif[Depth].detectMultiScale( Frame, objs, Port.scale, Port.hits, 0, Port.min, Port.max );
+
+				features = objs.size();
+				feature = new FEATURE[features];
+
+printf("haar feature=%s depth=%d search=%d,%d maxdepth=%d scale=%g hits=%d detects=%d\n",
+	Name,Depth,Frame.rows,Frame.cols,Port.maxdepth,Port.scale,Port.hits,features);
+
+//printf("haar depth=%d at=%s found=%d rows=%d cols=%d\n",Depth,Port.cascade[Depth],features,Frame.rows,Frame.cols);
+				
+				for(int i = 0; i < features; i++ ) 
+					feature[i] = FEATURE(Depth+1, objs[i], Port.cascade[Depth], Frame( objs[i] ), Port);
+			}
+			else 
+				features = 0;
+		  
+			cols = (float) Box.width;
+			rows = (float) Box.height;
+			row = (float) Box.x;
+			col = (float) Box.y;
+		};
+
+		Rect  		box;
+		float 		row,col,rows,cols;
+		str 		name;
+		int			features;
+		FEATURE 	*feature;
+		str			json(void);
+};
+
+// HAAR feature detection machine
+
+int CVMACHINE::latch(PORT &port, V8ARRAY tau) { 	// Latch tau input to HARR input port
+	str job = port.query ? port.job : V8TOSTR( V8IDX(tau->Get(0)->ToObject(),"job") );
+
+	frame = imread( job , 1 );
+
+printf("haar load=%s empty=%d\n",job,frame.empty());
+	return frame.empty();
+}
+
+int CVMACHINE::latch(V8ARRAY tau, PORT &port) { 	// Latch HAAR output port to tau output
+	steps++;
+	
+	if ( frame.empty() ) return 101;
+
+	FEATURE detects(0,Rect(0,0,0,0),port.name,frame,port);
+	
+printf("haar detects=%d\n",detects.features);
+
+	set(tau,detects);
+	return 0;
+}
+
+str	FEATURE::json(void) {
+	int 	outlen=0,bufflen,i;
+	str		buffs[features],out;
+	char 	buff[512];
+	
+	sprintf(buff,
+		"\"FEATURE\":\"%s\",\"x\":%d,\"y\":%d,\"width\":%d,\"height\":%d,\"row\":%g,\"col\":%g,\"rows\":%g,\"cols\":%g\"children\":",
+		name,box.x,box.y,box.width,box.height,row,col,rows,cols);
+		
+	JSONIFY;
+	return out;
+}

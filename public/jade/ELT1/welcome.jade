@@ -1,0 +1,36 @@
+//- UNCLASSIFIED
+
+extends layout
+append layoutparms
+	- Layout = "Grid"
+append layoutarea
+
+	#null(path="/roles.db",sync,cols="Table.T,Special.H,INSERT.T,UPDATE.T,DELETE.T,SELECT.T")
+	#null(path="/parms.db",sync,cols="ID.I,Parm,Label,Type,Special,By Inspect.c,By Analysis.c,By Demo.c")
+
+	if query.splash
+		#folder
+			#splash(path="/",dims="[750,500]")
+
+			#grid(
+				class="Welcome || #{user} to the #{title} news",
+				path="/news.db",sorts="Stay,Starts",
+				page=20,dims="[750,400]",typical,
+				cols="Starts.d,Message.x,Category.t,To.t")
+				
+				:markdown
+					Provides a news and a welcome &splash.  Old news items are automatically 
+					rolled-off by the system.  Feel free to add your own news items here.
+	else
+
+		#grid(
+			class="Welcome || #{user} to the #{title} news",
+			path="/news.db",sorts="Stay,Starts",
+			page=20,dims="[750,400]",typical,
+			cols="Starts.d,Message.x,Category.t,To.t")
+			
+			:markdown
+				Provides a news and a welcome &splash.  Old news items are automatically 
+				rolled-off by the system.  Feel free to add your own news items here.
+
+//- UNCLASSIFIED

@@ -1,0 +1,21 @@
+// UNCLASSIFIED
+
+extends site
+append siteparms
+	- help = "Edit engine by specified &name and &engine type."
+	- view = "Editor"
+	- dims = "[1200,2000]"
+	- dock = "left"
+append sitearea
+
+	#form(
+		class="#{user}",
+		path="/profiles.db",
+		links="User.#{user}",
+		dims="#{dims}",dock="left",
+		cols="User,LikeUs.n,Credit.n,Joined.d,Profile(Banned.x,Email,Login,Challenge.c,Trusted.c,Captcha.c)")
+
+		:markdown
+			**Select** to retrieve and lock your record for editing.  **Update**, **Insert**, **Delete** or **Select** as needed to unlock the record.
+		
+// UNCLASSIFIED

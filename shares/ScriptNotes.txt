@@ -1,0 +1,115 @@
+** Action Buttons
+
+Greetings FSGALAM users and
+welcome to 
+this help module on ABs.
+
+So what are ABs?  Well, 
+FSGALAM places ABs on 
+grid, pivot and form
+components that can be
+edited. 
+
+For ex, the [News], [Find], 
+and [List] components can 
+be edited and therefore 
+have ABs.  However the
+ChgLogs and T&Qs pivtos
+cannot be edited, and thus have 
+no ABs.
+
+[News] So the 1st thing 
+we note about ABs is that
+there are always 4 ABs
+when they appear:
+[select all]
+	I/C (blue plus),
+	D/R (R X), 
+	U/C (B arrow)
+	P/L (G tri).
+
+Now each AB has an 
+associated Role-and-Impact
+customized by the 
+Moderator for each grid.
+
+In our News grid eg we 
+see that the Mod has
+allocated the ABs to ...
+The Mod is free to realloc
+at any time the R&Is to 
+faciliate change reviews.
+
+So in summary: whereas 
+the ABs always
+perform the same change 
+action, 
+the Role-and-Impact of
+your change may itself
+change from one day to 
+the next, as the Mod
+reallocates these R&Is. 
+Again, the Mod reallocs
+the R&Is to 
+faciliate change review.
+
+We also need to know that
+ABs work in concert
+with Record [Selectors].
+
+I'll illustrate this
+interaction with the 
+News grid...
+
+So if I dont select 
+any rec, the Insert AB
+will Insert a new rec 
+[type some stuff].
+
+However, if I select a rec 
+1st, the Insert AB will 
+clone the selected rec. 
+
+In both cases I assumed 
+the Role of xxxx and my
+Insert action had an
+Impact of xxxx.
+
+Lets modify some records
+to see how the Update AB
+works.
+[Modify 2nd inserted
+record and another 
+unselected record].
+
+This is a good time
+to note that mod-ed fields
+are marked Dirty with 
+a small red marker in
+the corner.  So when
+we use the Update AB our
+changes are commited,
+and the Dirty field markers
+go away.
+
+So lets delete the two 
+recs we just created ...
+
+Now the Push AB is trivial
+for the New grid because
+this grid has not been
+linked to other grids.
+
+This concept of linked
+grids and ABs can be
+illustrated by moving
+to the Find Pivot.
+
+I wont illustrate
+all the ABs for a Pivot 
+here, as these can be
+somewhat complex (I'll
+cover these in a separate
+help module).  But the 
+Push AB is fairly straightfwd
+to illustrate.

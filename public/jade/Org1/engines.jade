@@ -1,0 +1,36 @@
+//- UNCLASSIFIED
+//-
+	Provides a view for the engines.
+
+extends site
+append siteparms
+	- view = "Min"
+	- dock = "left"
+	- parms = {min:"more=0", more:"more=1"}
+append sitearea
+
+	- dims = "[1000,500]"
+	
+	#grid.Engines(
+		path="/engines.db",
+		dims="#{dims}",page="#{page}",typical,
+		selects="run(Name,Engine) AS Run",
+		cols="Classif,Name,Special,Enabled.c,Run,Proxy(Period.n,Updates.n,Updated.d),Progam(Engine,Code.x,Vars.x,ID.A)")
+
+	#form.Engine(
+		path="/engines.db",
+		links="ID.Engines.ID",
+		page=25,actions,dims="#{dims}",
+		cols="Classif,Name,Special,Enabled.c,Proxy(Period.n,Updates.n,Updated.d),Progam(Engine,Code.x,Vars.x)")
+
+	#grid.Stats(
+		path="/simstats.db",
+		page=25,dims="#{dims}",
+		cols="t.date,name,step.n,events,tokens,state,delay")
+
+	#grid.Options(
+		path="/simoptions.db",
+		page=25,actions,dims="#{dims}",
+		cols="name,steps.n,t.n,delta.n,delaybins.n,delaymax.n,snappath,snapperiod.n")
+				
+//- UNCLASSIFIED

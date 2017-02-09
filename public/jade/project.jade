@@ -1,0 +1,117 @@
+//- UNCLASSIFIED
+
+extends site
+append site_parms
+	- view = "Min"
+	- parms = {min:"min", more:"more"}
+	- dims = "1000,800"
+	- dock = "left"
+append site_help
+
+	:markdown
+		Capabilties (aka project, tasks or projects) summarized in the Roadmap flow to ASP 
+		project, to ISP project, then to HW/SW project.  
+		
+		NGA does not, 
+		under any circumstances, warrent, underwrite, endorse, promote, fund, or sell any technologies
+		used herein. Changes to project must be coordinated through project's rapid, agile project management
+		system [JIRA](www.jira.com). project also welcomes [issues, bugs, and ideas](/issues.view).  Contributors
+		can monitor [project activity here](/issues.view).
+		
+		Please revise the Technology Transfer Agreement (End User License Agreement) herein as needed.
+		Consult [Admin](/admin.view?goto=Config) to see the current HW/SW configuration.
+		 
+append site_body
+
+
+	#grid.Roadmap(
+		path="/milestones.db",
+		page="#{page}",dims="#{dims}",
+		wrap,shifts,calc,
+		cols="Num.n,SeqNum.t,Task.t.Capability,Schedule(W*20)")
+
+	#grid.Build.Standards(
+		path="/standards.db",
+		page="#{page}",dims="#{dims}",
+		cols="Body,Standard,Dated.t,Exemptions.h,Applies.c")
+
+		:markdown
+			OCIO presently controls 1480 possible web build standards.  Please specifiy which of these standards apply.
+			Changes to these standards must be coordinated through project [JIRA](www.jira.com).
+
+	#accordion.Quads
+	
+		//
+			#fit.Quad
+			inline(src="/quads.db?Project=swag&Enabled=1&_jade=extjs,QL,QR",h=1000,w=2000)
+
+		#grid.Quad(
+			path="/quads.db?Project=swag&Enabled=1&_jade=QL,QR",
+			dims="#{dims}",
+			cols="QL.h,QR.h")
+
+		#grid.Quad.Notes(
+			path="/quads.db",
+			page="#{page}",dims="#{dims}",
+			cols="Enabled.c,Project,Row.i,AsOf.d,QL.x,QR.x")
+
+	#grid.TTAs(
+		path="/tta.db",
+		page="#{page}",dims="#{dims}",
+		cols="OE.t.Oper Env,UserAgree.x,Roles(ISP(ISP,ISProle.x),ASP(ASP,ASProle.x),Cert Authority(CA,CArole.x)),Refs.x")
+
+	#grid.Trades(
+		path="/trades.db",
+		dims="#{dims}",page="#{page}",calc,
+		cols="product,vendor,Compliance(P1.x.OpenIT,P2.x.Autonomous ROC,P3.x.Cloud Compute,P4.x.NTM Channel,P5.x.Reserved)")
+
+	#grid.Transitions(
+		path="/txstatus.db",calc,
+		dims="#{dims}",page="#{page}",
+		cols="ISP.t,Status.x")
+
+	#grid.ASP.Reqts(
+		path="/aspreqts.db",
+		page="#{page}",dims="#{dims}",
+		cols="Num.t,Reqt.x,DevReq.x.Deviations,Score.n,Function(Security.c,Cost.c,Maint.c,FaultTol.c,ContentMgt.c,AdvVis.c,CloudCompute.c),Verification(ByTest.c,ByDemo.c,ByInspect.c,ByAnalysis.c)")
+
+	#grid.ISP.Reqts(
+		path="/ispreqts.db",
+		dims="#{dims}",page="#{page}",
+		cols="Num.t,Reqt.x,DevReq.x.Deviations,Function(Security.c,Performance.c,Storage.c,Config.c,Network.c,EntExit.c),Verified(ByTest.c,ByDemo.c,ByInspect.c,ByAnalysis.c),ISP Compliance(GEOHUB.c,NOWTIDE.c,ILEAWSDG.c,ILE.c,NRORDT.c,ICITE.c,NGANET.c,BASELINE.c,CSCF.c,RES1.c,RES2.c,RES3.c,RES4.c,RES5.c)")
+
+	#grid.HW.Reqts(
+		path="/hwreqts.db",
+		dims="#{dims}",page="#{page}",
+		cols="Support(ISP,DTA.c,ADM.c),Phase,Compute(VMs.n,OS,RAM.n.ramGB,Disk.n.diskGB,Cores.n),Firewalls(JWICS.c,SBU.c,RDT.c,NMIS.c,UMIS.c),Services(OMAR.c,HYDRA.c,SMTP.c)")
+
+		:markdown
+			Consult [Admin](/admin.view?goto=Config) to see the current HW/SW configuration.
+			
+	#grid.SW.Reqts(
+		path="/swreqts.db",
+		dims="#{dims}",page="#{page}",
+		cols="Item,Pack,AdminReqd.c,DevReq.x.Deviations,OS(W2007,W2008,RHEL65,CENTOS65)")
+
+		:markdown
+			Consult [Admin](/admin.view?goto=Config) to see the current HW/SW configuration.
+
+	#grid.Issues(
+		path="/issues.db",
+		wrap,page=25,
+		cols="ID.i,Issue.h,Severity,Effort,Status,Action.h,Function(Reqt.c,GUI.c,Pivot.c,Grid.c,Form.c,Vis.c)")
+		
+		:markdown
+			Please insert your issue, bug or idea here.  If your issue is similar to an existing ticket, simply
+			append your observations to the best matching ticket.  The #{title} periodcally reviews your
+			tickets to improve the quality of the #{title}.  The #{title} also welcomes 
+			[your new project](/project.view).  Requirements and tickets
+			are resolved following IIG's [JIRA](www.jira.com) rapid, agile development process.  Use **execute**
+			to reflect recent GIT change logs to this table.
+			
+	#grid.Gits(
+		path="/gitlog.db",
+		page=25,
+		cols="made.d,hash,author,email,cm.x")
+
+//- UNCLASSIFIED

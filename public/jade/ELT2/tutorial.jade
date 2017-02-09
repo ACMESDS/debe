@@ -1,0 +1,303 @@
+//- UNCLASSIFIED
+//- Provides a tutorial for the integrate at level more=0,1
+
+extends brief
+append briefparms
+	- Classif = "(U) Unclassified"
+append briefarea
+
+	section
+		section
+			h4 SOM, Content Mgt, Data Strategy, Immersion
+			img(src="full_immersion.shares",width=1200,height=600)
+		section 
+			h4 Less is More
+			img(src="less_developers.shares",width=1200,height=600)
+		section 
+			h4 A World View
+			table.ac
+				td
+					p.lg.fragment.fade-out $ Users stay with the ALG - not in the testbed
+					p.lg.fragment.fade-out $ Cloud enabled - ALG external to testbed
+					p.lg.fragment.fade-out $ Users own the ALG
+					p.lg.fragment.fade-out $ Testbed is a WEB Service
+					p.lg.fragment.fade-out .... Instantly executes new ALG config reqts
+					p.lg.fragment.fade-out .... Situational awareness by all users				
+				td: img(src="car_repair.shares",width=800,height=600)
+		
+			aside.notes
+				code.
+					The goal here is to separate the UUT (the GEOINT algorithms) from the testbed.
+					We are propsing todo this by requiring GEOINT developers to PKI-enable their
+					code.!  Simply go to FSGALAM web site and request and download PKI key-pair.
+					Developer responsbile for holding configuration in the ALG itself - not the
+					NGA testbed!  If absoluting needed, ALG may retrieve config from NGA testbed 
+					when commanded - this acks developers approval that config is held in NGA testbed.
+
+		section 
+			h4 System View
+			img(src="FSGALAM_system.shares",width=1200,height=600)
+		section 
+			h4 Ingest View
+			img(src="FSGALAM_ingest.shares",width=1200,height=600)
+		section 
+			h4 Egress View
+			img(src="FSGALAM_egress.shares",width=1200,height=600)
+			
+	section
+		h3 Methodology
+		
+		section
+			h4 Technology
+			img(src="m1.jpg.shares",width=1200,height=600)
+		section
+			h4 Portfollio
+			img(src="m2.jpg.shares",width=1200,height=600)
+		section
+			h4 Project
+			img(src="m3.jpg.shares",width=1200,height=600)
+		section
+			h4 ISP Compliance
+			img(src="m4.jpg.shares",width=1200,height=600)
+			
+	section
+		h3 What do Algorithms Require?
+		
+		table.ac
+			tr
+				td: p.lg.al Ambiguous in the english language
+				td: p.lg.al To drive or to consume?
+			tr
+				td: p.lg.al "Customer" owns the requirements
+				td: p.lg.al "Supplier" owns the configurations
+			tr
+				td: p.lg.al Always difficult to verify
+				td: p.lg.al Non-requirements futile
+			tr
+				td.bl: p.lg _
+				td.bl: p.lg	_
+			tr
+				td: p.lg.al verifiable (Inspect, Demo, Analysis, Test)
+				td: p.lg.al Parameter View
+			tr
+				td: p.lg.al read/write accessible <strong>at all times by all parties</strong>
+				td: p.lg.al non-blocking, situational awareness
+			tr
+				td: p.lg.al expressible in a common language (fortran, xml, ...)
+				td: p.lg.al markdown language
+			tr
+				td: p.lg.al change tracked (no anonymity)
+				td: p.lg.al PKI
+			tr
+				td: p.lg.al scorable at all times by all parties (p/f, 1-5)
+				td: p.lg.al Evaluation View
+			tr
+				td: p.lg.al tracable to next level of assemblies
+				td: p.lg.al opendb enable for OO/MS apps
+		
+	section
+		h3 Content Mgt
+			
+		section#grids
+			h4 Girds are pivot & socketio powered
+			table
+				td.bl: pre: code.
+					extends site
+					append sitearea
+					#pivot.Find(
+					 path="/systems.db",
+					 pivots="Bogus,App,Name,Tech",
+					 cols="Test,Condition(TRL,Track,Reason),General(...)" )
+					#grid.List(
+					 path="/systems.db",
+					 cols="Name,Event(App,Tech,Test)",
+					 links="Name.Find.Name")
+					#form.Edit(
+					 path="/systems.db",
+					 links="ID.List.ID",
+					 cols="Name,Event(App,Tech,Test),Condition(...),General(...)")
+					
+				td
+					if query.more
+						iframe(src="exsite.view?ex=grids.shares",width=1500,height=600)
+
+		section#guides
+			h4 ... Navigators are pivot powered
+			table
+				td.bl: pre: code.
+					extends layout
+					append layoutparms
+					 Layout = "guides"
+					 Styles = ["elFinder","apy/14-steel-blue"];
+					 MenuStyle = Styles[query.style||0];
+					append layoutarea
+					#folder.Container
+					#grid.A
+					  p now is the time A
+					 #grid.B
+					  p now is the time B
+					 #grid.C
+					  p now is the time C
+					 #accordion.D
+					  #fit.X1
+					   p now is the time A
+					   p now is the time B
+					  #fit.X2
+					   p now is the time for X2
+					  #fit.X3
+					   p now is the time for X3
+					 #prot.E
+					  #pivot.Me(path="/#{query.src}",pivots="#{query.pivots}")
+					 #post.F(path="/joint.view")
+					
+				td
+					if query.more
+						iframe(src="exsite.view?ex=guides.shares",width=1500,height=600)
+
+		section#mobiles
+			h4 ... Pending
+
+		section#charts
+			h4 ... as are Advanced Visualizations
+			table
+				td.bl: pre: code.
+					extends site
+					append sitearea
+					#pivot.Browser(
+					 path="/systems.db",
+					 cols="Test,Condition(TRL,Track,Reason),General(...)")
+					#post.Force(
+					 path="/force.view?src=systems.db",
+					 links="Browser")
+					#post.Cluster(
+					 path="/cluster.view?src=systems.db",
+					 links="Browser")
+					#post.Fan(
+					 path="/treefan.view?src=systems.db",
+					 links="Browser")
+					#post.Sankey(
+					 path="/sankey.view?src=energy.json",
+					 links="Browser")
+				
+				td
+					if query.more
+						iframe(src="exsite.view?ex=charts.shares",width=1500,height=600)
+
+		section#models(data-transition="zoom")
+			h4 ... Workflow Models provide the testbed
+			table
+				td.bl: pre: code.
+					extends layout
+					append layoutparms
+					  Layout = "models"
+					  Start = "SIM"
+					append layoutarea
+					 #SIM(inputs="S1",outputs="S3",stats)
+					   #PY1(inputs="S1",outputs="S2")
+					   #PY2(inputs="S2",outputs="S3")
+				td
+					if query.more
+						iframe(src="exsite.view?ex=models.shares",width=1500,height=600)
+			
+		section#typesets
+			h4 ... Type Setters welcome
+			table
+				td.bl: pre: code.
+					extends layout
+					append layoutparms
+					 Layout = "typesets"
+					append layoutarea
+					 p The Lorenz Equations
+					 p.
+					  \[
+					  \begin{align}
+					  \dot{x} & = \sigma(y-x) \\
+					  \dot{y} & = \rho x - y - xz \\
+					  \dot{z} & = -\beta z + xy
+					  \end{align}
+					  \]
+					 br
+					 p Impressive 'eh
+					 p.
+					  \[
+					  J_\alpha(x) = \sum\limits_{m=0}^\infty 
+					|	\frac{(-1)^m}{m! \, \Gamma(m + \alpha + 1)}
+					|	{\left({\frac{x}{2}}\right)}^{2 m + \alpha}
+					  \]				
+				td
+					if query.more
+						iframe(src="exsite.view?ex=typesets.shares",width=1500,height=600)
+				
+		section
+			h4 ... work in briefings too
+			p.al.lg The Lorenz Equations
+			p.
+				\[
+				\begin{align}
+				\dot{x} & = \sigma(y-x) \\
+				\dot{y} & = \rho x - y - xz \\
+				\dot{z} & = -\beta z + xy
+				\end{align}
+				\]
+			br
+			p.al.lg.rd Impressive 'eh
+			p.
+				\[
+				J_\alpha(x) = \sum\limits_{m=0}^\infty \frac{(-1)^m}{m! \, \Gamma(m + \alpha + 1)}{\left({\frac{x}{2}}\right)}^{2 m + \alpha}
+				\]
+				
+		section#opendb
+			h4 ... interfaces with OO/MS applications
+			table
+				td.bl: pre: code.
+					extends site
+					append sitearea
+					#grid.Excel(path="/test.db",cols="a,b,c,d")
+					#grid.Access(path="/linktest.db",cols="a,b,c,d,e")
+							
+				td
+					if query.more
+						iframe(src="exsite.view?ex=opendb.shares",width=1500,height=600)
+				
+		section#games
+			h4 Minimal Gaming Interface 
+			table
+				td.bl: pre: code.
+					extends layout
+					append layoutparms
+					 Layout = "games"
+					append layoutarea
+					 block gameparms
+					 script(src="games/#{query.game}/bundle.js")
+				
+				td
+					if query.more
+						iframe(src="exsite.view?ex=games.shares",width=1500,height=600)
+		
+	section
+		h2 Documentation
+		br
+		table.ac
+			tr
+				td: a.lg(href="/icd.view") ICD
+				td: a.lg(href="/skin.view") Reqt Language
+				td: a.lg(href="/api.view") API
+			tr
+				td: a.lg(href="/issues.view") Open Issues
+				td: a.lg(href="/evals.view") Reqts and TTA
+				td: a.lg(href="/admin.view") SW and ISP Reqts
+				
+	section
+		h2 Under the hood
+		section
+			a(href="https://-github.com/visionmedia/jade#readme") Jade
+			a(href="http://-nodejs.org/") NodeJS
+			a(href="http://-www.sencha.com/products/extjs/examples/") ExtJS
+			a(href="https://-github.com/LearnBoost/socket.io/wiki/Configuring-Socket.IO") Socket.io
+			a(href="http://-d3js.org/") D^3
+		section
+			img(src="architecture.jpg.shares",width=600,height=500)
+		section
+			img(src="techstack.jpg.shares",width=600,height=500)
+
+//- UNCLASSIFIED

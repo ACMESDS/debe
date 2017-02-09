@@ -1,0 +1,27 @@
+//- UNCLASSIFIED
+//-
+	Provides a cesium framework with parameters:
+		- entry = "HelloWorld" | ...
+		- host = "aws" | "geohub" | "me" | "win"
+		- width = 750
+		- height = 500
+
+extends layout
+append layout_head
+
+	block nodered_parms
+		- entry = query.src || ""
+		- hosts = {geohub: "https://sigma0.ilabs.ic.gov:8082", me: "localhost:8082", win: "http://200.100.50.101:8082", aws: "http://172.31.76.130:8082"}
+		- host = "aws"
+		- width = 750
+		- height = 500
+	
+	block nodered.head
+
+append layout_body
+
+	iframe(src="#{hosts[host]}/#{entry}",width="#{width}",height="#{height}")
+
+	block nodered_body
+
+//- UNCLASSIFIED

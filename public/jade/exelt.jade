@@ -1,0 +1,13 @@
+//- UNCLASSIFIED
+
+extends layout
+append layoutparms
+	- Layout = "Guide"
+	- Feature.Image = "Darkroom"
+	- Feature.Capture = 1
+append layoutarea
+
+	#image(path="/#{query.src}")
+
+//- UNCLASSIFIED
+

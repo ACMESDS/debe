@@ -1,0 +1,53 @@
+extends base
+append base_parms
+	- pivot = "elFinder"
+	- grid = "w2UI"
+	- tech = "jquery"
+append base_body
+
+	//
+		#splash.x(
+		style="width:1000px;height:250px;", 
+		data-vide-bg="clients/jQuery/plugins/vide/test/video/ocean",
+		data-vide-options="loop:true, muted:false, position:0% 0%")
+
+	#folder.Container
+		#fit.Welcome
+			p now is the time A
+			p when all good men should get the time B
+			p.al The Lorenz Equations
+			p.
+				\[
+				\begin{align}
+				\dot{x} & = \sigma(y-x) \\
+				\dot{y} & = \rho x - y - xz \\
+				\dot{z} & = -\beta z + xy
+				\end{align}
+				\]
+			br
+			p.al.lg.rd Impressive 'eh
+			p.
+				\[
+				J_\alpha(x) = \sum\limits_{m=0}^\infty \frac{(-1)^m}{m! \, \Gamma(m + \alpha + 1)}{\left({\frac{x}{2}}\right)}^{2 m + \alpha}
+				\]
+		case 1
+			when 0
+				#grid.Data(path="/giatf.db",cols="ID,Name,Vision,Details(Status,JIRA,Docs(Specs,SpecsLink))")
+			when 1
+				#grid.News(
+					path="/news.db",
+					page=25,actions,check,help,crush,refresh,dims="[750,500]",
+					cols="ID,Starts,Stay,Message,Category,To")
+
+		#accordion.Info
+			#fit.X1
+				p now is the time A
+				p now is the time B
+			#fit.X2
+				p now is the time for X2
+			#fit.X3
+				p now is the time for X3
+
+		#pivot.elFinder(path="/intake.json",pivots="App,Tech,TRL")
+
+		#image.ELT(path="/shares/default.jpg")

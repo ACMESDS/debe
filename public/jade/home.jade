@@ -1,0 +1,108 @@
+//- UNCLASSIFIED
+
+extends site.jade
+append site_help
+	//
+		#post.Tutorial(path="/home_brief.view",dims="600,300",nowrap)
+	p Welcome to the #{title}.
+append site_parms
+	- view = query.option || "Min"
+	- parms = {Min:"Min",search:"search",brief:"brief",capture:"capture",chat:"chat","news contribute":"contribute",news:"news","news print":"print"}
+append site_body
+
+	case view
+		when "Min"
+			//	#post(path="/brief_geonode.jade",dims=dims)
+
+		when "search"
+			#grid.Search(
+				path="/CATALOG.db",
+				head="Search,Execute,Print,Refresh",
+				page=100,dims=dims,
+				search="Content",
+				cols="Ref,Name,Link.h,Dated.d,Searched")
+				
+			//
+				#pivot.Browse(
+					path="/CATALOG.db",
+					page=25,dims=dims,
+					pivots="Ref",
+					cols="Link.h,Dated.d,Searched,Content.h")
+				#treemap.Tree(
+					path="/CATALOG.db",
+					dims=dims,
+					links="Browser")
+
+		when "capture"
+			#grid.Files(path="/uploads.db",
+				patg=page,dims=dims,typical,top,
+				cols="Ref,Link.h,Area,Name,Size,Tags.x,Tagger")
+
+				:markdown
+					Here is where you can manage uploaded snapshots and tags.
+					
+			#minielt.ELT(links="src.Files.Ref")
+
+				:markdown
+					You can paste a snapshot here; then tag, crop, brighten, invert,
+					grayscale, mark and upload it.  Screen snapshots can be captured and tagged 
+					in the Image editor, then saved.  Image tags can be revised in the Uploads grid.
+				
+		when "chat"
+			#grid.Chat(
+				path="/sockets.db",
+				page=25,dims=dims,
+				cols="User,Org,Location,At,Joined.d,Message.x")
+
+		when "contribute"
+			#grid.News(
+				path="/news.db",
+				page=25,dims=dims,
+				cols="New.c,To.t,Starts.d,Stay.n,Message.h,Category.x")
+
+		when "brief"
+			#home_brief.Briefing(dims="1400,900")
+		
+		when "news"				
+			#grid.News(
+				path="news.db",refresh=300,
+				page=30,dims=dims,calc,
+				cols="Category,Message.h")
+
+		when "print"				
+			#grid.News(
+				path="news.db",
+				page=60,dims="800,4000",calc,
+				cols="Message.h")
+
+		when "immersion"
+			#folder.Gaming(left)
+				#post.Blast(path="/cubeland.view",dims=dims)
+				#post.Bounce(path="/spherebounce.view",dims=dims)
+				#post.Anagylph(path="/anaglyph.view",dims=dims)
+				#post.Build(path="/voxelpaint.view",dims=dims)
+		
+		when "intake"
+			#null.TRLs(path="/states.db?Class=TRL",sync,cols="State,Name,Special")
+			
+			#pivot.Find(
+				path="/intake.db",
+				page=50,dims=dims,track="#{type}",kiss,
+				pivots="App,Name",
+				menu="Search",
+				cols="TRL,Track,General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
+
+			#grid.List(
+				path="/intake.db",
+				page=50,dims=dims,track="#{type}",
+				sorts="App,Name,TRL",
+				links="Name.Find.Name",
+				cols="App,Name,TRL,Track,General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
+										
+			#form.Edit(
+				path="/intake.db",
+				links="ID.List.ID",
+				page=page,dims=dims,
+				cols="App,Name,TRL,Track,General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
+		
+//- UNCLASSIFIED

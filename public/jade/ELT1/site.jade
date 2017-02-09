@@ -1,0 +1,167 @@
+//- UNCLASSIFIED
+//-
+	Extends the layout view to provide a common site view with parameters:
+		parms = {opt1: "q=v1", opt2: "q=v2", ...} dropdown view options
+		dock = [left,right,top,bottom] folder tab docking
+		dims = [width,height] default dimensions
+		view = [Home,Kiss,Engr,Min,default] page format
+		page = rows grid page size
+
+extends layout
+append layoutparms
+	- Feature = {Theme:0}
+append layoutarea
+
+	block siteparms
+		- parms = {}
+		- dock = "top"
+		- dims = "[1280,800]"
+		- view = "TBD"
+		- page = 50
+		- help = ""
+		- brows = {Ok: ["supported","Chrome","Firefox","Opera","Safari"],Bad: ["unsupported","IE","Netscape","Traveler","TheWorld","Maxthon"] }
+		
+	//- global roles and parameters
+
+	#null.Roles(path="/roles.db",sync,cols="Internal,Special,INSERT,UPDATE,DELETE,SELECT")
+	#null.Parms(path="/parms.db",sync,cols="Parm,Label,Type,Special,Org0,Org1,Org2,Org3,V0,V1,V2,V3")
+
+	//- site style sheets
+
+	style.
+		.AL {text-align:left;}
+		.AR {text-align:right;}
+		.AC {text-align:center;}
+		.LG {font-size:15px;}
+		.SM {font-size:10px;}
+		.IN {text-indent:50px;}
+		.BY {background-color:yellow;}
+
+	#null.Options(path="#{JSON.stringify(parms)}",cols="index,value")
+	#null.Users(path="/USERS.db",cols="Info")
+	#null.Themes(path="/THEMES.db",cols="Info")
+	#null.Links(path="/LINKS.db?area=#{area}",cols="Info")
+	#null.Health(path="/HEALTH.db",cols="Info")
+
+	case view
+
+		when "Home"
+
+			#border(
+				dims="#{dims}",
+				class="#{title} || #{user}",
+				menu="Health,Users,Options,Themes,Links,Edit",
+				Edit="/edit.view?name=#{source}&engine=jade")
+
+				:markdown
+					*	Health - System health summary.
+					*	Users - All changes are reflected to stakeholders for complete situational awarness.
+					*	Options - Pass viewing options to this view.
+					*	Themes - Select your preferred css here.  You can upload and share new styles as well.
+					*	Links - Current views e.g. [issues](/issues.view), [requirements](/requirements.view), [tutorial](/tutorial.view), ...
+					*	Edit - To edit this view (see [skinning](skinguide.view) and [api](api.view) guides).
+
+				#fit(center,header)
+
+					block sitearea
+
+		when "Min"
+
+			#border(
+				dims="#{dims}",
+				class="#{title} || #{user}",
+				menu="Links,Edit",
+				Edit="/edit.view?name=#{source}&engine=jade")
+
+				:markdown
+					*	Links - Current views e.g. [issues](/issues.view), [requirements](/requirements.view), [tutorial](/tutorial.view), ...
+					*	Edit - To edit this view (see [skinning](skinguide.view) and [api](api.view) guides).
+
+				#folder(center,dock="#{dock}",crush)
+
+					block sitearea
+
+		when "Kiss"
+
+			#folder(class="#{source}",header,dock="#{dock}",menu="Links")
+
+				block sitearea
+
+		when "Engr"
+
+			#null.Queues(path="/QUEUES.db",cols="Info")
+			#null.Engines(path="/ENGINES.db",cols="Info")
+			#null.Uploads(path="/UPLOADS.db",cols="Info")
+			#null.Stores(path="/STORES.db",cols="Info")
+			#null.Cliques(path="/CLIQUES.db",cols="Info")
+		
+			#border(
+				dims="#{dims}",help="#{help}",
+				class="#{title} || #{user}",
+				menu="Health,Users,Options,Themes,Links,Engr(Engines,Queues,Cliques,Files(Uploads,$uploads,Stores,$stores)),Edit",
+				Edit="/edit.view?name=#{source}&engine=jade")
+
+				:markdown
+					*	Health - System health summary.
+					*	Users - All changes are reflected to stakeholders for complete situational awarness.
+					*	Options - Pass viewing options to this view.
+					*	Themes - Select your preferred css here.  You can upload and share new styles as well.
+					*	Engines - Execute a Python,JS,R,Ex,Matlab,etc [engine](/engine.view).
+					*	Queues - Status of state parameters (e.g. TRL) attached to a queue.
+					*	Cliques - Work clicks formed on underlying database.
+					*	Uploads - Files in one-time upload area are indexed by a [reader engine](/engine.view).
+					*	Stores - Files in persistent store area are ingested by a [workflows](/workflow.view).
+					*	Links - Current views e.g. [issues](/issues.view), [requirements](/requirements.view), [tutorial](/tutorial.view), ...
+					*	Edit - To edit this view (see [skinning](skinguide.view) and [api](api.view) guides).
+				
+				#folder(center,dock="#{dock}",crush)
+					
+					block sitearea
+						
+		default
+
+			#null.Queues(path="/QUEUES.db",cols="Info")
+			#null.Engines(path="/ENGINES.db",cols="Info")
+			#null.Uploads(path="/UPLOADS.db",cols="Info")
+			#null.Stores(path="/STORES.db",cols="Info")
+			#null.Cliques(path="/CLIQUES.db",cols="Info")
+		
+			#border(
+				dims="#{dims}",help="#{help}",
+				class="#{title} || #{user}",
+				menu="Health,Users,Options,Themes,Engines,Queues,Cliques,Uploads,$uploads,Stores,$stores,Links,Edit",
+				Edit="/edit.view?name=#{source}&engine=jade")
+
+				:markdown
+					*	Health - System health summary.
+					*	Users - All changes are reflected to stakeholders for complete situational awarness.
+					*	Options - Pass viewing options to this view.
+					*	Themes - Select your preferred css here.  You can upload and share new styles as well.
+					*	Engines - Execute a Python,JS,R,Ex,Matlab,etc [engine](/engine.view).
+					*	Queues - Status of state parameters (e.g. TRL) attached to a queue.
+					*	Cliques - Work clicks formed on underlying database.
+					*	Uploads - Files in one-time upload area are indexed by a [reader engine](/engine.view).
+					*	Stores - Files in persistent store area are ingested by a [workflows](/workflow.view).
+					*	Links - Current views e.g. [issues](/issues.view), [requirements](/requirements.view), [tutorial](/tutorial.view), ...
+					*	Edit - To edit this view (see [skinning](skinguide.view) and [api](api.view) guides).
+				
+				#pivot.Helpful.Links(
+					west,crush,dims="[200,600]",
+					path="/sidebars.db",cols="Pivot(NodeID,Topic),Special")
+
+				#fit.Browser(south,crush)
+
+					ishtml
+						each brow in brows.Ok
+							img(src="#{icons}/browsers/#{brow}.ico",width=16,height=16)
+
+						each brow in brows.Bad
+							img(src="#{icons}/browsers/#{brow}.ico",width=16,height=16)
+
+						p!= title + " v" + ver + " || " + contact
+						
+				#folder(center,dock="#{dock}",crush)
+	
+					block sitearea
+			
+//- UNCLASSIFIED

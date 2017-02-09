@@ -1,0 +1,29 @@
+//- UNCLASSIFIED
+
+extends site
+append site_parms
+	- view = "Min"
+	- dock = "left"
+	- parms = {min:"min", more:"more"}
+	- dims = "1000,800"
+append site_body
+
+	#grid.Issues(
+		path="/issues.db",
+		wrap,page=25,
+		cols="ID.i,Issue.h,Severity,Effort,Status,Action.h,Function(Reqt.c,GUI.c,Pivot.c,Grid.c,Form.c,Vis.c)")
+		
+		:markdown
+			Please insert your issue, bug or idea here.  If your issue is similar to an existing ticket, simply
+			append your observations to the best matching ticket.  The #{title} periodcally reviews your
+			tickets to improve the quality of the #{title}.  The #{title} also welcomes 
+			[your new requirements](/requirements.view).  Requirements and tickets
+			are resolved following IIG's [JIRA](www.jira.com) rapid, agile development process.  Use **execute**
+			to reflect recent GIT change logs to this table.
+			
+	#grid.git.logs(
+		path="/git.db",
+		page=25,
+		cols="ID.i,hash.h,author.t,email.t,made.d,cm.x")		
+			
+//- UNCLASSIFIED

@@ -1,0 +1,38 @@
+//- UNCLASSIFIED
+//-
+	Provides a view for the engines.
+
+extends site
+append siteparms
+	- view = "ROC Analysis"
+	- dock = "left"
+	- parms = {min:"more=0", more:"more=1"}
+append sitearea
+
+	- dims = "[1000,500]"
+	
+	#grid.REGsetup(
+		path="/Htest.db",
+		dims="#{dims}",page="#{page}",help,kiss,actions,check,refresh,
+		cols="Used.c,Name,Parameters(p0.n,p1.n,p2.n,p3.n,p4.n,p5.n),Observations(FPR.n,TPR.n)")
+
+	#grid.REGresults(
+		path="/Hreg.db",
+		dims="#{dims}",page="#{page}",help,kiss,actions,check,refresh,
+		cols="Name,Computed.d,Tests.n,Fits(a0.n,a1.n,a2.n,a3.n,a4.n,a5.n)")
+		
+	#grid.ROCsetup(
+		path="ROC.db",
+		dims="#{dims}",page="#{page}",help,kiss,actions,check,refresh,
+		cols="Parms(TestID,Enabled.c,Detector,Positives.n,ChipArea.n,FeatureArea.n,ResolvePower.n,Az.n,El.n),Test(FileID,TimeStamp.d,Observations.n,Negatives.n,ForecastLevel.n)")
+
+	#grid.ROCsummary(
+		path="ROCSUM.db?TestID=mytest&Detector=gms",
+		dims="#{dims}",page="#{page}",help,kiss,actions,check,refresh,
+		cols="ROC(ForecastLevel.n,FPR.n,TPR.n),Test(Observations.n,Negatives.n,Positives.n),Parms(TestID,ChipArea.n,FeatureArea.n,ResolvePower.n,Detector),Data(FileID,Az.n,El.n)")
+		
+	#post.ROCplot(path="/scatter.view?src=ROCSUM.db&index=FPR,TPR",dims="#{dims}")
+
+	#post.TipSheet(path="/tipsheet.view?src=news.db",dims="#{dims}")
+	
+//- UNCLASSIFIED

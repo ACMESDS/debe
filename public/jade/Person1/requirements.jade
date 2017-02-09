@@ -1,0 +1,85 @@
+//- UNCLASSIFIED
+
+extends site
+append siteparms
+	- view = "Kiss"
+	- parms = {min:"more=0", more:"more=1"}
+	- dims = "[1000,800]"
+	- dock = "left"
+append sitearea
+
+	#grid.Build.Standards(
+		path="/standards.db",
+		page="#{page}",dims="#{dims}",typical,wrap,
+		cols="Body,Standard,Dated.t,Exemptions.h,Applies.c")
+
+		:markdown
+			OCIO presently controls 1480 possible web build standards.  Please specifiy which of these standards apply.
+			Changes to these standards must be coordinated through NGA IIG [JIRA](www.jira.com).
+
+	#grid.TTA.EULA(
+		path="tta.db",
+		page="#{page}",dims="#{dims}",typical,wrap,
+		cols="OE.t.Oper Env,UserAgree.x,Roles(ISP(ISP,ISProle.x),ASP(ASP,ASProle.x),Cert Authority(CA,CArole.x)),Refs.x")
+
+		:markdown
+			Revise this Technology Transfer Agreement (End User License Agreement) as needed: all changes are tracked.  
+			NGA does not, under any circumstances, warrent, underwrite, endorse, promote, fund, or sell any technologies used herein.
+			Changes to this TTA must be coordinated through NGA IIG's rapid, agile project management
+			system [JIRA](www.jira.com).
+
+	#grid.Roadmap(
+		path="/milestones.db",
+		page="#{page}",dims="#{dims}",typical,wrap,
+		cols="Num.n,SeqNum.t,Task.t,Schedule(W*10)")
+
+		:markdown
+			This is the proposed roadmap to add new capabilties to this service.
+
+	#grid.ASP(
+		path="/aspreqts.db",
+		page="#{page}",dims="#{dims}",typical,wrap,
+		cols="Num.t,Reqt.x,DevReq.x.Deviations,Score.n,Function(Security.c,Cost.c,Maint.c,FaultTol.c,ContentMgt.c,AdvVis.c,CloudCompute.c),Verification(ByTest.c,ByDemo.c,ByInspect.c,ByAnalysis.c),Roadmap Increment(ITEM1.n.I1,ITEM2.n.I2,ITEM3.n.I3,ITEM4.n.I4,ITEM5.n.I5)")
+
+		:markdown
+			ASP requirements SHALL tie to NGA strategic IT goals.  NGA does not, 
+			under any circumstances, warrent, underwrite, endorse, promote, fund, or sell any technologies
+			used herein. Changes to requirements must be coordinated through NGA IIG's rapid, agile project management
+			system [JIRA](www.jira.com). IIG also welcomes [issues, bugs, and ideas](/issues.view).
+
+	#grid.ISP.General(
+		path="/ispreqts.db",
+		dims="#{dims}",page="#{page}",typical,wrap,
+		cols="Num,Reqt,DevReq.x.Deviations,Function(Security.c,Performance.c,Storage.c,Config.c,Network.c,EntExit.c),Verified(ByTest.c,ByDemo.c,ByInspect.c,ByAnalysis.c),ISP Compliance(GEOHUB.c,NOWTIDE.c,ILE.c,NRORDT.c,ICITE.c,NGANET.c,BASELINE.c,CSCF.c,RES1.c,RES2.c,RES3.c,RES4.c,RES5.c)")
+
+		:markdown
+			ISP requirements SHALL tie to ASP requirements.  NGA does not, 
+			under any circumstances, warrent, underwrite, endorse, promote, fund, or sell any technologies
+			used herein. Changes to requirements must be coordinated through NGA IIG's rapid, agile project management
+			system [JIRA](www.jira.com). IIG also welcomes [issues, bugs, and ideas](/issues.view).
+
+	#grid.ISP.HW(
+		path="/hwreqts.db",
+		dims="#{dims}",page="#{page}",typical,wrap,
+		cols="Support(ISP,DTA.c,ADM.c),Phase,Compute(VMs.n,OS,RAM.n.ramGB,Disk.n.diskGB),Firewalls(JWICS.c,SBU.c,RDT.c,NMIS.c,UMIS.c),Services(OMAR.c,HYDRA.c,SMTP.c)")
+
+		:markdown
+			ISP requirements SHALL tie to ASP requirements.  NGA does not, 
+			under any circumstances, warrent, underwrite, endorse, promote, fund, or sell any technologies
+			used herein. Changes to requirements must be coordinated through NGA IIG's rapid, agile project management
+			system [JIRA](www.jira.com). IIG also welcomes [issues, bugs, and ideas](/issues.view).
+
+	#grid.TradeOffs(
+		path="/trades.db",
+		dims="#{dims}",page="#{page}",typical,wrap,
+		cols="product,vendor,Compliance(P1.x.OpenIT,P2.x.ROC,P3.x.Cloud Compute,P4.x.Reserved,P5.x.Reserved)")
+
+	#grid.ISP.SW(
+		path="/swreqts.db",
+		dims="#{dims}",page="#{page}",typical,wrap,
+		cols="Item,Pack,AdminReqd,DevReq.x.Deviations,OS(W2007,W2008,RHEL65,CENTOS65)")
+
+		:markdown
+			Software requirements SHALL tie to ISP requirements and are verified by inspection.
+
+//- UNCLASSIFIED

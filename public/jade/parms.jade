@@ -1,0 +1,30 @@
+//- UNCLASSIFIED
+//- Revise lifecycle parameters.
+
+extends site
+append site.parms
+	- view = "Min"
+append site.body
+
+	#grid.roles(
+		path="/roles.db",
+		actions,help,page="#{page}",
+		cols="Table,Special.x,Roles(INSERT,UPDATE,DELETE,SELECT,IMPORT,EXPORT),Attribs(Journal.c,Expose.c,Log.c)")
+
+		:markdown
+			Execute to create the tables listed here.
+
+	#grid.parms(
+		path="/parms.db",
+		actions,help,page="#{page}",
+		cols="Enabled.c,Parm,Guard.c,Label,Type,Tables.x,Special,Verified(V0.c.byTest,V1.c.byAnalysis,V2.c.byInspect,V3.c.byDemo),Type(At Input.c,At Output.c,At System.c),Stakeholder(Org0.c.NGA-O,Org1.c.NGA-I,Org2.c.NGA-T,Org3.c.NGA-X,Org4.c.NGA-S,Org5.c.NGA-A)")
+
+		:markdown
+			Execute to create the parameters in the tables listed here.  
+
+	#grid.states(
+		path="/states.db",
+		actions,help,page="#{page}",
+		cols="Class,State.n,Name,Special.x,Supporting")
+
+//- UNCLASSIFIED

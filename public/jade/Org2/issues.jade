@@ -1,0 +1,22 @@
+//- UNCLASSIFIED
+
+extends site
+append siteparms
+	- view = "Kiss"
+	- dock = "left"
+	- parms = {min:"more=0", more:"more=1"}
+	- dims = "[1000,800]"
+append sitearea
+
+	#grid.Issues(
+		path="/issues.db",
+		page="#{page}",dims="#{dims}",typical,wrap,
+		cols="ID,Issue.x,Severity,Effort,Status,Action.x,Function(Reqt.c,GUI.c,Pivot.c,Grid.c,Form.c,Vis.c)")
+		
+		:markdown
+			Please note your issue, bug or idea here.  If your issue is similar to any existing ticket, simply
+			append your observations to the best matching ticket.  Tickets are periodcally reviewed to improve
+			the quality of this service.  We also welcome [new requirements](/requirements.view).  All issues 
+			are resolved following IIG's [JIRA](www.jira.com) rapid, agile development process.
+
+//- UNCLASSIFIED
