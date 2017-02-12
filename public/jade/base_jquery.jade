@@ -1,0 +1,227 @@
+link(href='/clients/jquery/ui/css/smoothness/jquery-ui.css',rel='stylesheet')
+
+//- link(href='/clients/jquery/css/default.css',rel='stylesheet')
+if password
+	input#text(type="password")
+	| Forceable in <span>less than one second</span>
+	//- $("#text").pwdstr("$info");
+
+case pivot
+	when "Isotope"
+		style.
+			* {
+				-webkit-box-sizing: border-box;
+				-moz-box-sizing: border-box;
+				box-sizing: border-box;
+			}
+
+			body {
+				font-family: sans-serif;
+			}
+
+			.button {
+				display: inline-block;
+				padding: 0.5em 1.0em;
+				background: #EEE;
+				border: none;
+				border-radius: 7px;
+				background-image: linear-gradient( to bottom, hsla(0, 0%, 0%, 0), hsla(0, 0%, 0%, 0.2) );
+				color: #222;
+				font-family: sans-serif;
+				font-size: 16px;
+				text-shadow: 0 1px white;
+				cursor: pointer;
+			}
+
+			.button:hover {
+				background-color: #8CF;
+				text-shadow: 0 1px hsla(0, 0%, 100%, 0.5);
+				color: #222;
+			}
+
+			.button:active,
+				.button.is-checked {
+				background-color: #28F;
+			}
+
+			.button.is-checked {
+				color: white;
+				text-shadow: 0 -1px hsla(0, 0%, 0%, 0.8);
+			}
+
+			.button:active {
+				box-shadow: inset 0 1px 10px hsla(0, 0%, 0%, 0.8);
+			}
+
+			.button-group:after {
+				content: '';
+				display: block;
+				clear: both;
+			}
+
+			.button-group .button {
+				float: left;
+				border-radius: 0;
+				margin-left: 0;
+				margin-right: 1px;
+			}
+
+			.button-group .button:first-child { border-radius: 0.5em 0 0 0.5em; }
+			.button-group .button:last-child { border-radius: 0 0.5em 0.5em 0; }
+
+			.isotope {
+				border: 1px solid #333;
+				max-width: 1200px;
+			}
+
+			.isotope:after {
+				content: '';
+				display: block;
+				clear: both;
+			}
+
+			.element {
+				position: relative;
+				float: left;
+				width: 100px;
+				height: 100px;
+				margin: 5px;
+				padding: 10px;
+				background: #888;
+				color: #262524;
+			}
+
+			.element > * {
+				margin: 0;
+				padding: 0;
+			}
+
+			.element .name {
+				position: absolute;
+				left: 10px;
+				top: 60px;
+				text-transform: none;
+				letter-spacing: 0;
+				font-size: 12px;
+				font-weight: normal;
+			}
+
+			.element .symbol {
+				position: absolute;
+				left: 10px;
+				top: 0px;
+				font-size: 42px;
+				font-weight: bold;
+				color: white;
+			}
+
+			.element .number {
+				position: absolute;
+				right: 8px;
+				top: 5px;
+			}
+
+			.element .weight {
+				position: absolute;
+				left: 10px;
+				top: 76px;
+				font-size: 12px;
+			}
+
+			.element .age {
+				position: absolute;
+				left: 30px;
+				top: 76px;
+				font-size: 12px;
+			}
+
+			.element.width1 { width: 100px; }
+			.element.height1 { height: 100px; }
+			.element.width2 { width: 200px; }
+			.element.height2 { height: 200px; }
+			.element.width3 { width: 300px; }
+			.element.height3 { height: 300px; }
+			.element.width4 { width: 400px; }
+			.element.height4 { height: 400px; }
+
+			.element.alkali          { background: #F00; background: hsl(   0, 100%, 50%); }
+			.element.alkaline-earth  { background: #F80; background: hsl(  36, 100%, 50%); }
+			.element.lanthanoid      { background: #FF0; background: hsl(  72, 100%, 50%); }
+			.element.actinoid        { background: #0F0; background: hsl( 108, 100%, 50%); }
+			.element.transition      { background: #0F8; background: hsl( 144, 100%, 50%); }
+			.element.post-transition { background: #0FF; background: hsl( 180, 100%, 50%); }
+			.element.metalloid       { background: #08F; background: hsl( 216, 100%, 50%); }
+			.element.diatomic        { background: #00F; background: hsl( 252, 100%, 50%); }
+			.element.halogen         { background: #F0F; background: hsl( 288, 100%, 50%); }
+			.element.noble-gas       { background: #F08; background: hsl( 324, 100%, 50%); }
+
+			.table-like {
+				list-style: none;
+				margin: 0;
+				padding: 0;
+			}
+
+			.table-like > li {
+				width: 100%;
+				clear: both;
+				border-top: 1px solid;
+			}
+
+			.table-like > li:after {
+				display: block;
+				content: '';
+				clear: both;
+			}
+
+			.table-like > li > * {
+				float: left;
+				padding: 4px 4px;
+			}
+
+			.table-like .name { width: 30%; }
+			.table-like .symbol { width: 10%; }
+			.table-like .weight { width: 15%; }
+			.table-like .number { width: 10%; }
+			.table-like .category { width: 20%; }
+
+	when "elFinder"
+		link(type="text/css",rel="stylesheet",media="screen",href="/clients/elfinder/css/elfinder.min.css")
+		link(type="text/css",rel="stylesheet",media="screen",href="/clients/elfinder/css/theme.css")
+		script.
+			var elFinder = true;
+
+	default
+		link(type="text/css",rel="stylesheet",href="/clients/apy/#{idx}/menu.css")
+		style.
+			input.ui-icon-save {
+				width:18px;
+				height:18px;
+				background:url(#{icons}actions/save.png);
+			}
+			input.ui-icon-tag {
+				width:18px;
+				height:18px;
+				background:url(#{icons}actions/tag.png);
+			}
+			input.ui-icon-crop {
+				width:18px;
+				height:18px;
+				background:url(#{icons}actions/crop.png);
+			}
+			input.ui-icon-process {
+				width:18px;
+				height:18px;
+				background:url(#{icons}actions/process.png);
+			}
+
+case grid
+	when "w2UI"
+		link(href='/clients/w2ui/dist/w2ui.min.css',rel='stylesheet')
+
+	when "DataTable"
+		style.
+			@import "/clients/datatables/media/css/demo_page.css";
+			@import "/clients/datatables/media/css/demo_table.css";
+
+	when "jqgrid"
+		link(type="text/css",rel="stylesheet",media="screen",href="/clients/jquery/jqgrid/css/ui.jqgrid.css")

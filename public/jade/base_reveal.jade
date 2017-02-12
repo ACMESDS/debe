@@ -1,0 +1,59 @@
+link(rel='stylesheet',href='/clients/reveal/css/reveal.min.css')
+link(rel='stylesheet',href='/clients/reveal/css/theme/#{query.theme||"moon"}.css')
+//-link(rel='stylesheet',href='/clients/reveal/css/print.css',type='text/css',media='print')
+
+style.
+	li { text-align:left;text-indent:50; position:relative;top:-100; }
+	iframe { width:1000px; height:500px; }
+	footer { position:relative; top:600; }
+	table { border-spacing: 5px;border-collapse: separate;width:150%; }
+	p { font-size:20px !important;color:white; }
+	.lg, .hd { font-size:40px !important; }
+	.sm { font-size:15px !important; }
+	.in { text-indent:50px !important; }
+	a { color:red; }
+	.al, .hd { text-align:left !important; }
+	.ar { text-align:right !important; }
+	.ac { margin-left:auto !important;margin-right:auto !important; }
+	img.ic { display:block;margin-left:auto;margin-right:auto; }
+	img.ir { display:block;margin-left:auto; }
+	td { vertical-align:middle !important;color:white; }
+	td.gr { background-color:green;color:white; }
+	td.rd { background-color:red;color:white; }
+	td.bl { background-color:blue;color:white; }
+	h4 { position:absolute;top:-350; }
+	h3 { position:relative;top:-300; }
+	h2 { position:relative;top:0; }
+	.rd { color:red; }
+	.bl { color:blue; }
+	.gr { color:green; }
+	h1.hd, h2.hd, h3.hd, h4.hd { color:green; }
+	iframe.rd { background-color: red; }
+
+header
+	p.rd.ar #{classif} || #{client} || 
+		a(href="/edit.view?name=#{table}", title="Edit skin ?theme=black|white|leagure|beige|ski|night|serif|solarized|blood|moon") Edit
+		|  || 
+		each val,key in more
+			a(href=val, title=help)= key
+		|  || 
+		a(href="/tutorial.view?print-pdf=1", title="Print this tutorial") Print
+		|  || 
+		a(href="#{Home}") Home
+		|  || O/utline S/ynopsis F/ullscreen B/lank
+
+	img.ir(src="/shares/header.jpg",width="50%",height="5%")
+
+footer
+	block reveal_help
+	p.rd.al #{classif}
+
+//
+	footer
+	img.ac(src="/shares/footer.jpg",width="90%",height="1%")
+	p.rd.al #{classif}
+		|  || 
+		a(href="/skinguide.view") Skinning
+		|  || 
+		a(href="/api.view") API
+
