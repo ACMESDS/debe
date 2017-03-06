@@ -717,8 +717,10 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	"emulator.": {  //< emulation endpoints
 	},
 	
-	"jsons.": {   //< mysql parms to derive on start
+	"jsons.": {   //< legacy -- mysql parms to parse on start
 		classif: { level: "(U)", purpose: "nada" },
+		asp: {},
+		isp: {},
 		filename: "./public/jade/ref.jade"	// jade reference path for includes, exports, appends		
 	},
 	

@@ -1035,12 +1035,10 @@ function DS(anchor) {
 						//	ID:0, NodeID:"root", NodeCount:0, leaf: false, expandable:true, expanded:false
 						//}]
 					},*/
-
 					/*root: {  
 						name: "root",
 						expanded: true
 					},*/
-
 					/*root: {  
 						NodeID: "root",
 						expanded: false
@@ -1199,7 +1197,7 @@ function DS(anchor) {
 
 			case "post":				// use Iframe for a "store"
 			default:
-				
+
 				var Store = This.Store = Ext.create('Ext.ux.IFrame', {   
 					// Basic	
 					//overflowX	: "auto",
@@ -1219,28 +1217,22 @@ function DS(anchor) {
 						dims = Store.ds.dims,
 						src = Store.ds.proxy.url,
 						tags = {
-							src: (anchor.id == "post")
-								? src
-								: anchor.id + ".view?src=" +src,
-
+							src: src,
 							width: dims[0],
 							height: dims[1]
 						},
 						iframe = DEFAULT.NOIFRAME.tag("iframe", tags);
-
 //alert(iframe);
+
 					Store.update( iframe );
 				};
 				
 				if (isResolved) Store.load();
 				
-				if (refresh) {
-					var refreshs = 0;
+				if (This.refresh) 
 					setInterval(function () {
 						Store.load();
-						refreshes++;
-					}, refresh*1000 );
-				}
+					}, This.refresh*1000 );
 				
 				break;
 		}	
@@ -1264,6 +1256,7 @@ function DS(anchor) {
  * path serving JSON 
  */
 		path 	= this.path = anchor.getAttribute("path") || "",  
+		
 /**
  * @property {String}
  * Database table specified in path
@@ -1287,15 +1280,14 @@ function DS(anchor) {
 		track	= this.track = anchor.getAttribute("track") || "",
 /**
  * @property {String}
- sorts
+ * sorts
  */
 		sorts	= hashify( this.sorts = (anchor.getAttribute("sorts") || "").split(",") ),
 		shifts	= anchor.getAttribute("shifts") ? true : false,
 		
 		page 	= anchor.getAttribute("page"),
 		sync 	= anchor.getAttribute("sync"),
-		refresh = anchor.getAttribute("refresh"),
-		refresh = this.refresh = parseInt(refresh) || refresh,
+		refresh = this.refresh = parseInt(anchor.getAttribute("refresh") || "0"),
 		dims = this.dims = (anchor.getAttribute("dims") || "200,200").split(","),
 		
 /**
@@ -1308,11 +1300,13 @@ function DS(anchor) {
 		calc	= anchor.getAttribute("calc")  ? [] : null,
 		create	= anchor.getAttribute("create") || "";
 
+	if (!path && !WIDGET.prototype[anchor.id]) path = this.path = "/"+anchor.id+".view";
+	
 /**
  * @property {Boolean}
  * Data locked during edit
  */
-	this.Locked		= false;	
+	this.Locked		= false;
 /**
  * @property {Array}
  * Slaves Pointer to Data Tables linked to this DS 
@@ -1534,7 +1528,7 @@ function DS(anchor) {
 
 	var Links = this.Links = {};
 		
-	url = (path||"").format(Links);
+	url = (path || "").format(Links);
 	if (!url || url.indexOf("undefined")>=0) url = "/undefined.db";
 	//alert(name+":"+path+"->"+url);
 	
@@ -1587,10 +1581,12 @@ function DS(anchor) {
 					break;
 			}
 		});	
+	
 	else
-	if (name && path) {
+	if (name) {
 		if ( DSLIST[name] )
 			alert(`widget "${name}" already used`);
+		
 		else {
 			//alert("preinit "+this.name+"="+this.title+"="+This.title+"="+anchor.getAttribute("title"));
 			initialize();
@@ -1599,7 +1595,7 @@ function DS(anchor) {
 	}
 }
 
-DS.prototype.relink = function (cb) {
+DS.prototype.relink = function (cb) {  // Relink dataset proxy to a new url
 	var 
 		proxy = this.proxy,
 		Store = this.Store;
@@ -2186,7 +2182,8 @@ WIDGET.prototype.menuTools = function () {
 	// retain only non-region UIs
 	var helpUIs = [];
 	this.UIs.Each( function (n,UI) {
-		if ( !UI.region ) helpUIs.push( UI );
+		if (UI)
+			if ( !UI.region ) helpUIs.push( UI );
 	});
 
 	// parse menu 
@@ -2438,11 +2435,9 @@ WIDGET.prototype.menuTools = function () {
 
 					case "refresh":
 
-						var timer = parseInt(Widget.refresh);
-
-						if (timer) setInterval(function () {
+						if (Widget.refresh) setInterval(function () {
 							Widget.Data.relink();
-						}, timer*1000);
+						}, Widget.refresh*1000);
 
 						if (isForm)
 							return nada;
@@ -3506,12 +3501,7 @@ WIDGET.prototype.terminal = function (term,opts) {
 WIDGET.prototype.wrapper = function () {
 	this.UIs = [this.UI];
 	
-	if (this.refresh) {
-		this.head = "Refresh";
-		this.menuTools();
-	}
-	else
-		this.menuTools();
+	this.menuTools();
 
 	this.UI = Ext.create('Ext.panel.Panel', {
 		title		: this.title,
@@ -3583,13 +3573,12 @@ WIDGET.prototype.content = function () {
 WIDGET.prototype.hold = function () {
 	var 
 		name = this.name,
-		store = this.Data.Store,
-		timer = parseInt(this.refresh);
+		store = this.Data.Store;
 	
-	if (timer) 
+	if (this.refresh) 
 		setInterval(function () {
-			//store.load();
-		}, timer*1000);
+			store.load();
+		}, this.refresh*1000);
 		
 	this.UI = null; 
 }
@@ -3605,9 +3594,11 @@ WIDGET.prototype.hold = function () {
  */
 WIDGET.prototype.post = function () { 
 	this.dataUI = this.UI = this.Data.Store;
-	
-	if (! this.nowrap )
+
+	if (! this.nowrap ) {
+		this.head = "Refresh";
 		this.wrapper();
+	}
 }
 
 /**
