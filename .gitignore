@@ -2,8 +2,6 @@ _*
 /htmls/
 /clients/
 /captcha/
-/node_modules/
-/certs/
 /doc/
 /shares/*/
 /public/dbs/
