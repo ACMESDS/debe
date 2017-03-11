@@ -73,7 +73,7 @@ append site_body
 						GET	/ATTR/FILE.TYPE ? PARMS	Return ATTRribute of a FILE
 						GET	/AREA/	Return list of files in this AREA
 					
-					where TYPE = **pdf | txt | csv | json | html | ... ** associates the requested
+					where TYPE = [pdf | txt | csv | json | html | ... ] associates the requested
 					file with the client's mime application, and where AREA references a #{nick} internal
 					file store or a one of its virtual stores:
 					
@@ -110,7 +110,7 @@ append site_body
 						POST	/DATASET.TYPE	Insert body parameters info DATASET
 						DELETE	/DATASET.TYPE	Delete from DATASET 
 						
-					where TYPE = **db | xml | csv | txt | ... | view** defines the 
+					where TYPE = [db | xml | csv | json | view | ... ] defines the 
 					returned format.  A "**view**" TYPE will dynamically skin the
 					requested DATASET.
 
@@ -268,7 +268,7 @@ append site_body
 						POST /ENGINE.TYPE	Step stateful ENGINE 
 						DELETE /ENGINE.TYPE	Free stateful ENGINE 
 					
-					where TYPE = db | xml | csv | txt defines the response transfer mode.
+					where TYPE = [db | xml | csv | json | view | ...] defines the transfer mode.
 
 			#fit.Parameters
 				:markdown

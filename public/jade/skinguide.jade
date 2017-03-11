@@ -781,37 +781,32 @@ append site_body
 
 			#fit.Context.Keys
 				:markdown
-					The following #{nick}-context keys (current value) are available:
-					+	master	URL to master (#{master})  
-					+	worker	URL to worker (#{worker})  
-					+	socketio	URL to socket.io (#{socketio})  
-					+	location client location (#{location})  
-					+	org	client organization (#{org})  
-					+	email	client email address (#{email})  
-					+	client	client name (#{client})  
-					+	joined	session start time (#{joined})  
-					+	query	request query (#{JSON.stringify(query)})
-					+	flags	request flags (#{JSON.stringify(flags)})  
-					+	db	database group (#{db})  
-					+	source	request dataset, view, or engine (#{source})  
-					+	action	request action (#{action})  
-					+	distro	email distributions (!{distro})  
-					+	profile	client qos profile (#{JSON.stringify(profile)})  
-					+	info 	system transition info (#{JSON.stringify(info)})  
-					+	title	full site name (#{title})  
-					+	nick	site nick name (#{nick})  
-					+	ver	site version number (#{ver})  
-					+	released	site release date (#{released})  
-					+	type	Client type M=moderator, U=nonmoderator (#{type})  
-					+	lock	session lock (#{JSON.stringify(options)})
-
-					and are referenced with \\#{KEY} (html escaped) or using \\!{KEY} (no html escape).
-
-					Skinning context also include several methods:
-					+	get(list,where,index,ag)  
-					aggregates a list into a ag=join | table, matching a where={key:value, ...} clause, 
-					and indexed on index="key,key,...".
-
-					as well as view-specific \\#{DS.KEY} variables defined at #{nick} startup.
+					The following #{nick}-context keys = definition (current value) are referenced 
+					using \\#{KEY} or \\!{KEY} to escape or not escape the html:
+					
+					+	master	= URL to master (#{master})  
+					+	worker	= URL to worker (#{worker})  
+					+	socketio	= URL to socket.io (#{socketio})  
+					+	location = client location (#{location})  
+					+	org	= client organization (#{org})  
+					+	email	= client email address (#{email})  
+					+	client	= client name (#{client})  
+					+	joined	= session start time (#{joined})  
+					+	query	= request query (#{json(query)})
+					+	flags	= request flags (#{json(flags)})  
+					+	db	= database group (#{db})  
+					+	source	= request dataset, view, or engine (#{source})  
+					+	action	= request action (#{action})  
+					+	distro	= email distributions (!{distro})  
+					+	profile	= client qos profile (#{json(profile)})  
+					+	info 	= system transition info (#{json(info)})  
+					+	title	= full site name (#{title})  
+					+	nick	= site nick name (#{nick})  
+					+	ver	= site version number (#{ver})  
+					+	released	= site release date (#{released})  
+					+	type	= Client type M=moderator, U=nonmoderator (#{type})  
+					+	lock	= session lock (#{JSON.stringify(options)})
+					+	table(DS, {where:value,...} ,"index,..." ) = tableify context dataset DS given optional where and index keys
+					+	json(DS)  = jsonify context dataset DS
 
 			//- #exsite.Examples(dims="800,500")

@@ -540,17 +540,21 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 
 	site: { 		//< initial site context
 
-		context: { // skinning context extenders defined for each skin
-			ssp: {   // define apps and stats dsvars for the ssp skin
+		context: { // skinning contexts for each skin
+			ssp: {   // defines the apps and stats datasets for the ssp skin
 				apps:"openv.apps",
 				stats:{table:"app1.dblogs",group:"client",index:"client,event"}
 			}
 		},
+
+		json: function (data) {
+			return JSON.stringify(data);
+		},
 		
-		get: function (list,where,index,ag,arg) {	// setup getter for site context vars
+		show: function (data,where,index) {	// table generator for context dataset
 			
-			function join(list,sep) { 
-				switch (list.constructor) {
+			function join(data,sep) { 
+				switch (data.constructor) {
 					case Array: 
 						return this.join(sep);
 					
@@ -564,13 +568,13 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				}
 			}
 			
-			function table(list) {
-				switch (list.constructor) {
-					case Array:
+			function table(data) {  // generate an html table from given data or object
+				switch (data.constructor) {
+					case Array:  // [ {head1:val}, head2:val}, ...]  create table from headers and values
 					
 						var rtn = "", head = true;
 						
-						list.each( function (n,rec) {
+						data.each( function (n,rec) {
 							
 							if (head) {
 								var row = "";
@@ -583,23 +587,28 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 							
 							var row = "";
 							Each(rec, function (key,val) {
-								row += (val+"").tag("td");
+								row += (typeof val == "object")
+									? table(val)
+									: (val+"").tag("td");
 							});
 							rtn += row.tag("tr");
 						});
 						
 						return rtn.tag("table",{});
 						
-					case Object:
+					case Object: // { key:val, ... } create table dump of object hash
 					
 						var rtn = "";
-						Each(list, function (key,val) {
-							rtn += (key.tag("td") + JSON.stringify(val).tag("td")).tag("tr");
+						Each(data, function (key,val) {
+							rtn += (typeof key == "object")
+								? table(val)
+								: (key.tag("td") + JSON.stringify(val).tag("td")).tag("tr");
 						});
+						
 						return rtn.tag("table");
 						
 					default:
-						return list+"";
+						return data+"";
 				}
 			}
 			
@@ -623,17 +632,17 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			
 			var rtns = [];
 			
-			if (list.constructor == Object) return dump(list);
+			/*
+			if (data.constructor == Object) return dump(data);
 			
 			if (where) {
 				if (!index) index = where.index;
 				if (!ag) ag = where.ag;
-				if (!arg) arg = where.arg;
-			}
+			}*/
 			
 			if (index) index = index.split(",");
 			
-			list.each( function (n,rec) {
+			data.each( function (n,rec) {
 				
 				var match = true;
 				
@@ -667,18 +676,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						
 			});
 			
-			switch (ag) {
-				case "join":
-				case "j":
-					return join(rtns,arg||",");
-
-				case "table":
-				case "t":
-					return table(rtns);
-
-				default:
-					return rtns;
-			}
+			return table(rtns);
 		}
 		
 	},
@@ -721,6 +719,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		classif: { level: "(U)", purpose: "nada" },
 		asp: {},
 		isp: {},
+		info: {},
 		filename: "./public/jade/ref.jade"	// jade reference path for includes, exports, appends		
 	},
 	
@@ -1477,6 +1476,7 @@ append extjs_body
 								res( skin.render(req) );
 							}
 						});
+					
 					else  	// render skin
 						res( skin.render(req) );
 				});
@@ -1484,7 +1484,7 @@ append extjs_body
 
 	}
 		
-	if (ctx) 				// render skin in extended context
+	if (ctx) 					// render skin in extended context
 		sql.context(ctx, function (ctx) {  // establish skinning context for requested table
 			
 			for (var n in ctx) { 		// enumerate thru all the datasets
@@ -1496,8 +1496,9 @@ append extjs_body
 
 			renderJade(); 			// render skin in this extended context
 		});
+	
 	else
-		renderJade();  				// render skin in default context
+		renderJade();  		// render skin in default context
 
 }
 

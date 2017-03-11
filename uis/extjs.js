@@ -320,17 +320,18 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 		return value;
 	}
 
-	//var fSwitch = (fType+"t").charAt(0);
 	var fListen = {
 		afterrender: function (me) {
 			Ext.create('Ext.tip.ToolTip', {
 				target	: me.getEl(),                 
 				html	 	: me.qtip,
 				title	 	: me.qtitle,
-				autoHide : false,
-				draggable: true,
+				autoHide : true,
+				//draggable: true,
 				maxWidth : 800,
 				minWidth : 200,
+				collapisible: true,
+				//collapseFirst: true,				
 				dismissDelay: 0
 			});
 		}
@@ -362,7 +363,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				fType		: fType,
 				dataIndex	: fName,
 				sortable	: false,
-				draggable 	: true,
+				//draggable 	: true,
 				hideable	: true,
 				layout		: "hbox",
 				menuDisabled: true,
@@ -388,7 +389,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				dataIndex	: fName,
 				filter		: "boolean",
 				sortable	: true,
-				draggable 	: true,
+				//draggable 	: true,
 				hideable	: true,
 				locked		: fLock,
 				disabled	: fOff,
@@ -418,7 +419,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				dataIndex	: fName,
 				filter		: "string",
 				sortable	: true,
-				draggable 	: true,
+				//draggable 	: true,
 				hideable	: true,
 				locked		: fLock,
 				width		: 100,
@@ -450,7 +451,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				dataIndex	: fName,
 				filter		: "date",
 				sortable	: true,
-				draggable 	: true,
+				//draggable 	: true,
 				hideable	: true,
 				locked		: fLock,
 				disabled	: fOff,
@@ -482,7 +483,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				dataIndex	: fName,
 				filter		: "number",
 				sortable	: true,
-				draggable 	: true,
+				//draggable 	: true,
 				hideable	: true,
 				locked		: fLock,
 				disabled	: fOff,
@@ -512,7 +513,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				dataIndex	: fName,
 				filter		: "number",
 				sortable	: true,
-				draggable 	: true,
+				//draggable 	: true,
 				hideable	: true,
 				locked		: fLock,
 				disabled	: fOff,
@@ -542,7 +543,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				dataIndex	: fName,
 				filter		: "boolean",
 				sortable	: true,
-				draggable 	: true,
+				//draggable 	: true,
 				hideable	: true,
 				locked		: fLock,
 				disabled	: fOff,
@@ -575,7 +576,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				dataIndex	: fName,
 				filter		: "number",
 				sortable	: true,
-				draggable 	: true,
+				//draggable 	: true,
 				hideable	: true,
 				locked		: fLock,
 				disabled	: fOff,
@@ -604,7 +605,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				dataIndex	: fName,
 				filter		: "number",
 				sortable	: true,
-				draggable 	: true,
+				//draggable 	: true,
 				hideable	: true,
 				locked		: fLock,
 				disabled	: fOff,
@@ -637,7 +638,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				fType		: fType,
 				dataIndex	: fName,
 				sortable	: true,
-				draggable 	: true,
+				//draggable 	: true,
 				hideable	: true,
 				locked		: fLock,
 				disabled	: fOff,
@@ -691,7 +692,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				enableKeyEvents: true,
 				dataIndex	: fName,
 				sortable	: true,
-				draggable 	: true,
+				//draggable 	: true,
 				hideable	: true,
 				locked		: fLock,
 				disabled	: fOff,
@@ -768,7 +769,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				fType		: fType,
 				dataIndex	: fName,
 				sortable	: true,
-				draggable 	: true,
+				//draggable 	: true,
 				hideable	: true,
 				locked		: fLock,
 				disabled	: fOff,
@@ -825,7 +826,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 					dataIndex	: fName,
 					filter		: "string",
 					sortable	: true,
-					draggable 	: true,
+					//draggable 	: true,
 					hideable	: true,
 					locked		: fLock,
 					disabled	: fOff,
@@ -844,7 +845,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 						allowBlank: true,
 						typeAhead: true,
 						triggerAction: 'all',
-						//multiSelect: false, //(fSwitch == "m"),
+						//multiSelect: false, 
 						store : comboDS.Store,
 						displayField : fDisp,
 						valueField : fValue,
@@ -878,7 +879,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 					dataIndex	: fName,
 					filter		: "string",
 					sortable	: true,
-					draggable 	: true,
+					//draggable 	: true,
 					hideable	: true,
 					locked		: fLock,
 					disabled	: fOff,
@@ -908,7 +909,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 					dataIndex	: fName,
 					filter		: "date",
 					sortable	: true,
-					draggable 	: true,
+					//draggable 	: true,
 					hideable	: true,
 					locked		: fLock,
 					disabled	: fOff,
@@ -937,7 +938,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 					dataIndex	: fName,
 					filter			: "string",
 					sortable	: true,
-					draggable 	: true,
+					//draggable 	: true,
 					hideable	: true,
 					locked		: fLock,
 					disabled	: fOff,
@@ -1583,8 +1584,8 @@ function DS(anchor) {
 		});	
 	
 	else
-	if (name) {
-		if ( DSLIST[name] )
+	if (name && path) {
+		if ( DSLIST[name])
 			alert(`widget "${name}" already used`);
 		
 		else {
@@ -2076,12 +2077,14 @@ WIDGET.prototype.menuTools = function () {
 				afterrender: function (me) {
 					Ext.create('Ext.tip.ToolTip', {
 						target	: me.getEl(),                 
-						html	 	: me.qtip,
-						title	 	: me.qtitle,
-						autoHide : false,
-						draggable: true,
+						html	 	: "help", //me.qtip,
+						title	 	: "!!!!", //me.qtitle,
+						autoHide : true,
+						//draggable: true,
 						maxWidth : 500,
 						minWidth : 200,
+						collapisible: true,
+						collapseFirst: true,
 						dismissDelay: 0
 					});
 				}
@@ -2234,10 +2237,12 @@ WIDGET.prototype.menuTools = function () {
 									MessageTip = Ext.create('Ext.tip.ToolTip', {
 										target: me.getEl(),
 										html: me.getText(),
-										autoHide : true,
-										draggable: false,
+										autoHide : false,
+										//draggable: false,
 										maxWidth : 500,
 										minWidth : 200,
+										collapisible: true,
+										collapseFirst: true,										
 										dismissDelay: 3000
 									});
 								}			
@@ -2258,7 +2263,7 @@ WIDGET.prototype.menuTools = function () {
 										class: "notes",
 										path: "/notes.db",
 										links: "Table=" + Widget.Data.table,
-										head: "Insert,Update,Print,Refresh",
+										head: "Insert,Update,Delete,Print,Refresh",
 										nowrap: true,
 										crush: "1",
 										cols: "Note.h"
@@ -2311,14 +2316,16 @@ WIDGET.prototype.menuTools = function () {
 											items 	 : helpUIs,
 											layout	 : "fit",
 											overflowY  : "scroll",
-											//closable : true,
-											draggable: true,
+											closable : true,
+											//draggable: true,
 											maxWidth : "80%",
 											minWidth : 600,
 											minHeight: 100,
-											//maxHeight: 600,
+											maxHeight: 400,
 											showDelay: 1000,
 											hideDelay: 50,
+											collapisible: true,
+											collapseFirst: true,
 											dismissDelay: 0
 										});
 									}
@@ -3516,7 +3523,7 @@ WIDGET.prototype.wrapper = function () {
 /**
  * @method content
  * @param {Object[]} UIs A list of components to be aggregated.
- * @param {String} HTML The HTML to append to help panel.
+ * @param {String} HTML Help information to append.
  * @return {Object} component created
  *
  * Construct a content component for this widget from the supplied component UIs and HTML.  
@@ -3586,7 +3593,7 @@ WIDGET.prototype.hold = function () {
 /**
  * @method post
  * @param {Object[]} UIs A list of components to be aggregated.
- * @param {String} HTML The HTML to append to help panel.
+ * @param {String} HTML Help information to append.
  * @return {Object} component created
  *
  * Construct a post component for this widget from the supplied component UIs and HTML.  
@@ -3604,7 +3611,7 @@ WIDGET.prototype.post = function () {
 /**
  * @method layout
  * @param {Object[]} UIs A list of components to be aggregated.
- * @param {String} HTML The HTML to append to help panel.
+ * @param {String} HTML Help information to append.
  * @return {Object} component created
  *
  * Construct the anchor, fit, hbox, vbox, box, table and colmn wrappers.  
@@ -3661,7 +3668,7 @@ for (var layout in {anchor:1, fit:1, hbox:1, vbox:1, box:1, table:1, column:1})
 /**
  * @method default
  * @param {Object[]} UIs A list of components to be aggregated.
- * @param {String} HTML The HTML to append to help panel.
+ * @param {String} HTML Help information to append.
  * @return {Object} component created
  *
  * Construct the default component for this widget from the supplied component UIs and HTML.  
@@ -3673,7 +3680,7 @@ WIDGET.prototype.default = function () {
 /**
  * @method border
  * @param {Object[]} UIs A list of components to be aggregated.
- * @param {String} HTML The HTML to append to help panel.
+ * @param {String} HTML Help information to append.
  * @return {Object} component created
  *
  * Construct a border component for this widget from the supplied component UIs and HTML.  
@@ -3707,7 +3714,7 @@ WIDGET.prototype.border = function () {
 /**
  * @method folder
  * @param {Object[]} UIs A list of components to be aggregated.
- * @param {String} HTML The HTML to append to help panel.
+ * @param {String} HTML Help information to append.
  * @return {Object} component created
  *
  * Construct a folder component for this widget from the supplied component UIs and HTML.  
@@ -3764,7 +3771,7 @@ WIDGET.prototype.folder = function() {
 /**
  * @method accordion
  * @param {Object[]} UIs A list of components to be aggregated.
- * @param {String} HTML The HTML to append to help panel.
+ * @param {String} HTML Help information to append.
  * @return {Object} component created
  *
  * Construct an accordion component for this widget from the supplied component UIs and HTML.  
@@ -3807,7 +3814,7 @@ WIDGET.prototype.accordion 	= function () {
 /**
  * @method window
  * @param {Object[]} UIs A list of components to be aggregated.
- * @param {String} HTML The HTML to append to help panel.
+ * @param {String} HTML Help information to append.
  * @return {Null} 
  *
  * Construct a window component for this widget from the supplied component UIs and HTML.  
@@ -3845,7 +3852,7 @@ WIDGET.prototype.window = function (UIs,HTML) {
 /**
  * @method grid
  * @param {Object[]} UIs A list of components to be aggregated.
- * @param {String} HTML The HTML to append to help panel.
+ * @param {String} HTML Help information to append.
  * @return {Object} component created
  *
  * Construct a grid component for this widget from the supplied component UIs and HTML.  
@@ -3857,7 +3864,7 @@ WIDGET.prototype.grid = function () {
 /**
  * @method find
  * @param {Object[]} UIs A list of components to be aggregated.
- * @param {String} HTML The HTML to append to help panel.
+ * @param {String} HTML Help information to append.
  * @return {Object} component created
  *
  * Construct a find component for this widget from the supplied component UIs and HTML.  
@@ -3869,7 +3876,7 @@ WIDGET.prototype.find = function () {
 /**
  * @method image
  * @param {Object[]} UIs A list of components to be aggregated.
- * @param {String} HTML The HTML to append to help panel.
+ * @param {String} HTML Help information to append.
  * @return {Object} component created
  *
  * Construct a mini image editor.  
@@ -3969,7 +3976,7 @@ WIDGET.prototype.image = function () {
 /**
  * @method pivot
  * @param {Object[]} UIs A list of components to be aggregated.
- * @param {String} HTML The HTML to append to help panel.
+ * @param {String} HTML Help information to append.
  * @return {Object} component created
  *
  * Construct a pivot component for this widget from the supplied component UIs and HTML.  
@@ -3995,7 +4002,7 @@ WIDGET.prototype.pivot = function () {
 /**
  * @method form
  * @param {Object[]} UIs A list of components to be aggregated.
- * @param {String} HTML The HTML to append to help panel.
+ * @param {String} HTML Help information to append.
  * @return {Object} component created
  *
  * Construct a form component for this widget from the supplied component UIs and HTML.  
@@ -4092,11 +4099,13 @@ WIDGET.prototype.form = function () {
 									title	 : me.qtitle,
 									autoHide : false,
 									//closable : true,
-									draggable: true,
+									//draggable: true,
 									maxWidth : 300,
 									minWidth : 200,
 									showDelay: 1000,
 									hideDelay: 50,
+									collapisible: true,
+									//collapseFirst: true,									
 									dismissDelay: 0
 								});
 							},

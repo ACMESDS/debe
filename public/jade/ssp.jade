@@ -21,21 +21,23 @@ append layout_body
 	p 1. INFORMATION SYSTEM NAME/TITLE
 	
 	p This System Security Plan (SSP) ... blah blah
-	p!= get(pocs,{Role:"pm"},null,"table")
+	p!= show(pocs,{Role:"pm"},null)
 	
 	p 1.1 All my apps
 	
-	p!= get(apps,null,"Released,Host,Nick","table")
+	p!= show(apps,null,"Released,Host,Nick")
 
 	table
 		th: p System Plan Identifier (SPID)
 		th: p Information System Name
 		th: p System Abbreviation
+		th: p System Dump
 		th: p System of Record Notice (SORN)
 		tr
 		td: p #{info.a[0].SPID}
 		td: p #{title}
 		td: p #{nick}
+		td: p #{json(info)}
 		td: p #{info.a[0].SORN}
 		
 	p 1.1 SCOPE AND APPLICABILITY
