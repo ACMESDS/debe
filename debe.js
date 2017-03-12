@@ -694,6 +694,9 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	"converters." : {
 		view: function (ack,req,cb) {
 			cb( ack );
+		},
+		exe: function (ack,req,cb) {
+			cb( ack );
 		}
 	},
 		
