@@ -11,5 +11,9 @@
     "url": "git@git.geointapps.org:acme/debe.org"
   },
   "author": "ACME Software Disposal Service",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@mapbox/togeojson": "^0.16.0",
+    "tokml": "^0.4.0"
+  }
 }
