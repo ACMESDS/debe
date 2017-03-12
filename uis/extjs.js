@@ -34,7 +34,7 @@ var
 	STATUS = {								// status messages
 		EMPTY: "empty", 
 		FAULT: "fault", 
-		READY: "ready"
+		OK: "ok"
 	},	
 		
 	SELECT_CELL = {},					// grid shifting context
@@ -1184,11 +1184,8 @@ function DS(anchor) {
 						method: "GET",
 						success: function (res) {
 							var info = Ext.decode(res.responseText);
-							if (info.success) {
-								var UI = This.Widget.dataUI || This.Widget.UI;
-								UI.getForm().loadRecord( Ext.create(This.name, info.data) );
-//alert("loaded "+This.source);
-							}
+							var UI = This.Widget.dataUI || This.Widget.UI;
+							UI.getForm().loadRecord( Ext.create(This.name, info.data[0]) );
 						},
 						failure: function (res) {
 						}								
@@ -2077,8 +2074,8 @@ WIDGET.prototype.menuTools = function () {
 				afterrender: function (me) {
 					Ext.create('Ext.tip.ToolTip', {
 						target	: me.getEl(),                 
-						html	 	: "help", //me.qtip,
-						title	 	: "!!!!", //me.qtitle,
+						html	 	: me.qtip,
+						title	 	: me.qtitle,
 						autoHide : true,
 						//draggable: true,
 						maxWidth : 500,
@@ -2116,12 +2113,7 @@ WIDGET.prototype.menuTools = function () {
 							params: flags,
 							method: met,
 							success: function (res) {
-								var info = Ext.decode(res.responseText);
-								if (info.success) 
-									cb(info);
-								
-								else
-									Status(info.msg); 
+								cb( Ext.decode(res.responseText) );
 							},
 							failure: function () {
 								Status(STATUS.FAULT);
@@ -2222,7 +2214,7 @@ WIDGET.prototype.menuTools = function () {
 						return Message = Ext.create('Ext.Button', { 	// attach a message area
 							//itemId: 'status',
 							xtype: 'button',
-							text: STATUS.READY, 
+							text: STATUS.OK, 
 							textAlign: "right",
 							width: 80,
 							maxWidth:500,
@@ -2348,6 +2340,7 @@ WIDGET.prototype.menuTools = function () {
 						
 						if (isForm)
 							return nada;
+						
 						else
 							return Ext.create("Ext.Panel", {
 								layout: "hbox",
@@ -2478,16 +2471,13 @@ WIDGET.prototype.menuTools = function () {
 									success: function (res) {					
 										var info = Ext.decode(res.responseText);
 
-										if (info.success) {
-											Rec.setId(info.data.insertId);
-											//Form.loadRecord( Rec );
-											Status(info.msg,Rec);
-										}
-										else
-											Status(info.msg);
+										Rec.setId(info.data.insertId);
+										//Form.loadRecord( Rec );
+										Status(STATUS.OK,Rec);
 									},
 									failure: function (res) {
-										Status(STATUS.FAULT);
+										var info = Ext.decode(res.responseText);
+										Status(info.msg || STATUS.FAULT);
 									}		
 								});	
 							},
@@ -2504,20 +2494,20 @@ WIDGET.prototype.menuTools = function () {
 
 										Data.Store.sync({
 											success: function (batch) {
-												var rtn = batch.proxy.getReader().rawData;
-												newRec.setId(rtn.data.insertId); 
+												var info = batch.proxy.getReader().rawData;
+												newRec.setId(info.data.insertId); 
 												// Set NodeID so that the new node is positioned at end of pivots
 												// newRec.set("NodeID","0>"+Data.pivots.replace(/,/g,">"));  //##
 												// Set NodeID to end of pivots
 												// newRec.set("NodeID",newRec.get("NodeID")+">"+newRec.get("ID"));  //##
 												// Might as well set a reasonable group count too
 												newRec.set("NodeCount",1);
-												Status("ok");
+												Status(STATUS.OK || info.msg);
 											},
 
 											failure: function (batch) {
-												var rtn = batch.proxy.getReader().rawData;
-												Status(rtn.msg);
+												var info = batch.proxy.getReader().rawData;
+												Status(info.msg || STATUS.FAULT);
 											},
 
 											scope: Widget
@@ -2532,13 +2522,13 @@ WIDGET.prototype.menuTools = function () {
 
 										Store.sync({
 											success: function (batch) {
-												var rtn = batch.proxy.getReader().rawData;
-												if (rtn.data.insertId) tmpRec.setId(rtn.data.insertId);
-												Status("ok");
+												var info = batch.proxy.getReader().rawData;
+												if (info.data.insertId) tmpRec.setId(info.data.insertId);
+												Status(STATUS.OK || info.msg);
 											},
 											failure: function (batch) {
-												var rtn = batch.proxy.getReader().rawData;
-												Status(rtn.msg);
+												var info = batch.proxy.getReader().rawData;
+												Status(info.msg || STATUS.FAULT);
 											}
 										});	
 									}
@@ -2557,14 +2547,14 @@ WIDGET.prototype.menuTools = function () {
 								Store.insert(0, tmpRec );
 
 								Store.sync({
-									success: function (batch) {   // EXTJS bug - never called
-										var rtn = batch.proxy.getReader().rawData;
-										tmpRec.setId(rtn.data.insertId);
-										Status(rtn.msg);
+									success: function (batch) {   
+										var info = batch.proxy.getReader().rawData;
+										tmpRec.setId(info.data.insertId);
+										Status(STATUS.OK || info.msg);
 									},
 									failure: function (batch) {
-										var rtn = batch.proxy.getReader().rawData;
-										Status(rtn.msg);
+										var info = batch.proxy.getReader().rawData;
+										Status(info.msg || STATUS.FAULT);
 									}
 								});	
 							}
@@ -2580,43 +2570,21 @@ WIDGET.prototype.menuTools = function () {
 								   	{ID:Rec.getId(), _lock:1},
 									function (info) {
 										Data.Store.remove(Rec);
-										Status(info.msg); 
-								});
-								
-								/*
-								Ext.Ajax.request({
-									url : Data.proxy.url,
-									params: JSON.stringify( {ID:Rec.getId(), _lock:1} ),
-									method: "DELETE",
-									success: function (res) {
-
-										var info = Ext.decode(res.responseText);
-
-										if (info.success) {										
-											Data.Store.remove(Rec);
-											Status(info.msg); 
-										}
-										else 
-											Status(info.msg); 
-
-									},
-									failure: function (res) {
-										Status(STATUS.FAULT);
-									}
-								}); */
+										Status(info.msg || STATUS.OK); 
+								});								
 							},
 
 							onSelect: function (Recs, Data, Status) {
 
 								Data.Store.remove( Recs );
 								Data.Store.sync({
-									success: function (batch) { 	// EXTJS BUG -- never called
-										var rtn = batch.proxy.getReader().rawData;
-										Status(rtn.msg);
+									success: function (batch) { 	
+										var info = batch.proxy.getReader().rawData;
+										Status(info.err || STATUS.OK);
 									},								
 									failure: function (batch) {
-										var rtn = batch.proxy.getReader().rawData;
-										Status(rtn.msg);
+										var info = batch.proxy.getReader().rawData;
+										Status(info.msg || STATUS.FAULT);
 									}
 								});
 							}
@@ -2627,7 +2595,7 @@ WIDGET.prototype.menuTools = function () {
 
 						return action( key, roles, {
 							onForm: function (Rec, Form, Data, Status,cb) {
-
+								
 								cb( 
 									"PUT", 
 								   	Copy( 	
@@ -2635,100 +2603,26 @@ WIDGET.prototype.menuTools = function () {
 										{ID:Rec.getId(), _lock:!Data.Locked} 
 									), 
 									function (info) {
-										Data.Locked = !Data.Locked;
-										Status(Data.Locked?"locked":"unlocked");
+										//Data.Locked = !Data.Locked;
+										Status(info.msg || STATUS.OK);
 								});
-								
-								/*
-								Ext.Ajax.request({
-									url : Data.proxy.url,
-									params: JSON.stringify( Copy( 	
-										Form.getValues(false, true, true),
-										{ID:Rec.getId(), _lock:!Data.Locked}
-									)),
-									method: "PUT",
-									success: function (res) {					
-										var info = Ext.decode(res.responseText);								
-
-										if (info.success) {
-											Data.Locked = !Data.Locked;
-											Status(Data.Locked?"locked":"unlocked");
-										}
-										else
-											Status(info.msg);
-
-									},
-									failure: function (res) {
-										Status(STATUS.FAULT);
-									}		
-								});	*/
-
-								/*Form.submit({
-								params : JSON.stringify( Copy( 	 // EXTJS BUG - cant send as json
-									Form.getValues(false, true, true),
-									{ID:Recs.getId(), _lock:1}
-								)), 
-								//clientValidation: true,
-								url		: path,
-								method	: 'PUT',
-								success	: function(form, action) {
-									var rtn = action.result;
-									//Data.Locked = rtn.msg == "Data.Locked";
-									//Status(Data.Locked ? "Data.Locked" : "unlocked");  // FF may have form cache bug
-									Data.Locked = !Data.Locked;
-									Status(Data.Locked?"locked":"unlocked");
-								},
-								failure	: function(form, action) {
-									var rtn = action.result;
-									//Status((Data.Locked ? "Data.Locked:" : "unlocked:")+rtn.msg);
-									Status(rtn.msg);
-								}
-							}); */
 							},
 
-							/*onSelect: function (Recs, Data, Status) {
-								Recs.Each(function (n,Rec) {
-									Ext.Ajax.request({
-										url : Data.path,
-										params: parms,
-										method: "PUT",
-										success: function (res) {
-											Status(STATUS.READY);
-										},
-										failure: function (res) {
-											Status(STATUS.FAULT);
-										}
-									});
-								});
-							},*/
-							
 							onAction: function (Data, Status) {
 								Data.Store.sync({
-									success: function (batch) {  	// EXTJS BUG -- never called
-										var rtn = batch.proxy.getReader().rawData;
-										Status(rtn.msg);
+									success: function (batch) {  	
+										var info = batch.proxy.getReader().rawData;
+										Status(STATUS.OK || info.msg);
 									},
 									failure: function (batch) {
-										var rtn = batch.proxy.getReader().rawData;
-										Status(rtn.msg);
+										var info = batch.proxy.getReader().rawData;
+										Status(info.msg || STATUS.FAULT);
 									}
 								});
 							}
 						});
 
 					case "select":
-						/*
-						if (progbar && Data.Locked)
-							progbar.wait({
-								interval: 10000,
-								duration: 120000,
-								increment: 12,
-								text: 'Locked',
-								scope: this,
-								fn: function () {
-									progbar.updateText('Unlocked');
-								}
-							});*/
 
 						return action( key, roles, {
 							onForm: function (Rec, Form, Data, Status, cb) {
@@ -2737,31 +2631,13 @@ WIDGET.prototype.menuTools = function () {
 									{_lock: ! Data.Locked},
 									function (info) {
 										Data.Locked = !Data.Locked;			
-											Status(Data.Locked?"locked":"unlocked");
-											Form.loadRecord( Ext.create(Data.name, info.data) );
+										Status(Data.Locked?"locked":"unlocked");
+										Form.loadRecord( Ext.create(Data.name, info.data[0]) );
 								});
-								/*
-								Ext.Ajax.request({
-									url : Data.proxy.url,
-									params: {_lock: ! Data.Locked},
-									method: "GET",
-									success: function (res) {
-										var info = Ext.decode(res.responseText);
-										if (info.success) {
-											Data.Locked = !Data.Locked;			
-											Status(Data.Locked?"locked":"unlocked");
-											Form.loadRecord( Ext.create(Data.name, info.data) );
-										}
-										else
-											Status(info.msg); 
-									},
-									failure: function (res) {
-										Status(STATUS.FAULT);
-									}								
-								});	 */
 							},
 
 							onAction: function (Data, Status) {
+								Status(STATUS.OK);
 								Each( Data.Slaves , function (n,slave) {
 									slave.relink();
 								});
@@ -2771,12 +2647,6 @@ WIDGET.prototype.menuTools = function () {
 					case "execute":
 
 						return action( key, roles, {
-
-							/* var progbar = false
-									? Ext.create('Ext.ProgressBar', {
-										width: 200
-									})
-									: null,*/
 
 							onForm: function (Rec, Form, Data, Status, cb) {
 								Ext.Ajax.request({
@@ -2793,11 +2663,6 @@ WIDGET.prototype.menuTools = function () {
 
 							onSelect: function (Recs, Data, Status) {
 								Recs.Each(function (n,Rec) {
-									/*
-									var rec = Rec.getData();
-									var parms = Copy(Data.Link.Mush, {ID: Rec.getId()}, function (key) {
-										return escape(rec[key]);
-									});*/
 									var parms = {ID: Rec.getId()};
 									
 									Ext.Ajax.request({
@@ -2839,19 +2704,6 @@ WIDGET.prototype.menuTools = function () {
 											filename: "snapshot.png",
 											name: "capture"
 									});
-									
-									/*Ext.Ajax.request({
-										url		: "/uploads.db",
-										method	: "POST"
-										params	: JSON.stringify({
-											image: canvas.toDataURL("image/png"),
-											name: "snapshot.jpg", // so server converts png to jpg
-											owner: BASE.user.client,
-											classif: "TBD",
-											tag: "snapshot",
-											geo: BASE.user.location
-										})
-									});*/
 								})
 							else
 								Ext.Msg.alert("Status","client has no capture feature");
@@ -2884,22 +2736,6 @@ WIDGET.prototype.menuTools = function () {
 													 filename: file.name,
 													name: id
 											});											
-											/*
-											var result = rdr.target.result,
-												base64 = ";base64,",
-											 	idx = result.indexOf(base64);
-
-											Ext.Ajax.request({
-													url	: `/${upid}.db`,
-													method	: "POST",
-													params	: 
-															`filename=${file.name};`
-															+ `name=${id};` 
-															+ result.substr(0,idx).replace("data:","type=") 
-															+ "\r\n" 
-															+ result.substr(idx+base64.length)
-												});
-											*/
 										}
 
 										for (var n=0,N=files.length; n<N; n++) {
@@ -2926,17 +2762,6 @@ WIDGET.prototype.menuTools = function () {
 								hideLabels: true,
 								
 								listeners: {
-									/*change: function (scope,newValue,oldValue,eOpts) {
-										alert(scope.fileInputEl);
-										alert(scope.fileInputEl.files);
-										Ext.Ajax.request({
-											url		: "/uploads.db",
-											method	: "POST",
-											params	: {
-												image: 123
-											}
-										});
-									}, */
 									change: function (scope,newValue,oldValue,eOpts) {								
 										Uploader.getForm().submit({	// submit menu form
 											url		: "/" + tok.substr(1)  + ".db",
@@ -3007,6 +2832,7 @@ WIDGET.prototype.menuTools = function () {
 									else
 										window.open(Action);
 								});
+						
 						else
 						if (pullDS)
 							return combo( tok, pullDS, function (val,parms) {

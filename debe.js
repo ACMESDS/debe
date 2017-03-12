@@ -691,6 +691,12 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		risk: sendAttr
 	},
 	
+	"converters." : {
+		view: function (ack,req,cb) {
+			cb( ack );
+		}
+	},
+		
 	"reader.": {	//< reader endpoint
 		help: sysHelp,
 		stop: sysStop,
@@ -1442,23 +1448,28 @@ function readJade(req,res) {
 		ctx = site.context[req.table]; 
 		
 	function renderJade() {  
+
+		Trace("RENDER "+req.table);
 		
-		sql.query(paths.mysql.engine, { 			// See iif skin is in engine db
+		sql.query(paths.mysql.engine, { 			// See if skin is in engine db
 			Name: req.table,
-			Engine: req.type
+			Engine: req.type,
+			Enabled: 1
 		})
 		.on("result", function (eng) {
 
-			if (eng.count)  			// render skin from engine db
+			if (eng.Count) 			// render using skinning engine
 				res( eng.Code.render(req) );
-			else 							// render skin from disk
+			
+			else 							// render using skin from disk
 				FS.readFile(paths.render+req.table+".jade", "utf-8", function (err,skin) {
 					
-					if (err)  // create dynamic skin for this table
+					if (err)  // create dynamic skin for this dataset
 						sql.query("DESCRIBE ??",req.table, function (err,fields) {
 							
 							if (err) 
 								res( DEBE.errors.dynamicSkin );
+							
 							else {
 								var cols = [];
 								fields.each(function (n,field) {
@@ -1467,9 +1478,11 @@ function readJade(req,res) {
 								});
 
 								var skin =
-`extends extjs
-append extjs_body
-	#grid.${req.table}(path="${req.table}.db",cols="${cols.join()}",dims="1200,600",page=50)
+`extends base
+append base_parms
+	- tech = "extjs"
+append base_body
+	#grid.${req.table}(path="${req.table}.db",cols="${cols.join()}",dims="1200,600",page=50,nowrap)
 `;
 //console.log(skin);
 								
