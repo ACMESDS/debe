@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 5.6.27-ndb-7.4.8, for linux-glibc2.5 (x86_64)
+-- MySQL dump 10.13  Distrib 5.7.17-ndb-7.5.5, for linux-glibc2.5 (x86_64)
 --
 -- Host: localhost    Database: openv
 -- ------------------------------------------------------
--- Server version	5.6.27-ndb-7.4.8-cluster-gpl
+-- Server version	5.7.17-ndb-7.5.5-cluster-gpl
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -65,7 +65,7 @@ CREATE TABLE `apps` (
   `Moderators` varchar(255) DEFAULT '',
   `POC` varchar(128) DEFAULT '',
   `Challenge` mediumtext,
-  `Classif` mediumtext,
+  `classif` json DEFAULT NULL,
   `Allocated` int(11) DEFAULT '0',
   `Started` datetime DEFAULT NULL,
   `Booted` datetime DEFAULT NULL,
@@ -80,8 +80,8 @@ CREATE TABLE `apps` (
   `EmailHost` varchar(128) DEFAULT NULL,
   `EmailUser` varchar(128) DEFAULT NULL,
   `Ping` int(11) DEFAULT NULL,
-  `ASP` mediumtext,
-  `ISP` mediumtext,
+  `asp` json DEFAULT NULL,
+  `isp` json DEFAULT NULL,
   `Proxy` int(11) DEFAULT NULL,
   `Cost` float DEFAULT '5000',
   `Parms` mediumtext,
@@ -93,7 +93,7 @@ CREATE TABLE `apps` (
   `DTO` mediumtext,
   `SORN` varchar(64) DEFAULT 'TBD',
   `SPID` varchar(64) DEFAULT 'TBD',
-  `Info` mediumtext,
+  `Info` json DEFAULT NULL,
   `Encrypt` varchar(64) DEFAULT '',
   `Riddles` int(11) DEFAULT '0',
   UNIQUE KEY `ID` (`ID`)
@@ -106,7 +106,7 @@ CREATE TABLE `apps` (
 
 LOCK TABLES `apps` WRITE;
 /*!40000 ALTER TABLE `apps` DISABLE KEYS */;
-INSERT INTO `apps` VALUES (5,'0.33','2014-05-11','Totem',0,0,'localhost',8080,0,'app1','app1','Totem','','','brian.d.james@comcast.net',NULL,'{\"level\":\"U\",\"purpose\",\"nada\"}',0,NULL,NULL,1,0,'app1',0,100,0,'NGA/IIG','brian.d.james@comcast.net','smtp.comcast.net:587','brian.d.james:COMCASTsnivel1',1800000,'{\"name\":\"TBD\",\"title\":\"Ctr\",\"org\":\"BOOZ\",\"addr\":\"nowhere\"}','{\"name\":\"TBD\",\"title\":\"spend your money\",\"org\":\"NGA-T\",\"addr\":\"nowhere\"}',0,5000,'','{\"name\":\"TBD\",\"title\":\"Program Mgr\",\"addr\":\"nowheres\"}',NULL,NULL,NULL,NULL,NULL,'TBD','TBD','{\"a\":[{\"SPID\":\"TBD\",\"SORN\":\"TBD\",\"ID\":0}],\"b\":[{\"NISTtype\":\"a1\",\"NISTid\":\"TBD\",\"ID\":1},{\"NISTtype\":\"TBD\",\"NISTid\":\"TBD\",\"ID\":2},{\"ID\":3,\"NISTtype\":\"a2\"}]}','',0),(7,'0.33','2014-05-11','Totem',2,0,'localhost',8080,1,'app1','node0','','','','brian.d.james@comcast.net',NULL,'{\"level\":\"U\",\"purpose\",\"nada\"}',0,NULL,NULL,1,0,'app1',1,100,0,'NGA/IIG','brian.d.james@comcast.net','smtp.comcast.net:587','brian.d.james:COMCASTsnivel1',1800000,'{\"name\":\"TBD\",\"title\":\"Ctr\",\"org\":\"BOOZ\",\"addr\":\"nowhere\"}','{\"name\":\"TBD\",\"title\":\"spend your money\",\"org\":\"NGA-T\",\"addr\":\"nowhere\"}',0,5000,'','{\"name\":\"TBD\",\"title\":\"Program Mgr\",\"addr\":\"nowheres\"}',NULL,NULL,NULL,NULL,NULL,'TBD','TBD','{\"a\":[{\"SPID\":\"TBD\",\"SORN\":\"TBD\",\"ID\":0}],\"b\":[{\"NISTtype\":\"TBD\",\"NISTid\":\"TBD\",\"ID\":1},{\"NISTtype\":\"TBD\",\"NISTid\":\"TBD\",\"ID\":2}]}','',0),(8,'0.33','2014-05-11','Totem',2,0,'localhost',8080,0,'app1','node3','','','','brian.d.james@comcast.net',NULL,'{\"level\":\"U\",\"purpose\",\"nada\"}',0,NULL,NULL,1,0,'app1',1,100,0,'NGA/IIG','brian.d.james@comcast.net','smtp.comcast.net:587','brian.d.james:COMCASTsnivel1',1800000,'{\"name\":\"TBD\",\"title\":\"Ctr\",\"org\":\"BOOZ\",\"addr\":\"nowhere\"}','{\"name\":\"TBD\",\"title\":\"spend your money\",\"org\":\"NGA-T\",\"addr\":\"nowhere\"}',0,5000,'','{\"name\":\"TBD\",\"title\":\"Program Mgr\",\"addr\":\"nowheres\"}',NULL,NULL,NULL,NULL,NULL,'TBD','TBD','{\"a\":[{\"SPID\":\"TBD\",\"SORN\":\"TBD\",\"ID\":0}],\"b\":[{\"NISTtype\":\"TBD\",\"NISTid\":\"TBD\",\"ID\":1},{\"NISTtype\":\"TBD\",\"NISTid\":\"TBD\",\"ID\":2}]}','',0),(9,'0.33','2014-05-11','Totem',2,0,'localhost',8080,0,'app1','node2','','','','brian.d.james@comcast.net',NULL,'{\"level\":\"U\",\"purpose\",\"nada\"}',0,NULL,NULL,1,0,'app1',1,100,0,'NGA/IIG','brian.d.james@comcast.net','smtp.comcast.net:587','brian.d.james:COMCASTsnivel1',1800000,'{\"name\":\"TBD\",\"title\":\"Ctr\",\"org\":\"BOOZ\",\"addr\":\"nowhere\"}','{\"name\":\"TBD\",\"title\":\"spend your money\",\"org\":\"NGA-T\",\"addr\":\"nowhere\"}',0,5000,'','{\"name\":\"TBD\",\"title\":\"Program Mgr\",\"addr\":\"nowheres\"}',NULL,NULL,NULL,NULL,NULL,'TBD','TBD','{\"a\":[{\"SPID\":\"TBD\",\"SORN\":\"TBD\",\"ID\":0}],\"b\":[{\"NISTtype\":\"TBD\",\"NISTid\":\"TBD\",\"ID\":1},{\"NISTtype\":\"TBD\",\"NISTid\":\"TBD\",\"ID\":2}]}','',0);
+INSERT INTO `apps` VALUES (5,'0.33','2014-05-11','Totem',0,0,'localhost',8080,0,'app1','app1','Totem','','','brian.d.james@comcast.net',NULL,'{\"level\": \"U\", \"purpose\": \"nada\"}',0,NULL,NULL,1,0,'app1',0,100,0,'NGA/IIG','brian.d.james@comcast.net','smtp.comcast.net:587','brian.d.james:COMCASTsnivel1',1800000,'{\"org\": \"BOOZ\", \"addr\": \"nowhere\", \"name\": \"TBD\", \"title\": \"Ctr\"}','{\"org\": \"NGA-T\", \"addr\": \"nowhere\", \"name\": \"TBD\", \"title\": \"spend your money\"}',0,5000,'','{\"name\":\"TBD\",\"title\":\"Program Mgr\",\"addr\":\"nowheres\"}',NULL,NULL,NULL,NULL,NULL,'TBD','TBD','{\"a\": [{\"ID\": 0, \"SORN\": \"TBD\", \"SPID\": \"TBD\"}], \"b\": [{\"ID\": 1, \"NISTid\": \"TBD\", \"NISTtype\": \"a1\"}, {\"ID\": 2, \"NISTid\": \"TBD\", \"NISTtype\": \"TBD\"}, {\"ID\": 3, \"NISTtype\": \"a2\"}]}','',0),(7,'0.33','2014-05-11','Totem',2,0,'localhost',8080,1,'app1','node0','','','','brian.d.james@comcast.net',NULL,'{\"level\": \"U\", \"purpose\": \"nada\"}',0,NULL,NULL,1,0,'app1',1,100,0,'NGA/IIG','brian.d.james@comcast.net','smtp.comcast.net:587','brian.d.james:COMCASTsnivel1',1800000,'{\"org\": \"BOOZ\", \"addr\": \"nowhere\", \"name\": \"TBD\", \"title\": \"Ctr\"}','{\"org\": \"NGA-T\", \"addr\": \"nowhere\", \"name\": \"TBD\", \"title\": \"spend your money\"}',0,5000,'','{\"name\":\"TBD\",\"title\":\"Program Mgr\",\"addr\":\"nowheres\"}',NULL,NULL,NULL,NULL,NULL,'TBD','TBD','{\"a\": [{\"ID\": 0, \"SORN\": \"TBD\", \"SPID\": \"TBD\"}], \"b\": [{\"ID\": 1, \"NISTid\": \"TBD\", \"NISTtype\": \"TBD\"}, {\"ID\": 2, \"NISTid\": \"TBD\", \"NISTtype\": \"TBD\"}]}','',0),(8,'0.33','2014-05-11','Totem',2,0,'localhost',8080,0,'app1','node3','','','','brian.d.james@comcast.net',NULL,'{\"level\": \"U\", \"purpose\": \"nada\"}',0,NULL,NULL,1,0,'app1',1,100,0,'NGA/IIG','brian.d.james@comcast.net','smtp.comcast.net:587','brian.d.james:COMCASTsnivel1',1800000,'{\"org\": \"BOOZ\", \"addr\": \"nowhere\", \"name\": \"TBD\", \"title\": \"Ctr\"}','{\"org\": \"NGA-T\", \"addr\": \"nowhere\", \"name\": \"TBD\", \"title\": \"spend your money\"}',0,5000,'','{\"name\":\"TBD\",\"title\":\"Program Mgr\",\"addr\":\"nowheres\"}',NULL,NULL,NULL,NULL,NULL,'TBD','TBD','{\"a\": [{\"ID\": 0, \"SORN\": \"TBD\", \"SPID\": \"TBD\"}], \"b\": [{\"ID\": 1, \"NISTid\": \"TBD\", \"NISTtype\": \"TBD\"}, {\"ID\": 2, \"NISTid\": \"TBD\", \"NISTtype\": \"TBD\"}]}','',0),(9,'0.33','2014-05-11','Totem',2,0,'localhost',8080,0,'app1','node2','','','','brian.d.james@comcast.net',NULL,'{\"level\": \"U\", \"purpose\": \"nada\"}',0,NULL,NULL,1,0,'app1',1,100,0,'NGA/IIG','brian.d.james@comcast.net','smtp.comcast.net:587','brian.d.james:COMCASTsnivel1',1800000,'{\"org\": \"BOOZ\", \"addr\": \"nowhere\", \"name\": \"TBD\", \"title\": \"Ctr\"}','{\"org\": \"NGA-T\", \"addr\": \"nowhere\", \"name\": \"TBD\", \"title\": \"spend your money\"}',0,5000,'','{\"name\":\"TBD\",\"title\":\"Program Mgr\",\"addr\":\"nowheres\"}',NULL,NULL,NULL,NULL,NULL,'TBD','TBD','{\"a\": [{\"ID\": 0, \"SORN\": \"TBD\", \"SPID\": \"TBD\"}], \"b\": [{\"ID\": 1, \"NISTid\": \"TBD\", \"NISTtype\": \"TBD\"}, {\"ID\": 2, \"NISTid\": \"TBD\", \"NISTtype\": \"TBD\"}]}','',0);
 /*!40000 ALTER TABLE `apps` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -374,7 +374,7 @@ CREATE TABLE `journal` (
   `Power` int(11) DEFAULT '0',
   UNIQUE KEY `ID` (`ID`),
   UNIQUE KEY `KeyID` (`Dataset`,`Field`,`Hawk`)
-) ENGINE=InnoDB AUTO_INCREMENT=58 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -593,7 +593,7 @@ CREATE TABLE `roles` (
   `Comment` mediumtext,
   UNIQUE KEY `ID` (`ID`),
   UNIQUE KEY `KeyID` (`Client`,`Hawk`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -794,7 +794,7 @@ CREATE TABLE `viewers` (
   `Dataset` varchar(32) DEFAULT NULL,
   UNIQUE KEY `ID` (`ID`),
   UNIQUE KEY `KeyID` (`Viewer`,`Dataset`)
-) ENGINE=InnoDB AUTO_INCREMENT=3956 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=3720 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -803,7 +803,7 @@ CREATE TABLE `viewers` (
 
 LOCK TABLES `viewers` WRITE;
 /*!40000 ALTER TABLE `viewers` DISABLE KEYS */;
-INSERT INTO `viewers` VALUES (1507,'api','ADMIN'),(1489,'api','aois'),(1492,'api','CLIQUES'),(1491,'api','ENGINES'),(1490,'api','HEALTH'),(1500,'api','history'),(1506,'api','issues'),(1486,'api','LINKS'),(1493,'api','lookups'),(1856,'api','notes'),(1501,'api','parms'),(1487,'api','QUEUES'),(1504,'api','roles'),(1499,'api','stores'),(1502,'api','SUMMARY'),(1505,'api','TABLES'),(1498,'api','uploads'),(1488,'api','USERS'),(1495,'api','VIEWS'),(3612,'exsite','aois'),(3615,'exsite','CLIQUES'),(3613,'exsite','ENGINES'),(3614,'exsite','HEALTH'),(3610,'exsite','LINKS'),(3616,'exsite','lookups'),(3624,'exsite','notes'),(3611,'exsite','QUEUES'),(3622,'exsite','stores'),(3623,'exsite','SUMMARY'),(3621,'exsite','uploads'),(3609,'exsite','USERS'),(3619,'exsite','VIEWS'),(3,'home','aois'),(157,'home','changes'),(9,'home','CLIQUES'),(6,'home','ENGINES'),(10,'home','HEALTH'),(833,'home','history'),(1,'home','LINKS'),(5,'home','lookups'),(49,'home','news'),(13,'home','notes'),(156,'home','parms'),(4,'home','QUEUES'),(15,'home','stores'),(14,'home','SUMMARY'),(8,'home','uploads'),(2,'home','USERS'),(7,'home','VIEWS'),(458,'moderate','aois'),(469,'moderate','changes'),(462,'moderate','CLIQUES'),(459,'moderate','ENGINES'),(461,'moderate','HEALTH'),(664,'moderate','history'),(471,'moderate','journal'),(647,'moderate','journals'),(456,'moderate','LINKS'),(463,'moderate','lookups'),(3117,'moderate','moderators'),(1351,'moderate','monitors'),(474,'moderate','notes'),(472,'moderate','parms'),(460,'moderate','QUEUES'),(473,'moderate','stores'),(470,'moderate','SUMMARY'),(468,'moderate','uploads'),(457,'moderate','USERS'),(467,'moderate','VIEWS'),(2494,'news','aois'),(2498,'news','CLIQUES'),(2496,'news','ENGINES'),(2497,'news','HEALTH'),(2492,'news','LINKS'),(2499,'news','lookups'),(2507,'news','news'),(2508,'news','notes'),(2495,'news','QUEUES'),(2505,'news','stores'),(2506,'news','SUMMARY'),(2503,'news','uploads'),(2493,'news','USERS'),(2502,'news','VIEWS'),(903,'project','aois'),(919,'project','aspreqts'),(906,'project','CLIQUES'),(901,'project','ENGINES'),(905,'project','HEALTH'),(914,'project','history'),(920,'project','ispreqts'),(921,'project','issues'),(900,'project','LINKS'),(908,'project','lookups'),(978,'project','milestones'),(922,'project','notes'),(916,'project','parms'),(917,'project','quads'),(902,'project','QUEUES'),(913,'project','stores'),(915,'project','SUMMARY'),(982,'project','tta'),(912,'project','uploads'),(904,'project','USERS'),(907,'project','VIEWS'),(3522,'skinguide','aois'),(3525,'skinguide','CLIQUES'),(3524,'skinguide','ENGINES'),(3527,'skinguide','HEALTH'),(3521,'skinguide','LINKS'),(3526,'skinguide','lookups'),(3535,'skinguide','notes'),(3523,'skinguide','QUEUES'),(3532,'skinguide','stores'),(3534,'skinguide','SUMMARY'),(3533,'skinguide','uploads'),(3520,'skinguide','USERS'),(3530,'skinguide','VIEWS');
+INSERT INTO `viewers` VALUES (1507,'api','ADMIN'),(1489,'api','aois'),(1492,'api','CLIQUES'),(3630,'api','CONFIG'),(1491,'api','ENGINES'),(1490,'api','HEALTH'),(1500,'api','history'),(1506,'api','issues'),(1486,'api','LINKS'),(1493,'api','lookups'),(1856,'api','notes'),(1501,'api','parms'),(1487,'api','QUEUES'),(1504,'api','roles'),(1499,'api','stores'),(1502,'api','SUMMARY'),(1505,'api','TABLES'),(1498,'api','uploads'),(1488,'api','USERS'),(1495,'api','VIEWS'),(3612,'exsite','aois'),(3615,'exsite','CLIQUES'),(3613,'exsite','ENGINES'),(3614,'exsite','HEALTH'),(3610,'exsite','LINKS'),(3616,'exsite','lookups'),(3624,'exsite','notes'),(3611,'exsite','QUEUES'),(3622,'exsite','stores'),(3623,'exsite','SUMMARY'),(3621,'exsite','uploads'),(3609,'exsite','USERS'),(3619,'exsite','VIEWS'),(3,'home','aois'),(157,'home','changes'),(9,'home','CLIQUES'),(6,'home','ENGINES'),(10,'home','HEALTH'),(833,'home','history'),(1,'home','LINKS'),(5,'home','lookups'),(49,'home','news'),(13,'home','notes'),(156,'home','parms'),(4,'home','QUEUES'),(15,'home','stores'),(14,'home','SUMMARY'),(8,'home','uploads'),(2,'home','USERS'),(7,'home','VIEWS'),(458,'moderate','aois'),(469,'moderate','changes'),(462,'moderate','CLIQUES'),(459,'moderate','ENGINES'),(461,'moderate','HEALTH'),(664,'moderate','history'),(471,'moderate','journal'),(647,'moderate','journals'),(456,'moderate','LINKS'),(463,'moderate','lookups'),(3117,'moderate','moderators'),(1351,'moderate','monitors'),(474,'moderate','notes'),(472,'moderate','parms'),(460,'moderate','QUEUES'),(473,'moderate','stores'),(470,'moderate','SUMMARY'),(468,'moderate','uploads'),(457,'moderate','USERS'),(467,'moderate','VIEWS'),(2494,'news','aois'),(2498,'news','CLIQUES'),(2496,'news','ENGINES'),(2497,'news','HEALTH'),(2492,'news','LINKS'),(2499,'news','lookups'),(2507,'news','news'),(2508,'news','notes'),(2495,'news','QUEUES'),(2505,'news','stores'),(2506,'news','SUMMARY'),(2503,'news','uploads'),(2493,'news','USERS'),(2502,'news','VIEWS'),(903,'project','aois'),(919,'project','aspreqts'),(906,'project','CLIQUES'),(901,'project','ENGINES'),(905,'project','HEALTH'),(914,'project','history'),(920,'project','ispreqts'),(921,'project','issues'),(900,'project','LINKS'),(908,'project','lookups'),(978,'project','milestones'),(922,'project','notes'),(916,'project','parms'),(917,'project','quads'),(902,'project','QUEUES'),(913,'project','stores'),(915,'project','SUMMARY'),(982,'project','tta'),(912,'project','uploads'),(904,'project','USERS'),(907,'project','VIEWS'),(3522,'skinguide','aois'),(3525,'skinguide','CLIQUES'),(3524,'skinguide','ENGINES'),(3527,'skinguide','HEALTH'),(3641,'skinguide','Hreg'),(3640,'skinguide','Htest'),(3639,'skinguide','jsdemo1'),(3521,'skinguide','LINKS'),(3526,'skinguide','lookups'),(3652,'skinguide','matdemo1'),(3636,'skinguide','news'),(3535,'skinguide','notes'),(3646,'skinguide','pydemo1'),(3523,'skinguide','QUEUES'),(3532,'skinguide','stores'),(3534,'skinguide','SUMMARY'),(3533,'skinguide','uploads'),(3520,'skinguide','USERS'),(3530,'skinguide','VIEWS'),(3712,'swag','catalog'),(3713,'swag','notes'),(3673,'test','json'),(3672,'test','notes');
 /*!40000 ALTER TABLE `viewers` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -816,4 +816,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2016-10-28  0:25:07
+-- Dump completed on 2017-03-11 20:09:49

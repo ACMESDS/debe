@@ -68,7 +68,7 @@ append base_body
 		when "Min"
 
 			#border(
-				head="Prefs(Locales,Themes,Options,Edit),Files(View,Uploads,$uploads,Stores,$stores),LikeUs,Help",
+				head="Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),Options,Edit,LikeUs,Help",
 				LikeUs="/likeus.db",
 				View="/files.view",
 				title=titlebar,
@@ -96,7 +96,7 @@ append base_body
 
 			#border(
 				title=titlebar,
-				head="Options,Themes,Edit,Capture,Help",dims=dims,
+				head="Themes,Options,Edit,Help",dims=dims,
 				Edit="/edit.view?name="+table)
 
 				p #{classif.level} #{classif.purpose}
@@ -121,7 +121,7 @@ append base_body
 
 			#border(
 				title=titlebar,
-				head="Health,Users,Options,Themes,Links,LikeUs,Edit,Capture,Help",
+				head="Health,Users,Themes,Capture,Links,Options,Edit,Likeus,Help",
 				LikeUs="/likeus.db",
 				crush,
 				dims=dims,
@@ -156,7 +156,7 @@ append base_body
 
 			#border(
 				title=titlebar,
-				head="Options,More(Health,Users,Links,Themes),Engines,Queues,Cliques,Uploads,$uploads,Stores,$stores,Views,LikeUs,Edit,Help",
+				head="More(Health,Users,Links,Themes),Engines,Queues,Cliques,Uploads,$uploads,Stores,$stores,Views,Options,Edit,LikeUs,Help",
 				LikeUs="/likeus.db",dims=dims,
 				Edit="/edit.view?name="+table)
 
@@ -205,7 +205,7 @@ append base_body
 
 			#border(
 				crush,
-				head="Comfort,Prefs(Locales,Themes,Options,Edit),Files(View,Uploads,$uploads,Stores,$stores),LikeUs,Help",
+				head="Comfort,Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),Options,Edit,Likeus,Help",
 				LikeUs="/likeus.db",
 				View="/files.view",
 				title=titlebar,
@@ -227,7 +227,7 @@ append base_body
 
 			#border(
 				title=titlebar,
-				head="Options,System(Health,Users,Links,Engines,Queues,Cliques),Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),LikeUs,Edit,Capture,Help",
+				head="System(Health,Users,Links,Engines,Queues,Cliques),Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),Options,Edit,LikeUs,Capture,Help",
 				LikeUs="/likeus.db",
 				View="/files.view",
 				Edit="/edit.view?name="+table)
