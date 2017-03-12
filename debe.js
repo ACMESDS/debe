@@ -56,6 +56,7 @@ var 									// NodeJS modules
 var										// 3rd party modules
 	LANG = require('i18n-abide'), 		//< I18 language translator
 	ARGP = require('optimist'),			//< Command line argument processor
+	TOKML = require("tokml"), 			//< geojson to kml concerter
 	SKIN = require('jade');				//< using jade as the skinner
 	
 var 									// totem modules		
@@ -547,11 +548,19 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			}
 		},
 
-		json: function (data) {
+		jsons: {  //< mysql site parms to json parse
+			classif: { level: "(U)", purpose: "nada" },
+			asp: {},
+			isp: {},
+			info: {},
+			filename: "./public/jade/ref.jade"	// jade reference path for includes, exports, appends		
+		},
+			
+		json: function (data) {  // dump dataset as json
 			return JSON.stringify(data);
 		},
 		
-		show: function (data,where,index) {	// table generator for context dataset
+		show: function (data,where,index) {	// dump dataset as html table
 			
 			function join(data,sep) { 
 				switch (data.constructor) {
@@ -697,6 +706,9 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		},
 		exe: function (ack,req,cb) {
 			cb( ack );
+		},
+		kml: function (ack,req,cb) {
+			cb( TOKML({}) );
 		}
 	},
 		
@@ -722,14 +734,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 	
 	"emulator.": {  //< emulation endpoints
-	},
-	
-	"jsons.": {   //< legacy -- mysql parms to parse on start
-		classif: { level: "(U)", purpose: "nada" },
-		asp: {},
-		isp: {},
-		info: {},
-		filename: "./public/jade/ref.jade"	// jade reference path for includes, exports, appends		
 	},
 	
 	"errors.": {  //< error messages

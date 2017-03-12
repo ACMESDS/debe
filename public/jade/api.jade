@@ -128,9 +128,9 @@ append site_body
 						expression 			// if unsafe queries enabled
 
 					# Body parameters
-					
+
 						These are JSON formatted parameters provided by the client
-						
+
 					# Searching parameters
 
 						_has	= search records by containment over fulltext keys
@@ -146,27 +146,29 @@ append site_body
 						_group	= KEY,KEY,... group records on KEYs
 						_tree	= KEY,KEY,... return name-children-view-size tree 
 						_index	= KEY,KEY,expression as KEY... return specified KEYs
-						_sort	= KEY,KEY,... or [{property:KEY,sort:DIRECT}, ...] to sort records on KEYs
+						_sort	= KEY,KEY,... sort records asscending on KEYs
+						_sort	= [{property:KEY,sort:DIRECT}, ...] sort records asc|desc on KEYs 
+						_geo = KEY,KEY,... add geojson geometry keys named gKEY to the records
 
 					# Conversion parameters
-					
-						_queue	= KEY for queueing record state
+
+						_queue	= KEY for queuing record state
 						_encap	= KEY to encapsulate records into hash
 						_delta = KEY to include baselined records for change comparisons
 						_mark	= KEY,KEY,... markdown these KEYs 
 						_jade	= KEY,KEY,... jadeify these KEYs (experimental - use _kjade)
 						_kjade	= KEY,KEY,... jadeify these KEYs (to be retired)
 						_json	= KEY,KEY,... json parse these KEYs
-						
+						_nav	= CMD,root/A/B/... folder navigation CMD=open|tree|rename|size 
+
 					# Auxillary parameters
 
 						_client	= name of client to broadcast to other clients
 						_lock	= enable record locking
 						_view 	= name of view to correlate with moderator datasets
-						_nav	= CMD,FROM folder navigation CMD=open|tree|rename|size FROM=root/A/B/...
 						_src	= orverride dataset path 
 
-					# Recrod sampling parameters
+					# Record sampling parameters
 
 						_limit	= number of records to return
 						_start	= record position to start returning records
