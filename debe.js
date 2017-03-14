@@ -94,7 +94,7 @@ var
 	},
 	
 	"reqflags.edits.": {  //< request flags taking parm list
-		jade: function (keys,recs,req,res) {  	// jade markdown on keys fields
+		jade: function (keys,recs,req) {  	// jade markdown on keys fields
 
 			recs.each( function (n, rec) { 
 				keys.each( function (m, key) {
@@ -106,11 +106,9 @@ var
 					});*/
 				});
 			});
-			
-			res( recs );
 		},
 
-		kjade: function (keys,recs,req,res) {  	// kludge jade markdown on keys fields
+		kjade: function (keys,recs,req) {  	// kludge jade markdown on keys fields
 
 			recs.each( function (n, rec) {  
 				keys.each( function (m, key) {
@@ -122,11 +120,9 @@ var
 					//console.log(rec[key]);
 				});
 			});
-			
-			return recs;
 		},
 
-		kjaderaw: function (keys,recs,req,res) {  // kludge jade markdown
+		kjaderaw: function (keys,recs,req) {  // kludge jade markdown
 
 			recs.each( function (n, rec) {
 				var rtn = "";
@@ -135,11 +131,9 @@ var
 				});
 				recs[n] = rtn;
 			});
-			
-			res( recs );
 		},
 		
-		mark: function (keys,recs,req,res) {  	// markdown keys fields
+		mark: function (keys,recs,req) {  	// markdown keys fields
 		
 			recs.each( function (n, rec) {
 				keys.each( function (m, key) {  
@@ -150,11 +144,9 @@ append layout_body
 		${rec[key] }` .render(req);
 				});
 			});
-			
-			res( recs );
 		},
 		
-		json: function json(keys,recs,req,res) {
+		json: function json(keys,recs,req) {
 			recs.each( function (n,rec) {
 				keys.each( function (i,n) {
 					try {
@@ -164,8 +156,7 @@ append layout_body
 					}
 				});
 			});
-			res(recs);
-		},
+		}
 
 		/*
 		index: function index(keys,recs,req,res) {
@@ -192,7 +183,216 @@ append layout_body
 			res([rtn]);
 		},
 		*/
-		nav: function (keys,recs,req,res) {  	// navigate records via pivot folders
+	},
+	
+	worker: {		//< reserved for worker endpoints defined on start
+	},
+	
+	admitRule: null, 	//< admitRule all clients by default 	
+		/*{ "u.s. government": "required",
+		 * 	"us": "optional"
+		 * }*/
+
+	site: { 		//< initial site context
+
+		context: { // skinning contexts for each skin
+			ssp: {   // defines the apps and stats datasets for the ssp skin
+				apps:"openv.apps",
+				stats:{table:"app1.dblogs",group:"client",index:"client,event"}
+			}
+		},
+
+		jsons: {  //< mysql site parms to json parse
+			classif: { level: "(U)", purpose: "nada" },
+			asp: {},
+			isp: {},
+			info: {},
+			filename: "./public/jade/ref.jade"	// jade reference path for includes, exports, appends		
+		},
+			
+		json: function (data) {  // dump dataset as json
+			return JSON.stringify(data);
+		},
+		
+		show: function (data,where,index) {	// dump dataset as html table
+			
+			function join(data,sep) { 
+				switch (data.constructor) {
+					case Array: 
+						return this.join(sep);
+					
+					case Object:
+						var rtn = [];
+						for (var n in this) rtn.push(this[n]);
+						return rtn.join(sep);
+						
+					default:
+						return this;
+				}
+			}
+			
+			function table(data) {  // generate an html table from given data or object
+				switch (data.constructor) {
+					case Array:  // [ {head1:val}, head2:val}, ...]  create table from headers and values
+					
+						var rtn = "", head = true;
+						
+						data.each( function (n,rec) {
+							
+							if (head) {
+								var row = "";
+								Each(rec, function (key,val) {
+									row += key.tag("th");
+								});
+								rtn += row.tag("tr");
+								head = false;
+							}
+							
+							var row = "";
+							Each(rec, function (key,val) {
+								row += (typeof val == "object")
+									? table(val)
+									: (val+"").tag("td");
+							});
+							rtn += row.tag("tr");
+						});
+						
+						return rtn.tag("table",{});
+						
+					case Object: // { key:val, ... } create table dump of object hash
+					
+						var rtn = "";
+						Each(data, function (key,val) {
+							rtn += (typeof key == "object")
+								? table(val)
+								: (key.tag("td") + JSON.stringify(val).tag("td")).tag("tr");
+						});
+						
+						return rtn.tag("table");
+						
+					default:
+						return data+"";
+				}
+			}
+			
+			function dump(x) {
+				rtn = "";
+				for (var n in x)  {
+					switch ( x[n].constructor ) {
+						case Object:
+							rtn += dump( x[n] ); break;
+						case Array:
+							rtn += n+"[]"; break;
+						case Function:
+							rtn += n+"()"; break;
+						default:
+							rtn += n;
+					}
+					rtn += "; ";
+				}
+				return rtn;
+			}
+			
+			var rtns = [];
+			
+			if (index) index = index.split(",");
+			
+			data.each( function (n,rec) {
+				
+				var match = true;
+				
+				if (where) 
+					switch (where.constructor) {
+						case Object:
+							for (var x in where) 
+								if (rec[x] != where[x]) match = false;
+
+							break;
+
+						case Function:
+							match = where(rec);
+							break;
+							
+						default:
+							if (where != n) match = false;
+					}
+								
+				if (match)
+					if (index) {
+						var rtn = {};
+						index.each( function (i,index) {
+							rtn[index] = rec[index];
+						});
+						rtns.push(rtn);
+					}
+					
+					else
+						rtns.push(rec);
+						
+			});
+			
+			return table(rtns);
+		}
+		
+	},
+	
+	"sender.": {		//< sender endpoints
+		code: sendCode,
+		jade: sendCode,		
+		classif: sendAttr,
+		readability: sendAttr,
+		client: sendAttr,
+		size: sendAttr,
+		risk: sendAttr
+	},
+	
+	"converters." : {
+		view: function (recs,req,res) {
+			res( recs );
+		},
+		exe: function (recs,req,res) {
+			res( recs );
+		},
+		kml: function (recs,req,res) {
+			res( TOKML({}) );
+		},
+		flat: function index(recs,req,res) {
+			recs.each( function (n,rec) {
+				var rtns = new Array();
+				for (var key in rec) rtns.push( rec[key] );
+				recs[n] = rtns;
+			});
+			res( recs );
+		},
+		tree: function (recs,req,res) {
+			res( recs.treeify(0,recs.length,0,Object.keys(recs[0] || {})) );
+		},
+		
+		delta: function (recs,req,res) {
+			var sql = req.sql;
+			var ctx = {
+				src: {
+					table: "baseline."+req.table
+				}
+			};
+
+			sql.context(ctx, function (ctx) {   		// establish skinning context for requested table
+				ctx.src.rec = function (Recs,me) {  // select the baseline records 
+					
+					if (Recs.constructor == Error)
+						res( Recs );
+					
+					else
+						res( recs.merge(Recs, Object.keys(Recs[0] || {})) );
+				};
+			});
+		},
+
+		encap: function encap(recs,req,res) {
+			res({encap: recs});
+		},
+		
+		nav: function (recs,req,res) {  	// navigate pivoted records
 
 /*console.log({
 	i: "nav",
@@ -200,7 +400,9 @@ append layout_body
 	f: req.flags,
 	q: req.query
 });*/
-			var flags = req.flags,
+			var 
+				keys = Object.keys(recs[0] || {}),
+				flags = req.flags,
 				query = req.query,
 				Browse = flags.browse.split(","),
 				Cmd = keys.pop(),
@@ -241,6 +443,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						dirs: 1 			// place inside tree too
 					});
 				});
+			
 			else 				// at leaf
 				recs.each( function (n,rec) {  // at leafs
 					Files.push({
@@ -501,214 +704,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					});
 			}
 		}
-	},
-	
-	worker: {		//< reserved for worker endpoints defined on start
-	},
-	
-	admitRule: null, 	//< admitRule all clients by default 	
-		/*{ "u.s. government": "required",
-		 * 	"us": "optional"
-		 * }*/
-
-	site: { 		//< initial site context
-
-		context: { // skinning contexts for each skin
-			ssp: {   // defines the apps and stats datasets for the ssp skin
-				apps:"openv.apps",
-				stats:{table:"app1.dblogs",group:"client",index:"client,event"}
-			}
-		},
-
-		jsons: {  //< mysql site parms to json parse
-			classif: { level: "(U)", purpose: "nada" },
-			asp: {},
-			isp: {},
-			info: {},
-			filename: "./public/jade/ref.jade"	// jade reference path for includes, exports, appends		
-		},
-			
-		json: function (data) {  // dump dataset as json
-			return JSON.stringify(data);
-		},
 		
-		show: function (data,where,index) {	// dump dataset as html table
-			
-			function join(data,sep) { 
-				switch (data.constructor) {
-					case Array: 
-						return this.join(sep);
-					
-					case Object:
-						var rtn = [];
-						for (var n in this) rtn.push(this[n]);
-						return rtn.join(sep);
-						
-					default:
-						return this;
-				}
-			}
-			
-			function table(data) {  // generate an html table from given data or object
-				switch (data.constructor) {
-					case Array:  // [ {head1:val}, head2:val}, ...]  create table from headers and values
-					
-						var rtn = "", head = true;
-						
-						data.each( function (n,rec) {
-							
-							if (head) {
-								var row = "";
-								Each(rec, function (key,val) {
-									row += key.tag("th");
-								});
-								rtn += row.tag("tr");
-								head = false;
-							}
-							
-							var row = "";
-							Each(rec, function (key,val) {
-								row += (typeof val == "object")
-									? table(val)
-									: (val+"").tag("td");
-							});
-							rtn += row.tag("tr");
-						});
-						
-						return rtn.tag("table",{});
-						
-					case Object: // { key:val, ... } create table dump of object hash
-					
-						var rtn = "";
-						Each(data, function (key,val) {
-							rtn += (typeof key == "object")
-								? table(val)
-								: (key.tag("td") + JSON.stringify(val).tag("td")).tag("tr");
-						});
-						
-						return rtn.tag("table");
-						
-					default:
-						return data+"";
-				}
-			}
-			
-			function dump(x) {
-				rtn = "";
-				for (var n in x)  {
-					switch ( x[n].constructor ) {
-						case Object:
-							rtn += dump( x[n] ); break;
-						case Array:
-							rtn += n+"[]"; break;
-						case Function:
-							rtn += n+"()"; break;
-						default:
-							rtn += n;
-					}
-					rtn += "; ";
-				}
-				return rtn;
-			}
-			
-			var rtns = [];
-			
-			if (index) index = index.split(",");
-			
-			data.each( function (n,rec) {
-				
-				var match = true;
-				
-				if (where) 
-					switch (where.constructor) {
-						case Object:
-							for (var x in where) 
-								if (rec[x] != where[x]) match = false;
-
-							break;
-
-						case Function:
-							match = where(rec);
-							break;
-							
-						default:
-							if (where != n) match = false;
-					}
-								
-				if (match)
-					if (index) {
-						var rtn = {};
-						index.each( function (i,index) {
-							rtn[index] = rec[index];
-						});
-						rtns.push(rtn);
-					}
-					
-					else
-						rtns.push(rec);
-						
-			});
-			
-			return table(rtns);
-		}
-		
-	},
-	
-	"sender.": {		//< sender endpoints
-		code: sendCode,
-		jade: sendCode,		
-		classif: sendAttr,
-		readability: sendAttr,
-		client: sendAttr,
-		size: sendAttr,
-		risk: sendAttr
-	},
-	
-	"converters." : {
-		view: function (recs,req,res) {
-			res( recs );
-		},
-		exe: function (recs,req,res) {
-			res( recs );
-		},
-		kml: function (recs,req,res) {
-			res( TOKML({}) );
-		},
-		flat: function index(recs,req,res) {
-			recs.each( function (n,rec) {
-				var rtns = new Array();
-				for (var key in rec) rtns.push( rec[key] );
-				recs[n] = rtns;
-			});
-			res( JSON.stringify(recs) );
-		},
-		tree: function (recs,req,res) {
-			res( JSON.stringify( recs.treeify(0,recs.length,0,Object.keys(recs[0] || {})) ) );
-		},
-		
-		delta: function (recs,req,res) {
-			var sql = req.sql;
-			var ctx = {
-				src: {
-					table: "baseline."+req.table
-				}
-			};
-
-			sql.context(ctx, function (ctx) {   		// establish skinning context for requested table
-				ctx.src.rec = function (Recs,me) {  // select the baseline records 
-console.log(Recs);
-					
-					if (Recs.constructor != Error)
-						recs.merge(Recs, Object.keys(Recs[0] || {}));
-					
-					res( JSON.stringify(recs) );
-				};
-			});
-		},
-
-		encap: function encap(recs,req,res) {
-			res( JSON.stringify({encap: recs}) );
-		}
 	},
 		
 	"reader.": {	//< reader endpoint
@@ -856,6 +852,8 @@ console.log(Recs);
 			recs = recs.sort( function (a,b) {
 				return a[idx] > b[idx] ? 1 : -1;
 			});
+			
+			return recs;
 		},
 		
 		/**
