@@ -1,4 +1,4 @@
-// UNCLASSIFIED 
+﻿// UNCLASSIFIED 
 
 /**
  * @class debe
@@ -94,15 +94,15 @@ var
 	},
 	
 	"reqflags.edits.": {  //< request flags taking parm list
-		jade: function (flag,recs,req,res) {  	// jade markdown on flag fields
+		jade: function (keys,recs,req,res) {  	// jade markdown on keys fields
 
 			recs.each( function (n, rec) { 
-				flag.each( function (m, idx) {
-					rec[idx] = "=$" + (rec[idx]+"").render(req);
+				keys.each( function (m, key) {
+					rec[key] = "=$" + (rec[key]+"").render(req);
 					/*"=$" + "Browser does not support iframes".tag("iframe", {
 						width: 400,
 						height: 400,
-						srcdoc: (rec[idx]+"").render(req)
+						srcdoc: (rec[key]+"").render(req)
 					});*/
 				});
 			});
@@ -110,28 +110,28 @@ var
 			res( recs );
 		},
 
-		kjade: function (flag,recs,req,res) {  	// kludge jade markdown on flag fields
+		kjade: function (keys,recs,req,res) {  	// kludge jade markdown on keys fields
 
 			recs.each( function (n, rec) {  
-				flag.each( function (m, idx) {
-					rec[idx] = (rec[idx]+"").tag("iframe", {
+				keys.each( function (m, key) {
+					rec[key] = (rec[key]+"").tag("iframe", {
 						width: 400,
 						height: 400,
-						src: `/${req.table}.html?ID=${rec.ID}&_kjaded=${idx}`
+						src: `/${req.table}.html?ID=${rec.ID}&_kjaded=${key}`
 					});
-					console.log(rec[idx]);
+					//console.log(rec[key]);
 				});
 			});
 			
 			return recs;
 		},
 
-		kjaded: function (flag,recs,req,res) {  // kludge jade markdown
+		kjaderaw: function (keys,recs,req,res) {  // kludge jade markdown
 
 			recs.each( function (n, rec) {
 				var rtn = "";
-				flag.each( function (m, idx) {  
-					rtn += (rec[idx] + "").render(req);
+				keys.each( function (m, key) {  
+					rtn += (rec[key] + "").render(req);
 				});
 				recs[n] = rtn;
 			});
@@ -139,53 +139,24 @@ var
 			res( recs );
 		},
 		
-		mark: function (flag,recs,req,res) {  	// markdown flag fields
+		mark: function (keys,recs,req,res) {  	// markdown keys fields
 		
 			recs.each( function (n, rec) {
-				flag.each( function (m, idx) {  
-					rec[idx] = 
+				keys.each( function (m, key) {  
+					rec[key] = 
 `extends layout
 append layout_body
 	:markdown
-		${rec[idx] }` .render(req);
+		${rec[key] }` .render(req);
 				});
 			});
 			
 			res( recs );
 		},
 		
-		tree: function (flag,recs,req,res) {	// treeify records on flag fields
-			res( recs.treeify(0,recs.length,0,flag) );
-		},
-		
-		delta: function (flag,recs,req,res) {
-			var sql = req.sql;
-			var ctx = {
-				src: {
-					table: "baseline."+req.table
-				}
-			};
-
-			sql.context(ctx, function (ctx) {   		// establish skinning context for requested table
-				ctx.src.rec = function (Recs,me) {  // select the baseline records 
-					
-					if (Recs.constructor != Error)
-						recs.merge(Recs,flag);
-					
-					res(recs);
-				};
-			});
-		},
-
-		encap: function encap(idx,recs,req,res) {
-			var encap = {};
-			encap[idx] = recs;
-			res(encap);
-		},
-
-		json: function json(idx,recs,req,res) {
+		json: function json(keys,recs,req,res) {
 			recs.each( function (n,rec) {
-				idx.each( function (i,n) {
+				keys.each( function (i,n) {
 					try {
 						rec[n] = (rec[n]||"").parse({});
 					}
@@ -196,10 +167,11 @@ append layout_body
 			res(recs);
 		},
 
-		index: function index(idx,recs,req,res) {
-			var group = idx[2],
-				x = idx[0],
-				y = idx[1];
+		/*
+		index: function index(keys,recs,req,res) {
+			var group = keys[2],
+				x = keys[0],
+				y = keys[1];
 
 			if (group) {
 				var rtn = {};
@@ -219,21 +191,21 @@ append layout_body
 
 			res([rtn]);
 		},
-		
-		nav: function (flag,recs,req,res) {  	// navigate records via pivot folders
+		*/
+		nav: function (keys,recs,req,res) {  	// navigate records via pivot folders
 
 /*console.log({
 	i: "nav",
-	c: flag,
+	c: keys,
 	f: req.flags,
 	q: req.query
 });*/
 			var flags = req.flags,
 				query = req.query,
 				Browse = flags.browse.split(","),
-				Cmd = flag.pop(),
+				Cmd = keys.pop(),
 				Slash = "_",
-				Parent = flag.pop(),
+				Parent = keys.pop(),
 				Nodes  = Parent ? Parent.split(Slash) : [],
 				Folder = Browse[Nodes.length],
 				Parent = Parent || "root",
@@ -262,7 +234,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						write: rec.write,			// write state
 						size: rec.NodeCount,			// size
 						hash: rec.NodeID,	// hash name
-						name: rec.name || "?"+n, // flag name
+						name: rec.name || "?"+n, // keys name
 						phash: Parent, 		// parent hash name
 						locked:rec.locked,			// lock state
 						volumeid: rec.group,
@@ -278,7 +250,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						write:rec.write,			// write state
 						size: rec.NodeCount,			// size
 						hash: rec.NodeID,		// hash name
-						name: rec.name || "?"+n,			// flag name
+						name: rec.name || "?"+n,			// keys name
 						phash: Parent,		// parent hash name
 						volumeid: rec.group,
 						locked:rec.locked			// lock state
@@ -287,7 +259,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			
 //console.log(Files);	
 
-			switch (Cmd) {  	// Handle flag nav
+			switch (Cmd) {  	// Handle keys nav
 				case "test":	// canonical test case for debugging					
 					res({  
 						cwd: { 
@@ -462,7 +434,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					
 				case "parents": // not sure when requested
 				case "rename":  // on rename with name=newname
-				case "flag": 	// on open via put, on download=1 via get
+				case "keys": 	// on open via put, on download=1 via get
 					res({
 						message: "TBD"
 					});
@@ -641,14 +613,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			
 			var rtns = [];
 			
-			/*
-			if (data.constructor == Object) return dump(data);
-			
-			if (where) {
-				if (!index) index = where.index;
-				if (!ag) ag = where.ag;
-			}*/
-			
 			if (index) index = index.split(",");
 			
 			data.each( function (n,rec) {
@@ -701,14 +665,49 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 	
 	"converters." : {
-		view: function (ack,req,cb) {
-			cb( ack );
+		view: function (recs,req,res) {
+			res( recs );
 		},
-		exe: function (ack,req,cb) {
-			cb( ack );
+		exe: function (recs,req,res) {
+			res( recs );
 		},
-		kml: function (ack,req,cb) {
-			cb( TOKML({}) );
+		kml: function (recs,req,res) {
+			res( TOKML({}) );
+		},
+		flat: function index(recs,req,res) {
+			recs.each( function (n,rec) {
+				var rtns = new Array();
+				for (var key in rec) rtns.push( rec[key] );
+				recs[n] = rtns;
+			});
+			res( JSON.stringify(recs) );
+		},
+		tree: function (recs,req,res) {
+			res( JSON.stringify( recs.treeify(0,recs.length,0,Object.keys(recs[0] || {})) ) );
+		},
+		
+		delta: function (recs,req,res) {
+			var sql = req.sql;
+			var ctx = {
+				src: {
+					table: "baseline."+req.table
+				}
+			};
+
+			sql.context(ctx, function (ctx) {   		// establish skinning context for requested table
+				ctx.src.rec = function (Recs,me) {  // select the baseline records 
+console.log(Recs);
+					
+					if (Recs.constructor != Error)
+						recs.merge(Recs, Object.keys(Recs[0] || {}));
+					
+					res( JSON.stringify(recs) );
+				};
+			});
+		},
+
+		encap: function encap(recs,req,res) {
+			res( JSON.stringify({encap: recs}) );
 		}
 	},
 		

@@ -144,8 +144,7 @@ append site_body
 						_pivot	= KEY,KEY,... pivot records on KEYs with NodeID = "ID,ID,..." groups
 						_browse	= KEY,KEY,... browse records on KEYs with NodeID = "name/name/ ..." 
 						_group	= KEY,KEY,... group records on KEYs
-						_tree	= KEY,KEY,... return name-children-view-size tree 
-						_index	= KEY,KEY,expression as KEY... return specified KEYs
+						_index	= KEY,KEY,... return only specified KEYs
 						_sort	= KEY,KEY,... sort records asscending on KEYs
 						_sort	= [{property:KEY,sort:DIRECT}, ...] sort records asc|desc on KEYs 
 						_geo = KEY,KEY,... add geojson geometry keys named gKEY to the records
@@ -153,8 +152,6 @@ append site_body
 					# Conversion parameters
 
 						_queue	= KEY for queuing record state
-						_encap	= KEY to encapsulate records into hash
-						_delta = KEY to include baselined records for change comparisons
 						_mark	= KEY,KEY,... markdown these KEYs 
 						_jade	= KEY,KEY,... jadeify these KEYs (experimental - use _kjade)
 						_kjade	= KEY,KEY,... jadeify these KEYs (to be retired)
@@ -270,7 +267,7 @@ append site_body
 						POST /ENGINE.TYPE	Step stateful ENGINE 
 						DELETE /ENGINE.TYPE	Free stateful ENGINE 
 					
-					where TYPE = [db | xml | csv | json | view | ...] defines the transfer mode.
+					where TYPE = [db | xml | csv | view | tree | flat | delta | ...] defines the presentation form.
 
 			#fit.Parameters
 				:markdown

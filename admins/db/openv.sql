@@ -182,8 +182,9 @@ CREATE TABLE `attrs` (
   `Trace` int(11) DEFAULT '0',
   `Tx` varchar(32) DEFAULT '',
   `Track` int(11) DEFAULT '0',
+  `Geo` varchar(32) DEFAULT NULL,
   UNIQUE KEY `ID` (`ID`)
-) ENGINE=InnoDB AUTO_INCREMENT=51 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=52 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -192,7 +193,7 @@ CREATE TABLE `attrs` (
 
 LOCK TABLES `attrs` WRITE;
 /*!40000 ALTER TABLE `attrs` DISABLE KEYS */;
-INSERT INTO `attrs` VALUES ('Admin<sup>4</sup>','Admin<sup>4</sup>','Admin<sup>4</sup>','Visitor<sup>0</sup>','Moderator<sup>0</sup>','Role allocation table','roles',15,1,1,1,0,0,1,'openv.roles',0),('Stakeholder<sup>4</sup>','Stakeholder<sup>4</sup>','Stakeholder<sup>4</sup>','Visitor<sup>0</sup>','Moderator<sup>0</sup>','List of algorithm sensor/Visitor interface specifications (aka file types)','aspreqts',19,1,1,1,0,0,1,'openv.aspreqts',0),('Stakeholder<sup>4</sup>','Stakeholder<sup>2</sup>','Admin<sup>3</sup>','Visitor<sup>0</sup>','Moderator<sup>0</sup>','This grid is used to track site usage issues (NOT new requirements).  Typical issues include GUI use, site layout, etc.','issues',21,1,1,1,0,0,1,'openv.issues',0),('Stakeholder<sup>3</sup>','Stakeholder<sup>1</sup>','Stakeholder<sup>4</sup>','Visitor<sup>0</sup>','Moderator<sup>0</sup>','Feel free to modify this news grid as you think necessary.  Remember there is no anonymity, so please try to keep your news relevant and accurate.','news',24,1,1,1,0,0,1,'',1),('Creator<sup>4</sup>','Developer<sup>3</sup>','Creator<sup>4</sup>','Visitor<sup>0</sup>','Moderator<sup>0</sup>','Sideline area to define unmoderated requirements and general algorithm information.','tta',33,1,1,1,0,0,1,'openv.tta',0),('Creator<sup>4</sup>','Developer<sup>3</sup>','Creator<sup>4</sup>','Visitor<sup>0</sup>','Moderator<sup>0</sup>','','intake',35,1,1,1,0,0,1,'openv.intake',0),('Admin<sup>5</sup>','Stakeholder<sup>3</sup>','Admin<sup>5</sup>','Visitor<sup>0</sup>','Moderator<sup>0</sup>','','queues',39,1,1,1,0,0,1,'',0),('Stakeholder<sup>5</sup>','Stakeholder<sup>4</sup>','Stakeholder<sup>5</sup>','Visitor<sup>0</sup>','Moderator<sup>0</sup>','FSGALAM requirements are tracked here.','ispreqts',42,1,1,1,0,0,1,'openv.ispreqts',0),('Admin<sup>4</sup>','Admin<sup>4</sup>','Admin<sup>4</sup>','Visitor<sup>0</sup>','Moderator<sup>0</sup>','Parameter allocation table','parms',46,1,1,1,0,0,1,'',0),(NULL,NULL,NULL,NULL,NULL,NULL,'milestones',47,NULL,1,1,0,0,1,'openv.milestones',0),(NULL,NULL,NULL,NULL,NULL,NULL,'catalog',48,NULL,1,1,0,1,1,'',1),(NULL,NULL,NULL,NULL,NULL,NULL,'journal',49,NULL,0,1,0,0,0,'openv.journal',0),(NULL,NULL,NULL,NULL,NULL,NULL,'moderators',50,NULL,0,1,0,0,0,'openv.hawks',0);
+INSERT INTO `attrs` VALUES ('Admin<sup>4</sup>','Admin<sup>4</sup>','Admin<sup>4</sup>','Visitor<sup>0</sup>','Moderator<sup>0</sup>','Role allocation table','roles',15,1,1,1,0,0,1,'openv.roles',0,NULL),('Stakeholder<sup>4</sup>','Stakeholder<sup>4</sup>','Stakeholder<sup>4</sup>','Visitor<sup>0</sup>','Moderator<sup>0</sup>','List of algorithm sensor/Visitor interface specifications (aka file types)','aspreqts',19,1,1,1,0,0,1,'openv.aspreqts',0,NULL),('Stakeholder<sup>4</sup>','Stakeholder<sup>2</sup>','Admin<sup>3</sup>','Visitor<sup>0</sup>','Moderator<sup>0</sup>','This grid is used to track site usage issues (NOT new requirements).  Typical issues include GUI use, site layout, etc.','issues',21,1,1,1,0,0,1,'openv.issues',0,NULL),('Stakeholder<sup>3</sup>','Stakeholder<sup>1</sup>','Stakeholder<sup>4</sup>','Visitor<sup>0</sup>','Moderator<sup>0</sup>','Feel free to modify this news grid as you think necessary.  Remember there is no anonymity, so please try to keep your news relevant and accurate.','news',24,1,1,1,0,0,1,'',1,NULL),('Creator<sup>4</sup>','Developer<sup>3</sup>','Creator<sup>4</sup>','Visitor<sup>0</sup>','Moderator<sup>0</sup>','Sideline area to define unmoderated requirements and general algorithm information.','tta',33,1,1,1,0,0,1,'openv.tta',0,NULL),('Creator<sup>4</sup>','Developer<sup>3</sup>','Creator<sup>4</sup>','Visitor<sup>0</sup>','Moderator<sup>0</sup>','','intake',35,1,1,1,0,0,1,'openv.intake',0,NULL),('Admin<sup>5</sup>','Stakeholder<sup>3</sup>','Admin<sup>5</sup>','Visitor<sup>0</sup>','Moderator<sup>0</sup>','','queues',39,1,1,1,0,0,1,'',0,NULL),('Stakeholder<sup>5</sup>','Stakeholder<sup>4</sup>','Stakeholder<sup>5</sup>','Visitor<sup>0</sup>','Moderator<sup>0</sup>','FSGALAM requirements are tracked here.','ispreqts',42,1,1,1,0,0,1,'openv.ispreqts',0,NULL),('Admin<sup>4</sup>','Admin<sup>4</sup>','Admin<sup>4</sup>','Visitor<sup>0</sup>','Moderator<sup>0</sup>','Parameter allocation table','parms',46,1,1,1,0,0,1,'',0,NULL),(NULL,NULL,NULL,NULL,NULL,NULL,'milestones',47,NULL,1,1,0,0,1,'openv.milestones',0,NULL),(NULL,NULL,NULL,NULL,NULL,NULL,'catalog',48,NULL,1,1,0,1,1,'',1,NULL),(NULL,NULL,NULL,NULL,NULL,NULL,'journal',49,NULL,0,1,0,0,0,'openv.journal',0,NULL),(NULL,NULL,NULL,NULL,NULL,NULL,'moderators',50,NULL,0,1,0,0,0,'openv.hawks',0,NULL),(NULL,NULL,NULL,NULL,NULL,NULL,'feats',51,NULL,0,1,0,0,0,'',0,'Geo');
 /*!40000 ALTER TABLE `attrs` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -794,7 +795,7 @@ CREATE TABLE `viewers` (
   `Dataset` varchar(32) DEFAULT NULL,
   UNIQUE KEY `ID` (`ID`),
   UNIQUE KEY `KeyID` (`Viewer`,`Dataset`)
-) ENGINE=InnoDB AUTO_INCREMENT=3962 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=3963 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -816,4 +817,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2017-03-12 14:50:08
+-- Dump completed on 2017-03-13 22:24:58
