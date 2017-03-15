@@ -202,13 +202,11 @@ append layout_body
 			}
 		},
 
-		jsons: {  //< mysql site parms to json parse
-			classif: { level: "(U)", purpose: "nada" },
-			asp: {},
-			isp: {},
-			info: {},
-			filename: "./public/jade/ref.jade"	// jade reference path for includes, exports, appends		
-		},
+		classif: { level: "(U)", purpose: "nada" },
+		asp: {},
+		isp: {},
+		info: {},
+		filename: "./public/jade/ref.jade",	// jade reference path for includes, exports, appends		
 			
 		json: function (data) {  // dump dataset as json
 			return JSON.stringify(data);
