@@ -74,6 +74,17 @@ var
 	watch: "", //"public/uploads/", 
 		
 	"reqflags.traps." : {  // request flags to trap request
+		save: function (req) {
+			var cleanurl = req.url.replace(`_save=${req.flags.save}`,"");
+Trace(`PUBLISH ${cleanurl} AT ${req.flags.save}`);
+			req.sql.query("INSERT INTO engines SET ?", {
+				Name: req.flags.save,
+				Enabled: 1,
+				Engine: "url",
+				Code: cleanurl
+			});
+		},
+				
 		browse: function(req) {	// folder navigator
 			var query = req.query, flags = req.flags;
 			query.NodeID = parseInt(query.init) ? "" : query.target || "";
@@ -158,31 +169,6 @@ append layout_body
 			});
 		}
 
-		/*
-		index: function index(keys,recs,req,res) {
-			var group = keys[2],
-				x = keys[0],
-				y = keys[1];
-
-			if (group) {
-				var rtn = {};
-				recs.each( function (n,rec) {
-					var xy = rtn[rec[group]];
-					if (!xy) xy = rtn[rec[group]] = [];
-					xy.push([rec[x], rec[y]]);
-				});
-			}
-			else {
-				var rtn = {group: []}, xy = rtn.group;
-				recs.each( function (n,rec) {
-					if (!xy) xy = rtn[rec[group]] = [];
-					xy.push([rec[x], rec[y]]);
-				});
-			}
-
-			res([rtn]);
-		},
-		*/
 	},
 	
 	worker: {		//< reserved for worker endpoints defined on start
