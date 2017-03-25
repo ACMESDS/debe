@@ -234,9 +234,10 @@ append layout_body
 							
 							var row = "";
 							Each(rec, function (key,val) {
-								row += (typeof val == "object")
-									? table(val)
-									: (val+"").tag("td");
+								if (val)
+									row += (typeof val == "object")
+										? table(val)
+										: (val+"").tag("td");
 							});
 							rtn += row.tag("tr");
 						});
@@ -247,9 +248,10 @@ append layout_body
 					
 						var rtn = "";
 						Each(data, function (key,val) {
-							rtn += (typeof key == "object")
-								? table(val)
-								: (key.tag("td") + JSON.stringify(val).tag("td")).tag("tr");
+							if (val)
+								rtn += (typeof key == "object")
+									? table(val)
+									: (key.tag("td") + JSON.stringify(val).tag("td")).tag("tr");
 						});
 						
 						return rtn.tag("table");
@@ -347,6 +349,25 @@ append layout_body
 				recs[n] = rtns;
 			});
 			res( recs );
+		},
+		txt: function (recs,req,res) {
+			var head = recs[0], cols = [], cr = String.fromCharCode(13), txt="", list = ",";
+
+			if (head) {
+				for (var n in head) cols.push(n);
+				txt += cols.join(list) + cr;
+
+				recs.each(function (n,rec) {
+					var cols = [];
+					for (var n in rec) cols.push(rec[n]);
+					txt += cols.join(list) + cr;
+				});
+			}
+
+			res( txt );
+		},
+		tab: function (recs,req,res) {
+			res( TOTEM.site.show( recs ) );
 		},
 		tree: function (recs,req,res) {
 			res( recs.treeify(0,recs.length,0,Object.keys(recs[0] || {})) );

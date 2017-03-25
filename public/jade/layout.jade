@@ -28,7 +28,7 @@ html(lang="en")
 		//- Make the application on mobile take up the full browser screen and disable user scaling.
 		meta(name="viewport", content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no")
 
-		title #{source}
+		title #{nick}-#{table}
 
 		//-	Check browser compatibility. Requires javascript and JSON. Invalid browsers will crash or ignore startup scripts.
 
@@ -129,9 +129,10 @@ html(lang="en")
 
 			if query.inline
 				inline(src=query.inline,w="90%",h="90%",a="Classif",g="Edit",s="rd")
-				script(src="/clients/uis/base.js")
-				script.
-					BASE.start();
+				//
+					script(src="/clients/uis/base.js")
+					script.
+						BASE.start();
 
 			block layout_body
 			
