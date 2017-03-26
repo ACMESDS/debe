@@ -24,13 +24,22 @@ DEBE options use the [ENUM copy()](https://git.geointapps.org/acmesds/enum) conv
 		:
 	}
 
-DEBE's default configuration extends TOTEM by providing:
+DEBE's default configuration adds various endpoints:
 
-	+ service monitoring endpoints: help, stop, alert, codes, ping, bit, config
-	+ data converters: view, exe, kml, flat, txt, tab, tree, delta, encap, and nav
+	+ service monitoring: help, stop, alert, codes, ping, bit, config
+	+ user maintenance: user
+	+ data fetchers: wget, curl, http
+	+ antibot protection: test
+	
+various endpoint DATASET.TYPEs:
+
+	+ data convertors: view, exe, kml, flat, txt, tab, tree, delta, encap, and nav
 	+ site rendering: jade,view
 	+ engine job submit: exe
 	+ file attributes: code, jade, classif, readability, client, size, risk
+	
+and:
+
 	+ site context data dumpers: json, show
 	+ request flags: jade, mark, json
 
