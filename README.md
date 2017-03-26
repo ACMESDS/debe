@@ -24,6 +24,16 @@ DEBE options use the [ENUM copy()](https://git.geointapps.org/acmesds/enum) conv
 		:
 	}
 
+DEBE's default configuration extends TOTEM by providing:
+
+	+ service monitoring endpoints: help, stop, alert, codes, ping, bit, config
+	+ data converters: view, exe, kml, flat, txt, tab, tree, delta, encap, and nav
+	+ site rendering: jade,view
+	+ engine job submit: exe
+	+ file attributes: code, jade, classif, readability, client, size, risk
+	+ site context data dumpers: json, show
+	+ request flags: jade, mark, json
+
 In addition to [TOTEM](https://git.geointapps.org/acmesds/totem) options, DEBE accepts:
 
 	isSpawned: false, //< Enabled when this is child server spawned by a master server
@@ -31,7 +41,7 @@ In addition to [TOTEM](https://git.geointapps.org/acmesds/totem) options, DEBE a
 	blindTesting: false, //< Enable for double-blind testing (make FLEX susceptible to sql injection attacks)
 	statefulViews: {...}, //< Jade views that require  the stateful URL
 
-but its default values suffice.
+but its default values suffice.  
 
 ## Installation
 
