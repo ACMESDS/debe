@@ -2,8 +2,9 @@
 @class debe [![Forked from SourceForge](https://sourceforge.net)]
 # DEBE
 
-DEBE integrates TOTEM, FLEX, CHIPPER and ENGINE into a web service for managing client interface, requirements, project 
-metrics, geoint products and workflows.
+DEBE integrates [TOTEM](https://git.geointapps.org/acmesds/totem), [FLEX](https://git.geointapps.org/acmesds/flex),
+[CHIPPER](https://git.geointapps.org/acmesds/chipper) and [ENGINE](https://git.geointapps.org/acmesds/engine) into a 
+web service for managing client interface, requirements, project metrics, geoint products and workflows.
 
 Simply require DEBE and start it:
 
@@ -46,8 +47,7 @@ Typically, you will want to redirect the following to your project:
 
 ## Examples
 
-Below sample are from the totem/test.js unit tester.  See Totem's [DEBE](https://git.geointapps.org/acmesds/debe) 
-for a far more complex use-case.  You may  also find Totem's [DSVAR](https://git.geointapps.org/acmesds/dsvar) 
+Below sample are from the totem/test.js unit tester.  You may  also find Totem's [DSVAR](https://git.geointapps.org/acmesds/dsvar) 
 useful, if you wish to learn more about its database agnosticator.
 
 ### D1 - Encypted with a database
