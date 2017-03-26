@@ -7,10 +7,11 @@ metrics, geoint products and workflows.
 
 Simply require DEBE and start it:
 
-	var DEBE = require("debe").start(options);
+	var DEBE = require("debe").config(options, function (err) {
+		// server callback on startup
+	});
 	
-Because extends [ENUM](https://git.geointapps.org/acmesds/enum), its' options can be specified
-using ENUM.copy() conventions:
+DEBE options use the [ENUM copy()](https://git.geointapps.org/acmesds/enum) conventions:
 
 	options =  {
 		key: value, 						// set 
@@ -29,7 +30,7 @@ In addition to [TOTEM](https://git.geointapps.org/acmesds/totem) options, DEBE a
 	blindTesting: false, //< Enable for double-blind testing (make FLEX susceptible to sql injection attacks)
 	statefulViews: {...}, //< Jade views that require  the stateful URL
 
-but its' default values suffice.
+but its default values suffice.
 
 ## Installation
 
@@ -45,65 +46,47 @@ Typically, you will want to redirect the following to your project:
 
 ## Examples
 
-Below sample use-cases are from debe/test.js.
+Below sample are from the totem/test.js unit tester.  See Totem's [DEBE](https://git.geointapps.org/acmesds/debe) 
+for a far more complex use-case.  You may  also find Totem's [DSVAR](https://git.geointapps.org/acmesds/dsvar) 
+useful, if you wish to learn more about its database agnosticator.
 
-### D1
+### D1 - Encypted with a database
 
-	D1: function () {
+	var DEBE = require("../debe").config({
+		name: ENV.SERVICE_NAME,
+		encrypt: ENV.SERVICE_PASS,
+		mysql: {
+			host: ENV.MYSQL_HOST,
+			user: ENV.MYSQL_USER,
+			pass: ENV.MYSQL_PASS
+		}
+	}, function (err) {
+		Trace( err || "Yowzers - An encrypted DEBE service with a database" );
+	});
 		
-		var TOTEM = require("../debe").start({
-			//encrypt: ENV.SERVICE_PASS,
-			
-			mysql: {
-				host: ENV.MYSQL_HOST,
-				user: ENV.MYSQL_USER,
-				pass: ENV.MYSQL_PASS
-			},
-			
-			init: function () {
+### D2 - D1 plus an endpoint
 
-				Trace( "Encrypted Totem client with a database" );
-				//debe_mysql:TOTEM.mysql,
-				//debe_site: TOTEM.site
-				
+	var DEBE = require("../debe").config({
+		encrypt: ENV.SERVICE_PASS,
+		riddles: 10,
+		mysql: {
+			host: ENV.MYSQL_HOST,
+			user: ENV.MYSQL_USER,
+			pass: ENV.MYSQL_PASS
+		},
+		"reader.": {
+			wfs: function (req,res) {
+				res("here i go again");
+
+				TOTEM.fetchers.http(ENV.WFS_TEST, function (data) {
+					console.log(data);
+				});
 			}
-			
-		});
-			
-	},
-	
-### D2
 
-	D2: function () {
-		
-		var TOTEM = require("../debe").start({
-			encrypt: ENV.SERVICE_PASS,
-			riddles: 10,
-			
-			mysql: {
-				host: ENV.MYSQL_HOST,
-				user: ENV.MYSQL_USER,
-				pass: ENV.MYSQL_PASS
-			},
-
-			"reader.": {
-				wfs: function (req,res) {
-					res("here i go again");
-					
-					TOTEM.fetchers.http(ENV.WFS_TEST, function (data) {
-						console.log(data);
-					});
-				}
-
-			},				
-			
-			init: function () {
-
-				Trace( "Unencrypted dev-Totem client with a database and wfs endpoint" );
-				
-			}
-			
-		});
+		}
+	}, function (err) {
+		Trace( "This bad boy in an encrypted service with a database and has an /wfs endpoint" );
+	});
 		
 		
 ## License
