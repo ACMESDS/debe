@@ -1,7 +1,7 @@
 // UNCLASSIFIED
 //-
 	 Provides d3 scatter plot given:
-		src = data path
+		src = path to json data
 		line = color1, color2, ...
 		marker = style1, style2, ... 
 		legend = name1, name2, ...
@@ -9,11 +9,12 @@
 		auto = x-autoscale, y-autoscale
 		trace = 1 to enable data traces
 		debug = 1 to display derived options
-		_min = x-min, y-min
-		_max = x-max, y-max
-		_ref = [x,y], ... reference path
-		_init = [x,y],... data to prefix
-		_extra = [x,y],... data to append
+		min = x-min, y-min
+		max = x-max, y-max
+		xy = key, key | idx, idx
+		ref = [x,y],... reference path
+		init = [x,y],... data to prefix
+		extra = [x,y],... data to append
 
 extends base
 append base_parms
@@ -40,7 +41,7 @@ append base_body
 	if query.src
 		script.
 			function split(x,def) {
-				return x ? x.split(",") : def || [];
+				return x ? x.split(",") : def;
 			}
 
 			var margin = {top: 20, right: 20, bottom: 30, left: 40},
@@ -56,27 +57,39 @@ append base_body
 				.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 			//Load the data
-
+			
 			var opts = {
-				src: "#{query.src}?_index=#{query.index}",
+				src: "#{query.src}",
 				trace: "#{query.trace}",
 				debug: "#{query.debug}",
 
-				marker: split("#{query.marker}" || "dot"),
-				line: split("#{query.line}" || "blue"),
+				marker: split("#{query.marker}", ["dot"]),
+				line: split("#{query.line}", ["blue"]),
 
-				label: split("#{query.label}"),
-				idx: split("#{query.index}"),
-				auto: split("#{query.auto}"),
-				legend: split("#{query.legend}"),
-
-				ref: eval("[#{flags.ref}]"),
-				min: eval("[#{flags.min}]"),
-				max: eval("[#{flags.max}]"),
-				init:  eval("[#{flags.init}]"),
-				extra: eval("[#{flags.extra}]")
+				label: split("#{query.label}", []),
+				idx: split("#{query.index}", []),
+				auto: split("#{query.auto}", []),
+				legend: split("#{query.legend}", null),
+				xy: split("#{query.xy}" , ["0","1"]),
+				
+				ref: JSON.parse("[#{query.ref}]"),
+				min: JSON.parse("[#{query.min}]"),
+				max: JSON.parse("[#{query.max}]"),
+				init:  JSON.parse("[#{query.init}]"),
+				extra: JSON.parse("[#{query.extra}]")
 			};
 
+			opts.x = parseInt(opts.xy[0]); if (opts.x != NaN) opts.x = opts.xy[0];
+			opts.y = parseInt(opts.xy[1]); if (opts.y != NaN) opts.y = opts.xy[1];
+			
+			if (opts.legend) {
+				opts.srcs = [];
+				for (var keys=opts.legend,n=0,N=keys.length; n<N; n++) 
+					opts.srcs.push( opts.src + "?Name=" + keys[n] );
+			}
+			else
+				opts.srcs = [opts.src];
+					
 			function click(d) {
 
 				if (details = d[2] ) {
@@ -152,22 +165,22 @@ append base_body
 						.data(pdata)
 						.enter()
 						.append("text")
-						.text(function (d){ return d[0].toFixed(2)+" , "+d[1].toFixed(2); } )
-						.attr("x",function (d){ return x(d[0]); } )
-						.attr("y",function (d){ return y(d[1]); } )
+						.text(function (d){ return d[opts.x].toFixed(2)+" , "+d[opts.y].toFixed(2); } )
+						.attr("x",function (d){ return x(d[opts.x]); } )
+						.attr("y",function (d){ return y(d[opts.y]); } )
 						.attr("dy", ".35em")
 						.attr("font-family", "sans-serif")
 						.attr("font-size", "11px")
 						.attr("fill", "red");
 			}
 
-			function axes(data,opts) {
+			function axes(opts) {
 
 				var line = d3.svg.line();
 
 				line
-					.x(function (d) { return x(d[0]); })
-					.y(function (d) { return y(d[1]); })
+					.x(function (d) { return x(d[opts.x]); })
+					.y(function (d) { return y(d[opts.y]); })
 					.interpolate('linear');
 
 				var xaxis = svg
@@ -217,7 +230,7 @@ append base_body
 					.attr('stroke-width', 2)
 					.attr('fill', 'none');
 
-				if (opts.legend.length) {   // add legend
+				if (opts.legend) {   // add legend
 					var legend = svg
 					.selectAll(".legend")
 					.data(color.domain())
@@ -245,35 +258,42 @@ append base_body
 				}
 			}
 
-			//alert(JSON.stringify(opts.src));
+			if (opts.debug) 
+				alert(JSON.stringify(opts));
 
-			d3.json(opts.src, function(json) {
+			for (var srcs=opts.srcs,n=0,N=srcs.length; n<N; n++)
+				d3.json(srcs[n], function(data) {
 
-				var data = json[0];
+					if (n == 0) {
+						if (opts.auto[0]) // assumes data is an array
+							x.domain(d3.extent(data, function(d) { return d[opts.x]; })).nice();
+						else
+							x.domain([opts.min[0] || 0, opts.max[0] || 1]);
 
-				if (opts.debug) 
-					alert(JSON.stringify(opts));
+						if (opts.auto[1]) 
+							y.domain(d3.extent(data, function(d) { return d[opts.y]; })).nice();
+						else
+							y.domain([opts.min[1] || 0, opts.max[1] || 1]);
 
-				if (opts.auto[0]) 
-					x.domain(d3.extent(data, function(d) { return d[0]; })).nice();
-				else
-					x.domain([opts.min[0] || 0, opts.max[0] || 1]);
+						axes(opts);
+					}
+					
+					switch (data.constructor) {
+						case Object:
+							for (var n in data) plot(data[n],opts);
+							break;
 
-				if (opts.auto[1]) 
-					y.domain(d3.extent(data, function(d) { return d[1]; })).nice();
-				else
-					y.domain([opts.min[1] || 0, opts.max[1] || 1]);
+						case Array:
+							plot(data,opts);
+							break;
+					}
 
-				axes(data,opts);
-
-				for (var n in data) plot(data[n],opts);
-
-			});
+				});
 	else
 		:markdown
 			 Provides d3 scatter plot given:
 
-				src = data path
+				src = path to json data
 				line = color1, color2, ...
 				marker = style1, style2, ... 
 				legend = name1, name2, ...
@@ -281,10 +301,10 @@ append base_body
 				auto = x-autoscale, y-autoscale
 				trace = 1 to enable data traces
 				debug = 1 to display derived options
-				_min = x-min, y-min
-				_max = x-max, y-max
-				_ref = [x,y], ... reference path
-				_init = [x,y],... data to prefix
-				_extra = [x,y],... data to append
+				min = x-min, y-min
+				max = x-max, y-max
+				ref = [x,y], ... reference path
+				init = [x,y],... data to prefix
+				extra = [x,y],... data to append
 		
 // UNCLASSIFIED
