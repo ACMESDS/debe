@@ -1,6 +1,7 @@
 _*
 /htmls/
 /clients/
+!/clients/uis/
 /captcha/
 /doc/
 /shares/*/
