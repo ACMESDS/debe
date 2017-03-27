@@ -1,0 +1,5 @@
+extends base
+append base_parms
+	- tech = "extjs"
+append base_body
+	#grid.news(path="news.db",cols="New.i,Starts.d,Stay.i,Message.h,Category.t,To.t",dims="1200,600",page=50)
