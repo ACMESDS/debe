@@ -73,7 +73,7 @@ var
 	
 	watch: "", //"public/uploads/", 
 		
-	"reqflags.traps." : {  // request flags to trap request
+	"reqflags.traps." : {  //< trap ?_flag to reorder query/body parms
 		save: function (req) {
 			var cleanurl = req.url.replace(`_save=${req.flags.save}`,"");
 Trace(`PUBLISH ${cleanurl} AT ${req.flags.save}`);
@@ -95,8 +95,7 @@ Trace(`PUBLISH ${cleanurl} AT ${req.flags.save}`);
 			delete query.tree;
 		},
 		
-		view: function (req) {   // correlate a view=flag to this dataset
-//console.log("CORRELATE ",[req.table,req.flags.view]);
+		view: function (req) {   // correlate a ?_view=name flag to requested dataset
 			req.sql.query("INSERT INTO openv.viewers SET ?", {
 				Viewer: req.flags.view,
 				Dataset: req.table
@@ -104,7 +103,7 @@ Trace(`PUBLISH ${cleanurl} AT ${req.flags.save}`);
 		}
 	},
 	
-	"reqflags.edits.": {  //< request flags taking parm list
+	"reqflags.edits.": {  //< intercept ?_flag=keys
 		jade: function (keys,recs,req) {  	// jade markdown on keys fields
 
 			recs.each( function (n, rec) { 
@@ -168,7 +167,6 @@ append layout_body
 				});
 			});
 		}
-
 	},
 	
 	worker: {		//< reserved for worker endpoints defined on start
@@ -322,7 +320,7 @@ append layout_body
 		
 	},
 	
-	"sender.": {		//< sender endpoints
+	"sender.": {		//< FILE.ATTR senders
 		code: sendCode,
 		jade: sendCode,		
 		classif: sendAttr,
@@ -332,7 +330,7 @@ append layout_body
 		risk: sendAttr
 	},
 	
-	"converters." : {
+	"converters." : { // NODE.TYPE converters respond on current req-res thread with converted recs
 		view: function (recs,req,res) {
 			res( recs );
 		},
@@ -724,7 +722,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		//checkpt: sysCheckpt,
 		config: sysConfig,
 		
-		// A jade = view TYPE will render a page using jade
+		// Render a page using jade skinning engine
 		jade: readJade,
 		view: readJade,
 		
@@ -749,9 +747,10 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 	
 	"paths.": {  //< paths to things
-		default: "home.view",
+		default: "tour/",
 		
 		mime: {
+			tour: ".",		 			//< enable totem touring 
 			jobs: "./public/jobs",		//< path to tau simulator job files
 			stores: "./public", 		//< persistant scrape area
 			uploads: "./public", 		//< one-time scrape area
@@ -766,7 +765,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			index: { 					//< allowed file indexers
 				shares: "indexer",
 				uploads: "indexer",
-				stores: "indexer"
+				stores: "indexer",
+				tour: "indexer"
 			}
 		},
 		
@@ -789,7 +789,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 
 	// Records processing protos
 	
-	String: [
+	String: [  // string prototypes
 		function indentify(tag) {
 			if (tag) 
 				return tag + "\n\t" + this.split("\n").join("\n\t");
@@ -812,7 +812,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		}
 	],
 	
-	Array: [
+	Array: [  // array prototypes
 		/**
 		@method merge
 		**/
@@ -1074,6 +1074,9 @@ function SOAPsession(req,res,peer,action) {
 function icoFavicon(req,res) {   // extjs trap
 	res("No icons here"); 
 };
+
+//==========================================
+// Maintenance endpoints
 
 /**
 @class support.sys
@@ -1458,6 +1461,18 @@ function readJade(req,res) {
 		
 	function renderJade() {  
 
+		function skinDynamic(cols, req, res) {
+			var skin =
+`extends base
+append base_parms
+	- tech = "extjs"
+append base_body
+	#grid.V${req.table}(path="${req.table}.db",cols="${cols.join()}",dims="1200,600",page=50,nowrap)
+`;
+								
+			res( skin.render(req) );
+		}			
+							  
 		Trace("RENDER "+req.table);
 		
 		sql.query(paths.mysql.engine, { 			// See if skin is in engine db
@@ -1474,30 +1489,31 @@ function readJade(req,res) {
 				FS.readFile(paths.render+req.table+".jade", "utf-8", function (err,skin) {
 					
 					if (err)  // create dynamic skin for this dataset
-						sql.query("DESCRIBE ??",req.table, function (err,fields) {
-							
-							if (err) 
-								res( DEBE.errors.dynamicSkin );
-							
-							else {
-								var cols = [];
-								fields.each(function (n,field) {
-									if (field.Field != "ID")
-										cols.push( field.Field + "." + (SQLTYPES[field.Type] || "t") );
+						if ( select = FLEX.select[req.table] ) // try virtual table
+							select(req, function (recs) {
+								var cols = [], rec = recs[0] || {};
+								Each(rec, function (n,rec) {
+									cols.push( n );
 								});
+								skinDynamic(cols, req, res);
+							});
 
-								var skin =
-`extends base
-append base_parms
-	- tech = "extjs"
-append base_body
-	#grid.${req.table}(path="${req.table}.db",cols="${cols.join()}",dims="1200,600",page=50,nowrap)
-`;
-//console.log(skin);
-								
-								res( skin.render(req) );
-							}
-						});
+						else  // try sql table
+							sql.query("DESCRIBE ??",req.table, function (err,fields) {
+
+								if (err) 
+									res( DEBE.errors.dynamicSkin );
+
+								else {
+									var cols = [];
+									fields.each(function (n,field) {
+										if (field.Field != "ID")
+											cols.push( field.Field + "." + (SQLTYPES[field.Type] || "t") );
+									});
+
+									skinDynamic(cols, req, res);
+								}
+							});
 					
 					else  	// render skin
 						res( skin.render(req) );

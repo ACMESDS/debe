@@ -12,6 +12,7 @@ export DETS=$PUBLIC/dets/ 				# trained detectors
 export PROOFS=$PUBLIC/cars/ver0/ 			# unmodulated/unrotated images for testing
 export DEFAULT=$HERE
 export SCRIPTS=$HERE/clients/extjs/packages/ext-locale/build/ext-locale-
+export THEMES=$HERE/clients/themes
 
 # Python
 export PYTHONPATH=$PYTHONPATH:$HERE/public/py
