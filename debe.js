@@ -1590,19 +1590,19 @@ function runExe(req,res) {
 			});
 	}
 
-	if (exe = (false?debug:false))  						// debugging mode
-		if (chips) {
+	if (exe = (false?debug:false))  	// execute debugging mode
+		if (chips) {  		// fragmented job placed in job queue
 			qos = 8;  		// 4 sec delivery
 			priority = 0;
 			queueExe("debug", jobname, exe);
 		}
-		else
+		else 				// bulk job executed now
 			exe(req,res);
 		
 	else
-	if (exe = FLEX.execute[table]) 		// execute sql crud
+	if (exe = FLEX.execute[table]) 		// execute flex virtual table
 		if (chips)
-			queueExe("sql", jobname, exe);
+			queueExe("flex", jobname, exe);
 		else
 			exe(req,res);
 		

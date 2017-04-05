@@ -11,7 +11,7 @@
 		debug = display derived options switch
 		min = X,Y
 		max = X,Y
-		xy = key,key || idx,idx
+		xy = key,key,... || idx,idx, ...
 		ref = [x,y], ... reference path
 		init = [x,y], ... data to prefix
 		extra = [x,y], ... data to append
@@ -45,10 +45,15 @@ append base_body
 					cb( n, this[n] );
 			}
 			
-			function split(x,def) {
-				return x ? x.split(",") : def;
+			function parse(x,def) {
+				try {
+					return x ? JSON.parse("[" + x + "]") : def;
+				}
+				catch (err) {
+					return x ? x.split(",") : def;
+				}
 			}
-
+					
 			function click(d) {
 
 				if (details = d[2] ) {
@@ -66,53 +71,58 @@ append base_body
 				}
 			}
 
-			function plot (data,opts) {
+			function plot (name,data,opts) {
 
 				var pdata = opts.init.concat(data.concat(opts.extra));
-
 				var line = d3.svg.line();
+				var xidx = opts.x;
+				
+				opts.ys.each(function (n, yidx) {
+					alert(JSON.stringify([name,xidx,yidx]));
+					
+					line
+						.x(function (d) { return x(d[xidx]); })
+						.y(function (d) { return y(d[yidx]); })
+						.interpolate('linear');
 
-				line
-					.x(function (d) { return x(d[n]); })
-					.y(function (d) { return y(d[n+1]); })
-					.interpolate('linear');
+					if (opts.marker.length)  			// add markers
+						for (var m=0,n=0,M=opts.marker.length; m<M; m++,n+=2) 
+							var dots = svg
+							.selectAll(".dot")
+							.data(pdata)
+							.enter()
+							.append("circle")
+							.attr("class", opts.marker[m])
+							.attr("r", 3.5)
+							.attr("cx", function(d) { return x(d[xidx]); })
+							.attr("cy", function(d) { return y(d[yidx]); })
+							.on("click", click) ;
+							//.style("fill", function(d) { return color(d[2]); });
 
-				if (opts.marker.length)  			// add markers
-					for (var m=0,n=0,M=opts.marker.length; m<M; m++,n+=2) 
-						var dots = svg
-						.selectAll(".dot")
-						.data(pdata)
-						.enter()
-						.append("circle")
-						.attr("class", opts.marker[m])
-						.attr("r", 3.5)
-						.attr("cx", function(d) { return x(d[n]); })
-						.attr("cy", function(d) { return y(d[n+1]); })
-						.on("click", click) ;
-						//.style("fill", function(d) { return color(d[2]); });
+					if (opts.line.length) 				// add lines
+						for (var m=0,n=0,M=opts.line.length; m<M; m++,n+=2) 
+							svg
+							.append('path')
+							.attr('d', line(pdata))
+							.attr('stroke', opts.line[m])
+							.attr('stroke-width', 2)
+							.attr('fill', 'none');
 
-				if (opts.line.length) 				// add lines
-					for (var m=0,n=0,M=opts.line.length; m<M; m++,n+=2) 
-						svg
-						.append('path')
-						.attr('d', line(pdata))
-						.attr('stroke', opts.line[m])
-						.attr('stroke-width', 2)
-						.attr('fill', 'none');
-
-				if (opts.trace)
-					var trace = svg
-						.selectAll(".text")
-						.data(pdata)
-						.enter()
-						.append("text")
-						.text(function (d){ return d[opts.x].toFixed(2)+" , "+d[opts.y].toFixed(2); } )
-						.attr("x",function (d){ return x(d[opts.x]); } )
-						.attr("y",function (d){ return y(d[opts.y]); } )
-						.attr("dy", ".35em")
-						.attr("font-family", "sans-serif")
-						.attr("font-size", "11px")
-						.attr("fill", "red");
+					if (opts.trace)
+						var trace = svg
+							.selectAll(".text")
+							.data(pdata)
+							.enter()
+							.append("text")
+							.text(function (d){ return d[xidx].toFixed(2)+" , "+d[yidx].toFixed(2); } )
+							.attr("x",function (d){ return x(d[xidx]); } )
+							.attr("y",function (d){ return y(d[yidx]); } )
+							.attr("dy", ".35em")
+							.attr("font-family", "sans-serif")
+							.attr("font-size", "11px")
+							.attr("fill", "red");
+							
+				});			
 			}
 
 			function axes(opts) {
@@ -208,19 +218,19 @@ append base_body
 								if (refs)
 									refs.each( function (n,ref) {
 										if (ref.Pick)
-											cb( opts.src + "?Name=" + ref.Name );
+											cb( ref.Name, opts.src + "?Name=" + ref.Name );
 									});
 								else
 									alert(key+" legend redirect path invalid");
 							});					
 					
 						else
-							cb( opts.src + "?Name=" + key );
+							cb( key, opts.src + "?Name=" + key + "&_json=Result" );
 							
 					});
 
 				else
-					cb( opts.src );
+					cb( "", opts.src );
 			}
 			
 			var 
@@ -258,59 +268,78 @@ append base_body
 				trace: "#{query.trace}",
 				debug: "#{query.debug}",
 
-				marker: split("#{query.marker}", ["dot"]),
-				line: split("#{query.line}", ["blue"]),
+				marker: parse("#{query.marker}", ["dot"]),
+				line: parse("#{query.line}", ["blue"]),
 
-				label: split("#{query.label}", []),
-				idx: split("#{query.index}", []),
-				auto: split("#{query.auto}", []),
-				legend: split("#{query.legend}", null),
-				xy: split("#{query.xy}" , ["0","1"]),
-				
-				ref: JSON.parse("[#{query.ref}]"),
-				min: JSON.parse("[#{query.min}]"),
-				max: JSON.parse("[#{query.max}]"),
-				init:  JSON.parse("[#{query.init}]"),
-				extra: JSON.parse("[#{query.extra}]")
+				label: parse("#{query.label}", []),
+				idx: parse("#{query.index}", []),
+				auto: parse("#{query.auto}", []),
+				legend: parse("#{query.legend}", null),
+				xy: parse("#{query.xy}" , [0,1]),
+				x: 0,
+				y: 1,				
+				ys: [],
+				ref: parse("#{query.ref}", []),
+				min: parse("#{query.min}", []),
+				max: parse("#{query.max}", []),
+				init:  parse("#{query.init}", []),
+				extra: parse("#{query.extra}", [])
 			};
 
-			opts.x = parseInt(opts.xy[0]); if (opts.x != NaN) opts.x = opts.xy[0];
-			opts.y = parseInt(opts.xy[1]); if (opts.y != NaN) opts.y = opts.xy[1];
-
+			opts.xy.each(function (n,xy) {
+				if (n == 0) {
+					if ((opts.x = parseInt(xy)) != NaN) opts.x = xy;
+				}
+				else {
+					if((opts.y = parseInt(xy)) != NaN) opts.y = xy;
+					opts.ys.push( opts.y );
+				}
+			});
+			
 			if (opts.debug) 
 				alert(JSON.stringify(opts));
 
-			source(opts, function (src) {  // get source path
+			var
+					init = true,
+					xidx = opts.x,
+					yidx = opts.y;
+			
+			source(opts, function (name, src) {  // get source path
 			
 				if (opts.debug) alert("plot "+src);
 				
-				d3.json(src, function(data) {  // get source data
+				d3.json(src, function(recs) {  // get source data
 				
-					if (opts.debug) alert( data ? data.length+" points read" : "no data read");
+					recs.each( function (recn,data) {
 
-					if (n == 0) {  // setup axes on first source
-						if (opts.auto[0]) // assumes data is an array
-							x.domain(d3.extent(data, function(d) { return d[opts.x]; })).nice();
-						else
-							x.domain([opts.min[0] || 0, opts.max[0] || 1]);
+						if (init) {  // setup axes on first source
+							init = false;
 
-						if (opts.auto[1]) 
-							y.domain(d3.extent(data, function(d) { return d[opts.y]; })).nice();
-						else
-							y.domain([opts.min[1] || 0, opts.max[1] || 1]);
+							if (opts.auto[0]) // assumes data is an array
+								x.domain(d3.extent(data, function(d) { return d[xidx]; })).nice();
+							else
+								x.domain([opts.min[0] || 0, opts.max[0] || 1]);
 
-						axes(opts);
-					}
+							if (opts.auto[1]) 
+								y.domain(d3.extent(data, function(d) { return d[yidx]; })).nice();
+							else
+								y.domain([opts.min[1] || 0, opts.max[1] || 1]);
+
+							axes(opts);
+						}
 					
-					switch (data.constructor) {
-						case Object:
-							for (var n in data) plot(data[n],opts);
-							break;
+						switch (data.constructor) {
+							case Object:
+								for (var n in data) 
+									if (data[n].constructor == Array)
+										plot(name+"."+n, data[n], opts);
+								break;
 
-						case Array:
-							plot(data,opts);
-							break;
-					}
+							case Array:
+								plot(name, data, opts);
+								break;
+						}
+					});
 
 				});
 			});
@@ -328,7 +357,7 @@ append base_body
 				debug = display derived options switch
 				min = X,Y
 				max = X,Y
-				xy = key,key || idx,idx
+				xy = key,key,... || idx,idx,...
 				ref = [x,y], ... reference path
 				init = [x,y], ... data to prefix
 				extra = [x,y], ... data to append
