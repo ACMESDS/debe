@@ -71,15 +71,32 @@ append base_body
 				}
 			}
 
-			function plot (name,data,opts) {
+			function plot (name,data) {
 
 				var pdata = opts.init.concat(data.concat(opts.extra));
 				var line = d3.svg.line();
 				var xidx = opts.x;
 				
 				opts.ys.each(function (n, yidx) {
-					alert(JSON.stringify([name,xidx,yidx]));
+					//alert(JSON.stringify([name,opts.initialize,xidx,yidx]));
 					
+						if (opts.initialize) {  // setup axes on first source
+							opts.initialize = false;
+
+							if (opts.auto[0]) // assumes data is an array
+								x.domain(d3.extent(data, function(d) { return d[xidx]; })).nice();
+							else
+								x.domain([opts.min[0] || 0, opts.max[0] || 1]);
+
+							if (opts.auto[1]) 
+								y.domain(d3.extent(data, function(d) { return d[yidx]; })).nice();
+							else
+								y.domain([opts.min[1] || 0, opts.max[1] || 1]);
+
+							axes(opts);
+						}
+					
+
 					line
 						.x(function (d) { return x(d[xidx]); })
 						.y(function (d) { return y(d[yidx]); })
@@ -142,10 +159,10 @@ append base_body
 					.append("text")
 					.attr("class", "label")
 					.attr("x", width)
-					.attr("y", -25)
+					.attr("y", -45)
 					.attr("dy", "1em")
 					.style("text-anchor", "end")
-					.text(opts.label[0] || opts.idx[0]);
+					.text(opts.label[0] || "x");
 
 				var yaxis = svg
 					.append("g")
@@ -154,10 +171,10 @@ append base_body
 					.append("text")
 					.attr("class", "label")
 					.attr("transform", "rotate(-90)")
-					.attr("y", 10)
+					.attr("y", 20)
 					.attr("dy", "1em")
 					.style("text-anchor", "end")
-					.text(opts.label[1] || opts.idx[1]);
+					.text(opts.label[1] || "y");
 
 				svg
 					.append('path')
@@ -269,16 +286,16 @@ append base_body
 				debug: "#{query.debug}",
 
 				marker: parse("#{query.marker}", ["dot"]),
-				line: parse("#{query.line}", ["blue"]),
+				line: parse("#{query.line}", ["blue","green","red","black","orange","yellow"]),
 
 				label: parse("#{query.label}", []),
-				idx: parse("#{query.index}", []),
 				auto: parse("#{query.auto}", []),
 				legend: parse("#{query.legend}", null),
 				xy: parse("#{query.xy}" , [0,1]),
 				x: 0,
 				y: 1,				
 				ys: [],
+				initialize: true,
 				ref: parse("#{query.ref}", []),
 				min: parse("#{query.min}", []),
 				max: parse("#{query.max}", []),
@@ -299,44 +316,23 @@ append base_body
 			if (opts.debug) 
 				alert(JSON.stringify(opts));
 
-			var
-					init = true,
-					xidx = opts.x,
-					yidx = opts.y;
-			
 			source(opts, function (name, src) {  // get source path
 			
-				if (opts.debug) alert("plot "+src);
+				//if (opts.debug) alert("plot "+src);
 				
 				d3.json(src, function(recs) {  // get source data
 				
 					recs.each( function (recn,data) {
 
-						if (init) {  // setup axes on first source
-							init = false;
-
-							if (opts.auto[0]) // assumes data is an array
-								x.domain(d3.extent(data, function(d) { return d[xidx]; })).nice();
-							else
-								x.domain([opts.min[0] || 0, opts.max[0] || 1]);
-
-							if (opts.auto[1]) 
-								y.domain(d3.extent(data, function(d) { return d[yidx]; })).nice();
-							else
-								y.domain([opts.min[1] || 0, opts.max[1] || 1]);
-
-							axes(opts);
-						}
-					
 						switch (data.constructor) {
 							case Object:
 								for (var n in data) 
 									if (data[n].constructor == Array)
-										plot(name+"."+n, data[n], opts);
+										plot(name+"."+n, data[n]);
 								break;
 
 							case Array:
-								plot(name, data, opts);
+								plot(name, data);
 								break;
 						}
 					});
