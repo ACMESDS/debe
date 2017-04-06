@@ -2313,7 +2313,7 @@ WIDGET.prototype.menuTools = function () {
 											maxWidth : "80%",
 											minWidth : 600,
 											minHeight: 100,
-											maxHeight: 400,
+											maxHeight: 800,
 											showDelay: 1000,
 											hideDelay: 50,
 											collapisible: true,
@@ -4093,7 +4093,6 @@ for (var chart in DISPLAYS)
 				},
 				tips: {
 					width: 140,
-					maxHeight: 200,
 					maxHeight: 300,
 					anchor: 'left',
 					anchorOffset: 2,
