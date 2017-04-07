@@ -61,9 +61,9 @@ append base_body
 		#hold.Positives(path="/positives.FILES.db",cols="Name")
 		#hold.Negatives(path="/negatives.FILES.db",cols="Name")
 
-	- titlebar = [table.hyper(":project"), client.hyper("/home.view?option=chat"), ("QoS"+profile.QoS).hyper(":profile"), "Issues".hyper(), "Baseline".hyper("git.exe"), "Moderate".hyper(), warning ? warning.substr(0,16).hyper("/warning.view") : ""].join(" || ")
+	- titlebar = [table.hyper(":project"), client.hyper("/home.view?option=chat"), ("QoS"+profile.QoS).hyper(":profile"), "Issues".hyper(), "Baseline".hyper("git.exe"), "Moderate".hyper(), warning ? warning.substr(0,16).fontcolor("red").hyper("/warning.view") : ""].join(" || ")
 	- goto = query.goto || ""
-	
+
 	case view
 		when "Min"
 
