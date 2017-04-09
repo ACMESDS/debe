@@ -104,6 +104,17 @@ var
 	},
 	
 	"reqflags.edits.": {  //< intercept ?_flag=keys
+		blog: function (keys,recs,req) {  	// blog on keys fields
+			recs.each( function (n, rec) { 
+				keys.each( function (m, key) {
+					if ( val = rec[key] )
+						if (val.constructor == String) 
+							if (val.charAt(0) == "/")							
+								rec[key] = "no iframes".tag("iframe",{src:val,width:400,height:400});
+				});
+			});
+		},
+		
 		jade: function (keys,recs,req) {  	// jade markdown on keys fields
 
 			recs.each( function (n, rec) { 
@@ -1476,9 +1487,10 @@ function readJade(req,res) {
 append base_parms
 	- tech = "extjs"
 append base_body
-	#grid.V${req.table}(path="${req.table}.db",cols="${cols.join()}",dims="1200,600",page=50,nowrap)
+	#grid.view.${req.table}(path="/${req.table}.db?${req.search}",cols="${cols.join()}",dims="1200,600",page=50,nowrap)
 `;
-								
+//console.log(skin);
+			
 			res( skin.render(req) );
 		}			
 							  
@@ -1509,7 +1521,6 @@ append base_body
 
 						else  // try sql table
 							sql.query("DESCRIBE ??",req.table, function (err,fields) {
-
 								if (err) 
 									res( DEBE.errors.dynamicSkin );
 

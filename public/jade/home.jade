@@ -7,7 +7,7 @@ append site_help
 	p Welcome to the #{title}.
 append site_parms
 	- view = query.option || "Min"
-	- parms = {Min:"Min",search:"search",brief:"brief",capture:"capture",chat:"chat","news contribute":"contribute",news:"news","news print":"print"}
+	- parms = {Min:"Min",search:"search",brief:"brief",capture:"capture",chat:"chat",news:"news","news print":"print"}
 append site_body
 
 	case view
@@ -54,7 +54,7 @@ append site_body
 				page=25,dims=dims,
 				cols="User,Org,Location,At,Joined.d,Message.x")
 
-		when "contribute"
+		when "news"
 			#grid.News(
 				path="/news.db",
 				page=25,dims=dims,
@@ -63,13 +63,7 @@ append site_body
 		when "brief"
 			#home_brief.Briefing(dims="1400,900")
 		
-		when "news"				
-			#grid.News(
-				path="news.db",refresh=300,
-				page=30,dims=dims,calc,
-				cols="Category,Message.h")
-
-		when "print"				
+		when "print"
 			#grid.News(
 				path="news.db",
 				page=60,dims="800,4000",calc,

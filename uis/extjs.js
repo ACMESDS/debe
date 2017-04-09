@@ -667,21 +667,21 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				//draggable 	: true,
 				//hideable	: true,
 				//locked		: fLock,
-				disabled	: fOff,
+				//disabled	: fOff,
 				width		: 400,
 				text		: fLabel,
-				qtip		: fTip, 
-				qtitle	 	: fTipTitle,
+				//qtip		: fTip, 
+				//qtitle	 	: fTipTitle,
 				editor		: {	
 					xtype: 'htmleditor',
-					scrollable: true,
+					//scrollable: true,
 					//grow: true,
 					width: 400,
-					height: 400,
-					disabled: fOff
-				},
-				renderer 	: fCalc ? calcRender : null,
-				listeners	: fListen   // EXTJS widget gets confused when embedded in grid
+					height: 400
+					//disabled: fOff
+				}
+				//renderer 	: fCalc ? calcRender : null,
+				//listeners	: fListen   // EXTJS widget gets confused when embedded in grid
 			};
 						
 		case 'x':		// text area
@@ -1992,7 +1992,7 @@ WIDGET.prototype.menuTools = function () {
 				var tarDS = DSLIST[link[0]];
 
 				tarDS.relink( function (proxy) {
-					proxy.url = ("/"+link[1]).format({ def: rec.getData() });
+					proxy.url = link.format({ def: rec.getData() });
 				});
 			});
 	}
@@ -2799,13 +2799,13 @@ WIDGET.prototype.menuTools = function () {
 
 					case "datasets":
 						
-						if (ds = DSLIST[tok]) {
+						if (ds = DSLIST[tok]) 
 							return combo( tok, ds, function (path, parms) {
 								Widget.Data.relink( function (proxy, flags) {
 									proxy.url = path;
 								});
 							});
-						}
+
 						else
 							return button( tok, function () {
 							});
