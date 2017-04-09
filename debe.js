@@ -76,7 +76,7 @@ var
 	"reqflags.traps." : {  //< trap ?_flag to reorder query/body parms
 		save: function (req) {
 			var cleanurl = req.url.replace(`_save=${req.flags.save}`,"");
-Trace(`PUBLISH ${cleanurl} AT ${req.flags.save}`);
+			Trace(`PUBLISH ${cleanurl} AT ${req.flags.save}`);
 			req.sql.query("INSERT INTO engines SET ?", {
 				Name: req.flags.save,
 				Enabled: 1,
@@ -158,12 +158,21 @@ append layout_body
 		
 		json: function json(keys,recs,req) {
 			recs.each( function (n,rec) {
-				keys.each( function (i,n) {
-					try {
-						rec[n] = (rec[n]||"").parse({});
-					}
-					catch (err) {
-					}
+				keys.each( function (k,key) {
+					var src = rec;
+					key.split(".").each( function (k,key) {
+						if (k)
+							src = src[key];
+
+						else
+							try {
+								src = JSON.parse(src[key]);
+								delete rec[key];
+							}
+							catch (err) {
+							}
+					});
+					rec[key] = src;
 				});
 			});
 		}

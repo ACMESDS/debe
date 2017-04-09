@@ -11,6 +11,7 @@
 		debug = display derived options switch
 		min = X,Y
 		max = X,Y
+		json = key.key.key,key.key, ...
 		xy = key,key,... || idx,idx, ...
 		ref = [x,y], ... reference path
 		init = [x,y], ... data to prefix
@@ -77,6 +78,8 @@ append base_body
 				var line = d3.svg.line();
 				var xidx = opts.x;
 				
+				if (opts.debug) alert(JSON.stringify(data));
+				
 				opts.ys.each(function (n, yidx) {
 					//alert(JSON.stringify([name,opts.initialize,xidx,yidx]));
 					
@@ -95,7 +98,6 @@ append base_body
 
 							axes(opts);
 						}
-					
 
 					line
 						.x(function (d) { return x(d[xidx]); })
@@ -242,7 +244,7 @@ append base_body
 							});					
 					
 						else
-							cb( key, opts.src + "?Name=" + key + "&_json=Result" );
+							cb( key, opts.src + "?Name=" + key +"&_json=" + opts.json );
 							
 					});
 
@@ -290,6 +292,7 @@ append base_body
 
 				label: parse("#{query.label}", []),
 				auto: parse("#{query.auto}", []),
+				json: "#{query.json}",
 				legend: parse("#{query.legend}", null),
 				xy: parse("#{query.xy}" , [0,1]),
 				x: 0,
@@ -321,18 +324,16 @@ append base_body
 				//if (opts.debug) alert("plot "+src);
 				
 				d3.json(src, function(recs) {  // get source data
-				
-					recs.each( function (recn,data) {
-
-						switch (data.constructor) {
+					recs.each( function (recn,rec) {
+						switch (rec.constructor) {
 							case Object:
-								for (var n in data) 
-									if (data[n].constructor == Array)
-										plot(name+"."+n, data[n]);
+								for (var n in rec) 
+									if (rec[n].constructor == Array) 
+										plot(name+"."+n, rec[n]);
 								break;
 
 							case Array:
-								plot(name, data);
+								plot(name, rec);
 								break;
 						}
 					});
@@ -357,5 +358,6 @@ append base_body
 				ref = [x,y], ... reference path
 				init = [x,y], ... data to prefix
 				extra = [x,y], ... data to append
+				json = key.key.key,key.key, ...
 		
 // UNCLASSIFIED
