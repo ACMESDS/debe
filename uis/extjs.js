@@ -2016,7 +2016,8 @@ WIDGET.prototype.menuTools = function () {
 			listeners: {
 				afterRender: function (combo,eOpts) { 
 					if (ds.table == "lookups")
-						combo.store.filter("Ref", (anchor.id == "grid" ) ? name : label );
+						combo.store.filter("Ref", name);
+										   // (anchor.id == "grid" ) ? name : label );
 					//combo.setValue(null); // EXTJS BUG set globally
 				}, 
 				change: function (field,newValue,oldValue,eOpts) {
@@ -2822,8 +2823,7 @@ WIDGET.prototype.menuTools = function () {
 											url : Action,
 											method: "GET",
 											success: function (res) {
-												var info = Ext.decode(res.responseText);
-												Ext.Msg.alert("status",info.msg);
+												Ext.Msg.alert("status",res.responseText);
 											},
 											failure: function (res) {
 												Ext.Msg.alert("status",STATUS.FAULT);
@@ -3335,7 +3335,7 @@ WIDGET.prototype.wrapper = function () {
 	this.UIs = [this.UI];
 	
 	this.menuTools();
-
+	
 	this.UI = Ext.create('Ext.panel.Panel', {
 		title		: this.title,
 		region		: this.region,
@@ -3428,10 +3428,8 @@ WIDGET.prototype.hold = function () {
 WIDGET.prototype.post = function () { 
 	this.dataUI = this.UI = this.Data.Store;
 
-	if (! this.nowrap ) {
-		this.head = "Refresh";
-		this.wrapper();
-	}
+	if (! this.nowrap ) this.wrapper();
+
 }
 
 /**
