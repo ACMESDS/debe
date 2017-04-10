@@ -1475,6 +1475,7 @@ function DS(anchor) {
 	var flags = { // non-record fields attached to all ajax calls
 		_view: (anchor.id == "hold") ? "" : BASE.user.source, 		// view-dataset crossref
 		_pivot: pivots, 	// pivot fields
+		_limit: page, 
 		_index: index		// field generators  
 	};
 
