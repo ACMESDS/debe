@@ -107,24 +107,29 @@ var
 		blog: function (keys,recs,req) {  	// blog on keys fields
 			recs.each( function (n, rec) { 
 				keys.each( function (m, key) {
-					if ( val = rec[key] )
+					if (val = rec[key])
 						if (val.constructor == String) 
-							if (val.charAt(0) == "/")							
+							if (val.substr(0,2) == "//") 
+								rec[key] = val.substr(2).render(req);
+							
+							else
+							if (val.substr(0,1) == "/")
 								rec[key] = "no iframes".tag("iframe",{src:val,width:400,height:400});
+							
+							else
+								rec[key] = 
+`:markdown
+	${val}` .render(req);
 				});
 			});
 		},
 		
+		/*
 		jade: function (keys,recs,req) {  	// jade markdown on keys fields
 
 			recs.each( function (n, rec) { 
 				keys.each( function (m, key) {
 					rec[key] = "=$" + (rec[key]+"").render(req);
-					/*"=$" + "Browser does not support iframes".tag("iframe", {
-						width: 400,
-						height: 400,
-						srcdoc: (rec[key]+"").render(req)
-					});*/
 				});
 			});
 		},
@@ -166,6 +171,7 @@ append layout_body
 				});
 			});
 		},
+		*/
 		
 		json: function json(keys,recs,req) {
 			recs.each( function (n,rec) {

@@ -136,11 +136,8 @@ append site_body
 					# Conversion parameters
 
 						_queue	= KEY for queuing record state
-						_mark	= KEY,KEY,... markdown these KEYs 
-						_jade	= KEY,KEY,... jadeify these KEYs (experimental - use _kjade)
-						_kjade	= KEY,KEY,... jadeify these KEYs (to be retired)
 						_json	= KEY,KEY,... json parse KEYs indexing with KEY.KEY.KEY...
-						_blog	= KEY,KEY,... iframe the specified KEYs
+						_blog	= KEY,KEY,... format KEYs containing markdown, /VIEW, or //JADE
 						_nav	= CMD,root/A/B/... folder navigation CMD=open|tree|rename|size 
 
 					# Auxillary parameters
@@ -155,6 +152,11 @@ append site_body
 						_limit	= number of records to return
 						_start	= record position to start returning records
 						_page	= page number (reserved)
+
+					# Legacy parameter
+						_mark	= KEY,KEY,... markdown these KEYs 
+						_jade	= KEY,KEY,... jadeify these KEYs (experimental - use _kjade)
+						_kjade	= KEY,KEY,... jadeify these KEYs (to be retired)
 
 			#fit.Examples
 				:markdown

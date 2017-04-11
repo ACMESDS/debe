@@ -255,9 +255,9 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 
 				var tags = {
 					text: CALC.TAGTEXT[val.substr(0,2)],
-					cell: CALC.TAGCELL[val.substr(0,2)],
-					blog: val.substr(0,1) == "/",
-					jade: val.substr(0,1) == "$" 
+					cell: CALC.TAGCELL[val.substr(0,2)]
+					//blog: val.substr(0,1) == "/",
+					//jade: val.substr(0,1) == "$" 
 				};
 					
 				if (tags.text)
@@ -269,6 +269,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 					return val.substr(2);
 				}
 				
+				/*
 				else
 				if (tags.blog)
 					if (CALC.BLOG) {
@@ -277,12 +278,15 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 					}
 					else
 						return val.fontcolor("red");
-
+				*/
+				
+				/*
 				else 
 				if (tags.jade)  { 
 					CALC.BLOG.srcdoc = val.substr(1);
 					return "".tag("iframe",CALC.BLOG);
 				}
+				*/
 				
 				else {
 					eval("var rtn="+val);
@@ -356,7 +360,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 						// Ext.Msg.alert(fName,"Cannot edit an action field");
 					}
 				});
-				});
+			});
 				
 			return {
 				xtype		: "actioncolumn", 
@@ -633,7 +637,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 		case 'h':
 		case 'html':	// html
 		case 'mediumtext':	
-			return (navigator.browser == "xxFireFox")  // EXTJS-FF BUG (xx->"" to enable)
+			return true // (navigator.browser == "xxFireFox")  // EXTJS-FF BUG (xx->"" to enable)
 			? {
 				fType		: fType,
 				dataIndex	: fName,
@@ -1310,7 +1314,13 @@ function DS(anchor) {
  * Slaves Pointer to Data Tables linked to this DS 
  */
 	this.Slaves 	= {};
+/**
+ * @property {Array}
+ * List of  bloggable fields
+ */
 		
+	var Blogs = this.Blogs = [];
+	
 	// Derive fields, types, labels, tips and groups if specified.
 
 /**
@@ -1328,7 +1338,8 @@ function DS(anchor) {
 
 	cols = this.cols = cols.parse( PARMS, function cb(tok,args) {
 
-		var fOpts = tok.split("."),
+		var 
+			fOpts = tok.split("."),
 			fName = fOpts[0],
 			fParm = PARMS[ fName.toLowerCase() ] || {Type:calc ? "html" : "text",Label:fName,Special:""},
 			fType = fOpts[1] || fParm.Type || "text",
@@ -1345,6 +1356,8 @@ function DS(anchor) {
 		
 		var fCol = gridColumn(fType,fName,fOff,fLock,fLabel,fTip,calc);
 				
+		if (fType == "x" || fType=="h") Blogs.push( fName );
+
 		switch (fSum) {			// Add row aggregator if needed
 			case "min":
 			case "max":
@@ -1731,7 +1744,7 @@ Ext.onReady( function () {
 				dims:"1200,600",title:"",page:"",plugins:"cXF",
 				//guard:"",
 				dock:"head",sync:"",
-				head:"Status,Search,Datasets,Insert,Update,Delete,Select,Execute,|,Print,Refresh,Delta,Help",
+				head:"Status,Search,Datasets,Insert,Update,Delete,Select,Execute,|,Blog,Print,Refresh,Delta,Help",
 				update:"",select:"",execute:"",delete:""},
 			PARMS : {
 				left:"dock",right:"dock",top:"dock",bottom:"dock",head:"dock",
@@ -2170,7 +2183,8 @@ WIDGET.prototype.menuTools = function () {
 		help: "help",
 		print: "print",
 		refresh: "refresh",
-		delta: "toggle"
+		delta: "toggle",
+		blog: "right"
 	};
 
 	// define widget help text
@@ -2418,7 +2432,7 @@ WIDGET.prototype.menuTools = function () {
 
 					case "delta":
 
-						var delta = true;
+						var deltaed = true;
 						
 						if (isForm)
 							return nada;
@@ -2430,9 +2444,9 @@ WIDGET.prototype.menuTools = function () {
 								//Widget.Data.Store.setProxy(defineProxy(Widget.Data.proxy.url, delta ? {_delta:"Num"} : null));
 								
 								Widget.Data.relink( function (proxy,flags) {
-									flags._delta = delta ? "Num" : "";
+									flags._delta = deltaed ? "Num" : "";
 								});
-								delta = !delta;
+								deltaed = !deltaed;
 							});
 
 					case "refresh":
@@ -2455,6 +2469,24 @@ WIDGET.prototype.menuTools = function () {
 						else
 							return action( key, {PRINT:"N/A",Special:"Print."}, function () {
 								Ext.ux.grid.Printer.print(Widget.dataUI);
+							});
+
+					case "blog":
+	
+						var blogged = false;
+						
+						if (isForm)
+							return nada;
+						else
+							return action( key, {BLOG:"N/A",Special:"Blog."}, function () {
+								Widget.Data.relink( function (proxy, flags) {
+									if (blogged)
+										proxy.url = proxy.url.substr(0,proxy.url.indexOf("?"));
+									else
+										proxy.url = proxy.url +"_blog=" + Widget.Data.Blogs.join(",");
+									
+									blogged = !blogged;
+								});
 							});
 
 					case "|":
