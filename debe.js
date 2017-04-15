@@ -218,6 +218,17 @@ append layout_body
 		info: {},
 		filename: "./public/jade/ref.jade",	// jade reference path for includes, exports, appends		
 			
+		index: function (data,keys,rtn) {
+			keys.split(",").each(function (n,key) {
+				var src = data;
+				key.split(".").each( function (k,idx) {
+					src = src[idx];
+				});
+				rtn[key] = src;
+			});
+			return rtn;
+		},
+		
 		json: function (data) {  // dump dataset as json
 			return JSON.stringify(data);
 		},
@@ -305,7 +316,7 @@ append layout_body
 			
 			var rtns = [];
 			
-			if (index) index = index.split(",");
+			//if (index) index = index.split(",");
 			
 			data.each( function (n,rec) {
 				
@@ -328,13 +339,15 @@ append layout_body
 					}
 								
 				if (match)
-					if (index) {
+					if (index) 
+						rtns.push( DEBE.site.index(rec, index, {}) );
+					/*{
 						var rtn = {};
 						index.each( function (i,index) {
 							rtn[index] = rec[index];
 						});
 						rtns.push(rtn);
-					}
+					}*/
 					
 					else
 						rtns.push(rec);
@@ -391,7 +404,7 @@ append layout_body
 			res( txt );
 		},
 		tab: function (recs,req,res) {
-			res( TOTEM.site.show( recs ) );
+			res( DEBE.site.show( recs ) );
 		},
 		tree: function (recs,req,res) {
 			res( recs.treeify(0,recs.length,0,Object.keys(recs[0] || {})) );
