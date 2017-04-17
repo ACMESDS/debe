@@ -174,23 +174,30 @@ append layout_body
 		*/
 		
 		json: function json(keys,recs,req) {
+			var id = 1;
+			
 			recs.each( function (n,rec) {
+				var rtn = {ID: id++};
+				
 				keys.each( function (k,key) {
 					var src = rec;
-					key.split(".").each( function (k,key) {
-						if (k)
-							src = src[key];
+					key.split(".").each( function (k,idx) {
+						if (src)
+							if (k) 
+								src = src[idx];
 
-						else
-							try {
-								src = JSON.parse(src[key]);
-								delete rec[key];
-							}
-							catch (err) {
-							}
+							else 
+								try {
+									src = JSON.parse( src[idx] || "null" );
+								}
+								catch (err) {
+								}
 					});
-					rec[key] = src;
+					
+					rtn[key] = src;
 				});
+				
+				recs[n] = rtn;
 			});
 		}
 	},

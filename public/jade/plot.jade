@@ -1,21 +1,21 @@
 // UNCLASSIFIED
 //-
 	 Provides d3 scatter plot given:
-		src = path to json data
-		line = color,color, ...
-		marker = style,style, ... 
-		legend = name,name, ...  ||  /pick,/pick, ...
-		label = X,Y
-		auto = X,Y
-		trace = data trace switch
+		src = json path
+		line = color,color, ... line color
+		marker = style,style, ... line markers
+		name = name,name, ...  ||  /src,/src, ... data selector
+		label = X,Y labels
+		auto = X,Y auto scales
+		trace = data trace interval
 		debug = display derived options switch
-		min = X,Y
-		max = X,Y
-		json = key.key.key,key.key, ...
-		xy = key,key,... || idx,idx, ...
+		min = X,Y axis minimums
+		max = X,Y axis maximums
+		xy = xindex,yindex,yindex,... index to data
 		ref = [x,y], ... reference path
 		init = [x,y], ... data to prefix
 		extra = [x,y], ... data to append
+		sample = index,index, ... sample data with index=key.key...
 
 extends base
 append base_parms
@@ -31,7 +31,7 @@ append base_head
 			shape-rendering: crispEdges;
 		}
 
-		.dot { stroke: #000; }
+		.marker { stroke: #000; }
 		
 		.legend { }
 
@@ -78,8 +78,6 @@ append base_body
 				var line = d3.svg.line();
 				var xidx = opts.x;
 				
-				if (opts.debug) alert(JSON.stringify(data));
-				
 				opts.ys.each(function (n, yidx) {
 					//alert(JSON.stringify([name,opts.initialize,xidx,yidx]));
 					
@@ -106,12 +104,12 @@ append base_body
 
 					if (opts.marker.length)  			// add markers
 						for (var m=0,n=0,M=opts.marker.length; m<M; m++,n+=2) 
-							var dots = svg
-							.selectAll(".dot")
+							var marks = svg
+							.selectAll(".marker")
 							.data(pdata)
 							.enter()
-							.append("circle")
-							.attr("class", opts.marker[m])
+							.append( opts.marker[m] )
+							.attr("class", "marker")
 							.attr("r", 3.5)
 							.attr("cx", function(d) { return x(d[xidx]); })
 							.attr("cy", function(d) { return y(d[yidx]); })
@@ -127,13 +125,15 @@ append base_body
 							.attr('stroke-width', 2)
 							.attr('fill', 'none');
 
-					if (opts.trace)
-						var trace = svg
+					if (opts.trace) 
+						var 
+							labs = 0,
+							trace = svg
 							.selectAll(".text")
 							.data(pdata)
 							.enter()
 							.append("text")
-							.text(function (d){ return d[xidx].toFixed(2)+" , "+d[yidx].toFixed(2); } )
+							.text(function (d){ labs++; return (labs % opts.trace) ? "" : d[xidx].toFixed(2)+" , "+d[yidx].toFixed(2); } )
 							.attr("x",function (d){ return x(d[xidx]); } )
 							.attr("y",function (d){ return y(d[yidx]); } )
 							.attr("dy", ".35em")
@@ -200,7 +200,9 @@ append base_body
 					.attr('stroke-width', 2)
 					.attr('fill', 'none');
 
-				if (opts.legend) {   // add legend
+				//alert(JSON.stringify(opts));
+				
+				if (opts.name) {   // add legend
 					var legend = svg
 					.selectAll(".legend")
 					.data(color.domain())
@@ -209,7 +211,7 @@ append base_body
 					.attr("class", "legend")
 					.attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
 
-					for (var m=0,M=opts.legend.length; m<M; m++) {
+					for (var m=0,M=opts.name.length; m<M; m++) {
 						svg
 						.append("rect")
 						.attr("x", width - 18)
@@ -223,33 +225,43 @@ append base_body
 						.attr("y", 9)
 						.attr("dy", ".35em")
 						.style("text-anchor", "end")
-						.text(opts.legend[m]);
+						.text(opts.name[m]);
 					}
 				}
 			}
 			
 			function source(opts, cb) {
-				if (keys = opts.legend) 
-					keys.each( function (n,key) {					
+			
+				function getrecs(name, src, cb) {
+					d3.json(src, function(recs) {  
+						recs.each( function (recn,rec) {
+							if (opts.debug) alert("plot "+name+"."+recn + " id="+rec.ID);
+							cb(name+"."+recn, rec);
+						});
+					});
+				}
+				
+				if (keys = opts.name) 
+					keys.each( function (n,key) {
 					
 						if (key.charAt(0) == "/") 
 							d3.json( key, function (refs) {
 								if (refs)
 									refs.each( function (n,ref) {
 										if (ref.Pick)
-											cb( ref.Name, opts.src + "?Name=" + ref.Name );
+											getrecs( ref.Name, opts.src + "?Name=" + ref.Name, cb );
 									});
 								else
-									alert(key+" legend redirect path invalid");
-							});					
+									alert(key+" invalid path");
+							});	
 					
 						else
-							cb( key, opts.src + "?Name=" + key +"&_json=" + opts.json );
+							getrecs( key, opts.src + "?Name=" + key +"&_json=" + opts.sample, cb );
 							
 					});
 
 				else
-					cb( "", opts.src );
+					getrecs( "", opts.src, cb );
 			}
 			
 			var 
@@ -287,13 +299,13 @@ append base_body
 				trace: "#{query.trace}",
 				debug: "#{query.debug}",
 
-				marker: parse("#{query.marker}", ["dot"]),
+				marker: parse("#{query.marker}", ["circle", "square", "triangle"]),
 				line: parse("#{query.line}", ["blue","green","red","black","orange","yellow"]),
 
 				label: parse("#{query.label}", []),
 				auto: parse("#{query.auto}", []),
-				json: "#{query.json}",
-				legend: parse("#{query.legend}", null),
+				sample: "#{query.sample}",
+				name: parse("#{query.name}", null),
 				xy: parse("#{query.xy}" , [0,1]),
 				x: 0,
 				y: 1,				
@@ -308,10 +320,12 @@ append base_body
 
 			opts.xy.each(function (n,xy) {
 				if (n == 0) {
-					if ((opts.x = parseInt(xy)) != NaN) opts.x = xy;
+					//if ((opts.x = parseInt(xy)) != NaN) 
+					opts.x = xy;
 				}
 				else {
-					if((opts.y = parseInt(xy)) != NaN) opts.y = xy;
+					//if((opts.y = parseInt(xy)) != NaN) 
+					opts.y = xy;
 					opts.ys.push( opts.y );
 				}
 			});
@@ -319,45 +333,39 @@ append base_body
 			if (opts.debug) 
 				alert(JSON.stringify(opts));
 
-			source(opts, function (name, src) {  // get source path
+			source(opts, function (name, rec) { 
 			
-				//if (opts.debug) alert("plot "+src);
-				
-				d3.json(src, function(recs) {  // get source data
-					recs.each( function (recn,rec) {
-						switch (rec.constructor) {
-							case Object:
-								for (var n in rec) 
-									if (rec[n].constructor == Array) 
-										plot(name+"."+n, rec[n]);
-								break;
+				switch (rec.constructor) {
+					case Object:
+						for (var n in rec) 
+							if (rec[n])
+								if (rec[n].constructor == Array)  
+									plot(name+"."+n, rec[n]);
+						break;
 
-							case Array:
-								plot(name, rec);
-								break;
-						}
-					});
-
-				});
+					case Array:
+						plot(name, rec);
+						break;
+				}
 			});
 	else
 		:markdown
 			 Provides d3 scatter plot given:
 
-				src = path to json data
-				line = color,color, ...
-				marker = style,style, ... 
-				legend = name,name, ...  ||  /pick,/pick, ...
-				label = X,Y
-				auto = X,Y
-				trace = data trace switch
+				src = json path
+				line = color,color, ... line color
+				marker = style,style, ... line markers
+				name = name,name, ...  ||  /src,/src, ... data selector
+				label = X,Y labels
+				auto = X,Y auto scales
+				trace = data trace interval
 				debug = display derived options switch
-				min = X,Y
-				max = X,Y
-				xy = key,key,... || idx,idx,...
+				min = X,Y axis minimums
+				max = X,Y axis maximums
+				xy = xindex,yindex,yindex,... index to data
 				ref = [x,y], ... reference path
 				init = [x,y], ... data to prefix
-				extra = [x,y], ... data to append
-				json = key.key.key,key.key, ...
-		
+				extra = [x,y], ... data to append+
+				sample = index,index, ... sample data with index=key.key...
+
 // UNCLASSIFIED
