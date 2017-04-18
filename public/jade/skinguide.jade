@@ -549,44 +549,41 @@ append site_body
 						+ layout: **anchor** | **fit** | **hbox** | **vbox** | **box** | **table** | **column**
 						+ terminal: **grid** | **form** | **pivot** | **find** | **hold**
 						+ cartesian chart: **bar** | **bar3d** | **candlestick** | **line** | **scatter**
-						+ polar chart: **gauge** | **pie** | **pie3d** | **radar**
-						+ surface chart: (reserved)
-						+ raster chart: **image** (experimental)
+						+ polar chart: **gauge** | **pie** | **pie3d** | **radar** | **surface**
 
-					For example, the tabs in a **folder** (or the sections in uan **accordion**, or the regions
-					within a **border**) container are introduced by indented layouts, display or containers. 
-					The HTML and WIDGETs indented under a terminal form the terminal's tool-tips.  
+					For example, the tabs in a **folder** (or the sections in an **accordion**, or the regions
+					within a **border**) are introduced by indenting children widgets.  HTML and WIDGETs 
+					indented under a terminal widget define the terminal's tool-tips.  
 
 					A **post** widget can be used explictly or implictly:
 
-						#post.NAME(path="/SKIN.jade?src=SOURCE", ...)
-						#SKIN.NAME(path="SOURCE")
+						#post.NAME(path="/SKIN?src=SOURCE", ...)
+						#SKIN.NAME(path="/SOURCE")
 
-					The **hold** widget:
-
-						#hold.FIELD(path="SOURCE",cols="DISPLAY,VALUE,...")
-
-					holds data for comboboxes (with given DISPLAY VALUE cols) associated with the
-					FIELD.combo cols used in other terminals.
-
-					A widget's SOURCE **path** can reference a dataset, static data, skinning options, or (if a **post**)
-					a view, a file, or an area index:
-					+	/DATASET.db?QUERY
+					where SKIN can specifiy a dataset, skin, file or file area.
+					
+					A widget's SOURCE **path** can reference a dataset, or define static data, or define 
+					skinning options:
+					+	/DATASET?QUERY
 					+	[{key:val,...}]
 					+	{key:display,...} 
-					+	/SKIN.view
-					+	/FILE.TYPE?QUERY
-					+	/AREA/
 
-					The optional QUERY can contain #{nick}-context expressions:
+					An optional dataset QUERY can contain #{nick}-context expressions:
 					+ \\#{KEY ... F(...) ...}
 
-					where KEY and methods **F()** are defined in**Context Keys**.  The QUERY
+					where KEY and methods **F()** are defined in **Context Keys**.  The QUERY
 					may also contain client-context (dataset linking) expressions:
 					+ ${xs( 'N' ).KEY ... x.KEY ... ds( 'N' ).KEY ... d.KEY}
 
 					where xs('N') sets **x** to key the active record of dataset N, and ds('N') sets **d** to
 					key the properties of dataset N.
+
+					The **hold** widget:
+
+						#hold.FIELD(path="/DATASET",cols="DISPLAY,VALUE,...")
+
+					holds data for comboboxes (with given DISPLAY VALUE cols) associated with the
+					FIELD.combo cols used in other terminals.
 
 			#fit.Widget.Attributes
 
