@@ -108,7 +108,7 @@ append base_body
 							.selectAll(".marker")
 							.data(pdata)
 							.enter()
-							.append( opts.marker[m] )
+							.append( "circle" )
 							.attr("class", "marker")
 							.attr("r", 3.5)
 							.attr("cx", function(d) { return x(d[xidx]); })

@@ -68,6 +68,7 @@ append base_body
 		when "Min"
 
 			#border(
+				class=table,
 				head="Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),Options,Edit,LikeUs,Help",
 				LikeUs="/likeus.db",
 				View="/files.view",
@@ -95,6 +96,7 @@ append base_body
 		when "Basic"
 
 			#border(
+				class=table,
 				title=titlebar,
 				head="Themes,Options,Edit,Help",dims=dims,
 				Edit="/edit.view?name="+table)
@@ -120,6 +122,7 @@ append base_body
 		when "Home"
 
 			#border(
+				class=table,
 				title=titlebar,
 				head="Health,Users,Themes,Capture,Links,Options,Edit,Likeus,Help",
 				LikeUs="/likeus.db",
@@ -148,13 +151,14 @@ append base_body
 
 		when "Kiss"
 
-			#folder(dock=dock,active=goto)
+			#folder(dock=dock,active=goto,class=table)
 				block site_help
 				block site_body
 
 		when "Monster"
 
 			#border(
+				class=table,
 				title=titlebar,
 				head="More(Health,Users,Links,Themes),Engines,Queues,Uploads,$uploads,Stores,$stores,Views,Options,Edit,LikeUs,Help",
 				LikeUs="/likeus.db",dims=dims,
@@ -203,6 +207,7 @@ append base_body
 			#hold.Comfort(path="/lookups.db",cols="Name,Path")
 
 			#border(
+				class=table,			
 				crush,
 				head="Comfort,Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),Options,Edit,Likeus,Help",
 				LikeUs="/likeus.db",
@@ -225,6 +230,7 @@ append base_body
 		default
 
 			#border(
+				class=table,			
 				title=titlebar,
 				head="System(Health,Users,Links,Engines,Queues),Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),Options,Edit,LikeUs,Capture,Help",
 				LikeUs="/likeus.db",

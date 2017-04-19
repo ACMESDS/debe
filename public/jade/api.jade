@@ -111,9 +111,9 @@ append site_body
 						A.KEY = B.KEY 	// Join datasets A and B on specified KEYs (experimental)
 						expression 			// if unsafe queries enabled
 
-					# Body parameters
+					# Body and File Upload parameters
 
-						JSON formatted parameters or a file transfer script:
+						JSON formatted parameters or a file upload script:
 							key = val ; key = val ; ...  [cr newline]
 							:
 							:
@@ -127,7 +127,7 @@ append site_body
 						_qex	= search records by query expansion over fulltext keys
 						_score	= minimum search score required
 
-					# Grouping parameters
+					# Indexing and Grouping parameters
 
 						_pivot	= KEY,KEY,... pivot records on KEYs with NodeID = "ID,ID,..." groups
 						_browse	= KEY,KEY,... browse records on KEYs with NodeID = "name/name/ ..." 

@@ -202,7 +202,7 @@ function defineProxy(path,links,key) {
 	//if (links) alert(JSON.stringify(links)); 
 	return {								// Proxy to read/write from/to the server.
 		type: 'rest',						// wonderful restful
-		url: path,							// HTTP path to this table table
+		url: path,							// HTTP path to this dataset
 		reader: {							// parms to read JSON from server
 			type			: "json",		// of course
 			root			: PROXY.ROOT,	
@@ -330,12 +330,10 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				target	: me.getEl(),                 
 				html	 	: me.qtip,
 				title	 	: me.qtitle,
-				autoHide : true,
-				//draggable: true,
+				autoHide : false, 
 				maxWidth : 800,
 				minWidth : 200,
 				collapisible: true,
-				//collapseFirst: true,				
 				dismissDelay: 0
 			});
 		}
@@ -367,7 +365,6 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				fType		: fType,
 				dataIndex	: fName,
 				sortable	: false,
-				//draggable 	: true,
 				hideable	: true,
 				layout		: "hbox",
 				menuDisabled: true,
@@ -393,7 +390,6 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				dataIndex	: fName,
 				filter		: "boolean",
 				sortable	: true,
-				//draggable 	: true,
 				hideable	: true,
 				locked		: fLock,
 				disabled	: fOff,
@@ -423,7 +419,6 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				dataIndex	: fName,
 				filter		: "string",
 				sortable	: true,
-				//draggable 	: true,
 				hideable	: true,
 				locked		: fLock,
 				width		: 100,
@@ -455,7 +450,6 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				dataIndex	: fName,
 				filter		: "date",
 				sortable	: true,
-				//draggable 	: true,
 				hideable	: true,
 				locked		: fLock,
 				disabled	: fOff,
@@ -487,7 +481,6 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				dataIndex	: fName,
 				filter		: "number",
 				sortable	: true,
-				//draggable 	: true,
 				hideable	: true,
 				locked		: fLock,
 				disabled	: fOff,
@@ -517,7 +510,6 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				dataIndex	: fName,
 				filter		: "number",
 				sortable	: true,
-				//draggable 	: true,
 				hideable	: true,
 				locked		: fLock,
 				disabled	: fOff,
@@ -547,7 +539,6 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				dataIndex	: fName,
 				filter		: "boolean",
 				sortable	: true,
-				//draggable 	: true,
 				hideable	: true,
 				locked		: fLock,
 				disabled	: fOff,
@@ -580,7 +571,6 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				dataIndex	: fName,
 				filter		: "number",
 				sortable	: true,
-				//draggable 	: true,
 				hideable	: true,
 				locked		: fLock,
 				disabled	: fOff,
@@ -609,7 +599,6 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				dataIndex	: fName,
 				filter		: "number",
 				sortable	: true,
-				//draggable 	: true,
 				hideable	: true,
 				locked		: fLock,
 				disabled	: fOff,
@@ -642,7 +631,6 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				fType		: fType,
 				dataIndex	: fName,
 				sortable	: true,
-				//draggable 	: true,
 				hideable	: true,
 				locked		: fLock,
 				disabled	: fOff,
@@ -668,7 +656,6 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				fType		: fType,
 				dataIndex	: fName,
 				//sortable	: true,
-				//draggable 	: true,
 				//hideable	: true,
 				//locked		: fLock,
 				//disabled	: fOff,
@@ -696,7 +683,6 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				enableKeyEvents: true,
 				dataIndex	: fName,
 				sortable	: true,
-				//draggable 	: true,
 				hideable	: true,
 				locked		: fLock,
 				disabled	: fOff,
@@ -773,7 +759,6 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				fType		: fType,
 				dataIndex	: fName,
 				sortable	: true,
-				//draggable 	: true,
 				hideable	: true,
 				locked		: fLock,
 				disabled	: fOff,
@@ -830,7 +815,6 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 					dataIndex	: fName,
 					filter		: "string",
 					sortable	: true,
-					//draggable 	: true,
 					hideable	: true,
 					locked		: fLock,
 					disabled	: fOff,
@@ -883,7 +867,6 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 					dataIndex	: fName,
 					filter		: "string",
 					sortable	: true,
-					//draggable 	: true,
 					hideable	: true,
 					locked		: fLock,
 					disabled	: fOff,
@@ -913,7 +896,6 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 					dataIndex	: fName,
 					filter		: "date",
 					sortable	: true,
-					//draggable 	: true,
 					hideable	: true,
 					locked		: fLock,
 					disabled	: fOff,
@@ -942,7 +924,6 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 					dataIndex	: fName,
 					filter			: "string",
 					sortable	: true,
-					//draggable 	: true,
 					hideable	: true,
 					locked		: fLock,
 					disabled	: fOff,
@@ -1259,12 +1240,13 @@ function DS(anchor) {
  */
 		path 	= this.path = anchor.getAttribute("path") || "",  
 		
-/**
+/*
  * @property {String}
  * Database table specified in path
  */
-		parts 	= (("[{".indexOf(path.charAt(0)) < 0 ) ? path : ".").split("."),
-		table 		= this.table = parts[0].substr(1),
+		dataset = this.dataset = ( "[{".indexOf(path.charAt(0)) >= 0 ) 
+			? ""
+			: path.split("?")[0].split(".")[0];
 /**
  * @property {String}
  * pivots pivots to use on each load.
@@ -1345,7 +1327,8 @@ function DS(anchor) {
 			fType = fOpts[1] || fParm.Type || "text",
 			fLabel = fOpts[2] || fParm.Label || fName,
 			fSum = fOpts[3],
-			fChange = HISTORY[table+"."+fName] || {Moderators:""},
+			//fChange = HISTORY[table+"."+fName] || {Moderators:""},
+			fChange = HISTORY[path+"."+fName] || {Moderators:""},
 			fTip = 	"edit".tag("a",{href:`/parms.view?parm=${fName}`}) 
 					+ " | " + fChange.Moderators 
 					+ " | " + "moderate".tag("a", {href:"/moderate.view"})
@@ -1465,7 +1448,7 @@ function DS(anchor) {
 		return fCol;			// Return the column descriptor to the column grouper.
 	});
 
-	if (create) {				// Process table make request
+	if (create) {				// Process dataset make request
 		var fields = {}; 
 		Fields.Each( function(n,f) { 
 			fields[f.name] = f.fType;
@@ -1555,12 +1538,12 @@ function DS(anchor) {
 				masterDS.Widget.UI.setTitle(masterDS.Widget.selects);
 			}
 
-			//alert( "Select to " + name +" by " + ((masterDS.table == table) ? "field" : "link") );
+			//alert( "Select to " + name +" by " + ((masterDS.dataset == dataset) ? "field" : "link") );
 
 			masterDS.Menu.add({
-				text: "Select to " + name +" by " + ((masterDS.table == table) ? "field" : "link"),
+				text: "Select to " + name +" by " + ((masterDS.dataset == dataset) ? "field" : "link"),
 				handler: function () { 	// relink the slave
-					var slaveDS = DSLIST[name];				
+					var slaveDS = DSLIST[name];
 					
 					slaveDS.relink( function (proxy) {
 						proxy.url = slaveDS.path.format({ 
@@ -2080,7 +2063,7 @@ WIDGET.prototype.menuTools = function () {
 			//text: label,
 			// EXTJS bug - fails in some versions of Chrome
 			//tooltip: (roles.constructor == String) ? roles : roles[Label+"S"] + " " + label + "s as " +roles[Label],
-			qtip: "edit".tag("a",{href:"/engines.view?Engine="+label+"&Name="+Widget.Data.table}),
+			qtip: "edit".tag("a",{href:"/engines.view?Engine="+label+"&Name="+Widget.Data.dataset}),
 			qtitle: label + " as " +roles[Label],
 			disabled: false,
 			canToggle: false,
@@ -2092,7 +2075,6 @@ WIDGET.prototype.menuTools = function () {
 						html	 	: me.qtip,
 						title	 	: me.qtitle,
 						autoHide : true,
-						//draggable: true,
 						maxWidth : 500,
 						minWidth : 200,
 						collapisible: true,
@@ -2171,7 +2153,7 @@ WIDGET.prototype.menuTools = function () {
 		opts = BASE.parser,
 		Tips = true,
 		nada = { xtype: "tbseparator" },
-		roles = this.roles = ROLES[this.Data.table] || DEFAULT.ROLES;
+		roles = this.roles = ROLES[this.Data.dataset] || DEFAULT.ROLES;
 
 	var actionSign = {
 		insert: "plus", 
@@ -2246,7 +2228,6 @@ WIDGET.prototype.menuTools = function () {
 										target: me.getEl(),
 										html: me.getText(),
 										autoHide : false,
-										//draggable: false,
 										maxWidth : 500,
 										minWidth : 200,
 										collapisible: true,
@@ -2264,14 +2245,13 @@ WIDGET.prototype.menuTools = function () {
 							//&& name != "notes" 	// and request not recursive
 							//&& Widget.Data.table 	// and not a dataless widget (like border etc)
 							//&& Widget.anchor.id != "form"	// and not a form
-
+							
 							var notes = new WIDGET(  
 								new ANCHOR("spoof", {}, [
 									new ANCHOR("grid", {  // anchor new notes widget to a form
 										class: "notes",
-										path: "/notes.db",
-										links: "Table=" + Widget.Data.table,
-										head: "Insert,Update,Delete,Print,Refresh",
+										path: "/notes.db?Dataset=" + Widget.name ,
+										head: "Status,Insert,Update,Delete,Print,Refresh",
 										nowrap: true,
 										crush: "1",
 										cols: "Note.h"
@@ -2318,14 +2298,10 @@ WIDGET.prototype.menuTools = function () {
 											html	 : help ,
 											title	 : name,
 											autoHide : false,
-											//defaults: {
-											//	width: 500
-											//},
 											items 	 : helpUIs,
 											layout	 : "fit",
 											overflowY  : "scroll",
 											closable : true,
-											//draggable: true,
 											maxWidth : "80%",
 											minWidth : 600,
 											minHeight: 100,
@@ -3747,6 +3723,7 @@ WIDGET.prototype.find = function () {
  *
  * Construct a mini image editor.  
  */
+/*
 WIDGET.prototype.image = function () { 
 	var Data = this.Data;
 	var AOIs = [];
@@ -3782,7 +3759,11 @@ WIDGET.prototype.image = function () {
 		region		: this.region,
 		layout		: "fit",
 		header		: true //!this.Header,
-		/*tools		: this.tipControls([], UIs, HTML, function () {
+
+	});		
+}
+*/
+/*tools		: this.tipControls([], UIs, HTML, function () {
 			if (aoiDS) {
 				aoiDS.Store.removeAt(0,aoiDS.Store.getCount());
 				aoiDS.Store.sync();
@@ -3836,8 +3817,6 @@ WIDGET.prototype.image = function () {
 				}
 			}
 		}) ]*/
-	});		
-}
 
 /**
  * @method pivot
@@ -3965,7 +3944,6 @@ WIDGET.prototype.form = function () {
 									title	 : me.qtitle,
 									autoHide : false,
 									//closable : true,
-									//draggable: true,
 									maxWidth : 300,
 									minWidth : 200,
 									showDelay: 1000,

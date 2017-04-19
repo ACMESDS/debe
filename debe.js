@@ -414,7 +414,7 @@ append layout_body
 			res( DEBE.site.show( recs ) );
 		},
 		tree: function (recs,req,res) {
-			res( recs.treeify(0,recs.length,0,Object.keys(recs[0] || {})) );
+			res( recs.treeify( 0, recs.length, 0, (req.flags.sort || "").split(",") ) );
 		},
 		
 		delta: function (recs,req,res) {
@@ -909,29 +909,30 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		/**
 		@method treeify
+		Return a tree = {name,weight,children: tree} from records having been sorted on keys=[key,...]
 		*/
-		function treeify(idx,kids,level,piv,wt) {
-			var recs = this;
-			var key = piv[level];
-			var levels = piv.length-1;
-			var ref = recs[idx][key];
-			var len = 0;
-			var pos = idx, end = idx+kids;
-			var tar = [];
+		function treeify(idx,kids,level,keys,wt) {
+			var	
+				recs = this,
+				key = keys[level],
+				len = 0,
+				pos = idx, end = idx+kids,
+				tar = [];
 			
-			if (level<levels)
-				while (pos<end) {
+//console.log([level,keys,ref,idx]);
+			
+			if (key)
+				for (var ref = recs[idx][key]; pos < end; ) {
 					var rec = recs[idx];
 					var stop = (idx==end) ? true : (rec[key] != ref);
 					
 					if ( stop ) {
 						//console.log([pos,idx,end,key,ref,recs.length]);
-						//console.log(rec);
 						
 						var node = {
-							name: key+":"+ref, 
-							weight: len, //wt ? parseInt(rec[wt] || "0") : 0,
-							children: recs.treeify(pos,len,level+1,piv,wt)
+							name: key+" "+ref, 
+							weight: wt ? parseInt(rec[wt] || "0") : len,
+							children: recs.treeify(pos,len,level+1,keys,wt)
 						};
 
 						tar.push( node );
@@ -944,12 +945,13 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						len++;
 					}
 				}
+			
 			else
 				while (pos < end) {
 					var rec = recs[pos++];
 					tar.push({
-						name: key+":"+rec[key], 
-						weight: wt ? parseInt(rec[wt] || "1") : 1,
+						name: "end", 
+						weight: 0, 
 						doc: rec
 					});
 				}
