@@ -44,14 +44,7 @@ append base_body
 				.append("g")
 				.attr("transform", "translate(2,2)");
 
-			d3.json("#{query.src}?_tree=#{query.pivots}", function(error, json) {
-				//alert(JSON.stringify(json));
-
-				root = json[0];
-				//alert(JSON.stringify(root));
-
-				root.name = "#{query.src}";
-
+			d3.json("#{query.src}.tree?_sort=#{query.pivots}", function(root) {
 				var node = svg.datum(root).selectAll(".node")
 					.data(pack.nodes)
 					.enter().append("g")

@@ -31,8 +31,8 @@ append base_body
 		script.
 
 			// Chart dimensions.
-			var w = 1280,
-				h = 400,
+			var w = 1200,
+				h = 500,
 				r1 = Math.min(w, h) / 2 - 4,
 				r0 = r1 - 20,
 				format = d3.format(",.3r");
@@ -76,8 +76,7 @@ append base_body
 				.attr("transform", "translate(" + w / 2 + "," + h / 2 + ")");
 
 			// Load our data file…
-			d3.json("#{query.src}", function(json) {
-				var data = json;
+			d3.json("#{query.src}", function(data) {
 				var countries = {},
 				array = [],
 				n = 0;

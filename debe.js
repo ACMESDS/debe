@@ -114,7 +114,7 @@ var
 							
 							else
 							if (val.substr(0,1) == "/")
-								rec[key] = "no iframes".tag("iframe",{src:val,width:400,height:400});
+								rec[key] = "no iframes".tag("iframe",{src:val,width:1200,height:400});
 							
 							else
 								rec[key] = 
@@ -414,7 +414,11 @@ append layout_body
 			res( DEBE.site.show( recs ) );
 		},
 		tree: function (recs,req,res) {
-			res( recs.treeify( 0, recs.length, 0, (req.flags.sort || "").split(",") ) );
+			res( {
+				name: "root", 
+				weight: 1, 
+				children: recs.treeify( 0, recs.length, 0, (req.flags.sort || "").split(",") )
+			} );
 		},
 		
 		delta: function (recs,req,res) {
@@ -950,7 +954,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				while (pos < end) {
 					var rec = recs[pos++];
 					tar.push({
-						name: "end", 
+						name: "doc", 
 						weight: 0, 
 						doc: rec
 					});

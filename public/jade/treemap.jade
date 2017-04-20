@@ -38,8 +38,8 @@ append base_body
 		script.
 
 			var margin = {top: 40, right: 10, bottom: 10, left: 10},
-				width = 960 - margin.left - margin.right,
-				height = 400 - margin.top - margin.bottom;
+				width = 1200 - margin.left - margin.right,
+				height = 500 - margin.top - margin.bottom;
 
 			var color = d3.scale.category20c();
 
@@ -55,8 +55,8 @@ append base_body
 				.style("left", margin.left + "px")
 				.style("top", margin.top + "px");
 
-			d3.json("#{query.src}?_tree=#{query.pivots}", function(error, root) {
-				var node = div.datum(root[0]).selectAll(".node")
+			d3.json("#{query.src}.tree?_sort=#{query.pivots}", function(root) {
+				var node = div.datum(root).selectAll(".node")
 					.data(treemap.nodes)
 					.enter().append("div")
 					.attr("class", "node")

@@ -30,8 +30,8 @@ append base_body
 	if query.src
 		script.
 			var m = [20, 120, 20, 120],
-			w = 960 - m[1] - m[3],
-			h = 400 - m[0] - m[2],
+			w = 1200 - m[1] - m[3],
+			h = 500 - m[0] - m[2],
 			i = 0,
 			root;
 
@@ -47,10 +47,7 @@ append base_body
 			.append("svg:g")
 			.attr("transform", "translate(" + m[3] + "," + m[0] + ")");
 
-			//alert("#{query.src}?_tree=#{query.pivots}");
-
-			d3.json("#{query.src}?_tree=#{query.pivots}", function(json) {
-				root = json[0];
+			d3.json("#{query.src}.tree?_sort=#{query.pivots}", function(root) {
 				root.x0 = h / 2;
 				root.y0 = 0;
 
@@ -164,7 +161,7 @@ append base_body
 			function click(d) { 
 				toggle(d); 
 				update(d); 
-				if (d.details) details(d); 
+				if (d.doc) details(d); 
 			}
 
 			// Toggle children.
@@ -180,17 +177,17 @@ append base_body
 			}
 
 			function details(d) {
-				var isView = d.details.constructor == String;
+				var isView = d.doc.constructor == String;
 
 				var doc = window.open(
-					isView ? d.details : "",
+					isView ? d.doc : "",
 					"_blank",
 					"left="+d.x+"px,"
 					+ "top="+d.y+"px,"
 					+ "width=50,height=50,location=0,menubar=0,status=0,titlebar=0,toolbar=0");
 
 				if ( !isView )
-					doc.document.write(JSON.stringify( d.details ));
+					doc.document.write(JSON.stringify( d.doc ));
 			}
 	else
 		:markdown

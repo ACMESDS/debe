@@ -25,7 +25,7 @@ append base_body
 
 	if query.src
 		script.
-			var	width = 960,
+			var	width = 1200,
 				height = 500,
 				node,
 				link,
@@ -41,11 +41,7 @@ append base_body
 				.attr("width", width)
 				.attr("height", height);
 
-			//alert("#{query.src}?_tree=#{query.pivots}");
-			d3.json("#{query.src}?_tree=#{query.pivots}", function(json) {
-				root = json[0];
-				root.weight = root.children.length;
-				root.name = "#{query.src}";
+			d3.json("#{query.src}.tree?_sort=#{query.pivots}", function(root) {
 				root.fixed = true;
 				root.x = width / 2;
 				root.y = height / 2;
@@ -110,17 +106,17 @@ append base_body
 			}
 
 			function details(d) {
-				var isView = d.details.constructor == String;
+				var isView = d.doc.constructor == String;
 
 				var doc = window.open(
-					isView ? d.details : "",
+					isView ? d.doc : "",
 					"_blank",
 					"left="+d.x+"px,"
 					+ "top="+d.y+"px,"
 					+ "width=50,height=50,location=0,menubar=0,status=0,titlebar=0,toolbar=0");
 
 				if ( !isView )
-					doc.document.write(JSON.stringify( d.details ));
+					doc.document.write(JSON.stringify( d.doc ));
 
 				//var g = d3.select(this); // the node
 
@@ -169,7 +165,7 @@ append base_body
 					d._children = null;
 				}
 
-				if (d.details) details(d);
+				if (d.doc) details(d);
 				update();
 			}
 
