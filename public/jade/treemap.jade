@@ -1,8 +1,5 @@
 //- UNCLASSIFIED
-//-
-	Display treemap chart using parameters:
-		src = source url returns node tree { name:"label", size:Value, children: [ ... ]}
-		pivots = data pivot list = field,field,...
+// d3 treemap chart.
 
 extends base
 append base_parms
@@ -37,9 +34,13 @@ append base_body
 	if query.src
 		script.
 
-			var margin = {top: 40, right: 10, bottom: 10, left: 10},
-				width = 1200 - margin.left - margin.right,
-				height = 500 - margin.top - margin.bottom;
+			var 
+				margin = {top: 40, right: 10, bottom: 10, left: 10},
+				width = parseInt("#{query.width}" || 1200),
+				height = parseInt("#{query.height}" || 500);
+				
+				//width = (query.w || 1200) - margin.left - margin.right,
+				//height = (query.h || 500) - margin.top - margin.bottom;
 
 			var color = d3.scale.category20c();
 
@@ -105,6 +106,8 @@ append base_body
 
 				src = source url returns node tree { name:"label", size:Value, children: [ ... ]}
 				pivots = data pivot list = field,field,...
+				w = drawing width
+				h = drawing height
 		
 // UNCLASSIFIED
 		

@@ -1,21 +1,5 @@
 // UNCLASSIFIED
-//-
-	 Provides d3 scatter plot given:
-		src = json path
-		line = color,color, ... line color
-		marker = style,style, ... line markers
-		name = name,name, ...  ||  /src,/src, ... data selector
-		label = X,Y labels
-		auto = X,Y auto scales
-		trace = data trace interval
-		debug = display derived options switch
-		min = X,Y axis minimums
-		max = X,Y axis maximums
-		xy = xindex,yindex,yindex,... index to data
-		ref = [x,y], ... reference path
-		init = [x,y], ... data to prefix
-		extra = [x,y], ... data to append
-		sample = index,index, ... sample data with index=key.key...
+// d3 scatter plot.
 
 extends base
 append base_parms
@@ -367,5 +351,7 @@ append base_body
 				init = [x,y], ... data to prefix
 				extra = [x,y], ... data to append+
 				sample = index,index, ... sample data with index=key.key...
+				w = drawing width
+				h = drawing height
 
 // UNCLASSIFIED

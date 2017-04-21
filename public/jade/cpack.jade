@@ -1,8 +1,5 @@
 //- UNCLASSIFIED
-//-
-	Display treemap chart using parameters:
-		src = source url returns node tree { name:"label", size:Value, children: [ ... ]}
-		pivots = data pivot list = field,field,...
+// d3 treemap chart
 
 extends base
 append base_parms
@@ -31,12 +28,23 @@ append base_body
 	if query.src
 		script.
 
-			var diameter = 400,
+			var 
+				w = parseInt("#{query.width}" || 1200),
+				h = parseInt("#{query.height}" || 500),			
+				diameter = Math.min(w,h),
 				format = d3.format(",d");
+				
+			var 
+				opts = {
+					x: "#{query.x}" || "x",
+					y: "#{query.y}" || "y",
+					r: "#{query.r}" || "r",
+					s: "#{query.q}" || "weight"
+				};
 
 			var pack = d3.layout.pack()
 				.size([diameter - 4, diameter - 4])
-				.value(function(d) { return d.size; });
+				.value(function(d) { return d[opts.s]; });
 
 			var svg = d3.select("#content").append("svg")
 				.attr("width", diameter)
@@ -49,18 +57,18 @@ append base_body
 					.data(pack.nodes)
 					.enter().append("g")
 					.attr("class", function(d) { return d.children ? "node" : "leaf node"; })
-					.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+					.attr("transform", function(d) { return "translate(" + d[opts.x] + "," + d[opts.y] + ")"; });
 
 				node.append("title")
-					.text(function(d) { return d.name + (d.children ? "" : ": " + format(d.size)); });
+					.text(function(d) { return d.name + (d.children ? "" : ": " + format(d[opts.s])); });
 
 				node.append("circle")
-					.attr("r", function(d) { return d.r; });
+					.attr("r", function(d) { return d[opts.r]; });
 
 				node.filter(function(d) { return !d.children; }).append("text")
 					.attr("dy", ".3em")
 					.style("text-anchor", "middle")
-					.text(function(d) { return d.name.substring(0, d.r / 3); });
+					.text(function(d) { return d.name.substring(0, d[opts.r] / 3); });
 				});
 
 			d3.select(self.frameElement).style("height", diameter + "px");
@@ -70,5 +78,7 @@ append base_body
 
 				src = source url returns node tree { name:"label", size:Value, children: [ ... ]}
 				pivots = data pivot list = field,field,...
+				w = drawing width
+				h = drawing height
 		
 // UNCLASSIFIED

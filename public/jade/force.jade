@@ -1,10 +1,5 @@
 //- UNCLASSIFIED
-//-
-	Display force graph using parameters:
-		src = source url returns node tree { ID:Name, count:Value, data: [ Children ]}
-		pivots = data pivot list = field,field,...
-
-	Graph nodes are sized to node.weight + length(node.children).
+// Display d3 force graph.
 
 extends base
 append base_parms
@@ -25,8 +20,9 @@ append base_body
 
 	if query.src
 		script.
-			var	width = 1200,
-				height = 500,
+			var	
+				width = parseInt("#{query.width}" || 1200),
+				height = parseInt("#{query.height}" || 500),
 				node,
 				link,
 				root;
@@ -41,7 +37,8 @@ append base_body
 				.attr("width", width)
 				.attr("height", height);
 
-			d3.json("#{query.src}.tree?_sort=#{query.pivots}", function(root) {
+			d3.json("#{query.src}.tree?_sort=#{query.pivots}", function(json) {
+				root = json;
 				root.fixed = true;
 				root.x = width / 2;
 				root.y = height / 2;
@@ -199,6 +196,8 @@ append base_body
 
 				src = source url returns node tree { ID:Name, count:Value, data: [ Children ]}
 				pivots = data pivot list = field,field,...
+				w = drawing width
+				h = drawing height
 
 			Graph nodes are sized to node.weight + length(node.children).
 

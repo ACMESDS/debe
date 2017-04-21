@@ -1,8 +1,5 @@
 //- UNCLASSIFIED
-//-
-	Display treefan chart using parameters:
-		src = source url returns node tree { name:"label", size:Value, children: [ ... ]}
-		pivots = data pivot list = field,field,...
+// d3 treefan chart.
 
 extends base
 append base_parms
@@ -30,8 +27,10 @@ append base_body
 	if query.src
 		script.
 			var m = [20, 120, 20, 120],
-			w = 1200 - m[1] - m[3],
-			h = 500 - m[0] - m[2],
+			//w = (query.w || 1200) - m[1] - m[3],
+			//h = (query.h || 500) - m[0] - m[2],
+			w = parseInt("#{query.width}" || 1200),
+			h = parseInt("#{query.height}" || 500),
 			i = 0,
 			root;
 
@@ -47,7 +46,8 @@ append base_body
 			.append("svg:g")
 			.attr("transform", "translate(" + m[3] + "," + m[0] + ")");
 
-			d3.json("#{query.src}.tree?_sort=#{query.pivots}", function(root) {
+			d3.json("#{query.src}.tree?_sort=#{query.pivots}", function(json) {
+				root = json;
 				root.x0 = h / 2;
 				root.y0 = 0;
 
@@ -195,5 +195,7 @@ append base_body
 
 				src = source url returns node tree { name:"label", size:Value, children: [ ... ]}
 				pivots = data pivot list = field,field,...
+				w = drawing width
+				h = drawing height
 
 //- UNCLASSIFIED
