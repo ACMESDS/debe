@@ -71,6 +71,10 @@ var										// shortcuts and globals
 var
 	DEBE = module.exports = TOTEM.extend({
 	
+	builtins: {
+		gaussmix: FLEX.execute.gaussmix
+	},
+		
 	watch: "", //"public/uploads/", 
 		
 	"reqflags.traps." : {  //< trap ?_flag to reorder query/body parms
@@ -1605,7 +1609,8 @@ Totem(req,res) endpoint to execute (import, sync, export, etc) a virtual databas
 */
 function runExe(req,res) {
 	
-	var sql = req.sql,
+	var 
+		sql = req.sql,
 		table = req.table,
 		type = req.type,
 		query = req.query,
@@ -1892,7 +1897,8 @@ function Initialize () {
 
 		ENGINE.config({
 			thread: DEBE.thread,
-			cores: DEBE.cores
+			cores: DEBE.core,
+			builtins: DEBE.builtins	
 		});
 
 		if (cb) cb();	
