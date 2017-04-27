@@ -121,9 +121,7 @@ var
 								rec[key] = "no iframes".tag("iframe",{src:val,width:1200,height:400});
 							
 							else
-								rec[key] = 
-`:markdown
-	${val}` .render(req);
+								rec[key] = (":markdown\n"+val).replace(/\n/g,"\n\t").render(req);
 				});
 			});
 		},

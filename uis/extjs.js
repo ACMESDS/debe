@@ -626,7 +626,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 		case 'h':
 		case 'html':	// html
 		case 'mediumtext':	
-			return true // (navigator.browser == "xxFireFox")  // EXTJS-FF BUG (xx->"" to enable)
+			return false  // (navigator.browser == "xxFireFox")  // EXTJS-FF BUG (xx->"" to enable)
 			? {
 				fType		: fType,
 				dataIndex	: fName,
@@ -661,6 +661,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				//disabled	: fOff,
 				width		: 400,
 				text		: fLabel,
+				cellWrap: true,
 				//qtip		: fTip, 
 				//qtitle	 	: fTipTitle,
 				editor		: {	
@@ -684,6 +685,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				dataIndex	: fName,
 				sortable	: true,
 				hideable	: true,
+				cellWrap: true,
 				locked		: fLock,
 				disabled	: fOff,
 				width		: 400,
