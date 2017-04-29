@@ -1508,7 +1508,8 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 */
 function readJade(req,res) {
 			
-	var sql = req.sql,
+	var 
+		sql = req.sql,
 		paths = DEBE.paths,
 		site = DEBE.site,  
 		ctx = site.context[req.table]; 
@@ -1554,7 +1555,7 @@ append base_body
 							});
 
 						else  // try sql table
-							sql.query("DESCRIBE ??",req.table, function (err,fields) {
+							sql.query("DESCRIBE ??", (DEBE.dsAttrs[req.table] || {}).tx || req.table, function (err,fields) {
 								if (err) 
 									res( DEBE.errors.dynamicSkin );
 
