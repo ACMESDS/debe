@@ -54,6 +54,7 @@ var 									// NodeJS modules
 	FS = require("fs"); 				//< NodeJS filesystem and uploads
 	
 var										// 3rd party modules
+	OGEN = require("officegen"),
 	LANG = require('i18n-abide'), 		//< I18 language translator
 	ARGP = require('optimist'),			//< Command line argument processor
 	TOKML = require("tokml"), 			//< geojson to kml concerter
@@ -414,6 +415,62 @@ append layout_body
 		},
 		tab: function (recs,req,res) {
 			res( DEBE.site.show( recs ) );
+		},
+		docxx: function (recs,req,res) {
+			var 
+				docx = OGEN({
+					type: "docx"
+					//onend: function (writeBytes) { 	}
+				}),
+				docf = `./shares/${req.table}.docx`,
+				docs = FS.createWriteStream(docf);
+			
+			docx.generate( docs );
+			docs.on("close", function () {
+				//console.log("stream closed");
+			});
+			
+			var docp = docx.createP();
+			docp.addText("hello there");
+			
+			var cols = [];
+			var rows = [cols];
+			
+			recs.each( function (n,rec) {
+				if (n == 0) 
+					for (var key in rec)
+						rows.push({
+							val: key,
+							opts: {
+								cellColWidth: 4261,
+								b: true,
+								sz: "48",
+								shd: {
+									fille: "7F7F7F",
+									themeFill: "text1",
+									themeFillTint: "80"
+								},
+								fontFamily: "Avenir Book"
+							}
+						});
+				
+				var row = new Array();
+				
+				rows.push(row);
+				for (var key in rec)
+					row.push( rec[key] );
+			});
+			
+			docx.createTable(rows, {
+				tableColWidth: 4261,
+				tableSize: 24,
+				tableColor: "ada",
+				tableAlign: "left",
+				tableFontFamily: "Comic Sans MS",
+				borders: true
+			});
+
+			res( "Claim your file "+"here".link(docf) );
 		},
 		tree: function (recs,req,res) {
 			res( {
