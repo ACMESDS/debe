@@ -66,8 +66,8 @@ append layout_head
 		- effect = ""
 		// cesium
 		- src = query.src || ""
-		- hosts = {geohub: "https://sigma0.ilabs.ic.gov:8083", me: "localhost:8083", win: "http://200.100.50.101:8083", aws: "http://172.31.76.130:8083",local:"http://localhost:8083",swaggpu:"http://swag-gpu-01.ec2.internal:8083", swagws:"http://swag-ws-02.ec2.internal:8083"}
-		- host = "swagws"
+		- hosts = {geohub: "https://sigma0.ilabs.ic.gov:8083", me: "localhost:8083", win: "http://200.100.50.101:8083", aws: "http://172.31.76.130:8083",local:"http://localhost:8083",swaggpu:"http://swag-gpu-01.ec2.internal:8083", swagws:"http://swag-ws-02.ec2.internal:8083", swagdev: "http://localhost:8083"}
+		- host = "swagdev"
 		- width = 750
 		- height = 500		
 		// d3
@@ -277,7 +277,7 @@ append layout_body
 			when "three"
 				block base_body
 				if effect
-					script(src="clients/threejs/examples/js/effects/#{effect}.js")
+					script(src="/clients/threejs/examples/js/effects/#{effect}.js")
 
 			when "dojo"
 				block base_body
@@ -313,7 +313,7 @@ append layout_body
 
 					block base_body
 
-				script(src="clients/games/#{game}/bundle.js")
+				script(src="/clients/games/#{game}/bundle.js")
 
 			when "reveal"
 				.reveal(style="width:100%;height:100%;")

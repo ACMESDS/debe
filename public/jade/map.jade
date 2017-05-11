@@ -31,19 +31,19 @@ append base_body
 
 				var data = {};
 
-				json.Each(function (n,rec) {
+				/*json.Each(function (n,rec) {
 					Copy(rec, data[rec[opts.index].toUpperCase()] = {
 						fillKey: rec[opts.fill] || "UNKNOWN",
 						Info: rec[opts.details] || ""
 					});
-				});
+				});*/
 
 				var map = new Datamap({
 					element: document.getElementById('content'),
 
 					geographyConfig: {
 						popupTemplate: function (geo,data) {
-							return (geo.properties.name+"<BR>"+data.Info).tag("div",{class:"hoverinfo"});			
+							return (geo.properties.name+"<BR>"+data.Info).tag("div",{class:"hoverinfo"});	
 						}
 					},
 					fills: {

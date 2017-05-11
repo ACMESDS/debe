@@ -1,7 +1,7 @@
-extends layout
-append layoutparms
-	- Layout = "Scene"
-append layoutarea
+extends base
+append base_parms
+	- tech = "scene"
+append base_body
 
 	script.
 		var scene = SceneJS.createScene({

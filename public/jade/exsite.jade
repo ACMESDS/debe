@@ -116,19 +116,19 @@ append site_body
 						
 							#folder.Gaming(dock="left")
 								#cesium.Earth(path="HelloWorld",dims="750,500")
-								#voxel.Blast(path="cubeland",dims=dims)
+								#videobump.Bump(path="cubeland",dims=dims)
 								#spherebounce.Bounce(path="/",dims=dims)
 								#anaglyph.Anagylph(path="/",dims=dims)
-								#voxelpaint.Build(path="/",dims=dims)
+								#voxelpaint.Paint(path="/",dims=dims)
 
 				#fit.Render
 						
 					#folder.Gaming(dock="left")
-						#cesium.Earth(path="HelloWorld",dims="750,500")
-						#voxel.Blast(path="forest",dims=dims)
-						#spherebounce.Bounce(path="/",dims=dims)
-						#anaglyph.Anagylph(path="/",dims=dims)
-						#voxelpaint.Build(path="/",dims=dims)
+						#earth.Cesium(dims=dims)
+						#videobump.Bump(dims=dims)
+						#spherebounce.Bounce(dims=dims)
+						#anaglyph.Anagylph(dims=dims)
+						#voxelpaint.Paint(dims=dims)
 
 		when "blogs"
 			#accordion.Blog
@@ -351,7 +351,6 @@ append site_body
 				dims=dims)
 
 			#omg.OG(
-				path="/intake.json",
 				dims=dims)
 
 			#plot.RC(
