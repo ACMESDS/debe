@@ -215,38 +215,52 @@ append layout_body
 
 	site: { 		//< initial site context
 
-		context: { // skinning contexts for each skin
-			ssp: {   // defines the apps and stats datasets for the ssp skin
-				apps:"openv.apps",
-				stats:{table:"app1.dblogs",group:"client",index:"client,event"}
-			}
-		},
+		get: function(recs, where) {
+			var rtns = [];
 
-		classif: { level: "(U)", purpose: "nada" },
-		asp: {},
-		isp: {},
-		info: {},
-		filename: "./public/jade/ref.jade",	// jade reference path for includes, exports, appends		
+			if (where)
+				switch (where.constructor) {
+					case Object:
+						recs.each(function (n,rec) {
+							var match = true;
+
+							for (var x in where) 
+								if (rec[x] != where[x]) match = false;
+
+							if (match)
+								rtns.push( rec );
+						});
+						break;
+		
+					case String:
+						var keys = where.split(",");
+						recs.each(function (n,rec) {		
+							var rtn = new Object();
+							keys.each(function (n,key) {
+								var src = rec;
+								key.split(".").each( function (k,idx) {
+									src = src[idx];
+								});
+								rtn[key] = src;
+							});
+							rtns.push( rtn );
+						});
+						break;
+				}
 			
-		index: function (data,keys,rtn) {
-			keys.split(",").each(function (n,key) {
-				var src = data;
-				key.split(".").each( function (k,idx) {
-					src = src[idx];
-				});
-				rtn[key] = src;
-			});
-			return rtn;
+			else
+				rtns = recs;
+					
+			return rtns;
 		},
 		
-		json: function (data) {  // dump dataset as json
-			return JSON.stringify(data);
+		json: function(recs) {  // dump dataset as json
+			return JSON.stringify(recs);
 		},
 		
-		show: function (data,where,index) {	// dump dataset as html table
-			
-			function join(data,sep) { 
-				switch (data.constructor) {
+		show: function(recs) {	// dump dataset as html table
+			function join(recs,sep) { 
+				switch (recs.constructor) {
 					case Array: 
 						return this.join(sep);
 					
@@ -260,13 +274,13 @@ append layout_body
 				}
 			}
 			
-			function table(data) {  // generate an html table from given data or object
-				switch (data.constructor) {
+			function table(recs) {  // generate an html table from given data or object
+				switch (recs.constructor) {
 					case Array:  // [ {head1:val}, head2:val}, ...]  create table from headers and values
 					
 						var rtn = "", head = true;
 						
-						data.each( function (n,rec) {
+						recs.each( function (n,rec) {
 							
 							if (head) {
 								var row = "";
@@ -280,9 +294,11 @@ append layout_body
 							var row = "";
 							Each(rec, function (key,val) {
 								if (val)
-									row += (typeof val == "object")
+									row += (val.constructor == Array)
 										? table(val)
 										: (val+"").tag("td");
+								else
+									row += "null".tag("td");
 							});
 							rtn += row.tag("tr");
 						});
@@ -292,9 +308,9 @@ append layout_body
 					case Object: // { key:val, ... } create table dump of object hash
 					
 						var rtn = "";
-						Each(data, function (key,val) {
+						Each(recs, function (key,val) {
 							if (val)
-								rtn += (typeof key == "object")
+								rtn += (val.constructor == Array)
 									? table(val)
 									: (key.tag("td") + JSON.stringify(val).tag("td")).tag("tr");
 						});
@@ -302,7 +318,7 @@ append layout_body
 						return rtn.tag("table");
 						
 					default:
-						return data+"";
+						return recs+"";
 				}
 			}
 			
@@ -324,49 +340,23 @@ append layout_body
 				return rtn;
 			}
 			
-			var rtns = [];
-			
-			//if (index) index = index.split(",");
-			
-			data.each( function (n,rec) {
+			return table( recs );
+		},
 				
-				var match = true;
-				
-				if (where) 
-					switch (where.constructor) {
-						case Object:
-							for (var x in where) 
-								if (rec[x] != where[x]) match = false;
+		context: { // skinning contexts for each skin
+			ssp: {   // define DSVAR datasets available for the ssp skin
+				apps:"openv.apps",
+				users: "openv.profiles",
+				projs: "openv.milestones"
+				//stats:{table:"openv.profiles",group:"client",index:"client,event"}
+			}
+		},
 
-							break;
-
-						case Function:
-							match = where(rec);
-							break;
-							
-						default:
-							if (where != n) match = false;
-					}
-								
-				if (match)
-					if (index) 
-						rtns.push( DEBE.site.index(rec, index, {}) );
-					/*{
-						var rtn = {};
-						index.each( function (i,index) {
-							rtn[index] = rec[index];
-						});
-						rtns.push(rtn);
-					}*/
-					
-					else
-						rtns.push(rec);
-						
-			});
-			
-			return table(rtns);
-		}
-		
+		classif: { level: "(U)", purpose: "nada" },
+		asp: {},
+		isp: {},
+		info: {},
+		filename: "./public/jade/ref.jade"	// jade reference path for includes, exports, appends					
 	},
 	
 	"sender.": {		//< FILE.ATTR senders

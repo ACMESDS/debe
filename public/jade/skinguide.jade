@@ -802,7 +802,12 @@ append site_body
 					+	released	= site release date (#{released})  
 					+	type	= Client type M=moderator, U=nonmoderator (#{type})  
 					+	lock	= session lock (#{JSON.stringify(options)})
-					+	table(DS, {where:value,...} ,"index,..." ) = tableify context dataset DS given optional where and index keys
-					+	json(DS)  = jsonify context dataset DS
+					
+					Several list minipulators are also available:
+					
+					+	get(list, {key:value,...} )
+					+	get(list, "key,..." )
+					+	show(list)
+					+	json(list)
 
 			//- #exsite.Examples(dims="800,500")

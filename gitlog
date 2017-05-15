@@ -53,3 +53,15 @@ f91c6e1||acme sds||debera34@xxqx3802.com||Tue Apr 11 08:59:19 2017 -0400||simpli
 934fd8f||acme sds||debera34@xxqx3802.com||Sat Apr 15 09:58:32 2017 -0400||adjust blog
 1671d3d||acme sds||debera34@xxqx3802.com||Sat Apr 15 10:03:59 2017 -0400||guest baseline
 e2970bd||acme sds||debera34@xxqx3802.com||Mon Apr 17 19:08:20 2017 -0400||fix _blog indexing
+bb494f0||acme sds||debera34@xxqx3802.com||Mon Apr 17 22:05:05 2017 -0400||update api and guide
+d781cea||acmesds||acmesds@email.com||Tue Apr 18 16:06:46 2017 -0500||minor
+d055049||acme sds||debera34@xxqx3802.com||Tue Apr 18 22:39:54 2017 -0400||fix .tree and _pivot.  update docs
+960ef71||acme sds||debera34@xxqx3802.com||Wed Apr 19 22:00:07 2017 -0400||fix _tree
+b45c7b9||acme sds||debera34@xxqx3802.com||Fri Apr 21 07:24:16 2017 -0400||fix d3 jades
+6cd691e||acme sds||debera34@xxqx3802.com||Tue Apr 25 07:53:13 2017 -0400|| fix ?
+225eb47||acmesds||acmesds@email.com||Thu Apr 27 18:00:47 2017 -0500||fix blog
+21ead1c||acme sds||debera34@xxqx3802.com||Sat Apr 29 11:17:49 2017 -0400||view openv ds
+a381582||acme sds||debera34@xxqx3802.com||Sun Apr 30 07:59:44 2017 -0400||add officegen. remove forever.
+d9b47e2||acme sds||debera34@xxqx3802.com||Tue May 9 19:14:45 2017 -0400||add officegen
+27e6eeb||acme sds||debera34@xxqx3802.com||Wed May 10 21:04:50 2017 -0400||fix parm parser
+5bc7844||James||jamesbd@wsn3303.technology.local||Thu May 11 16:23:19 2017 -0500||fix base and exsite immersions views

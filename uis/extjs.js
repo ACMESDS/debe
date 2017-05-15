@@ -710,19 +710,28 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 
 							var el = f.inputEl.dom, 
 								key = e.getKey(),
-								pos = el.selectionStart,
-								map = {
-									126: e.TAB,
-									92: e.ENTER
-								};
+								pos = el.selectionStart;
 								
-							//console.log(key);
+							//alert(key);
 							switch (key) {
-								case 8: 
-									pos--; el.setSelectionRange(pos,pos);
+								case 8:  //backspace
+									if (pos) {
+										el.value = el.value.substring(0,pos-1) + el.value.substring(pos);
+										pos--; 
+									}
+									//el.setSelectionRange(pos,pos);
 									break;
 									
-								case 46:
+								case 13: //return
+								case 9:  //tab
+									el.value = 
+										el.value.substring(0,pos) 
+										+ String.fromCharCode(key) 
+										+ el.value.substring(el.selectionEnd);
+									pos++;
+									break;
+									
+								case 46:  //del
 									el.value = 
 										el.value.substring(0,pos) 
 										+ el.value.substring(el.selectionEnd);								
@@ -731,7 +740,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 								default:
 									el.value = 
 										el.value.substring(0,pos) 
-										+ String.fromCharCode(map[e.getKey()] || key) 
+										+ String.fromCharCode(key) 
 										+ el.value.substring(el.selectionEnd);
 									pos++;
 							}
@@ -2002,6 +2011,7 @@ WIDGET.prototype.menuTools = function () {
 			forceSelection: false,
 			//format: "",
 			allowblank: true,
+			icon: "/clients/icons/tips/"+label+".ico",			
 			//typeAheads: true,
 			//triggerAction: "all",
 			emptyText: '<missing>',
@@ -2014,9 +2024,9 @@ WIDGET.prototype.menuTools = function () {
 			editable: false,
 			listeners: {
 				afterRender: function (combo,eOpts) { 
-					if (ds.table == "lookups")
+					if (ds.path == "/lookups.db") 
 						combo.store.filter("Ref", name);
-										   // (anchor.id == "grid" ) ? name : label );
+					// (anchor.id == "grid" ) ? name : label );
 					//combo.setValue(null); // EXTJS BUG set globally
 				}, 
 				change: function (field,newValue,oldValue,eOpts) {
@@ -2254,8 +2264,9 @@ WIDGET.prototype.menuTools = function () {
 										class: "notes",
 										path: "/notes.db?Dataset=" + Widget.name ,
 										head: "Status,Insert,Update,Delete,Print,Refresh",
+										//dims: "500,100",
 										nowrap: true,
-										crush: "1",
+										crush: true,
 										cols: "Note.h"
 									})
 								]
@@ -3380,6 +3391,7 @@ WIDGET.prototype.content = function () {
 	this.UI = Ext.create('Ext.panel.Panel', {
 		layout: "border",
 		region: "center",
+		overflowY: "auto",  // EXTJS bug - ignored
 		items: [ 
 			Ext.create('Ext.panel.Panel', { 		// header
 				layout: "fit",
@@ -3608,7 +3620,8 @@ WIDGET.prototype.folder = function() {
 			bodyPadding : 10,
 			closable: this.crush
 		},
-		items		: this.UIs
+		items		: this.UIs,
+		html 		: this.HTML
 	});
 }
 
