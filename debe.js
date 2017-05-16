@@ -243,6 +243,7 @@ append layout_body
 						for (var key in keys)
 							if ( rec[key] )
 								rec[key] = (rec[key] + "").replace("#" + key, keys[key]);
+					}
 				}
 					
 				if (match)
