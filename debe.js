@@ -215,42 +215,40 @@ append layout_body
 
 	site: { 		//< initial site context
 
-		get: function(recs, where) {
-			var rtns = [];
+		get: function(recs, where, index, subs) {
+			var rtns = [], idxs = index ? index.split(",") : null;
 
-			if (where)
-				switch (where.constructor) {
-					case Object:
-						recs.each(function (n,rec) {
-							var match = true;
+			recs.each(function (n,rec) {
+				var match = true;
 
-							for (var x in where) 
-								if (rec[x] != where[x]) match = false;
+				if (where)
+					for (var x in where) 
+						if (rec[x] != where[x]) match = false;
 
-							if (match)
-								rtns.push( rec );
+				if (idxs) {
+					var rtn = new Object();
+					idxs.each(function (n,key) {
+						var src = rec;
+						key.split(".").each( function (k,idx) {
+							src = src[idx];
 						});
-						break;
-		
-					case String:
-						var keys = where.split(",");
-						recs.each(function (n,rec) {		
-							var rtn = new Object();
-							keys.each(function (n,key) {
-								var src = rec;
-								key.split(".").each( function (k,idx) {
-									src = src[idx];
-								});
-								rtn[key] = src;
-							});
-							rtns.push( rtn );
-						});
-						break;
+						rtn[key] = src;
+					});
+					rec = rtn;
 				}
-			
-			else
-				rtns = recs;
+				
+				if (subs) {
+					for (var idx in sub) {
+						var keys = subs[idx];
+						for (var key in keys)
+							if ( rec[key] )
+								rec[key] = (rec[key] + "").replace("#" + key, keys[key]);
+				}
 					
+				if (match)
+					rtns.push( rec );
+			});
+			
 			return rtns;
 		},
 		
@@ -344,10 +342,11 @@ append layout_body
 		},
 				
 		context: { // skinning contexts for each skin
-			ssp: {   // define DSVAR datasets available for the ssp skin
+			rtpsqd: {   // define DSVAR datasets available for the ssp skin
 				apps:"openv.apps",
 				users: "openv.profiles",
-				projs: "openv.milestones"
+				projs: "openv.milestones",
+				QAs: "app1.QAs"
 				//stats:{table:"openv.profiles",group:"client",index:"client,event"}
 			}
 		},

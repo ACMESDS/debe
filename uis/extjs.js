@@ -340,8 +340,8 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 	},
 	
 	fTips = fTip.split("||"),
-	fTip = fTips.pop(),
-	fTipTitle = fTips.pop();
+	fTip = fTips.pop() || "",
+	fTipTitle = fTips.pop() || fName;
 		
 	switch (fType || "text") {
 		case '#': 	// actions		
@@ -662,8 +662,8 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				width		: 400,
 				text		: fLabel,
 				cellWrap: true,
-				//qtip		: fTip, 
-				//qtitle	 	: fTipTitle,
+				qtip		: fTip, 
+				qtitle	 	: fTipTitle,
 				editor		: {	
 					xtype: 'htmleditor',
 					//scrollable: true,
@@ -671,9 +671,9 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 					width: 400,
 					height: 400
 					//disabled: fOff
-				}
-				//renderer 	: fCalc ? calcRender : null,
-				//listeners	: fListen   // EXTJS widget gets confused when embedded in grid
+				},
+				renderer 	: fCalc ? calcRender : null,
+				listeners	: fListen   // EXTJS widget gets confused when embedded in grid
 			};
 						
 		case 'x':		// text area
@@ -1338,10 +1338,9 @@ function DS(anchor) {
 			fType = fOpts[1] || fParm.Type || "text",
 			fLabel = fOpts[2] || fParm.Label || fName,
 			fSum = fOpts[3],
-			//fChange = HISTORY[table+"."+fName] || {Moderators:""},
-			fChange = HISTORY[path+"."+fName] || {Moderators:""},
-			fTip = 	"edit".tag("a",{href:`/parms.view?parm=${fName}`}) 
-					+ " | " + fChange.Moderators 
+			//fChange = HISTORY[path+"."+fName] || {Moderators:""},
+			fTip = 	fName.tag("a",{href:`/parms.view?parm=${fName}`}) 
+			//		+ " | " + fChange.Moderators 
 					+ " | " + "moderate".tag("a", {href:"/moderate.view"})
 					+ "||" + (fOpts[4] || fParm.Special || ""),
 			fChar = fType.charAt(0),
