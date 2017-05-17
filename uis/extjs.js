@@ -331,8 +331,15 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				html	 	: me.qtip,
 				title	 	: me.qtitle,
 				autoHide : false, 
+				closable: true,
+				resizable: true,
+				scrollable: true,
+				overlapHeader: true,
 				maxWidth : 800,
 				minWidth : 200,
+				mouseOffset: [0,0],
+				//trackMouse: true,
+				//getTargetXY: function () { return [0,0]; },
 				collapisible: true,
 				dismissDelay: 0
 			});

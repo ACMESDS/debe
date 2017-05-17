@@ -65,3 +65,6 @@ a381582||acme sds||debera34@xxqx3802.com||Sun Apr 30 07:59:44 2017 -0400||add of
 d9b47e2||acme sds||debera34@xxqx3802.com||Tue May 9 19:14:45 2017 -0400||add officegen
 27e6eeb||acme sds||debera34@xxqx3802.com||Wed May 10 21:04:50 2017 -0400||fix parm parser
 5bc7844||James||jamesbd@wsn3303.technology.local||Thu May 11 16:23:19 2017 -0500||fix base and exsite immersions views
+891d928||acme sds||debera34@xxqx3802.com||Mon May 15 08:14:02 2017 -0400||parse url parms. fix ssp docs
+c3d7b9d||James||jamesbd@wsn3303.technology.local||Tue May 16 15:09:32 2017 -0500||dynamic doc prep fixes
+66ba0be||James||jamesbd@wsn3303.technology.local||Tue May 16 15:57:25 2017 -0500||fix dynamic doc gen
