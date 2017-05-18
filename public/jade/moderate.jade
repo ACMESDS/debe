@@ -9,27 +9,32 @@ append site_parms
 append site_body
 
 	#grid.Changes(
-		path="/history.db?return=changes",
+		path="/history.db?option=changes",
 		head="Datasets,Print,Refresh",
 		page=100,dims=dims,
 		cols="Moderators,Datasets.t")
-		
+
 	#grid.Signoffs(
-		path="/history.db?return=signoffs",
-		head="Datasets,Execute,Print,Refresh",
+		path="/history.db?option=signoffs",
+		head="Print,Refresh",
 		page=100,dims=dims,
-		links="Hawk,Datasets,Power,Comment,Approved",
-		cols="Approved.c,Moderator.t,Datasets.t,Comment.x,DetailedComment.h")
+		cols="Approve,Moderator.t,Changes.t")
+
+	#grid.Comments(
+		path="/roles.db",
+		head="Print,Refresh",
+		page=100,dims=dims,
+		cols="Hawk.T,Client.T,Datasets.T,Earnings.I,Comment.X")
 
 	//
 		#grid.Itemized(
-			path="/history.db?return=itemized",
+			path="/history.db?option=itemized",
 			head="Datasets,Print,Refresh",
 			page=100,dims=dims,
 			cols="Moderators,Idx.t.Index")
 
 		#grid.Earnings(
-			path="/history.db?return=earnings",
+			path="/history.db?option=earnings",
 			head="Print,Refresh",
 			page=100,dims=dims,
 			cols="Client,Earnings.t,Comments.T")
