@@ -1569,7 +1569,7 @@ function readJade(req,res) {
 append base_parms
 	- tech = "extjs"
 append base_body
-	#grid.view.${req.table}(path="/${req.table}.db?${req.search}",cols="${cols.join()}",dims="1200,600",page=50,nowrap)
+	#grid.view.${req.table}(path="/${req.table}.db?${req.search}",cols="${cols.join()}",dims="1200,600",page=20,nowrap)
 `;
 //console.log(skin);
 			

@@ -11,32 +11,32 @@ append site_body
 	#grid.Changes(
 		path="/history.db?return=changes",
 		head="Datasets,Print,Refresh",
-		page=100,dims=dims,wrap,
-		cols="Moderators,Activity.t")
+		page=100,dims=dims,
+		cols="Moderators,Datasets.t")
 		
 	#grid.Signoffs(
 		path="/history.db?return=signoffs",
 		head="Datasets,Execute,Print,Refresh",
-		page=100,dims=dims,wrap,
+		page=100,dims=dims,
 		links="Hawk,Datasets,Power,Comment,Approved",
-		cols="Approved.c,Moderator.t,Links.t,Fields.t,Comment.h,DetailedComment.t")
+		cols="Approved.c,Moderator.t,Datasets.t,Comment.x,DetailedComment.h")
 
 	//
 		#grid.Itemized(
 			path="/history.db?return=itemized",
 			head="Datasets,Print,Refresh",
-			page=100,dims=dims,wrap,
+			page=100,dims=dims,
 			cols="Moderators,Idx.t.Index")
 
 		#grid.Earnings(
 			path="/history.db?return=earnings",
 			head="Print,Refresh",
-			page=100,dims=dims,wrap,
+			page=100,dims=dims,
 			cols="Client,Earnings.t,Comments.T")
 
 		#grid.Moderators(
 			path="/moderators.db",
-			page=100,dims=dims,wrap,
+			page=100,dims=dims,
 			cols="Hawk.t.Role,Dataset,Field,Power.i")
 
 //- UNCLASSIFIED

@@ -333,8 +333,8 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				autoHide : false, 
 				closable: true,
 				resizable: true,
-				scrollable: true,
-				overlapHeader: true,
+				//scrollable: true,
+				//overlapHeader: true,
 				maxWidth : 800,
 				minWidth : 200,
 				mouseOffset: [0,0],
@@ -2879,12 +2879,13 @@ WIDGET.prototype.menuTools = function () {
 
 								else  {
 									if (parms.option) {
-										var ps = val.split("+"),
+										var 
+											ps = val.split("+"),
 											ns = val.split("-");
 
 										parms.more = ps.length-1;
 										parms.less = ns.length-1;
-										parms.option = ps[0];
+										parms.option = parms.more ? ps[0] : ns[0];
 									}
 
 									location.search = Ext.Object.toQueryString(
