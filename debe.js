@@ -238,7 +238,7 @@ append layout_body
 				}
 				
 				if (subs) {
-					for (var idx in sub) {
+					for (var idx in subs) {
 						var keys = subs[idx];
 						for (var key in keys)
 							if ( rec[key] )
