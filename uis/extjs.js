@@ -3196,6 +3196,7 @@ WIDGET.prototype.terminal = function (term,opts) {
 
 		//overflowX	: "auto",
 		//overflowY	: "auto",
+		scrollable: true,
 
 		//iconCls	: 'Loads-0',
 		icon		: "/clients/icons/widgets/"+this.name,
@@ -3513,8 +3514,9 @@ for (var layout in {anchor:1, fit:1, hbox:1, vbox:1, box:1, table:1, column:1})
 			// Subcomponents	
 
 			defaults		: {
-				overflowX: "auto",
-				overflowY: "auto",
+				//overflowX: "auto",
+				//overflowY: "auto",
+				scrollable: true,
 				width: this.dims[0],
 				height: this.dims[1] },
 				
@@ -4027,7 +4029,8 @@ WIDGET.prototype.form = function () {
 		disabled	: this.disable,
 
 		//overflowX	: "auto",
-		overflowY	: "auto",
+		//overflowY	: "auto",
+		scrollable: true,
 
 		//iconCls		: 'Loads-0',
 		icon		: "/clients/icons/widgets/"+this.name,
