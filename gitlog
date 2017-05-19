@@ -68,3 +68,7 @@ d9b47e2||acme sds||debera34@xxqx3802.com||Tue May 9 19:14:45 2017 -0400||add off
 891d928||acme sds||debera34@xxqx3802.com||Mon May 15 08:14:02 2017 -0400||parse url parms. fix ssp docs
 c3d7b9d||James||jamesbd@wsn3303.technology.local||Tue May 16 15:09:32 2017 -0500||dynamic doc prep fixes
 66ba0be||James||jamesbd@wsn3303.technology.local||Tue May 16 15:57:25 2017 -0500||fix dynamic doc gen
+ec0e99c||acme sds||debera34@xxqx3802.com||Tue May 16 21:27:22 2017 -0400||fix tooltips
+27fe557||acme sds||debera34@xxqx3802.com||Thu May 18 08:20:15 2017 -0400||refactor session metrics
+2d59a81||acmesds@somemail.com||jamesbd@wsn3303.technology.local||Thu May 18 10:33:48 2017 -0500||refactor moderator logic
+7ff564d||acmesds@somemail.com||jamesbd@wsn3303.technology.local||Thu May 18 13:34:06 2017 -0500||dyn doc fix
