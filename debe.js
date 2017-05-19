@@ -302,7 +302,7 @@ append layout_body
 							rtn += row.tag("tr");
 						});
 						
-						return rtn.tag("table",{});
+						return rtn.tag("table",{}).tag("div",{style:"overflow-x:auto"});
 						
 					case Object: // { key:val, ... } create table dump of object hash
 					
