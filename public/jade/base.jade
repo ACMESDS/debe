@@ -1,51 +1,62 @@
 //- UNCLASSIFIED
 //-
-	Extends the layout framework to provide an ExtJS framework with parameters:
+	Extends the layout framework to provide a base framework with parameters:
 
-		tech = extjs | jquery | dojo | reveal | voxel | scene | three | cesium | joint | d3 | nada
-		locale = [en | fr | de | ...] language plugin 
-		holdoff = name on button to load this skin 
-		holdoff = [skin,skin, ...] skins to load via accordion
+		tech = "[extjs] | jquery | dojo | reveal | voxel | scene | three | cesium | joint | d3 | flow | ..."
+		locale = "[en] | fr | de | ..." language plugin 
+		holdoff = "button name" to holdoff loading via button
+		holdoff = "skin,skin, ..." skins to holding loading via accordion
+		start = "starting div" to place content
 		
 		extjs:
-			carousel = [false | true] image plugin
-			theme = [crisp | neptune | aria | gray | ...] styling
-			charting = [true | false] data visualization plugin
+			carousel = false | true image plugin
+			theme = "crisp | neptune | aria | gray | ..." styling
+			charting = true | false data visualization plugin
 
 		reveal:
-			theme = [default | ...] styling  
-			classif = classification banner
+			theme = "default | ..." styling  
+			classif = "classification banner"
 		
 		jquery:
-			grid = DataTable | w2UI | jqgrid | ...
-			image = Darkroom | Camen | Vide | Fabric | ...
-			pivot = Isotope | elFinder | apy-X | ...
+			grid = "DataTable | w2UI | jqgrid | ... " gridding technology
+			image = "Darkroom | Camen | Vide | Fabric | ... " image technology
+			pivot = "Isotope | elFinder | apy-X | ... " pivot technology
 			themer = false | true
 			password = false | true
 		
 		voxel:
-			game = "" | "cubeland" | ...
+			game = "cubeland | ... "
 
 		three:
-			effect = "" | "AnaglyphEffect" | ...
+			effect = "AnaglyphEffect | ... "
 
-		src = "" | "dataset"
-		host = "aws" | "geohub" | "me" | "win" | "local"
-		width = 750
-		height = 500
-
-		map = "" | "world" | "usa" | ...
+		cesium:
+			src = query.src
+			src = "dataset | ..." 
+			host = "aws | geohub | me | win | local | local | swaggpu | swagaws | swagdev | ..."
+			width = 750
+			height = 500
+			
+		d3:
+			map = "world | usa | ... "
+		
+		flow:
+			none
 
 extends layout
+append layout_parms
+	- start = start
 append layout_head
 
 	block base_parms
+		- start = ""
 		- tech = "extjs"
 		- base = true
 		- locale = query.locale || "en"
 		- holdoff = query.holdoff
 		- banner = query.holdoff ? "" : banner
 		- theme = query.theme
+		- hosts = {geohub: "https://sigma0.ilabs.ic.gov:8083", me: "localhost:8083", win: "http://200.100.50.101:8083", aws: "http://172.31.76.130:8083",local:"http://localhost:8083",swaggpu:"http://swag-gpu-01.ec2.internal:8083", swagws:"http://swag-ws-02.ec2.internal:8083", swagdev: "http://localhost:8083"}
 		// extjs
 		- carousel = false
 		- charting = false
@@ -65,13 +76,13 @@ append layout_head
 		// three
 		- effect = ""
 		// cesium
-		- src = query.src || ""
-		- hosts = {geohub: "https://sigma0.ilabs.ic.gov:8083", me: "localhost:8083", win: "http://200.100.50.101:8083", aws: "http://172.31.76.130:8083",local:"http://localhost:8083",swaggpu:"http://swag-gpu-01.ec2.internal:8083", swagws:"http://swag-ws-02.ec2.internal:8083", swagdev: "http://localhost:8083"}
+		- src = query.src
 		- host = "swagdev"
 		- width = 750
 		- height = 500		
 		// d3
 		- map = ""
+		// flow
 
 	//- Define tech styles
 
@@ -93,9 +104,23 @@ append layout_head
 
 		when "extjs"
 			include base_extjs
+			
+		when "flow"
+			include base_flow
 
 	//- Load underlying tech 
 	case tech
+		when "flow"
+			//- any changes in these scriptes require re-minification
+			script(src="/clients/joint/joint.min.js")
+			script(src="/clients/joint/joint.shapes.devs.js")
+			script(src="/clients/joint/joint.shapes.fsa.min.js")
+			script(src="/clients/joint/joint.shapes.pn.min.js")
+			script(src="/clients/joint/joint.shapes.erd.min.js")
+			//-script(src='/clients/jQuery/js/jquery-1.9.1.min.js')
+			script(src='/clients/jQuery/ui/jquery-ui-1.10.3.custom.min.js')
+			//-script(src='/clients/jQuery/plugins/misc/jquery.ui.tooltip.min.js')
+		
 		when "d3"
 			script(src="/clients/d3/d3.min.js")
 			case map
@@ -271,6 +296,33 @@ append layout_body
 			#post(class=holdoff,path=url.replace('holdoff='+holdoff, ''),refresh,dims="98%,98%")
 	else
 		case tech
+			when "flow"
+				block base_body
+					table
+						th: input#run.ui-icon-run(type="button",size=4,title="step or pause simulation")
+						th: input#open.ui-icon-open(type="button",size=4,title="open selected system")
+						th: input#save.ui-icon-save(type="button",size=4,title="save model")
+						th: input#load.ui-icon-load(type="button",size=4,title="load model")
+						th: input#clone.ui-icon-clone(type="button",size=4,title="clone selected system")
+						th: input#delete.ui-icon-delete(type="button",size=4,title="delete selected system")
+						th: input#select.ui-icon-select(type="button",size=4,title="select system")
+						th: input#info.ui-icon-info(type="button",size=4,title="info about selected system")
+						th: input#reset.ui-icon-reset(type="button",size=4,title="stop and reset simulation")
+						th.x: #status status
+						th.x: #state state
+						th.x: #step step
+						th.x: #tokens tokens
+						th.x: #jobs jobs
+						th.x: #msg msg
+						th.x: #db LFS
+						th: #progressBar
+							#res
+
+					//- for debugging wrapper
+						svg#Experimental(xmlns="http://-www.w3.org/2000/svg",version="1.1",style="width:150px;height:150px;position:absolute;")
+							ellipse(cx="50%",cy="50%",rx="50%",ry="50%",stroke="#FF0000",stroke-width="2",fill="#800000")
+							ellipse(cx="50%",cy="50%",rx="10%",ry="10%",stroke="#FF0000",stroke-width="2",fill="#880000")
+
 			when "cesium"
 				iframe(src="#{hosts[host]}/geonode/cesium.html?src=#{src}",width="#{width}",height="#{height}")
 

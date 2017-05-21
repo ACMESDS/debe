@@ -840,7 +840,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				+ ".  See issues".tag("a",{href: "/issues.view"})
 				+ " for further information";
 		},
-		dynamicSkin: new Error("failed dynamic skinning of dataset"),
+		badDataset: new Error("dataset does not exist"),
 		noCode: new Error("failed engine code lookup"),
 		unsupportedFeature: new Error("unsupported feature")
 	},
@@ -1563,7 +1563,38 @@ function readJade(req,res) {
 		
 	function renderJade() {  
 
-		function skinDynamic(cols, req, res) {
+		function skinDynamic(req, res, fields) {
+			
+			var cols = [];
+			
+			switch (fields.constructor) {
+				case Array:
+					fields.each(function (n,field) {
+						if (field.Field != "ID")
+							cols.push( field.Field + "." + (SQLTYPES[field.Type] || "t") );
+					});
+					break;
+					
+				case String:
+					fields.split(",").each(function (n,field) {
+						if (field.Field != "ID")
+							cols.push( field.Field );
+					});					
+					break;
+					
+				case Object:
+				default:
+					
+					try{
+						Each(fields, function (n,rec) {
+							if (n != "ID")
+								cols.push( n );
+						});	
+					}
+					catch (err) {
+					}
+			}
+				
 			var skin =
 `extends base
 append base_parms
@@ -1578,7 +1609,7 @@ append base_body
 							  
 		Trace("RENDER "+req.table);
 		
-		sql.query(paths.mysql.engine, { 			// See if skin is in engine db
+		sql.query(paths.mysql.engine, { // Try a skin from the  engine db
 			Name: req.table,
 			Engine: req.type,
 			Enabled: 1
@@ -1588,33 +1619,36 @@ append base_body
 			if (eng.Count) 			// render using skinning engine
 				res( eng.Code.render(req) );
 			
-			else 							// render using skin from disk
+			else 						// render using skin from disk
 				FS.readFile(paths.render+req.table+".jade", "utf-8", function (err,skin) {
 					
 					if (err)  // create dynamic skin for this dataset
 						if ( select = FLEX.select[req.table] ) // try virtual table
 							select(req, function (recs) {
-								var cols = [], rec = recs[0] || {};
-								Each(rec, function (n,rec) {
-									cols.push( n );
-								});
-								skinDynamic(cols, req, res);
+								skinDynamic( req, res, recs[0] || {} );
 							});
 
 						else  // try sql table
-							sql.query("DESCRIBE ??", (DEBE.dsAttrs[req.table] || {}).tx || req.table, function (err,fields) {
-								if (err) 
-									res( DEBE.errors.dynamicSkin );
+							sql.query(
+								"DESCRIBE ??", 
+								(DEBE.dsAttrs[req.table] || {}).tx || req.table, 
+								function (err,fields) {
+									
+									if (err) // might be an engine
+										if (route = DEBE.worker[req.action])   // try engines CRUD
+											route(req, function (ack) { // try the engine
+												if (ack.constructor == Error) // noluck
+													res( ack );
 
-								else {
-									var cols = [];
-									fields.each(function (n,field) {
-										if (field.Field != "ID")
-											cols.push( field.Field + "." + (SQLTYPES[field.Type] || "t") );
-									});
+												else 
+													skinDynamic( req, res, ack[0] || {} );
+											});	
+										
+										else  // give up
+											res( DEBE.errors.badDataset );
 
-									skinDynamic(cols, req, res);
-								}
+									else 
+										skinDynamic( req, res, fields );
 							});
 					
 					else  	// render skin
@@ -1753,7 +1787,7 @@ function Initialize () {
 
 		Trace(`INITIALIZING SESSIONS`);
 
-		Each( CRUDE, function (n,routes) { // Map engine CRUD to DEBE
+		Each( CRUDE, function (n,routes) { // Map engine CRUD to DEBE workers
 			DEBE.worker[n] = ENGINE[n];
 		});	
 

@@ -3,16 +3,16 @@
 
 extends site
 append site_help
-	p Provides a view for all engines, or a specfic engine &Name or type &Engine
+	p Provides a view for all engines, or a specfic engine &name of type &engine
 append site_parms
 	- view = "Min"
 	- dock = "left"
 	- dims = "1000,800"
 append site_body
 
-	if query.Engine
-		#form.Engine(
-			path="/engines.db?Engine=#{query.Engine}&Name=#{query.Name}",
+	if query.engine
+		#form.engine(
+			path="/engines.db?Engine=#{query.engine}&Name=#{query.name}",
 			dims=dims,
 			cols="Classif,Name,Engine,Enabled.c,Period.n,Progam(Code.x,Vars.x,Special)")
 
@@ -23,29 +23,29 @@ append site_body
 				[API](/api.view?goto=Engines) and [skinning guide](/skinguide.view) for more information on engines.
 
 	else
-		#grid.Engs(
+		#grid.engines(
 			path="/engines.db",
 			dims=dims,page=25,kiss,nowrap,
 			cols="Classif,Name,Engine,Enabled.c,Period.n,Code.t,Vars.t,Special.t")
 
-		#grid.Stats(
+		#grid.stats(
 			path="/simstats.db",
 			page=25,dims=dims,nowrap,
 			cols="t.date,name,step.n,events,tokens,state,delay")
 
-		#grid.Opts(
+		#grid.options(
 			path="/simoptions.db",
 			page=25,dims=dims,
 			cols="name,steps.n,t.n,delta.n,delaybins.n,delaymax.n,snappath,snapperiod.n")
 
-		#form.Engine(
-			path="/engines.db?Engine=${xs('Engs').Engine}&Name=${x.Name}",
+		#form.engine(
+			path="/engines.db?engine=${xs('engines').Engine}&name=${x.Name}",
 			dims=dims,
 			cols="Classif,Name,Engine,Enabled.c,Period.n,Progam(Special,Code.x,Vars.x)")
 
 			:markdown
-				**Select** to retrieve and lock your engine for editing.  **Update**, **Insert**, **Delete** or **Select** will unlock (for possible recompile) your engine.  Use
-				**Execute** to test your **enabled** engine or to recover 
+				**Select** to retrieve and lock your engine for editing.  **Update**, **Insert**, **Delete** or **Select**
+				will unlock (for possible recompile) your engine.  Use **Execute** to test your **enabled** engine or to recover 
 				your **disabled** engine from the **#{title}** initial (as shipped) store.  See the **#{title}**
 				[API](/api.view?goto=Engines) and [skinning guide](/skinguide.view) for more information on engines.
 

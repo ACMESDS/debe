@@ -6,61 +6,59 @@ append site_help
 		Provides a &view to the model library &lib [exlib,swaglib,...] at version &ver.
 
 append site_parms
-	- parms = { Threaded:"Threaded",PetriNet:"PetriNet",StateMachine1:"StateMachine1",StateMachine2:"StateMachine2",Python2:"Python2",Python1:"Python1",test5:"test5",test4:"test4",test3:"test3",test2:"test2",test1:"test1",test6:"test6",test7:"test7",test8:"test8",test9:"test9",test10:"test10" }
+	- parms = { NodeRed:"red", Threaded:"Threaded",PetriNet:"PetriNet",StateMachine1:"StateMachine1",StateMachine2:"StateMachine2",Python2:"Python2",Python1:"Python1",test5:"test5",test4:"test4",test3:"test3",test2:"test2",test1:"test1",test6:"test6",test7:"test7",test8:"test8",test9:"test9",test10:"test10" }
 	- view = query.view || "Min"
 
-append site_body
-
+append site_help
 	:markdown
 		Consult the [api](/api.view?goto=Engines) and the [skinguide](/skinguide?goto=Workflows) 
 		for help on how to create engines and use them in workflows.
+append site_body
 
 	- src = query.option || query.src || "Python1"
 
-	#nodetau.Model(path="#{src}",dims="#{dims}")
+	if src == "red"
+		#post.model(path="http://localhost:1880",dims=dims)
 
-		:markdown
-			Consult the [api](/api.view?goto=Engines) and the [skinguide](/skinguide?goto=Workflows) 
-			for help on how to create engines and use them in workflows.
+	else
+		#post.model(path="/flow.view?src=#{src}",dims=dims)
 
-	#grid.Stats(
-		path="/simstats.db",
-		page=25,refresh,
-		cols="t.date,name,step.n,user,tokens,state,delay")
+		#grid.options(
+			path="/simoptions.db",
+			page=25,
+			cols="name,steps.n,t.n,delta.n,snappath,snapperiod.n,screen.x,url")
+		//
+			#grid.stats(
+				path="/simstats.db",
+				page=25,refresh,
+				cols="t.date,name,step.n,user,tokens,state,delay")
 
-	#grid.SimOptions(
-		path="/simoptions.db",
-		page=25,
-		cols="name,steps.n,t.n,delta.n,snappath,snapperiod.n,screen.x,url")
+			#grid.apps(
+				path="/apps.db",
+				page=25,
+				cols="Name.t,Nick.t,Title.t,DB.t,Cores.n,Sockets.c,Domain.t,PKI.c,Port.n")
 
-	#grid.Apps(
-		path="/apps.db",
-		page=25,
-		cols="Name.t,Nick.t,Title.t,DB.t,Cores.n,Sockets.c,Domain.t,PKI.c,Port.n")
+			#grid.cores(
+				path="/simcores.db",
+				page=25,
+				cols="engine,timeout.n,type,client,name,thread.n,index.n")
 
-	#grid.Cores(
-		path="/simcores.db",
-		page=25,
-		cols="engine,timeout.n,type,client,name,thread.n,index.n")
+			#grid.engines(
+				path="/engines.db",kiss,
+				page=25,
+				cols="Name,Vars.x,Engine,Code.x,Classif")
 
-	#grid.Engines(
-		path="/engines.db",kiss,
-		page=25,
-		cols="Name,Vars.x,Engine,Code.x,Classif")
-		
-		:markdown
-			Consult the [api](/api.view?goto=Engines) and the [skinguide](/skinguide?goto=Workflows) 
-			for help on how to create engines and use them in workflows.
-			
-	#form.Engine(
-		path="/engines.db",
-		page=25,
-		links="Name.Engines.Name",
-		cols="Name,Vars.x,Engine,Code.x,Classif")
+				:markdown
+					Consult the [api](/api.view?goto=Engines) and the [skinguide](/skinguide?goto=Workflows) 
+					for help on how to create engines and use them in workflows.
 
-		:markdown
-			Consult the [api](/api.view?goto=Engines) and the [skinguide](/skinguide?goto=Workflows) 
-			for help on how to create engines and use them in workflows.
+			#form.engine(
+				path="/engines.db",
+				page=25,
+				cols="Name,Vars.x,Engine,Code.x,Classif")
 
+					:markdown
+						Consult the [api](/api.view?goto=Engines) and the [skinguide](/skinguide?goto=Workflows) 
+						for help on how to create engines and use them in workflows.
 		
 //- UNCLASSIFIED
