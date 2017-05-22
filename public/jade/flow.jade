@@ -1,0 +1,166 @@
+//- UNCLASSIFIED
+
+extends base
+append base_parms
+	- tech = "flow"
+	- start = query.start || "SIM"
+append base_body
+
+	- src = query.src
+	- sectors = 4
+	- features = 2
+	- metrics = 3
+
+	case src
+		when "Threaded"
+			#SIM.DPF(inputs="NITF.file",outputs="act.C")
+				#A.WARN(inputs="NITF.SIM",outputs="jpg.#{sectors}")
+				#SWAG.TRK(inputs="jpg.A",outputs="det.#{features}")
+				#C.ABI(inputs="det.SWAG",outputs="act.#{metrics}")
+
+		when "PetriNet"
+			#SIM(inputs="S1,S2,S0",outputs="S3,S5",markers="A||t1||B|C,B|C||t2||D|A,1|0|4|2")
+
+		when "StateMachine1"
+			#SIM(inputs="S1,S2,S0",outputs="S3,S5",routes="A|B|itau[0].Value==0,B|C|2>1,C|A|2==3,0|A|start")
+
+		when "StateMachine2"
+			#SIM(inputs="S1,S2,S0",outputs="S3,S5",routes="A|B|1>0,B|C|2>1,C|A|2==3,0|A|start")
+
+		when "Python2"
+			#SIM(inputs="$STEP",outputs="S3||PY2")
+				#PY1(inputs="S1||SIM|$STEP",outputs="S2")
+				#PY2(inputs="S2||PY1",outputs="S3")
+
+		when "Python1"
+			#SIM(inputs="$STEP",outputs="S2||PY1")
+				#PY1(inputs="S1||SIM|$STEP",outputs="S2")
+
+		when "test0"
+			#SIM(inputs="L1,L2,L0",outputs="L3||A,L4")
+				#jsf(inputs="L0||SIM,L1,L2",outputs="L3,L4")
+
+		when "test1"
+			#SIM(inputs="fi",outputs="fo")
+			//
+				#SIM(inputs="L1,L2,L0",outputs="L3,L4")
+
+		when "test2"
+			#SIM(inputs="L1,L2,$TEST",outputs="L3||B,L4||A",stats)
+				#A(inputs="X||SIM|$TEST,L1,L2",outputs="B1,L4",stats)
+				#B(inputs="IN1||A|B1,IN2||A|L4",outputs="L3,$STEP",stats)
+
+		when "test3"
+			#SIM(inputs="L1,L2,L0",outputs="L3||A,L4")
+				#A(inputs="L0||SIM,L1,L2",outputs="L3,L4")
+
+		when "test4"
+			#SIM(inputs="L1,L2,L0",outputs="L3||B,L4||C")
+				#A(inputs="L0||SIM,L1,L2",outputs="B1,B2,C1")
+				#B(inputs="spec||A||B1,jpg||A|B2",outputs="L3")
+				#C(inputs="msg||A|C1",outputs="L4")
+
+		when "test5"
+			#SIM(inputs="S1,S2,S0",outputs="S3||B,S5||BIG")
+				#SM(routes="A|B|1>0|n++;k=0|n--,B|C|2>1,C|A|2==3,0|A|start")
+				#PN(markers="A||t1||B|C,B|C||t2||D|A,1|0|4|2")
+				#A(inputs="S0||SIM,S1,S2",outputs="B1,B2,C1")
+				#B(inputs="B1||A,B2",outputs="S3")
+				#C(inputs="C1||A",outputs="C2")
+				#BIG(inputs="X1||C|C2",outputs="S5||BB|X3")
+					#AA(inputs="X1",outputs="X2")
+					#BB(inputs="X2||AA",outputs="X3")
+
+		when "test7"
+			#SIM(inputs="$JTEST",outputs="Land||Warn1,Water||Warn1")
+				#hack.Warn1(inputs="Chip||SIM|$JTEST",outputs="Land,Water")
+				#hack.Warn2(inputs="Chip||SIM|$JTEST",outputs="Lake,Urban,Forest")
+
+		when "test6"
+			#SIM(inputs="$JTEST|1",outputs="Land|9|Warn,Water|1|Warn")
+				#hack.Warn(inputs="Chip|1|SIM|$JTEST",outputs="Land|9,Water|1")
+
+		when "test8"
+			#SIM(inputs="$JTEST|1",outputs="helipads|4|Detect,faces|9|Detect")
+				#haar.Detect(inputs="frame|1|SIM|$JTEST",outputs="helipads|4,faces|9")
+
+		when "test9"
+			#SIM(inputs="$JTEST|1",outputs="helipads|4|Detect,faces|1|Detect")
+				#hack.Warn(inputs="Chip|1|SIM|$JTEST",outputs="Land|9,Water|1")
+				#haar.Detect(inputs="frame|9|Warn|Land",outputs="helipads|4,faces|1")
+
+		when "test10"
+			#SIM.test10(inputs="$JTEST|1",outputs="tracks|4|Change Detect,tarps|8|Change Detect,tels|4|Feature Detect,tarps|8|Mux Tarps")
+				#jpg.JPG.Service(inputs="Chip|1|SIM|$JTEST",outputs="jpg|1")
+				#hack.Image.Index(inputs="jpg|1|JPG Service",outputs="Land|9,Water|1,Urban|1,City|1")
+				#haar.Feature.Detect(inputs="frame|9|Image Index|Land",outputs="helipads|4,faces|1,tarp1|4,tarp2|4,tels|4")
+				#abi.Change.Detect(inputs="obj|4|Feature Detect|helipads",outputs="tracks|4")
+				#mux.Mux.Tarps(inputs="tarp1|4|Feature Detect,tarp2|4",outputs="tarps|8")
+
+		when "mux"
+			#SIM(inputs="$TEST|4",outputs="muxed|8|mux")
+				#mux(inputs="x|4|SIM|$TEST,y|4|SIM|$TEST",outputs="muxed|8")
+
+		when "ThreadedSWAG"
+			#SIM.DPF(inputs="NITF.file",outputs="act.C")
+				#A.WARN(inputs="NITF.SIM",outputs="jpg.#{sectors}")
+				#SWAG.TRK(inputs="jpg.A",outputs="det.#{features}")
+				#C.ABI(inputs="det.SWAG",outputs="act.#{metrics}")
+
+		when "v0"
+			#SIM(inputs="test",outputs="Land|Warn,Water|Warn")
+				#hack|Warn(inputs="Image|SIM|test",outputs="Land,Water")
+				//
+					#SIM(inputs="test",outputs="pad|Track,tel|Track,ship|Sea")
+						#hack.Warn(inputs="Image|SIM|test",outputs="land|4,sea|2,lake|5")
+						#haar.Track(inputs="land|Warn",outputs="pad|2,tel|3")
+						#haar.Sea(inputs="sea|Warn",outputs="iceberg|4,ship|4,sub|2")
+						#C.ABI(inputs="det|SWAG",outputs="act")
+
+		when "v1"
+			#SIM(inputs="$STEP",outputs="S3||PY2")
+				#PY1(inputs="S1||SIM|$STEP",outputs="S2")
+				#PY2(inputs="S2||PY1",outputs="S3")
+
+		when "v1.1"
+			#SIM(inputs="$TEST",outputs="Land||Warn1,Water||Warn1")
+				#hack.Warn1(inputs="Chip||SIM|$TEST",outputs="Land,Water")
+				#hack.Warn2(inputs="Chip||SIM|$TEST",outputs="Lake,Urban,Forest")
+
+		when "v2"
+			#SIM(inputs="$TEST|1",outputs="Land|9|Warn,Water|1|Warn")
+				#hack.Warn(inputs="Chip|1|SIM|$TEST",outputs="Land|9,Water|1")
+
+		when "v3"
+			#SIM(inputs="$TEST|1",outputs="helipads|4|Detect,faces|9|Detect")
+				#haar.Detect(inputs="frame|1|SIM|$TEST",outputs="helipads|4,faces|9")
+
+		when "v4"
+			#SIM(inputs="$TEST|1",outputs="helipads|4|Detect,faces|1|Detect")
+				#hack.Warn(inputs="Chip|1|SIM|$TEST",outputs="Land|9,Water|1")
+				#haar.Detect(inputs="frame|9|Warn|Land",outputs="helipads|4,faces|1")
+
+		when "v5"
+			#SIM(inputs="$TEST|1",outputs="tracks|4|Change Detect,tarps|8|Change Detect,tels|4|Feature Detect,tarps|8|Mux Tarps")
+				#jpgsrv.JPG.Service(inputs="dpf|1|SIM|$TEST",outputs="jpg|1")
+				#hack.Image.Index(inputs="Chip|1|JPG Service|jpg",outputs="Land|9,Water|1,Urban|1,City|1")
+				#haar.Feature.Detect(inputs="frame|9|Image Index|Land",outputs="helipads|4,faces|1,tarp1|4,tarp2|4,tels|4")
+				#abi.Change.Detect(inputs="obj|4|Feature Detect|helipads",outputs="tracks|4")
+				#mux.Mux.Tarps(inputs="tarp1|4|Feature Detect,tarp2|4",outputs="tarps|8")
+
+		when "v7"
+			#SIM(inputs="$TEST|1",outputs="tracks|4|Change Detect")
+				#jpgsrv.JPG.Service(inputs="dpf|1|SIM|$TEST",outputs="jpg|1")
+				#hack.Image.Index(inputs="Chip|1|JPG Service|jpg",outputs="Land|9")
+				#haar.Feature.Detect(inputs="frame|9|Image Index|Land",outputs="helipads|4")
+				#abi.Change.Detect(inputs="obj|4|Feature Detect|helipads",outputs="tracks|4")
+
+		when "v6"
+			#SIM(inputs="$TEST|1",outputs="Land|9|Image Index")
+				#jpgsrv.JPG.Service(inputs="dpf|1|SIM|$TEST",outputs="jpg|1")
+				#hack.Image.Index(inputs="Chip|1|JPG Service|jpg",outputs="Land|9")
+				
+		default
+			#SIM(inputs="fi",outputs="fo")		
+
+//- UNCLASSIFIED
