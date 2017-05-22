@@ -296,6 +296,9 @@ append layout_body
 			#post(class=holdoff,path=url.replace('holdoff='+holdoff, ''),refresh,dims="98%,98%")
 	else
 		case tech
+			when "nada"
+				block base_body
+
 			when "flow"
 				block base_body
 					table
