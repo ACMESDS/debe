@@ -215,9 +215,17 @@ append layout_body
 
 	site: { 		//< initial site context
 
-		get: function(recs, where, index, subs) {
-			var rtns = [], idxs = index ? index.split(",") : null;
-
+		get: function(recs, where, index, sub1, sub2) {
+			var rtns = [];
+			
+			if (index && index.constructor == String) {
+				var idx = {};
+				index.split(",").each(function (n,key) {
+					idx[key] = key;
+				});
+				index = idx;
+			}
+			
 			recs.each(function (n,rec) {
 				var match = true;
 
@@ -225,21 +233,30 @@ append layout_body
 					for (var x in where) 
 						if (rec[x] != where[x]) match = false;
 
-				if (idxs) {
+				if (index) {
 					var rtn = new Object();
-					idxs.each(function (n,key) {
+					for (var key in index) {
 						var src = rec;
 						key.split(".").each( function (k,idx) {
 							src = src[idx];
 						});
-						rtn[key] = src;
-					});
+						rtn[ index[key] ] = src;
+					}
 					rec = rtn;
 				}
 				
-				if (subs) {
-					for (var idx in subs) {
-						var keys = subs[idx];
+				if (sub2) {
+					for (var idx in sub2) {
+						var keys = sub2[idx];
+						for (var key in keys)
+							if ( rec[key] )
+								rec[key] = (rec[key] + "").replace("##" + key, keys[key]);
+					}
+				}
+
+				if (sub1) {
+					for (var idx in sub1) {
+						var keys = sub1[idx];
 						for (var key in keys)
 							if ( rec[key] )
 								rec[key] = (rec[key] + "").replace("#" + key, keys[key]);
@@ -297,7 +314,7 @@ append layout_body
 										? table(val)
 										: (val+"").tag("td");
 								else
-									row += "null".tag("td");
+									row += (val+"").tag("td");
 							});
 							rtn += row.tag("tr");
 						});
