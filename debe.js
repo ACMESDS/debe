@@ -233,38 +233,39 @@ append layout_body
 					for (var x in where) 
 						if (rec[x] != where[x]) match = false;
 
-				if (index) {
-					var rtn = new Object();
-					for (var key in index) {
-						var src = rec;
-						key.split(".").each( function (k,idx) {
-							src = src[idx];
-						});
-						rtn[ index[key] ] = src;
+				if (match) {
+					if (sub2) {
+						for (var idx in sub2) {
+							var keys = sub2[idx];
+							if ( rec[idx] )
+								for (var key in keys)
+									rec[idx] = (rec[idx] + "").replace("##" + key, keys[key]);
+						}
 					}
-					rec = rtn;
-				}
-				
-				if (sub2) {
-					for (var idx in sub2) {
-						var keys = sub2[idx];
-						for (var key in keys)
-							if ( rec[key] )
-								rec[key] = (rec[key] + "").replace("##" + key, keys[key]);
-					}
-				}
 
-				if (sub1) {
-					for (var idx in sub1) {
-						var keys = sub1[idx];
-						for (var key in keys)
-							if ( rec[key] )
-								rec[key] = (rec[key] + "").replace("#" + key, keys[key]);
+					if (sub1) {
+						for (var idx in sub1) {
+							var keys = sub1[idx];
+							if ( rec[idx] )
+								for (var key in keys)
+									rec[idx] = (rec[idx] + "").replace("#" + key, keys[key]);
+						}
 					}
-				}
 					
-				if (match)
+					if (index) {
+						var rtn = new Object();
+						for (var key in index) {
+							var src = rec;
+							key.split(".").each( function (k,idx) {
+								src = src[idx];
+							});
+							rtn[ index[key] ] = src;
+						}
+						rec = rtn;
+					}
+					
 					rtns.push( rec );
+				}
 			});
 			
 			return rtns;
@@ -307,14 +308,16 @@ append layout_body
 								head = false;
 							}
 							
-							var row = "";
+							var row = "", intro = "";
 							Each(rec, function (key,val) {
 								if (val)
 									row += (val.constructor == Array)
 										? table(val)
-										: (val+"").tag("td");
+										: (val+"").tag("td", intro ? {class:"intro"} : {});
 								else
 									row += (val+"").tag("td");
+								
+								intro = false;
 							});
 							rtn += row.tag("tr");
 						});
@@ -839,7 +842,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		config: sysConfig,
 		
 		// Render a page using jade skinning engine
-		jade: readJade,
+		//jade: readJade,
 		view: readJade,
 		
 		// An exe TYPE will schedule (one-time or periodic) jobs matched by 
@@ -867,7 +870,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		mime: {
 			tour: ".",		 			//< enable totem touring 
-			jobs: "./public/jobs",		//< path to tau simulator job files
+			//jobs: "./public/jobs",		//< path to tau simulator job files
 			stores: "./public", 		//< persistant scrape area
 			uploads: "./public", 		//< one-time scrape area
 			data: "./public", 			//< json data area

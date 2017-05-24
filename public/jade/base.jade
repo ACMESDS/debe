@@ -50,7 +50,7 @@ append layout_head
 
 	block base_parms
 		- start = ""
-		- tech = "extjs"
+		- tech = ""
 		- base = true
 		- locale = query.locale || "en"
 		- holdoff = query.holdoff
@@ -278,6 +278,8 @@ append layout_head
 
 	if base
 		script(src="/clients/uis/base.js")
+		
+	if tech
 		script(src="/clients/uis/#{tech}.js")
 
 	block base_head
@@ -296,7 +298,7 @@ append layout_body
 			#post(class=holdoff,path=url.replace('holdoff='+holdoff, ''),refresh,dims="98%,98%")
 	else
 		case tech
-			when "nada"
+			when ""
 				block base_body
 
 			when "flow"

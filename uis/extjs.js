@@ -760,6 +760,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 										+ el.value.substring(el.selectionEnd);								
 									break;
 									
+								/*
 								case 112:
 								case 113:
 								case 114:
@@ -773,6 +774,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 										+ el.value.substring(el.selectionEnd);
 									pos++;
 									break;
+								*/
 									
 								default:
 									//alert(key);
@@ -1196,7 +1198,7 @@ function DS(anchor) {
 					
 					//autoSync	: false,  	// disabled forces use of update to sync changes
 					//buffered	: false, 	// used with paging and verticalScroller but EXTJS BUG
-					//pageSize	: page,  	// used with paging and verticalScroller
+					pageSize	: page  	// used with paging and verticalScroller
 					//remoteSort	: true	// enable remote sorting
 				});
 				break;
@@ -1318,7 +1320,7 @@ function DS(anchor) {
 		sorts	= hashify( this.sorts = (anchor.getAttribute("sorts") || "").split(",") ),
 		shifts	= anchor.getAttribute("shifts") ? true : false,
 		
-		page 	= anchor.getAttribute("page"),
+		page 	= parseInt(anchor.getAttribute("page")) || 0,
 		sync 	= anchor.getAttribute("sync"),
 		refresh = this.refresh = parseInt(anchor.getAttribute("refresh") || "0"),
 		dims = this.dims = (anchor.getAttribute("dims") || "200,200").split(","),
@@ -3114,21 +3116,22 @@ WIDGET.prototype.terminal = function (term,opts) {
 	function pageTools () {
 		var ctrls = [];
 
-		if (Widget.page)
-			ctrls.push( Ext.create('Ext.PagingToolbar', {
-				store: Widget.Data.Store,
-				dock: "bottom",
-				displayInfo: true,
-				displayMsg: 'Showing {0} - {1} of {2}',
-				emptyMsg: "No records"
-			}));
+		ctrls.push( Ext.create('Ext.PagingToolbar', {
+			store: Widget.Data.Store,
+			dock: "bottom",
+			displayInfo: true,
+			displayMsg: 'Showing {0} - {1} of {2}',
+			emptyMsg: "No records"
+		}));
 
 		return ctrls;
 	}
 			
-	var Widget = this,
+	var 
+		Widget = this,
 		Sorts = this.sorts,
 		Plugins = this.plugins || "",
+		page = parseInt(this.page) || 0,
 		Data = this.Data,
 		Name = Data.name,
 		Store = Data.Store,
@@ -3241,7 +3244,7 @@ WIDGET.prototype.terminal = function (term,opts) {
 
 		selModel	: Widget.Selector, 
 
-		bbar		: pageTools(),
+		bbar		: page ? pageTools() : null,
 
 		tools		: isHead ? this.Menu : null,
 		
