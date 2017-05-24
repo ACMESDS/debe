@@ -40,7 +40,7 @@ var 									// globals
 		"varchar(128)": "t",
 		"int(11)": "i",
 		float: "n",
-		mediumtext: "h",
+		mediumtext: "x",
 		date: "d",
 		datetime: "d"
 	},		

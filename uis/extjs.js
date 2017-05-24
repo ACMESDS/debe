@@ -738,13 +738,44 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 									pos++;
 									break;
 									
+								case 35: //end
+									pos = el.value.length;
+									break;
+									
+								case 36: //home
+									pos=0;
+									break;
+									
+								case 37: //left
+									if (pos) pos--;
+									break;
+									
+								case 39: //right
+									if (pos<el.value.length) pos++;
+									break;
+										
 								case 46:  //del
 									el.value = 
 										el.value.substring(0,pos) 
 										+ el.value.substring(el.selectionEnd);								
 									break;
 									
+								case 112:
+								case 113:
+								case 114:
+								case 115:
+								case 116:
+								case 117:
+								case 118:
+									el.value = 
+										el.value.substring(0,pos) 
+										+ "." 
+										+ el.value.substring(el.selectionEnd);
+									pos++;
+									break;
+									
 								default:
+									//alert(key);
 									el.value = 
 										el.value.substring(0,pos) 
 										+ String.fromCharCode(key) 
