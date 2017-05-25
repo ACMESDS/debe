@@ -633,33 +633,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 		case 'h':
 		case 'html':	// html
 		case 'mediumtext':	
-			return false  // (navigator.browser == "xxFireFox")  // EXTJS-FF BUG (xx->"" to enable)
-			? {
-				fType		: fType,
-				dataIndex	: fName,
-				sortable	: true,
-				hideable	: true,
-				locked		: fLock,
-				disabled	: fOff,
-				width		: 400,
-				text		: fLabel,
-				qtip		: fTip, 
-				qtitle	 	: fTipTitle,
-				editor		: {	
-					xtype: 'textareafield', 
-					format: "",
-					defaultValue: "",
-					scrollable: true,
-					//grow: true,
-					disabled: fOff,					
-					allowBlank: true,
-					width: 600
-				},
-				renderer 	: fCalc ? calcRender : null,
-				listeners	: fListen
-			}	
-			
-			: {
+			/*return  {
 				fType		: fType,
 				dataIndex	: fName,
 				//sortable	: true,
@@ -682,7 +656,8 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				renderer 	: fCalc ? calcRender : null,
 				listeners	: fListen   // EXTJS widget gets confused when embedded in grid
 			};
-						
+			*/
+			
 		case 'x':		// text area
 		case 'textarea':
 		case 'xtextarea':
@@ -719,7 +694,6 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 								key = e.getKey(),
 								pos = el.selectionStart;
 								
-							//alert(key);
 							switch (key) {
 								case 8:  //backspace
 									if (pos) {
@@ -777,7 +751,6 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 								*/
 									
 								default:
-									//alert(key);
 									el.value = 
 										el.value.substring(0,pos) 
 										+ String.fromCharCode(key) 
@@ -1371,6 +1344,8 @@ function DS(anchor) {
 
 	cols = this.cols = cols.parse( PARMS, function cb(tok,args) {
 
+		//if (name == "News") 	alert(tok+(args?args.length:-1));
+		
 		var 
 			fOpts = tok.split("."),
 			fName = fOpts[0],
@@ -1486,6 +1461,11 @@ function DS(anchor) {
 		
 		if (args) { 			// Return column list to the column grouper if tokens supplied
 			fCol.columns = args;
+			
+			/*alert(["cols",fCol.columns.length]);
+			args.Each(function (n,arg) {
+				alert([n,arg.dataIndex]);
+			});*/
 			
 			// EXTJS BUG does not allow tree in locked column
 			if (fName == "Pivot" && args[0].xtype != "treecolumn") fCol.locked = true;

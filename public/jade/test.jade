@@ -14,10 +14,14 @@ append site_help
 		page=page,dims=dims,
 		cols="Num.t,Reqt.x,Baseline.c")
 	//
-	#post.testpost(path="/shares/m1.jpg",dims="600,400",head="Refresh,Datasets",nowrap)
+		#post.testpost(path="/shares/m1.jpg",dims="600,400",head="Refresh,Datasets",nowrap)
 
 append site_body
 
+	#grid.News(
+		path="/news.db",
+		page=5,
+		cols="New.c,hello(To.t,Starts.d),Stay.n,Message.h,Category.x")
 //
 	#fit.xx
 		#post.testpost(path="/shares/m1.jpg",dims="800,400",head="Refresh,Datasets")

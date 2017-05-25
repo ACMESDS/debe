@@ -19,7 +19,7 @@ append site_body
 			#grid.Search(
 				path="/CATALOG.db",
 				head="Search,Execute,Print,Refresh",
-				page=100,dims=dims,
+				page=100,
 				search="Content",
 				cols="Ref,Name,Link.h,Dated.d,Searched")
 				
@@ -58,7 +58,7 @@ append site_body
 		when "news"
 			#grid.News(
 				path="/news.db",
-				page=25,dims=dims,
+				page=10,
 				cols="New.c,To.t,Starts.d,Stay.n,Message.h,Category.x")
 
 		when "brief"
