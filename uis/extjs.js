@@ -1344,12 +1344,10 @@ function DS(anchor) {
 
 	cols = this.cols = cols.parse( PARMS, function cb(tok,args) {
 
-		//if (name == "News") 	alert(tok+(args?args.length:-1));
-		
 		var 
 			fOpts = tok.split("."),
 			fName = fOpts[0],
-			fParm = PARMS[ fName.toLowerCase() ] || {Type:calc ? "html" : "text",Label:fName,Special:""},
+			fParm = PARMS[ fName ] || {Type:calc ? "html" : "text",Label:fName,Special:""},
 			fType = fOpts[1] || fParm.Type || "text",
 			fLabel = fOpts[2] || fParm.Label || fName,
 			fSum = fOpts[3],
@@ -1821,17 +1819,17 @@ Ext.onReady( function () {
 				
 //alert(JSON.stringify(req)+BASE.user.client);
 				if (req.from != BASE.user.client) {
-					var table = req.table;
+					var path = req.tabpathle;
 					var body = req.body;
 					var ID = Number(req[PROXY.KEY]);
 
 					for (var n in DSLIST) {
-						var Data = DSLIST[n];
-						if (Data.table == table) {
+						var ds = DSLIST[n];
+						if (ds.path == path) {
 							if (BASE.user.content) 
 								BASE.user.content.setTitle(req.from+">"+req.msg);
 
-							var rec = Data.Store.getById(ID);
+							var rec = ds.Store.getById(ID);
 							if (rec) for (var b in body) rec.set(b,body[b]);
 						}
 					}
@@ -1840,18 +1838,18 @@ Ext.onReady( function () {
 
 			delete: function (req) {
 				if (req.frome != BASE.user.client) {
-					var table = req.table;
+					var path = req.path;
 					var body = req.body;
 					var ID = Number(req[PROXY.KEY]);
 
 					for (var n in DSLIST) {
-						var Data = DSLIST[n];
-						if (Data.table == table) {
+						var ds = DSLIST[n];
+						if (ds.path == path) {
 							if (BASE.user.content) 
 								BASE.user.content.setTitle(req.from+">"+req.msg);
 
-							var rec = Data.Store.getById(ID);
-							if (rec) Data.Store.remove(rec);
+							var rec = ds.Store.getById(ID);
+							if (rec) ds.Store.remove(rec);
 						}
 					}
 				}
@@ -1859,20 +1857,20 @@ Ext.onReady( function () {
 
 			insert: function (req) {
 				if (req.from != BASE.user.client) {
-					var table = req.table;
+					var path = req.path;
 					var body = req.body;
 					var ID = Number(req[PROXY.KEY]);
 
 					for (var n in DSLIST) {
-						var Data = DSLIST[n];
-						if (Data.table == table) {
-							var rec = Ext.create(Data.name, body);
+						var ds = DSLIST[n];
+						if (ds.path == path) {
+							var rec = Ext.create(ds.name, body);
 							if (rec) {
 								if (BASE.user.content) 
 									BASE.user.content.setTitle(req.from+">"+req.msg);
 
 								rec.setId(ID);
-								Data.Store.add(rec);
+								ds.Store.add(rec);
 								rec.setId(ID);		// EXTJS Bug -- need to reset othwise it autoincrements
 							}
 						}
@@ -3208,9 +3206,9 @@ WIDGET.prototype.terminal = function (term,opts) {
 		minHeight	: this.dims[1],
 		maxWidth	: this.dims[0],
 
-		//overflowX	: "auto",
-		//overflowY	: "auto",
-		scrollable: true,
+		overflowX	: "auto",
+		overflowY	: "auto",
+		//scrollable: true,
 
 		//iconCls	: 'Loads-0',
 		icon		: "/clients/icons/widgets/"+this.name,
@@ -3528,9 +3526,9 @@ for (var layout in {anchor:1, fit:1, hbox:1, vbox:1, box:1, table:1, column:1})
 			// Subcomponents	
 
 			defaults		: {
-				//overflowX: "auto",
-				//overflowY: "auto",
-				scrollable: true,
+				overflowX: "auto",
+				overflowY: "auto",
+				//scrollable: true,
 				width: this.dims[0],
 				height: this.dims[1] },
 				
@@ -4042,9 +4040,9 @@ WIDGET.prototype.form = function () {
 		frame		: false, 
 		disabled	: this.disable,
 
-		//overflowX	: "auto",
-		//overflowY	: "auto",
-		scrollable: true,
+		overflowX	: "auto",
+		overflowY	: "auto",
+		//scrollable: true,
 
 		//iconCls		: 'Loads-0',
 		icon		: "/clients/icons/widgets/"+this.name,
