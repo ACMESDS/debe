@@ -34,7 +34,8 @@ var
 	STATUS = {								// status messages
 		EMPTY: "empty", 
 		FAULT: "fault", 
-		OK: "ok"
+		OK: "ok",
+		NOSELECT: "please select a record"
 	},	
 		
 	SELECT_CELL = {},					// grid shifting context
@@ -1755,7 +1756,8 @@ Ext.onReady( function () {
 				dims:"1200,600",title:"",page:"",plugins:"cXF",
 				//guard:"",
 				dock:"head",sync:"",
-				head:"Status,Search,Datasets,Insert,Update,Delete,Select,Execute,|,Blog,Print,Refresh,Delta,Help",
+				head:"Status,Insert,Update,Delete,Select,Execute,|,Blog,Print,Refresh,Delta,Help",
+				menu: "",
 				update:"",select:"",execute:"",delete:""},
 			PARMS : {
 				left:"dock",right:"dock",top:"dock",bottom:"dock",head:"dock",
@@ -2048,7 +2050,7 @@ WIDGET.prototype.menuTools = function () {
 				}, 
 				change: function (field,newValue,oldValue,eOpts) {
 					var parms = {};
-					parms[label.substr(0,label.length-1).toLowerCase()] = newValue;
+					parms[label.toLowerCase()] = newValue;
 					if (cb) cb(newValue,parms);
 				}	
 			},
@@ -2065,7 +2067,67 @@ WIDGET.prototype.menuTools = function () {
 		});
 	}
 	
-	function button (label, cb) {
+	function callback(label,cbs) {	
+		var 
+			dataUI = Widget.dataUI || Widget.UI, // deal with potentially wrapped widgets
+			Form = dataUI.getForm ? dataUI.getForm() : null,
+			View = dataUI.getView ? dataUI.getView() : null,
+			Data = Widget.Data;
+
+		if (!cbs) 
+			cbs = {};
+		
+		/*
+		else
+		if (cbs.constructor == Function) 
+			cbs = {onAction: cbs};
+		*/
+		
+		if (Widget[label] && cbs.onAction)
+			cbs.onAction( Data, Status );
+
+		else
+		if (Form && cbs.onForm) 
+			cbs.onForm( Form.getRecord(), Form, Data, Status, function (meth, flags, cb) {
+				Ext.Ajax.request({
+					url : Data.proxy.url,
+					params: flags,
+					method: meth,
+					success: function (res) {
+						cb( Ext.decode(res.responseText) );
+					},
+					failure: function () {
+						Status(STATUS.FAULT);
+					}		
+				});	
+			});
+
+		else
+		if (View) {
+			if (Selector = View.getSelectionModel()) {
+				var Recs = Selector.getSelection();
+
+				Selector.deselectAll();
+				
+				if (Recs.length && cbs.onSelect)
+					cbs.onSelect( Recs, Data, Status );
+				else
+				if (cbs.onAction)
+					cbs.onAction( Data, Status );
+
+			}
+			
+			else
+			if (cbs.onAction)
+				cbs.onAction( Data, Status );
+		}
+		
+		else 
+		if (cbs.onAction)
+			cbs.onAction( Data, Status );
+	}
+	
+	function button (label, cbs) {
 		return Ext.create("Ext.Button", {
 			textAlign: "left",
 			cls: "x-menu-button",
@@ -2077,7 +2139,7 @@ WIDGET.prototype.menuTools = function () {
 			width: DEFAULT.DROP_WIDTH,
 			
 			handler: function (me) {
-				if (cb) cb(me);
+				callback(label,cbs);
 			} 
 		});	
 	}
@@ -2119,55 +2181,7 @@ WIDGET.prototype.menuTools = function () {
 				}*/
 			},
 			handler: function(me) {
-				var 
-					dataUI = Widget.dataUI || Widget.UI, // deal with potentially wrapped widgets
-					Form = dataUI.getForm ? dataUI.getForm() : null,
-					View = dataUI.getView ? dataUI.getView() : null,
-					Data = Widget.Data;
-				
-				if (cbs.constructor == Function) 
-					cbs = {onAction: cbs};
-
-				if (Widget[label] && cbs.onAction)
-					cbs.onAction( Data, Status );
-					
-				else
-				if (Form && cbs.onForm) 
-					cbs.onForm( Form.getRecord(), Form, Data, Status, function (met, flags, cb) {
-						Ext.Ajax.request({
-							url : Data.proxy.url,
-							params: flags,
-							method: met,
-							success: function (res) {
-								cb( Ext.decode(res.responseText) );
-							},
-							failure: function () {
-								Status(STATUS.FAULT);
-							}		
-						});	
-					});
-					
-				else
-				if (View) {
-					if (Selector = View.getSelectionModel()) {
-						var Recs = Selector.getSelection();
-						
-						Selector.deselectAll();
-
-						if (Recs.length && cbs.onSelect)
-							cbs.onSelect( Recs, Data, Status );
-						else
-						if (cbs.onAction)
-							cbs.onAction( Data, Status );
-						
-					}
-					else
-					if (cbs.onAction)
-						cbs.onAction( Data, Status );
-				}
-				else 
-				if (cbs.onAction)
-					cbs.onAction( Data, Status );
+				callback(label,cbs);
 			}
 		};
 	}
@@ -2181,6 +2195,7 @@ WIDGET.prototype.menuTools = function () {
 		isHead = this.dock == "head",
 		opts = BASE.parser,
 		Tips = true,
+		agent = "",
 		nada = { xtype: "tbseparator" },
 		roles = this.roles = ROLES[this.Data.dataset] || DEFAULT.ROLES;
 
@@ -2214,14 +2229,14 @@ WIDGET.prototype.menuTools = function () {
 	var Message, MessageTip;
 	
 	if (menu == this.dock) menu = this.head;
-
-//alert("menu="+menu);
-	 
+	if (this.menu) menu = this.menu + "," + menu;
+		 
 	if (menu)  
 		this.Menu = menu.parse( null, function (tok,args) { 
-			var 	Action = anchor.getAttribute(tok);
-			var 	pullDS = DSLIST[tok];
-			var 	key = tok.toLowerCase();
+			var 
+				Action = anchor.getAttribute(tok),
+				pullDS = DSLIST[tok],
+				key = tok.toLowerCase();
 			
 			if (args)  			// nowrap sub menu items in another pulldown menu
 				return Ext.create("Ext.Button", {
@@ -2463,6 +2478,7 @@ WIDGET.prototype.menuTools = function () {
 
 						if (isForm)
 							return nada;
+						
 						else
 							return action( key, {REFRESH:"N/A",Special:"Refresh."}, function () {
 								Widget.Data.relink();
@@ -2472,6 +2488,7 @@ WIDGET.prototype.menuTools = function () {
 
 						if (isForm)
 							return nada;
+						
 						else
 							return action( key, {PRINT:"N/A",Special:"Print."}, function () {
 								Ext.ux.grid.Printer.print(Widget.dataUI);
@@ -2483,6 +2500,7 @@ WIDGET.prototype.menuTools = function () {
 						
 						if (isForm)
 							return nada;
+						
 						else
 							return action( key, {BLOG:"N/A",Special:"Blog."}, function () {
 								Widget.Data.relink( function (proxy, flags) {
@@ -2715,7 +2733,7 @@ WIDGET.prototype.menuTools = function () {
 									var parms = {ID: Rec.getId()};
 									
 									Ext.Ajax.request({
-										url : Data.proxy.url.replace(".db",".exe"),
+										url : Data.proxy.url.replace(".db",".exe")+agent,
 										params: parms,
 										method: "GET",
 										success: function (res) {
@@ -2761,7 +2779,8 @@ WIDGET.prototype.menuTools = function () {
 					case "$stores": 		// reserved file uploaders
 					case "$uploads":
 
-						var upid = key.substr(1),
+						var 
+							upid = key.substr(1),
 							upco = `<img src='/clients/icons/tips/${upid}.ico' height=20 width=20 id='cover' onclick="document.getElementById('${upid}').click();">`,
 							upin = `<input id='${upid}' type='file' style='display:none' name='uploader' />`;
 					
@@ -2841,9 +2860,9 @@ WIDGET.prototype.menuTools = function () {
 						if (pullDS) 
 							return combo( tok, pullDS , function (val) {
 							});
+						
 						else
-							return button( tok, function () {
-							});
+							return button(tok);
 
 					case "datasets":
 						
@@ -2855,34 +2874,54 @@ WIDGET.prototype.menuTools = function () {
 							});
 
 						else
-							return button( tok, function () {
+							return button(tok);
+					
+					case "agents":
+						
+						if (ds = DSLIST[tok]) 
+							return combo( tok, ds, function (path, parms) {
+								agent = path || "";
 							});
+
+						else
+							return button(tok);
 					
 					default:
 
-						if (Action)  		// pulldown via widget attribute
+						if (Action)  		// pulldown via attribute to this widget
 							if (pullDS) 
 								return combo( tok, pullDS, function (val) {
 								});
+							
 							else
-								return button( tok, function () {
-									if (Action.indexOf(".db") >= 0)
-										Ext.Ajax.request({
-											url : Action,
-											method: "GET",
-											success: function (res) {
-												Ext.Msg.alert("status",res.responseText);
-											},
-											failure: function (res) {
-												Ext.Msg.alert("status",STATUS.FAULT);
-											}
-										});
-									else
-										window.open(Action);
+								return button( tok, {
+									onSelect: function (Recs,Data,Status) {
+									
+										alert(Recs.length);
+
+										if (Action.indexOf(".db") >= 0)
+											Ext.Ajax.request({
+												url : Action,
+												method: "GET",
+												success: function (res) {
+													Status(res.responseText);
+												},
+												failure: function (res) {
+													Status(STATUS.FAULT);
+												}
+											});
+
+										else
+											window.open(Action);
+									},
+									
+									onAction: function (Data,Status) {
+										Status(STATUS.NOSELECT);
+									}
 								});
 						
 						else
-						if (pullDS)
+						if (pullDS) 		// pulldown via dataset of another widget
 							return combo( tok, pullDS, function (val,parms) {
 
 								if (val.charAt(0) == "/") 
@@ -2907,9 +2946,9 @@ WIDGET.prototype.menuTools = function () {
 								}
 
 							});
+						
 						else
-							return button( tok, function () {
-							});
+							return button(tok);
 				}
 		});
 		

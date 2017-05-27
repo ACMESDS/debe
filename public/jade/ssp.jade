@@ -35,7 +35,7 @@ append base_body
 	p!= show(apps,null,"Released,Host,Nick")
 
 	p  1.2 All my users
-	p!= show(users,null, "Client,Joined,QoS,Liked")
+	p!= show(users,null,"Client,Joined,QoS,Liked")
 
 	table
 		th: p System Plan Identifier (SPID)
@@ -77,23 +77,23 @@ append base_body
 		\]
 
 	h1 Chapter 2
-//
-	#grid.News(
-		path="/news.db",
-		page=25,dims=dims,
-		cols="New.c,To.t,Starts.d,Stay.n,Message.h,Category.x")
+	//
+		#grid.News(
+			path="/news.db",
+			page=25,dims=dims,
+			cols="New.c,To.t,Starts.d,Stay.n,Message.h,Category.x")
 
-//
-	#grid.InfoTypes(
-		path="/json.db",
-		cols="NISTtype,NISTid,Confidentiality,Integrity,Availability",
-		links=`key=apps.Totem.Info.b` )
+	//
+		#grid.InfoTypes(
+			path="/json.db",
+			cols="NISTtype,NISTid,Confidentiality,Integrity,Availability",
+			links=`key=apps.Totem.Info.b` )
 
-//
-	each sec,idx in secs
-	#fit(class=`x${idx}. ${sec.title}`)
-		p= sec_body
-		if sec.grid
-			#grid(class=`g${idx}`,path=`/${sec.grid}.db`,cols="To,Message")
+	//
+		each sec,idx in secs
+		#fit(class=`x${idx}. ${sec.title}`)
+			p= sec_body
+			if sec.grid
+				#grid(class=`g${idx}`,path=`/${sec.grid}.db`,cols="To,Message")
 
-//- UNCLASSIFIED
+	//- UNCLASSIFIED

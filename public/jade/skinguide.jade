@@ -423,74 +423,68 @@ append site_body
 					:markdown
 						Provides a base layout framework with parameters:
 
-							banner = site banner
-							start = div name to start skinning
-							math = [false | true] mathjax plugin 
-							highlight = [zenburn | ...] code styling theme 
-							capture = [false | true] to add screen capture button
-							inline = [/PATH/FILE.type &w=width &h=height] embed file with derived attributes
+							banner = "site banner"
+							start = "div name" to place content
+							math = false | true to enable mathjax plugin 
+							highlight = "zenburn | ..." code styling theme 
+							capture = false | true to add screen capture button
+							&inline = "/file.type &w=width &h=height" to embed a file with derived attributes
 
 				#fit.base
 					:markdown
-						The base framework provides a technology agnostic interface and accepts parameters:
+						The base framework provides a specific interface and accepts parameters:
 
-							tech = extjs | jquery | dojo | reveal | voxel | scene | three | cesium | joint | d3 | nada
-							locale = [en | fr | de | ...] language plugin 
-							holdoff = name on button to load this skin 
-							holdoff = [skin,skin, ...] skins to load via accordion
+							tech = "extjs | jquery | dojo | reveal | voxel | scene | three | cesium | joint | d3 | flow | ..."
+							locale = "[en] | fr | de | ..." language plugin 
+							holdoff = "button name" to holdoff loading via button
+							holdoff = "skin,skin, ..." skins to holding loading via accordion
+							start = "starting div" to place content
 
-						extjs parameters:
+							extjs:
+								carousel = false | true image plugin
+								theme = "crisp | neptune | aria | gray | ..." styling
+								charting = true | false data visualization plugin
 
-							carousel = [false | true] image plugin
-							theme = [crisp | neptune | aria | gray | ...] styling
-							charting = [true | false] data visualization plugin
-							locale = [en | fr | de | ...] language plugin 
-							holdoff = name on button to load this skin 
-							holdoff = [skin,skin, ...] skins to load via accordion
+							reveal:
+								theme = "default | ..." styling  
+								classif = "classification banner"
 
-						three parameters:
+							jquery:
+								grid = "DataTable | w2UI | jqgrid | ... " gridding technology
+								image = "Darkroom | Camen | Vide | Fabric | ... " image technology
+								pivot = "Isotope | elFinder | apy-X | ... " pivot technology
+								themer = false | true
+								password = false | true
 
-							effect = AnaglyphEffect | special effect
+							voxel:
+								game = "cubeland | ... "
 
-						voxel parameters:
+							three:
+								effect = "AnaglyphEffect | ... "
 
-							game = paint | name of game
+							cesium:
+								src = query.src
+								src = "dataset | ..." 
+								host = "aws | geohub | me | win | local | local | swaggpu | swagaws | swagdev | ..."
+								width = 750
+								height = 500
 
-						jquery parameters:
+							d3:
+								map = "world | usa | ... "
 
-							grid = DataTable | W2UI | jqGrid | ...
-							image = Darkroom | Camen | Vide | Fabric | ...
-							pivot = Isotope | elFinder | apy-X | ...
-							themer = false | true
-							password = false | true
-
-						reveal parameters:
-
-							theme = [default | ...] styling  
-							classif = classification banner
-
-						d3 parameters:
-
-							map =  | world | usa | ...
-
-						joint parameters:
-
-							entry =  | ...
-							host = aws | geohub | me | win
-							width = 750
-							height = 500
-							src = Python1 | ...
+							flow:
+								none
 
 				#fit.site
 					:markdown
 						Extends the base framework to provide a standard site skinning framework with parameters:
+						
 							parms = {option1: menu1, option2: menu2, ...} dropdown skinning options 
 							dock = [left | right | top | bottom] folder docking style 
 							dims = width,height maximum widget dimensions 
 							view = [Home | Kiss | Engr | Min | Basic | Nada, ...] site style
 							page = maximum grid rows
 							goto = tab to activate
-							help = extra html help
 							pulse = system health refresh rate (in seconds)
 
 			#fit.Skin.Layouts
@@ -676,11 +670,12 @@ append site_body
 						right = "MENU" docked to right
 						bottom = "MENU" docked to bottom
 						head = "MENU" docked to header
+						menu = "MENU" additional items
 
 					where:
 					+	MENU: WIDGET, ... GROUP(SOURCE,WIDGET,SPECIAL,ACTION,LOADER,BREAK ...), ...   
 					+	WIDGET: combo widget with cols=Name,Value fields  
-					+	SPECIAL: Search | Print | Refresh | Help | Capture | Save | Status | Delta | Blog 
+					+	SPECIAL: Search | Print | Refresh | Help | Capture | Save | Status | Delta | Blog | Datasets | Agents
 					+	ACTION: Insert | Update | Delete | Select | Execute  
 					+	LOADER: $stores | $uploads | $positives | $negatives  
 					+	BREAK: |
@@ -789,7 +784,7 @@ append site_body
 					+	query	= request query (#{json(query)})
 					+	flags	= request flags (#{json(flags)})  
 					+	db	= database group (#{db})  
-					+	source	= request dataset, view, or engine (#{source})  
+					+	table	= request dataset, view, or engine (#{table})  
 					+	action	= request action (#{action})  
 					+	distro	= email distributions (!{distro})  
 					+	profile	= client qos profile (#{json(profile)})  
@@ -803,8 +798,7 @@ append site_body
 					
 					Several list minipulators are also available:
 					
-					+	get(list, {key:value,...} )
-					+	get(list, "key,..." )
+					+	get(list, {key:where,...}, {key:rename,...}, {key:{#find:replace,...},...}, {key:{##find:replace,...},...}  )
 					+	show(list)
 					+	json(list)
 

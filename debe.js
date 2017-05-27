@@ -54,7 +54,7 @@ var 									// NodeJS modules
 	FS = require("fs"); 				//< NodeJS filesystem and uploads
 	
 var										// 3rd party modules
-	//OGEN = require("officegen"),
+	OGEN = require("officegen"), 	//< MS office generator
 	LANG = require('i18n-abide'), 		//< I18 language translator
 	ARGP = require('optimist'),			//< Command line argument processor
 	TOKML = require("tokml"), 			//< geojson to kml concerter
@@ -363,7 +363,7 @@ append layout_body
 		},
 				
 		context: { // skinning contexts for each skin
-			rtpsqd: {   // define DSVAR datasets available for the ssp skin
+			ssp: {   // define DSVAR datasets available for the ssp skin
 				apps:"openv.apps",
 				users: "openv.profiles",
 				projs: "openv.milestones",
@@ -393,9 +393,9 @@ append layout_body
 		view: function (recs,req,res) {
 			res( recs );
 		},
-		exe: function (recs,req,res) {
+		/*exe: function (recs,req,res) {
 			res( recs );
-		},
+		},*/
 		kml: function (recs,req,res) {
 			res( TOKML({}) );
 		},
@@ -423,65 +423,16 @@ append layout_body
 
 			res( txt );
 		},
-		tab: function (recs,req,res) {
+
+		htm: function (recs,req,res) {
 			res( DEBE.site.show( recs ) );
 		},
-		docxx: function (recs,req,res) {
-			var 
-				docx = OGEN({
-					type: "docx"
-					//onend: function (writeBytes) { 	}
-				}),
-				docf = `./shares/${req.table}.docx`,
-				docs = FS.createWriteStream(docf);
-			
-			docx.generate( docs );
-			docs.on("close", function () {
-				//console.log("stream closed");
-			});
-			
-			var docp = docx.createP();
-			docp.addText("hello there");
-			
-			var cols = [];
-			var rows = [cols];
-			
-			recs.each( function (n,rec) {
-				if (n == 0) 
-					for (var key in rec)
-						rows.push({
-							val: key,
-							opts: {
-								cellColWidth: 4261,
-								b: true,
-								sz: "48",
-								shd: {
-									fille: "7F7F7F",
-									themeFill: "text1",
-									themeFillTint: "80"
-								},
-								fontFamily: "Avenir Book"
-							}
-						});
-				
-				var row = new Array();
-				
-				rows.push(row);
-				for (var key in rec)
-					row.push( rec[key] );
-			});
-			
-			docx.createTable(rows, {
-				tableColWidth: 4261,
-				tableSize: 24,
-				tableColor: "ada",
-				tableAlign: "left",
-				tableFontFamily: "Comic Sans MS",
-				borders: true
-			});
-
-			res( "Claim your file "+"here".link(docf) );
-		},
+		
+		xdoc: genDoc,
+		xxls: genDoc,
+		xpps: genDoc,
+		xppt: genDoc,
+		
 		tree: function (recs,req,res) {
 			res( {
 				name: "root", 
@@ -862,7 +813,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		},
 		badDataset: new Error("dataset does not exist"),
 		noCode: new Error("failed engine code lookup"),
-		unsupportedFeature: new Error("unsupported feature")
+		unsupportedFeature: new Error("unsupported feature"),
+		noOffice: new Error("office docs not enabled")
 	},
 	
 	"paths.": {  //< paths to things
@@ -1620,7 +1572,7 @@ function readJade(req,res) {
 append base_parms
 	- tech = "extjs"
 append base_body
-	#grid.view.${req.table}(path="/${req.table}.db?${req.search}",cols="${cols.join()}",dims="1200,600",page=20,nowrap)
+	#grid.view.${req.table}(path="/${req.table}.db?${req.search}",cols="${cols.join()}",dims="1000,400",page=10,nowrap)
 `;
 //console.log(skin);
 			
@@ -1791,7 +1743,192 @@ function runExe(req,res) {
 		});
 		*/
 }	
-			
+
+function genDoc (recs,req,res) {
+	if (!OGEN) 
+		return res(DEBE.errors.noOffice);
+	
+	var 
+		types = {
+			xdoc: "docx",
+			xxls: "xlsx",
+			xppt: "pptx",
+			xpps: "ppsx"
+		},
+		type = types[req.type],
+		docf = `./shares/${req.table}.${type}`;
+	
+	if (type) 
+		docx = OGEN({
+			type: type
+			//onend: function (writeBytes) { 	}
+		});
+	
+	else
+		res(DEBE.errors.badOffice);
+	
+	var
+		docs = FS.createWriteStream(docf);
+
+	docx.generate( docs );
+	docs.on("close", function () {
+		console.log("CREATED "+docf);
+	});
+
+	if (false) {  // debugging
+		var docp = docx.createP();
+		docp.addText("hello there");
+	
+		docp.addTest(`
+view || edit
+
+this is a test go home
+
+0.1. SYSTEM SECURITY PLAN PREPARED BY
+
+0.2. REVISION HISTORY
+
+Date
+	
+
+Description
+	
+
+System Version
+	
+
+Authors
+	
+
+Complete
+
+Sun May 11 2014 00:00:00 GMT-0400 (EDT)
+	
+
+wash my face
+	
+
+0.33
+	
+
+pms: users: brian.james@guest.org,guest,guest@guest.org,selfsigned
+	
+
+0.5
+
+1. INFORMATION SYSTEM NAME/TITLE
+
+This System Security Plan (SSP) ... blah blah
+
+ID	Role	Site	Address	Name
+2	hawk	Totem	brian.d.james@comcast.net	null
+3	moderator	Totem	brian.d.james@comcast.net	null
+
+1.1 All my apps
+
+ID	Ver	Released	Title	Cores	Sockets	Host	Port	PKI	DB	Name	Nick	Byline	Moderators	POC	Challenge	classif	Allocated	Started	Booted	Enabled	Spawn	App	Peers	Sessions	Protect	Credits	Hawks	EmailHost	EmailUser	Ping	asp	isp	Proxy	Cost	Parms	PM	ISSO	ATP	IATT	DAO	DTO	SORN	SPID	Info	Riddles	Warning
+5	0.33	Sun May 11 2014 00:00:00 GMT-0400 (EDT)	Totem	0	0	localhost	8080	0	app1	app1	Totem			brian.d.james@comcast.net	null	{"level": "U", "purpose": "nada"}	0	null	null	1	0	app1	0	100	0	NGA/IIG	brian.d.james@comcast.net	smtp.comcast.net:587	brian.d.james:COMCASTsnivel1	1800000	{"org": "BOOZ", "addr": "nowhere", "name": "TBD", "title": "Ctr"}	{"org": "NGA-T", "addr": "nowhere", "name": "TBD", "title": "spend your money"}	0	5000		{"name":"TBD","title":"Program Mgr","addr":"nowheres"}	null	null	null	null	null	TBD	TBD	{"a": [{"ID": 0, "SORN": "TBD", "SPID": "TBD"}], "b": [{"ID": 1, "NISTid": "TBD", "NISTtype": "a1"}, {"ID": 2, "NISTid": "TBD", "NISTtype": "TBD"}, {"ID": 3, "NISTtype": "a2"}]}	0	Your ISP providing faulty browsers. bla bla
+7	0.33	Sun May 11 2014 00:00:00 GMT-0400 (EDT)	Totem	2	0	localhost	8080	1	app1	node0				brian.d.james@comcast.net	null	{"level": "U", "purpose": "nada"}	0	null	null	1	0	app1	1	100	0	NGA/IIG	brian.d.james@comcast.net	smtp.comcast.net:587	brian.d.james:COMCASTsnivel1	1800000	{"org": "BOOZ", "addr": "nowhere", "name": "TBD", "title": "Ctr"}	{"org": "NGA-T", "addr": "nowhere", "name": "TBD", "title": "spend your money"}	0	5000		{"name":"TBD","title":"Program Mgr","addr":"nowheres"}	null	null	null	null	null	TBD	TBD	{"a": [{"ID": 0, "SORN": "TBD", "SPID": "TBD"}], "b": [{"ID": 1, "NISTid": "TBD", "NISTtype": "TBD"}, {"ID": 2, "NISTid": "TBD", "NISTtype": "TBD"}]}	0	null
+8	0.33	Sun May 11 2014 00:00:00 GMT-0400 (EDT)	Totem	2	0	localhost	8080	0	app1	node3				brian.d.james@comcast.net	null	{"level": "U", "purpose": "nada"}	0	null	null	1	0	app1	1	100	0	NGA/IIG	brian.d.james@comcast.net	smtp.comcast.net:587	brian.d.james:COMCASTsnivel1	1800000	{"org": "BOOZ", "addr": "nowhere", "name": "TBD", "title": "Ctr"}	{"org": "NGA-T", "addr": "nowhere", "name": "TBD", "title": "spend your money"}	0	5000		{"name":"TBD","title":"Program Mgr","addr":"nowheres"}	null	null	null	null	null	TBD	TBD	{"a": [{"ID": 0, "SORN": "TBD", "SPID": "TBD"}], "b": [{"ID": 1, "NISTid": "TBD", "NISTtype": "TBD"}, {"ID": 2, "NISTid": "TBD", "NISTtype": "TBD"}]}	0	null
+9	0.33	Sun May 11 2014 00:00:00 GMT-0400 (EDT)	Totem	2	0	localhost	8080	0	app1	node2				brian.d.james@comcast.net	null	{"level": "U", "purpose": "nada"}	0	null	null	1	0	app1	1	100	0	NGA/IIG	brian.d.james@comcast.net	smtp.comcast.net:587	brian.d.james:COMCASTsnivel1	1800000	{"org": "BOOZ", "addr": "nowhere", "name": "TBD", "title": "Ctr"}	{"org": "NGA-T", "addr": "nowhere", "name": "TBD", "title": "spend your money"}	0	5000		{"name":"TBD","title":"Program Mgr","addr":"nowheres"}	null	null	null	null	null	TBD	TBD	{"a": [{"ID": 0, "SORN": "TBD", "SPID": "TBD"}], "b": [{"ID": 1, "NISTid": "TBD", "NISTtype": "TBD"}, {"ID": 2, "NISTid": "TBD", "NISTtype": "TBD"}]}	0	null
+
+1.2 All my users
+
+ID	Client	Likeus	Updated	Banned	Liked	Joined	SnapInterval	SnapCount	Charge	Credit	QoS	Trusted	Captcha	Login	Email	Challenge	isHawk	Requested	Approved	Group	uid	gid	User	Journal	Message	IDs	Admin	Repoll	Timeout	Roles	Strength
+34	brian.james@guest.org	0	Mon May 04 2015 05:52:50 GMT-0400 (EDT)		1	Mon Sep 28 2015 20:51:50 GMT-0400 (EDT)	null	null	null	0	0	0	0	null	null	0	1	null	null	app1	null	null	brian.james@guest.org	null	null	{"Login":"me","Password":"test","FavColor":"blue"}	Please contact joeschome to unlock your accout	0	30000	PM,R,X	1
+37	selfsigned	null	null	null	null	Mon Sep 28 2015 20:51:50 GMT-0400 (EDT)	null	null	null	0	0	0	0	null	null	0	1	null	null	app1	null	null	me@guest.org	null	Hello there guest - riddle me this (riddle) and (riddle) and your (Birthdate) and (ids)	{"Login":"me","Password":"test","FavColor":"blue"}	Please contact joeschome to unlock your accout	0	30000		1
+41	guest@guest.org	1	null	null	0	null	0	0	null	null	2	0	0	null	guest	0	1	null	null	app1	null	null	guest@guest.org	null	null	{"Login":"me","Password":"test","FavColor":"blue"}	Please contact joeschome to unlock your accout	0	30000	R,PM	1
+42	guest	10	null		0	null	0	0	0	100	5	0	0	null	null	0	null	null	null		null	null	guest	null	Welcome guest - what is (riddle)?	null	null	0	0	R,X	1
+
+System Plan Identifier (SPID)
+	
+
+Information System Name
+	
+
+System Abbreviation
+	
+
+System Dump
+	
+
+System of Record Notice (SORN)
+
+TBD
+	
+
+Totem
+	
+
+Totem
+	
+
+{"a":[{"ID":0,"SORN":"TBD","SPID":"TBD"}],"b":[{"ID":1,"NISTid":"TBD","NISTtype":"a1"},{"ID":2,"NISTid":"TBD","NISTtype":"TBD"},{"ID":3,"NISTtype":"a2"}]}
+	
+
+TBD
+
+1.1 SCOPE AND APPLICABILITY
+
+This document applies to all NGA owned, controlled, outsourced, blah blah
+
+2. INFORMATION SYSTEM CATEGORIZATION
+
+2.1 INFORMATION TYPES
+Chapter 1
+
+The Lorenz Equations x2=0
+
+x˙y˙z˙=σ(y−x)=ρx−y−xz=−βz+xy
+
+Impressive 'eh
+
+Jα(x)=∑m=0∞(−1)mm!Γ(m+α+1)(x2)2m+α
+Chapter 2
+`);
+	}
+	
+	var cols = [];
+	var rows = [cols];
+
+	recs.each( function (n,rec) {
+		if (n == 0) 
+			for (var key in rec)
+				rows.push({
+					val: key,
+					opts: {
+						cellColWidth: 4261,
+						b: true,
+						sz: "48",
+						shd: {
+							fille: "7F7F7F",
+							themeFill: "text1",
+							themeFillTint: "80"
+						},
+						fontFamily: "Avenir Book"
+					}
+				});
+
+		var row = new Array();
+
+		rows.push(row);
+		for (var key in rec)
+			row.push( rec[key] );
+	});
+
+	if (false)
+	docx.createTable(rows, {
+		tableColWidth: 4261,
+		tableSize: 24,
+		tableColor: "ada",
+		tableAlign: "left",
+		tableFontFamily: "Comic Sans MS",
+		borders: true
+	});
+
+	res( "Claim file "+"here".link(docf) );
+}
+
 /**
 @method Initialize
 Initialize DEBE on startup.

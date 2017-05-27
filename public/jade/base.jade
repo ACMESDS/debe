@@ -2,7 +2,7 @@
 //-
 	Extends the layout framework to provide a base framework with parameters:
 
-		tech = "[extjs] | jquery | dojo | reveal | voxel | scene | three | cesium | joint | d3 | flow | ..."
+		tech = "extjs | jquery | dojo | reveal | voxel | scene | three | cesium | joint | d3 | flow | ..."
 		locale = "[en] | fr | de | ..." language plugin 
 		holdoff = "button name" to holdoff loading via button
 		holdoff = "skin,skin, ..." skins to holding loading via accordion
@@ -83,6 +83,8 @@ append layout_head
 		// d3
 		- map = ""
 		// flow
+		// doc
+		- opens = true
 
 	//- Define tech styles
 
@@ -299,6 +301,13 @@ append layout_body
 	else
 		case tech
 			when ""
+				if opens
+					a(href="/"+table+".view") open
+					|  || 
+					a(href="/edit.view?name="+table+".view") edit
+					|  || 
+					a(href="/edit.view?name="+table+".send") send
+
 				block base_body
 
 			when "flow"

@@ -942,11 +942,11 @@ function Copy(src,tar,cb) {
 				tar[key] = src[key];
 
 	return tar;
-};
+}
 
 function Clone(src,cb) {
 	return Copy(src,{},cb);
-};
+}
 
 /**
  * @method Each
@@ -990,7 +990,7 @@ function Each(src,cb) {
 			return false;
 			
 	}
-};
+}
 
 String.prototype.format = function (req,plugin) {
 	req.plugin = req.F = plugin || {};

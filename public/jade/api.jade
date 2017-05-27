@@ -25,7 +25,11 @@ append site_body
 					ENGINE.TYPE ? PARAMS
 					FILE.TYPE ? PARAMS
 
-				and where TYPE = [db | xml | csv | txt | tab | view | tree | flat | delta | nav | kml | exe | encap | html | ...] formats the returned data.
+				and TYPE 
+				
+					db | xml | csv | txt | htm | view | tree | flat | delta | nav | kml | exe | encap | xdoc | xxls | xppt | xpps | ...
+					
+				returns data in the requested format.
 
 		#accordion.Views
 		
