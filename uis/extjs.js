@@ -419,36 +419,6 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				listeners	: fListen
 			};
 					
-		case 't':
-		case 'text':
-		case 'varchar':	// text			
-			return {
-				fType		: fType,
-				dataIndex	: fName,
-				filter		: "string",
-				sortable	: true,
-				hideable	: true,
-				locked		: fLock,
-				width		: 100,
-				text		: fLabel,
-				qtip		: fTip, 
-				qtitle	 	: fTipTitle,
-				editor		: {	
-					xtype		: 'textfield',
-					disabled: fOff
-					//stripCharsRe: /[A-Z]/,
-					//maxLength: 4,
-					//defaultValue: "",
-					//format: "",
-					//minLength: 0,
-					//allowBlank: true,
-					//width: 400,
-					//disabled: fOff
-				},
-				renderer	: fRender,
-				listeners	: fListen
-			};		
-			
 		case 'd':
 		case 'date':	// date
 		case 'datetime':
@@ -684,9 +654,9 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 					allowBlank: true,
 					disabled: fOff,
 					//minHeight: 200,
-					width: 600,
+					width: 600
 					// If standalone widget
-					enableKeyEvents: true,  
+					/*enableKeyEvents: true,  
 					listeners: {
 						keypress: function (f,e) {
 							e.stopEvent();
@@ -735,7 +705,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 										+ el.value.substring(el.selectionEnd);								
 									break;
 									
-								/*
+								/  *
 								case 112:
 								case 113:
 								case 114:
@@ -749,7 +719,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 										+ el.value.substring(el.selectionEnd);
 									pos++;
 									break;
-								*/
+								*  /
 									
 								default:
 									el.value = 
@@ -761,7 +731,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 
 							el.setSelectionRange(pos,pos);
 
-							/*if (e.getKey() == e.TAB) {
+							/  *if (e.getKey() == e.TAB) {
 								var tabText = '\t';
 								if (el.setSelectionRange) {
 								}
@@ -769,14 +739,45 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 								if (document.selection) {
 									document.selection.createRange().text = tabText;
 								}
-							}*/
+							}*  /
 						}
 					}
+					*/
 				},
 				renderer 	: calcRender,
 				listeners	: fListen
 			};
 						
+		case 't':
+		case 'text':
+		case 'varchar':	// text			
+			return {
+				fType		: fType,
+				dataIndex	: fName,
+				filter		: "string",
+				sortable	: true,
+				hideable	: true,
+				locked		: fLock,
+				width		: 100,
+				text		: fLabel,
+				qtip		: fTip, 
+				qtitle	 	: fTipTitle,
+				editor		: {	
+					xtype		: 'textfield',
+					disabled: fOff
+					//stripCharsRe: /[A-Z]/,
+					//maxLength: 4,
+					//defaultValue: "",
+					//format: "",
+					//minLength: 0,
+					//allowBlank: true,
+					//width: 400,
+					//disabled: fOff
+				},
+				renderer	: fRender,
+				listeners	: fListen
+			};		
+			
 		case 'f':
 		case 'file':	// file
 			return {
@@ -2361,13 +2362,15 @@ WIDGET.prototype.menuTools = function () {
 								}
 							}, 
 
-							action( key, {HELP:"N/A",Special:"Help."}, function () {
+							action( key, {HELP:"N/A",Special:"Help."}, {
+								onAction: function () {
 								if (Tips) 
 									Ext.QuickTips.disable(); 
 								else 
 									Ext.QuickTips.enable();
 
 								Tips = !Tips;
+							}
 							}) 
 						);
 
@@ -2446,9 +2449,11 @@ WIDGET.prototype.menuTools = function () {
 
 					case "save":
 
-						return button(tok, function () {
-							Widget.fireEvent('saveview');
-							Ext.Msg.alert(name,"Widget view was held");
+						return button(tok, {
+							onAction: function () {
+								Widget.fireEvent('saveview');
+								Ext.Msg.alert(name,"Widget view was held");
+							}
 						});	
 
 					case "delta":
@@ -2459,7 +2464,8 @@ WIDGET.prototype.menuTools = function () {
 							return nada;
 						
 						else
-							return action( key, {DELTA:"N/A",Special:"Delta baseline changes."}, function () {
+							return action( key, {DELTA:"N/A",Special:"Delta baseline changes."}, {
+								onAction: function () {
 								//Flag = Data.Link.Flag;								
 								//Flag._delta = delta ? "Num" : "";
 								//Widget.Data.Store.setProxy(defineProxy(Widget.Data.proxy.url, delta ? {_delta:"Num"} : null));
@@ -2468,6 +2474,7 @@ WIDGET.prototype.menuTools = function () {
 									flags._delta = deltaed ? "Num" : "";
 								});
 								deltaed = !deltaed;
+							}
 							});
 
 					case "refresh":
@@ -2480,8 +2487,10 @@ WIDGET.prototype.menuTools = function () {
 							return nada;
 						
 						else
-							return action( key, {REFRESH:"N/A",Special:"Refresh."}, function () {
+							return action( key, {REFRESH:"N/A",Special:"Refresh."}, {
+								onAction: function () {
 								Widget.Data.relink();
+							}
 							});
 
 					case "print":
@@ -2490,8 +2499,10 @@ WIDGET.prototype.menuTools = function () {
 							return nada;
 						
 						else
-							return action( key, {PRINT:"N/A",Special:"Print."}, function () {
+							return action( key, {PRINT:"N/A",Special:"Print."}, {
+								onAction: function () {
 								Ext.ux.grid.Printer.print(Widget.dataUI);
+							}
 							});
 
 					case "blog":
@@ -2762,7 +2773,8 @@ WIDGET.prototype.menuTools = function () {
 
 					case "capture":
 
-						return action( key, {CAPTURE:"N/A",Special:"Capture screen."}, function () {
+						return action( key, {CAPTURE:"N/A",Special:"Capture screen."}, {
+							onAction: function () {
 
 							if (html2canvas)
 								html2canvas(document.body).then( function (canvas) {
@@ -2774,6 +2786,7 @@ WIDGET.prototype.menuTools = function () {
 								})
 							else
 								Ext.Msg.alert("Status","client has no capture feature");
+						}
 						});
 
 					case "$stores": 		// reserved file uploaders
