@@ -704,6 +704,26 @@ append site_body
 						function with the current **tau** workflow events and the **parm**
 						set to the corresponding "ports" hash.
 
+		#accordion.Agents
+			:markdown
+				Agents provide a means to outsource an engine, while retaining a compute/queue thread
+				on each agent.  An agent at "http://agent" must provide #{title} with the
+				following push/pull endpoints:
+
+					http://agent?push=totem.CLIENT.ENGINE.ID&args=JSON
+					http://agent?pull=JOBID
+
+				where the push defines the job being pushed to the agent (CLIENT the user requesting 
+				the agent, ENGINE the engine name being outsouces, ID a unique job identifier, and 
+				JSON the arguments to the engine).  The agent responds with a JOBID, or a "" if no job
+				could be created.  #{title} will periodically poll the agent for the results of JOBID.
+
+				To engage an AGENT for engine ENGINE polling every N seconds, use:
+
+					/ENGINE.exe?agent=AGENT&poll=N&QUERY
+					
+				where the QUERY parmaters define the args to the ENGINE.
+				
 		#accordion.System
 
 			#fit.Routes
