@@ -76,7 +76,10 @@ append site_body
 						positives	file pulled from positive-proof area
 						negatives	file pulled from negative-proof area
 						cert	generates a PKI cert for the requested user
-						
+						chips
+						tips
+						shares
+
 			#fit.Parameters
 				:markdown
 					File retrival parameters include:
@@ -704,50 +707,6 @@ append site_body
 						function with the current **tau** workflow events and the **parm**
 						set to the corresponding "ports" hash.
 
-		#accordion.Agents
-			:markdown
-				Agents provide a means to outsource an engine, while retaining a compute/queue thread
-				on each agent.  An agent at "http://agent" must provide #{title} with the
-				following push/pull endpoints:
-
-					http://agent?push=totem.CLIENT.ENGINE.ID&args=JSON
-					http://agent?pull=JOBID
-
-				where the push defines the job being pushed to the agent (CLIENT the user requesting 
-				the agent, ENGINE the engine name being outsouces, ID a unique job identifier, and 
-				JSON the arguments to the engine).  The agent responds with a JOBID, or a "" if no job
-				could be created.  #{title} will periodically poll the agent for the results of JOBID.
-
-				To engage an AGENT for engine ENGINE polling every N seconds, use:
-
-					/ENGINE.exe?agent=AGENT&poll=N&QUERY
-					
-				where the QUERY parmaters define the args to the ENGINE.
-				
-		#accordion.System
-
-			#fit.Routes
-				:markdown
-					The **#{nick}** recognizes the **stores**, **uploads**, **chips**, **tips**, **shares**, **data**, **positives**, **negatives**, **proofs**, and **code** AREAs
-					used in the **Views**, **Files**, **Datasets**, **Engines** end-points.  The following special **#{nick}** command routes are also recognized:
-
-						GET /SITE.yql 	Return data from YQL compliant SITE=select/from/where
-						GET /socket.io	reserved client socket.io connections
-						GET /start	restart service &name
-						GET /ping	check client-server connectivity
-						GET /codes	returns http error codes
-						GET /alert	broadcast alert &msg to all clients
-						GET /stop	stops the server with alert &msg broadcasted to all clients
-						GET /kill	kill queued job &ID
-						GET /checkpt	checkpoint database
-						GET /bit	built-in test with &N client connections at rate &lambda=events/s
-						GET /service/algorithm/ENGINE Execute ENGINE with SOAP/XML parameters
-						GET /user 	select,delete,update,insert user profile
-						GET /wget	fetch data from wget endpoint using query parameters
-						GET /curl	fetch data from curl endpoint using query parameters
-						GET /http	fetch data from http endpoint using query parameters
-						GET /test	challenge response endpoint
-
 		#accordion.Jobs
 		
 			#fit.Routes
@@ -771,7 +730,54 @@ append site_body
 			#fit.Examples
 				:markdown
 					TBD
-						
+
+		#accordion.Agents
+			:markdown
+				Agents provide a means to outsource an engine, while retaining a compute/queue thread
+				on each agent.  An agent at "http://agent" must provide #{title} with the
+				following push/pull endpoints:
+
+					GET http://AGENT?push=totem.CLIENT.ENGINE.ID&args=JSON
+					GET http://AGENT?pull=JOBID
+
+				where the push endpoint defines the job being sent to the AGENT (with the CLIENT 
+				requesting the agent, the ENGINE being outsourced, the ID of the test case,
+				and the JSON args to the ENGINE).  The AGENT eventually responds at 
+				the pull endpoint with a JOBID, or a "" if no job could be created.  #{title} will periodically 
+				poll the agent for the results of JOBID.
+
+				To outsource an ENGINE to an AGENT us:
+
+					GET /ENGINE.exe?agent=AGENT&poll=N&QUERY
+					
+				where the AGENT is polled every N seconds for its results, and where the QUERY 
+				defines the ENGINE args.
+				
+				#{title} reciprocates by providing its own AGENT at its **/agent** endpoint.
+
+		#accordion.System
+
+			#fit.Routes
+				:markdown
+					The following routes are used to maintain #{title}:
+
+						GET /SITE.yql 	Return data from YQL compliant SITE=select/from/where
+						GET /socket.io	reserved client socket.io connections
+						GET /start	restart service &name
+						GET /ping	check client-server connectivity
+						GET /codes	returns http error codes
+						GET /alert	broadcast alert &msg to all clients
+						GET /stop	stops the server with alert &msg broadcasted to all clients
+						GET /kill	kill queued job &ID
+						GET /checkpt	checkpoint database
+						GET /bit	built-in test with &N client connections at rate &lambda=events/s
+						GET /service/algorithm/ENGINE Execute ENGINE with SOAP/XML parameters
+						GET /user 	select,delete,update,insert user profile
+						GET /wget	fetch data from wget endpoint using query parameters
+						GET /curl	fetch data from curl endpoint using query parameters
+						GET /http	fetch data from http endpoint using query parameters
+						GET /test	challenge response endpoint
+
 	#accordion.Readers
 		#fit.Intro
 			:markdown
