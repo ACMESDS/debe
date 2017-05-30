@@ -363,7 +363,7 @@ append layout_body
 		},
 				
 		context: { // skinning contexts for each skin
-			ssp: {   // define DSVAR datasets available for the ssp skin
+			rtpsqd: {   // define DSVAR datasets available for the rtpsqd skin
 				apps:"openv.apps",
 				users: "openv.profiles",
 				projs: "openv.milestones",
