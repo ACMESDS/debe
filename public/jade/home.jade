@@ -7,7 +7,7 @@ append site_help
 
 	p Welcome to the #{title}.
 append site_parms
-	- view = query.option || "Min"
+	- view = query.options || "Min"
 	- parms = {Min:"Min",search:"search",brief:"brief",capture:"capture",chat:"chat",news:"news","news print":"print"}
 append site_body
 
@@ -22,7 +22,7 @@ append site_body
 				page=100,
 				search="Content",
 				cols="Ref,Name,Link.h,Dated.d,Searched")
-				
+
 			//
 				#pivot.Browse(
 					path="/CATALOG.db",
@@ -41,14 +41,14 @@ append site_body
 
 				:markdown
 					Here is where you can manage uploaded snapshots and tags.
-					
+
 			#minielt.ELT(links="src.Files.Ref")
 
 				:markdown
 					You can paste a snapshot here; then tag, crop, brighten, invert,
 					grayscale, mark and upload it.  Screen snapshots can be captured and tagged 
 					in the Image editor, then saved.  Image tags can be revised in the Uploads grid.
-				
+
 		when "chat"
 			#grid.Chat(
 				path="/sockets.db",

@@ -1010,25 +1010,35 @@ function DS(anchor) {
 		else
 		if (path.charAt(0) == "{")
 			var type = "options";
-		
+
 		else
 			var type = anchor.id;
 		
 		switch (type) { 		// dynamic data
 			case "inline":  	// static inline data
-				var Store = This.Store = Ext.create('Ext.data.Store', {
-					model 	: name,
-					data	: (path||"").json([])
-				});
-				Store.setproxy = Store.load = function () {};
+				try {
+					var Store = This.Store = Ext.create('Ext.data.Store', {
+						model 	: name,
+						data	: (path||"").json([])
+					});
+					Store.setproxy = Store.load = function () {};
+				}
+				catch (err) {
+					alert("Bad Data json for "+name);
+				}
 				break;
 		
 			case "options":  // static options data
-				var Store = This.Store = Ext.create('Ext.data.Store', {
-					model	: name,
-					data	: listify( (path||"").json([]), This.cols[0].dataIndex, This.cols[1].dataIndex  )
-				});
-				Store.setproxy = Store.load = function () {};
+				try {
+					var Store = This.Store = Ext.create('Ext.data.Store', {
+						model	: name,
+						data	: listify( (path||"").json([]), This.cols[0].dataIndex, This.cols[1].dataIndex  )
+					});
+					Store.setproxy = Store.load = function () {};
+				}
+				catch (err) {
+					alert("Bad Options json for "+name);
+				}
 				break;
 				
 			case "pivot": 				// tree store
@@ -1968,7 +1978,7 @@ WIDGET.prototype.menuTools = function () {
 		if (Message)
 			Message.setText(msg);
 		else
-			alert(msg);
+			Ext.Msg.alert(this.name,msg);
 	}
 
 	/**
@@ -2908,9 +2918,9 @@ WIDGET.prototype.menuTools = function () {
 							
 							else
 								return button( tok, {
-									onSelect: function (Recs,Data,Status) {
+									onAction: function (Data,Status) {
 									
-										alert(Recs.length);
+										//alert(Recs.length);
 
 										if (Action.indexOf(".db") >= 0)
 											Ext.Ajax.request({
@@ -2926,10 +2936,6 @@ WIDGET.prototype.menuTools = function () {
 
 										else
 											window.open(Action);
-									},
-									
-									onAction: function (Data,Status) {
-										Status(STATUS.NOSELECT);
 									}
 								});
 						

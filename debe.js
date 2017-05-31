@@ -54,7 +54,7 @@ var 									// NodeJS modules
 	FS = require("fs"); 				//< NodeJS filesystem and uploads
 	
 var										// 3rd party modules
-	OGEN = require("officegen"), 	//< MS office generator
+	OGEN = null, //require("officegen"), 	//< MS office generator
 	LANG = require('i18n-abide'), 		//< I18 language translator
 	ARGP = require('optimist'),			//< Command line argument processor
 	TOKML = require("tokml"), 			//< geojson to kml concerter
