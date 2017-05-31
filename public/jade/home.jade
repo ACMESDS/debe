@@ -59,7 +59,9 @@ append site_body
 			#grid.News(
 				path="/news.db",
 				page=10,
-				cols="New.c,To.t,Starts.d,Stay.n,Message.h,Category.x")
+				menu="somelink",
+				cols="New.c,To.t,Starts.d,Stay.n,Message.h,Category.x",
+				somelink="/moderate.view")
 
 		when "brief"
 			#home_brief.Briefing(dims="1400,900")

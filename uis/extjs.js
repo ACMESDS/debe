@@ -2197,6 +2197,16 @@ WIDGET.prototype.menuTools = function () {
 		};
 	}
 	
+	function isLink(action) {
+		var pre = ["/", "http:", "https:"];
+		
+		for (var n=0; n<pre.length; n++)  
+			if (action.indexOf(pre[n]) == 0) 
+				return true;
+
+		return false;
+	}
+	
 	var 
 		Widget = this,
 		Data = this.Data,
@@ -2916,6 +2926,15 @@ WIDGET.prototype.menuTools = function () {
 								return combo( tok, pullDS, function (val) {
 								});
 							
+							/*
+							else
+							if ( isLink(Action) ) {
+								return {
+									xtype: "box",
+									html: tok.tag("a",{href:Action})
+								}
+							}
+							*/
 							else
 								return button( tok, {
 									onAction: function (Data,Status) {
