@@ -13,8 +13,7 @@ append site_body
 	if query.engine
 		#form.engine(
 			path="/engines.db?Engine=#{query.engine}&Name=#{query.name}",
-			dims=dims,
-			cols="Classif,Name,Engine,Enabled.c,Period.n,Progam(Code.x,Vars.x,Special)")
+			cols="Classif,Name,Engine,Enabled.c,Period.n,Program(Code.x,Vars.x,Special)")
 
 			:markdown
 				**Select** to retrieve and lock your engine for editing.  **Update**, **Insert**, **Delete** or **Select** will unlock (for possible recompile) your engine.  Use
@@ -25,23 +24,22 @@ append site_body
 	else
 		#grid.engines(
 			path="/engines.db",
-			dims=dims,page=25,kiss,nowrap,
+			page=25,kiss,nowrap,
 			cols="Classif,Name,Engine,Enabled.c,Period.n,Code.t,Vars.t,Special.t")
 
 		#grid.stats(
 			path="/simstats.db",
-			page=25,dims=dims,nowrap,
+			page=25,nowrap,
 			cols="t.date,name,step.n,events,tokens,state,delay")
 
 		#grid.options(
 			path="/simoptions.db",
-			page=25,dims=dims,
+			page=25,
 			cols="name,steps.n,t.n,delta.n,delaybins.n,delaymax.n,snappath,snapperiod.n")
 
 		#form.engine(
 			path="/engines.db?engine=${xs('engines').Engine}&name=${x.Name}",
-			dims=dims,
-			cols="Classif,Name,Engine,Enabled.c,Period.n,Progam(Special,Code.x,Vars.x)")
+			cols="Classif,Name,Engine,Enabled.c,Period.n,Program(Special,Code.x,Vars.x)")
 
 			:markdown
 				**Select** to retrieve and lock your engine for editing.  **Update**, **Insert**, **Delete** or **Select**
