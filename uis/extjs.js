@@ -1813,7 +1813,7 @@ Ext.onReady( function () {
 							status,
 							req.message,
 							function (sel,val,opt) {
-								cb(`/riddle?guess=${val}&ID=${req.ID}&ipaddr=${navigator.clientip}`);
+								cb(`/riddle?guess=${val}&ID=${req.ID}&clientip=${navigator.clientip}`);
 							},
 
 							this, 	// scope
