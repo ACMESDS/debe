@@ -12,8 +12,9 @@ append site_body
 	- hosts = {geohub: "https://sigma0.ilabs.ic.gov", me: "localhost", win: "http://200.100.50.101", aws: "http://172.31.76.130"}
 	- host = hosts.aws
 	- dims = "800,600"
-
-	case query.option
+	- option = query.options || "main"
+	
+	case option
 		when "embeds"
 			#post.Simple.Service(path="http://www.w3schools.com",dims="750,500",refresh,head="Refresh,Help")
 
@@ -25,7 +26,6 @@ append site_body
 
 			#grid.Complex.Help(
 				path="/news.db",
-				page=page,dims=dims,
 				head="Edit,Help",
 				cols="Message,To,Category")
 
@@ -60,47 +60,44 @@ append site_body
 
 			#accordion.JS
 			
-				#form.jsEngines(
+				#form.Engine(
 					path="engines.db?Name=jsdemo1&Engine=js",
 					cols="Name,Engine,Enabled.c,Program(Vars.x,Code.x)")
 
 					:markdown
 						To learn more about JS engines, consult the #{title}'s [api](/api.view?goto=Engines).
 
-				#grid.jsEndPt(
+				#grid.endpt(
 					path="/jsdemo1.db?Name=test&M=3",
-					dims=dims,page=page,
 					cols="u")
-				#grid.jsInputs(
+				#grid.inputs(
 					path="/Htest.db",
-					dims=dims,page=page,
 					cols="Used.c,Name,Parameters(p0.n,p1.n,p2.n,p3.n,p4.n,p5.n),Observations(FPR.n,TPR.n)")
-				#grid.jsOutputs(
+				#grid.outputs(
 					path="/Hreg.db",
-					dims=dims,page=page,
 					cols="Name,Computed.d,Tests.n,Fits(a0.n,a1.n,a2.n,a3.n,a4.n,a5.n)")
 
 			#accordion.Python
 
-				#form.pyEngines(
+				#form.Engine(
 					path="engines.db?Name=pydemo1&Engine=py",
 					cols="Name,Engine,Enabled.c,Program(Vars.x,Code.x)")
 
 					:markdown
 						To learn more about Python engines, consult the #{title}'s [api](/api.view?goto=Engines).
 
-				#grid.pyEndPt(path="pydemo1.db?Name=file1",cols="x,y,z")
+				#grid.endpt(path="pydemo1.db?Name=file1",cols="x,y,z")
 
 			#accordion.MatLike
 
-				#form.labEngines(
+				#form.Engine(
 					path="engines.db?Name=matdemo1&Engine=mat",
 					cols="Name,Engine,Enabled.c,Program(Vars.x,Code.x)")
 
 					:markdown
 						To learn more about Matlab-like engines, consult the #{title}'s [api](/api.view?goto=Engines).
 
-				#grid.labEndPt(path="matdemo1.db",cols="x,y,z")
+				#grid.endpt(path="matdemo1.db",cols="x,y,z")
 
 		when "immersion"
 			#accordion.Immersion
@@ -114,21 +111,20 @@ append site_body
 						append site_body
 						
 							#folder.Gaming(dock="left")
-								#cesium.Earth(path="HelloWorld",dims="750,500")
-								#voxel.Blast(path="cubeland",dims=dims)
-								#spherebounce.Bounce(path="/",dims=dims)
-								#anaglyph.Anagylph(path="/",dims=dims)
-								#voxelpaint.Build(path="/",dims=dims)
+								#earth.Cesium(path="HelloWorld")
+								#videobump.Bump(path="cubeland")
+								#spherebounce.Bounce(path="/")
+								#anaglyph.Anagylph(path="/")
+								#voxelpaint.Paint(path="/")
 
 				#fit.Render
 						
 					#folder.Gaming(dock="left")
-						#cesium.Earth(path="HelloWorld",dims="750,500")
-						#voxel.Blast(path="forest",dims=dims)
-						#spherebounce.Bounce(path="/",dims=dims)
-						#anaglyph.Anagylph(path="/",dims=dims)
-						#voxelpaint.Build(path="/",dims=dims)
-
+							#earth.Cesium(path="HelloWorld")
+							#videobump.Bump(path="cubeland")
+							#spherebounce.Bounce(path="/")
+							#anaglyph.Anagylph(path="/")
+							#voxelpaint.Paint(path="/")
 		when "blogs"
 			#accordion.Blog
 				#fit.Jade
@@ -141,7 +137,7 @@ append site_body
 
 						#grid.Blog(
 							path="news.db",refresh=300,
-							sorts="Stay,Starts",page=30,dims=dims,calc,head="Search,Print,Refresh",
+							sorts="Stay,Starts",page=30,calc,head="Search,Print,Refresh",
 							cols="Message.h")
 
 					:markdown
@@ -152,7 +148,7 @@ append site_body
 				#fit.Render
 					#grid.Blog(
 						path="news.db",refresh=300,
-						sorts="Stay,Starts",page=30,dims=dims,calc,head="Search,Print,Refresh",
+						sorts="Stay,Starts",page=30,calc,head="Search,Print,Refresh",
 						cols="Message.h")
 						
 					:markdown
@@ -170,7 +166,7 @@ append site_body
 										
 							#pivot.Find(
 								path="/intake.db",
-								page=50,dims=dims,
+								page=50,
 								pivots="App,Name,Tech",kiss,
 								cols="Condition(TRL,Track,Reason),General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
 
@@ -179,13 +175,12 @@ append site_body
 
 							#grid.List(
 								path="/intake.db?Name=${xs('FIND').Name}",
-								page=50,dims=dims,
+								page=50,
 								sorts="App,Name",menu="FilterBy,TestBy(a,b,c)",
 								cols="Name,App,Tech,TRL,Track,General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
 
 							#form.Edit(
 								path="/intake.db?ID=${xs('List').ID}",
-								dims=dims,
 								cols="Name,App,Tech,TRL,Track,General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
 
 					:markdown
@@ -196,7 +191,7 @@ append site_body
 				#folder.Render
 					#pivot.Find(
 						path="/intake.db",
-						page=50,dims=dims,
+						page=50,
 						pivots="App,Name,Tech",kiss,
 						cols="Condition(TRL,Track,Reason),General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
 
@@ -205,13 +200,12 @@ append site_body
 
 					#grid.List(
 						path="/intake.db?Name=${xs('FIND').Name}",
-						page=50,dims=dims,
+						page=50,
 						sorts="App,Name",menu="FilterBy,TestBy(a,b,c)",
 						cols="Name,App,Tech,TRL,Track,General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
 
 					#form.Edit(
 						path="/intake.db?ID=${xs('List').ID}",
-						dims=dims,
 						cols="Name,App,Tech,TRL,Track,General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
 
 		when "navigator"
@@ -249,7 +243,7 @@ append site_body
 								#image.Light.Table(path="/shares/default.jpg")
 
 				#fit.Render
-					#exnav.AP(dims=dims)
+					#exnav
 
 		when "tipsheets"
 			#accordion.Tipsheet
@@ -269,7 +263,6 @@ append site_body
 				#fit.Render
 					#tipsheet(
 						path="/tips.db",
-						dims=dims,
 						pivots="cat,tip,name,symbol,lat,lon,nipf,nipf,links")
 
 		when "techpub"
@@ -305,13 +298,13 @@ append site_body
 						and the [#{title} API](/api.view).
 										
 				#fit.Render
-					#expub.AP(dims=dims)
+					#expub
 
 		when "mobiles"
 			p Pending
 
 		when "briefs"
-			#exbrief.Brief(dims=dims)
+			#exbrief.Brief
 
 		when "workflows"
 			#accordion
@@ -322,13 +315,13 @@ append site_body
 			//
 				#pivot.Browser(
 				path="/intake.db",
-				page=10,dims=dims,
+				page=10,
 				pivots="TRL,Name",
 				cols="name")
 		
 			#pivot.Browser(
 				path="/intake.db",
-				page=10,dims=dims,
+				page=10,
 				pivots="TRL,App",
 				cols="ID,App,TRL,Tech")
 
@@ -337,56 +330,23 @@ append site_body
 
 			#pivot.Browser(
 				path="/intake.db",kiss,
-				page=25,dims=dims,
+				page=25,
 				pivots="TRL,App,Tech",
 				cols="ID,App,TRL,Tech")
 
-			#force.FP(
-				path=bpath,
-				dims=dims)
-			//
-			#sankey.SK(
-				path="/data/energy.json",
-				dims=dims)
-
-			#omg.OG(
-				path="/intake.json",
-				dims=dims)
-
-			#plot.RC(
-				path="/rocs.json?index=FPR,TPR&_ref=[0,0],[1,1]&marker=dot&legend=ROC&trace=1&_extra=[0,0]",
-				dims=dims)
-
-			#map.EM(
-				path="/maps.json&fill=Type&index=Name&details=Info&${xs('Browser')}",
-				dims=dims)
-
-				#grid.MapData(
-					path="/maps.json",
-					page=20,
-					cols="Name,Type,Info.x")
-
-			#treefan.TF(
-				path=bpath,
-				dims=dims)
-
-			#treemap.TM(
-				path=bpath,
-				dims=dims)
-
-			#cluster.DC(
-				path=bpath,
-				dims=dims)
-
-				#cpack.CP(
-					path=bpath,
-					dims=dims)
-
-				#chords.CH(
-					path="/bank.json",
-					dims=dims)
+			#force.FP(path=bpath)
+			#sankey.SK(path="/data/energy.json")
+			#omg.OG
+			#plot.RC(path="/rocs.json?index=FPR,TPR&_ref=[0,0],[1,1]&marker=dot&legend=ROC&trace=1&_extra=[0,0]")
+			#map.EM(path="/maps.json&fill=Type&index=Name&details=Info&${xs('Browser')}")
+			#grid.MapData(path="/maps.json",page=20,cols="Name,Type,Info.x")
+			#treefan.TF(path=bpath)
+			#treemap.TM(path=bpath)
+			#cluster.DC(path=bpath)
+			#cpack.CP(path=bpath)
+			#chords.CH(path="/bank.json")
 					
-		default
+		when "main"
 			#fit.Introduction
 				:markdown
 					When a client requests a X.view, **#{nick}** renders this view with the jade skin associated with X.  [Jade](http://jade-lang.com/tutorial/)
@@ -770,8 +730,7 @@ append site_body
 
 			#fit.Context.Keys
 				:markdown
-					The following #{nick}-context keys (current value shown) are referenced 
-					using \\#{KEY} or \\!{KEY} to escape or not escape the html:
+					The following #{nick}-context keys are inserted using \\#{KEY} or \\!{KEY} with or without html-escaping (current value shown):
 					
 					+	masterURL	= URL to master (#{masterURL})  
 					+	workerURL	= URL to worker (#{workerURL})  
