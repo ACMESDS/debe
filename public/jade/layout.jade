@@ -39,29 +39,34 @@ html(lang="en")
 			script(src="/clients/json/json2.js")
 
 		script.
+			var totem = navigator.totem = {
+				browser: null, 
+				ip: null, 
+				location: null,
+				onLinux: false,
+				onWindows: false
+			};
+
+			// Discover clients brower
 			try {
 				var
 					agent = navigator.userAgent,
 					agents = {Firefox:"Firefox/", Chrome: "Chrome/", Safari:"Safari/"};
 						
-				navigator.browser = null;
 				for (var n in agents)		
 					if (agent.indexOf(agents[n])>=0) {
-						navigator.browser = n;
+						totem.browser = n;
 						break;
 					}
-
-				navigator.onLinux = navigator.platform.indexOf("Linux") == 0;
-				navigator.onWindows = navigator.platform.indexOf("Win") == 0;
-
-				if (!navigator.browser) 
-					alert("Use Firefox/Chrome browser");
 			}
 			catch (err) {
-				alert("Use Firefox/Chrome browser");
 			}
 
-			//get the IP addresses associated with an account
+			// Doscover clients platform
+			totem.onLinux = navigator.platform.indexOf("Linux") == 0;
+			totem.onWindows = navigator.platform.indexOf("Win") == 0;
+
+			// Discover client IP addresses associated with an account
 			function getIPs(callback){
 				var ip_dups = {};
 
@@ -132,29 +137,21 @@ html(lang="en")
 				}, 1000);
 			}
 
-			//insert IP addresses into the page
-			navigator.clientip = "unknown";
+			// Retain IP addresses
 			getIPs(function(ip){
-				navigator.clientip = ip;
-				//alert(ip);
-				/*
-				var li = document.createElement("li");
-				li.textContent = ip;
-
-				//local IPs
-				if (ip.match(/^(192\.168\.|169\.254\.|10\.|172\.(1[6-9]|2\d|3[01]))/))
-				document.getElementsByTagName("ul")[0].appendChild(li);
-
-				//IPv6 addresses
-				else if (ip.match(/^[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7}$/))
-				document.getElementsByTagName("ul")[2].appendChild(li);
-
-				//assume the rest are public IPs
-				else
-				document.getElementsByTagName("ul")[1].appendChild(li);
-				*/
+				totem.ip = ip;
 			});
 			
+			// Discover client geolocation
+			
+			if (false && navigator.geolocation)
+				navigator.geolocation.getCurrentPosition(function (pos) {
+					if (!pos.coords) pos.coords = {latitude:0, longitude: 0};
+					totem.location = 'POINT(' + pos.coords.latitude + " " + pos.coords.longitude + ')';
+				}, function (err) {	
+					totem.location = 'POINT(0 0)';
+				});
+
 		//-
 			Install socketio to sync changes amoungst clients.  This interface is establihed 
 			when the server does a require('socket.io') which creates a route #{sockets} = 

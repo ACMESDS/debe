@@ -1813,7 +1813,7 @@ Ext.onReady( function () {
 							status,
 							req.message,
 							function (sel,val,opt) {
-								cb(`/riddle?guess=${val}&ID=${req.ID}&clientip=${navigator.clientip}`);
+								cb(`/riddle?guess=${val}&ID=${req.ID}`);
 							},
 
 							this, 	// scope
@@ -1822,6 +1822,7 @@ Ext.onReady( function () {
 						).setWidth(600);
 					});
 				}
+				
 				else
 				if (req.message)
 					Ext.Msg.alert("Welcome! ".blink().bold().fontcolor('red'), req.message);

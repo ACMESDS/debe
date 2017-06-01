@@ -111,8 +111,8 @@ var BASE = {
 		//qos:1,								// default QoS
 		//message: "",						// challenge for client
 		//riddles: 0, 
-		location: 'POINT(0 0)',	// default location
-		geolocate : false, 		// enable geolocation
+		//location: 'POINT(0 0)',	// default location
+		//geolocate : false, 		// enable geolocation
 		retries: 5 				// default max challenge retries if none provided by challenger
 	},
 		
@@ -250,31 +250,14 @@ var BASE = {
 			
 			BASE.socketio.emit("select", {
 				client: BASE.user.client,
-				message: "can I join please?"
+				message: "can I join please?",
+				ip: navigator.totem.ip,
+				location: navigator.totem.location
 			});	
 		}
 
 		//console.log("base div=[%s] default=[%s] guard=[%s]",opts.START,div,opts.GUARD);
 
-		// Discover client geolocation
-		
-		if (BASE.user.geolocate && window.navigator.geolocation)
-			window.navigator.geolocation.getCurrentPosition(function (pos) {
-				if (!pos.coords) pos.coords = {latitude:0, longitude: 0};
-				BASE.user.location = 'POINT(' + pos.coords.latitude + " " + pos.coords.longitude + ')';
-			}, function (err) {
-				BASE.user.location = 'POINT(0 0)';
-			});
-
-		/*
-		geoloc.getCurrentPosition(function (pos) {
-			alert(JSON.stringify(pos));
-			BASE.user.location = JSON.stringify(pos);
-			BASE.socketio.emit('response', { to: req.from, from: req.to, msg: BASE.user.client ? 'accepted' : 'declined', geo: BASE.user.location});
-		}, function (err) {
-			BASE.socketio.emit('response', { to: req.from, from: req.to, msg: BASE.user.client ? 'accepted' : 'declined', geo: BASE.user.location});
-		}); */
-		
 		// Allow content div to redirect starting div
 
 		if (div = BASE.parser.START) 
