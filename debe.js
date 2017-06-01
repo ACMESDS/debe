@@ -1948,12 +1948,14 @@ function Initialize () {
 			DEBE.worker[n] = ENGINE[n];
 		});	
 
-		// i18n simply provide a industry standard framework for translating native -> foreign
-		// phrases (defined my pot->po files under XLATE folder).  These pot->po are not free.
-		// Indeed, wordpress, for example, provides a service that allows websites to register
-		// for their services that crowd source translations from supplied pot files to their
-		// delivered po files.
-
+		/*
+		The i18n simply provides an industry standard framework for translating native -> foreign
+		phrases (defined my pot->po files under XLATE folder).  These pot->po translations are 
+		not free.  Wordpress, for example, provides a service that allows websites to register
+		for their services that crowd source translations from supplied pot files to their
+		delivered po files.
+		*/
+		
 		if (path = DEBE.paths.mime.xlate) 
 			EXAPP.use(LANG.abide({
 				supported_languages: ['en', 'de', 'fr'],

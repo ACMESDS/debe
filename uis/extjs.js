@@ -2938,9 +2938,6 @@ WIDGET.prototype.menuTools = function () {
 							else
 								return button( tok, {
 									onAction: function (Data,Status) {
-									
-										//alert(Recs.length);
-
 										if (Action.indexOf(".db") >= 0)
 											Ext.Ajax.request({
 												url : Action,

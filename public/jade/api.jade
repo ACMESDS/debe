@@ -95,7 +95,7 @@ append site_body
 					[download a file from the shares area](/shares/welcome.pdf)  
 					[return flare json file from data area](/data/flare.json)
 
-		#accordion.DataSets
+		#accordion.Datasets
 			#fit.Routes
 				:markdown
 					Both **database** and **emulated datasets** are reached	at the following end-points:
@@ -628,14 +628,21 @@ append site_body
 							}
 							
 						In this engine, the [json returned](/jsdemo1.db?Name=test) by tau[0].u can, 
-						for example, be fed to a [grid(path="/jsdemo1.db?Name=test",cols="u") view](/skinguide.view).  
-						Here, the engine Code is run in its context by importing context variable **A**
-						on entry, and exporting **B** on exit. 
+						for example, be fed to a [dynamic view](/jsdemo1.view).
+						
+						Here, on entry to the engine, its context **A** and **B** variables are primed by the entry queries.  On
+						exit, its context **B** variable is exported by the exit query.  Engines (both stateful  and stateless) are 
+						always free to revise their context as needed.
+						
+						An engine's context is aways provided a **sql** connector
+						equipped with the **sql.query** and **sql.release** methods to directly access a database
+						(limited only by the client's profile group).  This **sql** connector also provides 
+						**insertJob**, **deleteJob**, **updateJob** and **selectJob** methods to
+						minipilate jobs in the FLEX queues.
 						
 						Because this engine did not define functions -- functions are associated
-						with workflow engine ports -- this stateless engine is [only accessible at an endpoint](/jsdemo1.db?Name=test).
-						As with all engines, stateless engines remain free to revise its context as needed.
-
+						with workflow engine ports -- this stateless engine is [only accessible at an endpoint](/jsdemo1.view?Name=test).
+						
 						## Stateless Example
 
 						This [jsdemo2 engine](/engines.view) example (test [here](/jsdemo2.db?Name=file1&Used=1)):
@@ -711,21 +718,21 @@ append site_body
 		
 			#fit.Routes
 				:markdown
-					One-time and scheduled jobs are initiated at the following endpoint:
-					
+					Jobs are initiated at the following endpoint:
+
 						GET /JOB.exe
-						
-					where JOB will schedule:
-					
-						the execute logic for matched TABLEs
-						a run for matched ENGINEs
-						a reader (scan, index, parse) for matched FILEs
+
+					where JOB is  
+					+ a table to run the CRUDE execute logic,  
+					+ an engine to run the matched engine, or   
+					+ a file to run the assocated reader
 						
 			#fit.Parameters
 				:markdown
-					qos = Desired QoS queue to use for this job (0=one-time)
-					priority = Desired job priority
-					on = TBD - event to cause job to run
+					The following job parameters are understood:
+					+ qos = job QoS queue (0=run job immediately)  
+					+ priority = job priority  
+					+ on = reserved (event to cause job to run)
 					
 			#fit.Examples
 				:markdown
@@ -756,27 +763,25 @@ append site_body
 				#{title} reciprocates by providing its own AGENT at its **/agent** endpoint.
 
 		#accordion.System
+			:markdown
+				The following routes are used to maintain #{title}:
 
-			#fit.Routes
-				:markdown
-					The following routes are used to maintain #{title}:
-
-						GET /SITE.yql 	Return data from YQL compliant SITE=select/from/where
-						GET /socket.io	reserved client socket.io connections
-						GET /start	restart service &name
-						GET /ping	check client-server connectivity
-						GET /codes	returns http error codes
-						GET /alert	broadcast alert &msg to all clients
-						GET /stop	stops the server with alert &msg broadcasted to all clients
-						GET /kill	kill queued job &ID
-						GET /checkpt	checkpoint database
-						GET /bit	built-in test with &N client connections at rate &lambda=events/s
-						GET /service/algorithm/ENGINE Execute ENGINE with SOAP/XML parameters
-						GET /user 	select,delete,update,insert user profile
-						GET /wget	fetch data from wget endpoint using query parameters
-						GET /curl	fetch data from curl endpoint using query parameters
-						GET /http	fetch data from http endpoint using query parameters
-						GET /test	challenge response endpoint
+					GET /SITE.yql 	Return data from YQL compliant SITE=select/from/where
+					GET /socket.io	reserved client socket.io connections
+					GET /start	restart service &name
+					GET /ping	check client-server connectivity
+					GET /codes	returns http error codes
+					GET /alert	broadcast alert &msg to all clients
+					GET /stop	stops the server with alert &msg broadcasted to all clients
+					GET /kill	kill queued job &ID
+					GET /checkpt	checkpoint database
+					GET /bit	built-in test with &N client connections at rate &lambda=events/s
+					GET /service/algorithm/ENGINE Execute ENGINE with SOAP/XML parameters
+					GET /user 	select,delete,update,insert user profile
+					GET /wget	fetch data from wget endpoint using query parameters
+					GET /curl	fetch data from curl endpoint using query parameters
+					GET /http	fetch data from http endpoint using query parameters
+					GET /test	challenge response endpoint
 
 	#accordion.Readers
 		#fit.Intro
