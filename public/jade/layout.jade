@@ -15,6 +15,7 @@ block layout_parms
 	- highlight = "zenburn"
 	- capture = false
 	- math = true
+	- probe = {platform: true, location: false, ip: true, browser: true}
 
 html(lang="en")
 
@@ -47,25 +48,23 @@ html(lang="en")
 				onWindows: false
 			};
 
-			// Discover clients brower
-			try {
+			if (probe.browser) {  // Discover clients brower
 				var
-					agent = navigator.userAgent,
+					agent = navigator.userAgent || "",
 					agents = {Firefox:"Firefox/", Chrome: "Chrome/", Safari:"Safari/"};
 						
-				for (var n in agents)		
+				for (var n in agents)
 					if (agent.indexOf(agents[n])>=0) {
 						totem.browser = n;
 						break;
 					}
 			}
-			catch (err) {
+
+			if (probe.platform) { // Doscover clients platform
+				totem.onLinux = navigator.platform.indexOf("Linux") == 0;
+				totem.onWindows = navigator.platform.indexOf("Win") == 0;
 			}
-
-			// Doscover clients platform
-			totem.onLinux = navigator.platform.indexOf("Linux") == 0;
-			totem.onWindows = navigator.platform.indexOf("Win") == 0;
-
+			
 			// Discover client IP addresses associated with an account
 			function getIPs(callback){
 				var ip_dups = {};
@@ -137,14 +136,12 @@ html(lang="en")
 				}, 1000);
 			}
 
-			// Retain IP addresses
-			getIPs(function(ip){
-				totem.ip = ip;
-			});
+			if (probe.ip)  // Retain IP addresses
+				getIPs(function(ip){
+					totem.ip = ip;
+				});
 			
-			// Discover client geolocation
-			
-			if (false && navigator.geolocation)
+			if (navigator.geolocation && probe.location)  // Discover client geolocation
 				navigator.geolocation.getCurrentPosition(function (pos) {
 					if (!pos.coords) pos.coords = {latitude:0, longitude: 0};
 					totem.location = 'POINT(' + pos.coords.latitude + " " + pos.coords.longitude + ')';
@@ -216,7 +213,6 @@ html(lang="en")
 	body
 
 		//- Inject content div
-
 		#content(icons=icons,start=start,client=client,source=table,query=JSON.stringify(query),title=banner)
 
 			if query.inline

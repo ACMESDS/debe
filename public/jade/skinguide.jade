@@ -16,7 +16,7 @@ append site_body
 	
 	case option
 		when "embeds"
-			#post.Simple.Service(path="http://www.w3schools.com",dims="750,500",refresh,head="Refresh,Help")
+			#post.Simple.Service(path="http://www.w3schools.com",dims="750,500",head="Refresh,Help")
 
 				:markdown
 					Here is a sample service embed.  This was embedded with the "refresh" option, so you 
@@ -43,9 +43,9 @@ append site_body
 						\]
 
 				#folder.Embeds
-					#expapers.Embedded.Paper(dims="300,300")
-
-					#minielt.Embedded.Editor(path="/uploads.Welcome9.jpg",dims="400,300")
+					#post.Another.Site(path="/home.view?options=news",dims="600,300")
+					#post.Tech.Pub(path="/expub.view",dims="600,300")
+					#minielt.Image.Editor(path="/uploads.Welcome9.jpg",dims="600,300")
 						:markdown
 							this is a test image containing a typeset popup
 					
@@ -60,99 +60,62 @@ append site_body
 
 			#accordion.JS
 			
-				#form.Engine(
+				#form.js.engine(
 					path="engines.db?Name=jsdemo1&Engine=js",
 					cols="Name,Engine,Enabled.c,Program(Vars.x,Code.x)")
 
 					:markdown
 						To learn more about JS engines, consult the #{title}'s [api](/api.view?goto=Engines).
 
-				#grid.endpt(
+				#grid.js.endpt(
 					path="/jsdemo1.db?Name=test&M=3",
 					cols="u")
-				#grid.inputs(
+				#grid.js.inputs(
 					path="/Htest.db",
 					cols="Used.c,Name,Parameters(p0.n,p1.n,p2.n,p3.n,p4.n,p5.n),Observations(FPR.n,TPR.n)")
-				#grid.outputs(
+				#grid.js.outputs(
 					path="/Hreg.db",
 					cols="Name,Computed.d,Tests.n,Fits(a0.n,a1.n,a2.n,a3.n,a4.n,a5.n)")
 
 			#accordion.Python
 
-				#form.Engine(
+				#form.py.engine(
 					path="engines.db?Name=pydemo1&Engine=py",
 					cols="Name,Engine,Enabled.c,Program(Vars.x,Code.x)")
 
 					:markdown
 						To learn more about Python engines, consult the #{title}'s [api](/api.view?goto=Engines).
 
-				#grid.endpt(path="pydemo1.db?Name=file1",cols="x,y,z")
+				#grid.py.endpt(path="pydemo1.db?Name=file1",cols="x,y,z")
 
 			#accordion.MatLike
 
-				#form.Engine(
+				#form.ml.engine(
 					path="engines.db?Name=matdemo1&Engine=mat",
 					cols="Name,Engine,Enabled.c,Program(Vars.x,Code.x)")
 
 					:markdown
 						To learn more about Matlab-like engines, consult the #{title}'s [api](/api.view?goto=Engines).
 
-				#grid.endpt(path="matdemo1.db",cols="x,y,z")
+				#grid.ml.endpt(path="matdemo1.db",cols="x,y,z")
 
 		when "immersion"
-			#accordion.Immersion
-				#fit.Jade
-					pre: code.mysql.
-						extends site
-							- tech = "jquery"
-						append site_parms
-							- view = "Min"
-							- dock = "left"
-						append site_body
-						
-							#folder.Gaming(dock="left")
-								#earth.Cesium(path="HelloWorld")
-								#videobump.Bump(path="cubeland")
-								#spherebounce.Bounce(path="/")
-								#anaglyph.Anagylph(path="/")
-								#voxelpaint.Paint(path="/")
+				#folder.Gaming(dock="left")
+						#earth.Cesium(path="HelloWorld")
+						#videobump.Bump(path="cubeland")
+						#spherebounce.Bounce(dims="800,600")
+						#anaglyph.Anagylph(dims="800,600")
+						#voxelpaint.Paint(dims="800,600")
 
-				#fit.Render
-						
-					#folder.Gaming(dock="left")
-							#earth.Cesium(path="HelloWorld")
-							#videobump.Bump(path="cubeland")
-							#spherebounce.Bounce(path="/")
-							#anaglyph.Anagylph(path="/")
-							#voxelpaint.Paint(path="/")
 		when "blogs"
-			#accordion.Blog
-				#fit.Jade
-					pre: code.mysql.
-						extends site
-							- tech = "jquery"
-						append site_parms
-							- view = "Min"
-						append site_body
+			#grid.Blog(
+				path="news.db?_blog=Message",refresh=300,
+				sorts="Stay,Starts",page=30,calc,head="Search,Print,Refresh",
+				cols="Message.h")
 
-						#grid.Blog(
-							path="news.db",refresh=300,
-							sorts="Stay,Starts",page=30,calc,head="Search,Print,Refresh",
-							cols="Message.h")
-
-					:markdown
-						To make a jade skin **hello**, create a **hello**  [jade engine](/engines.view) then
-						render it with **/hello.view**.  You can learn more about how to [skin #{title}](/skinguide.view) 
-						and the [#{title} API](/api.view).  
-
-				#fit.Render
-					#grid.Blog(
-						path="news.db",refresh=300,
-						sorts="Stay,Starts",page=30,calc,head="Search,Print,Refresh",
-						cols="Message.h")
-						
-					:markdown
-						The cool thing about blogging grids is that they can be printed.
+			:markdown
+				The cool thing about blogging grids is that they can be printed.  This one is setup
+				to blog Messages and function as a spreadsheet calculator.
 
 		when "finders"
 			#accordion.Finder
@@ -270,7 +233,6 @@ append site_body
 				#fit.Jade
 					pre: code.mysql.
 						extends base
-							- tech = "nada"
 						append base_body
 							h1 Chapter 1
 							
@@ -298,7 +260,7 @@ append site_body
 						and the [#{title} API](/api.view).
 										
 				#fit.Render
-					#expub
+					#post.Tech.Pub(path="/expub.view")
 
 		when "mobiles"
 			p Pending

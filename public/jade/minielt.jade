@@ -1,7 +1,9 @@
 //- UNCLASSIFIED
 
-extends jquery
-append jquery_body
+extends base
+append base_parms
+	- tech = "jquery"
+append base_body
 
 	#image(path="#{query.src}")
 
