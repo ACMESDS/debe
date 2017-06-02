@@ -113,15 +113,16 @@ append layout_head
 	//- Load underlying tech 
 	case tech
 		when "flow"
-			//- any changes in these scriptes require re-minification
+			script(src='/clients/jquery/js/jquery-1.11.0.min.js')
+			script(src='/clients/jquery/ui/jquery-ui-1.10.3.custom.min.js')
+			//-script(src='/clients/jquery/js/jquery-1.9.1.min.js')
+			//-script(src='/clients/jquery/plugins/misc/jquery.ui.tooltip.min.js')
+			//- any changes in these scripts require re-minification
 			script(src="/clients/joint/joint.min.js")
 			script(src="/clients/joint/joint.shapes.devs.js")
 			script(src="/clients/joint/joint.shapes.fsa.min.js")
 			script(src="/clients/joint/joint.shapes.pn.min.js")
 			script(src="/clients/joint/joint.shapes.erd.min.js")
-			//-script(src='/clients/jQuery/js/jquery-1.9.1.min.js')
-			script(src='/clients/jQuery/ui/jquery-ui-1.10.3.custom.min.js')
-			//-script(src='/clients/jQuery/plugins/misc/jquery.ui.tooltip.min.js')
 		
 		when "d3"
 			script(src="/clients/d3/d3.min.js")

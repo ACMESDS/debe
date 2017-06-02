@@ -102,7 +102,7 @@ append site_body
 					
 						GET	/DATASET.TYPE		Return data from DATASET
 						PUT	/DATASET.TYPE		Update DATASET with body parameters
-						POST	/DATASET.TYPE	Insert body parameters info DATASET
+						POST	/DATASET.TYPE	Insert body parameters into DATASET
 						DELETE	/DATASET.TYPE	Delete from DATASET 
 
 			#fit.Parameters
@@ -116,15 +116,16 @@ append site_body
 						KEY = [ min , max ] // inclusive range (if unsafe queries enabled)
 						KEY = [ x, y, z, ... ] // bounding box (reserved)
 						A.KEY = B.KEY 	// Join datasets A and B on specified KEYs (experimental)
-						expression 			// if unsafe queries enabled
+						expression 			// e.g. KEY<value, KEY>value,... (if unsafe queries enabled)
 
 					# Body and File Upload parameters
 
-						JSON formatted parameters or a file upload script:
-							key = val ; key = val ; ...  [cr newline]
-							:
-							:
-							file data [cr newline]
+					JSON formatted parameters, or a file upload script following this convention:
+
+						key = val ; key = val ; ...  [cr newline]
+						:
+						:
+						file data [cr newline]
 
 					# Searching parameters
 
@@ -753,12 +754,14 @@ append site_body
 				the pull endpoint with a JOBID, or a "" if no job could be created.  #{title} will periodically 
 				poll the agent for the results of JOBID.
 
-				To outsource an ENGINE to an AGENT us:
+				To outsource an ENGINE to an AGENT use:
 
 					GET /ENGINE.exe?agent=AGENT&poll=N&QUERY
+					GET /ENGINE.exe?agent=AGENT&QUERY
 					
-				where the AGENT is polled every N seconds for its results, and where the QUERY 
-				defines the ENGINE args.
+				where the &poll request will start a job then poll the AGENT every N seconds for its results, 
+				whereas the no-&poll request will start a job then reply on the AGENT to claim the job.  In
+				either case, QUERY defines the ENGINE args.
 				
 				#{title} reciprocates by providing its own AGENT at its **/agent** endpoint.
 
