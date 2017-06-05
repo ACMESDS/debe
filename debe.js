@@ -2085,7 +2085,7 @@ function Initialize () {
 			indexer: DEBE.indexer,
 			uploader: DEBE.uploader,
 
-			paths: {
+			paths: {  // urls to supporting services
 				HOST: DEBE.site.masterURL,
 				NEWSREAD: "http://craphound.com:80/?feed=rss2",
 				AOIREAD: "http://omar.ilabs.ic.gov:80/tbd"
@@ -2093,12 +2093,13 @@ function Initialize () {
 
 			site: DEBE.site,						// Site parameters
 
-			watch: DEBE.watch,
+			watch: DEBE.watch,  	// file watcher
 			
+			/*
 			statefulViews : { 					// Jade views that require the stateful URL
 				'workflow': 1,
 				'workflows': 1
-			},	
+			},*/	
 
 			/*NEWSREAD: { 					// Establish news reader
 				//JOB: APP.INGEST,
@@ -2112,7 +2113,8 @@ function Initialize () {
 
 			mailer : {						// Email parameters
 				TRACE 	: true,	
-				ONSTART: true
+				ONSTART: true,
+				SOURCE: "tbd"
 			},
 
 			likeus : {
