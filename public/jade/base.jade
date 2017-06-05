@@ -113,10 +113,17 @@ append layout_head
 	//- Load underlying tech 
 	case tech
 		when "flow"
-			script(src='/clients/jquery/js/jquery-1.11.0.min.js')
+			case "1.x"
+				when "1.x"
+					script(src="/clients/lodash.js")
+					script(src="/clients/backbone.js")
+					script(src='/clients/jquery/js/jquery-3.1.1.js')
+				when "0.x"
+					script(src='/clients/jquery/js/jquery-1.11.0.min.js')
+					//-script(src='/clients/jquery/js/jquery-1.9.1.min.js')
+					//-script(src='/clients/jquery/plugins/misc/jquery.ui.tooltip.min.js')
+
 			script(src='/clients/jquery/ui/jquery-ui-1.10.3.custom.min.js')
-			//-script(src='/clients/jquery/js/jquery-1.9.1.min.js')
-			//-script(src='/clients/jquery/plugins/misc/jquery.ui.tooltip.min.js')
 			//- any changes in these scripts require re-minification
 			script(src="/clients/joint/joint.min.js")
 			script(src="/clients/joint/joint.shapes.devs.js")
@@ -305,9 +312,9 @@ append layout_body
 				if opens
 					a(href="/"+table+".view") open
 					|  || 
-					a(href="/edit.view?name="+table+".view") edit
+					a(href="/edit.view?name="+table) edit
 					|  || 
-					a(href="/edit.view?name="+table+".send") send
+					a(href="/send.view?name="+table) send
 
 				block base_body
 

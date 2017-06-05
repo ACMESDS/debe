@@ -15,7 +15,6 @@ block layout_parms
 	- highlight = "zenburn"
 	- capture = false
 	- math = true
-	- probe = {platform: true, location: false, ip: true, browser: true}
 
 html(lang="en")
 
@@ -40,6 +39,8 @@ html(lang="en")
 			script(src="/clients/json/json2.js")
 
 		script.
+			var probe = {platform: true, location: false, ip: true, browser: true};
+
 			var totem = navigator.totem = {
 				browser: null, 
 				ip: null, 
