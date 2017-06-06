@@ -65,7 +65,7 @@ append site_body
 					cols="Name,Engine,Enabled.c,Program(Vars.x,Code.x)")
 
 					:markdown
-						To learn more about JS engines, consult the #{title}'s [api](/api.view?goto=Engines).
+						To learn more about JS engines, consult #{title}'s [api](/api.view?goto=Engines).
 
 				#grid.js.endpt(
 					path="/jsdemo1.db?Name=test&M=3",
@@ -84,7 +84,7 @@ append site_body
 					cols="Name,Engine,Enabled.c,Program(Vars.x,Code.x)")
 
 					:markdown
-						To learn more about Python engines, consult the #{title}'s [api](/api.view?goto=Engines).
+						To learn more about Python engines, consult #{title}'s [api](/api.view?goto=Engines).
 
 				#grid.py.endpt(path="pydemo1.db?Name=file1",cols="x,y,z")
 
@@ -95,7 +95,7 @@ append site_body
 					cols="Name,Engine,Enabled.c,Program(Vars.x,Code.x)")
 
 					:markdown
-						To learn more about Matlab-like engines, consult the #{title}'s [api](/api.view?goto=Engines).
+						To learn more about Matlab-like engines, consult #{title}'s [api](/api.view?goto=Engines).
 
 				#grid.ml.endpt(path="matdemo1.db",cols="x,y,z")
 
@@ -476,7 +476,7 @@ append site_body
 						#post.NAME(path="/SKIN?src=SOURCE", ...)
 						#SKIN.NAME(path="/SOURCE")
 
-					where SKIN can specifiy a dataset, skin, file or file area.
+					where SKIN can specify a dataset, skin, file or file area.
 					
 					A widget's SOURCE **path** can reference a dataset, define static data, or define view options:
 					+	/DATASET?QUERY
@@ -541,7 +541,7 @@ append site_body
 					+	date: date | datetime | mediumdate | defaultdate | iso8601long | iso8601short |shortdate | longdate | fulldatetime | monthday | shorttime | longtime | sortabledatetime | universalsortabledatetime | yearmonth  
 					+	icon: ##... (make icon list from class img-Action-value[0, 1, ...])
 
-					Capatalized types flag a read only field (mandatory for fields derived by selects).
+					Capitalized types flag a read only field (mandatory for fields derived by selects).
 					The first character abbreviates a type. **Due to browser bugs (1) an html grid field may revert to xtextarea and (2) a numeric 
 					form field may revert to text.**
 
@@ -724,7 +724,7 @@ append site_body
 					+	cores = number of worker threads (#{cores})  
 					+	lock	= session lock (#{json(options)})
 					
-					Several list minipulators are also available:
+					Several list manipulators are also available:
 					
 					+	get(list, {key:where,...}, {key:rename,...}, {key:{#find:replace,...},...}, {key:{##find:replace,...},...}  )
 					+	show(list)
