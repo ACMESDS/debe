@@ -99,7 +99,7 @@ append site_body
 			#fit.Routes
 				:markdown
 					Both **database** and **emulated datasets** are reached	at the following end-points:
-					
+
 						GET	/DATASET.TYPE		Return data from DATASET
 						PUT	/DATASET.TYPE		Update DATASET with body parameters
 						POST	/DATASET.TYPE	Insert body parameters into DATASET
@@ -256,7 +256,8 @@ append site_body
 					be accssed directly from the CRUDE Routes (with Parameters noted herein).  *Statefull engines*
 					are executed from a [workflow](/nodeflow.view) and are defined following the [engine skinning guide](/skinguide.view).
 					Please note that **#{nick}** is not intended to be an interactive development environment; as such,
-					engine code should be throughly debugged before [inserting code](/engines.db) into **#{nick}**.
+					engine code should be throughly debugged before [inserting code](/engines.view) into **#{nick}**.
+					
 					Engines are accessed on the following routes:
  
 						GET /ENGINE.TYPE 	Compile and step stateless ENGINE
@@ -266,10 +267,8 @@ append site_body
 
 			#fit.Parameters
 				:markdown
-					Engine parameters are held in a context that is directly
-					assessible in both stateful or stateless (memoryless) 
-					workflows.  An engine's CRUD interface supports stateful
-					flows via step/POST, init/PUT, and free/DELETE endpoints.
+					Engine parameters are held in a context that is directly assessible in both stateful or stateless (memoryless) 
+					workflows.  An engine's CRUD interface supports stateful flows via step/POST, init/PUT, and free/DELETE endpoints.
 					Stateless flows are supported by its read/GET endpoint.
 					
 					During exectution, an engine's explict context:
@@ -287,16 +286,12 @@ append site_body
 						sql: connector, 
 						lib1: module, lib2: module, ... 
 						
-					each time the engine is stepped.  Whereas stateless 
-					engines (being memoryless) are initialized at each 
-					step, stateful engines are initializedonly at the 
-					first workflow step.  
+					each time the engine is stepped.  Whereas stateless engines (being memoryless) are initialized at each 
+					step, stateful engines are initializedonly at the first workflow step.  
 					
-					When an engine is initialized, its context defines its i/o 
-					ports by nameX, its default i/o event tau tokens, and any
-					urlX parameters.  The context entry/exit is used to 
-					define/store context variables varX from/into the 
-					underlying sql database using their select/update statements.
+					When an engine is initialized, its context defines its i/o ports by nameX, its default i/o event tau tokens, 
+					and any	urlX parameters.  The context entry/exit is used to define/store context variables varX from/into 
+					the underlying sql database using their select/update statements.
 					
 					Each event **tau** typically contains the following:
 
@@ -309,9 +304,8 @@ append site_body
 						status = 0	# Status code
 						value = 0	# Flow calculation
 
-					As an engine is stepped, it may freely revise its context and
-					utilize the auto-imported sql connector (or SQL0, SQL1 python
-					cursors) and library libX modules (DSP, LWIP, CRYPTO, ...).
+					As an engine is stepped, it may freely revise its context and utilize the auto-imported sql 
+					connector (or SQL0, SQL1 python	cursors) and library libX modules (DSP, LWIP, CRYPTO, ...).
 					
 			#folder.Examples
 				#fit.URL
@@ -334,8 +328,7 @@ append site_body
 									return Math.cos(req.arg*Math.PI/180); 
 									} }
 								
-						would reroute "/testeng.xml?id=abc123&arg=45" to 
-						"http://www.someservice.com?service=wfs&layer=abc123xxx&arg=0.70710",
+						would reroute "/testeng.xml?id=abc123&arg=45" to "http://www.someservice.com?service=wfs&layer=abc123xxx&arg=0.70710",
 						then return someservice's response in xml format.
 
 				#fit.R
@@ -345,7 +338,7 @@ append site_body
 				#fit.Matlab
 					:markdown
 						#Stateless Example1
-						[This](/engines.view?Engine=mat&Name=matdemo1) .mat-engine:
+						[This](/engines.view?engine=mat&name=matdemo1) .mat-engine:
 
 							Code:
 								Z = [1,2;3,4];
@@ -361,15 +354,15 @@ append site_body
 							
 						illustrates how its context variables **A** and **B** are imported with the sql
 						**entry** hash.  The sql ?-tokens in the **entry** hash evaluate with the 
-						engine query, for example, [? = {Name:test}](/matdemo1.db?Name=test).
-						On [executing](/matdemo1.db?Name=test) this engine places  
+						engine query, for example, [? = {Name:test}](/matdemo1.db?name=test).
+						On [executing](/matdemo1.db?name=test) this engine places  
 						variables **X**, **Y**, and **Z** into its context.  When an engine terminates,
 						it it free to store any context variables into the sql store with its sql
 						**exit** hash.
 						
 						#Stateless Example2
 						
-						[Executing](/matdemo2.db?Name=test) [this](/engines.view?Engine=mat&Name=matdemo2) engine
+						[Executing](/matdemo2.db?name=test) [this](/engines.view?engine=mat&name=matdemo2) engine
 
 							Code:
 								Z = [1,2;3,4];
@@ -435,8 +428,8 @@ append site_body
 				#fit.Virtual
 					:markdown
 						Virtual-dataset engines are JS-engines that can be accessed and customized
-						ny right-clicking its corresponding action button from within
-						a view.  Virtual-dataset engines follow this pattern:
+						ny right-clicking its corresponding action button from within a view.  Virtual-dataset
+						engines follow this pattern:
 						
 							Code:
 								function (req, res) {   		// request-callback
@@ -458,7 +451,7 @@ append site_body
 						
 				#fit.SQL
 					:markdown
-						[This](/engines.view?Engine=SQL&Name=sqldemo) .sql engine:
+						This [sql engine](/engines.view?engine=sql&name=sqldemo):
 						
 							Code:
 								SQL.select = function (sql,recs,cb) {
@@ -476,7 +469,7 @@ append site_body
 							Context:
 								{}
 
-						is a CRUD-select [simply selects)(/sqldemo.db) all records from the **intake** 
+						is a CRUD-select [simply selects)(/sqldemo.sql) all records from the **intake** 
 						dataset whose **TRL** is at 2, and adds a **Cat** field to each record.  Note 
 						again that all i/o (here console.log) is sent to the **service** console.  Note 
 						too that when this engine is executed (read/GET) for the first time, the engine is 
@@ -493,8 +486,8 @@ append site_body
 					:markdown
 						Reader engines automatically index a variety of documents, graphics, presentation, 
 						and spreadsheet files when uploaded into **#{nick}**.  Ingested text is checked for
-						readibility, indexed to the best
-						using [NLP training rules](/admins.view), then reflected into the [file stores](/files.view).
+						readibility, indexed to the best using [NLP training rules](/admins.view), then reflected
+						into the [file stores](/files.view).
 
 				#fit.Model
 					:markdown
@@ -504,13 +497,12 @@ append site_body
 					
 				#fit.OpenCV
 					:markdown
-						OpenCV [engines](/engines.view) X=haar,res1,res2,... are defined by an X.h and an X.cpp under
-						TAUIF/machines/opensv/src.  Unlike other engines, OpenCV (and all C) engines
-						must be bound to nodejs using the TAUIF/gentau.sh after compiling them with
-						TAUIF/opencv.sh (details [here](/api.view?goto=Startup and Maintenance)).
-						
-						The [haar](/engined.db) example ([tested here](/haar.db)) is defined by a
-						haar.h and haar.cpp, these following this template pattern:
+						OpenCV engines X=haar,res1,res2,... are defined by an X.h and an X.cpp (under
+						#{title}'s engine/engines/opencv development folder).  Unlike other engines, OpenCV (C, C++, etc) engines
+						must be bound to nodejs using its *node-gyp rebuild* binder as provided by #{totem} *maint.sh bind*.
+
+						This [haar engine](/engines.view?engine=cv&name=haar) can be [tested here](/haar.cv), and 
+						follows the following pattern for its haar.h and its haar.cpp:
 						
 							Code:
 								class PORT { 								 	// OPENCV port
@@ -551,7 +543,7 @@ append site_body
 					:markdown
 						## Stateless Example
 						
-						In this [pydemo1 engine](/engines.db?Engine=py&Name=pydemo1) .py engine:
+						In this [python engine](/engines.view?engine=py&name=pydemo1):
 
 							Code:
 								print "welcome to python"
@@ -568,17 +560,17 @@ append site_body
 							}
 
 						we display **Htest** sql data at the service console, then return 
-						a **tau** JSON data to the client.  This **tau** could, for example, be 
-						brought to 
-						a [#grid(path="/pydemo1.db",cols="x,y") view](/skinguide.view).  As well as the 
-						standard import-export context support (not employed here), Python engines are 
+						a **tau** JSON data to the client.  Engine results (returned **tau**) can be: accessed from 
+						a [#grid(path="/pydemo1.db",cols="x,y") skin](/skinguide.view), viewed
+						directly [/pydemo1.view](/pydemo1.view), or simply dumped [/pydemo1.py](/pydemo1.py).
+						As well as the 	standard import-export context support (not employed here), Python engines are 
 						provided two sql cursors -- **SQL0** and **SQL1** for read and write -- 
 						as [demonstrated here](/pydemo1.db).
 
 						## Stateful Example
 
 						Stateful engines are used to maximize data stationarity in workflows.  This
-						[pydemo2 engine](/engines.db?Engine=py&Name=pydemo2) example:
+						[pydemo2 engine](/engines.db?engine=py&name=pydemo2) example:
 
 							Code:
 								print "executing on port " + port
@@ -608,10 +600,10 @@ append site_body
 					:markdown
 						## Stateless Example
 						
-						Consider [this](/engines.view?Engine=js&Name=jsdemo1) JS engine:
+						Consider this [js engine](/engines.view?engine=js&name=jsdemo1):
 							
 							Code:
-								CON.log("M = "+M+" Name="+query.Name);
+								CON.log("M = "+M+" name="+query.Name);
 								CON.log("A="+A.length+" by "+A[0].length);
 								CON.log("B="+B.length+" by "+B[0].length);
 								tau[0].u = [M,M+1,M+2];
@@ -628,10 +620,10 @@ append site_body
 								}
 							}
 							
-						In this engine, the [json returned](/jsdemo1.db?Name=test) by tau[0].u can, 
+						In this example, the [data returned](/jsdemo1.js?name=test) by **tau** can, 
 						for example, be fed to a [dynamic view](/jsdemo1.view).
 						
-						Here, on entry to the engine, its context **A** and **B** variables are primed by the entry queries.  On
+						On entry to this engine, its context **A** and **B** variables are primed by the entry queries.  On
 						exit, its context **B** variable is exported by the exit query.  Engines (both stateful  and stateless) are 
 						always free to revise their context as needed.
 						
@@ -642,11 +634,11 @@ append site_body
 						minipilate jobs in the FLEX queues.
 						
 						Because this engine did not define functions -- functions are associated
-						with workflow engine ports -- this stateless engine is [only accessible at an endpoint](/jsdemo1.view?Name=test).
+						with workflow engine ports -- this stateless engine is [only accessible at an endpoint](/jsdemo1.view?name=test).
 						
 						## Stateless Example
 
-						This [jsdemo2 engine](/engines.view) example (test [here](/jsdemo2.db?Name=file1&Used=1)):
+						This [js engine](/engines.view?engine=js&name=jsdemo2):
 						
 							Code:
 								var Name = query.Name;
@@ -669,6 +661,7 @@ append site_body
 								}
 							}
 
+						can be [tested here](/jsdemo2.js?name=file1&Used=1), and
 						makes use of the mathjs MATH module to do a Matlab-like regression 
 						analysis.  Here, the **Name**, **Used** and **M** parameters -- acquired 
 						from the URL query -- are used to retrieve data from the **Htest** 
@@ -691,7 +684,7 @@ append site_body
 
 						## Stateful Example
 
-						This [jsdemo3 engine](/engines.db) example (test [here](/jsdemo3.db)):
+						This [jsdemo3 engine](/engines.view) example:
 
 							Code:
 								x = 123;
@@ -702,16 +695,16 @@ append site_body
 								function fo(tau,parm) {
 								  return 0;
 								};
-								
+
 							Context: { 
 								"ports": {
 									"fi" : {"x":10,"y":20},
 									"fo":{"x":11,"y":21} 
 								}
 							}
-				
-						places the **x** and ports **fi**, **fo** in its context.  Subsequent requests 
-						at the step/POST endpoint with **port** = "fi" or "fo" will call the
+
+						places **x** and the ports **fi**, **fo** in its context, as [demonstrated here](/jsdemo3.js).
+						Subsequent requests at the step/POST endpoint with **port** = "fi" or "fo" will call the
 						function with the current **tau** workflow events and the **parm**
 						set to the corresponding "ports" hash.
 

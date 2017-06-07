@@ -93,7 +93,7 @@ useful, if you wish to learn more about its database agnosticator.
 			user: ENV.MYSQL_USER,
 			pass: ENV.MYSQL_PASS
 		},
-		"reader.": {
+		"worker.": {
 			wfs: function (req,res) {
 				res("here i go again");
 

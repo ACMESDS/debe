@@ -205,9 +205,6 @@ append layout_body
 		}
 	},
 	
-	worker: {		//< reserved for worker endpoints defined on start
-	},
-	
 	admitRule: null, 	//< admitRule all clients by default 	
 		/*{ "u.s. government": "required",
 		 * 	"us": "optional"
@@ -780,7 +777,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 	},
 		
-	"reader.": {	//< reader endpoint
+	"worker.": {	//< reader endpoint
 		help: sysHelp,
 		stop: sysStop,
 		//kill: sysKill,
@@ -790,17 +787,29 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		bit: sysBIT,
 		//start: sysStart,
 		//checkpt: sysCheckpt,
-		config: sysConfig,
-		
-		// Render a page using jade skinning engine
-		//jade: readJade,
-		view: readJade,
-		
-		// An exe TYPE will schedule (one-time or periodic) jobs matched by 
-		// table, engine or file.		
-		exe: runExe
+		config: sysConfig
 	},
 	
+	"reader.": {
+		// Render a page using jade skinning engine
+		view: {
+			select: readJade
+		},
+		
+		// engines
+		js: ENGINE,
+		py: ENGINE,
+		cv: ENGINE,
+		sh: ENGINE,
+		mat: ENGINE,
+		sql: ENGINE,
+		
+		// Schedule (one-time or periodic) jobs 	
+		exe: {
+			select: runExe
+		}
+	},
+
 	"emulator.": {  //< emulation endpoints
 	},
 	
@@ -1607,8 +1616,8 @@ append base_body
 								function (err,fields) {
 									
 									if (err) // might be an engine
-										if (route = DEBE.worker[req.action])   // try engines CRUD
-											route(req, function (ack) { // try the engine
+										if (route = DEBE.reader[req.type])   // try engines CRUD
+											route[action](req, function (ack) { // try the engine
 												if (ack.constructor == Error) // noluck
 													res( ack );
 
@@ -1944,10 +1953,12 @@ function Initialize () {
 
 		Trace(`INITIALIZING SESSIONS`);
 
+		/*
 		Each( CRUDE, function (n,routes) { // Map engine CRUD to DEBE workers
 			DEBE.worker[n] = ENGINE[n];
 		});	
-
+		*/
+		
 		/*
 		The i18n simply provides an industry standard framework for translating native -> foreign
 		phrases (defined my pot->po files under XLATE folder).  These pot->po translations are 
