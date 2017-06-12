@@ -27,7 +27,8 @@ append site_body
 
 				and TYPE 
 				
-					db | xml | csv | txt | htm | view | tree | flat | delta | nav | kml | exe | encap | xdoc | xxls | xppt | xpps | ...
+					db | xml | csv | txt | htm | view | tree | flat | delta | nav | 
+					kml | exe | encap | xdoc | xxls | xppt | xpps | ...
 					
 				returns data in the requested format.
 
@@ -183,7 +184,7 @@ append site_body
 
 			#fit.Virtual.Datasets
 				#grid.DS.Parms(
-					path="/parms.db",page=page,dims=dims,crush,
+					path="/parms.db",crush,
 					head="Print,Help",
 					cols="ID.a,Parm,Label,Type,Special,By Inspect.c,By Analysis.c,By Demo.c")
 
@@ -193,7 +194,7 @@ append site_body
 						methods, and access priviledges.
 
 				#grid.Roles(
-					path="/roles.db",page=page,dims=dims,crush,
+					path="/roles.db",crush,
 					head="Print,Help",
 					cols="Table.T,Special.H,INSERT.T,UPDATE.T,DELETE.T,SELECT.T,IMPORT.T,EXPORT.T")
 
@@ -202,7 +203,7 @@ append site_body
 						select records from a specific dataset. 
 
 				#grid.Intrinsic(
-					path="/TABLES.db",page=page,dims=dims,crush,
+					path="/TABLES.db",crush,
 					head="Print,Help",
 					cols="Name.h")
 					
@@ -210,7 +211,7 @@ append site_body
 						The [TABLES](/TABLES.db) provides a list of **#{nick}** datasets.
 
 				#grid.Admin(
-					path="/ADMIN.db",page=page,dims=dims,crush,
+					path="/ADMIN.db",crush,
 					head="Print,Help",
 					cols="TABLE_NAME,TABLE_TYPE,ENGINE,VERSION,ROW_FORMAT,TABLE_ROWS,AVG_ROW_LENGTH,DATA_LENGTH,MAX_DATA_LENGTH,CREATE_TIME,UPDATE_TIME,TABLE_COMMENT")
 
@@ -218,7 +219,7 @@ append site_body
 						The [ADMIN](/ADMIN.db) provides detailed storage and technical information on all **#{nick}** datasets.
 						
 				#grid.Sys.Config(
-					path="/CONFIG.db",page=page,dims=dims,crush,
+					path="/CONFIG.db",crush,
 					head="Print,Help",
 					cols="classif,extnet,disk,cpu,cpuat,platform,totalmem,freemem,uptime,cpus,host,netif,temp")
 
@@ -253,8 +254,8 @@ append site_body
 			#fit.Routes
 				:markdown
 					Engines are language agnostic machines for processing/generating data.  *Stateless engines* can
-					be accssed directly from the CRUDE Routes (with Parameters noted herein).  *Statefull engines*
-					are executed from a [workflow](/nodeflow.view) and are defined following the [engine skinning guide](/skinguide.view).
+					be accssed directly from the CRUDE Routes given the Parameters defined herein.  *Stateful engines*
+					-- these are executed from a [workflow](/nodeflow.view) -- are defined following the [engine skinning guide](/skinguide.view).
 					Please note that **#{nick}** is not intended to be an interactive development environment; as such,
 					engine code should be throughly debugged before [inserting code](/engines.view) into **#{nick}**.
 					
@@ -264,36 +265,47 @@ append site_body
 						PUT /ENGINE.TYPE 	Compile stateful ENGINE
 						POST /ENGINE.TYPE	Step stateful ENGINE 
 						DELETE /ENGINE.TYPE	Free stateful ENGINE 
+						
+					and accept the Parameters defined herein.
 
 			#fit.Parameters
 				:markdown
 					Engine parameters are held in a context that is directly assessible in both stateful or stateless (memoryless) 
-					workflows.  An engine's CRUD interface supports stateful flows via step/POST, init/PUT, and free/DELETE endpoints.
-					Stateless flows are supported by its read/GET endpoint.
+					workflows.  An engine's CRUD interface (see Routes) supports stateful flows via step/POST, 
+					init/PUT, and free/DELETE endpoints; a stateless flow is supported by its read/GET endpoint.
 					
-					During exectution, an engine's explict context:
+					An engine's defined context:
 					
-						ports: {name1: {...}, name2: {...}, ... }, 
-						tau: [tau1, tau2, ... ],
-						f1: function () {}, f2: function() {}, ...
-						entry: {var1: "select", var2: "select", ... },
-						exit: {var1: "update", var2: "update, ... },
-						var1: value, var2: value, ...
+						ports: { name1: {...}, ... }, 
+						tau: [ tau1, tau2, ... ],
+						f1: function () {}, 
+						f2: function() {}, ...
+						entry: {var1: "select ...", ... } || "select ..."
+						exit: {var1: "update ...", ... } || "update ...",
+						var1: value, 
+						var2: value, ...
 						
-					is extended by:
+					is extended with:
 					
-						query: {url1: parm, url2: parm, ...},  
+						query: {key: value,  ...},  
 						sql: connector, 
-						lib1: module, lib2: module, ... 
+						LIB1: module, 
+						LIB2: module, ... 
 						
-					each time the engine is stepped.  Whereas stateless engines (being memoryless) are initialized at each 
-					step, stateful engines are initializedonly at the first workflow step.  
+					each time it is stepped, where
+					+ LIBX are standard computational modules (DSP, LWIP, RAN, RAN.MLE, 
+					RAN.MVN, GRP, MATH, CRYPTO, ...),  
+					+ query contains key:value parameters from the url,  
+					+ sql provides a sql connector for js-engines (SQL0, SQL1 cursors for python-engines).
 					
-					When an engine is initialized, its context defines its i/o ports by nameX, its default i/o event tau tokens, 
-					and any	urlX parameters.  The context entry/exit is used to define/store context variables varX from/into 
-					the underlying sql database using their select/update statements.
+					Whereas stateless engines (being memoryless) are initialized at each step, stateful 
+					engines are initialized only when the workflow is initialized.  When initialized, an engine's context 
+					defines its i/o ports *nameX*, its default i/o event tokens *tau*, and its *url key:value* 
+					parameters.  An engine's context variables *varX* are loaded (and stored) 
+					from (to) its underlying sql database using *"select ..."* (an *"update ..."*) queries on
+					engine entry (and exit).
 					
-					Each event **tau** typically contains the following:
+					Each event *tau* typically contains the following:
 
 						job = "" 	# Fully qualified file path to jpg chip
 						work = 0 	# Anticipated/delivered data volume (dims bits etc)
@@ -304,9 +316,6 @@ append site_body
 						status = 0	# Status code
 						value = 0	# Flow calculation
 
-					As an engine is stepped, it may freely revise its context and utilize the auto-imported sql 
-					connector (or SQL0, SQL1 python	cursors) and library libX modules (DSP, LWIP, CRYPTO, ...).
-					
 			#folder.Examples
 				#fit.URL
 					:markdown
@@ -338,7 +347,7 @@ append site_body
 				#fit.Matlab
 					:markdown
 						#Stateless Example1
-						[This](/engines.view?engine=mat&name=matdemo1) .mat-engine:
+						This [mat-like engine](/engines.view?engine=mat&name=demo1):
 
 							Code:
 								Z = [1,2;3,4];
@@ -352,17 +361,17 @@ append site_body
 								}
 							}
 							
-						illustrates how its context variables **A** and **B** are imported with the sql
-						**entry** hash.  The sql ?-tokens in the **entry** hash evaluate with the 
-						engine query, for example, [? = {Name:test}](/matdemo1.db?name=test).
-						On [executing](/matdemo1.db?name=test) this engine places  
-						variables **X**, **Y**, and **Z** into its context.  When an engine terminates,
+						illustrates how its context variables *A* and *B* are imported with the sql
+						*entry* hash.  The sql ?-tokens in the *entry* hash evaluate with the 
+						engine query, for example, [? = {Name:test}](/demo1.db?name=test).
+						On [executing](/demo1.db?name=test) this engine places  
+						variables *X*, *Y*, and *Z* into its context.  When an engine terminates,
 						it it free to store any context variables into the sql store with its sql
-						**exit** hash.
+						*exit* hash.
 						
 						#Stateless Example2
 						
-						[Executing](/matdemo2.db?name=test) [this](/engines.view?engine=mat&name=matdemo2) engine
+						[Executing](/demo2.db?name=test) [this](/engines.view?engine=mat&name=demo2) engine
 
 							Code:
 								Z = [1,2;3,4];
@@ -409,7 +418,7 @@ append site_body
 						to directly interface with clients and other workflow engines. And whereas 
 						**#{nick}** is PKI driven, HYDRA is login driven.
 						
-						This [exdemo engine](/engines.db) example (test [here](/exdemo.db)):
+						This [demo engine](/engines.db) example (test [here](/demo.db)):
 						
 							Code:
 								ls
@@ -451,7 +460,7 @@ append site_body
 						
 				#fit.SQL
 					:markdown
-						This [sql engine](/engines.view?engine=sql&name=sqldemo):
+						This [sql engine](/engines.view?engine=sql&name=demo):
 						
 							Code:
 								SQL.select = function (sql,recs,cb) {
@@ -469,7 +478,7 @@ append site_body
 							Context:
 								{}
 
-						is a CRUD-select [simply selects)(/sqldemo.sql) all records from the **intake** 
+						is a CRUD-select [simply selects)(/demo.sql) all records from the **intake** 
 						dataset whose **TRL** is at 2, and adds a **Cat** field to each record.  Note 
 						again that all i/o (here console.log) is sent to the **service** console.  Note 
 						too that when this engine is executed (read/GET) for the first time, the engine is 
@@ -543,7 +552,7 @@ append site_body
 					:markdown
 						## Stateless Example
 						
-						In this [python engine](/engines.view?engine=py&name=pydemo1):
+						In this [python engine](/engines.view?engine=py&name=demo1):
 
 							Code:
 								print "welcome to python"
@@ -559,18 +568,18 @@ append site_body
 							Context: {
 							}
 
-						we display **Htest** sql data at the service console, then return 
-						a **tau** JSON data to the client.  Engine results (returned **tau**) can be: accessed from 
-						a [#grid(path="/pydemo1.db",cols="x,y") skin](/skinguide.view), viewed
-						directly [/pydemo1.view](/pydemo1.view), or simply dumped [/pydemo1.py](/pydemo1.py).
-						As well as the 	standard import-export context support (not employed here), Python engines are 
-						provided two sql cursors -- **SQL0** and **SQL1** for read and write -- 
-						as [demonstrated here](/pydemo1.db).
+						we display *Htest* sql data at the service console, then return a *tau* JSON data 
+						to the client.  Engine results (returned *tau*) can be: accessed from 
+						a [#grid(path="/demo1.db",cols="x,y") skin](/skinguide.view), viewed
+						directly [/demo1.view](/demo1.view), or simply dumped [/demo1.py](/demo1.py).
+						As well as the 	standard import-export context support (not employed here), Python 
+						engines are provided two sql cursors -- *SQL0* and *SQL1* for read and write -- 
+						as [demonstrated here](/demo1.db).
 
 						## Stateful Example
 
 						Stateful engines are used to maximize data stationarity in workflows.  This
-						[pydemo2 engine](/engines.db?engine=py&name=pydemo2) example:
+						[demo2 engine](/engines.db?engine=py&name=demo2) example:
 
 							Code:
 								print "executing on port " + port
@@ -590,17 +599,17 @@ append site_body
 								}
 							}
 
-						defines input/output ports **f1** and **f1** to be called during the workflow 
-						with the incoming **tau** event token and the assoicated **parm** hash taken 
-						from the defined **ports** hash.  Although this engine would be typically used
+						defines input/output ports *f1* / *f2* to be called during the workflow 
+						with the incoming *tau* event token and the assoicated *parm* hash taken 
+						from the defined *ports* hash.  Although this engine would be typically used
 						in [stateful flows](/nodeflow.view), it can also be used in a stateless flow
-						by passing **port** (as demonstrated [here](/pydemo2.db?port=f1)).
+						by passing *port* (as demonstrated [here](/demo2.py?port=f1)).
 
 				#fit.JS
 					:markdown
 						## Stateless Example
 						
-						Consider this [js engine](/engines.view?engine=js&name=jsdemo1):
+						Consider this [js engine](/engines.view?engine=js&name=demo1):
 							
 							Code:
 								CON.log("M = "+M+" name="+query.Name);
@@ -620,25 +629,25 @@ append site_body
 								}
 							}
 							
-						In this example, the [data returned](/jsdemo1.js?name=test) by **tau** can, 
-						for example, be fed to a [dynamic view](/jsdemo1.view).
+						In this example, the [data returned](/demo1.js?name=test) by *tau* can, 
+						for example, be fed to a [dynamic view](/demo1.view).
 						
-						On entry to this engine, its context **A** and **B** variables are primed by the entry queries.  On
-						exit, its context **B** variable is exported by the exit query.  Engines (both stateful  and stateless) are 
+						On entry to this engine, its context *A* and *B* variables are primed by the entry queries.  On
+						exit, its context *B* variable is exported by the exit query.  Engines (both stateful  and stateless) are 
 						always free to revise their context as needed.
 						
-						An engine's context is aways provided a **sql** connector
-						equipped with the **sql.query** and **sql.release** methods to directly access a database
-						(limited only by the client's profile group).  This **sql** connector also provides 
-						**insertJob**, **deleteJob**, **updateJob** and **selectJob** methods to
+						An engine's context is aways provided a *sql* connector
+						equipped with the *sql.query* and *sql.release* methods to directly access a database
+						(limited only by the client's profile group).  This *sql* connector also provides 
+						*insertJob*, *deleteJob*, *updateJob* and *selectJob* methods to
 						minipilate jobs in the FLEX queues.
 						
 						Because this engine did not define functions -- functions are associated
-						with workflow engine ports -- this stateless engine is [only accessible at an endpoint](/jsdemo1.view?name=test).
+						with workflow engine ports -- this stateless engine is [only accessible at an endpoint](/demo1.view?name=test).
 						
 						## Stateless Example
 
-						This [js engine](/engines.view?engine=js&name=jsdemo2):
+						This [js engine](/engines.view?engine=js&name=demo2):
 						
 							Code:
 								var Name = query.Name;
@@ -661,12 +670,11 @@ append site_body
 								}
 							}
 
-						can be [tested here](/jsdemo2.js?name=file1&Used=1), and
-						makes use of the mathjs MATH module to do a Matlab-like regression 
-						analysis.  Here, the **Name**, **Used** and **M** parameters -- acquired 
-						from the URL query -- are used to retrieve data from the **Htest** 
-						dataset.  This data is then used to setup a regression companion matrix **X** 
-						and measurement vector **y**.  Regression results **a** are then saved into 
+						can be [tested here](/demo2.js?name=file1&Used=1), and makes use of the mathjs 
+						MATH module to do a Matlab-like regression analysis.  Here, the **Name**, **Used** 
+						and **M** parameters -- acquired from the URL query -- are used to retrieve data 
+						from the **Htest** dataset.  This data is then used to setup a regression companion 
+						matrix **X** and measurement vector **y**.  Regression results **a** are then saved into 
 						a **b** vector (which, for example, may be saved with a Context.entry sql).
 						
 						Automatically include modules include:
@@ -684,7 +692,7 @@ append site_body
 
 						## Stateful Example
 
-						This [jsdemo3 engine](/engines.view) example:
+						This [demo3 engine](/engines.view) example:
 
 							Code:
 								x = 123;
@@ -703,10 +711,10 @@ append site_body
 								}
 							}
 
-						places **x** and the ports **fi**, **fo** in its context, as [demonstrated here](/jsdemo3.js).
+						places **x** and the ports **fi**, **fo** in its context, as [demonstrated here](/demo3.js).
 						Subsequent requests at the step/POST endpoint with **port** = "fi" or "fo" will call the
-						function with the current **tau** workflow events and the **parm**
-						set to the corresponding "ports" hash.
+						function with the current **tau** workflow events and the **parm** set to the 
+						corresponding "ports" hash.
 
 		#accordion.Jobs
 		
@@ -734,8 +742,8 @@ append site_body
 
 		#accordion.Agents
 			:markdown
-				Agents provide a means to outsource an engine, while retaining a compute/queue thread
-				on each agent.  An agent at "http://agent" must provide #{title} with the
+				Agents provide a means to outsource an engine, while retaining a thread
+				on each agent request.  A valid agent provided #{title} with the
 				following push/pull endpoints:
 
 					GET http://AGENT?push=totem.CLIENT.ENGINE.ID&args=JSON
@@ -752,8 +760,8 @@ append site_body
 					GET /ENGINE.exe?agent=AGENT&poll=N&QUERY
 					GET /ENGINE.exe?agent=AGENT&QUERY
 					
-				where the &poll request will start a job then poll the AGENT every N seconds for its results, 
-				whereas the no-&poll request will start a job then reply on the AGENT to claim the job.  In
+				where the &poll request will start a job, then poll the AGENT every N seconds for its results.
+				Consersely, a poll-less request will start a job, then reply on the AGENT to claim the job.  In
 				either case, QUERY defines the ENGINE args.
 				
 				#{title} reciprocates by providing its own AGENT at its **/agent** endpoint.
