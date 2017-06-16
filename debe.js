@@ -838,6 +838,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			chips: "./public/images",	//< chipped files
 			tips: "./public/images",	//< tipped files
 			shares: ".", 				//< cached file area
+			docs: ".", 					//< html documents
 			socketio: ".",				//< path to socket.io
 			clients: ".",				//< path to clients
 			//icons: ".",				//< path to icons
