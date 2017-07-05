@@ -360,6 +360,9 @@ append layout_body
 		},
 				
 		context: { // skinning contexts for each skin
+			briefs: {   // define DSVAR datasets available for the briefs skin
+				projs: "openv.milestones"
+			},
 			rtpsqd: {   // define DSVAR datasets available for the rtpsqd skin
 				apps:"openv.apps",
 				users: "openv.profiles",
