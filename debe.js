@@ -292,13 +292,19 @@ append layout_body
 				switch (recs.constructor) {
 					case Array:  // [ {head1:val}, head2:val}, ...]  create table from headers and values
 					
-						var rtn = "", head = true;
+						var rtn = "", head = true, heads = {};
+						
+						recs.each( function (n,rec) {
+							Each(rec, function (key,val) {
+								heads[key] = key;
+							});
+						});
 						
 						recs.each( function (n,rec) {
 							
 							if (head) {
 								var row = "";
-								Each(rec, function (key,val) {
+								Each(heads, function (key,val) {
 									row += key.tag("th");
 								});
 								rtn += row.tag("tr");
@@ -306,13 +312,13 @@ append layout_body
 							}
 							
 							var row = "", intro = "";
-							Each(rec, function (key,val) {
-								if (val)
+							Each(heads, function (key,val) {
+								if (val = rec[key])
 									row += (val.constructor == Array)
 										? table(val)
 										: (val+"").tag("td", intro ? {class:"intro"} : {});
 								else
-									row += (val+"").tag("td");
+									row += "".tag("td");
 								
 								intro = false;
 							});
