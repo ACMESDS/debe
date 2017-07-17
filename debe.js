@@ -76,8 +76,6 @@ var
 		gaussmix: FLEX.execute.gaussmix
 	},
 		
-	watch: "", //"public/uploads/", 
-		
 	"reqflags.traps." : {  //< trap ?_flag to reorder query/body parms
 		save: function (req) {
 			var cleanurl = req.url.replace(`_save=${req.flags.save}`,"");
@@ -1735,7 +1733,7 @@ function runExe(req,res) {
 			exe(req,res);
 		
 	else
-	if (exe = ENGINE.read) 				// execute engine
+	if (exe = ENGINE.select) 				// execute engine
 		sql.query("SELECT * FROM engines WHERE ? AND Enabled",{Name: table})
 		.on("result", function (eng) {
 
@@ -2114,8 +2112,6 @@ function Initialize () {
 
 			site: DEBE.site,						// Site parameters
 
-			watch: DEBE.watch,  	// file watcher
-			
 			/*
 			statefulViews : { 					// Jade views that require the stateful URL
 				'workflow': 1,
