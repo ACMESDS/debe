@@ -21,18 +21,6 @@
  * @requires engine
  */
 
-function Trace(msg,arg) {
-	
-	if (msg.constructor == String)
-		console.log("D>"+msg);
-	else
-		console.log("D>"+msg.sql);
-
-	if (arg) console.log(arg);
-
-	return msg;
-}
-
 var 									// globals
 	SQLTYPES = {
 		"varchar(32)": "t",
@@ -72,12 +60,12 @@ var										// shortcuts and globals
 var
 	DEBE = module.exports = TOTEM.extend({
 	
-	builtins: {
-		gaussmix: FLEX.execute.gaussmix
-	},
+	builtins: {  // builtin added to engines
+		// gaussmix: FLEX.execute.gaussmix
+	}, 
 		
-	"reqflags.traps." : {  //< trap ?_flag to reorder query/body parms
-		save: function (req) {
+	"reqflags.traps." : {  //< _flag=name can modify the reqeust
+		save: function (req) {  //< _save=name retains query in named engine
 			var cleanurl = req.url.replace(`_save=${req.flags.save}`,"");
 			Trace(`PUBLISH ${cleanurl} AT ${req.flags.save}`);
 			req.sql.query("INSERT INTO engines SET ?", {
@@ -88,7 +76,7 @@ var
 			});
 		},
 				
-		browse: function(req) {	// folder navigator
+		browse: function(req) {	//< _browse=name navigates named folder
 			var query = req.query, flags = req.flags;
 			query.NodeID = parseInt(query.init) ? "" : query.target || "";
 			flags.nav = [query.NodeID, query.cmd];
@@ -98,7 +86,7 @@ var
 			delete query.tree;
 		},
 		
-		view: function (req) {   // correlate a ?_view=name flag to requested dataset
+		view: function (req) {   //< ?_view=name correlates named view to request dataset
 			req.sql.query("INSERT INTO openv.viewers SET ?", {
 				Viewer: req.flags.view,
 				Dataset: req.table
@@ -106,8 +94,8 @@ var
 		}
 	},
 	
-	"reqflags.edits.": {  //< intercept ?_flag=keys
-		blog: function (keys,recs,req) {  	// blog on keys fields
+	"reqflags.edits.": {  //< _flag=key,key,... edits specified keys in requested dataset
+		blog: function (keys,recs,req) {  	//<  _blog=key,key,... renders keys
 			recs.each( function (n, rec) { 
 				keys.each( function (m, key) {
 					if (val = rec[key])
@@ -174,7 +162,7 @@ append layout_body
 		},
 		*/
 		
-		json: function json(keys,recs,req) {
+		json: function json(keys,recs,req) { //< _json=key,key,... jsonize keys
 			var id = 1;
 			
 			recs.each( function (n,rec) {
@@ -210,7 +198,7 @@ append layout_body
 
 	site: { 		//< initial site context
 
-		get: function(recs, where, index, sub1, sub2) {
+		get: function(recs, where, index, sub1, sub2) {  //< index dataset
 			var rtns = [];
 			
 			if (index && index.constructor == String) {
@@ -266,11 +254,11 @@ append layout_body
 			return rtns;
 		},
 		
-		json: function(recs) {  // dump dataset as json
+		json: function(recs) {  //< jsonize dataset
 			return JSON.stringify(recs);
 		},
 		
-		show: function(recs) {	// dump dataset as html table
+		show: function(recs) {	//< dump dataset as html table
 			function join(recs,sep) { 
 				switch (recs.constructor) {
 					case Array: 
@@ -363,11 +351,11 @@ append layout_body
 			return table( recs );
 		},
 				
-		context: { // skinning contexts for each skin
-			briefs: {   // define DSVAR datasets available for the briefs skin
+		context: { // defines DSVAR contexts when a skin is rendered
+			briefs: {
 				projs: "openv.milestones"
 			},
-			rtpsqd: {   // define DSVAR datasets available for the rtpsqd skin
+			rtpsqd: {
 				apps:"openv.apps",
 				users: "openv.profiles",
 				projs: "openv.milestones",
@@ -376,11 +364,12 @@ append layout_body
 			}
 		},
 
-		classif: { level: "(U)", purpose: "nada" },
+		/*classif: { level: "(U)", purpose: "nada" },
 		asp: {},
 		isp: {},
 		info: {},
-		filename: "./public/jade/ref.jade"	// jade reference path for includes, exports, appends					
+		*/
+		filename: "./public/jade/ref.jade"	// jade reference path for includes, exports, and appends
 	},
 	
 	"sender.": {		//< FILE.ATTR senders
@@ -836,6 +825,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	"paths.": {  //< paths to things
 		default: "tour/",
 		
+		filename: "./public/jade/ref.jade",	// jade reference path for includes, exports, appends
+		
 		mime: {
 			tour: ".",		 			//< enable totem touring 
 			//jobs: "./public/jobs",		//< path to tau simulator job files
@@ -873,9 +864,9 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		}
 	},
 	
-	Function: Initialize,  //< add to ENUM callback stack
+	Function: Initialize,  //< added to ENUM callback stack
 
-	// Records processing protos
+	// Protos
 	
 	String: [  // string prototypes
 		function indentify(tag) {
@@ -1799,56 +1790,6 @@ function genDoc (recs,req,res) {
 		docp.addTest(`
 view || edit
 
-this is a test go home
-
-0.1. SYSTEM SECURITY PLAN PREPARED BY
-
-0.2. REVISION HISTORY
-
-Date
-	
-
-Description
-	
-
-System Version
-	
-
-Authors
-	
-
-Complete
-
-Sun May 11 2014 00:00:00 GMT-0400 (EDT)
-	
-
-wash my face
-	
-
-0.33
-	
-
-pms: users: brian.james@guest.org,guest,guest@guest.org,selfsigned
-	
-
-0.5
-
-1. INFORMATION SYSTEM NAME/TITLE
-
-This System Security Plan (SSP) ... blah blah
-
-ID	Role	Site	Address	Name
-2	hawk	Totem	brian.d.james@comcast.net	null
-3	moderator	Totem	brian.d.james@comcast.net	null
-
-1.1 All my apps
-
-ID	Ver	Released	Title	Cores	Sockets	Host	Port	PKI	DB	Name	Nick	Byline	Moderators	POC	Challenge	classif	Allocated	Started	Booted	Enabled	Spawn	App	Peers	Sessions	Protect	Credits	Hawks	EmailHost	EmailUser	Ping	asp	isp	Proxy	Cost	Parms	PM	ISSO	ATP	IATT	DAO	DTO	SORN	SPID	Info	Riddles	Warning
-5	0.33	Sun May 11 2014 00:00:00 GMT-0400 (EDT)	Totem	0	0	localhost	8080	0	app1	app1	Totem			brian.d.james@comcast.net	null	{"level": "U", "purpose": "nada"}	0	null	null	1	0	app1	0	100	0	NGA/IIG	brian.d.james@comcast.net	smtp.comcast.net:587	brian.d.james:COMCASTsnivel1	1800000	{"org": "BOOZ", "addr": "nowhere", "name": "TBD", "title": "Ctr"}	{"org": "NGA-T", "addr": "nowhere", "name": "TBD", "title": "spend your money"}	0	5000		{"name":"TBD","title":"Program Mgr","addr":"nowheres"}	null	null	null	null	null	TBD	TBD	{"a": [{"ID": 0, "SORN": "TBD", "SPID": "TBD"}], "b": [{"ID": 1, "NISTid": "TBD", "NISTtype": "a1"}, {"ID": 2, "NISTid": "TBD", "NISTtype": "TBD"}, {"ID": 3, "NISTtype": "a2"}]}	0	Your ISP providing faulty browsers. bla bla
-7	0.33	Sun May 11 2014 00:00:00 GMT-0400 (EDT)	Totem	2	0	localhost	8080	1	app1	node0				brian.d.james@comcast.net	null	{"level": "U", "purpose": "nada"}	0	null	null	1	0	app1	1	100	0	NGA/IIG	brian.d.james@comcast.net	smtp.comcast.net:587	brian.d.james:COMCASTsnivel1	1800000	{"org": "BOOZ", "addr": "nowhere", "name": "TBD", "title": "Ctr"}	{"org": "NGA-T", "addr": "nowhere", "name": "TBD", "title": "spend your money"}	0	5000		{"name":"TBD","title":"Program Mgr","addr":"nowheres"}	null	null	null	null	null	TBD	TBD	{"a": [{"ID": 0, "SORN": "TBD", "SPID": "TBD"}], "b": [{"ID": 1, "NISTid": "TBD", "NISTtype": "TBD"}, {"ID": 2, "NISTid": "TBD", "NISTtype": "TBD"}]}	0	null
-8	0.33	Sun May 11 2014 00:00:00 GMT-0400 (EDT)	Totem	2	0	localhost	8080	0	app1	node3				brian.d.james@comcast.net	null	{"level": "U", "purpose": "nada"}	0	null	null	1	0	app1	1	100	0	NGA/IIG	brian.d.james@comcast.net	smtp.comcast.net:587	brian.d.james:COMCASTsnivel1	1800000	{"org": "BOOZ", "addr": "nowhere", "name": "TBD", "title": "Ctr"}	{"org": "NGA-T", "addr": "nowhere", "name": "TBD", "title": "spend your money"}	0	5000		{"name":"TBD","title":"Program Mgr","addr":"nowheres"}	null	null	null	null	null	TBD	TBD	{"a": [{"ID": 0, "SORN": "TBD", "SPID": "TBD"}], "b": [{"ID": 1, "NISTid": "TBD", "NISTtype": "TBD"}, {"ID": 2, "NISTid": "TBD", "NISTtype": "TBD"}]}	0	null
-9	0.33	Sun May 11 2014 00:00:00 GMT-0400 (EDT)	Totem	2	0	localhost	8080	0	app1	node2				brian.d.james@comcast.net	null	{"level": "U", "purpose": "nada"}	0	null	null	1	0	app1	1	100	0	NGA/IIG	brian.d.james@comcast.net	smtp.comcast.net:587	brian.d.james:COMCASTsnivel1	1800000	{"org": "BOOZ", "addr": "nowhere", "name": "TBD", "title": "Ctr"}	{"org": "NGA-T", "addr": "nowhere", "name": "TBD", "title": "spend your money"}	0	5000		{"name":"TBD","title":"Program Mgr","addr":"nowheres"}	null	null	null	null	null	TBD	TBD	{"a": [{"ID": 0, "SORN": "TBD", "SPID": "TBD"}], "b": [{"ID": 1, "NISTid": "TBD", "NISTtype": "TBD"}, {"ID": 2, "NISTid": "TBD", "NISTtype": "TBD"}]}	0	null
-
 1.2 All my users
 
 ID	Client	Likeus	Updated	Banned	Liked	Joined	SnapInterval	SnapCount	Charge	Credit	QoS	Trusted	Captcha	Login	Email	Challenge	isHawk	Requested	Approved	Group	uid	gid	User	Journal	Message	IDs	Admin	Repoll	Timeout	Roles	Strength
@@ -1856,26 +1797,6 @@ ID	Client	Likeus	Updated	Banned	Liked	Joined	SnapInterval	SnapCount	Charge	Credi
 37	selfsigned	null	null	null	null	Mon Sep 28 2015 20:51:50 GMT-0400 (EDT)	null	null	null	0	0	0	0	null	null	0	1	null	null	app1	null	null	me@guest.org	null	Hello there guest - riddle me this (riddle) and (riddle) and your (Birthdate) and (ids)	{"Login":"me","Password":"test","FavColor":"blue"}	Please contact joeschome to unlock your accout	0	30000		1
 41	guest@guest.org	1	null	null	0	null	0	0	null	null	2	0	0	null	guest	0	1	null	null	app1	null	null	guest@guest.org	null	null	{"Login":"me","Password":"test","FavColor":"blue"}	Please contact joeschome to unlock your accout	0	30000	R,PM	1
 42	guest	10	null		0	null	0	0	0	100	5	0	0	null	null	0	null	null	null		null	null	guest	null	Welcome guest - what is (riddle)?	null	null	0	0	R,X	1
-
-System Plan Identifier (SPID)
-	
-
-Information System Name
-	
-
-System Abbreviation
-	
-
-System Dump
-	
-
-System of Record Notice (SORN)
-
-TBD
-	
-
-Totem
-	
 
 Totem
 	
@@ -2170,5 +2091,9 @@ function Initialize () {
 
 	}); }); });
 } 
+
+function Trace(msg,arg) {
+	TOTEM.trace("D>",msg,arg);
+}
 
 // UNCLASSIFIED
