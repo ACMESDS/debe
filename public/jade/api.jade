@@ -27,10 +27,11 @@ append site_body
 
 				and TYPE 
 				
-					db | xml | csv | txt | htm | view | tree | flat | delta | nav | 
-					kml | exe | encap | xdoc | xxls | xppt | xpps | ...
+					db | xml | csv | txt | htm | tree | flat | delta | nav | kml | encap | 
+					xdoc | xxls | xppt | xpps |
+					js | py | cv | sh | mat | sql | view
 					
-				returns data in the requested format.
+				returns data in the requested format, office document, or engine processing.
 
 		#accordion.Views
 		
@@ -261,19 +262,19 @@ append site_body
 					
 					Engines are accessed on the following routes:
  
-						GET /ENGINE.TYPE 	Compile and step stateless ENGINE
-						PUT /ENGINE.TYPE 	Compile stateful ENGINE
-						POST /ENGINE.TYPE	Step stateful ENGINE 
-						DELETE /ENGINE.TYPE	Free stateful ENGINE 
+						GET /ENGINE.TYPE 	Compile and step (select) stateless ENGINE
+						PUT /ENGINE.TYPE 	Compile (update) stateful ENGINE
+						POST /ENGINE.TYPE	Step (insert) stateful ENGINE 
+						DELETE /ENGINE.TYPE	Free (delete) stateful ENGINE 
 						
 					and accept the Parameters defined herein.
 
 			#fit.Parameters
 				:markdown
 					Engine parameters are held in a context that is directly assessible in both stateful or stateless (memoryless) 
-					workflows.  An engine's CRUD interface (see Routes) supports stateful flows via step/POST, 
-					init/PUT, and free/DELETE endpoints; a stateless flow is supported by its read/GET endpoint.
+					workflows.  
 					
+					## Direct non-chipping mode
 					An engine's defined context:
 					
 						ports: { name1: {...}, ... }, 
@@ -316,6 +317,11 @@ append site_body
 						status = 0	# Status code
 						value = 0	# Flow calculation
 
+					## Data chipping mode
+					An engine is placed into a data chipping job queue when a job=JOBID parameter and AOI parameters (e.g. ring=[...], platform=id, etc) 
+					are provided.  **Agents** are free to claim any job in the job queue; otherwise jobs are processed by #{title} according to the client's 
+					current QoS profile.
+					
 			#folder.Examples
 				#fit.URL
 					:markdown
@@ -715,30 +721,6 @@ append site_body
 						Subsequent requests at the step/POST endpoint with **port** = "fi" or "fo" will call the
 						function with the current **tau** workflow events and the **parm** set to the 
 						corresponding "ports" hash.
-
-		#accordion.Jobs
-		
-			#fit.Routes
-				:markdown
-					Jobs are initiated at the following endpoint:
-
-						GET /JOB.exe
-
-					where JOB is  
-					+ a table to run the CRUDE execute logic,  
-					+ an engine to run the matched engine, or   
-					+ a file to run the assocated reader
-						
-			#fit.Parameters
-				:markdown
-					The following job parameters are understood:
-					+ qos = job QoS queue (0=run job immediately)  
-					+ priority = job priority  
-					+ on = reserved (event to cause job to run)
-					
-			#fit.Examples
-				:markdown
-					TBD
 
 		#accordion.Agents
 			:markdown

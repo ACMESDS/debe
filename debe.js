@@ -2066,18 +2066,30 @@ function Initialize () {
 
 		Trace(`INITIALIZING ENGINES`);
 
+		CHIPS.config({
+			fetch: {
+				wfs: DEBE.fetchers.curl,
+				wms: DEBE.fetchers.wget
+			},
+			thread: DEBE.thread
+		});
+				
 		ENGINE.config({
 			thread: DEBE.thread,
 			cores: DEBE.core,
 			builtins: DEBE.builtins,
 			chipper: function (req,det) {
 				
+				det.qos = req.profile.QoS;
+				
+console.log({chipper:{q:req.query,d:det}});
+				
 				var 
 					query = req.query,
 					job = {
 						class: "chipping",
 						client: req.client,
-						qos: req.profile.QoS,
+						qos: det.qos,
 						priority: 0,
 						//key: `${det.name}.${det.channel}`,
 						req: Copy(query,{}),
