@@ -60,9 +60,10 @@ Download the latest version with
 	
 Typically, you will want to redirect the following to your project:
 
-	ln -s ../myproject/test.js test.js 					# unit testing
-	ln -s ../myproject/maint.sh maint.sh 			# test startup and maint scripts
-	ln -s ../myproject/myCertsFolder certs		# contains name.pfx cert and truststore folder 
+	ln -s PROJECT/totem/test.js test.js 			# unit testing
+	ln -s PROJECT/totem/maint.sh maint.sh 		# test startup and maint scripts
+	ln -s PROJECT/totem/certs certs					# truststore folder for name.pfx certs 
+	ln -s PROJECT/JPGS captcha 	 				# folder for captcha digits
 
 ## Examples
 
@@ -78,11 +79,16 @@ useful, if you wish to learn more about its database agnosticator.
 			host: ENV.MYSQL_HOST,
 			user: ENV.MYSQL_USER,
 			pass: ENV.MYSQL_PASS
+		},
+		watch: {
+			"./uploads": function (file) {
+			}
 		}
+
 	}, function (err) {
-		Trace( err || "Yowzers - An encrypted DEBE service with a database" );
+		Trace( err || "Yowzers - An encrypted DEBE service with a database watching files in uploads area" );
 	});
-		
+
 ### D2 - D1 plus an endpoint
 
 	var DEBE = require("../debe").config({

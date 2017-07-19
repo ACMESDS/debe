@@ -51,7 +51,8 @@ var										// 3rd party modules
 var 									// totem modules		
 	ENGINE = require("engine"), 
 	FLEX = require("flex"),
-	TOTEM = require("totem");
+	TOTEM = require("totem"),
+	CHIPS = require("chipper");
 
 var										// shortcuts and globals
 	Copy = TOTEM.copy,
@@ -364,15 +365,10 @@ append layout_body
 			}
 		},
 
-		/*classif: { level: "(U)", purpose: "nada" },
-		asp: {},
-		isp: {},
-		info: {},
-		*/
 		filename: "./public/jade/ref.jade"	// jade reference path for includes, exports, and appends
 	},
 	
-	"sender.": {		//< FILE.ATTR senders
+	"sender.": {		//< file.attr senders
 		code: sendCode,
 		jade: sendCode,		
 		classif: sendAttr,
@@ -382,17 +378,16 @@ append layout_body
 		risk: sendAttr
 	},
 	
-	"converters." : { // NODE.TYPE converters respond on current req-res thread with converted recs
-		view: function (recs,req,res) {
+	"converters." : { // endpoints to convert dataset on req-res thread
+		view: function (recs,req,res) {  //< dataset.view returnsrendered skin
 			res( recs );
 		},
-		/*exe: function (recs,req,res) {
-			res( recs );
-		},*/
-		kml: function (recs,req,res) {
+		
+		kml: function (recs,req,res) {  //< dataset.kml converts to kml
 			res( TOKML({}) );
 		},
-		flat: function index(recs,req,res) {
+		
+		flat: function index(recs,req,res) { //< dataset.flat flattens records
 			recs.each( function (n,rec) {
 				var rtns = new Array();
 				for (var key in rec) rtns.push( rec[key] );
@@ -400,7 +395,8 @@ append layout_body
 			});
 			res( recs );
 		},
-		txt: function (recs,req,res) {
+		
+		txt: function (recs,req,res) { //< dataset.txt convert to text
 			var head = recs[0], cols = [], cr = String.fromCharCode(13), txt="", list = ",";
 
 			if (head) {
@@ -417,16 +413,17 @@ append layout_body
 			res( txt );
 		},
 
-		htm: function (recs,req,res) {
+		html: function (recs,req,res) { //< dataset.html converts to html
 			res( DEBE.site.show( recs ) );
 		},
 		
+		// MS office doc converters
 		xdoc: genDoc,
 		xxls: genDoc,
 		xpps: genDoc,
 		xppt: genDoc,
 		
-		tree: function (recs,req,res) {
+		tree: function (recs,req,res) { //< dataset.tree treeifies records sorted with _sort=keys
 			res( {
 				name: "root", 
 				weight: 1, 
@@ -434,7 +431,7 @@ append layout_body
 			} );
 		},
 		
-		delta: function (recs,req,res) {
+		delta: function (recs,req,res) { //< dataset.delta adds change records from last baseline
 			var sql = req.sql;
 			var ctx = {
 				src: {
@@ -454,11 +451,11 @@ append layout_body
 			});
 		},
 
-		encap: function encap(recs,req,res) {
+		encap: function encap(recs,req,res) {  //< dataset.encap to encap records
 			res({encap: recs});
 		},
 		
-		nav: function (recs,req,res) {  	// navigate pivoted records
+		nav: function (recs,req,res) {  //< dataset.nav to navigate records pivoted with _browse=keys
 
 /*console.log({
 	i: "nav",
@@ -773,7 +770,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 	},
 		
-	"worker.": {	//< reader endpoint
+	"worker.": {	//< worker endpoints
 		help: sysHelp,
 		stop: sysStop,
 		//kill: sysKill,
@@ -786,27 +783,21 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		config: sysConfig
 	},
 	
-	"reader.": {
-		// Render a page using jade skinning engine
-		view: {
+	"reader.": { //< reader endpoints
+		view: {  // dataset.view renders a page using jade skinning engine
 			select: readJade
 		},
 		
-		// engines
+		// dataset.type executes an engine
 		js: ENGINE,
 		py: ENGINE,
 		cv: ENGINE,
 		sh: ENGINE,
 		mat: ENGINE,
-		sql: ENGINE,
-		
-		// Schedule (one-time or periodic) jobs 	
-		exe: {
-			select: runExe
-		}
+		sql: ENGINE
 	},
 
-	"emulator.": {  //< emulation endpoints
+	"emulator.": {  //< virtual table emulation endpoints
 	},
 	
 	"errors.": {  //< error messages
@@ -1667,6 +1658,7 @@ Totem(req,res) endpoint to execute (import, sync, export, etc) a virtual databas
 @param {Object} req Totem request
 @param {Function} res Totem response
 */
+/*
 function runExe(req,res) {
 	
 	var 
@@ -1690,7 +1682,7 @@ function runExe(req,res) {
 		res(`Submitted ${file} to `+"job queues".tag("a",{href:"/jobs.view"}));  
 		
 		for (var n=0; n<chips; n++)
-			sql.insertJobs({
+			sql.insertJob({
 				class: cls,
 				client: client,
 				qos: qos,
@@ -1735,7 +1727,7 @@ function runExe(req,res) {
 			
 		});
 		
-	/*else
+	else
 	if (exe = READER[type]) 		// execute reader
 		DEBE.indexer( DEBE.paths.uploads, function (files) {
 			
@@ -1749,8 +1741,8 @@ function runExe(req,res) {
 			});
 			
 		});
-		*/
 }	
+*/
 
 function genDoc (recs,req,res) {
 	if (!OGEN) 
@@ -2077,7 +2069,29 @@ function Initialize () {
 		ENGINE.config({
 			thread: DEBE.thread,
 			cores: DEBE.core,
-			builtins: DEBE.builtins	
+			builtins: DEBE.builtins,
+			chipper: function (req,det) {
+				
+				var 
+					query = req.query,
+					job = {
+						class: "chipping",
+						client: req.client,
+						qos: req.profile.QoS,
+						priority: 0,
+						//key: `${det.name}.${det.channel}`,
+						req: Copy(query,{}),
+						name: `${det.name}.${det.channel}`
+					};
+
+				DEBE.thread( function (sql) {  // start sql thread
+					sql.insertJob( job, function (sql,job) {  // start chipping job
+						CHIPS.start(query, det, function (chip, dets, sql) { // start new chipper
+							Trace("CHIPS "+chip.ID+" DETS="+dets.length);
+						});
+					});
+				});
+			}
 		});
 
 		if (cb) cb();	
