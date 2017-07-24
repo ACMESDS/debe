@@ -100,7 +100,7 @@ append site_body
 		#accordion.Datasets
 			#fit.Routes
 				:markdown
-					Both **database** and **emulated datasets** are reached	at the following end-points:
+					Datasets -- real and virtual -- are reached	at the following end-points:
 
 						GET	/DATASET.TYPE		Return data from DATASET
 						PUT	/DATASET.TYPE		Update DATASET with body parameters
@@ -232,7 +232,7 @@ append site_body
 					and *execute*) interface.  This CRUDE interface governs both *Database Datasets* and *Virtual Datasets*.
 					For example, an *execute* on dataset X will typically import/export the data to/from dataset 
 					X as controlled by its associated query parameters, a list of which might be returned by supplying a 
-					&help parameter.  Below are several important **emulated datasets**:
+					&help parameter.  Below are several important **Virtual datasets**:
 
 					+	[return upload files](/uploads.FILES.db), [stores files](/stores.FILES.db), etc
 					+	[return jade views](/VIEWS.db)  
@@ -249,6 +249,20 @@ append site_body
 					+	[reflect git change logs](/issues.execute) to [tracked issues](/issues.db)  
 					+	[broadcast messages](/sockets.execute) to [connected users](/sockets.db)  
 					+	[import milestones](/milestone.execute) from internal spreadsheet
+		
+		#accordion.Jobs
+			#fit.Routes
+				:markdown
+					Jobs are scheduled with the data chipper using:
+					
+						GET /ENGINE.job 	Start job with specified parameters
+					
+			#fit.Parameters
+				:markdown
+					There are chipping, engine and data query parameters:  
+					
+						job =  name,overlap,pixels
+						det = parm,...
 		
 		#accordion.Engines
 		
@@ -274,7 +288,6 @@ append site_body
 					Engine parameters are held in a context that is directly assessible in both stateful or stateless (memoryless) 
 					workflows.  
 					
-					## Direct non-chipping mode
 					An engine's defined context:
 					
 						ports: { name1: {...}, ... }, 
@@ -317,11 +330,6 @@ append site_body
 						status = 0	# Status code
 						value = 0	# Flow calculation
 
-					## Data chipping mode
-					An engine is placed into a data chipping job queue when a job=JOBID parameter and AOI parameters (e.g. ring=[...], platform=id, etc) 
-					are provided.  **Agents** are free to claim any job in the job queue; otherwise jobs are processed by #{title} according to the client's 
-					current QoS profile.
-					
 			#folder.Examples
 				#fit.URL
 					:markdown

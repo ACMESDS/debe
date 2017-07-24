@@ -724,10 +724,12 @@ append site_body
 					+	cores = number of worker threads (#{cores})  
 					+	lock	= session lock (#{json(options)})
 					
-					Several list manipulators are also available:
+					Several manipulators are also available:
 					
 					+	get(list, {key:where,...}, {key:rename,...}, {key:{#find:replace,...},...}, {key:{##find:replace,...},...}  )
-					+	show(list)
+					+	grid(list)
 					+	json(list)
+					+ 	hover(title,SharesJpgName,SharesHtmlName)
+					+ 	tag(text,el,{key:value,...})
 
 			//- #exsite.Examples(dims="800,500")

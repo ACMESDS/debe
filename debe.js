@@ -259,7 +259,20 @@ append layout_body
 			return JSON.stringify(recs);
 		},
 		
-		show: function(recs) {	//< dump dataset as html table
+		tag: function (src,el,tags) {
+			return src.tag(el,tags);
+		},
+		
+		hover: function (ti,fn) {
+			if (fn.charAt(0) != "/") fn = "/shares/"+fn;
+			return ti.tag("p",{class:"sm"}) 
+				+ (
+					   "".tag("img",{src:fn+".jpg"})
+					+ "".tag("iframe",{src:fn+".html"}).tag("div",{class:"ctr"}).tag("div",{class:"mid"})
+				).tag("div",{class:"container"});
+		},
+		
+		grid: function(recs) {	//< dump dataset as html table
 			function join(recs,sep) { 
 				switch (recs.constructor) {
 					case Array: 
@@ -414,7 +427,7 @@ append layout_body
 		},
 
 		html: function (recs,req,res) { //< dataset.html converts to html
-			res( DEBE.site.show( recs ) );
+			res( DEBE.site.grid( recs ) );
 		},
 		
 		// MS office doc converters
@@ -2097,11 +2110,22 @@ console.log({chipper:{q:req.query,d:det}});
 					};
 
 				DEBE.thread( function (sql) {  // start sql thread
-					sql.insertJob( job, function (sql,job) {  // start chipping job
+					if (det.qos < 0) {
+						job.Notes = "".link("/fundme.view");
+						sql.insertJob( job, function (sql,job) {  // start chipping job
+						});
+					}
+					else
+					if (det.qos > 0)
+						sql.insertJob( job, function (sql,job) {  // start chipping job
+							CHIPS.start(query, det, function (chip, dets, sql) { // start new chipper
+								Trace("CHIPS "+chip.ID+" DETS="+dets.length);
+							});
+						});
+					else
 						CHIPS.start(query, det, function (chip, dets, sql) { // start new chipper
 							Trace("CHIPS "+chip.ID+" DETS="+dets.length);
 						});
-					});
 				});
 			}
 		});
