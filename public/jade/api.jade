@@ -253,17 +253,21 @@ append site_body
 		#accordion.Jobs
 			#fit.Routes
 				:markdown
-					Jobs are scheduled with the data chipper using:
+					Data chipping jobs are scheduled with:
 					
-						GET /ENGINE.job 	Start job with specified parameters
+						GET /ENGINE.job 	Route chips indexed by collect parameters through this ENGINE
 					
 			#fit.Parameters
 				:markdown
-					There are chipping, engine and data query parameters:  
-					
-						job =  name,overlap,pixels
-						det = parm,...
-		
+					In addition to chipping and engine parameters (key=default):
+
+						size = 50  	// feature size in [m]
+						pixels = 512 	// samples across a chip [pixels]
+						scale = 8  		// scale^2 is max number of features in a chip
+						step = 0.01 	// relative seach step size
+						range = 0.1 	// relative search size
+						detects = 8		// hits required to declare a detect
+
 		#accordion.Engines
 		
 			#fit.Routes

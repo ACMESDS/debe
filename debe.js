@@ -272,7 +272,7 @@ append layout_body
 				).tag("div",{class:"container"});
 		},
 		
-		grid: function(recs) {	//< dump dataset as html table
+		gridify: function(recs,noheader) {	//< dump dataset as html table
 			function join(recs,sep) { 
 				switch (recs.constructor) {
 					case Array: 
@@ -292,7 +292,7 @@ append layout_body
 				switch (recs.constructor) {
 					case Array:  // [ {head1:val}, head2:val}, ...]  create table from headers and values
 					
-						var rtn = "", head = true, heads = {};
+						var rtn = "", head = !noheader, heads = {};
 						
 						recs.each( function (n,rec) {
 							Each(rec, function (key,val) {
@@ -427,7 +427,7 @@ append layout_body
 		},
 
 		html: function (recs,req,res) { //< dataset.html converts to html
-			res( DEBE.site.grid( recs ) );
+			res( DEBE.site.gridify( recs ) );
 		},
 		
 		// MS office doc converters
@@ -799,6 +799,10 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	"reader.": { //< reader endpoints
 		view: {  // dataset.view renders a page using jade skinning engine
 			select: readJade
+		},
+		
+		job: {		// job interface
+			select: runJob
 		},
 		
 		// dataset.type executes an engine
@@ -1664,6 +1668,42 @@ append base_body
 @class support
 Debe initializer.
 */
+function runJob(req,res) {
+	var
+		sql = req.sql,
+		query = req.query,
+		job = {
+			itau: [ENGINE.tau()],  // input events to engine
+			otau: [],  // output events from engine
+			call: null, //ENGINE.opencv,  // engine
+			channel: "test", //query.job, // channel name
+			size: query.size || 50,  // feature size in [m]
+			pixels: query.pixels || 512, 	// samples across a chip [pixels]
+			scale: query.scale || 8,  // scale^2 is max number of features in a chip
+			step: query.step || 0.01, 	// relative seach step size
+			range: query.range || 0.1, // relative search size
+			detects: query.detects || 8,	// hits required to declare a detect
+			//job: query.job // job name
+			qos: req.profile.QoS,  // quality of service rate
+			priority: 0,
+			client: req.client,
+			class: "chipping",
+			name: req.table  // detector name
+		};
+					
+		for (var n in job) delete query[n];
+
+		console.log({
+			query: query,
+			job: job
+		});
+		CHIPS.start(query, job, function (chip,dets,sql) {
+			Trace({
+				cn: chip.name,
+				cd: dets
+			});
+		});
+}
 
 /**
 @method runExe
@@ -2081,8 +2121,9 @@ function Initialize () {
 
 		CHIPS.config({
 			fetch: {
-				wfs: DEBE.fetchers.curl,
-				wms: DEBE.fetchers.wget
+				wfs: DEBE.fetchers.http,
+				wms: DEBE.fetchers.wget,
+				save: DEBE.fetchers.plugin
 			},
 			thread: DEBE.thread
 		});
@@ -2090,44 +2131,7 @@ function Initialize () {
 		ENGINE.config({
 			thread: DEBE.thread,
 			cores: DEBE.core,
-			builtins: DEBE.builtins,
-			chipper: function (req,det) {
-				
-				det.qos = req.profile.QoS;
-				
-console.log({chipper:{q:req.query,d:det}});
-				
-				var 
-					query = req.query,
-					job = {
-						class: "chipping",
-						client: req.client,
-						qos: det.qos,
-						priority: 0,
-						//key: `${det.name}.${det.channel}`,
-						req: Copy(query,{}),
-						name: `${det.name}.${det.channel}`
-					};
-
-				DEBE.thread( function (sql) {  // start sql thread
-					if (det.qos < 0) {
-						job.Notes = "".link("/fundme.view");
-						sql.insertJob( job, function (sql,job) {  // start chipping job
-						});
-					}
-					else
-					if (det.qos > 0)
-						sql.insertJob( job, function (sql,job) {  // start chipping job
-							CHIPS.start(query, det, function (chip, dets, sql) { // start new chipper
-								Trace("CHIPS "+chip.ID+" DETS="+dets.length);
-							});
-						});
-					else
-						CHIPS.start(query, det, function (chip, dets, sql) { // start new chipper
-							Trace("CHIPS "+chip.ID+" DETS="+dets.length);
-						});
-				});
-			}
+			builtins: DEBE.builtins
 		});
 
 		if (cb) cb();	
