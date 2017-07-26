@@ -260,7 +260,7 @@ append layout_body
 		},
 		
 		tag: function (src,el,tags) {
-			return src.tag(el,tags);
+			return tags ? src.tag(el,tags) : src.tag("a",{href:el});;
 		},
 		
 		hover: function (ti,fn) {
@@ -784,15 +784,15 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 		
 	"worker.": {	//< worker endpoints
+		//kill: sysKill,
+		//start: sysStart,
+		//checkpt: sysCheckpt,
 		help: sysHelp,
 		stop: sysStop,
-		//kill: sysKill,
 		alert: sysAlert,
 		codes: sysCodes,
 		ping: sysPing,
 		bit: sysBIT,
-		//start: sysStart,
-		//checkpt: sysCheckpt,
 		config: sysConfig
 	},
 	
@@ -1673,22 +1673,22 @@ function runJob(req,res) {
 		sql = req.sql,
 		query = req.query,
 		job = {
-			itau: [ENGINE.tau()],  // input events to engine
-			otau: [],  // output events from engine
-			call: null, //ENGINE.opencv,  // engine
-			channel: "test", //query.job, // channel name
+			// engine parms
+			ievents: [ENGINE.tau()],  // input events to engine
+			oevents: [],  // output events from engine
+			engine: ENGINE[req.table], // engine interface
 			size: query.size || 50,  // feature size in [m]
 			pixels: query.pixels || 512, 	// samples across a chip [pixels]
 			scale: query.scale || 8,  // scale^2 is max number of features in a chip
 			step: query.step || 0.01, 	// relative seach step size
 			range: query.range || 0.1, // relative search size
 			detects: query.detects || 8,	// hits required to declare a detect
-			//job: query.job // job name
+			// queuing parms
 			qos: req.profile.QoS,  // quality of service rate
 			priority: 0,
 			client: req.client,
 			class: "chipping",
-			name: req.table  // detector name
+			name: req.table  // detector-channel name
 		};
 					
 		for (var n in job) delete query[n];
@@ -1697,6 +1697,7 @@ function runJob(req,res) {
 			query: query,
 			job: job
 		});
+		
 		CHIPS.start(query, job, function (chip,dets,sql) {
 			Trace({
 				cn: chip.name,
