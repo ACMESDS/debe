@@ -44,6 +44,8 @@ as described in its [skinguide](/skinguide.view) and its [api](/api.view).
 
 In addition to [TOTEM](https://git.geointapps.org/acmesds/totem) options, DEBE accepts:
 
+	billingCycle: 0, //< Interval [ms] to job billings
+	diagCycle: 0, //< Interval [ms] to run self diagnostics
 	isSpawned: false, //< Enabled when this is child server spawned by a master server
 	soapCRUD : {...},  //< action:route hash for XML-driven engines
 	blindTesting: false, //< Enable for double-blind testing (make FLEX susceptible to sql injection attacks)

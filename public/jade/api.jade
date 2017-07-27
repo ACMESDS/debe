@@ -255,7 +255,7 @@ append site_body
 				:markdown
 					Data chipping jobs are scheduled with:
 					
-						GET /ENGINE.job 	Route chips indexed by collect parameters through this ENGINE
+						GET /ENGINE.exe 	Route chips indexed by collect parameters through this ENGINE
 					
 			#fit.Parameters
 				:markdown
@@ -337,7 +337,7 @@ append site_body
 			#folder.Examples
 				#fit.URL
 					:markdown
-						Experimental URL engines provide a simple method to re-route request
+						URL engines (experimental) provide a simple method to re-route a request
 						based on URL parameters, ${req.PARM} and ${plugin.FN(req)} tags.  
 						These .url engines follow the pattern:
 						
@@ -695,7 +695,7 @@ append site_body
 						matrix **X** and measurement vector **y**.  Regression results **a** are then saved into 
 						a **b** vector (which, for example, may be saved with a Context.entry sql).
 						
-						Automatically include modules include:
+						Automatically added to the context are the following libraries:
 					 
 							CON console [http://mathjs.org/docs]
 							MATH Matlab-like scripting [http://mathjs.org/docs]
@@ -703,7 +703,10 @@ append site_body
 							CRYPTO cryptological [http://nodejs.org/api]
 							LWIP light-weight imaging processing [https://github.com/EyalAr/lwip]
 							SQL mysql connector [https://www.npmjs.com/package/mysql]
-							JSON standard json parsing [w3schools.com]
+							JSON standard json parsing [w3schools.com]							
+							LIE  Lie group symmetries learners (deep haar scattering)
+							INV Curve invariant learners
+							TXP Transport equation learners
 
 						Consult the Mat engine api for running Matlab-like engines directly in its 
 						native language.

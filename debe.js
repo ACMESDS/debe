@@ -798,11 +798,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	
 	"reader.": { //< reader endpoints
 		view: {  // dataset.view renders a page using jade skinning engine
-			select: readJade
+			select: renderJade
 		},
 		
-		job: {		// job interface
-			select: runJob
+		exe: {
+			select: runExe
 		},
 		
 		// dataset.type executes an engine
@@ -827,7 +827,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		badDataset: new Error("dataset does not exist"),
 		noCode: new Error("failed engine code lookup"),
 		unsupportedFeature: new Error("unsupported feature"),
-		noOffice: new Error("office docs not enabled")
+		noOffice: new Error("office docs not enabled"),
+		noExe: new Error("no execute interface")
 	},
 	
 	"paths.": {  //< paths to things
@@ -1010,6 +1011,12 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		delete: "",
 		post: "/service/algorithm/:proxy"		//< hydra endpoint
 	},  		//< reserved for soap interfaces
+		
+	cycles: {
+		billing: 0,  //< Interval [ms] to bill jobs in queue
+		diag: 0 	 //< Interval [ms] to run self diagnostics
+	},
+		
 	blindTesting : false,		//< Enable for double-blind testing (make FLEX susceptible to sql injection attacks)
 	statefulViews : { 			//< Jade views that require  the stateful URL
 		'workflow': 1,
@@ -1536,12 +1543,12 @@ Totem reader endpoints
 */
 
 /**
-@method readJade
+@method renderJade
 Totem(req,res) endpoint to render jade code requested by .table jade engine. 
 @param {Object} req Totem request
 @param {Function} res Totem response
 */
-function readJade(req,res) {
+function renderJade(req,res) {
 			
 	var 
 		sql = req.sql,
@@ -1668,135 +1675,52 @@ append base_body
 @class support
 Debe initializer.
 */
-function runJob(req,res) {
-	var
-		sql = req.sql,
-		query = req.query,
-		job = {
-			// engine parms
-			ievents: [ENGINE.tau()],  // input events to engine
-			oevents: [],  // output events from engine
-			engine: ENGINE[req.table], // engine interface
-			size: query.size || 50,  // feature size in [m]
-			pixels: query.pixels || 512, 	// samples across a chip [pixels]
-			scale: query.scale || 8,  // scale^2 is max number of features in a chip
-			step: query.step || 0.01, 	// relative seach step size
-			range: query.range || 0.1, // relative search size
-			detects: query.detects || 8,	// hits required to declare a detect
-			// queuing parms
-			qos: req.profile.QoS,  // quality of service rate
-			priority: 0,
-			client: req.client,
-			class: "chipping",
-			name: req.table  // detector-channel name
-		};
-					
-		for (var n in job) delete query[n];
-
-		console.log({
-			query: query,
-			job: job
-		});
-		
-		CHIPS.start(query, job, function (chip,dets,sql) {
-			Trace({
-				cn: chip.name,
-				cd: dets
-			});
-		});
-}
-
-/**
-@method runExe
-Totem(req,res) endpoint to execute (import, sync, export, etc) a virtual database table.
-@param {Object} req Totem request
-@param {Function} res Totem response
-*/
-/*
 function runExe(req,res) {
+	if (exe = FLEX.execute[req.table] )
+		exe(req,res);
 	
-	var 
-		sql = req.sql,
-		table = req.table,
-		type = req.type,
-		query = req.query,
-		client = req.client,
-		file = req.file,
-		qos = Math.min(parseInt(query.qos || "0"), req.profile.QoS),
-		priority = parseInt(query.priority || "0"),		
-		jobname = `${file}?` + JSON.stringify(query),
-		chips = query.chips;
-	
-	function debug(req,res) {
-		res("processed "+[req.chip.name,req.chip.num]);
-	}
-	
-	function queueExe(cls,name,exe) {
-		
-		res(`Submitted ${file} to `+"job queues".tag("a",{href:"/jobs.view"}));  
-		
-		for (var n=0; n<chips; n++)
-			sql.insertJob({
-				class: cls,
-				client: client,
-				qos: qos,
-				priority: priority,
-				chip: {name:"chip"+n, num:n},
-				name: name
-			}, function (sql,job) {
-				
-				job.sql = sql;
-				exe(job, function (ack) {
-					console.log(ack);
+	else  {
+		var
+			sql = req.sql,
+			query = req.query,
+			job = {
+				// engine parms
+				ievents: [ENGINE.tau()],  // input events to engine
+				oevents: [],  // output events from engine
+				engine: ENGINE[req.table], // engine interface
+				size: query.size || 50,  // feature size in [m]
+				pixels: query.pixels || 512, 	// samples across a chip [pixels]
+				scale: query.scale || 8,  // scale^2 is max number of features in a chip
+				step: query.step || 0.01, 	// relative seach step size
+				range: query.range || 0.1, // relative search size
+				detects: query.detects || 8,	// hits required to declare a detect
+				limit: query.limit || 1e99, 	// limit chips
+				// queuing parms
+				qos: req.profile.QoS,  // quality of service rate
+				priority: 0,
+				client: req.client,
+				class: "chipping",
+				credit: req.profile.Credit,
+				name: req.table  // detector-channel name
+			};
+
+			res("Job submitted");
+
+			for (var n in job) delete query[n];
+
+			console.log({
+				query: query,
+				job: job
+			});
+
+			CHIPS.start(query, job, function (chip,dets,sql) {
+				Trace({
+					cn: chip.name,
+					cd: dets
 				});
-				
 			});
 	}
-
-	if (exe = (false?debug:false))  	// execute debugging mode
-		if (chips) {  		// fragmented job placed in job queue
-			qos = 8;  		// 4 sec delivery
-			priority = 0;
-			queueExe("debug", jobname, exe);
-		}
-		else 				// bulk job executed now
-			exe(req,res);
-		
-	else
-	if (exe = FLEX.execute[table]) 		// execute flex virtual table
-		if (chips)
-			queueExe("flex", jobname, exe);
-		else
-			exe(req,res);
-		
-	else
-	if (exe = ENGINE.select) 				// execute engine
-		sql.query("SELECT * FROM engines WHERE ? AND Enabled",{Name: table})
-		.on("result", function (eng) {
-
-			if (chips)
-				queueExe("engine", jobname, exe);
-			else
-				exe(req,res);
-			
-		});
-		
-	else
-	if (exe = READER[type]) 		// execute reader
-		DEBE.indexer( DEBE.paths.uploads, function (files) {
-			
-			files.each(function (n,file) {
-
-				if (chips)
-					queueExe("reader", jobname, exe);
-				else
-					exe(req,res);
-
-			});
-			
-		});
-}	
-*/
+}
 
 function genDoc (recs,req,res) {
 	if (!OGEN) 
@@ -2077,6 +2001,9 @@ function Initialize () {
 				AOIREAD: "http://omar.ilabs.ic.gov:80/tbd"
 			},
 
+			billingCycle: DEBE.cycles.billing, 		// job billing cycle [ms]
+			diagCycle: DEBE.cycles.diag,			// Check period [ms]
+			
 			site: DEBE.site,						// Site parameters
 
 			/*
@@ -2101,21 +2028,13 @@ function Initialize () {
 				SOURCE: "tbd"
 			},
 
+			/*
 			likeus : {
 				BILLING : 1,				// Billing cycle [days]
 				PING : 0.5	 				// Check period [days]
 			},
-
-			pulse : {
-				LIMITS: {
-					Pigs : 2,
-					Jobs : 5
-				},
-				STATUS: "", 
-				COUNTS: {State:""},
-				PING: 0						// Check period [minutes]
-			}
-
+			*/
+			
 		});
 
 		Trace(`INITIALIZING ENGINES`);
