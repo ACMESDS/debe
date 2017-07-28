@@ -373,7 +373,7 @@ append layout_body
 				apps:"openv.apps",
 				users: "openv.profiles",
 				projs: "openv.milestones",
-				QAs: "app1.QAs"
+				QAs: "app.QAs"
 				//stats:{table:"openv.profiles",group:"client",index:"client,event"}
 			}
 		},
@@ -797,23 +797,12 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 	
 	"reader.": { //< reader endpoints
-		view: {  // dataset.view renders a page using jade skinning engine
-			select: renderJade
-		},
-		
-		exe: {
-			select: runExe
-		},
-		
-		// dataset.type executes an engine
-		js: ENGINE,
-		py: ENGINE,
-		cv: ENGINE,
-		sh: ENGINE,
-		mat: ENGINE,
-		sql: ENGINE
+		view: renderJade,
+		exe: runExe
 	},
 
+	runner: ENGINE,
+		
 	"emulator.": {  //< virtual table emulation endpoints
 	},
 	
@@ -1630,16 +1619,16 @@ append base_body
 								function (err,fields) {
 									
 									if (err) // might be an engine
-										if (route = DEBE.reader[req.type])   // try engines CRUD
-											route[action](req, function (ack) { // try the engine
+										if ( route = DEBE.runner )
+											route[req.action](req, function (ack) { // try the engine
 												if (ack.constructor == Error) // noluck
 													res( ack );
 
 												else 
 													skinDynamic( req, res, ack[0] || {} );
 											});	
-										
-										else  // give up
+											
+										else
 											res( DEBE.errors.badDataset );
 
 									else 
@@ -1676,33 +1665,20 @@ append base_body
 Debe initializer.
 */
 function runExe(req,res) {
-	if (exe = FLEX.execute[req.table] )
-		exe(req,res);
 	
-	else  {
+	function runJob (query) {
 		var
-			sql = req.sql,
-			query = req.query,
-			job = {
-				// engine parms
+			job = { // default missing query parms
 				ievents: [ENGINE.tau()],  // input events to engine
 				oevents: [],  // output events from engine
-				engine: ENGINE[req.table], // engine interface
+				engine: ENGINE[query.engine], 
 				size: query.size || 50,  // feature size in [m]
 				pixels: query.pixels || 512, 	// samples across a chip [pixels]
 				scale: query.scale || 8,  // scale^2 is max number of features in a chip
 				step: query.step || 0.01, 	// relative seach step size
 				range: query.range || 0.1, // relative search size
 				detects: query.detects || 8,	// hits required to declare a detect
-				limit: query.limit || 1e99, 	// limit chips
-				test: query.test || "test", // name of test dataset for results
-				// job parms
-				qos: req.profile.QoS, 
-				priority: 0,
-				client: req.client,
-				class: "chipping",
-				credit: req.profile.Credit,
-				name: req.table  
+				limit: query.limit || 1e99 	// limit chips
 			};
 
 			res("Job submitted");
@@ -1716,13 +1692,47 @@ function runExe(req,res) {
 
 			CHIPS.start(query, job, function (chip,dets,sql) {
 				
-				Trace({
-					cn: chip.name,
-					cd: dets
-				});
+				Trace(chip.name);
+				
+				if (dets)
+					sql.query(
+						"REPLACE INTO app.results SET ?", {
+						Chan: chip.imageID,
+						Engine: query.engine,
+						Result: JSON.stringify(dets)
+					});
 
 			});
 	}
+	
+	var
+		sql = req.sql,
+		query = req.query, 
+		parms = { // job parms
+			engine: req.table,
+			qos: req.profile.QoS, 
+			priority: 0,
+			client: req.client,
+			class: "chipping",
+			credit: req.profile.Credit,
+			name: req.table 
+		};
+
+	if (exe = FLEX.execute[req.table] )
+		exe(req,res);
+	
+	else 
+	if (query.ID) 
+		sql.query("SELECT * FROM app.? WHERE least(?,1)", [req.table, query])
+		.on("result", function (job) {
+			delete job[ID];
+			parms.engine = job.engine;
+			runJob(Copy(parms,job));
+		});
+	
+	else
+		runJob(Copy(parms,query));
+	
 }
 
 function genDoc (recs,req,res) {
@@ -1766,9 +1776,9 @@ view || edit
 1.2 All my users
 
 ID	Client	Likeus	Updated	Banned	Liked	Joined	SnapInterval	SnapCount	Charge	Credit	QoS	Trusted	Captcha	Login	Email	Challenge	isHawk	Requested	Approved	Group	uid	gid	User	Journal	Message	IDs	Admin	Repoll	Timeout	Roles	Strength
-34	brian.james@guest.org	0	Mon May 04 2015 05:52:50 GMT-0400 (EDT)		1	Mon Sep 28 2015 20:51:50 GMT-0400 (EDT)	null	null	null	0	0	0	0	null	null	0	1	null	null	app1	null	null	brian.james@guest.org	null	null	{"Login":"me","Password":"test","FavColor":"blue"}	Please contact joeschome to unlock your accout	0	30000	PM,R,X	1
-37	selfsigned	null	null	null	null	Mon Sep 28 2015 20:51:50 GMT-0400 (EDT)	null	null	null	0	0	0	0	null	null	0	1	null	null	app1	null	null	me@guest.org	null	Hello there guest - riddle me this (riddle) and (riddle) and your (Birthdate) and (ids)	{"Login":"me","Password":"test","FavColor":"blue"}	Please contact joeschome to unlock your accout	0	30000		1
-41	guest@guest.org	1	null	null	0	null	0	0	null	null	2	0	0	null	guest	0	1	null	null	app1	null	null	guest@guest.org	null	null	{"Login":"me","Password":"test","FavColor":"blue"}	Please contact joeschome to unlock your accout	0	30000	R,PM	1
+34	brian.james@guest.org	0	Mon May 04 2015 05:52:50 GMT-0400 (EDT)		1	Mon Sep 28 2015 20:51:50 GMT-0400 (EDT)	null	null	null	0	0	0	0	null	null	0	1	null	null	app	null	null	brian.james@guest.org	null	null	{"Login":"me","Password":"test","FavColor":"blue"}	Please contact joeschome to unlock your accout	0	30000	PM,R,X	1
+37	selfsigned	null	null	null	null	Mon Sep 28 2015 20:51:50 GMT-0400 (EDT)	null	null	null	0	0	0	0	null	null	0	1	null	null	app	null	null	me@guest.org	null	Hello there guest - riddle me this (riddle) and (riddle) and your (Birthdate) and (ids)	{"Login":"me","Password":"test","FavColor":"blue"}	Please contact joeschome to unlock your accout	0	30000		1
+41	guest@guest.org	1	null	null	0	null	0	0	null	null	2	0	0	null	guest	0	1	null	null	app	null	null	guest@guest.org	null	null	{"Login":"me","Password":"test","FavColor":"blue"}	Please contact joeschome to unlock your accout	0	30000	R,PM	1
 42	guest	10	null		0	null	0	0	0	100	5	0	0	null	null	0	null	null	null		null	null	guest	null	Welcome guest - what is (riddle)?	null	null	0	0	R,X	1
 
 Totem

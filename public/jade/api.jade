@@ -12,26 +12,27 @@ append site_body
 		#accordion.Intro
 		
 			:markdown
-				Multiple data nodes can be synchronized on any route at the CRUD interface:
+				TOTEM provides SUDI endpoints to synchronize dataset NODES:
 
-					POST  /NODE $$ NODE $$  ...
-					GET  /NODE $$ NODE $$  ...
-					PUT  /NODE $$ NODE $$  ...
-					DELETE  /NODE $$ NODE $$  ...
+					(select) GET 	 /NODE $$ NODE ...
+					(update) PUT 	 /NODE $$ NODE ...
+					(insert) POST 	 /NODE $$ NODE ...
+					(delete) DELETE /NODE $$ NODE ...
 
-				where a data NODE can reference a
+				where a NODE:
 
-					DATASET.TYPE ? PARAMS 
-					ENGINE.TYPE ? PARAMS
-					FILE.TYPE ? PARAMS
+					DATASET.TYPE ? PARMS
+					ENGINE.TYPE ? PARMS
+					AREA/PATH.TYPE ? PARMS
+					FILE.TYPE ? PARMS
 
-				and TYPE 
+				addresses a database **dataset**, a compute **engine**, a static area/path **file**, or a parsable **file**.  The dataset TYPE:
+
+					db | xml | csv | txt | tab | view | tree | flat | delta | nav | kml | encap | html | view | exe
+
+				specified how the dataset is to be rendered, or which the file attribute is to be returned:
 				
-					db | xml | csv | txt | htm | tree | flat | delta | nav | kml | encap | 
-					xdoc | xxls | xppt | xpps |
-					js | py | cv | sh | mat | sql | view
-					
-				returns data in the requested format, office document, or engine processing.
+					code | jade | classif | readability | client | size | risk
 
 		#accordion.Views
 		
@@ -228,8 +229,8 @@ append site_body
 						System configuration information is available at [CONFIG](/CONFIG.db).
 						
 				:markdown
-					The **#{nick}** supports *Virtual Datasets* through its CRUDE (*create*, *read*, *update*, *delete*, 
-					and *execute*) interface.  This CRUDE interface governs both *Database Datasets* and *Virtual Datasets*.
+					The **#{nick}** supports *Virtual Datasets* through its SUDIE (*create*, *read*, *update*, *delete*, 
+					and *execute*) interface.  This SUDIE interface governs both *Database Datasets* and *Virtual Datasets*.
 					For example, an *execute* on dataset X will typically import/export the data to/from dataset 
 					X as controlled by its associated query parameters, a list of which might be returned by supplying a 
 					&help parameter.  Below are several important **Virtual datasets**:
@@ -253,13 +254,12 @@ append site_body
 		#accordion.Jobs
 			#fit.Routes
 				:markdown
-					Data chipping jobs are scheduled with:
+					## To schedule data chipping jobs
 					
 						GET /ENGINE.exe 	Route chips indexed by collect parameters through this ENGINE
-					
-			#fit.Parameters
-				:markdown
-					In addition to chipping and engine parameters (key=default):
+						
+					Chipping jobs accept ESS-standard channel query parameters as well as the followng 
+					engine parameters (key=default):
 
 						size = 50  	// feature size in [m]
 						pixels = 512 	// samples across a chip [pixels]
@@ -267,13 +267,39 @@ append site_body
 						step = 0.01 	// relative seach step size
 						range = 0.1 	// relative search size
 						detects = 8		// hits required to declare a detect
+						limit = 1e99 	// restrict maximum number of schips to ingest
+						test = "test" 	// test case to store results
+						
+					## To outsource an ENGINE to an AGENT
+
+						GET /ENGINE.exe?agent=AGENT&poll=N&QUERY
+						GET /ENGINE.exe?agent=AGENT&QUERY
+
+					where the &poll request will start a job, then poll the AGENT every N seconds for its results.
+					Consersely, a poll-less request will start a job, then reply on the AGENT to claim the job.  In
+					either case, QUERY defines the ENGINE args.
+
+					#{title} reciprocates by providing its own AGENT at its **/agent** endpoint.
+
+					Agents provide a means to outsource an engine, while retaining a thread
+					on each agent request.  A valid agent provided #{title} with the
+					following push/pull endpoints:
+
+						GET http://AGENT?push=totem.CLIENT.ENGINE.ID&args=JSON
+						GET http://AGENT?pull=JOBID
+
+					where the push endpoint defines the job being sent to the AGENT (with the CLIENT 
+					requesting the agent, the ENGINE being outsourced, the ID of the test case,
+					and the JSON args to the ENGINE).  The AGENT eventually responds at 
+					the pull endpoint with a JOBID, or a "" if no job could be created.  #{title} will periodically 
+					poll the agent for the results of JOBID.
 
 		#accordion.Engines
 		
 			#fit.Routes
 				:markdown
 					Engines are language agnostic machines for processing/generating data.  *Stateless engines* can
-					be accssed directly from the CRUDE Routes given the Parameters defined herein.  *Stateful engines*
+					be accssed directly from the SUDIE Routes given the Parameters defined herein.  *Stateful engines*
 					-- these are executed from a [workflow](/nodeflow.view) -- are defined following the [engine skinning guide](/skinguide.view).
 					Please note that **#{nick}** is not intended to be an interactive development environment; as such,
 					engine code should be throughly debugged before [inserting code](/engines.view) into **#{nick}**.
@@ -417,14 +443,15 @@ append site_body
 						functions that hold/latch its input/output events, thus maximizing data 
 						stationarity in a workflow.  (More documention required).
 
-				#fit.Bash
+				#fit.sh
 					:markdown
-						The flexibility of Bash engines -- bash/dos scripts -- come with 
-						considerable overhead. These engines will suffer o(1) second of
-						overhead in loading/compiling a python/nodejs/etc module each time
-						the engine is called.  This translates into a 6 hour overhead in a 
-						typical chipping workflow containing 20K chips/footprint.  When, 
-						however, workflows can be focused to a small area-of-interest, Bash 
+						The flexibility of Bash sh-engines comes with 
+						considerable overhead and security implications; for these reasons, sh-engines
+						are typically disabled. 
+						
+						These engines suffer o(1) second of overhead in loading/compiling a python/nodejs/etc module each time
+						the engine is called.  This translates into a 6 hour overhead in a 	typical chipping workflow containing 
+						20K chips/footprint.  When, however, workflows can be focused to a small area-of-interest, Bash 
 						overhead can be tollerated.
 						
 						Bash engines are supported in both the HYDRA and **#{nick}** framework.  In
@@ -432,7 +459,7 @@ append site_body
 						soapUI (nonrestful XML) interface serviced by HYDRA's web service.  In
 						**#{nick}** framework, the engine's script is wrapped in a JSON (restful) interface
 						serviced by **#{nick}**'s web service.  **#{nick}**'s service supports workflow engines (to 
-						bypass the intrinsic overhead in calling Ex engines), as well as a mechanisims 
+						bypass the intrinsic overhead in calling sh-engines), as well as a mechanisims 
 						to directly interface with clients and other workflow engines. And whereas 
 						**#{nick}** is PKI driven, HYDRA is login driven.
 						
@@ -496,7 +523,7 @@ append site_body
 							Context:
 								{}
 
-						is a CRUD-select [simply selects)(/demo.sql) all records from the **intake** 
+						is a SUDI-select [simply selects)(/demo.sql) all records from the **intake** 
 						dataset whose **TRL** is at 2, and adds a **Cat** field to each record.  Note 
 						again that all i/o (here console.log) is sent to the **service** console.  Note 
 						too that when this engine is executed (read/GET) for the first time, the engine is 
@@ -736,32 +763,6 @@ append site_body
 						Subsequent requests at the step/POST endpoint with **port** = "fi" or "fo" will call the
 						function with the current **tau** workflow events and the **parm** set to the 
 						corresponding "ports" hash.
-
-		#accordion.Agents
-			:markdown
-				Agents provide a means to outsource an engine, while retaining a thread
-				on each agent request.  A valid agent provided #{title} with the
-				following push/pull endpoints:
-
-					GET http://AGENT?push=totem.CLIENT.ENGINE.ID&args=JSON
-					GET http://AGENT?pull=JOBID
-
-				where the push endpoint defines the job being sent to the AGENT (with the CLIENT 
-				requesting the agent, the ENGINE being outsourced, the ID of the test case,
-				and the JSON args to the ENGINE).  The AGENT eventually responds at 
-				the pull endpoint with a JOBID, or a "" if no job could be created.  #{title} will periodically 
-				poll the agent for the results of JOBID.
-
-				To outsource an ENGINE to an AGENT use:
-
-					GET /ENGINE.exe?agent=AGENT&poll=N&QUERY
-					GET /ENGINE.exe?agent=AGENT&QUERY
-					
-				where the &poll request will start a job, then poll the AGENT every N seconds for its results.
-				Consersely, a poll-less request will start a job, then reply on the AGENT to claim the job.  In
-				either case, QUERY defines the ENGINE args.
-				
-				#{title} reciprocates by providing its own AGENT at its **/agent** endpoint.
 
 		#accordion.System
 			:markdown

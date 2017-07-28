@@ -2,8 +2,8 @@
 @class debe [![Forked from SourceForge](https://sourceforge.net)]
 # DEBE
 
-DEBE integrates [TOTEM](https://git.geointapps.org/acmesds/totem), [FLEX](https://git.geointapps.org/acmesds/flex),
-[CHIPPER](https://git.geointapps.org/acmesds/chipper) and [ENGINE](https://git.geointapps.org/acmesds/engine) into a 
+DEBE integrates [TOTEM](https://github.com/acmesds/totem), [FLEX](https://github.com/acmesds/flex),
+[CHIPPER](https://github.com/acmesds/chipper) and [ENGINE](https://github.com/acmesds/engine) into a 
 web service for managing client interface, requirements, project metrics, geoint products and workflows.
 
 Simply require DEBE and start it:
@@ -12,7 +12,7 @@ Simply require DEBE and start it:
 		// server callback on startup
 	});
 	
-DEBE options use the [ENUM copy()](https://git.geointapps.org/acmesds/enum) conventions:
+DEBE options use the [ENUM copy()](https://github.com/acmesds/enum) conventions:
 
 	options =  {
 		key: value, 						// set 
@@ -24,12 +24,11 @@ DEBE options use the [ENUM copy()](https://git.geointapps.org/acmesds/enum) conv
 		:
 	}
 
-DEBE's extends its base [TOTEM](https://git.geointapps.org/acmesds/totem) to provide
-the following dataset TYPEs:
+DEBE's extends [TOTEM](https://github.com/acmesds/totem)'s DATASET.TYPE renders to include:
 
-	+ data converters: exe, kml, flat, txt, tab, tree, delta, encap, nav
+	+ data converters: kml, flat, txt, tab, tree, delta, encap, nav
 	+ site rendering: view
-	+ data chipping: job
+	+ data chipping: exe
 	+ file attributes: code, jade, classif, readability, client, size, risk
 	
 site context methods
@@ -42,7 +41,7 @@ and request flags
 
 as described in its [skinguide](/skinguide.view) and its [api](/api.view).
 
-In addition to [TOTEM](https://git.geointapps.org/acmesds/totem) options, DEBE accepts:
+In addition to [TOTEM](https://github.com/acmesds/totem) options, DEBE accepts:
 
 	billingCycle: 0, //< Interval [ms] to job billings
 	diagCycle: 0, //< Interval [ms] to run self diagnostics
@@ -57,7 +56,7 @@ but its default values suffice.
 
 Download the latest version with
 
-	git clone https://git.geointapps.org/acmesds/debe
+	git clone https://github.com/acmesds/debe
 	
 Typically, you will want to redirect the following to your project:
 
@@ -68,7 +67,7 @@ Typically, you will want to redirect the following to your project:
 
 ## Examples
 
-Below sample are from the totem/test.js unit tester.  You may  also find Totem's [DSVAR](https://git.geointapps.org/acmesds/dsvar) 
+Below sample are from the totem/test.js unit tester.  You may  also find Totem's [DSVAR](https://github.com/acmesds/dsvar) 
 useful, if you wish to learn more about its database agnosticator.
 
 ### D1 - Encypted with a database
