@@ -1695,13 +1695,14 @@ function runExe(req,res) {
 				range: query.range || 0.1, // relative search size
 				detects: query.detects || 8,	// hits required to declare a detect
 				limit: query.limit || 1e99, 	// limit chips
-				// queuing parms
-				qos: req.profile.QoS,  // quality of service rate
+				test: query.test || "test", // name of test dataset for results
+				// job parms
+				qos: req.profile.QoS, 
 				priority: 0,
 				client: req.client,
 				class: "chipping",
 				credit: req.profile.Credit,
-				name: req.table  // detector-channel name
+				name: req.table  
 			};
 
 			res("Job submitted");
@@ -1714,10 +1715,12 @@ function runExe(req,res) {
 			});
 
 			CHIPS.start(query, job, function (chip,dets,sql) {
+				
 				Trace({
 					cn: chip.name,
 					cd: dets
 				});
+
 			});
 	}
 }
