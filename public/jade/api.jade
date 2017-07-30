@@ -473,31 +473,28 @@ append site_body
 		#fit.Parameters
 			:markdown
 				Engine parameters are held in a context that is directly assessible in both stateful or stateless (memoryless) 
-				workflows.  
+				workflows.  An engine's defined context:
 
-				An engine's defined context:
-
-					ports: { name1: {...}, ... }, 
 					tau: [ tau1, tau2, ... ],
-					f1: function () {}, 
-					f2: function() {}, ...
-					entry: {var1: "select ...", ... } || "select ..."
-					exit: {var1: "update ...", ... } || "update ...",
-					var1: value, 
-					var2: value, ...
+					port1: function () {}, 
+					port2: function() {}, ...
+					entry: {key1: "select ...", ... } || "select ..."
+					exit: {key2: "update ...", ... } || "update ...",
+					key1: value, 
+					key2: value, ...
 
-				is extended with:
+				is automatically extended with:
 
 					query: {key: value,  ...},  
 					sql: connector, 
 					LIB1: module, 
 					LIB2: module, ... 
 
-				each time it is stepped, where
-				+ LIBX are standard computational modules (DSP, LWIP, RAN, RAN.MLE, 
-				RAN.MVN, GRP, MATH, CRYPTO, ...),  
-				+ query contains key:value parameters from the url,  
-				+ sql provides a sql connector for js-engines (SQL0, SQL1 cursors for python-engines).
+				where
+				+ LIBX are standard computational modules (DSP, LWIP, RAP, RAP.MLE, 
+				RAP.MVN, GRP, MATH, CRYPTO, LIE, ...),  
+				+ query will contain the key:value parameters from the url,  
+				+ sql provides a sql connector for js-engines (SQL0, SQL1 cursors are provided for py-engines).
 
 				Whereas stateless engines (being memoryless) are initialized at each step, stateful 
 				engines are initialized only when the workflow is initialized.  When initialized, an engine's context 
@@ -506,7 +503,7 @@ append site_body
 				from (to) its underlying sql database using *"select ..."* (an *"update ..."*) queries on
 				engine entry (and exit).
 
-				Each event *tau* typically contains the following:
+				If used, each *tau* event typically contains the following:
 
 					job = "" 	# Fully qualified file path to jpg chip
 					work = 0 	# Anticipated/delivered data volume (dims bits etc)
@@ -518,7 +515,7 @@ append site_body
 					value = 0	# Flow calculation
 
 		#folder.Examples
-			#fit.URL
+			#fit.url
 				:markdown
 					URL engines (experimental) provide a simple method to re-route a request
 					based on URL parameters, ${req.PARM} and ${plugin.FN(req)} tags.  
@@ -545,9 +542,10 @@ append site_body
 				:markdown
 					R engines are not yet implemented.
 
-			#fit.Matlab
+			#fit.ma
 				:markdown
-					#Stateless Example1
+					# Stateless Example1
+					
 					This [mat-like engine](/engines.view?engine=mat&name=demo1):
 
 						Code:
@@ -556,9 +554,9 @@ append site_body
 							Y = B * B';
 
 						Context: {
-							"entry": {
-								"A": "SELECT a2,a3,a6 FROM app1.MATtest WHERE least(?,1)",
-								"B": "SELECT a1,a6 FROM app1.MATtest WHERE least(?,1)"
+							entry: {
+								A: "SELECT a2,a3,a6 FROM app1.MATtest WHERE least(?,1)",
+								B: "SELECT a1,a6 FROM app1.MATtest WHERE least(?,1)"
 							}
 						}
 
@@ -581,13 +579,13 @@ append site_body
 							R = addIt(1,2);
 
 						Context: {
-							"entry": {
-								"A": "SELECT a2,a3,a6 FROM app1.MATtest WHERE least(?,1)",
-								"B": "SELECT a1,a6 FROM app1.MATtest WHERE least(?,1)"
+							entry: {
+								A: "SELECT a2,a3,a6 FROM app1.MATtest WHERE least(?,1)",
+								B: "SELECT a1,a6 FROM app1.MATtest WHERE least(?,1)"
 							},
 
-							"require": {
-							   "addIt" :  function (a,b) { return a+b; }
+							require: {
+							   addIt :  function (a,b) { return a+b; }
 							}
 						}
 
@@ -625,18 +623,20 @@ append site_body
 						Code:
 							ls
 							python mypgm.py
-						Context: {}
+						Context:
+							{ key: value, ...}
 
 					illustates an engine that simply list the files in the current directory,
 					the call the mypgm python module.
 
-			#fit.Jade
+			#fit.jade
 				:markdown
 					Jade engines contain [Jade markdown](/skinguide.view) to manage client
 					views.  A Jade engine is invoked at a **view end-point** with optional
 					parameters defined by the Jade engine.
 
-			#fit.Virtual
+			//
+				#fit.Virtual
 				:markdown
 					Virtual-dataset engines are JS-engines that can be accessed and customized
 					ny right-clicking its corresponding action button from within a view.  Virtual dataset
@@ -654,13 +654,13 @@ append site_body
 								});
 							}
 						Context:
-							{}
+							{ key: value, ...}
 
 					The response callback **res** must be called, and must return either
 					an **Error** object, a **String** message, an **Array** list of
 					records, or an **Object** hash.
 
-			#fit.SQL
+			#fit.sq
 				:markdown
 					This [sql engine](/engines.view?engine=sql&name=demo):
 
@@ -678,7 +678,7 @@ append site_body
 								CON.log("sql command="+q.sql);
 							}
 						Context:
-							{}
+							{ key: value, ...}
 
 					is a SUDI-select [simply selects)(/demo.sql) all records from the **intake** 
 					dataset whose **TRL** is at 2, and adds a **Cat** field to each record.  Note 
@@ -687,26 +687,20 @@ append site_body
 					simply added to **#{nick}**; subsequent executions return the desired records to 
 					the client.
 
-			#fit.Proxy
+			//
+				#fit.Proxy
 				:markdown
 					Proxy engines are [engines](/engines.view) that run periodically given a
 					run interval Period parameter.  A 0-period proxy is run once at **#{nick}** startup.
 					The [job hawkers](/admin.view) are proxy engines.
 
-			#fit.Readers
-				:markdown
-					Reader engines automatically index a variety of documents, graphics, presentation, 
-					and spreadsheet files when uploaded into **#{nick}**.  Ingested text is checked for
-					readibility, indexed to the best using [NLP training rules](/admins.view), then reflected
-					into the [file stores](/files.view).
-
-			#fit.Model
+			#fit.mo
 				:markdown
 					[Model engines](/engines.view) are used/defined by workflows when 
 					systems are referenced/saved from within the [workflow editor](/nodeflow.view).  
 					Model engines should remain disabled to prevent execution.
 
-			#fit.OpenCV
+			#fit.cv
 				:markdown
 					OpenCV engines X=haar,res1,res2,... are defined by an X.h and an X.cpp (under
 					#{title}'s engine/engines/opencv development folder).  Unlike other engines, OpenCV (C, C++, etc) engines
@@ -738,7 +732,7 @@ append site_body
 									FEATURE 	*feature;
 							};
 						Context:
-							{}
+							{ key: value, ...}
 
 					An engine's X.cpp follows the temp.cpp pattern (see haar.cpp for an example):
 
@@ -750,25 +744,24 @@ append site_body
 							return 0; // if successful
 						}
 
-			#fit.Python
+			#fit.py
 				:markdown
-					## Stateless Example
+					## Stateless Engines
 
 					In this [python engine](/engines.view?engine=py&name=demo1):
 
 						Code:
 							print "welcome to python"
+							tau = [{'x':[11,12],'y':[21,22]}]
 							print tau
 							print query
-
-							tau = [{'x':[11,12],'y':[21,22]}]
 
 							SQL0.execute("SELECT * from Htest", () )
 							for (Rec) in SQL0:
 								print Rec
 
-						Context: {
-						}
+						Context: 
+							{ }
 
 					we display *Htest* sql data at the service console, then return a *tau* JSON data 
 					to the client.  Engine results (returned *tau*) can be: accessed from 
@@ -778,7 +771,7 @@ append site_body
 					engines are provided two sql cursors -- *SQL0* and *SQL1* for read and write -- 
 					as [demonstrated here](/demo1.db).
 
-					## Stateful Example
+					## Stateful Engines
 
 					Stateful engines are used to maximize data stationarity in workflows.  This
 					[demo2 engine](/engines.db?engine=py&name=demo2) example:
@@ -795,10 +788,8 @@ append site_body
 								return 0
 
 						Context: {
-							"ports" : { 
-								"f1": {"a":1, "b":2}, 
-								"f2": {"a":2, "b":1} 
-							}
+							f1: {a:1, b:2}, 
+							f2: {a:2, b:1} 
 						}
 
 					defines input/output ports *f1* / *f2* to be called during the workflow 
@@ -807,9 +798,9 @@ append site_body
 					in [stateful flows](/nodeflow.view), it can also be used in a stateless flow
 					by passing *port* (as demonstrated [here](/demo2.py?port=f1)).
 
-			#fit.JS
+			#fit.js
 				:markdown
-					## Stateless Example
+					## Stateless Engines
 
 					Consider this [js engine](/engines.view?engine=js&name=demo1):
 
@@ -820,14 +811,14 @@ append site_body
 							tau[0].u = [M,M+1,M+2];
 
 						Context: {
-							"M":3, 
+							M: 3, 
 							"case": "file1",
-							"entry": {
-								"A": "SELECT a2,a3,a6 FROM MATtest WHERE least(?,1)",
-								"B": "SELECT a1,a6 FROM MATtest WHERE least(?,1)"
+							entry: {
+								A: "SELECT a2,a3,a6 FROM MATtest WHERE least(?,1)",
+								B: "SELECT a1,a6 FROM MATtest WHERE least(?,1)"
 							},
-							"exit": {
-								"A": "INSERT INTO ?? SET ?"
+							exit: {
+								A: "INSERT INTO ?? SET ?"
 							}
 						}
 
@@ -847,7 +838,7 @@ append site_body
 					Because this engine did not define functions -- functions are associated
 					with workflow engine ports -- this stateless engine is [only accessible at an endpoint](/demo1.view?name=test).
 
-					## Stateless Example
+					## Stateless Engines
 
 					This [js engine](/engines.view?engine=js&name=demo2):
 
@@ -865,10 +856,10 @@ append site_body
 							CON.log(b);
 
 						Context: {
-							"M": 3,
-							"entry": {
-								"X": "SELECT p0,p1,p2 FROM Htest WHERE least(?,1)",
-								"y": "SELECT FPR from Htest WHERE least(?,1)"
+							M: 3,
+							entry: {
+								X: "SELECT p0,p1,p2 FROM Htest WHERE least(?,1)",
+								y: "SELECT FPR from Htest WHERE least(?,1)"
 							}
 						}
 
@@ -888,12 +879,9 @@ append site_body
 						LWIP light-weight imaging processing [https://github.com/EyalAr/lwip]
 						SQL mysql connector [https://www.npmjs.com/package/mysql]
 						JSON standard json parsing [w3schools.com]							
-						LIE  Lie group symmetries learners (deep haar scattering)
+						LIE  Lie group symmetry learners 
 						INV Curve invariant learners
 						TXP Transport equation learners
-
-					Consult the Mat engine api for running Matlab-like engines directly in its 
-					native language.
 
 					## Stateful Example
 
@@ -910,10 +898,8 @@ append site_body
 							};
 
 						Context: { 
-							"ports": {
-								"fi" : {"x":10,"y":20},
-								"fo":{"x":11,"y":21} 
-							}
+							fi : {x:10, y:20},
+							fo: {x:11, y:21} 
 						}
 
 					places **x** and the ports **fi**, **fo** in its context, as [demonstrated here](/demo3.js).
