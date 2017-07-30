@@ -1671,7 +1671,7 @@ function runExe(req,res) {
 			job = { // default missing query parms
 				ievents: [ENGINE.tau()],  // input events to engine
 				oevents: [],  // output events from engine
-				engine: ENGINE[query.engine], 
+				engine: query.engine,   // engine name
 				size: query.size || 50,  // feature size in [m]
 				pixels: query.pixels || 512, 	// samples across a chip [pixels]
 				scale: query.scale || 8,  // scale^2 is max number of features in a chip
@@ -1723,15 +1723,15 @@ function runExe(req,res) {
 	
 	else 
 	if (query.ID) 
-		sql.query("SELECT * FROM app.? WHERE least(?,1)", [req.table, query])
+		sql.query("SELECT * FROM app.?? WHERE least(?,1)", [req.table, query])
 		.on("result", function (job) {
 			delete job[ID];
 			parms.engine = job.engine;
-			runJob(Copy(parms,job));
+			runJob( Copy(parms,job) );
 		});
 	
 	else
-		runJob(Copy(parms,query));
+		runJob( Copy(parms,query) );
 	
 }
 

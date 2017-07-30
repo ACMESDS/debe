@@ -43,6 +43,10 @@ as described in its [skinguide](/skinguide.view) and its [api](/api.view).
 
 In addition to [TOTEM](https://github.com/acmesds/totem) options, DEBE accepts:
 
+	builtin: {   //< engines to be added to the ENGINE pool
+		NAME: cb(req,res),
+		...
+	},
 	billingCycle: 0, //< Interval [ms] to job billings
 	diagCycle: 0, //< Interval [ms] to run self diagnostics
 	isSpawned: false, //< Enabled when this is child server spawned by a master server
@@ -64,6 +68,11 @@ Typically, you will want to redirect the following to your project:
 	ln -s PROJECT/totem/maint.sh maint.sh 		# test startup and maint scripts
 	ln -s PROJECT/totem/certs certs					# truststore folder for name.pfx certs 
 	ln -s PROJECT/JPGS captcha 	 				# folder for captcha digits
+
+## Databases
+
+openv.apps  Reads on start() to derive command line parms
+app.X Table X read for job parameters in a .exe route
 
 ## Examples
 
