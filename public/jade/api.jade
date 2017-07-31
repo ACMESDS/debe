@@ -702,47 +702,88 @@ append site_body
 
 			#fit.cv
 				:markdown
-					OpenCV engines X=haar,res1,res2,... are defined by an X.h and an X.cpp (under
-					#{title}'s engine/engines/opencv development folder).  Unlike other engines, OpenCV (C, C++, etc) engines
-					must be bound to nodejs using its *node-gyp rebuild* binder as provided by #{totem} *maint.sh bind*.
+					Machines MAC = opencv | python | res1 | res2 | ... are implemented in their respective 
+					MAC.cpp files (located under#{title}'s engine/ifs/MAC).  Unlike engines, machines must 
+					be **bound** to nodejs.  Engines are assocated to a machine by engine type (js, py, 
+					ma, cv, ...).
 
-					This [haar engine](/engines.view?engine=cv&name=haar) can be [tested here](/haar.cv), and 
-					follows the following pattern for its haar.h and its haar.cpp:
+					The [haar cv-engine](/engines.view?engine=cv&name=haar), for example, is assocated
+					with the opencv machine; this engine can be	[tested here](/haar) and accepts the 
+					following context:
+					
+						{ 
+							frame: {
+								job: jpg file to load and examine
+							},
+							detector: {
+								scale: 0:1 ,
+									//specifies how much the image size is reduced at each image scale step, and thus defines a 
+									//scale pyramid during the detection process.  E.g. 0.05 means reduce size by 5% when going to next image 
+									//scale step.  Smaller step sizes will thus increase the chance of detecting the features at diffrent scales. 
+								delta: 0:1 ,
+									//features of dim*(1-delta) : dim*(1+delta) pixels are detected
+								dim: integer ,
+									//defines nominal feature size in pixels
+								hits: integer ,
+									//specifies number is required neighboring detects to declare a single detect.  A higher value
+									//results in less detections of higher quality. 3~6 is a good value.
+								cascade: [ "path to xml file", ... ] ,
+									//list of trained cascades
+								net: string
+									//path to prototxt file used to train caffe cnn	
+							}
+						}
+					
+					All  CV.cpp machine implementations emply the following pattern:
 
-						Code:
-							class PORT { 								 	// OPENCV port
-								public:
-									PORT(str Name, V8OBJECT Parm) { 		// Define port
-										// define states
-									};
-									// Declare states
-							};
+						class OPORT { 								 	// output port
+							public:
+								OPORT(str Name, V8OBJECT Parm) { 		// Define port
+								};
+								// Members follow
+						};
+						class IPORT { 								 	// input port
+							public:
+								IPORT(str Name, V8OBJECT Parm) { 		// Define port
+								};
+								// Declare follow
+						};
+						class FEATURE { 								// OPENCV feature output object
+							public:
+								FEATURE(void) { 						// Define default value
+									// define members
+								};
 
-							class FEATURE { 								// OPENCV feature output object
-								public:
-									FEATURE(void) { 						// Define default value
-										// define members
-									};
+								FEATURE(int Depth,Rect Box,str Name,FRAME Frame,PORT &Port) {
+								};
 
-									FEATURE(int Depth,Rect Box,str Name,FRAME Frame,PORT &Port) {
-									};
-
-									// Declare members
-									int			features;
-									FEATURE 	*feature;
-							};
-						Context:
-							{ key: value, ...}
-
-					An engine's X.cpp follows the temp.cpp pattern (see haar.cpp for an example):
-
-						int CVMACHINE::latch(PORT &port, V8ARRAY tau) { 	// Latch tau input to OPENCV input port
+								// Declare members
+								int			features;
+								FEATURE 	*feature;
+						};
+						int CVMACHINE::latch(IPORT &port, V8ARRAY tau) { 	// Latch input context to input port
 							return 0; // if successful
 						}
-
-						int CVMACHINE::latch(V8ARRAY tau, PORT &port) { 	// Latch OPENCV output port to tau output
+						int CVMACHINE::latch(V8ARRAY tau, OPORT &port) { 	// Latch output port to output context
 							return 0; // if successful
 						}
+						
+					When a machine is bound to #{title} (using *node-gyp rebuild* provided by *maint.sh bind*),
+					a pool of machine is allocated to support multiple compute threads, each thread having 
+					its own independent context. Each thread calls a machine via
+
+							error = MAC.call( [ id string, code string, context hash ] )
+
+					which returns an interger error code (non-zero if a fault occured).
+
+					A thred id (typically "Name.Client.Instance") uniquely identifies the compute thread.  
+					Compute threads can be freely added to the pool until the pool becomes full.  
+
+					When stepping a machine, the code string specifies either the name of the engine port on 
+					which the arriving context is latched, or the name of the output port on which the departing 
+					context is latched; thus stepping the machine in a stateful way (to maximize data restfulness).
+					Given, however, an empty code string , the machine is stepped in a stateless way, that is, 
+					by latching context to all input ports, then latching all output ports to the context.
 
 			#fit.py
 				:markdown
