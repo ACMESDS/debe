@@ -36,7 +36,7 @@ append site_body
 
 	#accordion.Views
 
-		#fit.Routes
+		#fit.Endpoints
 
 			:markdown
 				Views are [editable](/edit.view) [Jade skinning engines](/skinguide.view) that defines 
@@ -62,7 +62,7 @@ append site_body
 				[view briefing under the ELT1 area](/ELT1.home_brief.view)
 
 	#accordion.Files
-		#fit.Routes
+		#fit.Endpoints
 			:markdown
 				File access is provided on the following endpoints:
 
@@ -256,7 +256,7 @@ append site_body
 				[return flare json file from data area](/data/flare.json)
 
 	#accordion.Datasets
-		#fit.Routes
+		#fit.Endpoints
 			:markdown
 				Both real and virtual datasets are reached at the following endpoints:
 
@@ -408,72 +408,42 @@ append site_body
 				+	[broadcast messages](/sockets.execute) to [connected users](/sockets.db)  
 				+	[import milestones](/milestone.execute) from internal spreadsheet
 
-	#accordion.Jobs
-		#fit.Routes
-			:markdown
-				## To place and engine into a data chipping job
-
-					GET /ENGINE.exe 	Route chips indexed by collect parameters through this ENGINE
-
-				Chipping jobs accept ESS-standard channel query parameters as well as the followng 
-				engine parameters (key=default):
-
-					size = 50  	// feature size in [m]
-					pixels = 512 	// samples across a chip [pixels]
-					scale = 8  		// scale^2 is max number of features in a chip
-					step = 0.01 	// relative seach step size
-					range = 0.1 	// relative search size
-					detects = 8		// hits required to declare a detect
-					limit = 1e99 	// restrict maximum number of schips to ingest
-					test = "test" 	// test case to store results
-
-				## To outsource an engine to an agent
-				
-					GET /ENGINE.exe?agent=AGENT&poll=N&QUERY
-					GET /ENGINE.exe?agent=AGENT&QUERY
-
-				where the &poll request will start a job, then poll the AGENT every N seconds for its results.
-				Consersely, a poll-less request will start a job, then reply on the AGENT to claim the job.  In
-				either case, QUERY defines the ENGINE args.
-
-				#{title} reciprocates by providing its own AGENT at its **/agent** endpoint.
-
-				Agents provide a means to outsource an engine, while retaining a thread
-				on each agent request.  A valid agent provided #{title} with the
-				following push/pull endpoints:
-
-					GET http://AGENT?push=totem.CLIENT.ENGINE.ID&args=JSON
-					GET http://AGENT?pull=JOBID
-
-				where the push endpoint defines the job being sent to the AGENT (with the CLIENT 
-				requesting the agent, the ENGINE being outsourced, the ID of the test case,
-				and the JSON args to the ENGINE).  The AGENT eventually responds at 
-				the pull endpoint with a JOBID, or a "" if no job could be created.  #{title} will periodically 
-				poll the agent for the results of JOBID.
-
 	#accordion.Engines
 
-		#fit.Routes
+		#fit.Endpoints
 			:markdown
-				Engines are language agnostic machines for processing/generating data.  *Stateless engines* can
-				be accssed directly from the SUDIE Routes given the Parameters defined herein.  *Stateful engines*
-				-- these are executed from a [workflow](/nodeflow.view) -- are defined following the [engine skinning guide](/skinguide.view).
-				Please note that **#{nick}** is not intended to be an interactive development environment; as such,
-				engine code should be throughly debugged before [inserting code](/engines.view) into **#{nick}**.
+				[Engines](/engines.view) utilize cv | py | R | sh | js | res1 | res2 | ... machines and are
+				accessed in *stateless*, *stateful*, *chipping* or *agent* workflows at
 
-				Engines are accessed on the following routes:
+					GET /ENGINE.TYPE 	Compile and step ENGINE in a stateless workflow
+					PUT /ENGINE.TYPE 	Compile (update) ENGINE in a stateful workflow
+					POST /ENGINE.TYPE	Step ENGINE  in a stateful workflow
+					DELETE /ENGINE.TYPE	Free ENGINE from a stateful workflow
 
-					GET /ENGINE.TYPE 	Compile and step (select) stateless ENGINE
-					PUT /ENGINE.TYPE 	Compile (update) stateful ENGINE
-					POST /ENGINE.TYPE	Step (insert) stateful ENGINE 
-					DELETE /ENGINE.TYPE	Free (delete) stateful ENGINE 
+				were TYPE = db | txt | view | html | .... specifies how the engine's output is delivered to the client (**not**
+				its machine type), or TYPE = exe to place the engine into a *chipping* or *agent* workflow.   Please know 
+				that, as **#{nick}** does not provide an interactive development environment, all engines should be 
+				throughly debugged in their native development environment before being [inserted](/engines.view) 
+				into **#{nick}**.
 
-				and accept the Parameters defined herein.
+				### Stateless workflow
+				
+				This endpoint:
+				
+					GET /ENGINE.TYPE 	Compile and step ENGINE in a stateless workflow
+					
+				provides a stateless interface to an engine and its context (see stateful workflow context).
 
-		#fit.Parameters
-			:markdown
-				Engine parameters are held in a context that is directly assessible in both stateful or stateless (memoryless) 
-				workflows.  An engine's defined context:
+				### Stateful workflow
+
+				These endpoints:
+				
+					PUT /ENGINE.TYPE 	Compile ENGINE in a stateful workflow
+					POST /ENGINE.TYPE	Step ENGINE  in a stateful workflow
+					DELETE /ENGINE.TYPE	Free ENGINE froma staeful workflow
+
+				provide a stateful interface to engines in [workflows](/nodeflow.view).  Engine parameters are held in a 
+				context that is read/write assessible to an engine
 
 					tau: [ tau1, tau2, ... ],
 					port1: function () {}, 
@@ -483,7 +453,7 @@ append site_body
 					key1: value, 
 					key2: value, ...
 
-				is automatically extended with:
+				Its context is automatically extended with:
 
 					query: {key: value,  ...},  
 					sql: connector, 
@@ -513,6 +483,51 @@ append site_body
 					policy = ""	# Data retention policy
 					status = 0	# Status code
 					value = 0	# Flow calculation
+
+				### Chipping workflow
+
+				A chipping workflow will regulate data chips to an engine at the clients' prevailing QoS and Credit
+				levels; these workflows are started at:
+				
+					GET /ENGINE.exe 	Route chips indexed by collect parameters through this ENGINE
+
+				where engine parameters accept ESS-standard channel query parameters (e.g. ring, platform, 
+				etc), as well as chiping and engine parameters (key=default):
+
+					size = 50  	// feature size in [m]
+					pixels = 512 	// samples across a chip [pixels]
+					scale = 8  		// scale^2 is max number of features in a chip
+					step = 0.01 	// relative seach step size
+					range = 0.1 	// relative search size
+					detects = 8		// hits required to declare a detect
+					limit = 1e99 	// restrict maximum number of schips to ingest
+					test = "test" 	// test case to store results
+
+				### Agent workflow
+				
+				An engine can be outsourced to agents at:
+				
+					GET /ENGINE.exe?agent=AGENT&poll=N&QUERY
+					GET /ENGINE.exe?agent=AGENT&QUERY
+
+				where the &poll request will start a job, then poll the AGENT every N seconds for its results.
+				Consersely, a poll-less request will start a job, then reply on the AGENT to claim the job.  In
+				either case, QUERY defines the ENGINE args.
+
+				#{title} reciprocates by providing its own AGENT at its **/agent** endpoint.
+
+				Agents provide a means to outsource an engine, while retaining a thread
+				on each agent request.  A valid agent provided #{title} with the
+				following push/pull endpoints:
+
+					GET http://AGENT?push=totem.CLIENT.ENGINE.ID&args=JSON
+					GET http://AGENT?pull=JOBID
+
+				where the push endpoint defines the job being sent to the AGENT (with the CLIENT 
+				requesting the agent, the ENGINE being outsourced, the ID of the test case,
+				and the JSON args to the ENGINE).  The AGENT eventually responds at 
+				the pull endpoint with a JOBID, or a "" if no job could be created.  #{title} will periodically 
+				poll the agent for the results of JOBID.
 
 		#folder.Examples
 			#fit.url
@@ -702,14 +717,8 @@ append site_body
 
 			#fit.cv
 				:markdown
-					Machines MAC = opencv | python | res1 | res2 | ... are implemented in their respective 
-					MAC.cpp files (located under#{title}'s engine/ifs/MAC).  Unlike engines, machines must 
-					be **bound** to nodejs.  Engines are assocated to a machine by engine type (js, py, 
-					ma, cv, ...).
-
-					The [haar cv-engine](/engines.view?engine=cv&name=haar), for example, is assocated
-					with the opencv machine; this engine can be	[tested here](/haar) and accepts the 
-					following context:
+					cv-machines learn, locate and classify objects.  The [haar engine](/engines.view?engine=cv&name=haar),
+					for example, executes a cv-machine in the following context:
 					
 						{ 
 							frame: {
@@ -733,57 +742,6 @@ append site_body
 									//path to prototxt file used to train caffe cnn	
 							}
 						}
-					
-					All  CV.cpp machine implementations emply the following pattern:
-
-						class OPORT { 								 	// output port
-							public:
-								OPORT(str Name, V8OBJECT Parm) { 		// Define port
-								};
-								// Members follow
-						};
-						class IPORT { 								 	// input port
-							public:
-								IPORT(str Name, V8OBJECT Parm) { 		// Define port
-								};
-								// Declare follow
-						};
-						class FEATURE { 								// OPENCV feature output object
-							public:
-								FEATURE(void) { 						// Define default value
-									// define members
-								};
-
-								FEATURE(int Depth,Rect Box,str Name,FRAME Frame,PORT &Port) {
-								};
-
-								// Declare members
-								int			features;
-								FEATURE 	*feature;
-						};
-						int CVMACHINE::latch(IPORT &port, V8ARRAY tau) { 	// Latch input context to input port
-							return 0; // if successful
-						}
-						int CVMACHINE::latch(V8ARRAY tau, OPORT &port) { 	// Latch output port to output context
-							return 0; // if successful
-						}
-						
-					When a machine is bound to #{title} (using *node-gyp rebuild* provided by *maint.sh bind*),
-					a pool of machine is allocated to support multiple compute threads, each thread having 
-					its own independent context. Each thread calls a machine via
-
-							error = MAC.call( [ id string, code string, context hash ] )
-
-					which returns an interger error code (non-zero if a fault occured).
-
-					A thred id (typically "Name.Client.Instance") uniquely identifies the compute thread.  
-					Compute threads can be freely added to the pool until the pool becomes full.  
-
-					When stepping a machine, the code string specifies either the name of the engine port on 
-					which the arriving context is latched, or the name of the output port on which the departing 
-					context is latched; thus stepping the machine in a stateful way (to maximize data restfulness).
-					Given, however, an empty code string , the machine is stepped in a stateless way, that is, 
-					by latching context to all input ports, then latching all output ports to the context.
 
 			#fit.py
 				:markdown
@@ -947,6 +905,58 @@ append site_body
 					Subsequent requests at the step/POST endpoint with **port** = "fi" or "fo" will call the
 					function with the current **tau** workflow events and the **parm** set to the 
 					corresponding "ports" hash.
+
+	#accordion.Machines
+		:markdown
+			Engines employ cv | py | R | sh | js | ... machines.  A machine MAC = opencv | python | ... is implemented 
+			by an engine/ifs/MAC/MAC.cpp that has been bound to #{title} (using the *node-gyp rebuild* provided 
+			by *maint.sh bind*).  Any MAC.cpp machine implements the following pattern:
+
+				class OPORT { 								 	// output port
+					OPORT(str Name, V8OBJECT Parm) { 		// Initiallize 
+					};
+					// Members follow
+				};
+				class IPORT { 								 	// input port
+					IPORT(str Name, V8OBJECT Parm) { 		// Initiallize 
+					};
+					// Members follow						
+				};
+				class FEATURE { 							// Output object
+					FEATURE( ... ) {						// Initialize 
+					};	
+					// Members follow
+				};
+				class CVMACHINE : public MACHINE {  
+					int atch(IPORT &port, V8ARRAY tau) { 	// Latch input context to input port
+						return 0; // if successful
+					}
+					int latch(V8ARRAY tau, OPORT &port) { 	// Latch output port to output context
+						return 0; // if successful
+					}
+					int program (void) { 		// program and step machine
+					}
+					int call(const V8STACK& args) {  // nodejs interface
+					}
+					// Members follow
+				}
+
+			When bound to #{title} (using *node-gyp rebuild* provided by *maint.sh bind*), a **pool** (of 
+			typically256) MAC machines is allocated to run multiple (context independent) compute 
+			threads at
+
+					error = MAC.call( [ id string, code string, context hash ] )
+
+			returning an interger error code (non-zero if a fault occured).
+
+			The thread id (typically "Name.Client.Instance") uniquely identifies the compute thread.  
+			Compute threads can be freely added to the pool until the pool becomes full.  
+
+			When stepping a machine, the code string specifies either the name of the engine port on 
+			which the arriving context is latched, or the name of the output port on which the departing 
+			context is latched; thus stepping the machine in a stateful way (to maximize data restfulness).
+			Given, however, an empty code string , the machine is stepped in a stateless way, that is, 
+			by latching context to all input ports, then latching all output ports to the context.
 
 	#accordion.System
 		:markdown
