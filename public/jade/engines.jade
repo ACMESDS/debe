@@ -13,7 +13,7 @@ append site_body
 	if query.engine
 		#form.engine(
 			path="/engines.db?Engine=#{query.engine}&Name=#{query.name}",
-			cols="Name,Engine,Enabled.c,Program(Code.x,Vars.x,Context)")
+			cols="Name,Engine,Enabled.c,Program(Code.x,Vars.x.Context)")
 
 			:markdown
 				**Select** to retrieve and lock your engine for editing.  **Update**, **Insert**, **Delete** or **Select** will unlock (for possible recompile) your engine.  Use
@@ -25,7 +25,7 @@ append site_body
 		#grid.engines(
 			path="/engines.db",
 			page=25,kiss,
-			cols="Classif,Name,Engine,Enabled.c,Period.n,Code.h,Vars.t,Special.t")
+			cols="Classif,Name,Engine,Enabled.c,Period.n,Code.x,Vars.x.Context,Special.t")
 
 		#grid.stats(
 			path="/simstats.db",

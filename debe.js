@@ -1669,6 +1669,8 @@ function runExe(req,res) {
 	function runJob (query) {
 		var
 			job = { // default missing query parms
+				source: query.source || "spoof",  //< default data channel
+				save: query.save || "", // location to save detects
 				ievents: [ENGINE.tau()],  // input events to engine
 				oevents: [],  // output events from engine
 				engine: query.engine,   // engine name
@@ -1692,16 +1694,21 @@ function runExe(req,res) {
 
 			CHIPS.start(query, job, function (chip,dets,sql) {
 				
-				Trace(chip.name);
-				
-				if (dets)
+				Trace("save "+chip.name);
+
+				if (dets && job.save && dets.length)
 					sql.query(
-						"REPLACE INTO app.results SET ?", {
+						"REPLACE INTO app.results SET ?,Geo=st_GeomFromText(?)", [{
+						Updated: new Date(),
+						Client: job.client,
+						Name: job.save,
 						Chan: chip.imageID,
 						Engine: query.engine,
-						Result: JSON.stringify(dets)
-					});
-
+						Result: JSON.stringify(dets),
+						Lat: chip.pos.lat,
+						Lon: chip.pos.lon
+					},
+					chip.geo ]);
 			});
 	}
 	
