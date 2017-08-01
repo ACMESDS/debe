@@ -52,7 +52,7 @@ var 									// totem modules
 	ENGINE = require("engine"), 
 	FLEX = require("flex"),
 	TOTEM = require("totem"),
-	CHIPS = require("chipper");
+	CHIP = require("chipper");
 
 var										// shortcuts and globals
 	Copy = TOTEM.copy,
@@ -1669,10 +1669,9 @@ function runExe(req,res) {
 	function runJob (query) {
 		var
 			job = { // default missing query parms
+				collecting: false,  
 				source: query.source || "spoof",  //< default data channel
 				save: query.save || "", // location to save detects
-				ievents: [ENGINE.tau()],  // input events to engine
-				oevents: [],  // output events from engine
 				engine: query.engine,   // engine name
 				size: query.size || 50,  // feature size in [m]
 				pixels: query.pixels || 512, 	// samples across a chip [pixels]
@@ -1692,11 +1691,11 @@ function runExe(req,res) {
 				job: job
 			});
 
-			CHIPS.start(query, job, function (chip,dets,sql) {
+			CHIP.start(query, job, function (chip,dets,sql) {
 				
 				Trace("save "+chip.name);
 
-				if (dets && job.save && dets.length)
+				if (dets && job.save)
 					sql.query(
 						"REPLACE INTO app.results SET ?,Geo=st_GeomFromText(?)", [{
 						Updated: new Date(),
@@ -1709,6 +1708,7 @@ function runExe(req,res) {
 						Lon: chip.pos.lon
 					},
 					chip.geo ]);
+				
 			});
 	}
 	
@@ -2059,7 +2059,7 @@ function Initialize () {
 
 		Trace(`INITIALIZING ENGINES`);
 
-		CHIPS.config({
+		CHIP.config({
 			fetch: {
 				wfs: DEBE.fetchers.http,
 				wms: DEBE.fetchers.wget,
