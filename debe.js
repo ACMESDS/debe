@@ -1584,7 +1584,7 @@ function renderJade(req,res) {
 append base_parms
 	- tech = "extjs"
 append base_body
-	#grid.view.${req.table}(path="/${req.table}.db?${req.search}",cols="${cols.join()}",dims="1000,400",page=10,nowrap)
+	#grid.view.${req.table}(path="/${req.table}.db?${req.search}",cols="${cols.join()}",dims="2000,600",page=10,nowrap)
 `;
 //console.log(skin);
 			
@@ -1669,6 +1669,7 @@ function runExe(req,res) {
 	function runJob () {
 		var
 			job = { // default required parms
+				// job related
 				thread: req.client.replace(/\./g,"") + "." + req.table,
 				qos: req.profile.QoS, 
 				priority: 0,
@@ -1676,7 +1677,7 @@ function runExe(req,res) {
 				class: "chipping",
 				credit: req.profile.Credit,
 				name: req.table,
-				// optional
+				// engine related
 				engine: req.table,   // engine name
 				size: query.size || 50,  // feature size in [m]
 				pixels: query.pixels || 512, 	// samples across a chip [pixels]
@@ -1687,52 +1688,55 @@ function runExe(req,res) {
 				limit: query.limit || 1e99 	// limit chips
 			};
 
-			res("Job submitted");
+		res("Job submitted");
 
-			for (var n in job) delete query[n];
+		for (var n in job) delete query[n];
 
-			console.log({
-				query: query,
-				job: job
+		console.log({
+			query: query,
+			job: job
+		});
+
+		if (query.window)
+			CHIP.count(query, job, function (voxel,stats,sql) {
+				var updated = new Date();
+
+				sql.query(  // update voxel with engine stats
+					"UPDATE app.voxels SET ? WHERE ?", [{
+						t: updated,
+						Stats: JSON.stringify(stats)
+					}, {
+						ID: voxel.ID
+					}
+				]);
 			});
 
-			if (query.window)
-				CHIP.count(query, job, function (voxel, stats, sql) {
-					sql.query( "UPDATE voxels SET ? WHERE ?", [{Stats: JSON.stringify(stats)}, {ID: voxel.ID}] );
-				});
-			
-			else
-				CHIP.detect(query, job, function (chip,dets,sql) {  // start detector
+		else
+			CHIP.detect(query, job, function (chip,dets,sql) {
+				var updated = new Date();
 
-					var updated = new Date();
-					//console.log(["save",chip.name, chip.geo]);
+				sql.query(
+					"REPLACE INTO app.chips SET ?,Geo=st_GeomFromText(?)", [{
+					Thread: job.thread,
+					Detects: JSON.stringify(dets),
+					t: updated,
+					x: chip.pos.lat,
+					y: chip.pos.lon
+				},
+				chip.geo ]);
 
+				for (var vox=CHIP.voxels,alt=vox.minAlt, del=vox.deltaAlt, max=vox.maxAlt; alt<max; alt+=del) 
 					sql.query(
-						"REPLACE INTO app.chips SET ?,Geo=st_GeomFromText(?)", [{  // update the chip stats
-							Thread: job.thread,
-							Stats: JSON.stringify(dets),
-							t: updated,
-							x: chip.pos.lat,
-							y: chip.pos.lon
-						},
-						chip.geo 
-					]);
-
-					for (var alt=CHIP.voxels.minAlt, max=CHIP.voxels.maxAlt, delta=CHIP.voxels.deltaAlt; alt<max; alt+=delta)  // reserve voxels over the chip
-						sql.query(
-							"REPLACE INTO app.voxels SET ?,Geo=st_GeomFromText(?)", [{
-								Thread: job.thread,
-								Stats: "",
-								t: updated,
-								x: chip.pos.lat,
-								y: chip.pos.lon,
-								z: alt
-							}, 
-							chip.geo
-							// `POINT(${chip.pos.lat} ${chip.pos.lon})` 
-						] );
-
-				});
+						"REPLACE INTO app.voxels SET ?,Geo=st_GeomFromText(?)", [{
+						Thread: job.thread,
+						Stats: "",
+						t: updated,
+						x: chip.pos.lat,
+						y: chip.pos.lon,
+						z: alt
+					},
+					chip.geo ]);
+			});		
 	}
 	
 	var
@@ -1748,11 +1752,11 @@ function runExe(req,res) {
 		.on("result", function (job) {
 			delete job[ID];
 			req.table = job.engine;
-			runJob();
+			runJob( );
 		});
 	
 	else
-		runJob();
+		runJob( );
 	
 }
 
