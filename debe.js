@@ -1666,13 +1666,21 @@ Debe initializer.
 */
 function runExe(req,res) {
 	
-	function runJob (query) {
+	function runJob () {
 		var
 			job = { // default missing query parms
-				collecting: false,  
+				// job
+				qos: req.profile.QoS,   //< clients current qos
+				priority: 0, //< default queuing priority
+				client: req.client, //< job bill to
+				class: "chipping", //< job class
+				credit: req.profile.Credit,  //< job credits
+				name: req.table,  //< job name
+				// engine
+				thread: req.client.replace(/\./g,"") + "." + req.table, //< compute thread
+				engine: req.table,  //< name of engine tied to chipping workflow
 				source: query.source || "spoof",  //< default data channel
 				save: query.save || "", // location to save detects
-				engine: query.engine,   // engine name
 				size: query.size || 50,  // feature size in [m]
 				pixels: query.pixels || 512, 	// samples across a chip [pixels]
 				scale: query.scale || 8,  // scale^2 is max number of features in a chip
@@ -1682,48 +1690,60 @@ function runExe(req,res) {
 				limit: query.limit || 1e99 	// limit chips
 			};
 
-			res("Job submitted");
+		res("Job submitted");
 
-			for (var n in job) delete query[n];
+		for (var n in job) delete query[n];
 
-			console.log({
-				query: query,
-				job: job
+		console.log({
+			query: query,
+			job: job
+		});
+
+		if (query.window)
+			CHIP.count(query, job, function (voxel,stats,sql) {
+				var updated = new Date();
+
+				sql.query(  // update voxel with engine stats
+					"UPDATE app.voxels SET ? WHERE ?", [{
+						t: updated,
+						Stats: JSON.stringify(stats)
+					}, {
+						ID: voxel.ID
+					}
+				]);
 			});
 
-			CHIP.start(query, job, function (chip,dets,sql) {
-				
-				Trace("save "+chip.name);
+		else
+			CHIP.detect(query, job, function (chip,dets,sql) {
+				var updated = new Date();
 
-				if (dets && job.save)
+				sql.query(
+					"REPLACE INTO app.chips SET ?,Geo=st_GeomFromText(?)", [{
+					Thread: job.thread,
+					Detects: JSON.stringify(dets),
+					t: updated,
+					x: chip.pos.lat,
+					y: chip.pos.lon
+				},
+				chip.geo ]);
+
+				for (var vox=CHIP.voxels,alt=vox.minAlt, del=vox.deltaAlt, max=vox.maxAlt; alt<max; alt+=del) 
 					sql.query(
-						"REPLACE INTO app.results SET ?,Geo=st_GeomFromText(?)", [{
-						Updated: new Date(),
-						Client: job.client,
-						Name: job.save,
-						Chan: chip.imageID,
-						Engine: query.engine,
-						Result: JSON.stringify(dets),
-						Lat: chip.pos.lat,
-						Lon: chip.pos.lon
+						"REPLACE INTO app.voxels SET ?,Geo=st_GeomFromText(?)", [{
+						Thread: job.thread,
+						Stats: "",
+						t: updated,
+						x: chip.pos.lat,
+						y: chip.pos.lon,
+						z: alt
 					},
 					chip.geo ]);
-				
-			});
+			});		
 	}
 	
 	var
 		sql = req.sql,
-		query = req.query, 
-		parms = { // job parms
-			engine: req.table,
-			qos: req.profile.QoS, 
-			priority: 0,
-			client: req.client,
-			class: "chipping",
-			credit: req.profile.Credit,
-			name: req.table 
-		};
+		query = req.query;
 
 	if (exe = FLEX.execute[req.table] )
 		exe(req,res);
@@ -1733,12 +1753,12 @@ function runExe(req,res) {
 		sql.query("SELECT * FROM app.?? WHERE least(?,1)", [req.table, query])
 		.on("result", function (job) {
 			delete job[ID];
-			parms.engine = job.engine;
-			runJob( Copy(parms,job) );
+			req.table = job.engine;
+			runJob( );
 		});
 	
 	else
-		runJob( Copy(parms,query) );
+		runJob( );
 	
 }
 
@@ -2063,6 +2083,7 @@ function Initialize () {
 			fetch: {
 				wfs: DEBE.fetchers.http,
 				wms: DEBE.fetchers.wget,
+				sss: DEBE.fetchers.http,
 				save: DEBE.fetchers.plugin
 			},
 			thread: DEBE.thread
