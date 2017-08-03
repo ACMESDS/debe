@@ -798,6 +798,10 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	
 	"reader.": { //< reader endpoints
 		view: renderJade,
+		pview: renderJade,
+		sview: renderJade,
+		spview: renderJade,
+		bview: renderJade,
 		exe: runExe
 	},
 
@@ -817,7 +821,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		noCode: new Error("failed engine code lookup"),
 		unsupportedFeature: new Error("unsupported feature"),
 		noOffice: new Error("office docs not enabled"),
-		noExe: new Error("no execute interface")
+		noExe: new Error("no execute interface"),
+		cantSkin: new Error("dynamic skinning not supported for this type")
 	},
 	
 	"paths.": {  //< paths to things
@@ -1547,7 +1552,7 @@ function renderJade(req,res) {
 		
 	function renderJade() {  
 
-		function skinDynamic(req, res, fields) {
+		function genSkin(req, res, fields) {
 			
 			var cols = [];
 			
@@ -1579,19 +1584,85 @@ function renderJade(req,res) {
 					}
 			}
 				
-			var skin =
-`extends base
+			switch (req.type) {
+				case "view":
+res( `extends base
 append base_parms
 	- tech = "extjs"
 append base_body
 	#grid.view.${req.table}(path="/${req.table}.db?${req.search}",cols="${cols.join()}",dims="2000,600",page=10,nowrap)
-`;
-//console.log(skin);
+`.render(req) ); break;
+					
+				case "pview":
+res( `extends base
+append base_parms
+	- tech = "extjs"
+append base_body
+	#pivot.view.${req.table}(path="/${req.table}.db?${req.search}",pivots="${cols[0]}",cols="${cols.join()}",dims="2000,600",page=10,nowrap)
+`
+.render(req) ); break;
+
+				case "sview":
+res( `extends site
+append site_parms
+	- view = "Min"
+append site_body
+	#grid.view.${req.table}(path="/${req.table}.db?${req.search}",cols="${cols.join()}",dims="2000,600",page=10,nowrap)
+`
+.render(req) ); break;
+					
+				case "spview":
+res( `extends site
+append site_parms
+	- view = "Min"
+append site_body
+	#pivot.view.${req.table}(path="/${req.table}.db?${req.search}",pivots="${cols[0]}",cols="${cols.join()}",dims="2000,600",page=10,nowrap)
+`
+.render(req) ); break;
+
+				case "bview":
+					if ( select = FLEX.select[req.table] )
+						select( req, function (recs) {
+res( `extends base
+append base_parms
+	- tech = "reveal"
+	- classif = "(U) Unclassified"
+append base_body
+	section
+		- recs = ${JSON.stringify(recs)}
+		div!= gridify(recs)
+`.render(req) );
+						});
+					
+					else
+						req.sql.query("SELECT * FROM app.??", req.table, function (err,recs) {
+							if (err)
+								res( DEBE.errors.cantSkin );
+							else {
+								recs.each( function (n,rec) {
+									delete rec.ID;
+								});
+res( `extends base
+append base_parms
+	- tech = "reveal"
+	- classif = "(U) Unclassified"
+append base_body
+	section
+		- recs = ${JSON.stringify(recs)}
+		div!= gridify(recs)
+`.render(req) );
+							}
+						}); 
+					
+					break;
 			
-			res( skin.render(req) );
+				default:
+					res(DEBE.errors.cantSkin);
+			}
+			
 		}			
 							  
-		Trace("RENDER "+req.table);
+		//Trace("RENDER "+req.table);
 		
 		sql.query(paths.mysql.engine, { // Try a skin from the  engine db
 			Name: req.table,
@@ -1609,7 +1680,7 @@ append base_body
 					if (err)  // create dynamic skin for this dataset
 						if ( select = FLEX.select[req.table] ) // try virtual table
 							select(req, function (recs) {
-								skinDynamic( req, res, recs[0] || {} );
+								genSkin( req, res, recs[0] || {} );
 							});
 
 						else  // try sql table
@@ -1625,14 +1696,14 @@ append base_body
 													res( ack );
 
 												else 
-													skinDynamic( req, res, ack[0] || {} );
+													genSkin( req, res, ack[0] || {} );
 											});	
 											
 										else
 											res( DEBE.errors.badDataset );
 
 									else 
-										skinDynamic( req, res, fields );
+										genSkin( req, res, fields );
 							});
 					
 					else  	// render skin
@@ -2038,7 +2109,7 @@ function Initialize () {
 				NEWSREAD: "http://craphound.com:80/?feed=rss2",
 				AOIREAD: "http://omar.ilabs.ic.gov:80/tbd"
 			},
-
+			
 			billingCycle: DEBE.cycles.billing, 		// job billing cycle [ms]
 			diagCycle: DEBE.cycles.diag,			// Check period [ms]
 			
@@ -2090,7 +2161,8 @@ function Initialize () {
 		ENGINE.config({
 			thread: DEBE.thread,
 			cores: DEBE.core,
-			builtins: DEBE.builtins
+			builtins: DEBE.builtins,
+			"plugins.FLEX": FLEX
 		});
 
 		if (cb) cb();	

@@ -26,13 +26,16 @@ append site_body
 				AREA/PATH.TYPE ? PARMS
 				FILE.TYPE ? PARMS
 
-			addresses a database **dataset**, a compute **engine**, a static area/path **file**, or a parsable **file**.  The dataset TYPE:
+			addresses a database **dataset**, a compute **engine**, a static area/path **file**, or a parsable **file**.
+			The dataset TYPE:
 
-				db | xml | csv | txt | tab | view | tree | flat | delta | nav | kml | encap | html | view | exe
-
-			specified how the dataset is to be rendered, or which the file attribute is to be returned:
-
+				db | xml | csv | txt | tab | view | tree | flat | delta | nav | kml | encap | html | 
+				view | pview | sview | spview | bview |
+				exe |
 				code | jade | classif | readability | client | size | risk
+
+			specifies how the dataset is formated, rendered, queued, or attribute returned.
+
 
 	#accordion.Views
 
@@ -442,18 +445,20 @@ append site_body
 					POST /ENGINE.TYPE	Step ENGINE  in a stateful workflow
 					DELETE /ENGINE.TYPE	Free ENGINE froma staeful workflow
 
-				provide a stateful interface to engines in [workflows](/nodeflow.view).  Engine parameters are held in a 
-				context that is read/write assessible to an engine
+				provide a stateful interface to engines in [workflows](/nodeflow.view).  Optioanl engine parameters 
+				are held in a read/write context that follows the pattern:
 
-					tau: [ tau1, tau2, ... ],
-					port1: function () {}, 
-					port2: function() {}, ...
-					entry: {key1: "select ...", ... } || "select ..."
-					exit: {key2: "update ...", ... } || "update ...",
-					key1: value, 
-					key2: value, ...
-
-				Its context is automatically extended with:
+					{
+						tau: [ tau1, tau2, ... ],
+						port1: function () {}, 
+						port2: function() {}, ...
+						entry: {key1: "select ...", ... } || "select ...",
+						exit: {key2: "update ...", ... } || "update ...",
+						key1: value, 
+						key2: value, ...
+					}
+					
+				When accessed, its context is automatically extended with:
 
 					query: {key: value,  ...},  
 					sql: connector, 
@@ -461,8 +466,7 @@ append site_body
 					LIB2: module, ... 
 
 				where
-				+ LIBX are standard computational modules (DSP, LWIP, RAN, RAN.MLE, 
-				RAN.MVN, GRP, MATH, CRYPTO, LIE, ...),  
+				+ LIBX refers to the [DSP](/linkpending), [LWIP](/linkpending), [MATH](/linkpending), [CRYPTO](/linkpending), [FLEX](/linkpending), ... modules,
 				+ query will contain the key:value parameters from the url,  
 				+ sql provides a sql connector for js-engines (SQL0, SQL1 cursors are provided for py-engines).
 

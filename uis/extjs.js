@@ -2534,24 +2534,20 @@ WIDGET.prototype.menuTools = function () {
 							return nada;
 						
 						else
-							return action( key, {BLOG:"N/A",Special:"Blog."}, function () {
-								Widget.Data.relink( function (proxy, flags) {
-									var parms = Ext.Object.fromQueryString(proxy.url);
+							return action( key, {BLOG:"N/A",Special:"Blog."}, {
+								onAction: function () {
+									Widget.Data.relink( function (proxy, flags) {
+										var parms = Ext.Object.fromQueryString(proxy.url);
 
-									if (blogged) 
-										delete parms._blog;
-									else
-										parms._blog = Widget.Data.Blogs.join(",");
+										if (blogged) 
+											delete parms._blog;
+										else
+											parms._blog = Widget.Data.Blogs.join(",");
 
-									proxy.url = unescape(Ext.Object.toQueryString(parms)).replace("?=","?");
-									/*
-									if (blogged)
-										proxy.url = proxy.url.substr(0,proxy.url.indexOf("?"));
-									else
-										proxy.url = proxy.url +"_blog=" + Widget.Data.Blogs.join(",");
-									*/
-									blogged = !blogged;
-								});
+										proxy.url = unescape(Ext.Object.toQueryString(parms)).replace("?=","?");
+										blogged = !blogged;
+									});
+								}
 							});
 
 					case "|":
