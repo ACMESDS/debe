@@ -38,6 +38,37 @@ html(lang="en")
 		if (!JSON.parse)
 			script(src="/clients/json/json2.js")
 
+		//- Add global ajax method
+		script.
+			navigator.ajax = function ( method, async, url, cb , body, kill ) {
+
+				var req = ((window.XMLHttpRequest)  			// get a request handle
+						? new XMLHttpRequest()
+						: new ActiveXObject("Microsoft.XMLHTTP"));
+
+				req.onreadystatechange = function() { 				// Set the callback
+					if (req.readyState==4 && req.status==200) 	// Service completed 
+						if (cb) 			// pass response to callback
+							if ( cb( req.responseText ) ) 	// test callback returned status
+								if (kill) kill();  // kill the document if cb returns true
+				};
+
+				req.open(method, url, async); // start request
+				if (body)
+					req.send(JSON.stringify(body));  	// end request
+				else
+					req.send();  // end request
+			}
+		
+		//- Add global link follower method for analytics
+		script.
+			navigator.follow = function (href,client,view) {
+				//alert("following "+href);
+				window.open(href);
+				navigator.ajax( "GET", true, `/follow?goto=${href}&client=${client}&view=${view}`);
+			}
+
+		//- Probe client's IP address
 		script.
 			var probe = {platform: true, location: false, ip: true, browser: true};
 

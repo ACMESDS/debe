@@ -61,8 +61,10 @@ var										// shortcuts and globals
 var
 	DEBE = module.exports = TOTEM.extend({
 	
-	builtins: {  // builtin added to engines
-		// gaussmix: FLEX.execute.gaussmix
+	publish: {  // builtin added to engines
+		randpr: FLEX.plugins.randpr,
+		res1pr: FLEX.plugins.res1pr,
+		res2pr: FLEX.plugins.res2pr		
 	}, 
 		
 	"reqflags.traps." : {  //< _flag=name can modify the reqeust
@@ -109,7 +111,16 @@ var
 								rec[key] = "no iframes".tag("iframe",{src:val,width:1200,height:400});
 							
 							else
-								rec[key] = (":markdown\n"+val).replace(/\n/g,"\n\t").render(req);
+								rec[key] = (":markdown\n" + val)
+									.replace(/\n/g,"\n\t")  // indent for markdown
+									.replace(/\[(.*?)\]\((.*?)\)/g, function (m,i) {  // [A](B) --> followed link
+										m = m.substr(1,m.length-2).split("]("); 
+										return `<a href="${m[1]}">${m[0]}</a>`;
+									})
+									.replace(/href=(.*?)>/g, function (m,i) { // <a href=B>A</a> --> followed link
+										return `href='javascript:navigator.follow(${i},BASE.user.client,BASE.user.source)'>`;
+									})
+									.render(req);
 				});
 			});
 		},
@@ -802,6 +813,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		sview: renderJade,
 		spview: renderJade,
 		bview: renderJade,
+		bgview: renderJade,
+		bpview: renderJade,
 		exe: runExe
 	},
 
@@ -1594,32 +1607,54 @@ append base_body
 `.render(req) ); break;
 					
 				case "pview":
+					var pcol = cols.pop();
 res( `extends base
 append base_parms
 	- tech = "extjs"
 append base_body
-	#pivot.view.${req.table}(path="/${req.table}.db?${req.search}",pivots="${cols[0]}",cols="${cols.join()}",dims="2000,600",page=10,nowrap)
+	#pivot.view.${req.table}(path="/${req.table}.db?${req.search}",pivots="${pcol}",cols="${cols.join()}",dims="2000,600",page=10,nowrap)
 `
 .render(req) ); break;
 
 				case "sview":
 res( `extends site
 append site_parms
-	- view = "Min"
+	- view = "Basic"
 append site_body
 	#grid.view.${req.table}(path="/${req.table}.db?${req.search}",cols="${cols.join()}",dims="2000,600",page=10,nowrap)
 `
 .render(req) ); break;
 					
 				case "spview":
+					var pcol = cols.pop();
 res( `extends site
 append site_parms
-	- view = "Min"
+	- view = "Basic"
 append site_body
-	#pivot.view.${req.table}(path="/${req.table}.db?${req.search}",pivots="${cols[0]}",cols="${cols.join()}",dims="2000,600",page=10,nowrap)
+	#pivot.view.${req.table}(path="/${req.table}.db?${req.search}",pivots="${pcol}",cols="${cols.join()}",dims="2000,600",page=10,nowrap)
 `
 .render(req) ); break;
 
+				case "bgview":
+res( `extends base
+append base_parms
+	- tech = "reveal"
+	- classif = "(U) Unclassified"
+append base_body
+	section
+		iframe(src='/${req.table}.view',width=1000,height=500)
+`.render(req) ); break;
+
+				case "bpview":
+res( `extends base
+append base_parms
+	- tech = "reveal"
+	- classif = "(U) Unclassified"
+append base_body
+	section
+		iframe(src='/${req.table}.pview',width=1000,height=500)
+`.render(req) ); break;
+					
 				case "bview":
 					if ( select = FLEX.select[req.table] )
 						select( req, function (recs) {
@@ -2161,7 +2196,7 @@ function Initialize () {
 		ENGINE.config({
 			thread: DEBE.thread,
 			cores: DEBE.core,
-			builtins: DEBE.builtins,
+			builtins: DEBE.publish,
 			"plugins.FLEX": FLEX
 		});
 

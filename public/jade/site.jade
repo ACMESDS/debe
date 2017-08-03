@@ -95,10 +95,7 @@ append base_body
 
 		when "Basic"
 
-			#border(
-				class=table,
-				title=titlebar,
-				head="Themes,Options,Help",dims=dims)
+			#border(class=table,title=titlebar,head="Themes,Options,Help")
 
 				p #{classif.level} #{classif.purpose}
 
@@ -112,7 +109,8 @@ append base_body
 						*	Capture screen for administrator.
 						*	Edit this [view](skinguide.view).
 
-				block site_body
+				#fit(center)
+					block site_body
 				
 				#fit(south,crush)
 					:markdown
@@ -125,8 +123,7 @@ append base_body
 				title=titlebar,
 				head="Health,Users,Themes,Capture,Links,Options,Likeus,Help",
 				LikeUs="/likeus.db",
-				crush,
-				dims=dims)
+				crush)
 
 				p #{classif.level} #{classif.purpose}
 
@@ -159,7 +156,7 @@ append base_body
 				class=table,
 				title=titlebar,
 				head="More(Health,Users,Links,Themes),Engines,Queues,Uploads,$uploads,Stores,$stores,Views,Options,LikeUs,Help",
-				LikeUs="/likeus.db",dims=dims)
+				LikeUs="/likeus.db")
 
 				p #{classif.level} #{classif.purpose}
 
@@ -204,7 +201,7 @@ append base_body
 			#hold.Comfort(path="/lookups.db",cols="Name,Path")
 
 			#border(
-				class=table,			
+				class=table,
 				crush,
 				head="Comfort,Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),Options,Likeus,Help",
 				LikeUs="/likeus.db",
@@ -216,7 +213,7 @@ append base_body
 				#grid.Search(
 					path="/catalog.db",center,crush,
 					head="Search,Execute,Print,Refresh",
-					page=100,dims=dims,
+					page=100,
 					cols="Ref,Name,Link.h,Dated.d,Quality")
 
 				#fit(south,crush)

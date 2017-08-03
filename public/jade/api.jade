@@ -30,11 +30,11 @@ append site_body
 			The dataset TYPE:
 
 				db | xml | csv | txt | tab | view | tree | flat | delta | nav | kml | encap | html | 
-				view | pview | sview | spview | bview |
+				view | pview | sview | spview | bview | bgview | bpview |
 				exe |
 				code | jade | classif | readability | client | size | risk
 
-			specifies how the dataset is formated, rendered, queued, or attribute returned.
+			specifies how the dataset is formatted, rendered, queued, or attribute returned.
 
 
 	#accordion.Views
@@ -313,8 +313,8 @@ append site_body
 
 					_queue	= KEY for queuing record state
 					_json	= KEY,KEY,... json parse selected KEYs and index with KEY=IDX.IDX...
-					_blog	= KEY,KEY,... render KEYs containing markdown, /VIEW, or //JADE
-					_nav	= CMD,root/A/B/... folder navigation CMD=open|tree|rename|size 
+					_blog	= KEY,KEY,... markdown KEYS or render /VIEW | //JADE prefixed KEYs
+					_nav	= CMD,root/A/B/... folder navigation CMD=open | tree | rename | size 
 
 				# Record parameters
 

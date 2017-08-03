@@ -241,6 +241,7 @@ var BASE = {
 		BASE.user.client = anchor.getAttribute("client");
 		//BASE.user.guard = anchor.getAttribute("guard");
 		BASE.user.source = anchor.getAttribute("source");
+		//alert("user="+BASE.user.client+" "+BASE.user.source);
 		
 		if (io) {
 			BASE.socketio = io(); // issues a GET on /socket.io to connect
