@@ -22,6 +22,7 @@
  */
 
 var 									// globals
+	ENV = process.env,
 	SQLTYPES = {
 		"varchar(32)": "t",
 		"varchar(64)": "t",
@@ -52,7 +53,7 @@ var 									// totem modules
 	ENGINE = require("engine"), 
 	FLEX = require("flex"),
 	TOTEM = require("totem"),
-	CHIP = require("chipper");
+	CHIPS = require("chipper");
 
 var										// shortcuts and globals
 	Copy = TOTEM.copy,
@@ -103,22 +104,33 @@ var
 				keys.each( function (m, key) {
 					if (val = rec[key])
 						if (val.constructor == String) 
-							if (val.substr(0,2) == "//") 
-								rec[key] = val.substr(2).render(req);
-							
-							else
-							if (val.substr(0,1) == "/")
-								rec[key] = "no iframes".tag("iframe",{src:val,width:1200,height:400});
-							
-							else
 								rec[key] = (":markdown\n" + val)
-									.replace(/\n/g,"\n\t")  // indent for markdown
-									.replace(/\[(.*?)\]\((.*?)\)/g, function (m,i) {  // [A](B) --> followed link
+									.replace(/   /g, "\t")  // fake tabs
+									.replace(/\n/g,"\n\t")  // indent markdown
+									.replace(/\[(.*?)\]\((.*?)\)/g, function (m,i) {  // adjust [x,w,h](u) markdown
 										m = m.substr(1,m.length-2).split("]("); 
-										return `<a href="${m[1]}">${m[0]}</a>`;
+										var 
+											v = m[0].split(","),
+											u = m[1] || "missing url",
+											x = v[0] || "",
+											w = v[1] || 100,
+											h = v[2] || 100;
+									
+										switch (x) {
+											case "update":
+												return x.tag("a",{href:req.table+".exe?ID="+rec.ID}) 
+													+ "".tag("iframe",{src:u,width:w,height:h});
+											case "image":
+												return "".tag("img",{src:u,width:w,height:h});
+											case "post":
+												return "".tag("iframe",{src:u,width:w,height:h});
+											default:
+												return x.tag("a",{href:u});
+										}										
 									})
 									.replace(/href=(.*?)>/g, function (m,i) { // <a href=B>A</a> --> followed link
-										return `href='javascript:navigator.follow(${i},BASE.user.client,BASE.user.source)'>`;
+										var q = (i.charAt(0) == "'") ? '"' : "'";
+										return `href=${q}javascript:navigator.follow(${i},BASE.user.client,BASE.user.source)${q}>`;
 									})
 									.render(req);
 				});
@@ -843,6 +855,26 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		filename: "./public/jade/ref.jade",	// jade reference path for includes, exports, appends
 		
+		sss: { // some streaming services
+			thresher: ENV.SSS_THRESHER,
+			spoof: "http://localhost:8080/spoof.exe?sss=test1",
+			gaussmix: "http://localhost:8080/gaussmix.exe?"			
+		},
+
+		wfs: { // wfs services
+			ess: ENV.WFS_ESS,
+			dglobe: ENV.WFS_DGLOBE,
+			omar: ENV.WFS_OMAR,
+			geosrv: ENV.WFS_GEOSRV
+		},
+
+		wms: { // wms services
+			ess: ENV.WMS_ESS,
+			dglobe: ENV.WMS_DGLOBE,
+			omar: ENV.WMS_OMAR,
+			geosrv: ENV.WMS_GEOSRV
+		},
+		
 		mime: {
 			tour: ".",		 			//< enable totem touring 
 			//jobs: "./public/jobs",		//< path to tau simulator job files
@@ -1022,6 +1054,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	cycles: {
 		billing: 0,  //< Interval [ms] to bill jobs in queue
 		diag: 0 	 //< Interval [ms] to run self diagnostics
+	},
+		
+	loader: function (url,met,req,res) { 
+		Trace("LOADING "+url.tagurl(req));
+		met( url.tagurl(req), res) ; 
 	},
 		
 	blindTesting : false,		//< Enable for double-blind testing (make FLEX susceptible to sql injection attacks)
@@ -1567,7 +1604,12 @@ function renderJade(req,res) {
 
 		function genSkin(req, res, fields) {
 			
-			var cols = [];
+			var
+				cols = [],
+				query = req.query,
+				page = query.page || "10",
+				dims = query.dims || "2000,300",
+				wh = dims.split(",");
 			
 			switch (fields.constructor) {
 				case Array:
@@ -1603,7 +1645,7 @@ res( `extends base
 append base_parms
 	- tech = "extjs"
 append base_body
-	#grid.view.${req.table}(path="/${req.table}.db?${req.search}",cols="${cols.join()}",dims="2000,600",page=10,nowrap)
+	#grid.view.${req.table}(path="/${req.table}.db?${req.search}",cols="${cols.join()}",dims=${dims},page=${page},nowrap)
 `.render(req) ); break;
 					
 				case "pview":
@@ -1612,7 +1654,7 @@ res( `extends base
 append base_parms
 	- tech = "extjs"
 append base_body
-	#pivot.view.${req.table}(path="/${req.table}.db?${req.search}",pivots="${pcol}",cols="${cols.join()}",dims="2000,600",page=10,nowrap)
+	#pivot.view.${req.table}(path="/${req.table}.db?${req.search}",pivots="${pcol}",cols="${cols.join()}",dims=${dims},page=${page},nowrap)
 `
 .render(req) ); break;
 
@@ -1621,7 +1663,7 @@ res( `extends site
 append site_parms
 	- view = "Basic"
 append site_body
-	#grid.view.${req.table}(path="/${req.table}.db?${req.search}",cols="${cols.join()}",dims="2000,600",page=10,nowrap)
+	#grid.view.${req.table}(path="/${req.table}.db?${req.search}",cols="${cols.join()}",dims=${dims},page=${page},nowrap)
 `
 .render(req) ); break;
 					
@@ -1631,7 +1673,7 @@ res( `extends site
 append site_parms
 	- view = "Basic"
 append site_body
-	#pivot.view.${req.table}(path="/${req.table}.db?${req.search}",pivots="${pcol}",cols="${cols.join()}",dims="2000,600",page=10,nowrap)
+	#pivot.view.${req.table}(path="/${req.table}.db?${req.search}",pivots="${pcol}",cols="${cols.join()}",dims=${dims},page=${page},nowrap)
 `
 .render(req) ); break;
 
@@ -1642,7 +1684,7 @@ append base_parms
 	- classif = "(U) Unclassified"
 append base_body
 	section
-		iframe(src='/${req.table}.view',width=1000,height=500)
+		iframe(src='/${req.table}.view',width=${wh[0]},height=${wh[1]})
 `.render(req) ); break;
 
 				case "bpview":
@@ -1652,7 +1694,7 @@ append base_parms
 	- classif = "(U) Unclassified"
 append base_body
 	section
-		iframe(src='/${req.table}.pview',width=1000,height=500)
+		iframe(src='/${req.table}.pview',width=${wh[0]},height=$wh[1])
 `.render(req) ); break;
 					
 				case "bview":
@@ -1803,10 +1845,12 @@ function runExe(req,res) {
 			job: job
 		});
 
-		if (query.window)
-			CHIP.count(query, job, function (voxel,stats,sql) {
+		if (query.tmin)
+			CHIPS.count(query, job, function (voxel,stats,sql) {
 				var updated = new Date();
 
+				console.log({save:stats});
+				
 				sql.query(  // update voxel with engine stats
 					"UPDATE app.voxels SET ? WHERE ?", [{
 						t: updated,
@@ -1818,7 +1862,7 @@ function runExe(req,res) {
 			});
 
 		else
-			CHIP.detect(query, job, function (chip,dets,sql) {
+			CHIPS.detect(query, job, function (chip,dets,sql) {
 				var updated = new Date();
 
 				sql.query(
@@ -1831,7 +1875,7 @@ function runExe(req,res) {
 				},
 				chip.geo ]);
 
-				for (var vox=CHIP.voxels,alt=vox.minAlt, del=vox.deltaAlt, max=vox.maxAlt; alt<max; alt+=del) 
+				for (var vox=CHIPS.voxels,alt=vox.minAlt, del=vox.deltaAlt, max=vox.maxAlt; alt<max; alt+=del) 
 					sql.query(
 						"REPLACE INTO app.voxels SET ?,Geo=st_GeomFromText(?)", [{
 						Thread: job.thread,
@@ -1849,6 +1893,8 @@ function runExe(req,res) {
 		sql = req.sql,
 		query = req.query;
 
+	console.log(["exe", req.table, FLEX.execute[req.table] ]);
+	
 	if (exe = FLEX.execute[req.table] )
 		exe(req,res);
 	
@@ -2183,15 +2229,22 @@ function Initialize () {
 
 		Trace(`INITIALIZING ENGINES`);
 
-		CHIP.config({
-			fetch: {
-				wfs: DEBE.fetchers.http,
-				wms: DEBE.fetchers.wget,
-				sss: DEBE.fetchers.http,
-				save: DEBE.fetchers.plugin
-			},
-			thread: DEBE.thread
-		});
+		var 
+			paths = DEBE.paths,
+			fetchers = DEBE.fetchers;
+		
+		if ( loader = DEBE.loader )	
+			CHIPS.config({
+				fetch: {
+					catalog: function (req,res) { loader( paths.wfs.ess, fetchers.http, req, res ); },
+					image: function (req,res) { loader( paths.wms.ess, fetchers.wget, req, res ); },
+					events: function (req,res) { loader( paths.sss.spoof, fetchers.http, req, res ); },
+					stats: function (req,res) { loader( paths.sss.gaussmix, fetchers.http, req, res ); },
+					save: fetchers.plugin
+				},
+				source: "",
+				thread: DEBE.thread
+			});
 				
 		ENGINE.config({
 			thread: DEBE.thread,

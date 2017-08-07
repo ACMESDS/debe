@@ -654,9 +654,9 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 					allowBlank: true,
 					disabled: fOff,
 					//minHeight: 200,
-					width: 600,
+					width: 600
 					// If standalone widget
-					enableKeyEvents: true,  
+					/*enableKeyEvents: true,  
 					listeners: {
 						keypress: function (f,e) {
 							e.stopEvent();
@@ -731,18 +731,8 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 
 							el.setSelectionRange(pos,pos);
 
-							/*
-							if (e.getKey() == e.TAB) {
-								var tabText = '\t';
-								if (el.setSelectionRange) {
-								}
-								else
-								if (document.selection) {
-									document.selection.createRange().text = tabText;
-								}
-							} */
 						}
-					}
+					} */
 				},
 				renderer 	: calcRender,
 				listeners	: fListen
