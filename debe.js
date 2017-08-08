@@ -6,7 +6,6 @@
  * @requires cluster
  * @requires child-process
  * @requires fs
- * @requires crypto
 
 * @requires i18n-abide
  * @requires socket.io
@@ -39,7 +38,6 @@ var 									// globals
 var 									// NodeJS modules
 	CP = require("child_process"), 		//< Child process threads
 	CLUSTER = require("cluster"), 		//< Support for multiple cores
-	CRYPTO = require('crypto'), 		
 	FS = require("fs"); 				//< NodeJS filesystem and uploads
 	
 var										// 3rd party modules
@@ -63,9 +61,9 @@ var
 	DEBE = module.exports = TOTEM.extend({
 	
 	publish: {  // builtin added to engines
-		randpr: FLEX.plugins.randpr,
-		res1pr: FLEX.plugins.res1pr,
-		res2pr: FLEX.plugins.res2pr		
+		//randpr: FLEX.plugins.randpr,
+		//res1pr: FLEX.plugins.res1pr,
+		//res2pr: FLEX.plugins.res2pr		
 	}, 
 		
 	"reqflags.traps." : {  //< _flag=name can modify the reqeust
@@ -855,10 +853,16 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		filename: "./public/jade/ref.jade",	// jade reference path for includes, exports, appends
 		
+		engine: "SELECT *,count(ID) as Count FROM app.engines WHERE least(?,1)",
+		render: "public/jade/",
+		
+		gms: { // gauss mixxing services
+			gaussmix: "http://localhost:8080/gaussmix.exe?"			
+		},
+		
 		sss: { // some streaming services
 			thresher: ENV.SSS_THRESHER,
-			spoof: "http://localhost:8080/spoof.exe?sss=test1",
-			gaussmix: "http://localhost:8080/gaussmix.exe?"			
+			spoof: "http://localhost:8080/spoof.exe?sss=test1"
 		},
 
 		wfs: { // wfs services
@@ -1068,96 +1072,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	}
 });
 
-/**
- * @method INGESTsession
- * @private
- * Ingest the supplied job when the specified event occurs.
- * 
- * @param {String} event generating this request
- * @param {String} job filename of job being requested
- */
-/*
-function _INGESTsession (area,file) { 
-	Thread( function (sql) {
-		
-		Trace("INGESTING "+file+" INTO " + area);
-		
-		switch (area) {
-			case "feed":
-				sql.query("INSERT INTO simjobs SET ?", {job:job, toa:new Date()}, sql.release);
-				break;
-			
-			case "poll": 		// polling heart beat
-			case "rename":		// file rename
-				sql.release();
-				break;
-				
-			case "uploads":		// ingest job by indexing with associated engine with removal
-			case "stores":		// ingest job by indexing with associated engine
-			
-				var
-					idle, busy,
-					job = {
-						Client	: DEBE.site.Name,
-						Class	: "index",
-						Job		: file,
-						State	: 0,
-						Arrived	: new Date(),
-						Work 	: 0,
-						Notes	: file.tag("a",{href:"/queues.view"})
-					};
-				
-				/-*
-				sql.query("INSERT INTO queues SET ?", job, function (err,info) {
-					var jobID = {ID:info.insertId};
-				
-					READER.job(sql,file,area, function (score) {
-						Trace(score);
-						
-						Each(OS.cpus(), function (n,cpu) {
-							idle = cpu.times.idle;
-							busy = cpu.times.nice + cpu.times.sys + cpu.times.irq + cpu.times.user;
-							job["Util"+n] = busy / (busy + idle);
-						});
-						
-						sql.query(
-							"UPDATE queues SET ? WHERE ?",
-							[{Departed: new Date(), State:1, Notes:"finished"},jobID], 
-							sql.release
-						);
-					});
-				});
-				* *-/
-				
-				break;
-							
-			case "jobs":		// ingest job by broadcasting job to all clients
-			
-				if (SOCKETIO) 
-					if (!Each( SESSIONS, function (n,ses) { // look for next ses on ring
-						if (ses.polled == SOCKETS.polled) {
-							ses.polled = !ses.polled;
-							sql.query("SELECT Job,min(toa),count(ID) AS Jobs FROM simjobs LIMIT 0,1")
-							.on("result", function (job) {
-								Trace(job);
-								SOCKETIO.sockets.emit("import", {
-									job: job.Job,
-									to: ses.Client,
-									jobs: job.Jobs,
-									core: CLUSTER.isMaster ? 0 : CLUSTER.worker.id,
-									from: DEBE.site.Name
-								});
-							});
-							return true;
-						}
-					})) // flip ses state if ring completely traversed 
-						SOCKETS.polled = !SOCKETS.polled;
-
-				break;
-		}
-	});
-}
-*/
 
 /**
  * @method SOAPsession
@@ -1741,13 +1655,13 @@ append base_body
 							  
 		//Trace("RENDER "+req.table);
 		
-		sql.query(paths.mysql.engine, { // Try a skin from the  engine db
+		sql.query(paths.engine, { // Try a skin from the  engine db
 			Name: req.table,
 			Engine: req.type,
 			Enabled: 1
 		})
 		.on("result", function (eng) {
-
+			
 			if (eng.Count) 			// render using skinning engine
 				res( eng.Code.render(req) );
 			
@@ -2239,7 +2153,7 @@ function Initialize () {
 					catalog: function (req,res) { loader( paths.wfs.ess, fetchers.http, req, res ); },
 					image: function (req,res) { loader( paths.wms.ess, fetchers.wget, req, res ); },
 					events: function (req,res) { loader( paths.sss.spoof, fetchers.http, req, res ); },
-					stats: function (req,res) { loader( paths.sss.gaussmix, fetchers.http, req, res ); },
+					stats: function (req,res) { loader( paths.gms.gaussmix, fetchers.http, req, res ); },
 					save: fetchers.plugin
 				},
 				source: "",
