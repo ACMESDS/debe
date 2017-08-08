@@ -28,6 +28,7 @@ var 									// globals
 		"varchar(128)": "t",
 		"int(11)": "i",
 		float: "n",
+		json: "x",
 		mediumtext: "x",
 		date: "d",
 		datetime: "d"
@@ -818,13 +819,13 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 	
 	"reader.": { //< reader endpoints
-		view: renderJade,
-		pview: renderJade,
-		sview: renderJade,
-		spview: renderJade,
-		bview: renderJade,
-		bgview: renderJade,
-		bpview: renderJade,
+		view: renderSkin,
+		pview: renderSkin,
+		sview: renderSkin,
+		spview: renderSkin,
+		bview: renderSkin,
+		bgview: renderSkin,
+		bpview: renderSkin,
 		exe: runExe
 	},
 
@@ -861,11 +862,12 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		},
 		
 		sss: { // some streaming services
-			thresher: ENV.SSS_THRESHER,
-			spoof: "http://localhost:8080/spoof.exe?sss=test1"
+			spoof: "http://localhost:8080/sss.exe?Name=spoof1",
+			thresher: ENV.SSS_THRESHER
 		},
 
 		wfs: { // wfs services
+			spoof: "http://localhost:8080/wfs.exe?Name=spoof1",
 			ess: ENV.WFS_ESS,
 			dglobe: ENV.WFS_DGLOBE,
 			omar: ENV.WFS_OMAR,
@@ -873,6 +875,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		},
 
 		wms: { // wms services
+			spoof: "http://localhost:8080/wms.exe?Name=spoof1",
 			ess: ENV.WMS_ESS,
 			dglobe: ENV.WMS_DGLOBE,
 			omar: ENV.WMS_OMAR,
@@ -1062,7 +1065,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 	loader: function (url,met,req,res) { 
 		Trace("LOADING "+url.tagurl(req));
-		met( url.tagurl(req), res) ; 
+		met( url.tagurl(req), res );
 	},
 		
 	blindTesting : false,		//< Enable for double-blind testing (make FLEX susceptible to sql injection attacks)
@@ -1501,12 +1504,12 @@ Totem reader endpoints
 */
 
 /**
-@method renderJade
+@method renderSkin
 Totem(req,res) endpoint to render jade code requested by .table jade engine. 
 @param {Object} req Totem request
 @param {Function} res Totem response
 */
-function renderJade(req,res) {
+function renderSkin(req,res) {
 			
 	var 
 		sql = req.sql,
@@ -1514,7 +1517,7 @@ function renderJade(req,res) {
 		site = DEBE.site,  
 		ctx = site.context[req.table]; 
 		
-	function renderJade() {  
+	function renderSkin() {  
 
 		function genSkin(req, res, fields) {
 			
@@ -1714,11 +1717,11 @@ append base_body
 				};
 			}
 
-			renderJade(); 			// render skin in this extended context
+			renderSkin(); 			// render skin in this extended context
 		});
 	
 	else
-		renderJade();  		// render skin in default context
+		renderSkin();  		// render skin in default context
 
 }
 
@@ -1768,7 +1771,7 @@ function runExe(req,res) {
 				sql.query(  // update voxel with engine stats
 					"UPDATE app.voxels SET ? WHERE ?", [{
 						t: updated,
-						Stats: JSON.stringify(stats)
+						Save: JSON.stringify(stats)
 					}, {
 						ID: voxel.ID
 					}
@@ -1782,7 +1785,7 @@ function runExe(req,res) {
 				sql.query(
 					"REPLACE INTO app.chips SET ?,Geo=st_GeomFromText(?)", [{
 					Thread: job.thread,
-					Detects: JSON.stringify(dets),
+					Save: JSON.stringify(dets),
 					t: updated,
 					x: chip.pos.lat,
 					y: chip.pos.lon
@@ -1793,7 +1796,7 @@ function runExe(req,res) {
 					sql.query(
 						"REPLACE INTO app.voxels SET ?,Geo=st_GeomFromText(?)", [{
 						Thread: job.thread,
-						Stats: "",
+						Save: null,
 						t: updated,
 						x: chip.pos.lat,
 						y: chip.pos.lon,
@@ -1807,8 +1810,6 @@ function runExe(req,res) {
 		sql = req.sql,
 		query = req.query;
 
-	console.log(["exe", req.table, FLEX.execute[req.table] ]);
-	
 	if (exe = FLEX.execute[req.table] )
 		exe(req,res);
 	
@@ -2053,7 +2054,7 @@ function Initialize () {
 					.on("result", function (app) {
 						Trace(app.Name+" v"+app.Ver+" url="+app.Host+":"+app.Port+" db="+app.DB+" nick="+app.Nick+" sockted="+(app.Sockets?"yes":"no")+" cores="+app.Cores+" pki="+app.PKI);
 					})
-					.on("error", function (err) {co
+					.on("error", function (err) {
 						Trace(err);
 					})
 					.on("end", function () {
@@ -2150,8 +2151,8 @@ function Initialize () {
 		if ( loader = DEBE.loader )	
 			CHIPS.config({
 				fetch: {
-					catalog: function (req,res) { loader( paths.wfs.ess, fetchers.http, req, res ); },
-					image: function (req,res) { loader( paths.wms.ess, fetchers.wget, req, res ); },
+					catalog: function (req,res) { loader( paths.wfs.spoof, fetchers.http, req, res ); },
+					image: function (req,res) { loader( paths.wms.spoof, fetchers.wget, req, res ); },
 					events: function (req,res) { loader( paths.sss.spoof, fetchers.http, req, res ); },
 					stats: function (req,res) { loader( paths.gms.gaussmix, fetchers.http, req, res ); },
 					save: fetchers.plugin
