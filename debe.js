@@ -820,12 +820,13 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	
 	"reader.": { //< reader endpoints
 		view: renderSkin,
-		pview: renderSkin,
-		sview: renderSkin,
-		spview: renderSkin,
-		bview: renderSkin,
-		bgview: renderSkin,
-		bpview: renderSkin,
+		run: renderSkin,
+		pivot: renderSkin,
+		site: renderSkin,
+		spivot: renderSkin,
+		brief: renderSkin,
+		gbrief: renderSkin,
+		pbrief: renderSkin,
 		exe: runExe
 	},
 
@@ -1517,7 +1518,7 @@ function renderSkin(req,res) {
 		site = DEBE.site,  
 		ctx = site.context[req.table]; 
 		
-	function renderSkin() {  
+	function renderJade() {  
 
 		function genSkin(req, res, fields) {
 			
@@ -1564,8 +1565,28 @@ append base_parms
 append base_body
 	#grid.view.${req.table}(path="/${req.table}.db?${req.search}",cols="${cols.join()}",dims=${dims},page=${page},nowrap)
 `.render(req) ); break;
-					
-				case "pview":
+
+				case "run":
+res( `extends site
+append site_parms
+	- view = "Min"
+append site_body
+	#grid.Tests(
+		path="/${req.table}.db?${req.search}",
+		cols="${cols.join()}",
+		dims=${dims},
+		page=${page})
+	#form.Engine(
+		path="/engines.db?Engine=js&Name=${req.table}",
+		cols="Name,Engine,Enabled.c,Program(Code.x,Vars.x.Context)")
+	#grid.Jobs(
+		path="/queues.db?Client=${req.client}",
+		cols="Arrived.d,Departed.d,Notes,Name,Job,Class,QoS.n,Age.n,Funded.n,Priority.n,State.n",
+		dims=${dims},
+		page=${page})
+`.render(req) ); break;
+										
+				case "pivot":
 					var pcol = cols.pop();
 res( `extends base
 append base_parms
@@ -1575,7 +1596,7 @@ append base_body
 `
 .render(req) ); break;
 
-				case "sview":
+				case "site":
 res( `extends site
 append site_parms
 	- view = "Basic"
@@ -1584,7 +1605,7 @@ append site_body
 `
 .render(req) ); break;
 					
-				case "spview":
+				case "spivot":
 					var pcol = cols.pop();
 res( `extends site
 append site_parms
@@ -1594,7 +1615,7 @@ append site_body
 `
 .render(req) ); break;
 
-				case "bgview":
+				case "gbrief":
 res( `extends base
 append base_parms
 	- tech = "reveal"
@@ -1604,7 +1625,7 @@ append base_body
 		iframe(src='/${req.table}.view',width=${wh[0]},height=${wh[1]})
 `.render(req) ); break;
 
-				case "bpview":
+				case "pbrief":
 res( `extends base
 append base_parms
 	- tech = "reveal"
@@ -1614,7 +1635,7 @@ append base_body
 		iframe(src='/${req.table}.pview',width=${wh[0]},height=$wh[1])
 `.render(req) ); break;
 					
-				case "bview":
+				case "brief":
 					if ( select = FLEX.select[req.table] )
 						select( req, function (recs) {
 res( `extends base
@@ -1660,7 +1681,7 @@ append base_body
 		
 		sql.query(paths.engine, { // Try a skin from the  engine db
 			Name: req.table,
-			Engine: req.type,
+			Engine: "jade",
 			Enabled: 1
 		})
 		.on("result", function (eng) {
@@ -1717,11 +1738,11 @@ append base_body
 				};
 			}
 
-			renderSkin(); 			// render skin in this extended context
+			renderJade(); 			// render skin in this extended context
 		});
 	
 	else
-		renderSkin();  		// render skin in default context
+		renderJade();  		// render skin in default context
 
 }
 
@@ -1784,25 +1805,27 @@ function runExe(req,res) {
 
 				sql.query(
 					"REPLACE INTO app.chips SET ?,Geo=st_GeomFromText(?)", [{
-					Thread: job.thread,
-					Save: JSON.stringify(dets),
-					t: updated,
-					x: chip.pos.lat,
-					y: chip.pos.lon
-				},
-				chip.geo ]);
+						Thread: job.thread,
+						Save: JSON.stringify(dets),
+						t: updated,
+						x: chip.pos.lat,
+						y: chip.pos.lon
+					},
+					chip.geo 
+				]);
 
 				for (var vox=CHIPS.voxels,alt=vox.minAlt, del=vox.deltaAlt, max=vox.maxAlt; alt<max; alt+=del) 
 					sql.query(
 						"REPLACE INTO app.voxels SET ?,Geo=st_GeomFromText(?)", [{
-						Thread: job.thread,
-						Save: null,
-						t: updated,
-						x: chip.pos.lat,
-						y: chip.pos.lon,
-						z: alt
-					},
-					chip.geo ]);
+							Thread: job.thread,
+							Save: null,
+							t: updated,
+							x: chip.pos.lat,
+							y: chip.pos.lon,
+							z: alt
+						},
+						chip.geo 
+					]);
 			});		
 	}
 	
@@ -2164,9 +2187,10 @@ function Initialize () {
 		ENGINE.config({
 			thread: DEBE.thread,
 			cores: DEBE.core,
-			builtins: DEBE.publish,
-			"plugins.FLEX": FLEX
+			builtins: DEBE.publish
 		});
+		
+		ENGINE.plugins.FLEX = FLEX;
 
 		if (cb) cb();	
 	}
