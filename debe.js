@@ -1580,8 +1580,8 @@ append site_body
 		path="/engines.db?Engine=js&Name=${req.table}",
 		cols="Name,Engine,Enabled.c,Program(Code.x,Vars.x.Context)")
 	#grid.Jobs(
-		path="/queues.db?Client=${req.client}",
-		cols="Arrived.d,Departed.d,Notes,Name,Job,Class,QoS.n,Age.n,Funded.n,Priority.n,State.n",
+		path="/queues.db?Client=${req.client}&Name=${req.table}",
+		cols="Arrived.d,Departed.d,Notes,Class,QoS.n,Age.n,Funded.n,Priority.n,State.n",
 		dims=${dims},
 		page=${page})
 `.render(req) ); break;
@@ -1615,7 +1615,7 @@ append site_body
 `
 .render(req) ); break;
 
-				case "gbrief":
+				case "brief":
 res( `extends base
 append base_parms
 	- tech = "reveal"
@@ -1635,7 +1635,7 @@ append base_body
 		iframe(src='/${req.table}.pview',width=${wh[0]},height=$wh[1])
 `.render(req) ); break;
 					
-				case "brief":
+				case "gbrief":
 					if ( select = FLEX.select[req.table] )
 						select( req, function (recs) {
 res( `extends base
@@ -1752,101 +1752,127 @@ Debe initializer.
 */
 function runExe(req,res) {
 	
-	function runJob () {
-		var
-			job = { // default required parms
-				// job related
-				thread: req.client.replace(/\./g,"") + "." + req.table,
-				qos: req.profile.QoS, 
-				priority: 0,
-				client: req.client,
-				class: "chipping",
-				credit: req.profile.Credit,
-				name: req.table,
-				// engine related
-				engine: req.table,   // engine name
-				size: query.size || 50,  // feature size in [m]
-				pixels: query.pixels || 512, 	// samples across a chip [pixels]
-				scale: query.scale || 8,  // scale^2 is max number of features in a chip
-				step: query.step || 0.01, 	// relative seach step size
-				range: query.range || 0.1, // relative search size
-				detects: query.detects || 8,	// hits required to declare a detect
-				limit: query.limit || 1e99 	// limit chips
-			};
-
-		res("Job submitted");
-
-		for (var n in job) delete query[n];
-
-		console.log({
-			query: query,
-			job: job
-		});
-
-		if (query.tmin)
-			CHIPS.count(query, job, function (voxel,stats,sql) {
-				var updated = new Date();
-
-				console.log({save:stats});
-				
-				sql.query(  // update voxel with engine stats
-					"UPDATE app.voxels SET ? WHERE ?", [{
-						t: updated,
-						Save: JSON.stringify(stats)
-					}, {
-						ID: voxel.ID
-					}
-				]);
-			});
-
-		else
-			CHIPS.detect(query, job, function (chip,dets,sql) {
-				var updated = new Date();
-
-				sql.query(
-					"REPLACE INTO app.chips SET ?,Geo=st_GeomFromText(?)", [{
-						Thread: job.thread,
-						Save: JSON.stringify(dets),
-						t: updated,
-						x: chip.pos.lat,
-						y: chip.pos.lon
-					},
-					chip.geo 
-				]);
-
-				for (var vox=CHIPS.voxels,alt=vox.minAlt, del=vox.deltaAlt, max=vox.maxAlt; alt<max; alt+=del) 
-					sql.query(
-						"REPLACE INTO app.voxels SET ?,Geo=st_GeomFromText(?)", [{
-							Thread: job.thread,
-							Save: null,
-							t: updated,
-							x: chip.pos.lat,
-							y: chip.pos.lon,
-							z: alt
-						},
-						chip.geo 
-					]);
-			});		
-	}
-	
 	var
 		sql = req.sql,
 		query = req.query;
 
-	if (exe = FLEX.execute[req.table] )
-		exe(req,res);
+		/*
+		var job = { // default required parms
+			// job related
+			thread: req.client.replace(/\./g,"") + "." + req.table,
+			qos: req.profile.QoS, 
+			priority: 0,
+			client: req.client,
+			class: "chipping",
+			credit: req.profile.Credit,
+			name: req.table,
+			// engine related
+			engine: req.table,   // engine name
+			size: query.size || 50,  // feature size in [m]
+			pixels: query.pixels || 512, 	// samples across a chip [pixels]
+			scale: query.scale || 8,  // scale^2 is max number of features in a chip
+			step: query.step || 0.01, 	// relative seach step size
+			range: query.range || 0.1, // relative search size
+			detects: query.detects || 8,	// hits required to declare a detect
+			limit: query.limit || 1e99 	// limit chips
+		};*/
 	
-	else 
-	if (query.ID) 
-		sql.query("SELECT * FROM app.?? WHERE least(?,1)", [req.table, query])
-		.on("result", function (job) {
-			delete job[ID];
-			req.table = job.engine;
-			runJob( );
+	if (query.ID || query.Name)
+		FLEX.runPlugin(req, function (rtn) {
+
+			if ( Job = rtn.Job ) {
+
+				res("Job submitted");
+
+				var 
+					chan = Job ? JSON.parse(Job) : {},
+					job = Copy(rtn, { // job related
+						thread: req.client.replace(/\./g,"") + "." + req.table,
+						qos: req.profile.QoS, 
+						priority: 0,
+						client: req.client,
+						class: "chipping",
+						credit: req.profile.Credit,
+						name: req.table
+					});
+
+				delete job.ID;
+				delete job.Job;
+
+				console.log({
+					chan: chan,
+					job: job
+				});
+
+				if (chan.tmin)
+					CHIPS.tagevents(chan, job, function (win,status,sql) {
+						console.log(win,status);
+					});
+
+				else
+				if (chan.voi)
+					CHIPS.count(chan, job, function (voxel,stats,sql) {
+						var updated = new Date();
+
+						console.log({save:stats});
+
+						sql.query(  // update voxel with engine stats
+							"UPDATE app.voxels SET ? WHERE ?", [{
+								t: updated,
+								Save: JSON.stringify(stats)
+							}, {
+								ID: voxel.ID
+							}
+						]);
+					});
+
+				else
+				if (chan.ring)
+					CHIPS.detect(chan, job, function (chip,dets,sql) {
+						var updated = new Date();
+
+						sql.query(
+							"REPLACE INTO app.chips SET ?,Geo=st_GeomFromText(?)", [{
+								Thread: job.thread,
+								Save: JSON.stringify(dets),
+								t: updated,
+								x: chip.pos.lat,
+								y: chip.pos.lon
+							},
+							chip.geo 
+						]);
+
+						// reserve voxel detectors above this chip
+						for (var vox=CHIPS.voxels,alt=vox.minAlt, del=vox.deltaAlt, max=vox.maxAlt; alt<max; alt+=del) 
+							sql.query(
+								"REPLACE INTO app.voxels SET ?,Geo=st_GeomFromText(?)", [{
+									Thread: job.thread,
+									Save: null,
+									t: updated,
+									x: chip.pos.lat,
+									y: chip.pos.lon,
+									z: alt
+								},
+								chip.geo 
+							]);
+
+					});
+
+				else
+					ENGINE.select(req, function (rtn) {
+						console.log({engrtn:rtn});
+						if (query.Save)
+							sql.query("REPLACE INTO ?? SET ?", [ req.table, {Save: JSON.stringify(rtn)} ]);
+					});
+
+			}
+
+			else
+				res( rtn );
 		});
 	
 	else
-		runJob( );
+		ENGINE.select(req, res);
 	
 }
 
