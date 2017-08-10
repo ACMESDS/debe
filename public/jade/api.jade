@@ -416,14 +416,15 @@ append site_body
 		:markdown
 			A plugin -- a dataset-engine pair -- is assessible from the following endpoints:
 			
-					GET /PLUGIN.exe?ID=case 	Run PLUGIN engine using PLUGIN dataset parameters at case number
-					GET /PLUGIN.exe?Name=case 	Run PLUGIN engine using PLUGIN dataset parameters at case name
+					GET /PLUGIN.exe?ID=CASE 	Run PLUGIN engine using PLUGIN dataset parameters for specified CASE 
+					GET /PLUGIN.exe?Name=CASE 	Run PLUGIN engine using PLUGIN dataset parameters for specified CASE
 			
 			There are (special) parameters that determine how a PLUGIN operates from its endpoint:
 			
-				(Save) the results are written to the PLUGIN dataset at the requested case
-				(Job) the PLUGIN is placed into a job queue regulated by the clients' prevailing QoS and Credit levels
-				(Agent) the PLUGIN is out-sourced to the requested agent by placing into the global job queue
+				(Save) json reserve for storing the results of this CASE
+				(Job) json parameters to place CASE into a job queue regulated by the clients' QoS and Credit levels
+				(Agent) name of agent to out-source this CASE which will be polled until it returns its results 
+				(Task) name of project associated with this CASE
 				
 			### Adding keys
 			Keys can be added to a PLUGIN via:

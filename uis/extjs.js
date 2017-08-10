@@ -604,7 +604,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 		case 'h':
 		case 'html':	// html
 		case 'mediumtext':	
-			/*return  {
+			return  {
 				fType		: fType,
 				dataIndex	: fName,
 				//sortable	: true,
@@ -623,11 +623,10 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 					width: 400,
 					height: 400
 					//disabled: fOff
-				},
-				renderer 	: fCalc ? calcRender : null,
-				listeners	: fListen   // EXTJS widget gets confused when embedded in grid
-			};
-			*/
+				}
+				//renderer 	: fCalc ? calcRender : null,
+				//listeners	: fListen   // EXTJS widget gets confused when embedded in grid
+			};			
 			
 		case 'x':		// text area
 		case 'textarea':
@@ -1364,7 +1363,7 @@ function DS(anchor) {
 		
 		var fCol = gridColumn(fType,fName,fOff,fLock,fLabel,fTip,calc);
 				
-		if (fType == "x" || fType=="h") Blogs.push( fName );
+		if (fType=="h") Blogs.push( fName );
 
 		switch (fSum) {			// Add row aggregator if needed
 			case "min":

@@ -9,12 +9,10 @@ append site_parms
 append site_body
 
 	#form.User.Profile(
-		path="/profiles.db",
-		title="#{client}",top,
-		links="Client=#{client}",
-		dims="#{dims}",
-		head="Update,Print,Execute",
-		cols="ID.i,Client,Likeus.i,QoS.i,Credit.n,Joined.d,Challenge.c,Trusted.c,Captcha.c,Notify(Banned.h,Message.h))")
+		path="/profiles.db?Client=#{client}",
+		title="#{client} profile",
+		head="Select,Print",
+		cols="Likeus.i,QoS.i,Credit.n,Joined.d,Challenge.c,Trusted.c,Captcha.c,Notify(Banned.h,Message.h))")
 
 		:markdown
 			**Select** to retrieve and lock your record for editing.  **Update**, **Insert**, **Delete** or **Select** 

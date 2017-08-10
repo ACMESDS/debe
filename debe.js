@@ -22,17 +22,6 @@
 
 var 									// globals
 	ENV = process.env,
-	SQLTYPES = {
-		"varchar(32)": "t",
-		"varchar(64)": "t",
-		"varchar(128)": "t",
-		"int(11)": "i",
-		float: "n",
-		json: "x",
-		mediumtext: "x",
-		date: "d",
-		datetime: "d"
-	},		
 	WINDOWS = process.platform == 'win32',		//< Is Windows platform
 	CRUDE = {select:1,delete:1,insert:1,update:1,execute:1};
 
@@ -829,7 +818,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		gbrief: renderSkin,
 		pbrief: renderSkin,
 		exe: executePlugin,
-		add: revisePlugin
+		add: extendPlugin
 	},
 
 	runner: ENGINE,
@@ -1524,13 +1513,27 @@ function renderSkin(req,res) {
 				query = req.query,
 				page = query.page || "10",
 				dims = query.dims || "2000,300",
-				wh = dims.split(",");
+				mode = query.mode,
+				wh = dims.split(","),
+				sqltypes = {
+					"varchar(32)": "t",
+					"varchar(64)": "t",
+					"varchar(128)": "t",
+					"int(11)": "i",
+					float: "n",
+					json: "x",
+					mediumtext: "h",
+					json: "x",
+					date: "d",
+					datetime: "d",
+					"tinyint(1)": "c"
+				};				
 			
 			switch (fields.constructor) {
 				case Array:
 					fields.each(function (n,field) {
 						if (field.Field != "ID")
-							cols.push( field.Field + "." + (SQLTYPES[field.Type] || "t") );
+							cols.push( field.Field + "." + (sqltypes[field.Type] || "t") );
 					});
 					break;
 					
@@ -1564,6 +1567,7 @@ append base_body
 `.render(req) ); break;
 
 				case "run":
+					var jobmode = mode || "grid";
 res( `extends site
 append site_parms
 	- view = "Min"
@@ -1576,9 +1580,9 @@ append site_body
 	#form.Engine(
 		path="/engines.db?Name=${req.table}",
 		cols="Name,Engine,Enabled.c,Program(Code.x,Vars.x.Context)")
-	#grid.Jobs(
-		path="/queues.db?Client=${req.client}&Name=${req.table}",
-		cols="Arrived.d,Departed.d,Notes,Class,QoS.n,Age.n,Funded.n,Priority.n,State.n",
+	#${jobmode}.Jobs(
+		path="/queues.db?Client=${req.client}&Class=${req.table}",
+		cols="Arrived.d,Departed.d,Notes.x,QoS.n,Age.n,Funded.c,Finished.c,Priority.n,State.n,Task.t",
 		dims=${dims},
 		page=${page})
 `.render(req) ); break;
@@ -1752,7 +1756,7 @@ append base_body
 @class plugins
 */
 
-function revisePlugin(req,res) {
+function extendPlugin(req,res) {
 	
 	var
 		sql = req.sql,
@@ -1769,15 +1773,14 @@ function revisePlugin(req,res) {
 		if ( parseInt(val)) type = "int(11)";
 		else 
 			try {
-				JSON.parse(val);
-				type = "json";
+				var val = JSON.parse(val);
+				type = (val === true || val === false) ? "boolean" : "json";
 			}
 			catch (err) {
 				type = (N = val.length) ? `varchar(${N})` : "mediumtext";
 			}
 			
-		var q = sql.query("ALTER TABLE app.?? ADD ?? "+type, [ds,key]);
-		Trace(q.sql);
+		sql.query("ALTER TABLE app.?? ADD ?? "+type, [ds,key]);
 		
 	});
 }
@@ -1786,7 +1789,10 @@ function executePlugin(req,res) {
 	
 	var
 		sql = req.sql,
-		query = req.query;
+		query = req.query,
+		jobnotes = 
+				(req.table+"?").tagurl(query).tag("a",{href:"/" + req.table + ".run"}) + " is " +
+				((req.profile.Credit>0) ? "funded" : "unfunded").tag("a",{href:req.url});
 
 		/*
 		var job = { // default required parms
@@ -1823,9 +1829,13 @@ function executePlugin(req,res) {
 						qos: req.profile.QoS, 
 						priority: 0,
 						client: req.client,
-						class: "chipping",
+						class: req.table,
 						credit: req.profile.Credit,
-						name: req.table
+						name: req.table,
+						task: query.Task,
+						notes: jobnotes	+ " " + (query.Task
+										? "RTP".tag("a",{href:`/rtpsqd.view?task=${query.Task}`}) + " " + "PMR brief".tag("a",{href:`/briefs.view?options=${query.Task}`})
+										: "" )												 
 					});
 
 				delete job.ID;
