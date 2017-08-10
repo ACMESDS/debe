@@ -825,9 +825,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		site: renderSkin,
 		spivot: renderSkin,
 		brief: renderSkin,
+		rbrief: renderSkin,
 		gbrief: renderSkin,
 		pbrief: renderSkin,
-		exe: runExe
+		exe: executePlugin,
+		add: revisePlugin
 	},
 
 	runner: ENGINE,
@@ -1359,7 +1361,7 @@ function sysEngine(req,res) {
 */
 
 /**
-@class support.send
+@class senders
 Totem sender endpoints
 */
 
@@ -1500,11 +1502,6 @@ function sendFile(req,res) {
 }
 
 /**
-@class support.reader
-Totem reader endpoints
-*/
-
-/**
 @method renderSkin
 Totem(req,res) endpoint to render jade code requested by .table jade engine. 
 @param {Object} req Totem request
@@ -1577,7 +1574,7 @@ append site_body
 		dims=${dims},
 		page=${page})
 	#form.Engine(
-		path="/engines.db?Engine=js&Name=${req.table}",
+		path="/engines.db?Name=${req.table}",
 		cols="Name,Engine,Enabled.c,Program(Code.x,Vars.x.Context)")
 	#grid.Jobs(
 		path="/queues.db?Client=${req.client}&Name=${req.table}",
@@ -1619,7 +1616,6 @@ append site_body
 res( `extends base
 append base_parms
 	- tech = "reveal"
-	- classif = "(U) Unclassified"
 append base_body
 	section
 		iframe(src='/${req.table}.view',width=${wh[0]},height=${wh[1]})
@@ -1629,19 +1625,26 @@ append base_body
 res( `extends base
 append base_parms
 	- tech = "reveal"
-	- classif = "(U) Unclassified"
 append base_body
 	section
-		iframe(src='/${req.table}.pview',width=${wh[0]},height=$wh[1])
+		iframe(src='/${req.table}.pivot',width=${wh[0]},height=${wh[1]})
 `.render(req) ); break;
-					
+
+				case "rbrief":
+res( `extends base
+append base_parms
+	- tech = "reveal"
+append base_body
+	section
+		iframe(src='/${req.table}.run',width=${wh[0]},height=${wh[1]})
+`.render(req) ); break;
+
 				case "gbrief":
 					if ( select = FLEX.select[req.table] )
 						select( req, function (recs) {
 res( `extends base
 append base_parms
 	- tech = "reveal"
-	- classif = "(U) Unclassified"
 append base_body
 	section
 		- recs = ${JSON.stringify(recs)}
@@ -1660,7 +1663,6 @@ append base_body
 res( `extends base
 append base_parms
 	- tech = "reveal"
-	- classif = "(U) Unclassified"
 append base_body
 	section
 		- recs = ${JSON.stringify(recs)}
@@ -1747,10 +1749,40 @@ append base_body
 }
 
 /**
-@class support
-Debe initializer.
+@class plugins
 */
-function runExe(req,res) {
+
+function revisePlugin(req,res) {
+	
+	var
+		sql = req.sql,
+		ds = req.table,
+		query = req.query;
+	
+	res("Adding keys");
+	
+	Each(query, function (key, val) {
+		var type = "varchar(32)";
+		
+		if ( parseFloat(val) ) type = "float";
+		else
+		if ( parseInt(val)) type = "int(11)";
+		else 
+			try {
+				JSON.parse(val);
+				type = "json";
+			}
+			catch (err) {
+				type = (N = val.length) ? `varchar(${N})` : "mediumtext";
+			}
+			
+		var q = sql.query("ALTER TABLE app.?? ADD ?? "+type, [ds,key]);
+		Trace(q.sql);
+		
+	});
+}
+	
+function executePlugin(req,res) {
 	
 	var
 		sql = req.sql,
@@ -1830,7 +1862,8 @@ function runExe(req,res) {
 				if (chan.ring)
 					CHIPS.detect(chan, job, function (chip,dets,sql) {
 						var updated = new Date();
-
+				
+						console.log({save:dets});
 						sql.query(
 							"REPLACE INTO app.chips SET ?,Geo=st_GeomFromText(?)", [{
 								Thread: job.thread,
@@ -1876,7 +1909,7 @@ function runExe(req,res) {
 	
 }
 
-function genDoc (recs,req,res) {
+function genDoc(recs,req,res) {
 	if (!OGEN) 
 		return res(DEBE.errors.noOffice);
 	

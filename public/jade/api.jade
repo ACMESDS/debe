@@ -411,6 +411,69 @@ append site_body
 				+	[broadcast messages](/sockets.execute) to [connected users](/sockets.db)  
 				+	[import milestones](/milestone.execute) from internal spreadsheet
 
+	#accordion.Plugins
+
+		:markdown
+			A plugin -- a dataset-engine pair -- is assessible from the following endpoints:
+			
+					GET /PLUGIN.exe?ID=case 	Run PLUGIN engine using PLUGIN dataset parameters at case number
+					GET /PLUGIN.exe?Name=case 	Run PLUGIN engine using PLUGIN dataset parameters at case name
+			
+			There are (special) parameters that determine how a PLUGIN operates from its endpoint:
+			
+				(Save) the results are written to the PLUGIN dataset at the requested case
+				(Job) the PLUGIN is placed into a job queue regulated by the clients' prevailing QoS and Credit levels
+				(Agent) the PLUGIN is out-sourced to the requested agent by placing into the global job queue
+				
+			### Adding keys
+			Keys can be added to a PLUGIN via:
+			
+				GET /PLUGIN.add?Key=value 	Add keys to the PLUGIN to accomodate prototype values
+			
+			### Detecting jobs
+			A Job = {ring: ... } will attach the requested PLUGIN to a chipping workflow with the following
+			parameters:
+
+				size = 50  	// feature size in [m]
+				pixels = 512 	// samples across a chip [pixels]
+				scale = 8  		// scale^2 is max number of features in a chip
+				step = 0.01 	// relative seach step size
+				range = 0.1 	// relative search size
+				detects = 8		// hits required to declare a detect
+				limit = 1e99 	// restrict maximum number of schips to ingest
+				test = "test" 	// test case to store results
+
+			### Counting jobs
+			Reserved
+			
+			### Tagging jobs
+			Reserved
+			
+			### Agent workflow
+			An engine can be outsourced to agents at:
+
+				GET /ENGINE.exe?agent=AGENT&poll=N&QUERY
+				GET /ENGINE.exe?agent=AGENT&QUERY
+
+			where the &poll request will start a job, then poll the AGENT every N seconds for its results.
+			Consersely, a poll-less request will start a job, then reply on the AGENT to claim the job.  In
+			either case, QUERY defines the ENGINE args.
+
+			#{title} reciprocates by providing its own AGENT at its **/agent** endpoint.
+
+			Agents provide a means to outsource an engine, while retaining a thread
+			on each agent request.  A valid agent provided #{title} with the
+			following push/pull endpoints:
+
+				GET http://AGENT?push=totem.CLIENT.ENGINE.ID&args=JSON
+				GET http://AGENT?pull=JOBID
+
+			where the push endpoint defines the job being sent to the AGENT (with the CLIENT 
+			requesting the agent, the ENGINE being outsourced, the ID of the test case,
+			and the JSON args to the ENGINE).  The AGENT eventually responds at 
+			the pull endpoint with a JOBID, or a "" if no job could be created.  #{title} will periodically 
+			poll the agent for the results of JOBID.
+
 	#accordion.Engines
 
 		#fit.Endpoints
@@ -423,21 +486,17 @@ append site_body
 					POST /ENGINE.TYPE	Step ENGINE  in a stateful workflow
 					DELETE /ENGINE.TYPE	Free ENGINE from a stateful workflow
 
-				were TYPE = db | txt | view | html | .... specifies how the engine's output is delivered to the client (**not**
-				its machine type), or TYPE = exe to place the engine into a *chipping* or *agent* workflow.   Please know 
-				that, as **#{nick}** does not provide an interactive development environment, all engines should be 
+				were TYPE = db | txt | view | html | .... specifies how the engine's output is delivered to the client, **not**
+				its machine type.  Use TYPE = exe to place the engine into a *chipping* or *agent* workflow.   Please know 
+				that **#{nick}** does not provide an interactive development environment; thus engines should be 
 				throughly debugged in their native development environment before being [inserted](/engines.view) 
 				into **#{nick}**.
 
-				### Stateless workflow
-				
 				This endpoint:
 				
 					GET /ENGINE.TYPE 	Compile and step ENGINE in a stateless workflow
 					
 				provides a stateless interface to an engine and its context (see stateful workflow context).
-
-				### Stateful workflow
 
 				These endpoints:
 				
@@ -487,51 +546,6 @@ append site_body
 					policy = ""	# Data retention policy
 					status = 0	# Status code
 					value = 0	# Flow calculation
-
-				### Chipping workflow
-
-				A chipping workflow will regulate data chips to an engine at the clients' prevailing QoS and Credit
-				levels; these workflows are started at:
-				
-					GET /ENGINE.exe 	Route chips indexed by collect parameters through this ENGINE
-
-				where engine parameters accept ESS-standard channel query parameters (e.g. ring, platform, 
-				etc), as well as chiping and engine parameters (key=default):
-
-					size = 50  	// feature size in [m]
-					pixels = 512 	// samples across a chip [pixels]
-					scale = 8  		// scale^2 is max number of features in a chip
-					step = 0.01 	// relative seach step size
-					range = 0.1 	// relative search size
-					detects = 8		// hits required to declare a detect
-					limit = 1e99 	// restrict maximum number of schips to ingest
-					test = "test" 	// test case to store results
-
-				### Agent workflow
-				
-				An engine can be outsourced to agents at:
-				
-					GET /ENGINE.exe?agent=AGENT&poll=N&QUERY
-					GET /ENGINE.exe?agent=AGENT&QUERY
-
-				where the &poll request will start a job, then poll the AGENT every N seconds for its results.
-				Consersely, a poll-less request will start a job, then reply on the AGENT to claim the job.  In
-				either case, QUERY defines the ENGINE args.
-
-				#{title} reciprocates by providing its own AGENT at its **/agent** endpoint.
-
-				Agents provide a means to outsource an engine, while retaining a thread
-				on each agent request.  A valid agent provided #{title} with the
-				following push/pull endpoints:
-
-					GET http://AGENT?push=totem.CLIENT.ENGINE.ID&args=JSON
-					GET http://AGENT?pull=JOBID
-
-				where the push endpoint defines the job being sent to the AGENT (with the CLIENT 
-				requesting the agent, the ENGINE being outsourced, the ID of the test case,
-				and the JSON args to the ENGINE).  The AGENT eventually responds at 
-				the pull endpoint with a JOBID, or a "" if no job could be created.  #{title} will periodically 
-				poll the agent for the results of JOBID.
 
 		#folder.Examples
 			#fit.url
@@ -912,9 +926,11 @@ append site_body
 
 	#accordion.Machines
 		:markdown
-			Engines employ cv | py | R | sh | js | ... machines.  A machine MAC = opencv | python | ... is implemented 
-			by an engine/ifs/MAC/MAC.cpp that has been bound to #{title} (using the *node-gyp rebuild* provided 
-			by *maint.sh bind*).  Any MAC.cpp machine implements the following pattern:
+			An Engines employ the proper MAC = opencv | python | ... machine implemented under
+			**engine/ifs/MAC/MAC.cpp**.  These machines are bound to #{title} using the 
+			*node-gyp rebuild* provided by *maint.sh bind*.  
+			
+			All opencv-machines implement the following pattern:
 
 				class OPORT { 								 	// output port
 					OPORT(str Name, V8OBJECT Parm) { 		// Initiallize 
@@ -945,13 +961,13 @@ append site_body
 					// Members follow
 				}
 
-			When bound to #{title} (using *node-gyp rebuild* provided by *maint.sh bind*), a **pool** (of 
-			typically256) MAC machines is allocated to run multiple (context independent) compute 
+			When bound to #{title} (using *node-gyp rebuild* provided by *maint.sh bind*), a **pool** of 
+			(typically 256) MAC machines is reserved to run multiple (context independent) compute 
 			threads at
 
 					error = MAC.call( [ id string, code string, context hash ] )
 
-			returning an interger error code (non-zero if a fault occured).
+			this call returning an interger error code (non-zero if a fault occured).
 
 			The thread id (typically "Name.Client.Instance") uniquely identifies the compute thread.  
 			Compute threads can be freely added to the pool until the pool becomes full.  
