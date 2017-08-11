@@ -1,0 +1,143 @@
+// UNCLASSIFIED
+// View dataset &ds in &mode = plugin | run | brief | gbrief | sbrief | rbrief | site 
+
+extends base
+append base_parms
+	case query.mode
+		when "brief"
+		when "gbrief"
+		when "rbrief"
+			- tech = "reveal"
+			
+		default
+			- tech = "extjs"
+
+extends site
+append site_parms
+	case query.mode
+		when "plugin"
+		when "run"
+		when "site"
+			- view = "Min"
+			- wrap = ""
+		default
+			- view = "Nada"
+			- wrap = "nowrap"
+
+append site_body
+
+	- mode = query.mode
+	- ds = query.ds || "news"
+	- dscols = query.cols || []
+	- dspage = query.page || 20
+	- dsquery = query.search || ""
+	- dspath = `/${ds}.db?${dsquery}`
+	- dstitle = ds + " view"
+	- width = query.width
+	- height = query.height
+
+	case mode
+		when "plugin"
+		when "run"
+			#grid.Dataset(
+				path=dspath,
+				cols=dscols.join(),
+				page=dspage )
+
+				:markdown
+					A plugin is a dataset-engine pair that is used to execute engines with the parameters
+					from a selected dataset case.  To run plugin with a specific parameter case, simply
+					select the case, then click the	execute button; you may also run a plugin from the url bar:
+
+						GET /PLUGIN.exe?ID=CASE 	Run PLUGIN engine using PLUGIN dataset parameters for specified CASE 
+						GET /PLUGIN.exe?Name=CASE 	Run PLUGIN engine using PLUGIN dataset parameters for specified CASE
+
+					Plugins normally run standalone, but they can be placed in job workflows when they 
+					contain (reserved) parameters:
+
+							(Save) json reserve for storing the results of this CASE
+							(Job) json parameters to place CASE into appropriate job workflow regulated by the clients' QoS and Credit levels
+							(Agent) name of agent to out-source this CASE which will be polled until it returns its results 
+							(Task) name of project associated with this CASE
+
+					Reserved parameters can be added to a plugin at any time:  [Save+](/#{ds}.add?Save=doc), 
+					[Job+](/#{ds}.add?Job=doc), [Agent+](/#{ds}.add?Agent=name), 
+					[Task+](/#{ds}.add?Task=name).
+
+					A (Description) parameter may contains bloggable markdown  tags
+
+						[image | post | update | LABEL,W,H](url) 
+
+					to document the test case and its results.  Toggle the blog button to 
+					edit / display the blog.
+
+			#form.Engine(
+				path="/engines.db?Name=#{ds}",
+				cols="Name,Engine,Enabled.c,Program(Code.x,Vars.x.Context)")
+
+				:markdown
+					[Engines](/api.view) contain js | python | matlab | opencv | ... code.  Click the 
+					execute button to test the engine with its default context parameters.
+
+			#grid.Jobs(
+				path="/queues.db?Class=#{ds}",
+				cols="Arrived.d,Departed.d,Notes.x,QoS.n,Age.n,Funded.c,Finished.c,Priority.n,State.n,Task.t",
+				page=dspage )
+
+				:markdown
+					Jobs created by this plugin are show here.  If the originator exceeded their credits,
+					the job notes will contain an "unfunded" link.  If you would like to fund this job with 
+					your credits, simply click the "unfunded" link.  To decide if this is a wise purchase, 
+					click the "#{ds}" link to see the test case case being explored.  If present, you 
+					may also click the "RTP" or "PMR" links to get further information about the 
+					project this job supports.
+
+		when "pivot"
+			- pcol = dscols.pop()
+			#pivot(
+				class=dstitle,
+				path=dspath,
+				pivots=pcol,
+				cols=dscols.join(),
+				page=dspage,
+				nowrap=wrap )
+
+		when "brief"
+		when "gbrief"
+			section
+				h3.hd= dstitle
+
+				if query.data
+					div!= gridify( query.data )
+	
+				else				
+					iframe(
+						src="/#{ds}.view",
+						width=width,
+						height=height )
+
+		when "pbrief"
+			section
+				h3.hd= dstitle
+				iframe(
+					src="/#{ds}.pivot",
+					width=width,
+					height=height )
+
+		when "rbrief"
+			section
+				h3.hd= dstitle				
+				iframe(
+					src="/#{ds}.run",
+					width=width,
+					height=height )
+
+		default
+			#grid(
+				class=dstitle,
+				path=dspath,
+				cols=dscols.join(),
+				page=dspage, 
+				nowrap=wrap )
+
+// UNCLASSIFIED
