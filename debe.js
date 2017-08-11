@@ -810,6 +810,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	"reader.": { //< reader endpoints
 		view: renderSkin,
 		run: renderSkin,
+		plugin: renderSkin,
 		pivot: renderSkin,
 		site: renderSkin,
 		spivot: renderSkin,
@@ -842,7 +843,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 	
 	"paths.": {  //< paths to things
-		default: "tour/",
+		default: "home.view",
 		
 		filename: "./public/jade/ref.jade",	// jade reference path for includes, exports, appends
 		
@@ -916,24 +917,26 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	// Protos
 	
 	String: [  // string prototypes
+		/*
 		function indentify(tag) {
 			if (tag) 
 				return tag + "\n\t" + this.split("\n").join("\n\t");
 			else
 				return "\t" + this.split("\n").join("\n\t");
-		},
+		},*/
 	
 		function render(req) { 
 
-			var jade = this;
-			Copy(DEBE.site,req);  			
+			var 
+				jade = this,
+				ctx = Copy(DEBE.site,req);  			
 			
 			try {
-				var gen = SKIN.compile(jade,req);
-				return gen ? rtn = gen(req) : "Bad skin";
+				var gen = SKIN.compile(jade,ctx);
+				return gen ? rtn = gen(ctx) : "Bad skin";
 			}
 			catch (err) {
-				return "skin - "+err;
+				return err;
 			}
 		}
 	],
@@ -1510,6 +1513,7 @@ function renderSkin(req,res) {
 			
 			var
 				cols = [],
+				ds = req.table,
 				query = req.query,
 				page = query.page || "10",
 				dims = query.dims || "2000,300",
@@ -1563,28 +1567,75 @@ res( `extends base
 append base_parms
 	- tech = "extjs"
 append base_body
-	#grid.view.${req.table}(path="/${req.table}.db?${req.search}",cols="${cols.join()}",dims=${dims},page=${page},nowrap)
+	#grid.view.${ds}(path="/${ds}.db?${req.search}",cols="${cols.join()}",dims=${dims},page=${page},nowrap)
 `.render(req) ); break;
 
 				case "run":
-					var jobmode = mode || "grid";
+				case "plugin":
+					var 
+						jobmode = mode || "grid";
 res( `extends site
 append site_parms
 	- view = "Min"
+append site_help
+	:markdown
+		This is the ${ds}-plugin.  See [api plugins](/api.view) and the help in each tab for
+		more information about plugins.
 append site_body
-	#grid.Tests(
-		path="/${req.table}.db?${req.search}",
+	#grid.Dataset(
+		path="/${ds}.db?${req.search}",
 		cols="${cols.join()}",
 		dims=${dims},
 		page=${page})
+
+		:markdown
+			A plugin is a dataset-engine pair that is used to execute engines with the parameters
+			from a selected dataset case.  To run plugin with a specific parameter case, simply
+			select the case, then click the	execute button; you may also run a plugin from the url bar:
+
+				GET /PLUGIN.exe?ID=CASE 	Run PLUGIN engine using PLUGIN dataset parameters for specified CASE 
+				GET /PLUGIN.exe?Name=CASE 	Run PLUGIN engine using PLUGIN dataset parameters for specified CASE
+
+			Plugins normally run standalone, but they can be placed in job workflows when they 
+			contain (reserved) parameters:
+ 
+					(Save) json reserve for storing the results of this CASE
+					(Job) json parameters to place CASE into appropriate job workflow regulated by the clients' QoS and Credit levels
+					(Agent) name of agent to out-source this CASE which will be polled until it returns its results 
+					(Task) name of project associated with this CASE
+
+			Reserved parameters can be added to a plugin at any time:  [Save+](/${ds}.add?Save=doc), 
+			[Job+](/${ds}.add?Job=doc), [Agent+](/${ds}.add?Agent=name), 
+			[Task+](/${ds}.add?Task=name).
+
+			A (Description) parameter may contains bloggable markdown  tags
+	
+				[image | post | update | LABEL,W,H](url) 
+
+			to document the test case and its results.  Toggle the blog button to 
+			edit / display the blog.
+
 	#form.Engine(
-		path="/engines.db?Name=${req.table}",
+		path="/engines.db?Name=${ds}",
 		cols="Name,Engine,Enabled.c,Program(Code.x,Vars.x.Context)")
+	
+		:markdown
+			[Engines](/api.view) contain js | python | matlab | opencv | ... code.  Click the 
+			execute button to test the engine with its default context parameters.
+
 	#${jobmode}.Jobs(
-		path="/queues.db?Client=${req.client}&Class=${req.table}",
+		path="/queues.db?Client=${req.client}&Class=${ds}",
 		cols="Arrived.d,Departed.d,Notes.x,QoS.n,Age.n,Funded.c,Finished.c,Priority.n,State.n,Task.t",
 		dims=${dims},
 		page=${page})
+
+		:markdown
+			Jobs created by this plugin are show here.  If the originator exceeded their credits,
+			the job notes will contain an "unfunded" link.  If you would like to fund this job with 
+			your credits, simply click the "unfunded" link.  To decide if this is a wise purchase, 
+			click the "${ds}" link to see the test case case being explored.  If present, you 
+			may also click the "RTP" or "PMR" links to get further information about the 
+			project this job supports.
 `.render(req) ); break;
 										
 				case "pivot":
@@ -1593,7 +1644,7 @@ res( `extends base
 append base_parms
 	- tech = "extjs"
 append base_body
-	#pivot.view.${req.table}(path="/${req.table}.db?${req.search}",pivots="${pcol}",cols="${cols.join()}",dims=${dims},page=${page},nowrap)
+	#pivot.view.${ds}(path="/${ds}.db?${req.search}",pivots="${pcol}",cols="${cols.join()}",dims=${dims},page=${page},nowrap)
 `
 .render(req) ); break;
 
@@ -1602,7 +1653,7 @@ res( `extends site
 append site_parms
 	- view = "Basic"
 append site_body
-	#grid.view.${req.table}(path="/${req.table}.db?${req.search}",cols="${cols.join()}",dims=${dims},page=${page},nowrap)
+	#grid.view.${ds}(path="/${ds}.db?${req.search}",cols="${cols.join()}",dims=${dims},page=${page},nowrap)
 `
 .render(req) ); break;
 					
@@ -1612,7 +1663,7 @@ res( `extends site
 append site_parms
 	- view = "Basic"
 append site_body
-	#pivot.view.${req.table}(path="/${req.table}.db?${req.search}",pivots="${pcol}",cols="${cols.join()}",dims=${dims},page=${page},nowrap)
+	#pivot.view.${ds}(path="/${ds}.db?${req.search}",pivots="${pcol}",cols="${cols.join()}",dims=${dims},page=${page},nowrap)
 `
 .render(req) ); break;
 
@@ -1622,7 +1673,7 @@ append base_parms
 	- tech = "reveal"
 append base_body
 	section
-		iframe(src='/${req.table}.view',width=${wh[0]},height=${wh[1]})
+		iframe(src='/${ds}.view',width=${wh[0]},height=${wh[1]})
 `.render(req) ); break;
 
 				case "pbrief":
@@ -1631,7 +1682,7 @@ append base_parms
 	- tech = "reveal"
 append base_body
 	section
-		iframe(src='/${req.table}.pivot',width=${wh[0]},height=${wh[1]})
+		iframe(src='/${ds}.pivot',width=${wh[0]},height=${wh[1]})
 `.render(req) ); break;
 
 				case "rbrief":
@@ -1640,11 +1691,11 @@ append base_parms
 	- tech = "reveal"
 append base_body
 	section
-		iframe(src='/${req.table}.run',width=${wh[0]},height=${wh[1]})
+		iframe(src='/${ds}.run',width=${wh[0]},height=${wh[1]})
 `.render(req) ); break;
 
 				case "gbrief":
-					if ( select = FLEX.select[req.table] )
+					if ( select = FLEX.select[ds] )
 						select( req, function (recs) {
 res( `extends base
 append base_parms
@@ -1657,7 +1708,7 @@ append base_body
 						});
 					
 					else
-						req.sql.query("SELECT * FROM app.??", req.table, function (err,recs) {
+						req.sql.query("SELECT * FROM app.??", ds, function (err,recs) {
 							if (err)
 								res( DEBE.errors.cantSkin );
 							else {
@@ -1777,7 +1828,7 @@ function extendPlugin(req,res) {
 				type = (val === true || val === false) ? "boolean" : "json";
 			}
 			catch (err) {
-				type = (N = val.length) ? `varchar(${N})` : "mediumtext";
+				type = (val=="doc") ? "mediumtext" : `varchar(${val.length})` ;
 			}
 			
 		sql.query("ALTER TABLE app.?? ADD ?? "+type, [ds,key]);
@@ -2259,7 +2310,7 @@ function Initialize () {
 			builtins: DEBE.publish
 		});
 		
-		ENGINE.plugins.FLEX = FLEX;
+		ENGINE.plugins.FLEX = FLEX.plugins;
 
 		if (cb) cb();	
 	}

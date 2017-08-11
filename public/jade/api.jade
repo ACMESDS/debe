@@ -419,17 +419,18 @@ append site_body
 					GET /PLUGIN.exe?ID=CASE 	Run PLUGIN engine using PLUGIN dataset parameters for specified CASE 
 					GET /PLUGIN.exe?Name=CASE 	Run PLUGIN engine using PLUGIN dataset parameters for specified CASE
 			
-			There are (special) parameters that determine how a PLUGIN operates from its endpoint:
+			The following (reserved) dataset parameters determine how a PLUGIN operates from an
+			exe-endpoint:
 			
 				(Save) json reserve for storing the results of this CASE
-				(Job) json parameters to place CASE into a job queue regulated by the clients' QoS and Credit levels
+				(Job) json parameters to place CASE into appropriate job workflow regulated by the clients' QoS and Credit levels
 				(Agent) name of agent to out-source this CASE which will be polled until it returns its results 
 				(Task) name of project associated with this CASE
 				
-			### Adding keys
-			Keys can be added to a PLUGIN via:
+			### Adding keys to a plugin dataset
+			Keys can be added to a plugin via:
 			
-				GET /PLUGIN.add?Key=value 	Add keys to the PLUGIN to accomodate prototype values
+				GET /PLUGIN.add?KEY=VALUE&... 	Add KEYs to the PLUGIN that can accomodate VALUEs
 			
 			### Detecting jobs
 			A Job = {ring: ... } will attach the requested PLUGIN to a chipping workflow with the following
@@ -479,34 +480,34 @@ append site_body
 
 		#fit.Endpoints
 			:markdown
-				[Engines](/engines.view) utilize cv | py | R | sh | js | res1 | res2 | ... machines and are
-				accessed in *stateless*, *stateful*, *chipping* or *agent* workflows at
+				[Engines](/engines.view) are built on cv | py | R | sh | js | res1 | res2 | ... machines and are
+				accessable from the following endpoints:
 
 					GET /ENGINE.TYPE 	Compile and step ENGINE in a stateless workflow
-					PUT /ENGINE.TYPE 	Compile (update) ENGINE in a stateful workflow
+					PUT /ENGINE.TYPE 	Compile ENGINE in a stateful workflow
 					POST /ENGINE.TYPE	Step ENGINE  in a stateful workflow
 					DELETE /ENGINE.TYPE	Free ENGINE from a stateful workflow
 
-				were TYPE = db | txt | view | html | .... specifies how the engine's output is delivered to the client, **not**
-				its machine type.  Use TYPE = exe to place the engine into a *chipping* or *agent* workflow.   Please know 
+				were TYPE = db | txt | view | html | .... specifies how the engine's *context* is delivered to the client
+				(TYPE **does not** imply anything about the engine's machine type).  A TYPE = exe will execute
+				the engine and return its results.  Please know 
 				that **#{nick}** does not provide an interactive development environment; thus engines should be 
 				throughly debugged in their native development environment before being [inserted](/engines.view) 
-				into **#{nick}**.
+				into **#{nick}**.  *Engines* become *plugins* when they are paired with a same-named dataset.
 
-				This endpoint:
+				While this endpoint:
 				
-					GET /ENGINE.TYPE 	Compile and step ENGINE in a stateless workflow
+					GET /ENGINE.TYPE 
 					
-				provides a stateless interface to an engine and its context (see stateful workflow context).
-
-				These endpoints:
+				provides a stateless interface to an engine and its context, this endpoints:
 				
-					PUT /ENGINE.TYPE 	Compile ENGINE in a stateful workflow
-					POST /ENGINE.TYPE	Step ENGINE  in a stateful workflow
-					DELETE /ENGINE.TYPE	Free ENGINE froma staeful workflow
+					PUT /ENGINE.TYPE 
+					POST /ENGINE.TYPE	
+					DELETE /ENGINE.TYPE	
 
-				provide a stateful interface to engines in [workflows](/nodeflow.view).  Optioanl engine parameters 
-				are held in a read/write context that follows the pattern:
+				provide a stateful interface to engines which are useful in [workflows](/nodeflow.view).  
+				
+				Optional engine parameters are held in a read/write context that follows the pattern:
 
 					{
 						tau: [ tau1, tau2, ... ],
@@ -518,7 +519,7 @@ append site_body
 						key2: value, ...
 					}
 					
-				When accessed, its context is automatically extended with:
+				When an engine is accessed, its context is automatically extended with:
 
 					query: {key: value,  ...},  
 					sql: connector, 
@@ -526,8 +527,8 @@ append site_body
 					LIB2: module, ... 
 
 				where
-				+ LIBX refers to the [DSP](/linkpending), [LWIP](/linkpending), [MATH](/linkpending), [CRYPTO](/linkpending), [FLEX](/linkpending), ... modules,
-				+ query will contain the key:value parameters from the url,  
+				+ LIBX is a [DSP](/linkpending), [LWIP](/linkpending), [MATH](/linkpending), [CRYPTO](/linkpending), [FLEX](/linkpending), ... module,
+				+ query contains the url key:value parameters,  and
 				+ sql provides a sql connector for js-engines (SQL0, SQL1 cursors are provided for py-engines).
 
 				Whereas stateless engines (being memoryless) are initialized at each step, stateful 
@@ -537,9 +538,9 @@ append site_body
 				from (to) its underlying sql database using *"select ..."* (an *"update ..."*) queries on
 				engine entry (and exit).
 
-				If used, each *tau* event typically contains the following:
+				If used, each *tau* event can contain anything, for example:
 
-					job = "" 	# Fully qualified file path to jpg chip
+					job = "" 	# Fully qualified file path to a jpg chip for ingesting
 					work = 0 	# Anticipated/delivered data volume (dims bits etc)
 					disem = "" 	# Disemination channel for this event
 					classif = "" # Classification of this event
@@ -552,8 +553,8 @@ append site_body
 			#fit.url
 				:markdown
 					URL engines (experimental) provide a simple method to re-route a request
-					based on URL parameters, ${req.PARM} and ${plugin.FN(req)} tags.  
-					These .url engines follow the pattern:
+					based on URL parameters, ${req.PARM} and ${plugin.FN(req)} tags; such engines
+					follow the pattern:
 
 						Code:
 							"http://URL?PARM=${req.PARM}&PARM=${plugin.FN(req)}"

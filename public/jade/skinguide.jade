@@ -692,25 +692,34 @@ append site_body
 
 			#fit.Context.Keys
 				:markdown
-					The following #{nick}-context keys are inserted using \\#{KEY} or \\!{KEY} with or without html-escaping (current value shown):
+					Context keys are inserted using \\#{KEY} or \\!{KEY} with or without html-escaping (current 
+					value).  There are request-context keys:
 					
-					+	masterURL	= URL to master (#{masterURL})  
-					+	workerURL	= URL to worker (#{workerURL})  
-					+	socketio	= URL to socket.io (#{socketio})  
-					+	serverip = server ip address (#{serverip})  
-					+	email	= client email address (#{email})  
-					+	client	= client name (#{client})  
-					+	query	= request query (#{json(query)})
-					+	flags	= request flags (#{json(flags)})  
-					+	db	= database (#{db})  
-					+	session = session information (#{json(session)})
 					+	table	= request dataset, view, or engine (#{table})  
 					+ 	search	= request search parameters (#{search})  
 					+ 	path	= request file path (#{path})  
 					+	action	= request action (#{action})  
+					+	query	= request query (#{json(query)})
+					+	flags	= request flags (#{json(flags)})  
+					+	serverip = server ip address (#{serverip})  
+					+	session = session information (#{json(session)})
+					+	joined = time session started (#{json(joined)})
+					
+					client-context keys:
+					+	client	= client's name (#{client})  
+					+	profile	= client's qos profile (#{json(profile)})  
+					+ 	group = client's assigned group (#{group})
+					+ 	org = client organization (#{org})
+					+ 	cert = client's pki cert (#{json(cert)})
+					
+					site-context keys:
+					+	masterURL	= URL to master (#{masterURL})  
+					+	workerURL	= URL to worker (#{workerURL})  
+					+	socketio	= URL to socket.io (#{socketio})  
+					+	email	= client email address (#{email})  
+					+	db	= database (#{db})  
 					+	pocs = poc by role hash (#{pocs})  
 					+	distro	= poc by role distribution hash (!{distro})  
-					+	profile	= client qos profile (#{json(profile)})  
 					+	info 	= system information (#{json(info)})  
 					+	title	= full site name (#{title})  
 					+	nick	= site nick name (#{nick})  
@@ -719,17 +728,15 @@ append site_body
 					+	started = site started date (#{started})  
 					+	port = site port number (#{port})  
 					+	classif = site classification attributes (#{classif})  
-					+	spid = system ID (#{spid})  
-					+	sorn = system (#{sorn})  
 					+	cores = number of worker threads (#{cores})  
 					+	lock	= session lock (#{json(options)})
 					
-					Several manipulators are also available:
+					and several data manipulator methods:
 					
-					+	get(list, {key:where,...}, {key:rename,...}, {key:{hashKey:replace,...},...}, {key:{hashHashKey:replace,...},...}  )
-					+	gridify(list,noheader)
-					+	json(list)
-					+ 	hover(title,jpgShares,htmlShares)
-					+ 	tag(text,el,{key:value,...})
+					+	get( list, {key:where,...}, {key:rename,...}, {key:{hashKey:replace,...},...}, {key:{hashHashKey:replace,...},...}  )
+					+	gridify( list,noheader )
+					+	json( list )
+					+ 	hover( title, jpgShares, htmlShares )
+					+ 	tag( text, el, {key:value,...} )
 
 			//- #exsite.Examples(dims="800,500")
