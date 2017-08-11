@@ -8,15 +8,17 @@
 		view = [Home | Kiss | Engr | Min | Basic | Nada, ...] site style
 		page = maximum grid rows
 		goto = tab to activate
-		pulse = system health refresh rate (in seconds)
+		pulse = system health refresh rate [seconds]
 
 extends base
 append base_parms
 	- tech = "extjs"
+
 append layout_parms
 	- banner = banner
 	- start = query.ver ? "SIM" : ""
 	- capture = true
+
 append base_head
 
 	block site_parms
@@ -25,7 +27,7 @@ append base_head
 		- dims = "2048,1200"
 		- view = "Min"
 		- page = 50
-		- pulse = 60
+		- pulse = 600
 
 	style.
 		.AL {text-align:left;}
@@ -150,6 +152,11 @@ append base_body
 				block site_help
 				block site_body
 
+		when "Nada"
+
+				block site_help
+				block site_body
+
 		when "Monster"
 
 			#border(
@@ -160,7 +167,7 @@ append base_body
 
 				p #{classif.level} #{classif.purpose}
 
-				bock site_help
+				block site_help
 
 					:markdown
 						*	Options for this view.

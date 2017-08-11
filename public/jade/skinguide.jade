@@ -697,12 +697,12 @@ append site_body
 					
 					+	table	= request dataset, view, or engine (#{table})  
 					+ 	search	= request search parameters (#{search})  
+					+ 	url = full url requested (#{url})
 					+ 	path	= request file path (#{path})  
+					+	parts = file parts (#{json(parts)})
 					+	action	= request action (#{action})  
 					+	query	= request query (#{json(query)})
 					+	flags	= request flags (#{json(flags)})  
-					+	serverip = server ip address (#{serverip})  
-					+	session = session information (#{json(session)})
 					+	joined = time session started (#{json(joined)})
 					
 					client-context keys:
@@ -710,14 +710,13 @@ append site_body
 					+	profile	= client's qos profile (#{json(profile)})  
 					+ 	group = client's assigned group (#{group})
 					+ 	org = client organization (#{org})
-					+ 	cert = client's pki cert (#{json(cert)})
+					+	email	= client email address (#{email})  
 					
 					site-context keys:
 					+	masterURL	= URL to master (#{masterURL})  
 					+	workerURL	= URL to worker (#{workerURL})  
 					+	socketio	= URL to socket.io (#{socketio})  
-					+	email	= client email address (#{email})  
-					+	db	= database (#{db})  
+					+	db	= main database (#{db})  
 					+	pocs = poc by role hash (#{pocs})  
 					+	distro	= poc by role distribution hash (!{distro})  
 					+	info 	= system information (#{json(info)})  
@@ -725,7 +724,7 @@ append site_body
 					+	nick	= site nick name (#{nick})  
 					+	ver	= site version number (#{ver})  
 					+	released	= site release date (#{released})  
-					+	started = site started date (#{started})  
+					+	started = site started date (#{json(started)})  
 					+	port = site port number (#{port})  
 					+	classif = site classification attributes (#{classif})  
 					+	cores = number of worker threads (#{cores})  
@@ -733,7 +732,11 @@ append site_body
 					
 					and several data manipulator methods:
 					
-					+	get( list, {key:where,...}, {key:rename,...}, {key:{hashKey:replace,...},...}, {key:{hashHashKey:replace,...},...}  )
+					+	get( list, {key:query,...} )
+					+	get( list, {key:query,...}, {key:rename,...} )
+					+	get( list, {key:query,...}, {key:rename,...}, {recKey:{key:#replace,...},...} )
+					+	get( list, {key:query,...}, {key:rename,...}, {recKey:{key:#replace,...},...}, {recKey:{key:##replace,...},...}  )
+					+	get( dsname, {key:query,...}, function (data) {...} )
 					+	gridify( list,noheader )
 					+	json( list )
 					+ 	hover( title, jpgShares, htmlShares )

@@ -75,8 +75,8 @@ append site_body
 
 				where AREA references a #{nick} internal file store or a one of its virtual stores:
 
-					code	file pulled from the [engines db](/engines.view)
-					jade	file pulled from the [engines db](/engines.view) or (failing that) the jade file area
+					code	file pulled from the [engines db](/engine.view)
+					jade	file pulled from the [engines db](/engine.view) or (failing that) the jade file area
 					uploads	file pulled from delete-on-access area
 					stores	file pulled from long-term area
 					positives	file pulled from positive-proof area
@@ -99,7 +99,7 @@ append site_body
 		#folder.Readers
 			#fit.Intro
 				:markdown
-					Readers are builtin [engines](/engines.view) that automatically index a variety of 
+					Readers are builtin [engines](/engine.view) that automatically index a variety of 
 					document, graphics, presentation, and spreadsheet files when uploaded into
 					**#{nick}**.  Ingested text is checked for readibility, indexed to the best
 					using [NLP training rules](/admins.view), then reflected into the [file stores](/files.view).
@@ -480,7 +480,7 @@ append site_body
 
 		#fit.Endpoints
 			:markdown
-				[Engines](/engines.view) are built on cv | py | R | sh | js | res1 | res2 | ... machines and are
+				[Engines](/engine.view) are built on cv | py | R | sh | js | res1 | res2 | ... machines and are
 				accessable from the following endpoints:
 
 					GET /ENGINE.TYPE 	Compile and step ENGINE in a stateless workflow
@@ -492,7 +492,7 @@ append site_body
 				(TYPE **does not** imply anything about the engine's machine type).  A TYPE = exe will execute
 				the engine and return its results.  Please know 
 				that **#{nick}** does not provide an interactive development environment; thus engines should be 
-				throughly debugged in their native development environment before being [inserted](/engines.view) 
+				throughly debugged in their native development environment before being [inserted](/engine.view) 
 				into **#{nick}**.  *Engines* become *plugins* when they are paired with a same-named dataset.
 
 				While this endpoint:
@@ -521,16 +521,18 @@ append site_body
 					
 				When an engine is accessed, its context is automatically extended with:
 
-					query: {key: value,  ...},  
-					sql: connector, 
-					LIB1: module, 
-					LIB2: module, ... 
-
-				where
-				+ LIBX is a [DSP](/linkpending), [LWIP](/linkpending), [MATH](/linkpending), [CRYPTO](/linkpending), [FLEX](/linkpending), ... module,
-				+ query contains the url key:value parameters,  and
-				+ sql provides a sql connector for js-engines (SQL0, SQL1 cursors are provided for py-engines).
-
+					query: {urlKey: value,  contextKey: value, ...}, 
+					[DSP](/linkpending) module,
+					[LWIP](/linkpending) module,  
+					[MATH](/linkpending) module,  
+					[CRYPTO](/linkpending) module,   
+					[FLEX](/linkpending) module,  
+					get( list, {key:query,...} )  
+					get( list, {key:query,...}, {key:rename,...} )  
+					get( list, {key:query,...}, {key:rename,...}, {recKey:{key:#replace,...},...} )  
+					get( list, {key:query,...}, {key:rename,...}, {recKey:{key:#replace,...},...}, {recKey:{key:##replace,...},...}  )  
+					get( dsname, {key:query,...}, function (data) {...} )
+					
 				Whereas stateless engines (being memoryless) are initialized at each step, stateful 
 				engines are initialized only when the workflow is initialized.  When initialized, an engine's context 
 				defines its i/o ports *nameX*, its default i/o event tokens *tau*, and its *url key:value* 
@@ -581,7 +583,7 @@ append site_body
 				:markdown
 					# Stateless Example1
 					
-					This [mat-like engine](/engines.view?engine=mat&name=demo1):
+					This [mat-like engine](/engine.view?engine=mat&name=demo1):
 
 						Code:
 							Z = [1,2;3,4];
@@ -605,7 +607,7 @@ append site_body
 
 					#Stateless Example2
 
-					[Executing](/demo2.db?name=test) [this](/engines.view?engine=mat&name=demo2) engine
+					[Executing](/demo2.db?name=test) [this](/engine.view?engine=mat&name=demo2) engine
 
 						Code:
 							Z = [1,2;3,4];
@@ -697,7 +699,7 @@ append site_body
 
 			#fit.sq
 				:markdown
-					This [sql engine](/engines.view?engine=sql&name=demo):
+					This [sql engine](/engine.view?engine=sql&name=demo):
 
 						Code:
 							SQL.select = function (sql,recs,cb) {
@@ -725,19 +727,19 @@ append site_body
 			//
 				#fit.Proxy
 				:markdown
-					Proxy engines are [engines](/engines.view) that run periodically given a
+					Proxy engines are [engines](/engine.view) that run periodically given a
 					run interval Period parameter.  A 0-period proxy is run once at **#{nick}** startup.
 					The [job hawkers](/admin.view) are proxy engines.
 
 			#fit.mo
 				:markdown
-					[Model engines](/engines.view) are used/defined by workflows when 
+					[Model engines](/engine.view) are used/defined by workflows when 
 					systems are referenced/saved from within the [workflow editor](/nodeflow.view).  
 					Model engines should remain disabled to prevent execution.
 
 			#fit.cv
 				:markdown
-					cv-machines learn, locate and classify objects.  The [haar engine](/engines.view?engine=cv&name=haar),
+					cv-machines learn, locate and classify objects.  The [haar engine](/engine.view?engine=cv&name=haar),
 					for example, executes a cv-machine in the following context:
 					
 						{ 
@@ -767,7 +769,7 @@ append site_body
 				:markdown
 					## Stateless Engines
 
-					In this [python engine](/engines.view?engine=py&name=demo1):
+					In this [python engine](/engine.view?engine=py&name=demo1):
 
 						Code:
 							print "welcome to python"
@@ -821,7 +823,7 @@ append site_body
 				:markdown
 					## Stateless Engines
 
-					Consider this [js engine](/engines.view?engine=js&name=demo1):
+					Consider this [js engine](/engine.view?engine=js&name=demo1):
 
 						Code:
 							CON.log("M = "+M+" name="+query.Name);
@@ -859,7 +861,7 @@ append site_body
 
 					## Stateless Engines
 
-					This [js engine](/engines.view?engine=js&name=demo2):
+					This [js engine](/engine.view?engine=js&name=demo2):
 
 						Code:
 							var Name = query.Name;
@@ -904,7 +906,7 @@ append site_body
 
 					## Stateful Example
 
-					This [demo3 engine](/engines.view) example:
+					This [demo3 engine](/engine.view) example:
 
 						Code:
 							x = 123;

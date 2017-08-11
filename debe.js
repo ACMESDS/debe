@@ -35,7 +35,7 @@ var										// 3rd party modules
 	LANG = require('i18n-abide'), 		//< I18 language translator
 	ARGP = require('optimist'),			//< Command line argument processor
 	TOKML = require("tokml"), 			//< geojson to kml concerter
-	SKIN = require('jade');				//< using jade as the skinner
+	JADE = require('jade');				//< using jade as the skinner
 	
 var 									// totem modules		
 	ENGINE = require("engine"), 
@@ -211,14 +211,57 @@ append layout_body
 	site: { 		//< initial site context
 
 		get: function(recs, where, index, sub1, sub2) {  //< index dataset
+			function select(keys) {
+				
+				switch ( (keys||0).constructor) {
+					case Object:
+						for (var key in keys) 
+							return "SELECT * FROM ??.?? WHERE least(?,1)";
+						
+						return "SELECT * FROM ??.??";
+						
+					case Array:
+						return "";
+						
+					case String:
+						return "SELECT * FROM ??.? WHERE " + keys;
+						
+					case Function:
+						return "";
+						
+					default:
+						return "";
+				}
+			}
+			
 			var rtns = [];
 			
-			if (index && index.constructor == String) {
-				var idx = {};
-				index.split(",").each(function (n,key) {
-					idx[key] = key;
-				});
-				index = idx;
+			switch ( (index||0).constructor ) {
+				case String: 
+					var idx = {};
+					index.split(",").each(function (n,key) {
+						idx[key] = key;
+					});
+					index = idx;
+					break;
+					
+				case Array:
+					return null;
+					break;
+					
+				case Function:
+					DEBE.thread( function (sql) {
+						try {
+							sql.query( select(where), [req.group, recs, where], function (err,recs) {								
+								index( err ? [] : recs );
+							});
+						}
+						
+						catch (err) {
+							index( [] );
+						}
+					});
+					return null;					
 			}
 			
 			recs.each(function (n,rec) {
@@ -387,9 +430,9 @@ append layout_body
 				QAs: "app.QAs"
 				//stats:{table:"openv.profiles",group:"client",index:"client,event"}
 			}
-		},
+		}
 
-		filename: "./public/jade/ref.jade"	// jade reference path for includes, exports, and appends
+		//filename: "./public/jade/ref.jade"	// jade reference path for includes, exports, and appends
 	},
 	
 	"sender.": {		//< file.attr senders
@@ -811,12 +854,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		view: renderSkin,
 		run: renderSkin,
 		plugin: renderSkin,
-		pivot: renderSkin,
 		site: renderSkin,
-		spivot: renderSkin,
 		brief: renderSkin,
-		rbrief: renderSkin,
+		pivot: renderSkin,
 		gbrief: renderSkin,
+		rbrief: renderSkin,
 		pbrief: renderSkin,
 		exe: executePlugin,
 		add: extendPlugin
@@ -834,21 +876,21 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				+ ".  See issues".tag("a",{href: "/issues.view"})
 				+ " for further information";
 		},
+		badSkin: new Error("skin contains invalid jade"),
 		badDataset: new Error("dataset does not exist"),
 		noCode: new Error("failed engine code lookup"),
 		unsupportedFeature: new Error("unsupported feature"),
 		noOffice: new Error("office docs not enabled"),
-		noExe: new Error("no execute interface"),
-		cantSkin: new Error("dynamic skinning not supported for this type")
+		noExe: new Error("no execute interface")
 	},
 	
 	"paths.": {  //< paths to things
 		default: "home.view",
 		
-		filename: "./public/jade/ref.jade",	// jade reference path for includes, exports, appends
+		jaderef: "./public/jade/ref.jade",	// jade reference path for includes, exports, appends
 		
 		engine: "SELECT *,count(ID) as Count FROM app.engines WHERE least(?,1)",
-		render: "public/jade/",
+		render: "./public/jade/",
 		
 		gms: { // gauss mixxing services
 			gaussmix: "http://localhost:8080/gaussmix.exe?"			
@@ -925,19 +967,45 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				return "\t" + this.split("\n").join("\n\t");
 		},*/
 	
-		function render(req) { 
+		function render(req,res) { 
 
 			var 
-				jade = this,
-				ctx = Copy(DEBE.site,req);  			
+				ctx = Copy(DEBE.site, {
+					table: req.table,
+					type: req.type,
+					parts: req.parts,
+					action: req.action,
+					org: req.org,
+					client: req.client,
+					flags: req.flags,
+					query: req.query,
+					joined: req.joined,
+					profile: req.profile,
+					group: req.group,
+					search: req.serach,
+					started: DEBE.started,
+					filename: DEBE.paths.jaderef,
+					url: req.url
+				});
+
+			if ( this.charAt(0) == "." )
+				try {
+					res( null, JADE.renderFile( this+"", ctx ) );  // js gets confused so force string
+				}
+				catch (err) {
+					res( err );
+				}
 			
-			try {
-				var gen = SKIN.compile(jade,ctx);
-				return gen ? rtn = gen(ctx) : "Bad skin";
-			}
-			catch (err) {
-				return err;
-			}
+			else
+				try {
+					if ( generator = JADE.compile(this, ctx) )
+						res( null, generator(ctx) );
+					else
+						res( DEBE.errors.badSkin );
+				}
+				catch (err) {
+					return res( err );
+				}
 		}
 	],
 	
@@ -1215,7 +1283,7 @@ function sysBIT(req, res) {
 
 	// Notify startup
 	
-	Trace(`BIT ${N} events at ${lambda} events/s with logstamp ${stamp}`);
+	//Trace(`BIT ${N} events at ${lambda} events/s with logstamp ${stamp}`);
 	
 	res("BIT running");
 
@@ -1509,16 +1577,23 @@ function renderSkin(req,res) {
 		
 	function renderJade() {  
 
-		function genSkin(req, res, fields) {
+		function genSkin(req, res, fields) { // generate skin from plugin.view skinner
 			
 			var
+				pluginPath = paths.render+"plugin.jade",
 				cols = [],
-				ds = req.table,
 				query = req.query,
-				page = query.page || "10",
-				dims = query.dims || "2000,300",
-				mode = query.mode,
-				wh = dims.split(","),
+				sql = req.sql,
+				dims = (query.dims || "50,50").split(),
+				query = req.query = {
+					mode: req.parts[1],
+					search: req.search,
+					cols: cols,
+					page: query.page,
+					width: dims[0],
+					height: dims[1],
+					ds: req.table
+				},				
 				sqltypes = {
 					"varchar(32)": "t",
 					"varchar(64)": "t",
@@ -1561,180 +1636,34 @@ function renderSkin(req,res) {
 					}
 			}
 				
-			switch (req.type) {
-				case "view":
-res( `extends base
-append base_parms
-	- tech = "extjs"
-append base_body
-	#grid.view.${ds}(path="/${ds}.db?${req.search}",cols="${cols.join()}",dims=${dims},page=${page},nowrap)
-`.render(req) ); break;
-
-				case "run":
-				case "plugin":
-					var 
-						jobmode = mode || "grid";
-res( `extends site
-append site_parms
-	- view = "Min"
-append site_help
-	:markdown
-		This is the ${ds}-plugin.  See [api plugins](/api.view) and the help in each tab for
-		more information about plugins.
-append site_body
-	#grid.Dataset(
-		path="/${ds}.db?${req.search}",
-		cols="${cols.join()}",
-		dims=${dims},
-		page=${page})
-
-		:markdown
-			A plugin is a dataset-engine pair that is used to execute engines with the parameters
-			from a selected dataset case.  To run plugin with a specific parameter case, simply
-			select the case, then click the	execute button; you may also run a plugin from the url bar:
-
-				GET /PLUGIN.exe?ID=CASE 	Run PLUGIN engine using PLUGIN dataset parameters for specified CASE 
-				GET /PLUGIN.exe?Name=CASE 	Run PLUGIN engine using PLUGIN dataset parameters for specified CASE
-
-			Plugins normally run standalone, but they can be placed in job workflows when they 
-			contain (reserved) parameters:
- 
-					(Save) json reserve for storing the results of this CASE
-					(Job) json parameters to place CASE into appropriate job workflow regulated by the clients' QoS and Credit levels
-					(Agent) name of agent to out-source this CASE which will be polled until it returns its results 
-					(Task) name of project associated with this CASE
-
-			Reserved parameters can be added to a plugin at any time:  [Save+](/${ds}.add?Save=doc), 
-			[Job+](/${ds}.add?Job=doc), [Agent+](/${ds}.add?Agent=name), 
-			[Task+](/${ds}.add?Task=name).
-
-			A (Description) parameter may contains bloggable markdown  tags
-	
-				[image | post | update | LABEL,W,H](url) 
-
-			to document the test case and its results.  Toggle the blog button to 
-			edit / display the blog.
-
-	#form.Engine(
-		path="/engines.db?Name=${ds}",
-		cols="Name,Engine,Enabled.c,Program(Code.x,Vars.x.Context)")
-	
-		:markdown
-			[Engines](/api.view) contain js | python | matlab | opencv | ... code.  Click the 
-			execute button to test the engine with its default context parameters.
-
-	#${jobmode}.Jobs(
-		path="/queues.db?Client=${req.client}&Class=${ds}",
-		cols="Arrived.d,Departed.d,Notes.x,QoS.n,Age.n,Funded.c,Finished.c,Priority.n,State.n,Task.t",
-		dims=${dims},
-		page=${page})
-
-		:markdown
-			Jobs created by this plugin are show here.  If the originator exceeded their credits,
-			the job notes will contain an "unfunded" link.  If you would like to fund this job with 
-			your credits, simply click the "unfunded" link.  To decide if this is a wise purchase, 
-			click the "${ds}" link to see the test case case being explored.  If present, you 
-			may also click the "RTP" or "PMR" links to get further information about the 
-			project this job supports.
-`.render(req) ); break;
-										
-				case "pivot":
-					var pcol = cols.pop();
-res( `extends base
-append base_parms
-	- tech = "extjs"
-append base_body
-	#pivot.view.${ds}(path="/${ds}.db?${req.search}",pivots="${pcol}",cols="${cols.join()}",dims=${dims},page=${page},nowrap)
-`
-.render(req) ); break;
-
-				case "site":
-res( `extends site
-append site_parms
-	- view = "Basic"
-append site_body
-	#grid.view.${ds}(path="/${ds}.db?${req.search}",cols="${cols.join()}",dims=${dims},page=${page},nowrap)
-`
-.render(req) ); break;
+			if ( query.mode == "gbrief" ) 
+				sql.query("SELECT * FROM ??.??", [req.group, query.ds], function (err,recs) {
+					if (err)
+						res( DEBE.errors.badSkin );
 					
-				case "spivot":
-					var pcol = cols.pop();
-res( `extends site
-append site_parms
-	- view = "Basic"
-append site_body
-	#pivot.view.${ds}(path="/${ds}.db?${req.search}",pivots="${pcol}",cols="${cols.join()}",dims=${dims},page=${page},nowrap)
-`
-.render(req) ); break;
-
-				case "brief":
-res( `extends base
-append base_parms
-	- tech = "reveal"
-append base_body
-	section
-		iframe(src='/${ds}.view',width=${wh[0]},height=${wh[1]})
-`.render(req) ); break;
-
-				case "pbrief":
-res( `extends base
-append base_parms
-	- tech = "reveal"
-append base_body
-	section
-		iframe(src='/${ds}.pivot',width=${wh[0]},height=${wh[1]})
-`.render(req) ); break;
-
-				case "rbrief":
-res( `extends base
-append base_parms
-	- tech = "reveal"
-append base_body
-	section
-		iframe(src='/${ds}.run',width=${wh[0]},height=${wh[1]})
-`.render(req) ); break;
-
-				case "gbrief":
-					if ( select = FLEX.select[ds] )
-						select( req, function (recs) {
-res( `extends base
-append base_parms
-	- tech = "reveal"
-append base_body
-	section
-		- recs = ${JSON.stringify(recs)}
-		div!= gridify(recs)
-`.render(req) );
+					else {
+						recs.each( function (n,rec) {
+							delete rec.ID;
 						});
-					
-					else
-						req.sql.query("SELECT * FROM app.??", ds, function (err,recs) {
-							if (err)
-								res( DEBE.errors.cantSkin );
-							else {
-								recs.each( function (n,rec) {
-									delete rec.ID;
-								});
-res( `extends base
-append base_parms
-	- tech = "reveal"
-append base_body
-	section
-		- recs = ${JSON.stringify(recs)}
-		div!= gridify(recs)
-`.render(req) );
-							}
-						}); 
-					
-					break;
+
+						query.data = recs;
+						pluginPath.render(req, function (err, html) {
+							res( err || html );
+						});
+					}
+				});
+
+			else	
+				pluginPath.render(req, function (err, html) {
+					res( err || html );
+				});
 			
-				default:
-					res(DEBE.errors.cantSkin);
-			}
-			
-		}			
+		}		
 							  
-		//Trace("RENDER "+req.table);
+		Trace("RENDER "+req.table);
+		
+		var
+			skinPath = paths.render+req.table+".jade";
 		
 		sql.query(paths.engine, { // Try a skin from the  engine db
 			Name: req.table,
@@ -1744,12 +1673,14 @@ append base_body
 		.on("result", function (eng) {
 			
 			if (eng.Count) 			// render using skinning engine
-				res( eng.Code.render(req) );
+				eng.Code.render(req, function (err, html) {
+					res( err || html );
+				});
 			
-			else 						// render using skin from disk
-				FS.readFile(paths.render+req.table+".jade", "utf-8", function (err,skin) {
+			else 						// try to render using skin from disk
+				skinPath.render(req, function (err, html) {
 					
-					if (err)  // create dynamic skin for this dataset
+					if (err)  	// try to create dynamic skin 
 						if ( select = FLEX.select[req.table] ) // try virtual table
 							select(req, function (recs) {
 								genSkin( req, res, recs[0] || {} );
@@ -1779,8 +1710,11 @@ append base_body
 							});
 					
 					else  	// render skin
-						res( skin.render(req) );
+						res( html );
 				});
+		})
+		.on("error", function (err) {
+			res( DEBE.errors.badSkin );
 		});
 
 	}
@@ -1831,7 +1765,7 @@ function extendPlugin(req,res) {
 				type = (val=="doc") ? "mediumtext" : `varchar(${val.length})` ;
 			}
 			
-		sql.query("ALTER TABLE app.?? ADD ?? "+type, [ds,key]);
+		sql.query("ALTER TABLE ??.?? ADD ?? "+type, [req.group,ds,key]);
 		
 	});
 }
@@ -1910,7 +1844,7 @@ function executePlugin(req,res) {
 						console.log({save:stats});
 
 						sql.query(  // update voxel with engine stats
-							"UPDATE app.voxels SET ? WHERE ?", [{
+							"UPDATE ??.voxels SET ? WHERE ?", [req.group, {
 								t: updated,
 								Save: JSON.stringify(stats)
 							}, {
@@ -1926,7 +1860,7 @@ function executePlugin(req,res) {
 				
 						console.log({save:dets});
 						sql.query(
-							"REPLACE INTO app.chips SET ?,Geo=st_GeomFromText(?)", [{
+							"REPLACE INTO ??.chips SET ?,Geo=st_GeomFromText(?)", [req.group, {
 								Thread: job.thread,
 								Save: JSON.stringify(dets),
 								t: updated,
@@ -1939,7 +1873,7 @@ function executePlugin(req,res) {
 						// reserve voxel detectors above this chip
 						for (var vox=CHIPS.voxels,alt=vox.minAlt, del=vox.deltaAlt, max=vox.maxAlt; alt<max; alt+=del) 
 							sql.query(
-								"REPLACE INTO app.voxels SET ?,Geo=st_GeomFromText(?)", [{
+								"REPLACE INTO ??.voxels SET ?,Geo=st_GeomFromText(?)", [req.group, {
 									Thread: job.thread,
 									Save: null,
 									t: updated,
@@ -2238,7 +2172,7 @@ function Initialize () {
 		FLEX.config({ 
 			thread: DEBE.thread,
 			emitter: DEBE.IO ? DEBE.IO.sockets.emit : null,
-			skinner: SKIN,
+			skinner: JADE,
 			fetcher: DEBE.fetchers.http,
 			indexer: DEBE.indexer,
 			uploader: DEBE.uploader,
