@@ -15,14 +15,23 @@ append base_parms
 extends site
 append site_parms
 	case query.mode
-		when "plugin"
-		when "run"
 		when "site"
+		when "view"
+		when "pivot"
+			- view = "Basic"
+			- wrap = "nowrap"
+		when "plugin"
+			- view = "Kiss"
+			- wrap = "nowrap"
+		when "run"
 			- view = "Min"
-			- wrap = ""
-		default
+			- wrap = ""		
+		when "brief"
 			- view = "Nada"
 			- wrap = "nowrap"
+		default
+			- view = "Nada"
+			- wrap = ""
 
 append site_body
 
@@ -42,6 +51,7 @@ append site_body
 			#grid.Dataset(
 				path=dspath,
 				cols=dscols.join(),
+				menu="Agents",
 				page=dspage )
 
 				:markdown
@@ -57,12 +67,10 @@ append site_body
 
 							(Save) json reserve for storing the results of this CASE
 							(Job) json parameters to place CASE into appropriate job workflow regulated by the clients' QoS and Credit levels
-							(Agent) name of agent to out-source this CASE which will be polled until it returns its results 
 							(Task) name of project associated with this CASE
 
-					Reserved parameters can be added to a plugin at any time:  [Save+](/#{ds}.add?Save=doc), 
-					[Job+](/#{ds}.add?Job=doc), [Agent+](/#{ds}.add?Agent=name), 
-					[Task+](/#{ds}.add?Task=name).
+					Use  [Save+](/#{ds}.add?Save=doc), [Job+](/#{ds}.add?Job=doc), [Task+](/#{ds}.add?Task=name) to add these (reserved) 
+					parameters to this plugin.
 
 					A (Description) parameter may contains bloggable markdown  tags
 
@@ -81,7 +89,7 @@ append site_body
 
 			#grid.Jobs(
 				path="/queues.db?Class=#{ds}",
-				cols="Arrived.d,Departed.d,Notes.x,QoS.n,Age.n,Funded.c,Finished.c,Priority.n,State.n,Task.t",
+				cols="Arrived.d,Departed.d,Notes.x,QoS.n,Age.n,Funded.c,Finished.c,Priority.n,Work.n,State.n,Task.t,Signoffs(Flagged.c,Sign0.c,Sign1.c,Sign2.c,Sign3.c)",
 				page=dspage )
 
 				:markdown

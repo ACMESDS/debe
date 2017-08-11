@@ -2244,7 +2244,7 @@ function Initialize () {
 			builtins: DEBE.publish
 		});
 		
-		ENGINE.plugins.FLEX = FLEX.plugins;
+		ENGINE.plugins.FLEX = FLEX.plugins;  // Force add FLEX plugins to engine plugins
 
 		if (cb) cb();	
 	}
@@ -2254,6 +2254,29 @@ function Initialize () {
 	initSQL( function () {
 
 		// Ta Da!
+		DEBE.thread( function (sql) {
+			var path = DEBE.paths.render;
+			
+			DEBE.indexer( path, function (files) {
+				var ignore = {".": true, "_": true};
+				files.each( function (n,file) {
+					if ( !ignore[file.charAt(0)] )
+						try {
+							Trace("PUBLISHING "+file);
+							sql.query( "INSERT INTO app.engines SET ?", {
+								Name: file.replace(".jade",""),
+								Code: FS.readFileSync( path+file, "utf-8"),
+								Engine: "jade",
+								Enabled: 0
+							});
+						}
+						catch (err) {
+							console.log(err);
+						}
+				});
+			});
+		});
+		
 
 	}); }); });
 } 
