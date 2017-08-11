@@ -16,9 +16,11 @@ extends site
 append site_parms
 	case query.mode
 		when "site"
+			- view = "Basic"
+			- wrap = "nowrap"
 		when "view"
 		when "pivot"
-			- view = "Basic"
+			- view = "Nada"
 			- wrap = "nowrap"
 		when "plugin"
 			- view = "Kiss"
