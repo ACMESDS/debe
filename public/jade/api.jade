@@ -12,7 +12,7 @@ append site_body
 	#fit.Intro
 
 		:markdown
-			TOTEM provides SUDI endpoints to synchronize dataset NODES:
+			TOTEM provides CRUD endpoints to synchronize dataset NODES:
 
 				(select) GET 	 /NODE $$ NODE ...
 				(update) PUT 	 /NODE $$ NODE ...
@@ -88,7 +88,7 @@ append site_body
 
 		#fit.Parameters
 			:markdown
-				File retrival parameters include:
+				File retrieval parameters include:
 
 					_has	find best file by string containment 
 					_nlp	find best file by nlp context 
@@ -389,8 +389,8 @@ append site_body
 					System configuration information is available at [CONFIG](/CONFIG.db).
 
 			:markdown
-				The **#{nick}** supports *Virtual Datasets* through its SUDIE (*create*, *read*, *update*, *delete*, 
-				and *execute*) interface.  This SUDIE interface governs both *Database Datasets* and *Virtual Datasets*.
+				The **#{nick}** supports *Virtual Datasets* through its CRUDE (*create*, *read*, *update*, *delete*, 
+				and *execute*) interface.  This CRUDE interface governs both *Database Datasets* and *Virtual Datasets*.
 				For example, an *execute* on dataset X will typically import/export the data to/from dataset 
 				X as controlled by its associated query parameters, a list of which might be returned by supplying a 
 				&help parameter.  Below are several important **Virtual datasets**:
@@ -458,7 +458,7 @@ append site_body
 				GET /ENGINE.exe?agent=AGENT&QUERY
 
 			where the &poll request will start a job, then poll the AGENT every N seconds for its results.
-			Consersely, a poll-less request will start a job, then reply on the AGENT to claim the job.  In
+			Conversely, a poll-less request will start a job, then reply on the AGENT to claim the job.  In
 			either case, QUERY defines the ENGINE args.
 
 			#{title} reciprocates by providing its own AGENT at its **/agent** endpoint.
@@ -481,7 +481,7 @@ append site_body
 		#fit.Endpoints
 			:markdown
 				[Engines](/engine.view) are built on cv | py | R | sh | js | res1 | res2 | ... machines and are
-				accessable from the following endpoints:
+				accessible from the following endpoints:
 
 					GET /ENGINE.TYPE 	Compile and step ENGINE in a stateless workflow
 					PUT /ENGINE.TYPE 	Compile ENGINE in a stateful workflow
@@ -492,7 +492,7 @@ append site_body
 				(TYPE **does not** imply anything about the engine's machine type).  A TYPE = exe will execute
 				the engine and return its results.  Please know 
 				that **#{nick}** does not provide an interactive development environment; thus engines should be 
-				throughly debugged in their native development environment before being [inserted](/engine.view) 
+				thoroughly debugged in their native development environment before being [inserted](/engine.view) 
 				into **#{nick}**.  *Engines* become *plugins* when they are paired with a same-named dataset.
 
 				While this endpoint:
@@ -633,7 +633,7 @@ append site_body
 					Stateful engines are operated in [workflows](/nodeflow.view) and extend 
 					stateless engines with the **ports** hash.  These ports are defined by 
 					functions that hold/latch its input/output events, thus maximizing data 
-					stationarity in a workflow.  (More documention required).
+					stationarity in a workflow.  (More documentation required).
 
 			#fit.sh
 				:markdown
@@ -644,14 +644,14 @@ append site_body
 					These engines suffer o(1) second of overhead in loading/compiling a python/nodejs/etc module each time
 					the engine is called.  This translates into a 6 hour overhead in a 	typical chipping workflow containing 
 					20K chips/footprint.  When, however, workflows can be focused to a small area-of-interest, Bash 
-					overhead can be tollerated.
+					overhead can be tolerated.
 
 					Bash engines are supported in both the HYDRA and **#{nick}** framework.  In
 					the HYDRA framework, the engine's script is wrapped in a HYDRA proprietary 
 					soapUI (nonrestful XML) interface serviced by HYDRA's web service.  In
 					**#{nick}** framework, the engine's script is wrapped in a JSON (restful) interface
 					serviced by **#{nick}**'s web service.  **#{nick}**'s service supports workflow engines (to 
-					bypass the intrinsic overhead in calling sh-engines), as well as a mechanisims 
+					bypass the intrinsic overhead in calling sh-engines), as well as a mechanisms 
 					to directly interface with clients and other workflow engines. And whereas 
 					**#{nick}** is PKI driven, HYDRA is login driven.
 
@@ -717,7 +717,7 @@ append site_body
 						Context:
 							{ key: value, ...}
 
-					is a SUDI-select [simply selects)(/demo.sql) all records from the **intake** 
+					is a CRUD-select [simply selects)(/demo.sql) all records from the **intake** 
 					dataset whose **TRL** is at 2, and adds a **Cat** field to each record.  Note 
 					again that all i/o (here console.log) is sent to the **service** console.  Note 
 					too that when this engine is executed (read/GET) for the first time, the engine is 
