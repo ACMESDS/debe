@@ -1128,6 +1128,43 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		met( url.tagurl(req), res );
 	},
 		
+	ingestFile: function (path, sql) {
+		var 
+			stream = FS.createReadStream(path),
+			items = ["x", "y", "z", "t", "n"];
+
+		stream.on("open", function () {
+			/*stream.pipe( function (buf) {
+				console.log(buf);
+			});*/
+		});
+
+		stream.on("error", function (err) {
+			Trace(err);
+		});
+
+		stream.on("data", function (buf) {			
+			buf.toString().split("\n").each( function (n,rec) {
+				var ev = new Object();
+				rec.split(",").each( function (i, item) {
+					ev[items[i]] = item;
+				});
+
+				sql.query(
+					"INSERT INTO app.evcache SET ?, Geo=st_GeomFromText(?)", [{
+						x: ev.x,
+						y: ev.y,
+						z: ev.z,
+						t: ev.t,
+						n: ev.n
+					},
+					`point(${ev.y} ${ev.x})`
+				]);
+			});
+			CHIPS.ingestCache(sql);	
+		});	
+	},
+	
 	blindTesting : false,		//< Enable for double-blind testing (make FLEX susceptible to sql injection attacks)
 	statefulViews : { 			//< Jade views that require  the stateful URL (legacy)
 		'workflow': 1,
@@ -1633,7 +1670,11 @@ function executePlugin(req,res) {
 						name: req.table,
 						task: query.Task,
 						notes: jobnotes	+ " " + (query.Task
-										? "RTP".tag("a",{href:`/rtpsqd.view?task=${query.Task}`}) + " " + "PMR brief".tag("a",{href:`/briefs.view?options=${query.Task}`})
+										? [
+											"RTP".tag("a",{href:`/rtpsqd.view?task=${query.Task}`}),
+											"PMR brief".tag("a",{href:`/briefs.view?options=${query.Task}`})
+											].join(" ")
+
 										: "" )												 
 					});
 
@@ -1646,7 +1687,7 @@ function executePlugin(req,res) {
 				});
 
 				if (chan.tmin)
-					CHIPS.tagevents(chan, job, function (win,status,sql) {
+					CHIPS.ingestStreams(chan, job, function (win,status,sql) {
 						console.log(win,status);
 					});
 
