@@ -854,7 +854,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		rbrief: renderSkin,
 		pbrief: renderSkin,
 		exe: executePlugin,
-		add: extendPlugin
+		add: extendPlugin,
+		sub: retractPlugin
 	},
 
 	runner: ENGINE,
@@ -1563,6 +1564,22 @@ function extendPlugin(req,res) {
 			}
 			
 		sql.query("ALTER TABLE ??.?? ADD ?? "+type, [req.group,ds,key]);
+		
+	});
+}
+
+function retractPlugin(req,res) {
+	
+	var
+		sql = req.sql,
+		ds = req.table,
+		query = req.query;
+	
+	res("Dropping keys");
+	
+	Each(query, function (key, val) {
+			
+		sql.query("ALTER TABLE ??.?? DROP ?? ", [req.group,ds,key]);
 		
 	});
 }
