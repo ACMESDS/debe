@@ -1,24 +1,24 @@
 ﻿// UNCLASSIFIED 
 
 /**
- * @class debe
- * @requires child_process
- * @requires cluster
- * @requires child-process
- * @requires fs
+@class debe
+@requires child_process
+@requires cluster
+@requires child-process
+@requires fs
 
-* @requires i18n-abide
- * @requires socket.io
- * @requires socket.io-clusterhub
- * @requires jade
- * @requires jade-filters
- * @requires markdown
- * @requires optomist
+@requires i18n-abide
+@requires socket.io
+@requires socket.io-clusterhub
+@requires jade
+@requires jade-filters
+@requires markdown
+@requires optomist
 
- * @requires flex
- * @requires totem
- * @requires engine
- */
+@requires flex
+@requires totem
+@requires engine
+*/
 
 var 									// globals
 	ENV = process.env,
@@ -50,12 +50,6 @@ var										// shortcuts and globals
 var
 	DEBE = module.exports = TOTEM.extend({
 	
-	publish: {  // builtin added to engines
-		//randpr: FLEX.plugins.randpr,
-		//res1pr: FLEX.plugins.res1pr,
-		//res2pr: FLEX.plugins.res2pr		
-	}, 
-		
 	"reqflags.traps." : {  //< _flag=name can modify the reqeust
 		save: function (req) {  //< _save=name retains query in named engine
 			var cleanurl = req.url.replace(`_save=${req.flags.save}`,"");
@@ -255,6 +249,7 @@ append layout_body
 							sql.query( select(where), [req.group, recs, where], function (err,recs) {								
 								index( err ? [] : recs );
 							});
+							sql.release();
 						}
 						
 						catch (err) {
@@ -431,8 +426,6 @@ append layout_body
 				//stats:{table:"openv.profiles",group:"client",index:"client,event"}
 			}
 		}
-
-		//filename: "./public/jade/ref.jade"	// jade reference path for includes, exports, and appends
 	},
 	
 	"sender.": {		//< file.attr senders
@@ -844,10 +837,10 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		help: sysHelp,
 		stop: sysStop,
 		alert: sysAlert,
-		codes: sysCodes,
+		//codes: sysCodes,
 		ping: sysPing,
-		bit: sysBIT,
-		config: sysConfig
+		bit: sysBIT
+		//config: sysConfig
 	},
 	
 	"reader.": { //< reader endpoints
@@ -956,7 +949,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	
 	Function: Initialize,  //< added to ENUM callback stack
 
-	// Protos
+	// Prototypes
 	
 	String: [  // string prototypes
 		/*
@@ -968,7 +961,10 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		},*/
 	
 		function render(req,res) { 
-
+		/**
+		@method render
+		Respond with res(err, html) to render html for this string or the "."-prefixed filename.
+		**/
 			var 
 				ctx = Copy(DEBE.site, {
 					table: req.table,
@@ -1010,10 +1006,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	],
 	
 	Array: [  // array prototypes
+		function merge(Recs,idx) {
 		/**
 		@method merge
+		Merge changes when doing table deltas from their baseline versions.
 		**/
-		function merge(Recs,idx) {
 			
 			function changed(rec,Rec) {
 				for (var n in rec)
@@ -1058,11 +1055,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			return recs;
 		},
 		
+		function treeify(idx,kids,level,keys,wt) {
 		/**
 		@method treeify
 		Return a tree = {name,weight,children: tree} from records having been sorted on keys=[key,...]
 		*/
-		function treeify(idx,kids,level,keys,wt) {
 			var	
 				recs = this,
 				key = keys[level],
@@ -1121,18 +1118,17 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		post: "/service/algorithm/:proxy"		//< hydra endpoint
 	},  		//< reserved for soap interfaces
 		
-	cycles: {
-		billing: 0,  //< Interval [ms] to bill jobs in queue
-		diag: 0 	 //< Interval [ms] to run self diagnostics
-	},
-		
-	loader: function (url,met,req,res) { 
-		Trace("LOADING "+url.tagurl(req));
+	billingcycle: 0, //< Interval [s] to bill jobs in queue (0 disables)
+	diagcycle: 0, //< Interval [s] to run self diagnostics (0 disables)
+	hawkingcycle: 0, 	// job hawking cycle [s] (0 disables)		
+
+	loader: function (url,met,req,res) { // data loader
+		Trace("FETCHING "+url.tagurl(req));
 		met( url.tagurl(req), res );
 	},
 		
 	blindTesting : false,		//< Enable for double-blind testing (make FLEX susceptible to sql injection attacks)
-	statefulViews : { 			//< Jade views that require  the stateful URL
+	statefulViews : { 			//< Jade views that require  the stateful URL (legacy)
 		'workflow': 1,
 		'workflows': 1
 	}
@@ -1195,20 +1191,16 @@ function icoFavicon(req,res) {   // extjs trap
 	res("No icons here"); 
 };
 
-//==========================================
-// Maintenance endpoints
-
 /**
-@class support.sys
-sys.X endpoints
+@class system
 */
 
 /**
 @method sysConfig
+@deprecated
 Totem(req,res) endpoint to render jade code requested by .table jade engine. 
 @param {Object} req Totem request
 @param {Function} res Totem response
-*/
 
 function sysConfig(req,res) {
 	function Guard(query, def) {
@@ -1223,28 +1215,25 @@ function sysConfig(req,res) {
 			res( err || "parameter set" );
 		});
 }
+*/
 
-/**
+/*
 @method sysCheckpt
 @deprecated
 Totem(req,res) endpoint to render jade code requested by .table jade engine. 
 @param {Object} req Totem request
 @param {Function} res Totem response
-*/
-/*
 function sysCheckpt(req,res) {
 	CP.exec('source maint.sh checkpoint "checkpoint"');
 	res("Checkpointing database");
 }
 */
 
-/**
+/*
 @method sysStart
 @deprecated
 @param {Object} req Totem request
 @param {Function} res Totem response
-*/
-/*
 function sysStart(req, res) {
 	req.sql.query("select * from openv.apps where least(?)",{Enabled:true,Name:req.query.name||"node0"})
 	.on("result",function (app) {
@@ -1261,13 +1250,13 @@ function sysStart(req, res) {
 }
 */
 
+function sysBIT(req, res) {
 /**
 @method sysBIT
 Totem(req,res) endpoint for builtin testing
 @param {Object} req Totem request
 @param {Function} res Totem response
 */
-function sysBIT(req, res) {
 	var N = req.query.N || 20;
 	var lambda = req.query.lambda || 2;
 	
@@ -1318,47 +1307,46 @@ function sysBIT(req, res) {
 	}
 }
 
+function sysPing(req,res) {
 /**
 @method sysPing
 Totem(req,res) endpoint to test client connection
 @param {Object} req Totem request
 @param {Function} res Totem response
 */
-function sysPing(req,res) {
 	res("hello "+req.client);			
 }
 
 /**
 @method sysCodes
+@deprecated
 Totem(req,res) endpoint to return html code for testing connection
 @param {Object} req Totem request
 @param {Function} res Totem response
-*/
 function sysCodes(req,res) {
-	res(HTTP.STATUS_CODES);
+	res( HTTP.STATUS_CODES );
 }
+*/
 
+function sysAlert(req,res) {
 /**
 @method sysAlert
 Totem(req,res) endpoint to send notice to all clients
 @param {Object} req Totem request
 @param {Function} res Totem response
 */
-function sysAlert(req,res) {
 	if (IO = DEBE.IO)
 		IO.sockets.emit("alert",{msg: req.query.msg || "system alert", to: "all", from: DEBE.site.title});
 			
 	res("Broadcasting alert");
 }
 
-/**
+/*
 @method sysKill
 @deprecated
 Totem(req,res) endpoint to render jade code requested by .table jade engine. 
 @param {Object} req Totem request
 @param {Function} res Totem response
-*/
-/*
 function sysKill(req,res) {
 	var killed = [];
 
@@ -1377,13 +1365,13 @@ function sysKill(req,res) {
 }
 */
 
+function sysStop(req,res) {
 /**
 @method sysStop
 Totem(req,res) endpoint to send emergency message to all clients then halt totem
 @param {Object} req Totem request
 @param {Function} res Totem response
 */
-function sysStop(req,res) {
 	if (IO = DEBE.IO)
 		IO.sockets.emit("alert",{msg: req.query.msg || "system halted", to: "all", from: DEBE.site.title});
 	
@@ -1391,13 +1379,13 @@ function sysStop(req,res) {
 	process.exit();
 }
 
+function sysHelp(req,res) {
 /**
 @method sysHelp
 Totem(req,res) endpoint to return all sys endpoints
 @param {Object} req Totem request
 @param {Function} res Totem response
 */
-function sysHelp(req,res) {
 	res(
 		  "/ping.sys check client-server connectivity<br>"
 		+ "/bit.sys built-in test with &N client connections at rate &lambda=events/s<br>"
@@ -1408,30 +1396,16 @@ function sysHelp(req,res) {
 }
 
 /**
-@method sysEngine
-@deprecated
-Totem(req,res) endpoint to render jade code requested by .table jade engine. 
-@param {Object} req Totem request
-@param {Function} res Totem response
-*/
-/*
-function sysEngine(req,res) {
-	res( DEBE.errors.unsupportedFeature );
-}
-*/
-
-/**
 @class senders
-Totem sender endpoints
 */
 
+function sendCode(req,res) { // return file contents tagged as code
 /**
 @method sendCode
 Totem(req,res) endpoint to send engine code requested by (.name, .type) 
 @param {Object} req Totem request
 @param {Function} res Totem response
 */
-function sendCode(req,res) { // return file contents tagged as code
 
 	var paths = DEBE.paths;
 	
@@ -1448,7 +1422,6 @@ function sendCode(req,res) { // return file contents tagged as code
 	});
 }
 
-/*
 function sendCert(req,res) { // create/return public-private certs
 			
 	var owner = req.table,
@@ -1462,7 +1435,7 @@ function sendCert(req,res) { // create/return public-private certs
 			function (err) {
 			
 			if (err) {
-				console.log(err);			
+				Trace(err);			
 				res( new Error("Failed to create cert") );
 			}
 				
@@ -1530,14 +1503,14 @@ To connect to ${site.Nick} from Windows:
 	});
 	
 }
-*/
+
+function sendAttr(req,res) { // send file attribute
 /**
 @method sendAttr
 Totem(req,res) endpoint to send the .area attribute of a .table file 
 @param {Object} req Totem request
 @param {Function} res Totem response
 */
-function sendAttr(req,res) { // send file attribute
 	
 	var attr = req.area,
 		table = req.table,
@@ -1551,190 +1524,14 @@ function sendAttr(req,res) { // send file attribute
 
 }
 
+function sendFile(req,res) {
 /**
 @method sendFile
 Totem(req,res) endpoint to response with mime file requested by .file
 @param {Object} req Totem request
 @param {Function} res Totem response
 */
-function sendFile(req,res) {
 	DEBE.sendFile(req,res);
-}
-
-/**
-@method renderSkin
-Totem(req,res) endpoint to render jade code requested by .table jade engine. 
-@param {Object} req Totem request
-@param {Function} res Totem response
-*/
-function renderSkin(req,res) {
-			
-	var 
-		sql = req.sql,
-		paths = DEBE.paths,
-		site = DEBE.site,  
-		ctx = site.context[req.table]; 
-		
-	function renderJade() {  
-
-		function genSkin(req, res, fields) { // generate skin from plugin.view skinner
-			
-			var
-				pluginPath = paths.render+"plugin.jade",
-				cols = [],
-				query = req.query,
-				sql = req.sql,
-				dims = (query.dims || "50,50").split(),
-				query = req.query = {
-					mode: req.parts[1],
-					search: req.search,
-					cols: cols,
-					page: query.page,
-					width: dims[0],
-					height: dims[1],
-					ds: req.table
-				},				
-				sqltypes = {
-					"varchar(32)": "t",
-					"varchar(64)": "t",
-					"varchar(128)": "t",
-					"int(11)": "i",
-					float: "n",
-					json: "x",
-					mediumtext: "h",
-					json: "x",
-					date: "d",
-					datetime: "d",
-					"tinyint(1)": "c"
-				};				
-			
-			switch (fields.constructor) {
-				case Array:
-					fields.each(function (n,field) {
-						if (field.Field != "ID")
-							cols.push( field.Field + "." + (sqltypes[field.Type] || "t") );
-					});
-					break;
-					
-				case String:
-					fields.split(",").each(function (n,field) {
-						if (field.Field != "ID")
-							cols.push( field.Field );
-					});					
-					break;
-					
-				case Object:
-				default:
-					
-					try{
-						Each(fields, function (n,rec) {
-							if (n != "ID")
-								cols.push( n );
-						});	
-					}
-					catch (err) {
-					}
-			}
-				
-			if ( query.mode == "gbrief" ) 
-				sql.query("SELECT * FROM ??.??", [req.group, query.ds], function (err,recs) {
-					if (err)
-						res( DEBE.errors.badSkin );
-					
-					else {
-						recs.each( function (n,rec) {
-							delete rec.ID;
-						});
-
-						query.data = recs;
-						pluginPath.render(req, function (err, html) {
-							res( err || html );
-						});
-					}
-				});
-
-			else	
-				pluginPath.render(req, function (err, html) {
-					res( err || html );
-				});
-			
-		}		
-							  
-		Trace("RENDER "+req.table);
-		
-		var
-			skinPath = paths.render+req.table+".jade";
-		
-		sql.query(paths.engine, { // Try a skin from the  engine db
-			Name: req.table,
-			Engine: "jade",
-			Enabled: 1
-		})
-		.on("result", function (eng) {
-			
-			if (eng.Count) 			// render using skinning engine
-				eng.Code.render(req, function (err, html) {
-					res( err || html );
-				});
-			
-			else 						// try to render using skin from disk
-				skinPath.render(req, function (err, html) {
-					
-					if (err)  	// try to create dynamic skin 
-						if ( select = FLEX.select[req.table] ) // try virtual table
-							select(req, function (recs) {
-								genSkin( req, res, recs[0] || {} );
-							});
-
-						else  // try sql table
-							sql.query(
-								"DESCRIBE ??", 
-								(DEBE.dsAttrs[req.table] || {}).tx || req.table, 
-								function (err,fields) {
-									
-									if (err) // might be an engine
-										if ( route = DEBE.runner )
-											route[req.action](req, function (ack) { // try the engine
-												if (ack.constructor == Error) // noluck
-													res( ack );
-
-												else 
-													genSkin( req, res, ack[0] || {} );
-											});	
-											
-										else
-											res( DEBE.errors.badDataset );
-
-									else 
-										genSkin( req, res, fields );
-							});
-					
-					else  	// render skin
-						res( html );
-				});
-		})
-		.on("error", function (err) {
-			res( DEBE.errors.badSkin );
-		});
-
-	}
-		
-	if (ctx) 					// render skin in extended context
-		sql.context(ctx, function (ctx) {  // establish skinning context for requested table
-			
-			for (var n in ctx) { 		// enumerate thru all the datasets
-				ctx[n].args = {n:n}; 	// hold ds name for use after select
-				ctx[n].rec = function clone(recs,me) {  // select and clone the records 
-					site[me.args.n] = recs; 		// save data into the context
-				};
-			}
-
-			renderJade(); 			// render skin in this extended context
-		});
-	
-	else
-		renderJade();  		// render skin in default context
-
 }
 
 /**
@@ -1904,6 +1701,186 @@ function executePlugin(req,res) {
 	
 }
 
+/**
+@class converters
+*/
+
+function renderSkin(req,res) {
+/**
+@method renderSkin
+Totem(req,res) endpoint to render jade code requested by .table jade engine. 
+@param {Object} req Totem request
+@param {Function} res Totem response
+*/
+			
+	var 
+		sql = req.sql,
+		paths = DEBE.paths,
+		site = DEBE.site,  
+		ctx = site.context[req.table]; 
+		
+	function renderJade() {  
+
+		function genSkin(req, res, fields) { // generate skin from plugin.view skinner
+			
+			var
+				pluginPath = paths.render+"plugin.jade",
+				cols = [],
+				query = req.query,
+				sql = req.sql,
+				dims = (query.dims || "50,50").split(),
+				query = req.query = {
+					mode: req.parts[1],
+					search: req.search,
+					cols: cols,
+					page: query.page,
+					width: dims[0],
+					height: dims[1],
+					ds: req.table
+				},				
+				sqltypes = {
+					"varchar(32)": "t",
+					"varchar(64)": "t",
+					"varchar(128)": "t",
+					"int(11)": "i",
+					float: "n",
+					json: "x",
+					mediumtext: "h",
+					json: "x",
+					date: "d",
+					datetime: "d",
+					"tinyint(1)": "c"
+				};				
+			
+			switch (fields.constructor) {
+				case Array:
+					fields.each(function (n,field) {
+						if (field.Field != "ID")
+							cols.push( field.Field + "." + (sqltypes[field.Type] || "t") );
+					});
+					break;
+					
+				case String:
+					fields.split(",").each(function (n,field) {
+						if (field.Field != "ID")
+							cols.push( field.Field );
+					});					
+					break;
+					
+				case Object:
+				default:
+					
+					try{
+						Each(fields, function (n,rec) {
+							if (n != "ID")
+								cols.push( n );
+						});	
+					}
+					catch (err) {
+					}
+			}
+				
+			if ( query.mode == "gbrief" ) 
+				sql.query("SELECT * FROM ??.??", [req.group, query.ds], function (err,recs) {
+					if (err)
+						res( DEBE.errors.badSkin );
+					
+					else {
+						recs.each( function (n,rec) {
+							delete rec.ID;
+						});
+
+						query.data = recs;
+						pluginPath.render(req, function (err, html) {
+							res( err || html );
+						});
+					}
+				});
+
+			else	
+				pluginPath.render(req, function (err, html) {
+					res( err || html );
+				});
+			
+		}		
+							  
+		Trace("RENDER "+req.table);
+		
+		var
+			skinPath = paths.render+req.table+".jade";
+		
+		sql.query(paths.engine, { // Try a skin from the  engine db
+			Name: req.table,
+			Engine: "jade",
+			Enabled: 1
+		})
+		.on("result", function (eng) {
+			
+			if (eng.Count) 			// render using skinning engine
+				eng.Code.render(req, function (err, html) {
+					res( err || html );
+				});
+			
+			else 						// try to render using skin from disk
+				skinPath.render(req, function (err, html) {
+					
+					if (err)  	// try to create dynamic skin 
+						if ( select = FLEX.select[req.table] ) // try virtual table
+							select(req, function (recs) {
+								genSkin( req, res, recs[0] || {} );
+							});
+
+						else  // try sql table
+							sql.query(
+								"DESCRIBE ??", 
+								(DEBE.dsAttrs[req.table] || {}).tx || req.table, 
+								function (err,fields) {
+									
+									if (err) // might be an engine
+										if ( route = DEBE.runner )
+											route[req.action](req, function (ack) { // try the engine
+												if (ack.constructor == Error) // noluck
+													res( ack );
+
+												else 
+													genSkin( req, res, ack[0] || {} );
+											});	
+											
+										else
+											res( DEBE.errors.badDataset );
+
+									else 
+										genSkin( req, res, fields );
+							});
+					
+					else  	// render skin
+						res( html );
+				});
+		})
+		.on("error", function (err) {
+			res( DEBE.errors.badSkin );
+		});
+
+	}
+		
+	if (ctx) 					// render skin in extended context
+		sql.context(ctx, function (ctx) {  // establish skinning context for requested table
+			
+			for (var n in ctx) { 		// enumerate thru all the datasets
+				ctx[n].args = {n:n}; 	// hold ds name for use after select
+				ctx[n].rec = function clone(recs,me) {  // select and clone the records 
+					site[me.args.n] = recs; 		// save data into the context
+				};
+			}
+
+			renderJade(); 			// render skin in this extended context
+		});
+	
+	else
+		renderJade();  		// render skin in default context
+
+}
+
 function genDoc(recs,req,res) {
 	if (!OGEN) 
 		return res(DEBE.errors.noOffice);
@@ -1932,7 +1909,7 @@ function genDoc(recs,req,res) {
 
 	docx.generate( docs );
 	docs.on("close", function () {
-		console.log("CREATED "+docf);
+		Trace("CREATED "+docf);
 	});
 
 	if (false) {  // debugging
@@ -1946,9 +1923,6 @@ view || edit
 
 ID	Client	Likeus	Updated	Banned	Liked	Joined	SnapInterval	SnapCount	Charge	Credit	QoS	Trusted	Captcha	Login	Email	Challenge	isHawk	Requested	Approved	Group	uid	gid	User	Journal	Message	IDs	Admin	Repoll	Timeout	Roles	Strength
 34	brian.james@guest.org	0	Mon May 04 2015 05:52:50 GMT-0400 (EDT)		1	Mon Sep 28 2015 20:51:50 GMT-0400 (EDT)	null	null	null	0	0	0	0	null	null	0	1	null	null	app	null	null	brian.james@guest.org	null	null	{"Login":"me","Password":"test","FavColor":"blue"}	Please contact joeschome to unlock your accout	0	30000	PM,R,X	1
-37	selfsigned	null	null	null	null	Mon Sep 28 2015 20:51:50 GMT-0400 (EDT)	null	null	null	0	0	0	0	null	null	0	1	null	null	app	null	null	me@guest.org	null	Hello there guest - riddle me this (riddle) and (riddle) and your (Birthdate) and (ids)	{"Login":"me","Password":"test","FavColor":"blue"}	Please contact joeschome to unlock your accout	0	30000		1
-41	guest@guest.org	1	null	null	0	null	0	0	null	null	2	0	0	null	guest	0	1	null	null	app	null	null	guest@guest.org	null	null	{"Login":"me","Password":"test","FavColor":"blue"}	Please contact joeschome to unlock your accout	0	30000	R,PM	1
-42	guest	10	null		0	null	0	0	0	100	5	0	0	null	null	0	null	null	null		null	null	guest	null	Welcome guest - what is (riddle)?	null	null	0	0	R,X	1
 
 Totem
 	
@@ -2020,17 +1994,21 @@ Chapter 2
 }
 
 /**
+@class initialize
+*/
+
+function Initialize () {
+/**
 @method Initialize
 Initialize DEBE on startup.
 */
-function Initialize () {
 		
+	function initSES(cb) {
 	/**
 	 * @method initSES
 	 * @private
 	 * Initialize the session environment
 	 */
-	function initSES(cb) {
 
 		Trace(`INITIALIZING SESSIONS`);
 
@@ -2061,12 +2039,12 @@ function Initialize () {
 		if (cb) cb();
 	}
 
+	function initENV(cb) {
 	/**
 	 * @method initENV
 	 * @private
 	 * Initialize the runtime environment
 	 */
-	function initENV(cb) {
 
 		Trace(`INTIALIZING ENVIRONMENT`);
 
@@ -2094,7 +2072,7 @@ function Initialize () {
 			.boolean('dump')
 			.describe('dump','display derived site parameters')  
 			.check(function (argv) {
-				console.log(site);
+				//console.log(site);
 			})
 		
 			/*
@@ -2142,25 +2120,26 @@ function Initialize () {
 			.argv;
 
 		Trace(
-			"HOSTING "+site.title+" ON "+(CLUSTER.isMaster ? "MASTER" : "CORE"+CLUSTER.worker.id)
-			+ "\n- USING "+site.db 
-			+ "\n- FROM "+process.cwd()
-			+ "\n- RUNNING "+(DEBE.protected?"PROTECTED":"UNPROTECTED")
+			"HOSTING " + site.title+" ON "+(CLUSTER.isMaster ? "MASTER" : "CORE"+CLUSTER.worker.id)
+			+ "\n- USING " + site.db 
+			+ "\n- FROM " + process.cwd()
+			+ "\n- RUNNING " + (DEBE.protected?"PROTECTED":"UNPROTECTED")
 			+ "\n- WITH " + (DEBE.paths.url.socketio||"NO")+" SOCKETS"
 			+ "\n- WITH " + (DEBE.SESSIONS||"UNLIMITED")+" CONNECTIONS"
 			+ "\n- WITH " + (site.Cores||"NO")+" WORKERS@ "+site.workerURL+" MASTER@ "+site.masterURL
+			+ "\n- BILL,DIAG,HAWK EVERY "+[site.billingcycle,site.diagcycle,site.hawkingcycle]+" SECS"
 		);
 
 		if (cb) cb();
 
 	}
 
+	function initSQL(cb) {
 	/**
 	 * @method initSQL
 	 * @private
 	 * Initialize the FLEX and ENGINE interfaces
 	 */
-	function initSQL(cb) {
 
 		Trace(`INITIALIZING FLEX`);
 
@@ -2183,8 +2162,9 @@ function Initialize () {
 				AOIREAD: "http://omar.ilabs.ic.gov:80/tbd"
 			},
 			
-			billingCycle: DEBE.cycles.billing, 		// job billing cycle [ms]
-			diagCycle: DEBE.cycles.diag,			// Check period [ms]
+			billingCycle: DEBE.billingCycle, 		// job billing cycle [ms]
+			diagCycle: DEBE.diagCycle,			// Check period [ms]
+			hawkingCycle: DEBE.hawkingCycle, 	// job hawking cycle [ms] (0 disables)
 			
 			site: DEBE.site,						// Site parameters
 
@@ -2240,8 +2220,7 @@ function Initialize () {
 				
 		ENGINE.config({
 			thread: DEBE.thread,
-			cores: DEBE.core,
-			builtins: DEBE.publish
+			cores: DEBE.core
 		});
 		
 		ENGINE.plugins.FLEX = FLEX.plugins;  // Force add FLEX plugins to engine plugins
@@ -2249,20 +2228,19 @@ function Initialize () {
 		if (cb) cb();	
 	}
 	
-	initENV( function () {
-	initSES( function () {
-	initSQL( function () {
+	initENV( function () {  // init the global environment
+	initSES( function () {	// init session handelling
+	initSQL( function () {	// init the sql interface
 
-		// Ta Da!
 		DEBE.thread( function (sql) {
 			var path = DEBE.paths.render;
 			
-			DEBE.indexer( path, function (files) {
+			DEBE.indexer( path, function (files) {  // publish new engines
 				var ignore = {".": true, "_": true};
 				files.each( function (n,file) {
 					if ( !ignore[file.charAt(0)] )
 						try {
-							Trace("PUBLISHING "+file);
+							//Trace("PUBLISH SKIN "+file);							
 							sql.query( "INSERT INTO app.engines SET ?", {
 								Name: file.replace(".jade",""),
 								Code: FS.readFileSync( path+file, "utf-8"),
@@ -2271,9 +2249,11 @@ function Initialize () {
 							});
 						}
 						catch (err) {
-							console.log(err);
+							//Trace(err);
 						}
 				});
+				
+				sql.release();
 			});
 		});
 		

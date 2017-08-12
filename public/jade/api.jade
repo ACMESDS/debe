@@ -988,13 +988,9 @@ append site_body
 
 				GET /SITE.yql 	Return data from YQL compliant SITE=select/from/where
 				GET /socket.io	reserved client socket.io connections
-				GET /start	restart service &name
 				GET /ping	check client-server connectivity
-				GET /codes	returns http error codes
 				GET /alert	broadcast alert &msg to all clients
 				GET /stop	stops the server with alert &msg broadcasted to all clients
-				GET /kill	kill queued job &ID
-				GET /checkpt	checkpoint database
 				GET /bit	built-in test with &N client connections at rate &lambda=events/s
 				GET /service/algorithm/ENGINE Execute ENGINE with SOAP/XML parameters
 				GET /user 	select,delete,update,insert user profile
