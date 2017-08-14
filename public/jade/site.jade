@@ -1,45 +1,36 @@
 //- UNCLASSIFIED
-//-
-	Extends the extjs framework to provide a standard site skinning framework with parameters:
+//- Extends the extjs framework to provide a standard site skinning framework with parameters:
 
-		parms = {option1: menu1, option2: menu2, ...} dropdown skinning options 
-		dock = [left | right | top | bottom] folder docking style 
-		dims = width,height maximum widget dimensions 
-		view = [Home | Kiss | Engr | Min | Basic | Nada, ...] site style
-		page = maximum grid rows
-		goto = tab to activate
-		pulse = system health refresh rate [seconds]
+extends layout
+append layout_parms
+	- banner = banner
+	- start = query.ver ? "SIM" : "content"
+	- capture = true
 
 extends base
 append base_parms
 	- tech = "extjs"
 
-append layout_parms
-	- banner = banner
-	- start = query.ver ? "SIM" : ""
-	- capture = true
+	block site_parms
+		- parms = {} // dropdown skinning options {option1: menu1, option2: menu2, ...} 
+		- dock = "top" // folder docking style left | right | top | bottom
+		- dims = "2048,1200" // width,height maximum widget dimensions 
+		- view = "Min" // site style Home | Kiss | Engr | Min | Basic | Nada, ..
+		- page = 50 // maximum grid rows
+		- pulse = 120 // system health refresh rate [seconds]
 
 append base_head
-
-	block site_parms
-		- parms = {}
-		- dock = "top"
-		- dims = "2048,1200"
-		- view = "Min"
-		- page = 50
-		- pulse = 600
-
-	style.
-		.AL {text-align:left;}
-		.AR {text-align:right;}
-		.AC {text-align:center;}
-		.LG {font-size:15px;}
-		.SM {font-size:10px;}
-		.IN {text-indent:50px;}
-		.BY {background-color:yellow;}
-
+	block site_head
+		style.
+			.AL {text-align:left;}
+			.AR {text-align:right;}
+			.AC {text-align:center;}
+			.LG {font-size:15px;}
+			.SM {font-size:10px;}
+			.IN {text-indent:50px;}
+			.BY {background-color:yellow;}
+			
 append base_body
-
 	#hold.Options(path=JSON.stringify(parms),cols="Name,option")
 	#hold.Users(path="/USERS.db",cols="Name")
 	#hold.Links(path="/LINKS.db?area="+area,cols="Name")
@@ -67,109 +58,107 @@ append base_body
 	- titlebar = [table.hyper("/edit.view?name="+table), client.hyper("/home.view?option=chat"), ("QoS"+profile.QoS).hyper(":profile"), "Issues".hyper(), "Baseline".hyper("git.exe"), "Moderate".hyper(), (warning ? warning.fontcolor("red") : "ok".fontcolor("blue")).hyper("/ispstatus.view") ].join(" || ")
 	- goto = query.goto || ""
 	
-	case view
-		when "Min"
+	block site_body
+		case view
+			when "Min"
+				#border(
+					class=table,
+					head="Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
+					LikeUs="/likeus.db",
+					View="/files.view",
+					title=titlebar)
 
-			#border(
-				class=table,
-				head="Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
-				LikeUs="/likeus.db",
-				View="/files.view",
-				title=titlebar)
+					#fit(south,crush)
+						:markdown
+							Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
+				script.
+					alert("min primed");
 
-				block site_help
+			when "Basic"
+				#border(class=table,title=titlebar,head="Themes,Options,Help")
 
+					#fit(south,crush)
+						:markdown
+							Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
+
+			when "Home"
+				#border(
+					class=table,
+					title=titlebar,
+					head="Health,Users,Themes,Capture,Links,Options,Likeus,Help",
+					LikeUs="/likeus.db",
+					crush)
+
+					#fit(south,crush)
+						:markdown
+							Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
+
+			when "Kiss"
+				#folder(dock=dock,active=goto,class="")
+
+			when "Nada"
+				//
+
+			when "Monster"
+				#border(
+					class=table,
+					title=titlebar,
+					head="More(Health,Users,Links,Themes),Engines,Queues,Uploads,$uploads,Stores,$stores,Views,Options,LikeUs,Help",
+					LikeUs="/likeus.db")
+
+					#pivot.Helpful.Links(
+						west,crush,dims="[200,600]",
+						path="/sidebars.db",cols="Pivot(NodeID,Topic),Special")
+
+					#fit(south,crush)
+						- browsers = {Ok: ["supported","Chrome","Firefox","Opera","Safari"],Bad: ["unsupported","IE","Netscape","Traveler","TheWorld","Maxthon"] }
+
+						ishtml
+							each brow in browsers.Ok
+								img(src=icons+"/browsers/"+brow+".ico",width=16,height=16)
+
+							each brow in browsers.Bad
+								img(src=icons+"/browsers/"+brow+".ico",width=16,height=16)
+
+						:markdown
+							Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
+
+			when "Search"
+				#hold.Comfort(path="/lookups.db",cols="Name,Path")
+
+				#border(
+					class=table,
+					crush,
+					head="Comfort,Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),Options,Likeus,Help",
+					LikeUs="/likeus.db",
+					View="/files.view",
+					title=titlebar)
+
+					#fit(south,crush)
+						:markdown
+							Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
+
+			default
+				#border(
+					class=table,			
+					title=titlebar,
+					head="System(Health,Users,Links,Engines,Queues),Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),Options,LikeUs,Capture,Help",
+					LikeUs="/likeus.db",
+					View="/files.view")
+
+					#fit(south,crush)
+						:markdown
+							Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
+
+		//
+			block site_help
+			case view
+				when "Nada"
+					//
+
+				default
 					:markdown
-						*	Options for this view.
-						*	Links to other views.
-						*	Themes preferred.  
-						*	Likeus for better QoS.
-						*	Capture screen for administrator.
-						*	Edit this [view](skinguide.view).
-
-				#folder(center,dock=dock,active=goto)
-
-					block site_body
-
-				#fit(south,crush)
-					:markdown
-						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
-
-		when "Basic"
-
-			#border(class=table,title=titlebar,head="Themes,Options,Help")
-
-				p #{classif.level} #{classif.purpose}
-
-				block site_help
-
-					:markdown
-						*	Options for this view.
-						*	Links to other views.
-						*	Themes preferred.  
-						*	Likeus for better QoS.
-						*	Capture screen for administrator.
-						*	Edit this [view](skinguide.view).
-
-				#fit(center)
-					block site_body
-				
-				#fit(south,crush)
-					:markdown
-						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
-
-		when "Home"
-
-			#border(
-				class=table,
-				title=titlebar,
-				head="Health,Users,Themes,Capture,Links,Options,Likeus,Help",
-				LikeUs="/likeus.db",
-				crush)
-
-				p #{classif.level} #{classif.purpose}
-
-				block site_help
-
-					:markdown
-						*	Options for this view.
-						*	Links to other views.
-						*	Themes preferred.  
-						*	Likeus for better QoS.
-						*	Capture screen for administrator.
-						*	Edit this [view](skinguide.view).
-
-				#fit(center)
-					block site_body
-					
-				#fit(south,crush)
-					:markdown
-						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
-
-		when "Kiss"
-
-			#folder(dock=dock,active=goto,class="")
-				block site_help
-				block site_body
-
-		when "Nada"
-
-				block site_help
-				block site_body
-
-		when "Monster"
-
-			#border(
-				class=table,
-				title=titlebar,
-				head="More(Health,Users,Links,Themes),Engines,Queues,Uploads,$uploads,Stores,$stores,Views,Options,LikeUs,Help",
-				LikeUs="/likeus.db")
-
-				p #{classif.level} #{classif.purpose}
-
-				block site_help
-
-					:markdown
+						*	(#{classif.level}) #{title} #{classif.purpose}
 						*	Options for this view.
 						*	Links to other views.
 						*	Themes preferred.  
@@ -183,82 +172,31 @@ append base_body
 						*	Uploads of files to NLP indexing engines.
 						*	Stores of files for [workflows](/workflow.view).
 
-				#pivot.Helpful.Links(
-					west,crush,dims="[200,600]",
-					path="/sidebars.db",cols="Pivot(NodeID,Topic),Special")
-
+		case view
+			when "Min"
 				#folder(center,dock=dock,active=goto)
-					block site_body
+				script.
+					alert("min folder");
+					
+			when "Basic"
+			when "Home"
+				#fit(center)
 
-				#fit(south,crush)
-					- browsers = {Ok: ["supported","Chrome","Firefox","Opera","Safari"],Bad: ["unsupported","IE","Netscape","Traveler","TheWorld","Maxthon"] }
+			when "Kiss"
+				#folder(dock=dock,active=goto,class="")
 
-					ishtml
-						each brow in browsers.Ok
-							img(src=icons+"/browsers/"+brow+".ico",width=16,height=16)
+			when "Monster"
+				#folder(center,dock=dock,active=goto)
 
-						each brow in browsers.Bad
-							img(src=icons+"/browsers/"+brow+".ico",width=16,height=16)
-
-					:markdown
-						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
-
-		when "Search"
-
-			#hold.Comfort(path="/lookups.db",cols="Name,Path")
-
-			#border(
-				class=table,
-				crush,
-				head="Comfort,Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),Options,Likeus,Help",
-				LikeUs="/likeus.db",
-				View="/files.view",
-				title=titlebar)
-				
-				block site_help
-
+			when "Search"
 				#grid.Search(
 					path="/catalog.db",center,crush,
 					head="Search,Execute,Print,Refresh",
 					page=100,
 					cols="Ref,Name,Link.h,Dated.d,Quality")
 
-				#fit(south,crush)
-					:markdown
-						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
-
-		default
-
-			#border(
-				class=table,			
-				title=titlebar,
-				head="System(Health,Users,Links,Engines,Queues),Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),Options,LikeUs,Capture,Help",
-				LikeUs="/likeus.db",
-				View="/files.view")
-
-				p #{classif.level} #{classif.purpose}
-
-				block site_help
-
-					:markdown
-						*	Options for this view.
-						*	Links to other views.
-						*	Themes preferred.  
-						*	Likeus for better QoS.
-						*	Capture screen for administrator.
-						*	Edit this [view](skinguide.view).
-						*	Health of system.
-						*	Users connected.
-						*	Engines [Python,JS,R,Ex,Matlab,etc](/engine.view) status.
-						*	Queues status.
-						*	Uploads of files to NLP indexing engines.
-						*	Stores of files for [workflows](/workflow.view).
-
-				#folder(center,dock=dock,active=goto)
-					block site_body
-
-				#fit(south,crush)
-					:markdown
-						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
-
+			when "Nada"
+			default
+				//
+			
 //- UNCLASSIFIED

@@ -1,5 +1,7 @@
 // UNCLASSIFIED
 
+alert("extjs loading");
+
 /**
  * @module grids
  * extjs 5.1 https://cdn.sencha.com/ext/gpl/ext-5.1.0-gpl.zip
@@ -3468,6 +3470,7 @@ WIDGET.prototype.wrapper = function () {
 */
 WIDGET.prototype.content = function () { 
 
+	alert("tit="+this.title+" uis="+this.UIs.length);
 	this.UI = Ext.create('Ext.panel.Panel', {
 		layout: "border",
 		region: "center",
@@ -3627,6 +3630,7 @@ WIDGET.prototype.border = function () {
 	
 	//this.UIs.Each(function (n,ui) { alert(ui.region); });
 	
+	alert("border started");
 	this.UI = Ext.create('Ext.panel.Panel', {
 		// Basic
 		title		: this.title,
@@ -3646,6 +3650,8 @@ WIDGET.prototype.border = function () {
 		tools		: this.Menu, 
 		items		: this.UIs
 	});	
+	
+	alert("brd="+this.UI);
 }
 
 /**

@@ -2,9 +2,7 @@
 
 extends site.jade
 append site_help
-	//
 	#post.Tutorial(path="/home_brief.view",dims="600,300",nowrap)
-
 	p Welcome to the #{title}.
 append site_parms
 	- view = query.options || "Min"

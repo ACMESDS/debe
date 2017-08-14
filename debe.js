@@ -964,7 +964,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		function render(req,res) { 
 		/**
 		@method render
-		Respond with res(err, html) to render html for this string or the "."-prefixed filename.
+		Respond with res(html) thats renders this string.  If string is of he form .PATH then an
+		attempt is made to render the file.  If an error occurs, the error is retured as html.
 		**/
 			var 
 				ctx = Copy(DEBE.site, {
@@ -985,18 +986,22 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					url: req.url
 				});
 
+			console.log(this);
+			
 			if ( this.charAt(0) == "." )
 				try {
-					res( null, JADE.renderFile( this+"", ctx ) );  // js gets confused so force string
+					res( JADE.renderFile( this+"", ctx ) );  // js gets confused so force string
 				}
 				catch (err) {
-					res( err );
+					console.log("file comp="+err);
+					res(  err );
 				}
 			
 			else
 				try {
+					console.log("try string compile");
 					if ( generator = JADE.compile(this, ctx) )
-						res( null, generator(ctx) );
+						res( generator(ctx) );
 					else
 						res( DEBE.errors.badSkin );
 				}
@@ -1849,23 +1854,16 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 						});
 
 						query.data = recs;
-						pluginPath.render(req, function (err, html) {
-							res( err || html );
-						});
+						pluginPath.render(req, res);
 					}
 				});
 
 			else	
-				pluginPath.render(req, function (err, html) {
-					res( err || html );
-				});
+				pluginPath.render(req, res);
 			
 		}		
 							  
 		Trace("RENDER "+req.table);
-		
-		var
-			skinPath = paths.render+req.table+".jade";
 		
 		sql.query(paths.engine, { // Try a skin from the  engine db
 			Name: req.table,
@@ -1875,45 +1873,28 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		.on("result", function (eng) {
 			
 			if (eng.Count) 			// render using skinning engine
-				eng.Code.render(req, function (err, html) {
-					res( err || html );
-				});
+				eng.Code.render( req, res );
 			
 			else 						// try to render using skin from disk
-				skinPath.render(req, function (err, html) {
-					
-					if (err)  	// try to create dynamic skin 
-						if ( select = FLEX.select[req.table] ) // try virtual table
-							select(req, function (recs) {
-								genSkin( req, res, recs[0] || {} );
-							});
-
-						else  // try sql table
-							sql.query(
-								"DESCRIBE ??", 
-								(DEBE.dsAttrs[req.table] || {}).tx || req.table, 
-								function (err,fields) {
-									
-									if (err) // might be an engine
-										if ( route = DEBE.runner )
-											route[req.action](req, function (ack) { // try the engine
-												if (ack.constructor == Error) // noluck
-													res( ack );
-
-												else 
-													genSkin( req, res, ack[0] || {} );
-											});	
-											
-										else
-											res( DEBE.errors.badDataset );
-
-									else 
-										genSkin( req, res, fields );
-							});
-					
-					else  	// render skin
-						res( html );
+			if ( select = FLEX.select[req.table] ) // try virtual table
+				select(req, function (recs) {
+					genSkin( req, res, recs[0] || {} );
 				});
+
+			else  // try sql table
+				var q = sql.query(
+					"DESCRIBE ??.??", 
+					[ req.group, req.table ], 
+					function (err,fields) {
+
+						console.log(["istable",err, q.sql, fields]);
+						if (err) // might be a file
+							( paths.render+req.table+".jade" ).render(req, res);
+
+						else 
+							genSkin( req, res, fields );
+				});				
+
 		})
 		.on("error", function (err) {
 			res( DEBE.errors.badSkin );

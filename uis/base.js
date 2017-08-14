@@ -10,6 +10,7 @@
  * See the BASE.start() method for further information.
  * */
  
+alert("base loaded");
 var BASE = {
 	
 	alert: "Skinning error: ",
@@ -233,10 +234,12 @@ var BASE = {
 		
 		// Retain session parameters
 		
+
 		BASE.bodyAnchor = window.document.getElementsByTagName("body")[0];
 		BASE.parser.QUERY = anchor.getAttribute("query"); 
 		BASE.parser.ICONS = anchor.getAttribute("icons");
 		BASE.parser.START = anchor.getAttribute("start");
+		alert("base start div="+	BASE.parser.START );
 		
 		BASE.user.client = anchor.getAttribute("client");
 		//BASE.user.guard = anchor.getAttribute("guard");
@@ -264,13 +267,14 @@ var BASE = {
 		if (div = BASE.parser.START) 
 			anchor = window.document.getElementById(div);
 		
+		alert("start anchor="+anchor);
 		if (anchor) {
-
 			var widget = new WIDGET(anchor);
 			
 			if (widget.content)
 				widget.content();
 			
+			alert("content gened");
 			if (cb) cb( widget );
 		}
 		else
@@ -673,6 +677,8 @@ function WIDGET (Anchor) {
 	
 	this.id = Anchor.id;
 	this.name = Anchor.getAttribute("class") || "";	
+	
+	alert("new wid="+this.name);
 	
 /**
  * @property {String}

@@ -1,112 +1,62 @@
 //- UNCLASSIFIED
-//-
-	Extends the layout framework to provide a base framework with parameters:
-
-		tech = "extjs | jquery | dojo | reveal | voxel | scene | three | cesium | joint | d3 | flow | ..."
-		locale = "[en] | fr | de | ..." language plugin 
-		holdoff = "button name" to holdoff loading via button
-		holdoff = "skin,skin, ..." skins to holding loading via accordion
-		start = "starting div" to place content
-		
-		extjs:
-			carousel = false | true image plugin
-			theme = "crisp | neptune | aria | gray | ..." styling
-			charting = true | false data visualization plugin
-
-		reveal:
-			theme = "default | ..." styling  
-			classif = "classification banner"
-		
-		jquery:
-			grid = "DataTable | w2UI | jqgrid | ... " gridding technology
-			image = "Darkroom | Camen | Vide | Fabric | ... " image technology
-			pivot = "Isotope | elFinder | apy-X | ... " pivot technology
-			themer = false | true
-			password = false | true
-		
-		voxel:
-			game = "cubeland | ... "
-
-		three:
-			effect = "AnaglyphEffect | ... "
-
-		cesium:
-			src = query.src
-			src = "dataset | ..." 
-			host = "aws | geohub | me | win | local | local | swaggpu | swagaws | swagdev | ..."
-			width = 750
-			height = 500
-			
-		d3:
-			map = "world | usa | ... "
-		
-		flow:
-			none
+// Extends the layout framework to provide a base framework with parameters:
 
 extends layout
 append layout_parms
-	- start = start
-append layout_head
+	- banner = query.holdoff ? "" : banner
 
 	block base_parms
-		- start = ""
-		- tech = ""
-		- base = true
-		- locale = query.locale || "en"
-		- holdoff = query.holdoff
-		- banner = query.holdoff ? "" : banner
-		- theme = query.theme
-		- hosts = {geohub: "https://sigma0.ilabs.ic.gov:8083", me: "localhost:8083", win: "http://200.100.50.101:8083", aws: "http://172.31.76.130:8083",local:"http://localhost:8083",swaggpu:"http://swag-gpu-01.ec2.internal:8083", swagws:"http://swag-ws-02.ec2.internal:8083", swagdev: "http://localhost:8083"}
-		// extjs
+		// exjs
 		- carousel = false
 		- charting = false
+		- theme = "crisp"  // crisp | neptune | aria | gray | ...
 		// jquery
-		- grid = "DataTable"
-		- image = "Darkroom"
-		- pivot = "Isotope"
+		- grid = "DataTable" // DataTable | w2UI | jqgrid | ... 
+		- image = "Darkroom" // Darkroom | Camen | Vide | Fabric | ...
+		- pivot = "Isotope"	// Isotope | elFinder | apy-X | ...
 		- themer = false
 		- password = false
 		// reveal
-		- highlight = "zenburn"
+		- highlight = "zenburn"	
 		- more = {}
 		- help = "can I get some help here?"
 		- classif = "UNCLASSIFIED"
 		// voxel
-		- game = "cubeland"
+		- game = "cubeland"	// cubeland | ... 
 		// three
-		- effect = ""
+		- effect = "" //  AnaglyphEffect | ... 
 		// cesium
 		- src = query.src
-		- host = "swagdev"
+		- host = {use:"swagdev", geohub: "https://sigma0.ilabs.ic.gov:8083", me: "localhost:8083", win: "http://200.100.50.101:8083", aws: "http://172.31.76.130:8083",local:"http://localhost:8083",swaggpu:"http://swag-gpu-01.ec2.internal:8083", swagws:"http://swag-ws-02.ec2.internal:8083", swagdev: "http://localhost:8083"}
 		- width = 750
 		- height = 500		
 		// d3
 		- map = ""
-		// flow
 		// doc
 		- opens = true
+		// content
+		- tech = "extjs"  // extjs | jquery | dojo | reveal | voxel | scene | three | cesium | joint | d3 | flow | ...
+		- base = true
 
-	//- Define tech styles
-
+append layout_head
+	- locale = query.locale || "en"  // en | fr | de | ...
+	- holdoff = query.holdoff  // name to holdoff loading via button, or skin,skin, ... to hold loading via accordion
+	- theme = query.theme
+	
+	// define css styles
 	case tech
 		when "three"
 			include base_three
-		
 		when "reveal"
 			include base_reveal
-
 		when "scene"
 			include base_scene
-
 		when "dojo"
 			include base_dojo
-
 		when "jquery"
 			include base_jquery
-
 		when "extjs"
 			include base_extjs
-			
 		when "flow"
 			include base_flow
 
@@ -130,7 +80,7 @@ append layout_head
 			script(src="/clients/joint/joint.shapes.fsa.min.js")
 			script(src="/clients/joint/joint.shapes.pn.min.js")
 			script(src="/clients/joint/joint.shapes.erd.min.js")
-		
+
 		when "d3"
 			script(src="/clients/d3/d3.min.js")
 			case map
@@ -146,7 +96,7 @@ append layout_head
 			script(src="/clients/threejs/build/three.min.js")
 			script(src="/clients/threejs/examples/js/Detector.js")
 			script(src="/clients/threejs/examples/js/libs/stats.min.js")
-		
+
 		when "reveal"
 			script(src='/clients/reveal/plugin/highlight/highlight.js')
 			script(src='/clients/reveal/lib/js/head.min.js')
@@ -162,14 +112,15 @@ append layout_head
 		when "dojo"
 			script.
 				var dojoConfig = {
-						async: true,
-						baseUrl: "/clients/dojo/",
-						packages: [
-							//{ name: "dojo" 	},
-							//{ name: "dijit"  },
-							//{ name: "dojox"  }
-						]
-					};
+					async: true,
+					baseUrl: "/clients/dojo/",
+					packages: [
+						//{ name: "dojo" 	},
+						//{ name: "dijit"  },
+						//{ name: "dojox"  }
+					]
+				};
+
 			script(src="/clients/dojo/dojo/dojo.js")
 
 		when "jquery"
@@ -268,210 +219,33 @@ append layout_head
 				script(src="/clients/extjs/build/packages/sencha-charts/build/sencha-charts.js")
 
 			script.
+				alert("call loader");
 				Ext.Loader.setConfig({
 					enabled: true, 
 					paths: {
 						'Ext.ux': '/clients/extjs/plugins',
 						'Ext': '/clients/extjs/build/examples'
 				}});
-
-			//
-				script.
+				/*
 				Ext.Loader.loadScript({
 					//url: "/clients/extjs/packages/ext-locale/build/ext-locale-#{locale}.js",
 					//onLoad: function () { alert("Language loaded"); },
 					onError: function () { alert("Locale failed to load"); },
 					scope: this
 				});
-
+				*/
+	
+	block base_head
+	
+append layout_body
 	//- Load the base and tech-specific dom parser
+	script.
+		alert("base=#{base}  tech=#{tech}");
 
 	if base
 		script(src="/clients/uis/base.js")
-		
+
 	if tech
 		script(src="/clients/uis/#{tech}.js")
 
-	block base_head
-
-append layout_body
-
-	if holdoff
-		- holds = holdoff.split(",")
-		
-		if holds.length > 1
-			#accordion.Load
-				each hold in holds
-					#post(class=hold,path="/"+hold+".view",refresh,dims="98%,98%")
-
-		else
-			#post(class=holdoff,path=url.replace('holdoff='+holdoff, ''),refresh,dims="98%,98%")
-	else
-		case tech
-			when ""
-				if opens
-					a(href="/"+table+".view?"+search) open
-					|  || 
-					a(href="/edit.view?name="+table) edit
-					|  || 
-					a(href="/send.view?name="+table) send
-
-				block base_body
-
-			when "flow"
-				table
-					th: input#run.ui-icon-run(type="button",size=4,title="step or pause simulation")
-					th: input#open.ui-icon-open(type="button",size=4,title="open selected system")
-					th: input#save.ui-icon-save(type="button",size=4,title="save model")
-					th: input#load.ui-icon-load(type="button",size=4,title="load model")
-					th: input#clone.ui-icon-clone(type="button",size=4,title="clone selected system")
-					th: input#delete.ui-icon-delete(type="button",size=4,title="delete selected system")
-					th: input#select.ui-icon-select(type="button",size=4,title="select system")
-					th: input#info.ui-icon-info(type="button",size=4,title="info about selected system")
-					th: input#reset.ui-icon-reset(type="button",size=4,title="stop and reset simulation")
-					th.x: #status status
-					th.x: #state state
-					th.x: #step step
-					th.x: #tokens tokens
-					th.x: #jobs jobs
-					th.x: #msg msg
-					th.x: #db LFS
-					th: #progressBar
-						#res
-
-				//- for debugging wrapper
-					svg#Experimental(xmlns="http://-www.w3.org/2000/svg",version="1.1",style="width:150px;height:150px;position:absolute;")
-						ellipse(cx="50%",cy="50%",rx="50%",ry="50%",stroke="#FF0000",stroke-width="2",fill="#800000")
-						ellipse(cx="50%",cy="50%",rx="10%",ry="10%",stroke="#FF0000",stroke-width="2",fill="#880000")
-				block base_body
-
-			when "cesium"
-				iframe(src="#{hosts[host]}/geonode/cesium.html?src=#{src}",width="#{width}",height="#{height}")
-
-			when "three"
-				block base_body
-				if effect
-					script(src="/clients/threejs/examples/js/effects/#{effect}.js")
-
-			when "dojo"
-				block base_body
-
-			when "scene"
-				block base_body
-				script.
-					SceneJS.setConfigs({
-						pluginPath:"clients/scenejs/plugins"
-					});
-
-			when "voxel"
-				#container
-					#crosshair
-					#battery
-					nav#tools.bar-tab
-						ul.tab-inner
-							li(class="tab-item active")
-								.tab-label
-									| grass
-							li.tab-item
-								.tab-label
-									| dirt
-							li.tab-item
-								.tab-label
-									| obsidian
-							li.tab-item
-								.tab-label
-									| plank
-							li.tab-item
-								.tab-label
-									| dude
-
-					block base_body
-
-				script(src="/clients/games/#{game}/bundle.js")
-
-			when "reveal"
-				.reveal(style="width:100%;height:100%;")
-					// .progress // .control // .state-background // .pause-overlay
-					.slides
-						block base_body
-
-				script.
-					Reveal.initialize({
-						keyboard: {
-							116: function () { alert("tada!"); }
-						},
-
-						// Display controls in the bottom right corner
-						controls: true,
-
-						// default slide delay
-						autoSlide:10000, 
-						
-						// Display a presentation progress bar
-						progress: true,
-
-						// If true; each slide will be pushed to the browser history
-						history: true,
-
-						// Loops the presentation, defaults to false
-						loop: false,
-
-						// Slide numbers
-						slideNumber: "c/t",
-
-						// Flags if mouse wheel navigation should be enabled
-						mouseWheel: true,
-
-						// Apply a 3D roll to links on hover
-						rollingLinks: true,
-
-						// UI style
-						theme:  Reveal.getQueryHash().theme, //'default', // available themes are in /css/theme
-
-						// Transition style
-						transition:  Reveal.getQueryHash().transition || 'default', //'default', // default/cube/page/concave/zoom/linear/none
-
-						// For MathJax suuport
-
-						math: {
-							mathjax: '/clients/mathjax/MathJax.js',
-							config: 'TeX-AMS_HTML-full'  // See http://docs.mathjax.org/en/latest/config-files.html
-						},
-
-						//	Optional libraries used to extend on reveal.js
-
-						dependencies: [
-							{ src: '/clients/reveal/lib/js/classList.js', condition: function() { return !document.body.classList; } },
-							{ src: '/clients/reveal/plugin/math/math.js', async: true },
-							{ src: '/clients/reveal/plugin/markdown/showdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
-							{ src: '/clients/reveal/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
-							//{ src: '/clients/reveal/plugin/highlight/highlight.js', async: false, callback: function() { hljs.initHighlightingOnLoad(); } },
-							{ src: '/clients/reveal/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
-							{ src: '/clients/reveal/plugin/zoom-js/zoom.js', async: true, condition: function() { return true; } },
-							{ src: '/clients/reveal/plugin/notes/notes.js', async: true, condition: function() { return true; } }
-						]
-					});
-
-					// Fires when a slide with data-state=customevent is activated
-					Reveal.addEventListener( 'customevent', function() {
-						alert( '"custom event" has fired' );
-					} );
-
-					// Fires each time a new slide is activated
-					Reveal.addEventListener( 'slidechanged', function( event ) {
-						// event.indexh & event.indexv
-					} );
-
-					// Fires when frame is shown or hidden						
-					Reveal.addEventListener( 'fragmentshown', function( event ) {
-						// event.fragment = the fragment DOM element
-					} );
-
-					Reveal.addEventListener( 'fragmenthidden', function( event ) {
-						// event.fragment = the fragment DOM element
-					} );
-
-			default
-				block base_body
-
-//- UNCLASSIFIED
+	block base_body

@@ -1,30 +1,21 @@
 //- UNCLASSIFIED
-//-
-	Provides a foundational layout framework with parameters:
-
-		banner = "site banner"
-		start = "div name" to place content
-		math = false | true to enable mathjax plugin 
-		highlight = "zenburn | ..." code styling theme 
-		capture = false | true to add screen capture button
-		&inline = "/file.type &w=width &h=height" to embed a file with derived attributes
+// Provides a foundational layout framework with parameters:	
 
 block layout_parms
-	- banner = ""
-	- start = ""
-	- highlight = "zenburn"
-	- capture = false
-	- math = true
+	- banner = "" // site banner
+	- start = "content" // div name to start content
+	- highlight = "zenburn"	// code styling theme zenburn | ...
+	- capture = false // to add screen capture button
+	- math = true // enable mathjax plugin
+	//- &inline = "/file.type &w=width &h=height" to embed a file with derived attributes
 
 html(lang="en")
-
 	head
-
 		meta(http-equiv="Content-Type",content="text/html; charset=utf-8;")
 
 		//- Tell IE to use the latest, best version (or Chrome Frame if pre-IE11).
 		meta(http-equiv="X-UA-Compatible", content="IE=Edge,chrome=1")
-		
+
 		//- Make the application on mobile take up the full browser screen and disable user scaling.
 		meta(name="viewport", content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no")
 
@@ -35,7 +26,7 @@ html(lang="en")
 		noscript
 			p Please enable Javascript and Cookies to access #{title}.
 
-		if (!JSON.parse)
+		if ! JSON.parse
 			script(src="/clients/json/json2.js")
 
 		//- Add global ajax method
@@ -59,7 +50,7 @@ html(lang="en")
 				else
 					req.send();  // end request
 			}
-		
+
 		//- Add global link follower method for analytics
 		script.
 			navigator.follow = function (href,client,view) {
@@ -67,6 +58,7 @@ html(lang="en")
 				window.open(href);
 				navigator.ajax( "GET", true, `/follow?goto=${href}&client=${client}&view=${view}`);
 			}
+
 
 		//- Probe client's IP address
 		script.
@@ -84,7 +76,7 @@ html(lang="en")
 				var
 					agent = navigator.userAgent || "",
 					agents = {Firefox:"Firefox/", Chrome: "Chrome/", Safari:"Safari/"};
-						
+
 				for (var n in agents)
 					if (agent.indexOf(agents[n])>=0) {
 						totem.browser = n;
@@ -96,7 +88,7 @@ html(lang="en")
 				totem.onLinux = navigator.platform.indexOf("Linux") == 0;
 				totem.onWindows = navigator.platform.indexOf("Win") == 0;
 			}
-			
+
 			// Discover client IP addresses associated with an account
 			function getIPs(callback){
 				var ip_dups = {};
@@ -172,7 +164,7 @@ html(lang="en")
 				getIPs(function(ip){
 					totem.ip = ip;
 				});
-			
+
 			if (navigator.geolocation && probe.location)  // Discover client geolocation
 				navigator.geolocation.getCurrentPosition(function (pos) {
 					if (!pos.coords) pos.coords = {latitude:0, longitude: 0};
@@ -193,8 +185,11 @@ html(lang="en")
 			script.
 				var io = null;
 
-		//- Define code highlighter if needed
+		//- Load mathjax preprocessor if needed
+		if math 
+			script(src="/clients/mathjax/MathJax.js?config=default")
 
+		//- Code formatting
 		if highlight
 			link(rel='stylesheet',href='/clients/reveal/lib/css/#{highlight}.css')
 
@@ -216,43 +211,43 @@ html(lang="en")
 					float: left;
 				}
 
-		//- Load mathjax preprocessor if needed
-
-		if math
-			script(src="/clients/mathjax/MathJax.js?config=default")
-
-		//- The capture plugin allows clients to capture their web canvas.
-
-		if capture
-			script(src="/clients/html2canvas/dist/html2canvas.min.js")
-			script(src="/clients/screen2canvas/capture.js")
-		else
-			script.
-				var 
-					html2canvas = null;
-
-		if math
-			script.
-				MathJax.Hub.Config({
-					extensions: ["tex2jax.js"],
-					jax: ["input/TeX","output/HTML-CSS"],
-					tex2jax: {inlineMath: [["$","$"],["\\(","\\)"]]}
-				});
-				//MathJax.Hub.Queue(["Paper",MathJax.Hub]);
-
 		block layout_head
+		
+body
+	if query.inline
+		inline(src=query.inline,w="90%",h="90%",a="Classif",g="Edit",s="rd")
+		script(src="/clients/uis/base.js")
+		script.
+			BASE.start();
 
-	body
-
-		//- Inject content div
-		#content(icons=icons,start=start,client=client,source=table,query=JSON.stringify(query),title=banner)
-
-			if query.inline
-				inline(src=query.inline,w="90%",h="90%",a="Classif",g="Edit",s="rd")
-				script(src="/clients/uis/base.js")
-				script.
-					BASE.start();
+	else
+		#content(
+			icons=icons,
+			start=start,
+			client=client,
+			source=table,
+			query=JSON.stringify(query),
+			title=banner)
 
 			block layout_body
 			
+	//- The capture plugin allows clients to capture their web canvas.
+	if capture 
+		script(src="/clients/html2canvas/dist/html2canvas.min.js")
+		script(src="/clients/screen2canvas/capture.js")
+
+	else
+		script.
+			var 
+				html2canvas = null;
+
+	if math
+		script.
+			MathJax.Hub.Config({
+				extensions: ["tex2jax.js"],
+				jax: ["input/TeX","output/HTML-CSS"],
+				tex2jax: {inlineMath: [["$","$"],["\\(","\\)"]]}
+			});
+			//MathJax.Hub.Queue(["Paper",MathJax.Hub]);
+
 //- UNCLASSIFIED

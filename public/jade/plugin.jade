@@ -1,5 +1,13 @@
 // UNCLASSIFIED
-// View dataset &ds in &mode = plugin | run | brief | gbrief | sbrief | rbrief | site 
+//-
+	Render a skin when DEBE encounters dynamic view endpoints /DS.MODE where
+
+		&mode = MODE
+		&cols = [key.type, ...]
+		&page = page size of DS grid
+		&refresh = refresh time of associated job grid
+		&width = post width
+		&height = post height
 
 extends base
 append base_parms
@@ -8,7 +16,6 @@ append base_parms
 		when "gbrief"
 		when "rbrief"
 			- tech = "reveal"
-			
 		default
 			- tech = "extjs"
 
@@ -27,7 +34,7 @@ append site_parms
 			- wrap = "nowrap"
 		when "run"
 			- view = "Min"
-			- wrap = ""		
+			- wrap = ""	
 		when "brief"
 			- view = "Nada"
 			- wrap = "nowrap"
@@ -37,11 +44,12 @@ append site_parms
 
 append site_body
 
-	- mode = query.mode
-	- ds = query.ds || "news"
+	- mode = ("help" in query) ? "help" : query.mode
+	- ds = query.ds || "plugin"
 	- dscols = query.cols || []
 	- dspage = query.page || 20
 	- dsquery = query.search || ""
+	- dsrefresh = query.refresh || ""
 	- dspath = `/${ds}.db?${dsquery}`
 	- dstitle = ds + " view"
 	- width = query.width
@@ -93,6 +101,7 @@ append site_body
 			#grid.Jobs(
 				path="/queues.db?Class=#{ds}",
 				cols="Arrived.d,Departed.d,Notes.x,QoS.n,Age.n,Funded.c,Finished.c,Priority.n,Work.n,State.n,Task.t,Signoffs(Flagged.c,Sign0.c,Sign1.c,Sign2.c,Sign3.c)",
+				refresh=dsrefresh,
 				page=dspage )
 
 				:markdown
@@ -120,7 +129,7 @@ append site_body
 
 				if query.data
 					div!= gridify( query.data )
-	
+
 				else				
 					iframe(
 						src="/#{ds}.view",
