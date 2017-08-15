@@ -1132,7 +1132,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		met( url.tagurl(req), res );
 	},
 		
-	ingestFile: function (path, sql) {
+	ingestEvents: function (path, sql, cb) {
 		var 
 			stream = FS.createReadStream(path),
 			items = ["x", "y", "z", "t", "n"];
@@ -1165,7 +1165,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					`point(${ev.y} ${ev.x})`
 				]);
 			});
-			CHIPS.ingestCache(sql);	
+			CHIPS.ingestCache(sql, cb);	
 		});	
 	},
 	
@@ -1691,30 +1691,13 @@ function executePlugin(req,res) {
 				});
 
 				if (chan.tmin)
-					CHIPS.ingestStreams(chan, job, function (win,status,sql) {
+					CHIPS.ingestEvents(chan, job, function (win,status,sql) {
 						console.log(win,status);
 					});
 
 				else
-				if (chan.voi)
-					CHIPS.count(chan, job, function (voxel,stats,sql) {
-						var updated = new Date();
-
-						console.log({save:stats});
-
-						sql.query(  // update voxel with engine stats
-							"UPDATE ??.voxels SET ? WHERE ?", [req.group, {
-								t: updated,
-								Save: JSON.stringify(stats)
-							}, {
-								ID: voxel.ID
-							}
-						]);
-					});
-
-				else
 				if (chan.ring)
-					CHIPS.detect(chan, job, function (chip,dets,sql) {
+					CHIPS.ingestChips(chan, job, function (chip,dets,sql) {
 						var updated = new Date();
 				
 						console.log({save:dets});
@@ -2259,6 +2242,7 @@ Initialize DEBE on startup.
 		});
 		
 		ENGINE.plugins.FLEX = FLEX.plugins;  // Force add FLEX plugins to engine plugins
+		FLEX.plugins.plugins = FLEX.plugins; // Allows plugins to ref either
 
 		if (cb) cb();	
 	}

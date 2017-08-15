@@ -99,29 +99,8 @@ append base_body
 						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
 
 		when "Basic"
-			#border(class=table,title=titlebar,head="Themes,Options,Help")
-				block site_help
-					:markdown
-						*	(#{classif.level}) #{title} #{classif.purpose}
-						*	Options for this view.
-						*	Links to other views.
-						*	Themes preferred.  
-						*	Likeus for better QoS.
-						*	Capture screen for administrator.
-						*	Edit this [view](skinguide.view).
-						*	Health of system.
-						*	Users connected.
-						*	Engines [Python,JS,R,Ex,Matlab,etc](/engine.view) status.
-						*	Queues status.
-						*	Uploads of files to NLP indexing engines.
-						*	Stores of files for [workflows](/workflow.view).
-				
-				#folder(center)
-					block site_body
-					
-				#fit(south,crush)
-					:markdown
-						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
+			#folder(center,dock=dock)
+				block site_body
 
 		when "Home"
 			#border(
