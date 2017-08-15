@@ -1,5 +1,12 @@
 //- UNCLASSIFIED
-//- Extends the extjs framework to provide a standard site skinning framework with parameters:
+//- 
+	Extends the extjs framework to provide a standard site skinning framework.
+		- parms = {} // dropdown skinning options {option1: menu1, option2: menu2, ...} 
+		- dock = "top" // folder docking style left | right | top | bottom
+		- dims = "2048,1200" // width,height maximum widget dimensions 
+		- view = "" // site style Home | Kiss | Engr | Min | Basic | Nada, ..
+		- page = 50 // maximum grid rows
+		- pulse = 120 // system health refresh rate [seconds]
 
 extends layout
 append layout_parms
@@ -15,7 +22,7 @@ append base_parms
 		- parms = {} // dropdown skinning options {option1: menu1, option2: menu2, ...} 
 		- dock = "top" // folder docking style left | right | top | bottom
 		- dims = "2048,1200" // width,height maximum widget dimensions 
-		- view = "Min" // site style Home | Kiss | Engr | Min | Basic | Nada, ..
+		- view = "" // site style Home | Kiss | Engr | Min | Basic | Nada, ..
 		- page = 50 // maximum grid rows
 		- pulse = 120 // system health refresh rate [seconds]
 
@@ -109,7 +116,7 @@ append base_body
 						*	Uploads of files to NLP indexing engines.
 						*	Stores of files for [workflows](/workflow.view).
 				
-				#fit(center)
+				#folder(center)
 					block site_body
 					
 				#fit(south,crush)
@@ -210,7 +217,7 @@ append base_body
 
 				#fit(center)
 					block site_body
-					
+		
 		default
 			#border(
 				class=table,

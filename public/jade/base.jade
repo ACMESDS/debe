@@ -1,6 +1,38 @@
 //- UNCLASSIFIED
-// Extends the layout framework to provide a base framework with parameters:
-
+//-
+	Extends the layout framework to provide a base framework with parameters:
+		// exjs
+		- carousel = false
+		- charting = false
+		- theme = "crisp"  // crisp | neptune | aria | gray | ...
+		// jquery
+		- grid = "DataTable" // DataTable | w2UI | jqgrid | ... 
+		- image = "Darkroom" // Darkroom | Camen | Vide | Fabric | ...
+		- pivot = "Isotope"	// Isotope | elFinder | apy-X | ...
+		- themer = false
+		- password = false
+		// reveal
+		- highlight = "zenburn"	
+		- more = {}
+		- help = "can I get some help here?"
+		- classif = "UNCLASSIFIED"
+		// voxel
+		- game = "cubeland"	// cubeland | ... 
+		// three
+		- effect = "" //  AnaglyphEffect | ... 
+		// cesium
+		- src = query.src
+		- host = {use:"swagdev", geohub: "https://sigma0.ilabs.ic.gov:8083", me: "localhost:8083", win: "http://200.100.50.101:8083", aws: "http://172.31.76.130:8083",local:"http://localhost:8083",swaggpu:"http://swag-gpu-01.ec2.internal:8083", swagws:"http://swag-ws-02.ec2.internal:8083", swagdev: "http://localhost:8083"}
+		- width = 750
+		- height = 500		
+		// d3
+		- map = ""
+		// doc
+		- opens = true
+		// content
+		- tech = "nada"  // extjs | jquery | dojo | reveal | voxel | scene | three | cesium | joint | d3 | flow | ...
+		- base = true
+		
 extends layout
 append layout_parms
 	- banner = query.holdoff ? "" : banner

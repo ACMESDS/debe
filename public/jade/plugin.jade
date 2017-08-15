@@ -1,7 +1,6 @@
 // UNCLASSIFIED
 //-
 	Render a skin when DEBE encounters dynamic view endpoints /DS.MODE where
-
 		&mode = MODE
 		&cols = [key.type, ...]
 		&page = page size of DS grid
@@ -24,27 +23,21 @@ append site_parms
 	case query.mode
 		when "site"
 			- view = "Basic"
-			- wrap = "nowrap"
 		when "view"
 		when "pivot"
 			- view = "Nada"
-			- wrap = "nowrap"
 		when "plugin"
 			- view = "Kiss"
-			- wrap = "nowrap"
 		when "run"
-			- view = "Min"
-			- wrap = ""	
+			- view = "Basic"
 		when "brief"
 			- view = "Nada"
-			- wrap = "nowrap"
 		default
 			- view = "Nada"
-			- wrap = ""
 
 append site_body
 
-	- mode = ("help" in query) ? "help" : query.mode
+	- mode = query.mode
 	- ds = query.ds || "plugin"
 	- dscols = query.cols || []
 	- dspage = query.page || 20
@@ -52,8 +45,8 @@ append site_body
 	- dsrefresh = query.refresh || ""
 	- dspath = `/${ds}.db?${dsquery}`
 	- dstitle = ds + " view"
-	- width = query.width
-	- height = query.height
+	- width = query.width || "75%"
+	- height = query.height || "75%"
 
 	case mode
 		when "plugin"
@@ -62,6 +55,7 @@ append site_body
 				path=dspath,
 				cols=dscols.join(),
 				menu="Agents",
+				wrap,
 				page=dspage )
 
 				:markdown
@@ -119,8 +113,7 @@ append site_body
 				path=dspath,
 				pivots=pcol,
 				cols=dscols.join(),
-				page=dspage,
-				nowrap=wrap )
+				page=dspage )
 
 		when "brief"
 		when "gbrief"
@@ -157,7 +150,6 @@ append site_body
 				class=dstitle,
 				path=dspath,
 				cols=dscols.join(),
-				page=dspage, 
-				nowrap=wrap )
+				page=dspage )
 
 // UNCLASSIFIED

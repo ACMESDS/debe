@@ -1,5 +1,12 @@
 //- UNCLASSIFIED
-// Provides a foundational layout framework with parameters:	
+//-
+	Provides a foundational layout framework with parameters:
+		- banner = "" // site banner
+		- start = "content" // div name to start content
+		- highlight = "zenburn"	// code styling theme zenburn | ...
+		- capture = false // to add screen capture button
+		- math = true // enable mathjax plugin
+		&inline = "/file.type &w=width &h=height" to embed a file with derived attributes
 
 block layout_parms
 	- banner = "" // site banner
@@ -7,7 +14,6 @@ block layout_parms
 	- highlight = "zenburn"	// code styling theme zenburn | ...
 	- capture = false // to add screen capture button
 	- math = true // enable mathjax plugin
-	//- &inline = "/file.type &w=width &h=height" to embed a file with derived attributes
 
 block layout_head
 	html(lang="en")

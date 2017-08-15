@@ -1887,7 +1887,6 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 					[ req.group, req.table ], 
 					function (err,fields) {
 
-						console.log(["istable",err, q.sql, fields]);
 						if (err) // might be a file
 							( paths.render+req.table+".jade" ).render(req, res);
 
