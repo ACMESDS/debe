@@ -1,7 +1,5 @@
 // UNCLASSIFIED
 
-alert("extjs loading");
-
 /**
  * @module grids
  * extjs 5.1 https://cdn.sencha.com/ext/gpl/ext-5.1.0-gpl.zip
@@ -1749,7 +1747,7 @@ Ext.onReady( function () {
 			NIXHTML : true,
 			SWITCHES : {
 				kiss: false,
-				nowrap: false,hide:false,crush:false,track:false,disable:false,
+				wrap: false,hide:false,crush:false,track:false,disable:false,
 				calc:false,kiss:false,summary:false,trace:false,notes:true,joins:false,
 				shifts:false
 			},
@@ -2251,7 +2249,7 @@ WIDGET.prototype.menuTools = function () {
 				pullDS = DSLIST[tok],
 				key = tok.toLowerCase();
 			
-			if (args)  			// nowrap sub menu items in another pulldown menu
+			if (args)  			// wrap sub menu items in another pulldown menu
 				return Ext.create("Ext.Button", {
 					width: DEFAULT.DROP_WIDTH,
 					text: tok,
@@ -2310,7 +2308,7 @@ WIDGET.prototype.menuTools = function () {
 										path: "/notes.db?Dataset=" + Widget.name ,
 										head: "Status,Insert,Update,Delete,Print,Refresh",
 										//dims: "500,100",
-										nowrap: true,
+										//nowrap: true,
 										crush: true,
 										cols: "Note.h"
 									})
@@ -3437,7 +3435,7 @@ WIDGET.prototype.terminal = function (term,opts) {
 		}
 	}));
 
-	if (! this.nowrap ) this.wrapper();
+	if ( this.wrap ) this.wrapper();
 }
 
 /**
@@ -3470,7 +3468,6 @@ WIDGET.prototype.wrapper = function () {
 */
 WIDGET.prototype.content = function () { 
 
-	alert("tit="+this.title+" uis="+this.UIs.length);
 	this.UI = Ext.create('Ext.panel.Panel', {
 		layout: "border",
 		region: "center",
@@ -3543,7 +3540,7 @@ WIDGET.prototype.hold = function () {
 WIDGET.prototype.post = function () { 
 	this.dataUI = this.UI = this.Data.Store;
 
-	if (! this.nowrap ) this.wrapper();
+	if ( this.wrap ) this.wrapper();
 
 }
 
@@ -3629,8 +3626,7 @@ WIDGET.prototype.border = function () {
 	this.menuTools();	
 	
 	//this.UIs.Each(function (n,ui) { alert(ui.region); });
-	
-	alert("border started");
+
 	this.UI = Ext.create('Ext.panel.Panel', {
 		// Basic
 		title		: this.title,
@@ -3650,8 +3646,6 @@ WIDGET.prototype.border = function () {
 		tools		: this.Menu, 
 		items		: this.UIs
 	});	
-	
-	alert("brd="+this.UI);
 }
 
 /**

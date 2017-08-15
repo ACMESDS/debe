@@ -1,15 +1,15 @@
 //- UNCLASSIFIED
 
-extends site.jade
+extends site
 append site_help
-	#post.Tutorial(path="/home_brief.view",dims="600,300",nowrap)
+	#post.Tutorial(path="/home_brief.view",dims="600,300")
 	p Welcome to the #{title}.
 append site_parms
-	- view = query.options || "Min"
+	- view = "Min"
 	- parms = {Min:"Min",search:"search",brief:"brief",capture:"capture",chat:"chat",news:"news","news print":"print"}
 append site_body
 
-	case view
+	case query.options
 		when "Min"
 			//	#post(path="/brief_geonode.jade",dims=dims)
 
