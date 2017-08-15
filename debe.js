@@ -86,7 +86,7 @@ var
 				keys.each( function (m, key) {
 					if (val = rec[key])
 						if (val.constructor == String) 
-								rec[key] = (":markdown\n" + val)
+								(":markdown\n" + val)
 									.replace(/   /g, "\t")  // fake tabs
 									.replace(/\n/g,"\n\t")  // indent markdown
 									.replace(/\[(.*?)\]\((.*?)\)/g, function (m,i) {  // adjust [x,w,h](u) markdown
@@ -114,7 +114,9 @@ var
 										var q = (i.charAt(0) == "'") ? '"' : "'";
 										return `href=${q}javascript:navigator.follow(${i},BASE.user.client,BASE.user.source)${q}>`;
 									})
-									.render(req);
+									.render(req, function (html) {
+										rec[key] = html;
+								});
 				});
 			});
 		},
@@ -204,7 +206,7 @@ append layout_body
 
 	site: { 		//< initial site context
 
-		get: function(recs, where, index, sub1, sub2) {  //< index dataset
+		get: function(recs, where, index, subs) {  //< index dataset
 			function select(keys) {
 				
 				switch ( (keys||0).constructor) {
@@ -267,15 +269,16 @@ append layout_body
 						if (rec[x] != where[x]) match = false;
 
 				if (match) {
-					if (sub2) {
-						for (var idx in sub2) {
-							var keys = sub2[idx];
+					Each(subs, function (pre, sub) {
+						for (var idx in sub) {
+							var keys = sub[idx];
 							if ( rec[idx] )
 								for (var key in keys)
-									rec[idx] = (rec[idx] + "").replace("##" + key, keys[key]);
+									rec[idx] = (rec[idx] + "").replace(pre + key, keys[key]);
 						}
-					}
+					});
 
+					/*
 					if (sub1) {
 						for (var idx in sub1) {
 							var keys = sub1[idx];
@@ -283,7 +286,7 @@ append layout_body
 								for (var key in keys)
 									rec[idx] = (rec[idx] + "").replace("#" + key, keys[key]);
 						}
-					}
+					}*/
 					
 					if (index) {
 						var rtn = new Object();
@@ -850,9 +853,9 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		site: renderSkin,
 		brief: renderSkin,
 		pivot: renderSkin,
-		gbrief: renderSkin,
-		rbrief: renderSkin,
-		pbrief: renderSkin,
+		gridbrief: renderSkin,
+		runbrief: renderSkin,
+		pivbrief: renderSkin,
 		exe: executePlugin,
 		add: extendPlugin,
 		sub: retractPlugin
@@ -986,20 +989,16 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					url: req.url
 				});
 
-			console.log(this);
-			
 			if ( this.charAt(0) == "." )
 				try {
 					res( JADE.renderFile( this+"", ctx ) );  // js gets confused so force string
 				}
 				catch (err) {
-					console.log("file comp="+err);
 					res(  err );
 				}
 			
 			else
 				try {
-					console.log("try string compile");
 					if ( generator = JADE.compile(this, ctx) )
 						res( generator(ctx) );
 					else
@@ -1791,14 +1790,12 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 				cols = [],
 				query = req.query,
 				sql = req.sql,
-				dims = (query.dims || "50,50").split(),
 				query = req.query = {
 					mode: req.parts[1],
 					search: req.search,
 					cols: cols,
 					page: query.page,
-					width: dims[0],
-					height: dims[1],
+					dims: query.dims || "100%,100%",
 					ds: req.table
 				},				
 				sqltypes = {

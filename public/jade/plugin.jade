@@ -12,8 +12,8 @@ extends base
 append base_parms
 	case query.mode
 		when "brief"
-		when "gbrief"
-		when "rbrief"
+		when "gridbrief"
+		when "runbrief"
 			- tech = "reveal"
 		default
 			- tech = "extjs"
@@ -45,8 +45,10 @@ append site_body
 	- dsrefresh = query.refresh || ""
 	- dspath = `/${ds}.db?${dsquery}`
 	- dstitle = ds + " view"
-	- width = query.width || "75%"
-	- height = query.height || "75%"
+	- dsdims = query.dims
+	- dims = dsdims.split(",")
+	- height = dims.pop()
+	- width = dims.pop()
 
 	case mode
 		when "plugin"
@@ -56,6 +58,7 @@ append site_body
 				cols=dscols.join(),
 				menu="Agents",
 				wrap,
+				dims=dsdims,
 				page=dspage )
 
 				:markdown
@@ -72,10 +75,11 @@ append site_body
 							(Save) json reserve for storing the results of this CASE
 							(Job) json parameters to place CASE into appropriate job workflow regulated by the clients' QoS and Credit levels
 							(Task) name of project associated with this CASE
-
-					Use  [Save+](/#{ds}.add?Save=doc), [Job+](/#{ds}.add?Job=doc), [Task+](/#{ds}.add?Task=name) to add,
-					and [Save-](/#{ds}.sub?Save), [Job-](/#{ds}.sub?Job), [Task-](/#{ds}.sub?Task) to remove
-					these (reserved) plugin parameters.
+							(Description) document CASE
+							
+					Use  [Save+](/#{ds}.add?Save=doc), [Job+](/#{ds}.add?Job=doc), [Task+](/#{ds}.add?Task=name), [Description+](/#{ds}.add?Description=doc) to add,
+					and [Save-](/#{ds}.sub?Save), [Job-](/#{ds}.sub?Job), [Task-](/#{ds}.sub?Task), [Description-](/#{ds}.sub?Description)  to remove
+					these parameters.
 
 					A (Description) parameter may contains bloggable markdown  tags
 
@@ -116,7 +120,7 @@ append site_body
 				page=dspage )
 
 		when "brief"
-		when "gbrief"
+		when "gridbrief"
 			section
 				h3.hd= dstitle
 
@@ -125,23 +129,23 @@ append site_body
 
 				else				
 					iframe(
-						src="/#{ds}.view",
+						src="/#{ds}.view?dims=#{dsdims}",
 						width=width,
 						height=height )
 
-		when "pbrief"
+		when "pivbrief"
 			section
 				h3.hd= dstitle
 				iframe(
-					src="/#{ds}.pivot",
+					src="/#{ds}.pivot?dims=#{dsdims}",
 					width=width,
 					height=height )
 
-		when "rbrief"
+		when "runbrief"
 			section
 				h3.hd= dstitle				
 				iframe(
-					src="/#{ds}.run",
+					src="/#{ds}.run?dims=#{dsdims}",
 					width=width,
 					height=height )
 
@@ -150,6 +154,7 @@ append site_body
 				class=dstitle,
 				path=dspath,
 				cols=dscols.join(),
+				dims=dsdims,
 				page=dspage )
 
 // UNCLASSIFIED

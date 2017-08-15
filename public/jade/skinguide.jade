@@ -734,8 +734,7 @@ append site_body
 					
 					+	get( list, {key:query,...} )
 					+	get( list, {key:query,...}, {key:rename,...} )
-					+	get( list, {key:query,...}, {key:rename,...}, {recKey:{key:#replace,...},...} )
-					+	get( list, {key:query,...}, {key:rename,...}, {recKey:{key:#replace,...},...}, {recKey:{key:##replace,...},...}  )
+					+	get( list, {key:query,...}, {key:rename,...}, {prefix: {recKey:{key:#replace, ...}, ...}, ...} )
 					+	get( dsname, {key:query,...}, function (data) {...} )
 					+	gridify( list,noheader )
 					+	json( list )
