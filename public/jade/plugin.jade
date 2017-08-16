@@ -74,13 +74,14 @@ append site_body
 					contain (reserved) parameters:
 
 							(Save) json reserve for storing the results of this CASE
-							(Job) json parameters to place CASE into appropriate job workflow regulated by the clients' QoS and Credit levels
+							(Job) json parameters to place CASE into QoS-Credit regulated queue.
 							(Task) name of project associated with this CASE
 							(Description) document CASE
 							
 					Use  [Save+](/#{ds}.add?Save=doc), [Job+](/#{ds}.add?Job=doc), [Task+](/#{ds}.add?Task=name), [Description+](/#{ds}.add?Description=doc) to add,
 					and [Save-](/#{ds}.sub?Save), [Job-](/#{ds}.sub?Job), [Task-](/#{ds}.sub?Task), [Description-](/#{ds}.sub?Description)  to remove
-					these parameters.
+					these parameters.   When events are ingested, the CASE="ingest" record is cloned with Job parameters afjusted to
+					the new events.
 
 					A (Description) parameter may contains bloggable markdown  tags
 
