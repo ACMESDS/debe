@@ -889,12 +889,10 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		engine: "SELECT *,count(ID) as Count FROM app.engines WHERE least(?,1)",
 		render: "./public/jade/",
 		
-		gms: { // gauss mixxing services
-			gaussmix: "http://localhost:8080/gaussmix.exe?"			
-		},
-		
 		sss: { // some streaming services
 			spoof: "http://localhost:8080/sss.exe?Name=spoof1",
+			gaussmix: "http://localhost:8080/gaussmix.exe?",
+			autorun: "http://localhost:8080/",
 			thresher: ENV.SSS_THRESHER
 		},
 
@@ -1128,14 +1126,21 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	hawkingcycle: 0, 	// job hawking cycle [s] (0 disables)		
 
 	loader: function (url,met,req,res) { // data loader
-		Trace("FETCHING "+url.tagurl(req));
-		met( url.tagurl(req), res );
+		
+		var 
+			path = req.plugin 
+							? (url+req.plugin+".exe?").tagurl(req)
+							: url.tagurl(req);
+		
+		Trace("FETCHING "+path);
+		met( path, res );
 	},
 		
 	ingestEvents: function (path, sql, cb) {
 		var 
 			stream = FS.createReadStream(path),
-			items = ["x", "y", "z", "t", "n"];
+			items = ["x", "y", "z", "t", "n"],
+			ingested = 0;
 
 		stream.on("open", function () {
 			/*stream.pipe( function (buf) {
@@ -1148,25 +1153,34 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		});
 
 		stream.on("data", function (buf) {			
+			//console.log(buf.toString());
 			buf.toString().split("\n").each( function (n,rec) {
 				var ev = new Object();
-				rec.split(",").each( function (i, item) {
-					ev[items[i]] = item;
-				});
+				if (rec.length) {
+					ingested++;
+					rec.split(",").each( function (i, item) {
+						ev[items[i]] = item;
+					});
 
-				sql.query(
-					"INSERT INTO app.evcache SET ?, Geo=st_GeomFromText(?)", [{
-						x: ev.x,
-						y: ev.y,
-						z: ev.z,
-						t: ev.t,
-						n: ev.n
-					},
-					`point(${ev.y} ${ev.x})`
-				]);
-			});
-			CHIPS.ingestCache(sql, cb);	
+					sql.query(
+						"INSERT INTO app.evcache SET ?, Geo=st_GeomFromText(?)", [{
+							x: ev.x,
+							y: ev.y,
+							z: ev.z,
+							t: ev.t,
+							n: ev.n
+						},
+						`point(${ev.y} ${ev.x})`
+					]);
+				}
+			});			
 		});	
+
+		stream.on("close", function (err) {
+			if (ingested)
+				CHIPS.ingestCache(sql, cb);	
+		});
+					
 	},
 	
 	blindTesting : false,		//< Enable for double-blind testing (make FLEX susceptible to sql injection attacks)
@@ -2229,7 +2243,8 @@ Initialize DEBE on startup.
 					catalog: function (req,res) { loader( paths.wfs.spoof, fetchers.http, req, res ); },
 					image: function (req,res) { loader( paths.wms.spoof, fetchers.wget, req, res ); },
 					events: function (req,res) { loader( paths.sss.spoof, fetchers.http, req, res ); },
-					stats: function (req,res) { loader( paths.gms.gaussmix, fetchers.http, req, res ); },
+					stats: function (req,res) { loader( paths.sss.gaussmix, fetchers.http, req, res ); },
+					autorun: function (req,res) { loader( paths.sss.autorun, fetchers.http, req, res ); },
 					save: fetchers.plugin
 				},
 				source: "",
