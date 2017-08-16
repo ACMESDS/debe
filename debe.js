@@ -1642,11 +1642,7 @@ function retractPlugin(req,res) {
 function executePlugin(req,res) {
 	
 	var
-		sql = req.sql,
-		query = req.query,
-		jobnotes = 
-				(req.table+"?").tagurl(query).tag("a",{href:"/" + req.table + ".run"}) + " is " +
-				((req.profile.Credit>0) ? "funded" : "unfunded").tag("a",{href:req.url});
+		query = req.query;
 
 		/*
 		var job = { // default required parms
@@ -1669,16 +1665,21 @@ function executePlugin(req,res) {
 			limit: query.limit || 1e99 	// limit chips
 		};*/
 	
-	if (query.ID || query.Name)
-		FLEX.runPlugin(req, function (rtn) {
+	if (query.ID || query.Name)  // run engine in its dataset ctx
+		FLEX.runPlugin(req, function (ctx, isjob) {
 
-			if ( Job = rtn.Job ) {
+			if ( isjob ) {  // Intercept plugin job request
 
 				res("Job submitted");
 
 				var 
-					chan = Job ? JSON.parse(Job) : {},
-					job = Copy(rtn, { // job related
+					chan = ctx.Job || {},
+					
+					jobnotes = 
+							(req.table+"?").tagurl(query).tag("a",{href:"/" + req.table + ".run"}) + " is " +
+							((req.profile.Credit>0) ? "funded" : "unfunded").tag("a",{href:req.url}),
+					
+					job = Copy(ctx, { // job related
 						thread: req.client.replace(/\./g,"") + "." + req.table,
 						qos: req.profile.QoS, 
 						priority: 0,
@@ -1705,10 +1706,15 @@ function executePlugin(req,res) {
 				});
 
 				if (chan.tmin)
-					CHIPS.ingestEvents(chan, job, function (win,status,sql) {
-						console.log(win,status);
+					CHIPS.ingestStreams(chan, job, function (twindow,status,sql) {
+						console.log(twindow,status);
 					});
 
+				else
+				if (chan.evring) 
+					CHIPS.ingestEvents(chan, job, function (voxel,status,sql) {
+					});
+				
 				else
 				if (chan.ring)
 					CHIPS.ingestChips(chan, job, function (chip,dets,sql) {
@@ -1727,7 +1733,7 @@ function executePlugin(req,res) {
 						]);
 
 						// reserve voxel detectors above this chip
-						for (var vox=CHIPS.voxels,alt=vox.minAlt, del=vox.deltaAlt, max=vox.maxAlt; alt<max; alt+=del) 
+						for (var vox=CHIPS.voxelSpecs,alt=vox.minAlt, del=vox.deltaAlt, max=vox.maxAlt; alt<max; alt+=del) 
 							sql.query(
 								"REPLACE INTO ??.voxels SET ?,Geo=st_GeomFromText(?)", [req.group, {
 									Thread: job.thread,
@@ -1742,20 +1748,22 @@ function executePlugin(req,res) {
 
 					});
 
-				else
+				else {
+					req.query = ctx;
 					ENGINE.select(req, function (rtn) {
 						console.log({engrtn:rtn});
 						if (query.Save)
-							sql.query("REPLACE INTO ?? SET ?", [ req.table, {Save: JSON.stringify(rtn)} ]);
+							req.sql.query("REPLACE INTO ?? SET ?", [ req.table, {Save: JSON.stringify(rtn)} ]);
 					});
+				}
 
 			}
 
-			else
-				res( rtn );
+			else  // respond with plugin results
+				res( ctx );
 		});
 	
-	else
+	else  // run engine in its req.query ctx
 		ENGINE.select(req, res);
 	
 }

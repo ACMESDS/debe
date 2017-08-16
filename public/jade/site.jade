@@ -102,6 +102,37 @@ append base_body
 			#folder(center,dock=dock)
 				block site_body
 
+		when "Typical"
+			#border(
+				class=table,
+				head="Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
+				LikeUs="/likeus.db",
+				View="/files.view",
+				title=titlebar)
+
+				block site_help
+					:markdown
+						*	(#{classif.level}) #{title} #{classif.purpose}
+						*	Options for this view.
+						*	Links to other views.
+						*	Themes preferred.  
+						*	Likeus for better QoS.
+						*	Capture screen for administrator.
+						*	Edit this [view](skinguide.view).
+						*	Health of system.
+						*	Users connected.
+						*	Engines [Python,JS,R,Ex,Matlab,etc](/engine.view) status.
+						*	Queues status.
+						*	Uploads of files to NLP indexing engines.
+						*	Stores of files for [workflows](/workflow.view).
+
+				#folder(center,dock=dock)
+					block site_body
+						
+				#fit(south,crush)
+					:markdown
+						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
+
 		when "Home"
 			#border(
 				class=table,
