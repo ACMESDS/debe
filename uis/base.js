@@ -107,13 +107,13 @@ var BASE = {
 		//guard: "",				// skin password guard
 		source: "tbd",			// default client view until socketio fixes
 		org:"", 				// organization for table guard ("" disables)
+		location: 'POINT(0 0)',	// default location
+		retries: 5 				// default max challenge retries if none provided by challenger
 		//content: null,	 					// topmost EXTJS component set on render
 		//qos:1,								// default QoS
 		//message: "",						// challenge for client
 		//riddles: 0, 
-		//location: 'POINT(0 0)',	// default location
 		//geolocate : false, 		// enable geolocation
-		retries: 5 				// default max challenge retries if none provided by challenger
 	},
 		
 	//render: null,
@@ -242,6 +242,7 @@ var BASE = {
 		BASE.user.client = anchor.getAttribute("client");
 		//BASE.user.guard = anchor.getAttribute("guard");
 		BASE.user.source = anchor.getAttribute("source");
+		BASE.user.location = anchor.getAttribute("location");		
 		//alert("user="+BASE.user.client+" "+BASE.user.source);
 		
 		if (io) {

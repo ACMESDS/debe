@@ -1163,14 +1163,14 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					});
 
 					sql.query(
-						"INSERT INTO app.evcache SET ?, Geo=st_GeomFromText(?)", [{
+						"INSERT INTO app.evcache SET ?, Point=st_GeomFromText(?)", [{
 							x: ev.x,
 							y: ev.y,
 							z: ev.z,
 							t: ev.t,
 							n: ev.n
 						},
-						`point(${ev.y} ${ev.x})`
+						`POINT(${ev.y} ${ev.x})`
 					]);
 				}
 			});			
@@ -1675,9 +1675,12 @@ function executePlugin(req,res) {
 				var 
 					chan = ctx.Job || {},
 					
-					jobnotes = 
-							(req.table+"?").tagurl(query).tag("a",{href:"/" + req.table + ".run"}) + " is " +
+					jobnotes = [
+							(req.table+"?").tagurl({Name:query.Name}).tag("a", {href:"/" + req.table + ".run"}), 
 							((req.profile.Credit>0) ? "funded" : "unfunded").tag("a",{href:req.url}),
+							"RTP".tag("a",{href:`/rtpsqd.view?task=${query.Task}`}),
+							"PMR brief".tag("a",{href:`/briefs.view?options=${query.Task}`})
+					],
 					
 					job = Copy(ctx, { // job related
 						thread: req.client.replace(/\./g,"") + "." + req.table,
@@ -1688,13 +1691,7 @@ function executePlugin(req,res) {
 						credit: req.profile.Credit,
 						name: req.table,
 						task: query.Task,
-						notes: jobnotes	+ " " + (query.Task
-										? [
-											"RTP".tag("a",{href:`/rtpsqd.view?task=${query.Task}`}),
-											"PMR brief".tag("a",{href:`/briefs.view?options=${query.Task}`})
-											].join(" ")
-
-										: "" )												 
+						notes: jobnotes.join(" || ")
 					});
 
 				delete job.ID;
@@ -1722,20 +1719,21 @@ function executePlugin(req,res) {
 				
 						console.log({save:dets});
 						sql.query(
-							"REPLACE INTO ??.chips SET ?,Geo=st_GeomFromText(?)", [req.group, {
+							"REPLACE INTO ??.chips SET ?,Ring=st_GeomFromText(?),Point=st_GeomFromText(?)", [req.group, {
 								Thread: job.thread,
 								Save: JSON.stringify(dets),
 								t: updated,
 								x: chip.pos.lat,
 								y: chip.pos.lon
 							},
-							chip.geo 
+							chip.ring ,
+							chip.point
 						]);
 
 						// reserve voxel detectors above this chip
 						for (var vox=CHIPS.voxelSpecs,alt=vox.minAlt, del=vox.deltaAlt, max=vox.maxAlt; alt<max; alt+=del) 
 							sql.query(
-								"REPLACE INTO ??.voxels SET ?,Geo=st_GeomFromText(?)", [req.group, {
+								"REPLACE INTO ??.voxels SET ?,Ring=st_GeomFromText(?),Point=st_GeomFromText(?)", [req.group, {
 									Thread: job.thread,
 									Save: null,
 									t: updated,
@@ -1743,7 +1741,8 @@ function executePlugin(req,res) {
 									y: chip.pos.lon,
 									z: alt
 								},
-								chip.geo 
+								chip.ring,
+								chip.point
 							]);
 
 					});

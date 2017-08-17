@@ -1891,9 +1891,10 @@ Ext.onReady( function () {
 								url		: "/uploads.db",
 								method	: "POST",
 								params	: JSON.stringify({
-									//image: canvas.toDataURL("image/png"),
-									image: "1234",
-									filename: "snapshot.jpg"
+									image: canvas.toDataURL("image/png"),
+									filename: BASE.user.client+"_snapshot.jpg",
+									location: BASE.user.location
+									//image: "1234",
 									/*owner: BASE.user.client,
 									classif: "TBD",
 									tag: "snapshot",
@@ -1941,25 +1942,21 @@ Ext.onReady( function () {
 	
 });
 
-function postFile(url, data, parms) {
-	
-	var 
-		base64 = ";base64,",
-		idx = data.indexOf(base64),
-		opts = "";
-	
-	Each(parms, function (n,parm) {
-		opts += n+"="+parm+";";
-	});
+String.prototype.tagurl = function (at) {
+	var rtn = this;
 
-	Ext.Ajax.request({
-			url	: url,
-			method	: "POST",
-			params	: opts 
-					+ data.substr(0,idx).replace("data:","type=") 
-					+ "\r\n" 
-					+ data.substr(idx+base64.length)
-		});
+	for (var n in at) {
+		rtn += n + "=";
+		switch ( (at[n] || 0).constructor ) {
+			//case Array: rtn += at[n].join(",");	break;
+			case Array:
+			case Date:
+			case Object: rtn += JSON.stringify(at[n]); break;
+			default: rtn += at[n];
+		}
+		rtn += "&";
+	}
+	return rtn;
 }
 
 WIDGET.prototype.menuTools = function () {
@@ -1971,6 +1968,28 @@ WIDGET.prototype.menuTools = function () {
 			Ext.Msg.alert(this.name,msg);
 	}
 
+	function postFile(url, data, parms) {
+
+		var 
+			base64 = ";base64,",
+			idx = data.indexOf(base64);
+
+		/*Each(parms, function (n,parm) {
+			opts += n+"="+parm+";";
+		}); */
+
+		Ext.Ajax.request({
+				url	: url,
+				method	: "POST",
+				params	: 
+						"".tagurl(parms).replace(/&/g,";") 
+						+ data.substr(0,idx).replace("data:","type=") 
+						+ "\r\n" 
+						+ data.substr(idx+base64.length)
+			});
+	}
+
+	function feed (query,recs) {	
 	/**
 	* @method feed
 	* @private
@@ -1980,7 +1999,6 @@ WIDGET.prototype.menuTools = function () {
 	* @param {String} query "TargetDT" (for grids) or "TargetDT/path/link/link ..." (for posts)
 	* @param {Array} recs Records to feed int this store
 	*/
-	function feed (query,recs) {	
 		var tarDS = DSLIST[query];
 		
 		if (tarDS) {							// query = TargetDT 
@@ -2786,8 +2804,8 @@ WIDGET.prototype.menuTools = function () {
 								html2canvas(document.body).then( function (canvas) {
 									document.body.appendChild(canvas);
 									postFile( "/uploads.db", canvas.toDataURL("image/png"), {
-											filename: "snapshot.png",
-											name: "capture"
+										filename: BASE.user.client+"+snapshot.png",
+										name: "capture"
 									});
 								})
 							else
@@ -2820,8 +2838,8 @@ WIDGET.prototype.menuTools = function () {
 										
 										reader.onload = function (rdr) {
 											postFile(url, rdr.target.result, {
-													 filename: file.name,
-													name: id
+												filename: file.name,
+												name: id
 											});											
 										}
 
@@ -4115,7 +4133,7 @@ WIDGET.prototype.form = function () {
 		
 		// layout
 		layout		: "anchor",
-		html		: this.HTML,
+		//html		: this.HTML,
 
 		// Toolbars, selection models, plugins and features
 		

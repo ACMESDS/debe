@@ -5,7 +5,7 @@ append site_help
 	:markdown
 		See also the companion [skinning guide](/skinguide.jade) and the [programmers ref manual](/shares/doc/totem/index.html).
 append site_parms
-	- view = "Min"
+	- view = "Basic"
 	- dock = "left"
 append site_body
 
@@ -523,11 +523,11 @@ append site_body
 				When an engine is accessed, its context is automatically extended with:
 
 					query: {urlKey: value,  contextKey: value, ...}, 
-					[DSP](/linkpending) module,
-					[LWIP](/linkpending) module,  
-					[MATH](/linkpending) module,  
-					[CRYPTO](/linkpending) module,   
-					[FLEX](/linkpending) module,  
+					[DSP](https://www.npmjs.com/package/dsp) module,
+					[LWIP](https://github.com/EyalAr/lwip) module,  
+					[MATH](http://mathjs.org/) module,  
+					[CRYPTO](https://nodejs.org/docs/latest/api/) module,   
+					[FLEX](https://github.com/ACMESDS/flex) module,  
 					get( list, {key:query,...} )  
 					get( list, {key:query,...}, {key:rename,...} )  
 					get( list, {key:query,...}, {key:rename,...}, {recKey:{key:#replace,...},...} )  

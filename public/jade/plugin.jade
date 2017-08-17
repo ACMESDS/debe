@@ -54,7 +54,7 @@ append site_body
 	case mode
 		when "plugin"
 		when "run"
-			#grid.Dataset(
+			#grid.Usecase(
 				path=dspath,
 				cols=dscols.join(),
 				menu="Agents",
@@ -63,15 +63,13 @@ append site_body
 				page=dspage )
 
 				:markdown
-					A plugin is a dataset-engine pair that is used to execute engines with the parameters
-					from a selected dataset case.  To run plugin with a specific parameter case, simply
-					select the case, then click the	execute button; you may also run a plugin from the url bar:
+					A plugin is a coupled dataset-engine that is used to run an engine with selected usecase parameters.  Simply select
+					a usecase, then click the execute/run button. Uou may also run a plugin from the url bar:
 
 						GET /PLUGIN.exe?ID=CASE 	Run PLUGIN engine using PLUGIN dataset parameters for specified CASE 
 						GET /PLUGIN.exe?Name=CASE 	Run PLUGIN engine using PLUGIN dataset parameters for specified CASE
 
-					Plugins normally run standalone, but they can be placed in job workflows when they 
-					contain (reserved) parameters:
+					Plugins may also be placed in job workflows when they contain (reserved) parameters:
 
 							(Save) json reserve for storing the results of this CASE
 							(Job) json parameters to place CASE into QoS-Credit regulated queue.
@@ -95,22 +93,27 @@ append site_body
 				cols="Name,Engine,Enabled.c,Program(Code.x,Vars.x.Context)")
 
 				:markdown
-					[Engines](/api.view) contain js | python | matlab | opencv | ... code.  Click the 
-					execute button to test the engine with its default context parameters.
-
+					[Engines](/api.view) contain js | python | matlab | opencv | ... code.  Click the execute button to test the 
+					engine with its default context parameters.  See [DSP](https://www.npmjs.com/package/dsp) module,
+					[LWIP](https://github.com/EyalAr/lwip) module,  [MATH](http://mathjs.org/) module,
+					[CRYPTO](https://nodejs.org/docs/latest/api/) module, and [FLEX](https://github.com/ACMESDS/flex) 
+					for information on the modules attached to a js-engine.  Simply import packages as needed for a py-engine.
+					
 			#grid.Jobs(
 				path="/queues.db?Class=#{ds}",
-				cols="Arrived.d,Departed.d,Notes.x,QoS.n,Age.n,Funded.c,Finished.c,Priority.n,Work.n,State.n,Task.t,Signoffs(Flagged.c,Sign0.c,Sign1.c,Sign2.c,Sign3.c)",
+				cols="Arrived.d,Departed.d,Client,Notes.x,QoS.n,Age.n,Funded.c,Finished.c,Priority.n,Work.n,State.n,Task.t,Signoffs(Flagged.c,Sign0.c,Sign1.c,Sign2.c,Sign3.c)",
 				refresh=dsrefresh,
+				wrap,
+				head="Print,Refresh,Help",
 				page=dspage )
 
 				:markdown
-					Jobs created by this plugin are show here.  If the originator exceeded their credits,
-					the job notes will contain an "unfunded" link.  If you would like to fund this job with 
-					your credits, simply click the "unfunded" link.  To decide if this is a wise purchase, 
-					click the "#{ds}" link to see the test case case being explored.  If present, you 
-					may also click the "RTP" or "PMR" links to get further information about the 
-					project this job supports.
+					Jobs created by this plugin are show here.  If the originator Client exceeded their credits,
+					the job notes will be marked "unfunded"; otherwise the job is marked "funded".  If you would like to fund this job with 
+					your credits, simply click its "(un)funded" link.  To decide if this is a wise purchase, 
+					click the "#{ds}" link to see the test case case being explored; additional project information,
+					if available, is attached as "RTP", "PMR" etc links.  Earning credits to run jobs is easy: simply upload data
+					using the Files | Uploads.
 
 		when "pivot"
 			- pcol = dscols.pop()

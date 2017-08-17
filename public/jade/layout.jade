@@ -175,7 +175,7 @@ block layout_head
 				if (navigator.geolocation && probe.location)  // Discover client geolocation
 					navigator.geolocation.getCurrentPosition(function (pos) {
 						if (!pos.coords) pos.coords = {latitude:0, longitude: 0};
-						totem.location = 'POINT(' + pos.coords.latitude + " " + pos.coords.longitude + ')';
+						totem.location = 'POINT(' + [pos.coords.longitude, pos.coords.latitude].join(" ") + ')';
 					}, function (err) {	
 						totem.location = 'POINT(0 0)';
 					});
@@ -225,6 +225,7 @@ body
 			start=start,
 			client=client,
 			source=table,
+			location=navigator.totem.location,
 			query=JSON.stringify(query),
 			title=banner)
 			
