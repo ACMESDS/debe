@@ -157,10 +157,10 @@ var BASE = {
 	 * 
 	 * */
 	reprompt: function(req, cb) {
-						
+				
 		var pass = false;
 		
-		cb( req, function test(url) {
+		cb( req, function test(url) {  // provide callback this prompt tester
 
 			BASE.syncReq( "GET", url,  function (res) {
 				

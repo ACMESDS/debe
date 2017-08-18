@@ -1,15 +1,7 @@
-block test_p
-	- a = "junk"
-
-case a
-	when "junk"
-		:markdown
-			some started junk
-
-	default
-		:markdown
-			nojunk
-
-block test_b
+extends base
+append base_parms
+	- tech = "extjs"
+append base_body
 	:markdown
-		bosy will start ere
+		this is a test
+

@@ -181,13 +181,13 @@ block layout_head
 					});
 
 			//-
-				Install socketio to sync changes amoungst clients.  This interface is establihed 
-				when the server does a require('socket.io') which creates a route #{sockets} = 
-				"/socket.io/socket.io.js" on which the client can source -- via a <script 
-				src="/socket.io/socket.io.js"> tag -- its io method.  
+				Install socketio to communicate with clients.  This interface is establihed when the server does a require('socket.io'), 
+				ths createing end endpoint at urls.socketio (typically /socket.io/socket.io.js) on which the client can source -- via 
+				a <script src="/socket.io/socket.io.js"> tag -- its io() method.  Note: have been unable to get socket.io 2.x working
+				so reverting to socket.io 1.5.0.
 
-			if socketio
-				script(src=socketio)
+			if sockets
+				script(src=urls.socketio)
 			else
 				script.
 					var io = null;

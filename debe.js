@@ -878,7 +878,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		noCode: new Error("failed engine code lookup"),
 		unsupportedFeature: new Error("unsupported feature"),
 		noOffice: new Error("office docs not enabled"),
-		noExe: new Error("no execute interface")
+		noExe: new Error("no execute interface"),
+		noUsecase: new Error("no usecase provided to plugin")
 	},
 	
 	"paths.": {  //< paths to things
@@ -890,14 +891,14 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		render: "./public/jade/",
 		
 		sss: { // some streaming services
-			spoof: "http://localhost:8080/sss.exe?Name=spoof1",
-			gaussmix: "http://localhost:8080/gaussmix.exe?",
-			autorun: "http://localhost:8080/",
+			spoof: ENV.DEBUG + "/sss.exe?Name=spoof1",
+			gaussmix: ENV.DEBUG + "/gaussmix.exe?",
+			autorun: ENV.DEBUG + "/",
 			thresher: ENV.SSS_THRESHER
 		},
 
 		wfs: { // wfs services
-			spoof: "http://localhost:8080/wfs.exe?Name=spoof1",
+			spoof: ENV.DEBUG + "/wfs.exe?Name=spoof1",
 			ess: ENV.WFS_ESS,
 			dglobe: ENV.WFS_DGLOBE,
 			omar: ENV.WFS_OMAR,
@@ -905,7 +906,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		},
 
 		wms: { // wms services
-			spoof: "http://localhost:8080/wms.exe?Name=spoof1",
+			spoof: ENV.DEBUG + "/wms.exe?Name=spoof1",
 			ess: ENV.WMS_ESS,
 			dglobe: ENV.WMS_DGLOBE,
 			omar: ENV.WMS_OMAR,
@@ -949,6 +950,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		}
 	},
 	
+	benevolent: false,  //< enable to give-away plugin services
+		
 	Function: Initialize,  //< added to ENUM callback stack
 
 	// Prototypes
@@ -1497,7 +1500,8 @@ function sendCert(req,res) { // create/return public-private certs
 				
 			else {
 				
-				var master = site.masterURL,
+				var 
+					master = site.urls.master,
 					paths = DEBE.paths,
 					site = DEBE.site,
 					FF = "Firefox".tag("a",{href:master+"/shares.firefox.zip"}),
@@ -1763,7 +1767,11 @@ function executePlugin(req,res) {
 		});
 	
 	else  // run engine in its req.query ctx
+	if (DEBE.benevolent)
 		ENGINE.select(req, res);
+	
+	else
+		res(DEBE.errors.noUsecase);
 	
 }
 
@@ -2163,9 +2171,9 @@ Initialize DEBE on startup.
 			+ "\n- USING " + site.db 
 			+ "\n- FROM " + process.cwd()
 			+ "\n- RUNNING " + (DEBE.protected?"PROTECTED":"UNPROTECTED")
-			+ "\n- WITH " + (DEBE.paths.url.socketio||"NO")+" SOCKETS"
+			+ "\n- WITH " + (site.urls.socketio||"NO")+" SOCKETS"
 			+ "\n- WITH " + (DEBE.SESSIONS||"UNLIMITED")+" CONNECTIONS"
-			+ "\n- WITH " + (site.Cores||"NO")+" WORKERS@ "+site.workerURL+" MASTER@ "+site.masterURL
+			+ "\n- WITH " + (site.Cores||"NO")+" WORKERS@ "+site.urls.worker+" MASTER@ "+site.urls.master
 			+ "\n- BILL,DIAG,HAWK EVERY "+[site.billingcycle,site.diagcycle,site.hawkingcycle]+" SECS"
 		);
 
@@ -2196,7 +2204,7 @@ Initialize DEBE on startup.
 			uploader: DEBE.uploader,
 
 			paths: {  // urls to supporting services
-				HOST: DEBE.site.masterURL,
+				HOST: DEBE.site.urls.master,
 				NEWSREAD: "http://craphound.com:80/?feed=rss2",
 				AOIREAD: "http://omar.ilabs.ic.gov:80/tbd"
 			},

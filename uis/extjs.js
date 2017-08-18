@@ -1779,7 +1779,7 @@ Ext.onReady( function () {
 					var	
 							msgbox = null,
 							status = "",
-							toc = (req.timeout || 10e3) * 1e-3;
+							toc = req.timeout;
 
 					if (toc)
 						BASE.fuse = setInterval( function () {
@@ -1802,7 +1802,7 @@ Ext.onReady( function () {
 							status,
 							req.message,
 							function (sel,val,opt) {
-								cb(`/riddle?guess=${val}&ID=${req.ID}`);
+								cb(`${req.callback}?guess=${val}&ID=${req.ID}`);
 							},
 
 							this, 	// scope
@@ -1813,8 +1813,10 @@ Ext.onReady( function () {
 				}
 				
 				else
-				if (req.message)
+				if (req.message) {
 					Ext.Msg.alert("Welcome! ".blink().bold().fontcolor('red'), req.message);
+					cb(`${req.callback}?guess=0&ID=${req.ID}`);
+				}
 
 			},
 
