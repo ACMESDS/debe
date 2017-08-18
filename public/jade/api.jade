@@ -516,23 +516,27 @@ append site_body
 						port2: function() {}, ...
 						entry: {key1: "select ...", ... } || "select ...",
 						exit: {key2: "update ...", ... } || "update ...",
-						key1: value, 
-						key2: value, ...
+						key: value, 
+						urlKey: value
 					}
 					
-				When an engine is accessed, its context is automatically extended with:
+				When an engine is accessed, its context is automatically extended with the following modules:
 
-					query: {urlKey: value,  contextKey: value, ...}, 
-					[DSP](https://www.npmjs.com/package/dsp) module,
-					[LWIP](https://github.com/EyalAr/lwip) module,  
-					[MATH](http://mathjs.org/) module,  
-					[CRYPTO](https://nodejs.org/docs/latest/api/) module,   
-					[FLEX](https://github.com/ACMESDS/flex) module,  
-					get( list, {key:query,...} )  
-					get( list, {key:query,...}, {key:rename,...} )  
-					get( list, {key:query,...}, {key:rename,...}, {recKey:{key:#replace,...},...} )  
-					get( list, {key:query,...}, {key:rename,...}, {recKey:{key:#replace,...},...}, {recKey:{key:##replace,...},...}  )  
-					get( dsname, {key:query,...}, function (data) {...} )
+					[DSP](https://www.npmjs.com/package/dsp) ,
+					[LWIP](https://github.com/EyalAr/lwip) ,  
+					[MATH](http://mathjs.org/) ,  
+					[CRYPTO](https://nodejs.org/docs/latest/api/) ,   
+					[FLEX](https://github.com/ACMESDS/flex),
+					[SVD)(https://www.npmjs.com/package/node-svd)
+					
+				FLEX contains several (ctx, res)-methods including:
+
+					FLEX.get( {ds: "...", where: {key:value, ...}}, (data) => {...} )  
+					FLEX.randpr( { jumprates, ... }, (data) => {...} )    // generate markov random process
+					FLEX.gaussmix( { events: [ {x,y,z,t ...}, ...], scenario: {}, ... }, (data) => {...} )  // generate (mean,sigma) estimates
+					FLEX.wms( { ... }, (data) => {...} )  // wms response
+					FLEX.wfs( { ... }, (data) => {...} )  // wfs response
+					FLEX.sss( { ... }, (data) => {...} )  // sss response
 					
 				Whereas stateless engines (being memoryless) are initialized at each step, stateful 
 				engines are initialized only when the workflow is initialized.  When initialized, an engine's context 
