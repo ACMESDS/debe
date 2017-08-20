@@ -2393,14 +2393,14 @@ WIDGET.prototype.menuTools = function () {
 							}, 
 
 							action( key, {HELP:"N/A",Special:"Help."}, {
-								onAction: function () {
-								if (Tips) 
-									Ext.QuickTips.disable(); 
-								else 
-									Ext.QuickTips.enable();
+									onAction: function () {
+									if (Tips) 
+										Ext.QuickTips.disable(); 
+									else 
+										Ext.QuickTips.enable();
 
-								Tips = !Tips;
-							}
+									Tips = !Tips;
+								}
 							}) 
 						);
 
@@ -2495,16 +2495,16 @@ WIDGET.prototype.menuTools = function () {
 						
 						else
 							return action( key, {DELTA:"N/A",Special:"Delta baseline changes."}, {
-								onAction: function () {
-								//Flag = Data.Link.Flag;								
-								//Flag._delta = delta ? "Num" : "";
-								//Widget.Data.Store.setProxy(defineProxy(Widget.Data.proxy.url, delta ? {_delta:"Num"} : null));
-								
-								Widget.Data.relink( function (proxy,flags) {
-									flags._delta = deltaed ? "Num" : "";
-								});
-								deltaed = !deltaed;
-							}
+									onAction: function () {
+									//Flag = Data.Link.Flag;								
+									//Flag._delta = delta ? "Num" : "";
+									//Widget.Data.Store.setProxy(defineProxy(Widget.Data.proxy.url, delta ? {_delta:"Num"} : null));
+
+									Widget.Data.relink( function (proxy,flags) {
+										flags._delta = deltaed ? "Num" : "";
+									});
+									deltaed = !deltaed;
+								}
 							});
 
 					case "refresh":
@@ -2518,9 +2518,9 @@ WIDGET.prototype.menuTools = function () {
 						
 						else
 							return action( key, {REFRESH:"N/A",Special:"Refresh."}, {
-								onAction: function () {
-								Widget.Data.relink();
-							}
+									onAction: function () {
+									Widget.Data.relink();
+								}
 							});
 
 					case "print":
@@ -2530,9 +2530,9 @@ WIDGET.prototype.menuTools = function () {
 						
 						else
 							return action( key, {PRINT:"N/A",Special:"Print."}, {
-								onAction: function () {
-								Ext.ux.grid.Printer.print(Widget.dataUI);
-							}
+									onAction: function () {
+									Ext.ux.grid.Printer.print(Widget.dataUI);
+								}
 							});
 
 					case "blog":
@@ -3291,7 +3291,7 @@ WIDGET.prototype.terminal = function (term,opts) {
 		//scrollable: true,
 
 		//iconCls	: 'Loads-0',
-		icon		: "/clients/icons/widgets/"+this.name,
+		icon		: "/clients/icons/widgets/"+Data.dataset +".ico",
 
 		// region in next level container
 		region		: this.region,
@@ -3508,7 +3508,7 @@ WIDGET.prototype.content = function () {
 				collapsed	: false, //this.crush,
 				collapsible	: false, //!this.Headless,
 				titleCollapse: false,
-				icon		: "/clients/icons/widgets/"+this.name,
+				icon		: "/clients/icons/widgets/"+this.name+".ico",
 				hidden		: this.hide,
 				maximizable	: true,
 				// Container				
@@ -3591,7 +3591,7 @@ for (var layout in {anchor:1, fit:1, hbox:1, vbox:1, box:1, table:1, column:1})
 			overflowY	: "auto",
 			frame		: false, //dims[2]>1,
 			//iconCls	: 'Loads-1',
-			icon		: "/clients/icons/widgets/"+this.name,
+			icon		: "/clients/icons/widgets/"+this.name+".ico",
 			hidden		: this.hide,
 			maximizable	: true,
 			
@@ -3657,7 +3657,7 @@ WIDGET.prototype.border = function () {
 		titleCollapse: false,
 		overflowY	: "auto",
 		frame		: false, //dims[2]>1,
-		icon		: "/clients/icons/widgets/"+this.name,
+		icon		: "/clients/icons/widgets/"+this.name+".ico",
 		hidden		: this.hide,
 		maximizable	: true,
 		
@@ -3791,7 +3791,7 @@ WIDGET.prototype.window = function (UIs,HTML) {
 		//overflowY	: "auto",					
 		frame		: this.dims[2]>1,
 		//iconCls		: 'Loads-1',
-		icon		: "/clients/icons/widgets/"+this.name,
+		icon		: "/clients/icons/widgets/"+this.name+".ico",
 		hidden		: this.hide,
 		maximizable	: true,
 
@@ -3972,7 +3972,8 @@ WIDGET.prototype.pivot = function () {
 var FieldIDs = {};
 
 WIDGET.prototype.form = function () {
-	var	Widget = this;
+	var	
+		Widget = this;
 		Data = this.Data;
 		
 	this.menuTools();
@@ -4125,7 +4126,7 @@ WIDGET.prototype.form = function () {
 		//scrollable: true,
 
 		//iconCls		: 'Loads-0',
-		icon		: "/clients/icons/widgets/"+this.name,
+		icon		: "/clients/icons/widgets/"+Data.dataset+".ico",
 
 		// Next level container
 		region		: this.region,

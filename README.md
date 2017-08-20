@@ -1,68 +1,46 @@
 /**
-@class debe [![Forked from SourceForge](https://sourceforge.net)]
+@class DEBE
+	[SourceForge](https://sourceforge.net) 
+	[github](https://github.com/acmesds/debe.git) 
+	[geointapps](https://git.geointapps.org/acmesds/debe)
+	[gitlab](https://gitlab.weat.nga.ic.gov/acmesds/debe.git)
+	
 # DEBE
 
-DEBE integrates [TOTEM](https://github.com/acmesds/totem), [FLEX](https://github.com/acmesds/flex),
-[CHIPPER](https://github.com/acmesds/chipper) and [ENGINE](https://github.com/acmesds/engine) into a 
-web service for managing client interface, requirements, project metrics, geoint products and workflows.
+DEBE stacks the [FLEX database extender](https://github.com/acmesds/flex), the
+[CHIPPER earth-focused data segmenter and workflow manager](https://github.com/acmesds/chipper) ,
+and the [ENGINE language agnostic computer](https://github.com/acmesds/engine) above 
+the [TOTEM base web service](https://github.com/acmesds/totem) to provide a web service for 
+managing interfaces, requirements, project metrics, geoint products and workflows.  
 
-Simply require DEBE and start it:
+As documented in its [api](/api.view), DEBE extends [TOTEM](https://github.com/acmesds/totem)'s 
+/DATASET.TYPE?QUERY endpoints with various TYPE convertors:
 
-	var DEBE = require("debe").config(options, function (err) {
-		// server callback on startup
-	});
+	kml, flat, txt, tab, tree, delta, encap, nav
 	
-DEBE options use the [ENUM copy()](https://github.com/acmesds/enum) conventions:
+page skinners:
 
-	options =  {
-		key: value, 						// set 
-		"key.key": value, 					// index and set
-		"key.key.": value,					// index and append
-		OBJECT: [ function (){}, ... ], 	// add prototypes
-		Function: function () {} 			// add callback
-		:
-		:
-	}
+	view | run | plugni | pivot | site | spivot | brief | gridbrief | pivbrief | runbrief
 
-DEBE's extends [TOTEM](https://github.com/acmesds/totem)'s DATASET.TYPE renders to include:
+an engine / workflow starter:
 
-	+ data converters: kml, flat, txt, tab, tree, delta, encap, nav
-	+ site rendering: view
-	+ data chipping: exe
-	+ file attributes: code, jade, classif, readability, client, size, risk
+	exe
 	
-site context methods
+and file attribute getters:
 
-	json, gridify, tag, get, hover
+	code, jade, classif, readability, client, size, risk
 	
-and request flags
+As documented in its [api](/api.view), DEBE also extends  [TOTEM](https://github.com/acmesds/totem)'s  
+QUERY flags with:
 
-	save, browse, view, blog, json
+	_save, _browse, _view, _blog, _json
 
-as described in its [skinguide](/skinguide.view) and its [api](/api.view).
-
-In addition to [TOTEM](https://github.com/acmesds/totem) options, DEBE accepts:
-
-	builtin: {   //< engines to be added to the ENGINE pool
-		NAME: cb(req,res),
-		...
-	},
-	billingCycle: 0, //< Interval [ms] to job billings
-	diagCycle: 0, //< Interval [ms] to run self diagnostics
-	isSpawned: false, //< Enabled when this is child server spawned by a master server
-	soapCRUD : {...},  //< action:route hash for XML-driven engines
-	blindTesting: false, //< Enable for double-blind testing (make FLEX susceptible to sql injection attacks)
-	statefulViews: {...}, //< Jade views that require  the stateful URL
-
-but its default values suffice.  
+DEBE provides its page skinners a context of useful parameters and methods, as described in 
+its [skinguide](/skinguide.view).
 
 ## Installation
 
-Download the latest version with
-
-	git clone https://github.com/acmesds/debe
-	
-Typically, you will want to redirect the following to your project:
+Clone from one of the repos.  You will typically want to redirect the following to your project
 
 	ln -s PROJECT/totem/test.js test.js 			# unit testing
 	ln -s PROJECT/totem/maint.sh maint.sh 		# test startup and maint scripts
@@ -74,16 +52,33 @@ Typically, you will want to redirect the following to your project:
 openv.apps  Reads on start() to derive command line parms
 app.X Table X read for job parameters in a .exe route
 
-## Examples
+## Use
 
-Below sample are from the totem/test.js unit tester.  You may  also find Totem's [DSVAR](https://github.com/acmesds/dsvar) 
-useful, if you wish to learn more about its database agnosticator.
+Simply require, configure and start DEBE:
+
+	var DEBE = require("debe").config({
+		key: value, 						// set key
+		"key.key": value, 					// indexed set
+		"key.key.": value,					// indexed append
+		OBJECT: [ function (){}, ... ], 	// add OBJECT prototypes 
+		Function: function () {} 			// add chained initializer callback
+		:
+		:
+	}, function (err) {
+		console.log( err ? "something evil happended" : "Im running");
+	});
+
+where its configuration keys follow [ENUM copy()](https://github.com/acmesds/enum) conventions and
+are described in its [PRM](/shares/prm/debe/index.html).
+
+The following examples are from TOTEM's test.js unit tester.  You may also find 
+Totem's [DSVAR](https://github.com/acmesds/dsvar) useful, if you wish to learn more about its 
+database agnosticator.
 
 ### D1 - Encypted with a database
 
 	var DEBE = require("../debe").config({
 		name: ENV.SERVICE_NAME,
-		encrypt: ENV.SERVICE_PASS,
 		mysql: {
 			host: ENV.MYSQL_HOST,
 			user: ENV.MYSQL_USER,
@@ -101,8 +96,6 @@ useful, if you wish to learn more about its database agnosticator.
 ### D2 - D1 plus an endpoint
 
 	var DEBE = require("../debe").config({
-		encrypt: ENV.SERVICE_PASS,
-		riddles: 10,
 		mysql: {
 			host: ENV.MYSQL_HOST,
 			user: ENV.MYSQL_USER,

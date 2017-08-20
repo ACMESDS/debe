@@ -10,9 +10,8 @@
 
 extends layout
 append layout_parms
-	- banner = banner
-	- start = query.ver ? "SIM" : "content"
 	- capture = true
+	- banner = classif.banner ? (classif.level + " " + classif.banner) : ""
 
 extends base
 append base_parms
@@ -81,15 +80,15 @@ append base_body
 						*	Options for this view.
 						*	Links to other views.
 						*	Themes preferred.  
-						*	Likeus for better QoS.
+						*	[Likeus](/likeus.view) to impove your QoS.
 						*	Capture screen for administrator.
-						*	Edit this [view](skinguide.view).
+						*	Edit this skin. See [skinning guide](skinguide.view)
 						*	Health of system.
 						*	Users connected.
-						*	Engines [Python,JS,R,Ex,Matlab,etc](/engine.view) status.
-						*	Queues status.
-						*	Uploads of files to NLP indexing engines.
-						*	Stores of files for [workflows](/workflow.view).
+						*	Engines status.  See [Python,JS,R,Ex,Matlab,etc engines](/api.view) 
+						*	Queues status.  Job are regulated at your existing [QoS level](/api.view)
+						*	Files/Uploads to upload data and receive credit for future job runs.
+						*	Files/Stores to upload shared files.
 
 				#fit(center)
 					block site_body
@@ -99,9 +98,36 @@ append base_body
 						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
 
 		when "Basic"
-			#folder(center,dock=dock)
-				block site_body
+			#border(
+				class=table,
+				head="Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
+				LikeUs="/likeus.db",
+				View="/files.view",
+				title=titlebar)
 
+				block site_help
+					:markdown
+						*	(#{classif.level}) #{title} #{classif.purpose}
+						*	Options for this view.
+						*	Links to other views.
+						*	Themes preferred.  
+						*	[Likeus](/likeus.view) to impove your QoS.
+						*	Capture screen for administrator.
+						*	Edit this skin. See [skinning guide](skinguide.view)
+						*	Health of system.
+						*	Users connected.
+						*	Engines status.  See [Python,JS,R,Ex,Matlab,etc engines](/api.view) 
+						*	Queues status.  Job are regulated at your existing [QoS level](/api.view)
+						*	Files/Uploads to upload data and receive credit for future job runs.
+						*	Files/Stores to upload shared files.
+
+				#folder(center,dock=dock)
+					block site_body
+						
+				#fit(south,crush)
+					:markdown
+						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
+		
 		when "Typical"
 			#border(
 				class=table,
@@ -116,15 +142,15 @@ append base_body
 						*	Options for this view.
 						*	Links to other views.
 						*	Themes preferred.  
-						*	Likeus for better QoS.
+						*	[Likeus](/likeus.view) to impove your QoS.
 						*	Capture screen for administrator.
-						*	Edit this [view](skinguide.view).
+						*	Edit this skin. See [skinning guide](skinguide.view)
 						*	Health of system.
 						*	Users connected.
-						*	Engines [Python,JS,R,Ex,Matlab,etc](/engine.view) status.
-						*	Queues status.
-						*	Uploads of files to NLP indexing engines.
-						*	Stores of files for [workflows](/workflow.view).
+						*	Engines status.  See [Python,JS,R,Ex,Matlab,etc engines](/api.view) 
+						*	Queues status.  Job are regulated at your existing [QoS level](/api.view)
+						*	Files/Uploads to upload data and receive credit for future job runs.
+						*	Files/Stores to upload shared files.
 
 				#folder(center,dock=dock)
 					block site_body
@@ -147,15 +173,15 @@ append base_body
 						*	Options for this view.
 						*	Links to other views.
 						*	Themes preferred.  
-						*	Likeus for better QoS.
+						*	[Likeus](/likeus.view) to impove your QoS.
 						*	Capture screen for administrator.
-						*	Edit this [view](skinguide.view).
+						*	Edit this skin. See [skinning guide](skinguide.view)
 						*	Health of system.
 						*	Users connected.
-						*	Engines [Python,JS,R,Ex,Matlab,etc](/engine.view) status.
-						*	Queues status.
-						*	Uploads of files to NLP indexing engines.
-						*	Stores of files for [workflows](/workflow.view).
+						*	Engines status.  See [Python,JS,R,Ex,Matlab,etc engines](/api.view) 
+						*	Queues status.  Job are regulated at your existing [QoS level](/api.view)
+						*	Files/Uploads to upload data and receive credit for future job runs.
+						*	Files/Stores to upload shared files.
 
 				#fit(center)
 					block site_body
@@ -180,15 +206,15 @@ append base_body
 						*	Options for this view.
 						*	Links to other views.
 						*	Themes preferred.  
-						*	Likeus for better QoS.
+						*	[Likeus](/likeus.view) to impove your QoS.
 						*	Capture screen for administrator.
-						*	Edit this [view](skinguide.view).
+						*	Edit this skin. See [skinning guide](skinguide.view)
 						*	Health of system.
 						*	Users connected.
-						*	Engines [Python,JS,R,Ex,Matlab,etc](/engine.view) status.
-						*	Queues status.
-						*	Uploads of files to NLP indexing engines.
-						*	Stores of files for [workflows](/workflow.view).
+						*	Engines status.  See [Python,JS,R,Ex,Matlab,etc engines](/api.view) 
+						*	Queues status.  Job are regulated at your existing [QoS level](/api.view)
+						*	Files/Uploads to upload data and receive credit for future job runs.
+						*	Files/Stores to upload shared files.
 
 				#pivot.Helpful.Links(
 					west,crush,dims="200,600",
@@ -242,15 +268,15 @@ append base_body
 						*	Options for this view.
 						*	Links to other views.
 						*	Themes preferred.  
-						*	Likeus for better QoS.
+						*	[Likeus](/likeus.view) to impove your QoS.
 						*	Capture screen for administrator.
-						*	Edit this [view](skinguide.view).
+						*	Edit this skin. See [skinning guide](skinguide.view)
 						*	Health of system.
 						*	Users connected.
-						*	Engines [Python,JS,R,Ex,Matlab,etc](/engine.view) status.
-						*	Queues status.
-						*	Uploads of files to NLP indexing engines.
-						*	Stores of files for [workflows](/workflow.view).
+						*	Engines status.  See [Python,JS,R,Ex,Matlab,etc engines](/api.view) 
+						*	Queues status.  Job are regulated at your existing [QoS level](/api.view)
+						*	Files/Uploads to upload data and receive credit for future job runs.
+						*	Files/Stores to upload shared files.
 
 				#fit(center)
 					block site_body

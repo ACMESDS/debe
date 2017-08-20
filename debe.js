@@ -1,7 +1,7 @@
 ﻿// UNCLASSIFIED 
 
 /**
-@class debe
+@class DEBE
 @requires child_process
 @requires cluster
 @requires child-process
@@ -204,9 +204,27 @@ append layout_body
 		 * 	"us": "optional"
 		 * }*/
 
-	site: { 		//< initial site context
+	"site.": { 		//< initial site context
 
+		classif: {
+			level: "",
+			purpose: ""
+		},
+		
+		info: {
+		},
+		
 		get: function(recs, where, index, subs) {  //< index dataset
+		/**
+		@member SKINS
+		@method get
+		Provides a data indexer when a skin is being rendered.
+		@param {Array} recs Record source
+		@param {Array} where {recKey:value, ...} to match recs
+		@param {Array} index "recKey,..." keys to retain from recs
+		@param {Array} subs {hash: {recKey: {key:value, ...}. ...}, ...} replace record values
+		*/
+		
 			function select(keys) {
 				
 				switch ( (keys||0).constructor) {
@@ -308,14 +326,28 @@ append layout_body
 		},
 		
 		json: function(recs) {  //< jsonize dataset
+		/**
+		@member SKINS
+		@method json
+		Jsonize records.
+		@param {Array} recs Record source
+		*/
 			return JSON.stringify(recs);
 		},
 		
 		tag: function (src,el,tags) {
+		/**
+		@member SKINS
+		@method tag
+		*/
 			return tags ? src.tag(el,tags) : src.tag("a",{href:el});;
 		},
 		
 		hover: function (ti,fn) {
+		/**
+		@member SKINS
+		@method hover
+		*/
 			if (fn.charAt(0) != "/") fn = "/shares/"+fn;
 			return ti.tag("p",{class:"sm"}) 
 				+ (
@@ -325,6 +357,10 @@ append layout_body
 		},
 		
 		gridify: function(recs,noheader) {	//< dump dataset as html table
+		/**
+		@member SKINS
+		@method gridify
+		*/
 			function join(recs,sep) { 
 				switch (recs.constructor) {
 					case Array: 
@@ -417,6 +453,11 @@ append layout_body
 			return table( recs );
 		},
 				
+		/**
+		@private
+		@cfg {Object}
+		@member SKINS
+		*/
 		context: { // defines DSVAR contexts when a skin is rendered
 			briefs: {
 				projs: "openv.milestones"
@@ -429,16 +470,6 @@ append layout_body
 				//stats:{table:"openv.profiles",group:"client",index:"client,event"}
 			}
 		}
-	},
-	
-	"sender.": {		//< file.attr senders
-		code: sendCode,
-		jade: sendCode,		
-		classif: sendAttr,
-		readability: sendAttr,
-		client: sendAttr,
-		size: sendAttr,
-		risk: sendAttr
 	},
 	
 	"converters." : { // endpoints to convert dataset on req-res thread
@@ -833,7 +864,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 	},
 		
-	"worker.": {	//< worker endpoints
+	"byTable.": {	//< worker endpoints
 		//kill: sysKill,
 		//start: sysStart,
 		//checkpt: sysCheckpt,
@@ -846,7 +877,15 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		//config: sysConfig
 	},
 	
-	"reader.": { //< reader endpoints
+	"byType.": { //< byType endpoints
+		code: sendCode,
+		jade: sendCode,		
+		classif: sendAttr,
+		readability: sendAttr,
+		client: sendAttr,
+		size: sendAttr,
+		risk: sendAttr,
+		
 		view: renderSkin,
 		run: renderSkin,
 		plugin: renderSkin,
@@ -861,9 +900,9 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		sub: retractPlugin
 	},
 
-	runner: ENGINE,
+	"byAction.": ENGINE,
 		
-	"emulator.": {  //< virtual table emulation endpoints
+	"byActionTable.": {  //< virtual table emulation endpoints
 	},
 	
 	"errors.": {  //< error messages
@@ -876,10 +915,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		badSkin: new Error("skin contains invalid jade"),
 		badDataset: new Error("dataset does not exist"),
 		noCode: new Error("failed engine code lookup"),
-		unsupportedFeature: new Error("unsupported feature"),
+		badFeature: new Error("unsupported feature"),
 		noOffice: new Error("office docs not enabled"),
 		noExe: new Error("no execute interface"),
-		noUsecase: new Error("no usecase provided to plugin")
+		noUsecase: new Error("no usecase provided to plugin"),
+		certFailed: new Error("Failed to create cert")
 	},
 	
 	"paths.": {  //< paths to things
@@ -950,6 +990,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		}
 	},
 	
+	/**
+	@cfg {Boolean}
+	@member DEBE
+	Enable to give-away plugin services
+	*/
 	benevolent: false,  //< enable to give-away plugin services
 		
 	Function: Initialize,  //< added to ENUM callback stack
@@ -967,9 +1012,10 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	
 		function render(req,res) { 
 		/**
+		@private
 		@method render
-		Respond with res(html) thats renders this string.  If string is of he form .PATH then an
-		attempt is made to render the file.  If an error occurs, the error is retured as html.
+		Respond with res( err || html) thats renders this string in a new context created for this request.  If string is 
+		of he form .PATH, then anattempt is made to render the file at PTH.  
 		**/
 			var 
 				ctx = Copy(DEBE.site, {
@@ -1114,22 +1160,57 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		}
 	],	
 	
-	// DEBE specific 
-				
+	/**
+	@cfg {Boolean}
+	@member DEBE
+	Enabled when this is child server spawned by a master server
+	*/
 	isSpawned: false, 			//< Enabled when this is child server spawned by a master server
-	soapCRUD : { 						//< action:route hash for XML-driven engines
+
+	/**
+	@cfg {Object}
+	@member DEBE
+	@private
+	reserved for soap interfaces
+	*/
+	bySOAP : { 						//< action:route hash for XML-driven engines
 		get: "",
 		put: "",
 		delete: "",
 		post: "/service/algorithm/:proxy"		//< hydra endpoint
 	},  		//< reserved for soap interfaces
 		
-	billingcycle: 0, //< Interval [s] to bill jobs in queue (0 disables)
-	diagcycle: 0, //< Interval [s] to run self diagnostics (0 disables)
-	hawkingcycle: 0, 	// job hawking cycle [s] (0 disables)		
+	/**
+	@cfg {Number}
+	@member DEBE
+	 job billing interval [s] (0 disables)
+	*/
+	billingcycle: 0, //< job billing interval [s] (0 disables)
+	
+	/**
+	@cfg {Number}
+	@member DEBE
+	self diagnostics interval [s] (0 disables)
+	*/		
+	diagcycle: 0, //< self diagnostics interval [s] (0 disables)
+	
+	/**
+	@cfg {Number}
+	@member DEBE
+	job hawking interval [s] (0 disables)
+	*/	
+	hawkingcycle: 0, 	// job hawking interval [s] (0 disables)		
 
 	loader: function (url,met,req,res) { // data loader
-		
+	/**
+	@member DEBE
+	@pivate
+	@method loader
+	@param {String} url path to source
+	@param {String} met method GET/POST/... to use
+	@param {Object} req http request
+	@param {Function} res Totom response callback
+	*/
 		var 
 			path = req.plugin 
 							? (url+req.plugin+".exe?").tagurl(req)
@@ -1140,6 +1221,15 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 		
 	ingestEvents: function (path, sql, cb) {
+	/**
+	@member DEBE
+	@private
+	@method ingestEvents
+	@param {String} path to the file being ingested
+	@param {Object} sql connector
+	@param {Function} cb Response callback( ingested aoi, cb (table,id) to return info )
+	*/
+		
 		var 
 			stream = FS.createReadStream(path),
 			items = ["x", "y", "z", "t", "n"],
@@ -1186,19 +1276,20 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					
 	},
 	
-	blindTesting : false,		//< Enable for double-blind testing (make FLEX susceptible to sql injection attacks)
-	statefulViews : { 			//< Jade views that require  the stateful URL (legacy)
-		'workflow': 1,
-		'workflows': 1
-	}
+	/**
+	@cfg {Boolean}
+	@member DEBE
+	Enable for double-blind testing 
+	*/
+	blindTesting : false		//< Enable for double-blind testing (eg make FLEX susceptible to sql injection attacks)
 });
 
 
 /**
  * @method SOAPsession
  * @private
- * Process an soapCRUD session peer-to-peer request.  Currently customized for Hydra-peer and 
- * could/should be revised to support more generic peer-to-peer soapCRUD interfaces.
+ * Process an bySOAP session peer-to-peer request.  Currently customized for Hydra-peer and 
+ * could/should be revised to support more generic peer-to-peer bySOAP interfaces.
  * 
  * @param {Object} req HTTP request
  * @param {Object} res HTTP response
@@ -1251,17 +1342,17 @@ function icoFavicon(req,res) {   // extjs trap
 };
 
 /**
-@class system
+@class MAINT service maintenance endpoints
 */
 
+function sysConfig(req,res) {
 /**
 @method sysConfig
 @deprecated
 Totem(req,res) endpoint to render jade code requested by .table jade engine. 
 @param {Object} req Totem request
 @param {Function} res Totem response
-
-function sysConfig(req,res) {
+*/
 	function Guard(query, def) {
 		for (var n in query) return query;
 		return def;
@@ -1274,26 +1365,26 @@ function sysConfig(req,res) {
 			res( err || "parameter set" );
 		});
 }
-*/
 
+function sysCheckpt(req,res) {
 /*
 @method sysCheckpt
 @deprecated
 Totem(req,res) endpoint to render jade code requested by .table jade engine. 
 @param {Object} req Totem request
 @param {Function} res Totem response
-function sysCheckpt(req,res) {
+*/
 	CP.exec('source maint.sh checkpoint "checkpoint"');
 	res("Checkpointing database");
 }
-*/
 
+function sysStart(req, res) {
 /*
 @method sysStart
 @deprecated
 @param {Object} req Totem request
 @param {Function} res Totem response
-function sysStart(req, res) {
+*/
 	req.sql.query("select * from openv.apps where least(?)",{Enabled:true,Name:req.query.name||"node0"})
 	.on("result",function (app) {
 		if (false)
@@ -1307,7 +1398,6 @@ function sysStart(req, res) {
 		res("restarting service");
 	});
 }
-*/
 
 function sysBIT(req, res) {
 /**
@@ -1376,16 +1466,16 @@ Totem(req,res) endpoint to test client connection
 	res("hello "+req.client);			
 }
 
+function sysCodes(req,res) {
 /**
 @method sysCodes
 @deprecated
 Totem(req,res) endpoint to return html code for testing connection
 @param {Object} req Totem request
 @param {Function} res Totem response
-function sysCodes(req,res) {
+*/
 	res( HTTP.STATUS_CODES );
 }
-*/
 
 function sysAlert(req,res) {
 /**
@@ -1400,13 +1490,14 @@ Totem(req,res) endpoint to send notice to all clients
 	res("Broadcasting alert");
 }
 
+function sysKill(req,res) {
 /*
 @method sysKill
 @deprecated
 Totem(req,res) endpoint to render jade code requested by .table jade engine. 
 @param {Object} req Totem request
 @param {Function} res Totem response
-function sysKill(req,res) {
+*/
 	var killed = [];
 
 	res("Killing jobs");
@@ -1422,7 +1513,6 @@ function sysKill(req,res) {
 		CP.exec("kill "+job.pid);
 	});
 }
-*/
 
 function sysStop(req,res) {
 /**
@@ -1455,7 +1545,7 @@ Totem(req,res) endpoint to return all sys endpoints
 }
 
 /**
-@class senders
+@class ATTRIB get and send dataset attributes
 */
 
 function sendCode(req,res) { // return file contents tagged as code
@@ -1495,7 +1585,7 @@ function sendCert(req,res) { // create/return public-private certs
 			
 			if (err) {
 				Trace(err);			
-				res( new Error("Failed to create cert") );
+				res( DEBE.errors.certFailed );
 			}
 				
 			else {
@@ -1584,21 +1674,29 @@ Totem(req,res) endpoint to send the .area attribute of a .table file
 
 }
 
+/*
 function sendFile(req,res) {
-/**
+/ **
 @method sendFile
 Totem(req,res) endpoint to response with mime file requested by .file
 @param {Object} req Totem request
 @param {Function} res Totem response
-*/
+* /
 	DEBE.sendFile(req,res);
 }
+*/
 
 /**
-@class plugins
+@class PLUGIN support for dataset-engine plugins
 */
 
 function extendPlugin(req,res) {
+/**
+@private
+@method extendPlugin
+@param {Object} req http request
+@param {Function} res Totem response callback
+*/
 	
 	var
 		sql = req.sql,
@@ -1628,6 +1726,12 @@ function extendPlugin(req,res) {
 }
 
 function retractPlugin(req,res) {
+/**
+@private
+@method retractPlugin
+@param {Object} req http request
+@param {Function} res Totem response callback
+*/
 	
 	var
 		sql = req.sql,
@@ -1644,7 +1748,13 @@ function retractPlugin(req,res) {
 }
 	
 function executePlugin(req,res) {
-	
+/**
+@private
+@method executePlugin
+Interface to execute a dataset-engine plugin with a specified usecase as defined in [api](/api.view).
+@param {Object} req http request
+@param {Function} res Totem response callback
+*/	
 	var
 		query = req.query;
 
@@ -1713,7 +1823,30 @@ function executePlugin(req,res) {
 
 				else
 				if (chan.evring) 
-					CHIPS.ingestEvents(chan, job, function (voxel,status,sql) {
+					CHIPS.ingestEvents(chan, job, function (voxel,stats,sql) {
+						var 
+							updates = {},
+							updated = false,
+							saves = new Object(stats);
+						
+						Each(stats, function (stat, val) {
+							if ( stat in voxel ) {
+								updates[stat] = val;
+								updated = true;
+								delete saves[stat];
+							}
+						});
+						
+						if (updated)
+							sql.query("UPDATE ??.voxels SET ? WHERE ?", [ 
+								req.group, updates, {ID: voxel.ID}
+							]);
+						
+						if (voxel.Save)
+							sql.query("UPDATE ??.voxels SET ? WHERE ?", [
+								req.group, saves, {ID: voxel.ID}
+							]);
+								
 					});
 				
 				else
@@ -1775,13 +1908,10 @@ function executePlugin(req,res) {
 	
 }
 
-/**
-@class converters
-*/
-
 function renderSkin(req,res) {
 /**
 @method renderSkin
+@member DEBE
 Totem(req,res) endpoint to render jade code requested by .table jade engine. 
 @param {Object} req Totem request
 @param {Function} res Totem response
@@ -1872,7 +2002,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 			
 		}		
 							  
-		Trace("RENDER "+req.table);
+		Trace("DEBE "+req.table);
 		
 		sql.query(paths.engine, { // Try a skin from the  engine db
 			Name: req.table,
@@ -1929,6 +2059,15 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 }
 
 function genDoc(recs,req,res) {
+/**
+@method genDoc
+@member DEBE
+Convert recods to requested req.type office file.
+@param {Array} recs list of records to be converted
+@param {Object} req Totem request
+@param {Function} res Totem response
+*/
+	
 	if (!OGEN) 
 		return res(DEBE.errors.noOffice);
 	
@@ -2040,13 +2179,10 @@ Chapter 2
 	res( "Claim file "+"here".link(docf) );
 }
 
-/**
-@class initialize
-*/
-
 function Initialize () {
 /**
 @method Initialize
+@member DEBE
 Initialize DEBE on startup.
 */
 		
@@ -2054,6 +2190,7 @@ Initialize DEBE on startup.
 	/**
 	 * @method initSES
 	 * @private
+	 * @member DEBE
 	 * Initialize the session environment
 	 */
 
@@ -2061,7 +2198,7 @@ Initialize DEBE on startup.
 
 		/*
 		Each( CRUDE, function (n,routes) { // Map engine CRUD to DEBE workers
-			DEBE.worker[n] = ENGINE[n];
+			DEBE.byTable[n] = ENGINE[n];
 		});	
 		*/
 		
@@ -2090,6 +2227,7 @@ Initialize DEBE on startup.
 	/**
 	 * @method initENV
 	 * @private
+	 * @member DEBE
 	 * Initialize the runtime environment
 	 */
 
@@ -2119,7 +2257,7 @@ Initialize DEBE on startup.
 			.boolean('dump')
 			.describe('dump','display derived site parameters')  
 			.check(function (argv) {
-				//console.log(site);
+				console.log(site);
 			})
 		
 			/*
@@ -2185,6 +2323,7 @@ Initialize DEBE on startup.
 	/**
 	 * @method initSQL
 	 * @private
+	 * @member DEBE
 	 * Initialize the FLEX and ENGINE interfaces
 	 */
 
@@ -2192,7 +2331,7 @@ Initialize DEBE on startup.
 
 		Each( CRUDE, function (n,routes) {  // redirect dataset crude calls
 			DEBE[n] = FLEX[n].ds;
-			DEBE.emulator[n] = FLEX[n];
+			DEBE.byActionTable[n] = FLEX[n];
 		});	
 
 		FLEX.config({ 
@@ -2221,7 +2360,7 @@ Initialize DEBE on startup.
 				'workflows': 1
 			},*/	
 
-			/*NEWSREAD: { 					// Establish news reader
+			/*NEWSREAD: { 					// Establish news byType
 				//JOB: APP.INGEST,
 				PROXY: {
 					hostname: 'http://omar.ilabs.ic.gov',
