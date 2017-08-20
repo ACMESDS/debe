@@ -222,18 +222,18 @@ var DEBE = module.exports = TOTEM.extend({
 
 	&quot;site.&quot;: { //&lt; initial site context
 
-<span id='TOTEM-site-method-get'>		/**
-</span>  @member TOTEM.site
-  @method get
-  Provides a data indexer when a skin is being rendered.
-  @param {Array} recs Record source
-  @param {Array} where {recKey:value, ...} to match recs
-  @param {Array} index &quot;recKey,...&quot; keys to retain from recs
-  @param {Array} subs {hash: {recKey: {key:value, ...}. ...}, ...} replace record values
-  */
-
 		get: function get(recs, where, index, subs) {
 			//&lt; index dataset
+<span id='SKINS-method-get'>			/**
+</span>   @member SKINS
+   @method get
+   Provides a data indexer when a skin is being rendered.
+   @param {Array} recs Record source
+   @param {Array} where {recKey:value, ...} to match recs
+   @param {Array} index &quot;recKey,...&quot; keys to retain from recs
+   @param {Array} subs {hash: {recKey: {key:value, ...}. ...}, ...} replace record values
+   */
+
 			function select(keys) {
 
 				switch ((keys || 0).constructor) {
@@ -329,28 +329,40 @@ var DEBE = module.exports = TOTEM.extend({
 			return rtns;
 		},
 
-<span id='TOTEM-site-method-json'>		/**
-</span>  @member TOTEM.site
-  @method json
-  Jsonize records.
-  @param {Array} recs Record source
-  */
 		json: function json(recs) {
 			//&lt; jsonize dataset
+<span id='SKINS-method-json'>			/**
+</span>   @member SKINS
+   @method json
+   Jsonize records.
+   @param {Array} recs Record source
+   */
 			return JSON.stringify(recs);
 		},
 
 		tag: function tag(src, el, tags) {
+<span id='SKINS-method-tag'>			/**
+</span>   @member SKINS
+   @method tag
+   */
 			return tags ? src.tag(el, tags) : src.tag(&quot;a&quot;, { href: el });;
 		},
 
 		hover: function hover(ti, fn) {
+<span id='SKINS-method-hover'>			/**
+</span>   @member SKINS
+   @method hover
+   */
 			if (fn.charAt(0) != &quot;/&quot;) fn = &quot;/shares/&quot; + fn;
 			return ti.tag(&quot;p&quot;, { class: &quot;sm&quot; }) + (&quot;&quot;.tag(&quot;img&quot;, { src: fn + &quot;.jpg&quot; }) + &quot;&quot;.tag(&quot;iframe&quot;, { src: fn + &quot;.html&quot; }).tag(&quot;div&quot;, { class: &quot;ctr&quot; }).tag(&quot;div&quot;, { class: &quot;mid&quot; })).tag(&quot;div&quot;, { class: &quot;container&quot; });
 		},
 
 		gridify: function gridify(recs, noheader) {
 			//&lt; dump dataset as html table
+<span id='SKINS-method-gridify'>			/**
+</span>   @member SKINS
+   @method gridify
+   */
 			function join(recs, sep) {
 				switch (recs.constructor) {
 					case Array:
@@ -442,6 +454,11 @@ var DEBE = module.exports = TOTEM.extend({
 			return table(recs);
 		},
 
+<span id='SKINS-cfg-context'>		/**
+</span>  @private
+  @cfg {Object}
+  @member SKINS
+  */
 		context: { // defines DSVAR contexts when a skin is rendered
 			briefs: {
 				projs: &quot;openv.milestones&quot;
@@ -454,16 +471,6 @@ var DEBE = module.exports = TOTEM.extend({
 				//stats:{table:&quot;openv.profiles&quot;,group:&quot;client&quot;,index:&quot;client,event&quot;}
 			}
 		}
-	},
-
-	&quot;sender.&quot;: { //&lt; file.attr senders
-		code: sendCode,
-		jade: sendCode,
-		classif: sendAttr,
-		readability: sendAttr,
-		client: sendAttr,
-		size: sendAttr,
-		risk: sendAttr
 	},
 
 	&quot;converters.&quot;: { // endpoints to convert dataset on req-res thread
@@ -854,7 +861,7 @@ var DEBE = module.exports = TOTEM.extend({
 
 	},
 
-	&quot;worker.&quot;: { //&lt; worker endpoints
+	&quot;byTable.&quot;: { //&lt; worker endpoints
 		//kill: sysKill,
 		//start: sysStart,
 		//checkpt: sysCheckpt,
@@ -867,7 +874,15 @@ var DEBE = module.exports = TOTEM.extend({
 		//config: sysConfig
 	},
 
-	&quot;reader.&quot;: { //&lt; reader endpoints
+	&quot;byType.&quot;: { //&lt; byType endpoints
+		code: sendCode,
+		jade: sendCode,
+		classif: sendAttr,
+		readability: sendAttr,
+		client: sendAttr,
+		size: sendAttr,
+		risk: sendAttr,
+
 		view: renderSkin,
 		run: renderSkin,
 		plugin: renderSkin,
@@ -882,9 +897,9 @@ var DEBE = module.exports = TOTEM.extend({
 		sub: retractPlugin
 	},
 
-	&quot;runner.&quot;: ENGINE,
+	&quot;byAction.&quot;: ENGINE,
 
-	&quot;emulator.&quot;: {//&lt; virtual table emulation endpoints
+	&quot;byActionTable.&quot;: {//&lt; virtual table emulation endpoints
 	},
 
 	&quot;errors.&quot;: { //&lt; error messages
@@ -969,6 +984,11 @@ var DEBE = module.exports = TOTEM.extend({
 		}
 	},
 
+<span id='DEBE-cfg-benevolent'>	/**
+</span> @cfg {Boolean}
+ @member DEBE
+ Enable to give-away plugin services
+ */
 	benevolent: false, //&lt; enable to give-away plugin services
 
 	Function: Initialize, //&lt; added to ENUM callback stack
@@ -986,9 +1006,10 @@ var DEBE = module.exports = TOTEM.extend({
 
 	function render(req, res) {
 <span id='DEBE-method-render'>		/**
-</span>  @method render
-  Respond with res(html) thats renders this string.  If string is of he form .PATH then an
-  attempt is made to render the file.  If an error occurs, the error is retured as html.
+</span>  @private
+  @method render
+  Respond with res( err || html) thats renders this string in a new context created for this request.  If string is 
+  of he form .PATH, then anattempt is made to render the file at PTH.  
   **/
 		var ctx = Copy(DEBE.site, {
 			table: req.table,
@@ -1114,23 +1135,58 @@ var DEBE = module.exports = TOTEM.extend({
 		return tar;
 	}],
 
-	// DEBE specific 
-
+<span id='DEBE-cfg-isSpawned'>	/**
+</span> @cfg {Boolean}
+ @member DEBE
+ Enabled when this is child server spawned by a master server
+ */
 	isSpawned: false, //&lt; Enabled when this is child server spawned by a master server
-	soapCRUD: { //&lt; action:route hash for XML-driven engines
+
+<span id='DEBE-cfg-bySOAP'>	/**
+</span> @cfg {Object}
+ @member DEBE
+ @private
+ reserved for soap interfaces
+ */
+	bySOAP: { //&lt; action:route hash for XML-driven engines
 		get: &quot;&quot;,
 		put: &quot;&quot;,
 		delete: &quot;&quot;,
 		post: &quot;/service/algorithm/:proxy&quot; //&lt; hydra endpoint
 	}, //&lt; reserved for soap interfaces
 
+<span id='DEBE-cfg-billingcycle'>	/**
+</span> @cfg {Number}
+ @member DEBE
+  job billing interval [s] (0 disables)
+ */
 	billingcycle: 0, //&lt; job billing interval [s] (0 disables)
+
+<span id='DEBE-cfg-diagcycle'>	/**
+</span> @cfg {Number}
+ @member DEBE
+ self diagnostics interval [s] (0 disables)
+ */
 	diagcycle: 0, //&lt; self diagnostics interval [s] (0 disables)
+
+<span id='DEBE-cfg-hawkingcycle'>	/**
+</span> @cfg {Number}
+ @member DEBE
+ job hawking interval [s] (0 disables)
+ */
 	hawkingcycle: 0, // job hawking interval [s] (0 disables)		
 
 	loader: function loader(url, met, req, res) {
 		// data loader
-
+<span id='DEBE-method-loader'>		/**
+</span>  @member DEBE
+  @pivate
+  @method loader
+  @param {String} url path to source
+  @param {String} met method GET/POST/... to use
+  @param {Object} req http request
+  @param {Function} res Totom response callback
+  */
 		var path = req.plugin ? (url + req.plugin + &quot;.exe?&quot;).tagurl(req) : url.tagurl(req);
 
 		Trace(&quot;FETCHING &quot; + path);
@@ -1138,6 +1194,15 @@ var DEBE = module.exports = TOTEM.extend({
 	},
 
 	ingestEvents: function ingestEvents(path, sql, cb) {
+<span id='DEBE-method-ingestEvents'>		/**
+</span>  @member DEBE
+  @private
+  @method ingestEvents
+  @param {String} path to the file being ingested
+  @param {Object} sql connector
+  @param {Function} cb Response callback( ingested aoi, cb (table,id) to return info )
+  */
+
 		var stream = FS.createReadStream(path),
 		    items = [&quot;x&quot;, &quot;y&quot;, &quot;z&quot;, &quot;t&quot;, &quot;n&quot;],
 		    ingested = 0;
@@ -1178,14 +1243,19 @@ var DEBE = module.exports = TOTEM.extend({
 		});
 	},
 
-	blindTesting: false //&lt; Enable for double-blind testing (make FLEX susceptible to sql injection attacks)
+<span id='DEBE-cfg-blindTesting'>	/**
+</span> @cfg {Boolean}
+ @member DEBE
+ Enable for double-blind testing 
+ */
+	blindTesting: false //&lt; Enable for double-blind testing (eg make FLEX susceptible to sql injection attacks)
 });
 
 <span id='DEBE-method-SOAPsession'>/**
 </span> * @method SOAPsession
  * @private
- * Process an soapCRUD session peer-to-peer request.  Currently customized for Hydra-peer and 
- * could/should be revised to support more generic peer-to-peer soapCRUD interfaces.
+ * Process an bySOAP session peer-to-peer request.  Currently customized for Hydra-peer and 
+ * could/should be revised to support more generic peer-to-peer bySOAP interfaces.
  * 
  * @param {Object} req HTTP request
  * @param {Object} res HTTP response
@@ -1238,12 +1308,12 @@ function icoFavicon(req, res) {
 	res(&quot;No icons here&quot;);
 };
 
-<span id='system'>/**
-</span>@class system
+<span id='MAINT'>/**
+</span>@class MAINT service maintenance endpoints
 */
 
 function sysConfig(req, res) {
-<span id='system-method-sysConfig'>	/**
+<span id='MAINT-method-sysConfig'>	/**
 </span> @method sysConfig
  @deprecated
  Totem(req,res) endpoint to render jade code requested by .table jade engine. 
@@ -1292,7 +1362,7 @@ function sysStart(req, res) {
 }
 
 function sysBIT(req, res) {
-<span id='system-method-sysBIT'>	/**
+<span id='MAINT-method-sysBIT'>	/**
 </span> @method sysBIT
  Totem(req,res) endpoint for builtin testing
  @param {Object} req Totem request
@@ -1348,7 +1418,7 @@ function sysBIT(req, res) {
 }
 
 function sysPing(req, res) {
-<span id='system-method-sysPing'>	/**
+<span id='MAINT-method-sysPing'>	/**
 </span> @method sysPing
  Totem(req,res) endpoint to test client connection
  @param {Object} req Totem request
@@ -1358,7 +1428,7 @@ function sysPing(req, res) {
 }
 
 function sysCodes(req, res) {
-<span id='system-method-sysCodes'>	/**
+<span id='MAINT-method-sysCodes'>	/**
 </span> @method sysCodes
  @deprecated
  Totem(req,res) endpoint to return html code for testing connection
@@ -1369,7 +1439,7 @@ function sysCodes(req, res) {
 }
 
 function sysAlert(req, res) {
-<span id='system-method-sysAlert'>	/**
+<span id='MAINT-method-sysAlert'>	/**
 </span> @method sysAlert
  Totem(req,res) endpoint to send notice to all clients
  @param {Object} req Totem request
@@ -1403,7 +1473,7 @@ function sysKill(req, res) {
 }
 
 function sysStop(req, res) {
-<span id='system-method-sysStop'>	/**
+<span id='MAINT-method-sysStop'>	/**
 </span> @method sysStop
  Totem(req,res) endpoint to send emergency message to all clients then halt totem
  @param {Object} req Totem request
@@ -1416,7 +1486,7 @@ function sysStop(req, res) {
 }
 
 function sysHelp(req, res) {
-<span id='system-method-sysHelp'>	/**
+<span id='MAINT-method-sysHelp'>	/**
 </span> @method sysHelp
  Totem(req,res) endpoint to return all sys endpoints
  @param {Object} req Totem request
@@ -1425,13 +1495,13 @@ function sysHelp(req, res) {
 	res(&quot;/ping.sys check client-server connectivity&lt;br&gt;&quot; + &quot;/bit.sys built-in test with &amp;N client connections at rate &amp;lambda=events/s&lt;br&gt;&quot; + &quot;/codes.sys returns http error codes&lt;br&gt;&quot; + &quot;/alert.sys broadcast alert &amp;msg to all clients&lt;br&gt;&quot; + &quot;/stop.sys stops server with client alert &amp;msg&lt;br&gt;&quot;);
 }
 
-<span id='senders'>/**
-</span>@class senders
+<span id='ATTRIB'>/**
+</span>@class ATTRIB get and send dataset attributes
 */
 
 function sendCode(req, res) {
 	// return file contents tagged as code
-<span id='senders-method-sendCode'>	/**
+<span id='ATTRIB-method-sendCode'>	/**
 </span> @method sendCode
  Totem(req,res) endpoint to send engine code requested by (.name, .type) 
  @param {Object} req Totem request
@@ -1498,7 +1568,7 @@ function sendCert(req, res) {
 
 function sendAttr(req, res) {
 	// send file attribute
-<span id='senders-method-sendAttr'>	/**
+<span id='ATTRIB-method-sendAttr'>	/**
 </span> @method sendAttr
  Totem(req,res) endpoint to send the .area attribute of a .table file 
  @param {Object} req Totem request
@@ -1526,11 +1596,17 @@ Totem(req,res) endpoint to response with mime file requested by .file
 }
 */
 
-<span id='plugins'>/**
-</span>@class plugins
+<span id='PLUGIN'>/**
+</span>@class PLUGIN support for dataset-engine plugins
 */
 
 function extendPlugin(req, res) {
+<span id='PLUGIN-method-extendPlugin'>	/**
+</span> @private
+ @method extendPlugin
+ @param {Object} req http request
+ @param {Function} res Totem response callback
+ */
 
 	var sql = req.sql,
 	    ds = req.table,
@@ -1553,6 +1629,12 @@ function extendPlugin(req, res) {
 }
 
 function retractPlugin(req, res) {
+<span id='PLUGIN-method-retractPlugin'>	/**
+</span> @private
+ @method retractPlugin
+ @param {Object} req http request
+ @param {Function} res Totem response callback
+ */
 
 	var sql = req.sql,
 	    ds = req.table,
@@ -1567,7 +1649,13 @@ function retractPlugin(req, res) {
 }
 
 function executePlugin(req, res) {
-
+<span id='PLUGIN-method-executePlugin'>	/**
+</span> @private
+ @method executePlugin
+ Interface to execute a dataset-engine plugin with a specified usecase as defined in [api](/api.view).
+ @param {Object} req http request
+ @param {Function} res Totem response callback
+ */
 	var query = req.query;
 
 	/*
@@ -1623,7 +1711,23 @@ function executePlugin(req, res) {
 
 				if (chan.tmin) CHIPS.ingestStreams(chan, job, function (twindow, status, sql) {
 					console.log(twindow, status);
-				});else if (chan.evring) CHIPS.ingestEvents(chan, job, function (voxel, status, sql) {});else if (chan.ring) CHIPS.ingestChips(chan, job, function (chip, dets, sql) {
+				});else if (chan.evring) CHIPS.ingestEvents(chan, job, function (voxel, stats, sql) {
+					var updates = {},
+					    updated = false,
+					    saves = new Object(stats);
+
+					Each(stats, function (stat, val) {
+						if (stat in voxel) {
+							updates[stat] = val;
+							updated = true;
+							delete saves[stat];
+						}
+					});
+
+					if (updated) sql.query(&quot;UPDATE ??.voxels SET ? WHERE ?&quot;, [req.group, updates, { ID: voxel.ID }]);
+
+					if (voxel.Save) sql.query(&quot;UPDATE ??.voxels SET ? WHERE ?&quot;, [req.group, saves, { ID: voxel.ID }]);
+				});else if (chan.ring) CHIPS.ingestChips(chan, job, function (chip, dets, sql) {
 					var updated = new Date();
 
 					console.log({ save: dets });
@@ -1659,13 +1763,10 @@ function executePlugin(req, res) {
 		if (DEBE.benevolent) ENGINE.select(req, res);else res(DEBE.errors.noUsecase);
 }
 
-<span id='converters'>/**
-</span>@class converters
-*/
-
 function renderSkin(req, res) {
-<span id='converters-method-renderSkin'>	/**
+<span id='DEBE-method-renderSkin'>	/**
 </span> @method renderSkin
+ @member DEBE
  Totem(req,res) endpoint to render jade code requested by .table jade engine. 
  @param {Object} req Totem request
  @param {Function} res Totem response
@@ -1740,7 +1841,7 @@ function renderSkin(req, res) {
 			});else pluginPath.render(req, res);
 		}
 
-		Trace(&quot;RENDER &quot; + req.table);
+		Trace(&quot;DEBE &quot; + req.table);
 
 		sql.query(paths.engine, { // Try a skin from the  engine db
 			Name: req.table,
@@ -1782,6 +1883,15 @@ function renderSkin(req, res) {
 }
 
 function genDoc(recs, req, res) {
+<span id='DEBE-method-genDoc'>	/**
+</span> @method genDoc
+ @member DEBE
+ Convert recods to requested req.type office file.
+ @param {Array} recs list of records to be converted
+ @param {Object} req Totem request
+ @param {Function} res Totem response
+ */
+
 	if (!OGEN) return res(DEBE.errors.noOffice);
 
 	var types = {
@@ -1852,20 +1962,18 @@ function genDoc(recs, req, res) {
 	res(&quot;Claim file &quot; + &quot;here&quot;.link(docf));
 }
 
-<span id='initialize'>/**
-</span>@class initialize
-*/
-
 function Initialize() {
-<span id='initialize-method-Initialize'>	/**
+<span id='DEBE-method-Initialize'>	/**
 </span> @method Initialize
+ @member DEBE
  Initialize DEBE on startup.
  */
 
 	function initSES(cb) {
-<span id='initialize-method-initSES'>		/**
+<span id='DEBE-method-initSES'>		/**
 </span>   * @method initSES
    * @private
+   * @member DEBE
    * Initialize the session environment
    */
 
@@ -1873,7 +1981,7 @@ function Initialize() {
 
 		/*
   Each( CRUDE, function (n,routes) { // Map engine CRUD to DEBE workers
-  	DEBE.worker[n] = ENGINE[n];
+  	DEBE.byTable[n] = ENGINE[n];
   });	
   */
 
@@ -1897,9 +2005,10 @@ function Initialize() {
 	}
 
 	function initENV(cb) {
-<span id='initialize-method-initENV'>		/**
+<span id='DEBE-method-initENV'>		/**
 </span>   * @method initENV
    * @private
+   * @member DEBE
    * Initialize the runtime environment
    */
 
@@ -1955,9 +2064,10 @@ function Initialize() {
 	}
 
 	function initSQL(cb) {
-<span id='initialize-method-initSQL'>		/**
+<span id='DEBE-method-initSQL'>		/**
 </span>   * @method initSQL
    * @private
+   * @member DEBE
    * Initialize the FLEX and ENGINE interfaces
    */
 
@@ -1966,7 +2076,7 @@ function Initialize() {
 		Each(CRUDE, function (n, routes) {
 			// redirect dataset crude calls
 			DEBE[n] = FLEX[n].ds;
-			DEBE.emulator[n] = FLEX[n];
+			DEBE.byActionTable[n] = FLEX[n];
 		});
 
 		FLEX.config({
@@ -1995,7 +2105,7 @@ function Initialize() {
    	'workflows': 1
    },*/
 
-			/*NEWSREAD: { 					// Establish news reader
+			/*NEWSREAD: { 					// Establish news byType
    	//JOB: APP.INGEST,
    	PROXY: {
    		hostname: 'http://omar.ilabs.ic.gov',

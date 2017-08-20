@@ -16,7 +16,12 @@
 </head>
 <body onload="prettyPrint(); highlight();">
   <pre class="prettyprint lang-js"><span id='DEBE'>/**
-</span>@class DEBE [![Forked from SourceForge](https://sourceforge.net)]
+</span>@class DEBE
+	[SourceForge](https://sourceforge.net) 
+	[github](https://github.com/acmesds/debe.git) 
+	[geointapps](https://git.geointapps.org/acmesds/debe)
+	[gitlab](https://gitlab.weat.nga.ic.gov/acmesds/debe.git)
+	
 # DEBE
 
 DEBE stacks the [FLEX database extender](https://github.com/acmesds/flex), the
@@ -24,6 +29,47 @@ DEBE stacks the [FLEX database extender](https://github.com/acmesds/flex), the
 and the [ENGINE language agnostic computer](https://github.com/acmesds/engine) above 
 the [TOTEM base web service](https://github.com/acmesds/totem) to provide a web service for 
 managing interfaces, requirements, project metrics, geoint products and workflows.  
+
+As documented in its [api](/api.view), DEBE extends [TOTEM](https://github.com/acmesds/totem)'s 
+/DATASET.TYPE?QUERY endpoints with various TYPE convertors:
+
+	kml, flat, txt, tab, tree, delta, encap, nav
+	
+page skinners:
+
+	view | run | plugni | pivot | site | spivot | brief | gridbrief | pivbrief | runbrief
+
+an engine / workflow starter:
+
+	exe
+	
+and file attribute getters:
+
+	code, jade, classif, readability, client, size, risk
+	
+As documented in its [api](/api.view), DEBE also extends  [TOTEM](https://github.com/acmesds/totem)'s  
+QUERY flags with:
+
+	_save, _browse, _view, _blog, _json
+
+DEBE provides its page skinners a context of useful parameters and methods, as described in 
+its [skinguide](/skinguide.view).
+
+## Installation
+
+Clone from one of the repos.  You will typically want to redirect the following to your project
+
+	ln -s PROJECT/totem/test.js test.js 			# unit testing
+	ln -s PROJECT/totem/maint.sh maint.sh 		# test startup and maint scripts
+	ln -s PROJECT/totem/certs certs					# truststore folder for name.pfx certs 
+	ln -s PROJECT/JPGS captcha 	 				# folder for captcha digits
+
+## Databases
+
+openv.apps  Reads on start() to derive command line parms
+app.X Table X read for job parameters in a .exe route
+
+## Use
 
 Simply require, configure and start DEBE:
 
@@ -42,53 +88,9 @@ Simply require, configure and start DEBE:
 where its configuration keys follow [ENUM copy()](https://github.com/acmesds/enum) conventions and
 are described in its [PRM](/shares/prm/debe/index.html).
 
-As documented in its [api](/api.view), DEBE extends [TOTEM](https://github.com/acmesds/totem)'s 
-/DATASET.TYPE?QUERY endpoints with TYPE convertors:
-
-	kml, flat, txt, tab, tree, delta, encap, nav
-	
-page skinners:
-
-	view, run, plugin, brief, pivot, site, pbrief, gbrief
-
-a engine / workflow starter:
-
-	exe
-	
-and file attributes:
-
-	code, jade, classif, readability, client, size, risk
-	
-As documented in its [api](/api.view), DEBE also extends  [TOTEM](https://github.com/acmesds/totem)'s  
-QUERY flags with:
-
-	_save, _browse, _view, _blog, _json
-
-DEBE provides its page skinners a context of useful parameters and methods, as described in 
-its [skinguide](/skinguide.view).
-
-## Installation
-
-Download the latest version with
-
-	git clone https://github.com/acmesds/debe
-	
-Typically, you will want to redirect the following to your project:
-
-	ln -s PROJECT/totem/test.js test.js 			# unit testing
-	ln -s PROJECT/totem/maint.sh maint.sh 		# test startup and maint scripts
-	ln -s PROJECT/totem/certs certs					# truststore folder for name.pfx certs 
-	ln -s PROJECT/JPGS captcha 	 				# folder for captcha digits
-
-## Databases
-
-openv.apps  Reads on start() to derive command line parms
-app.X Table X read for job parameters in a .exe route
-
-## Examples
-
-These examples are from DEBE's test.js unit tester.  You may also find Totem's [DSVAR](https://github.com/acmesds/dsvar) 
-useful, if you wish to learn more about its database agnosticator.
+The following examples are from TOTEM's test.js unit tester.  You may also find 
+Totem's [DSVAR](https://github.com/acmesds/dsvar) useful, if you wish to learn more about its 
+database agnosticator.
 
 ### D1 - Encypted with a database
 

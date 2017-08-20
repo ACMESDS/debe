@@ -101,6 +101,7 @@ var TOTEM = module.exports = ENUM.extend({
 
 <span id='TOTEM-cfg-IO'>	/**
 </span> @cfg {Object}
+ @private
  @member TOTEM
  Reserved for socket.io support to multiple clients
  */
@@ -115,50 +116,44 @@ var TOTEM = module.exports = ENUM.extend({
 
 	Array: [//&lt; Array prototypes
 
-<span id='Array-cfg-hyper'>	/**
-</span> @cfg {Function}
- @method hyper
- @member Array
- Returns list containing hyperlink list joined by an arg spearator.
- @param {Function} cb callback(val) returns item for join
- */
 	function hyper(refs, arg) {
+<span id='Array-method-rtns'>		/**
+</span>  @private
+  @member Array
+  Returns list containing hyperlink list joined by an arg spearator.
+  @param {Function} cb callback(val) returns item for join
+  */
 		var rtns = [],
 		    ref = ref[0];
 		this.each(function (n, lab) {
 			rtns.push(lab.hyper(refs[n] || ref));
 		});
 		return rtns.join(arg);
-	},
-
-<span id='Array-cfg-joinify'>	/**
-</span> @cfg {Function}
- @method joinify
- @member Array
- Return list joined under control by an optional callback.
- @param {Function} cb callback(val) returns item for join
- */
-	function joinify(cb) {
+	}, function joinify(cb) {
+<span id='Array-method-rtn'>		/**
+</span>  @private
+  @member Array
+  Return list joined under control by an optional callback.
+  @param {Function} cb callback(val) returns item for join
+  */
 
 		var rtn = [];
 
 		for (var n = 0, N = this.length; n &lt; N; n++) {
 			rtn.push(cb ? cb(this[n]) : this[n]);
 		}return rtn.join(&quot;,&quot;);
-	},
-
-<span id='Array-cfg-treeify'>	/**
-</span> @method treeify
- @cfg {Function}
- @member Array
- Returns list as a tree containing children,weight,name leafs.
- @param [Number] idx starting index (0 on first call)
- @param [Number] kids number of leafs following starting index (this.length on first call)
- @param [Number] level current depth (0 on first call)
- @param [Array] piv pivots
- @param [String] wt key name that contains leaf weight (defaults to &quot;size&quot;)
- */
-	function treeify(idx, kids, level, piv, wt) {
+	}, function treeify(idx, kids, level, piv, wt) {
+<span id='Array-method-treeify'>		/**
+</span>  @private
+  @method treeify
+  @member Array
+  Returns list as a tree containing children,weight,name leafs.
+  @param [Number] idx starting index (0 on first call)
+  @param [Number] kids number of leafs following starting index (this.length on first call)
+  @param [Number] level current depth (0 on first call)
+  @param [Array] piv pivots
+  @param [String] wt key name that contains leaf weight (defaults to &quot;size&quot;)
+  */
 
 		if (!wt) return this.treeify(0, recs.length, 0, idx, &quot;size&quot;);
 
@@ -205,16 +200,15 @@ var TOTEM = module.exports = ENUM.extend({
 	}],
 
 	String: [//&lt; String prototypes
-<span id='String-cfg-each'>	/**
-</span> @cfg {Function}
- @method each
- @member String
- Enumerate over pattern found in a string.
- @param {String} pat pattern to find
- @param {Array} rtn list being extended by callback
- @param {Function} cb callback(rtn)
- */
 	function each(pat, rtn, cb) {
+<span id='String-method-msg'>		/**
+</span>  @private
+  @member String
+  Enumerate over pattern found in a string.
+  @param {String} pat pattern to find
+  @param {Array} rtn list being extended by callback
+  @param {Function} cb callback(rtn)
+  */
 
 		var msg = this;
 
@@ -224,23 +218,18 @@ var TOTEM = module.exports = ENUM.extend({
 		}
 
 		return msg;
-	},
+	}, function format(req, plugin) {
+<span id='Format'>		/**
+</span>  @private
+  @member String
+  Return an EMAC &quot;...${...}...&quot; string using supplied req $-tokens and plugin methods.
+  */
 
-<span id='String-cfg-format'>	/**
-</span> @method format
- @cfg {Function}
- @member String
- Return an EMAC &quot;...${...}...&quot; string using supplied req $-tokens and plugin methods.
- */
-	function format(req, plugin) {
-
-<span id='TOTEM-method-Format'>		/**
-</span>   * @method Format
-   * 
-   * Format a string S containing ${X.key} tags.  The String wrapper for this
-   * method extends X with optional plugins like X.F = {fn: function (X){}, ...}.
-   * */
 		function Format(X, S) {
+			/*
+    * Format a string S containing ${X.key} tags.  The String wrapper for this
+    * method extends X with optional plugins like X.F = {fn: function (X){}, ...}.
+    */
 
 			try {
 				var rtn = eval(&quot;`&quot; + S + &quot;`&quot;);
@@ -252,16 +241,13 @@ var TOTEM = module.exports = ENUM.extend({
 
 		req.plugin = req.F = plugin || {};
 		return Format(req, this);
-	},
-
-<span id='String-cfg-parse'>	/**
-</span> @method parse
- @cfg {Function}
- @member String
- Parse a JSON string or parse a &quot;&amp;key=val&amp;key=val?query&amp;relation&amp; ...&quot; string into 
- the default rtn = {key:val, key=val?query, relation:null, key:json, ...} hash.
- */
-	function parse(rtn) {
+	}, function parse(rtn) {
+<span id='String-property-'>		/**
+</span>  @private
+  @member String
+  Parse a JSON string or parse a &quot;&amp;key=val&amp;key=val?query&amp;relation&amp; ...&quot; string into 
+  the default rtn = {key:val, key=val?query, relation:null, key:json, ...} hash.
+  */
 
 		if (this) try {
 			// could be json string
@@ -299,39 +285,50 @@ var TOTEM = module.exports = ENUM.extend({
 
 			return rtn;
 		} else return rtn;
-	},
-
-<span id='String-cfg-xmlParse'>	/**
-</span> @cfg {Function}
- @method xmlParse
- @member String
- */
-	function xmlParse(def, cb) {
+	}, function xmlParse(def, cb) {
+<span id='String-property-'>		/**
+</span>  @private
+  @member String
+  Callback cb(xml parsed) string
+  */
 		XML2JS.parseString(this, function (err, json) {
 			cb(err ? def : json);
 		});
-	},
-
-<span id='String-cfg-hyper'>	/**
-</span> @method hyper
- @cfg {Function}
- @member String
- Return a hyperlink of given label string.
- */
-	function hyper(ref) {
+	}, function hyper(ref) {
+<span id='String-property-'>		/**
+</span>  @private
+  @member String
+  Return a hyperlink of given label string.
+  */
 		if (ref) {
 			if (ref.charAt(0) == &quot;:&quot;) return this.link(&quot;/&quot; + (ref.substr(1) || this.toLowerCase()) + &quot;.view&quot;);else return this.link(ref);
 		} else return this.link(ref || &quot;/&quot; + this.toLowerCase() + &quot;.view&quot;);
 	}],
 
+<span id='TOTEM-cfg-config'>	/**
+</span> @cfg {Function}
+ @member TOTEM
+ @method config
+ Configure and start the service with options and optional callback when started.
+ @param {Object} opts configuration options following ENUM.Copy() conventions
+ @param {Function} cb callback(err) when service started
+ */
 	config: configService,
 
+<span id='TOTEM-cfg-stop'>	/**
+</span> @cfg {Function}
+ @member TOTEM	
+ @method stop
+ Stop the server.
+ */
 	stop: stopService,
 
 <span id='TOTEM-method-thread'>	/**
-</span> @method
- @member TOTEM
+</span> @private
+ @member TOTEM	
+ @method thread
  Thread a new sql connection to a callback.  Unless overridden, will default to the DSVAR thread method.
+ @param {Function} cb callback(sql connector)
   * */
 	thread: DSVAR.thread,
 
@@ -355,7 +352,6 @@ var TOTEM = module.exports = ENUM.extend({
  		traps: { flag:cb(query,flags), ...} // sets trap cb for a _flag=list to reorganize the query and flags hash,
  		edits: { flag:cb(list,data,req), ...} // sets data conversion cb for a _flag=list,
  		prefix:  &quot;_&quot; 	// sets flag prefix
- 
  */
 	reqflags: { //&lt; Properties for request flags
 		strips: //&lt; Flags to strips from request
@@ -429,43 +425,51 @@ var TOTEM = module.exports = ENUM.extend({
  @member TOTEM	
  Number of worker cores (0 for master-only startup)
  */
-	cores: 0,
+	cores: 0, //&lt; Number of worker cores (0 for master-only startup)
 
 <span id='TOTEM-cfg-port'>	/**
 </span> @cfg {Number} [port=8080]
+ @member TOTEM	
  Service port number
  */
-	port: 8080,
+	port: 8080, //&lt; Service port number
 
 <span id='TOTEM-cfg-host'>	/**
 </span> @cfg {String} [host=&quot;localhost&quot;]
+ @member TOTEM	
  Service host name 
  */
-	host: &quot;localhost&quot;,
+	host: &quot;localhost&quot;, //&lt; Service host name 
 
 <span id='TOTEM-cfg-watch'>	/**
 </span> @cfg {Obect}
+ @member TOTEM	
  Folder watching callbacks cb(path) 
  */
-	watch: {},
+	watch: {//&lt; Folder watching callbacks cb(path) 
+	},
 
 <span id='TOTEM-cfg-proxy'>	/**
 </span> @cfg {Boolean} [proxy=false]
+ @member TOTEM	
  Enable if https server being proxied
  */
-	proxy: false,
+	proxy: false, //&lt; Enable if https server being proxied
 
 <span id='TOTEM-cfg-name'>	/**
 </span> @cfg {String} [name=&quot;Totem&quot;]
+ @member TOTEM	
  Name of this service used to
  	1) derive site parms from mysql openv.apps by Nick=name
  	2) set mysql name.table for guest clients,
  	3) identify server cert name.pfx file.
+ If the Nick=name is not located in openv.apps, the supplied	config() options are not overridden.
  */
 	name: &quot;Totem&quot;,
 
 <span id='TOTEM-cfg-site'>	/**
 </span> @cfg {Object} 
+ @member TOTEM	
  Site context extended by the mysql derived query when service starts
  */
 	site: {// reserved for derived context vars		
@@ -473,6 +477,7 @@ var TOTEM = module.exports = ENUM.extend({
 
 <span id='TOTEM-cfg-converters'>	/**
 </span> @cfg {Object} 
+ @member TOTEM	
  Endpoint converters cb(ack data as string || error)
  */
 	converters: {
@@ -529,56 +534,74 @@ var TOTEM = module.exports = ENUM.extend({
   }*/
 	},
 
-<span id='TOTEM-cfg-worker'>	/**
+<span id='TOTEM-cfg-byTable'>	/**
 </span> @cfg {Object} 
- By-table endpoint routers for data fetchers and user management
+ @member TOTEM	
+ By-table endpoint routers {table: method(req,res), ... } for data fetchers, system and user management
  */
-	worker: {
+	byTable: {
 		wget: fetchWget,
 		curl: fetchCurl,
 		http: fetchHttp,
 		riddle: checkRiddle
 	},
 
-<span id='TOTEM-cfg-runner'>	/**
+<span id='TOTEM-cfg-byAction'>	/**
 </span> @cfg {Object} 
+ @member TOTEM	
  By-action endpoint routers for accessing engines
  */
-	runner: {},
+	byAction: {},
 
-<span id='TOTEM-cfg-reader'>	/**
+<span id='TOTEM-cfg-byType'>	/**
 </span> @cfg {Object} 
- By-type endpoint routers for accessing readers
+ @member TOTEM	
+ By-type endpoint routers  {type: method(req,res), ... } for accessing dataset readers
  */
-	reader: {},
+	byType: {},
 
-<span id='TOTEM-cfg-sender'>	/**
+<span id='TOTEM-cfg-byArea'>	/**
 </span> @cfg {Object} 
- By-area endpoint routers for sending/cacheing files
+ @member TOTEM	
+ By-area endpoint routers {area: method(req,res), ... } for sending/cacheing files
  */
-	sender: {},
+	byArea: {},
 
-<span id='TOTEM-cfg-emulator'>	/**
+<span id='TOTEM-cfg-byActionTable'>	/**
 </span> @cfg {Object} 
- By-action-table endpoint routers for access to virtual tables
+ @member TOTEM	
+ By-action-table endpoint routers {action: {table: method(req,res), ...}, ... } for accessing virtual tables
  */
-	emulator: {
-		select: {},
-		delete: {},
-		update: {},
-		insert: {},
-		execute: {}
+	byActionTable: {
+		select: {
+			user: selectUser
+		},
+		delete: {
+			user: deleteUser
+		},
+		update: {
+			user: updateUser
+		},
+		insert: {
+			user: insertUser
+		},
+		execute: {
+			user: executeUser
+		}
 	},
 
 <span id='TOTEM-cfg-trust'>	/**
 </span> @cfg {Object} 
  @private
+ @member TOTEM	
  Trust store extened with certs in the certs.truststore folder when the service starts in encrypted mode
  */
 	trust: [],
 
 <span id='TOTEM-cfg-server'>	/**
 </span> @cfg {Object} 
+ @private
+ @member TOTEM	
  CRUDE (req,res) method to respond to Totem request
  */
 	server: null,
@@ -586,70 +609,76 @@ var TOTEM = module.exports = ENUM.extend({
 	//======================================
 	// CRUDE interface
 
-<span id='TOTEM-method-select'>	/**
-</span> @method select
+<span id='TOTEM-cfg-select'>	/**
+</span> @cfg {Function}
+ @method select
+ @member TOTEM	
+ CRUDE (req,res) method to respond to a Totem request
  @param {Object} req Totem request
  @param {Function} res Totem responder
- CRUDE (req,res) method to respond to a Totem request
  */
-	select: dataSelect,
-<span id='TOTEM-method-update'>	/**
-</span> @method update
+	select: selectDS,
+<span id='Format-cfg-update'>	/**
+</span> @cfg {Function}	
+ @method update
+ CRUDE (req,res) method to respond to a Totem request
  @param {Object} req Totem request
  @param {Function} res Totem responder
- CRUDE (req,res) method to respond to a Totem request
  */
-	update: null,
-<span id='TOTEM-method-delete'>	/**
-</span> @method delete
+	update: updateDS,
+<span id='Format-cfg-delete'>	/**
+</span> @cfg {Function}	
+ @method delete
+ CRUDE (req,res) method to respond to a Totem request
  @param {Object} req Totem request
  @param {Function} res Totem responder
- CRUDE (req,res) method to respond to a Totem request
  */
-	delete: null,
-<span id='TOTEM-method-insert'>	/**
-</span> @method insert
+	delete: deleteDS,
+<span id='Format-cfg-insert'>	/**
+</span> @cfg {Function}
+ @method insert
+ CRUDE (req,res) method to respond to a Totem request
  @param {Object} req Totem request
  @param {Function} res Totem responder
- CRUDE (req,res) method to respond to a Totem request
  */
-	insert: null,
-<span id='TOTEM-method-execute'>	/**
-</span> @method execute
+	insert: insertDS,
+<span id='Format-cfg-execute'>	/**
+</span> @cfg {Function}
+ @method execute
+ CRUDE (req,res) method to respond to a Totem request
  @param {Object} req Totem request
  @param {Function} res Totem responder
- CRUDE (req,res) method to respond to a Totem request
  */
-	execute: null,
+	execute: executeDS,
 
 	//======================================
 
-<span id='TOTEM-cfg-started'>	/**
+<span id='Format-cfg-started'>	/**
 </span> @cfg {Date} 
  @private
  totem start time
  */
-	started: null,
+	started: null, //&lt; totem start time
 
-<span id='TOTEM-cfg-retries'>	/**
+<span id='Format-cfg-retries'>	/**
 </span> @cfg {Number} [retries=5]
  Maximum number of retries the data fetcher will user
  */
-	retries: 5,
+	retries: 5, //&lt; Maximum number of retries the data fetcher will user
 
-<span id='TOTEM-cfg-notify'>	/**
+<span id='Format-cfg-notify'>	/**
 </span> @cfg {Boolean} [notify=true]
  Enable/disable tracing of data fetchers
  */
-	notify: true,
+	notify: true, //&lt; Enable/disable tracing of data fetchers
 
-<span id='TOTEM-cfg-nofaults'>	/**
+<span id='Format-cfg-nofaults'>	/**
 </span> @cfg {Boolean} [nofaults=false]
  Enable/disable service protection mode
  */
-	nofaults: false,
+	nofaults: false, //&lt; Enable/disable service protection mode
 
-<span id='TOTEM-cfg-protect'>	/**
+<span id='Format-cfg-protect'>	/**
 </span> @cfg {Object} 
  @private
  Service protections when in nofaults mode
@@ -666,14 +695,14 @@ var TOTEM = module.exports = ENUM.extend({
 		SIGSTOP: 1
 	},
 
-<span id='TOTEM-cfg-validator'>	/**
+<span id='Format-cfg-validator'>	/**
 </span> @cfg {Function} 
  Additional session validator(req,res) responds will null if client validated, otherwise
  responds with an error.
  */
 	validator: null,
 
-<span id='TOTEM-cfg-admitRule'>	/**
+<span id='Format-cfg-admitRule'>	/**
 </span> @cfg {Object} 
  Null to admitRule all clients, or {X:&quot;required&quot;, Y: &quot;optional&quot;, ...} to admitRule clients with cert organizational
  credentials X.
@@ -683,7 +712,7 @@ var TOTEM = module.exports = ENUM.extend({
    	&quot;us&quot;: &quot;optional&quot;
    }*/
 
-<span id='TOTEM-cfg-guestProfile'>	/**
+<span id='Format-cfg-guestProfile'>	/**
 </span> @cfg {Object}
  Default guest profile (unencrypted or client profile not found)
  */
@@ -703,7 +732,7 @@ var TOTEM = module.exports = ENUM.extend({
 		Message: &quot;Welcome guest - what is (riddle)?&quot;
 	},
 
-<span id='TOTEM-cfg-riddleMap'>	/**
+<span id='Format-cfg-riddleMap'>	/**
 </span> @cfg {Object} 
  @private
  Riddle digit-to-jpeg map (null to disable riddles)
@@ -721,13 +750,13 @@ var TOTEM = module.exports = ENUM.extend({
 		9: [&quot;40&quot;, &quot;190&quot;]
 	},
 
-<span id='TOTEM-cfg-riddles'>	/**
+<span id='Format-cfg-riddles'>	/**
 </span> @cfg {Number} [riddles=0]
  Number of riddles to protect site (0 to disable anti-bot)
  */
 	riddles: 0,
 
-<span id='TOTEM-cfg-paths'>	/**
+<span id='Format-cfg-paths'>	/**
 </span> @cfg {Object} 
  @private
  Default paths to service files
@@ -753,7 +782,7 @@ var TOTEM = module.exports = ENUM.extend({
 
 		mysql: {
 			users: &quot;SELECT 'user' AS Role, group_concat(DISTINCT dataset SEPARATOR ';') AS Contact FROM app.dblogs WHERE instr(dataset,'@')&quot;,
-			derive: &quot;SELECT * FROM openv.apps WHERE ? LIMIT 0,1&quot;,
+			derive: &quot;SELECT *, count(ID) AS Count FROM openv.apps WHERE ? LIMIT 0,1&quot;,
 			record: &quot;INSERT INTO app.dblogs SET ? ON DUPLICATE KEY UPDATE Actions=Actions+1, Transfer=Transfer+?, Delay=Delay+?, Event=?&quot;,
 			search: &quot;SELECT * FROM files HAVING Score &gt; 0.1&quot;,
 			credit: &quot;SELECT * FROM files LEFT JOIN openv.profiles ON openv.profiles.Client = files.Client WHERE least(?) LIMIT 0,1&quot;,
@@ -774,7 +803,7 @@ var TOTEM = module.exports = ENUM.extend({
 		}
 	},
 
-<span id='TOTEM-cfg-errors'>	/**
+<span id='Format-cfg-errors'>	/**
 </span> @cfg {Object} 
  @private
  Error messages
@@ -802,29 +831,32 @@ var TOTEM = module.exports = ENUM.extend({
 		noSockets: new Error(&quot;scoket.io failed&quot;),
 		noService: new Error(&quot;no service  to start&quot;),
 		badData: new Error(&quot;data has circular reference&quot;),
-		retryFetch: new Error(&quot;data fecth retries exceeded&quot;)
+		retryFetch: new Error(&quot;data fecth retries exceeded&quot;),
+		cantConfig: new Error(&quot;cant derive config options&quot;)
 	},
 
-<span id='TOTEM-method-indexer'>	/**
+<span id='Format-method-indexer'>	/**
 </span> @method 
+ @config {Function}
  	File indexer
  */
 	indexer: indexFile,
 
-<span id='TOTEM-method-uploader'>	/**
-</span> @method 
+<span id='Format-cfg-uploader'>	/**
+</span> @cfg {Function}
+ @method uploader
  File uploader 
  */
 	uploader: uploadFile,
 
-<span id='TOTEM-cfg-busycycle'>	/**
+<span id='Format-cfg-busycycle'>	/**
 </span> @cfg {Number}
  Server toobusy check period in seconds
  */
 	busycycle: 3, //&lt; site too-busy check interval [s] (0 disables)
 
-<span id='TOTEM-method-setContext'>	/**
-</span> @method
+<span id='Format-cfg-setContext'>	/**
+</span> @cfg {Function}
  @private
  Sets the site context parameters available in TOTEM.site.
  */
@@ -853,7 +885,7 @@ var TOTEM = module.exports = ENUM.extend({
 		if (derive = mysql.derive) // derive site context vars
 			sql.query(derive, { Nick: TOTEM.name }).on(&quot;result&quot;, function (opts) {
 
-				Each(opts, function (key, val) {
+				if (opts.Count) Each(opts, function (key, val) {
 					key = key.toLowerCase();
 					site[key] = val;
 
@@ -873,7 +905,7 @@ var TOTEM = module.exports = ENUM.extend({
 
 				if (cb) cb();
 			}).on(&quot;error&quot;, function (err) {
-				Trace(&quot;DERIVE &quot; + err);
+				Trace(TOTEM.errors.cantConfig);
 			});
 			/*
    sql.indexJsons( &quot;openv.apps&quot;, {}, function (jsons) {	// get site json vars
@@ -882,7 +914,7 @@ var TOTEM = module.exports = ENUM.extend({
 		else if (cb) cb();
 	},
 
-<span id='TOTEM-cfg-cache'>	/**
+<span id='Format-cfg-cache'>	/**
 </span> @cfg {Object} 
  @private
  */
@@ -914,7 +946,7 @@ var TOTEM = module.exports = ENUM.extend({
 		certs: {} // reserved for crts in certs area
 	},
 
-<span id='TOTEM-cfg-Function'>	/**
+<span id='Format-cfg-Function'>	/**
 </span> @cfg {Object} 
  @private
  ENUM will callback this initializer when the service is started
@@ -927,11 +959,11 @@ var TOTEM = module.exports = ENUM.extend({
 </span> * @class TOTEM
  **/
 
-function dataSelect(req, res) {
+function selectDS(req, res) {
 	//&lt; Default virtual table logic is real table
-<span id='TOTEM-cfg-dataSelect'>	/**
-</span>  * @cfg {Function}
-  * @method dataSelect
+<span id='TOTEM-method-deleteDS'>	/**
+</span>  * @private
+  * @method deleteDS
   * @param {Object} req Totem's request
   * @param {Function} res Totem's response callback
   * */
@@ -940,39 +972,40 @@ function dataSelect(req, res) {
 	});else res(TOTEM.errors.noDB);
 }
 
-function dataUpdate(req, res) {
-<span id='TOTEM-cfg-'>	/**
-</span>  * @method dataUpdate
-   * @cfg {Function}
+function updateDS(req, res) {
+<span id='TOTEM-method-updateDS'>	/**
+</span>  * @private
+  * @method updateDS
   * @param {Object} req Totem's request
   * @param {Function} res Totem's response callback
   * */
 	res(TOTEM.paths.TOTEM.errors.noRoute);
 }
 
-function dataInsert(req, res) {
-<span id='TOTEM-cfg-'>	/**
-</span>  * @method dataInsert
-   * @cfg {Function}
+function insertDS(req, res) {
+<span id='TOTEM-method-insertDS'>	/**
+</span>  * @private
+  * @method insertDS
   * @param {Object} req Totem's request
   * @param {Function} res Totem's response callback
   * */
 	res(TOTEM.paths.TOTEM.errors.noRoute);
 }
 
-function dataDelete(req, res) {
-<span id='TOTEM-method-dataDelete'>	/**
-</span>  * @method dataDelete
+function deleteDS(req, res) {
+<span id='TOTEM-method-deleteDS'>	/**
+</span>  * @private
+  * @method deleteDS
   * @param {Object} req Totem's request
   * @param {Function} res Totem's response callback
   * */
 	res(TOTEM.paths.TOTEM.errors.noRoute);
 }
 
-function dataExecute(req, res) {
-<span id='TOTEM-cfg-dataExecute'>	/**
-</span>  * @cfg {Function}
-  * @method dataExecute
+function executeDS(req, res) {
+<span id='TOTEM-method-executeDS'>	/**
+</span>  * @private
+  * @method executeDS
   * @param {Object} req Totem's request
   * @param {Function} res Totem's response callback
   * */
@@ -984,8 +1017,8 @@ function dataExecute(req, res) {
  **/
 
 function configService(opts, cb) {
-<span id='TOTEM-cfg-configService'>	/**
-</span>  * @cfg {Function}
+<span id='TOTEM-method-configService'>	/**
+</span>  * @private
   * @method configService
   * Configure and start this server.
   * @param {Object} opts configuration options following the ENUM.Copy() conventions.
@@ -1017,7 +1050,7 @@ function configService(opts, cb) {
 					if (TOTEM.thread &amp;&amp; file) switch (ev) {
 						case &quot;change&quot;:
 							TOTEM.thread(function (sql) {
-								/*READ.reader(sql, path+file, function (keys) {
+								/*READ.byType(sql, path+file, function (keys) {
         	console.log([&quot;keys&quot;,keys]);
         });
         */
@@ -1081,8 +1114,8 @@ function configService(opts, cb) {
 }
 
 function startService(server, cb) {
-<span id='TOTEM-cfg-startService'>	/**
-</span>  * @cfg {Function}
+<span id='TOTEM-method-startService'>	/**
+</span>  * @private
   * @method startService
   * Attach the responder to this server then initialized.
   * @param {Object} server HTTP/HTTP server
@@ -1306,8 +1339,8 @@ function protectService(cb) {
 }
 
 function stopService() {
-<span id='TOTEM-cfg-stopService'>	/**
-</span>  * @cfg {Function}
+<span id='TOTEM-method-stopService'>	/**
+</span>  * @private
   * @method stopService
   * Stop the server.
   * */
@@ -1320,7 +1353,7 @@ function stopService() {
 }
 
 <span id='USER'>/**
-</span>@class USER profile maintenance
+</span>@class USER maintenance of users and their profiles
  */
 
 function selectUser(req, res) {
@@ -1459,10 +1492,10 @@ function insertUser(req, res) {
 	});
 }
 
-function fetchUser(req, res) {
-<span id='USER-method-fetchUser'>	/**
+function executeUser(req, res) {
+<span id='USER-method-executeUser'>	/**
 </span> @private
- @method fetchUser
+ @method executeUser
  Fetch user profile for processing
  @param {Object} req Totem request 
  @param {Function} res Totem response
@@ -1488,7 +1521,7 @@ function fetchUser(req, res) {
 }
 
 <span id='PKI'>/**
-</span>@class PKI cert utilitities
+</span>@class PKI utilities to create and manage PKI certs
  */
 
 function createCert(owner, pass, cb) {
@@ -1553,44 +1586,39 @@ function validateCert(req, res) {
   proxy, cert information is derived from the request headers.
   */
 
-		var con = req.connection;
-
-		if (TOTEM.encrypt &amp;&amp; con &amp;&amp; con.getPeerCertificate) {
-			// get PKI cert info when server providing encrypted channel
-
-			var cert = con.getPeerCertificate();
-
-			if (TOTEM.proxy) {
-				// when going through a proxy, must update cert with originating cert info that was placed in header
-				var NA = Req.headers.ssl_client_notafter,
-				    NB = Req.headers.sll_client_notbefore,
-				    DN = Req.headers.ssl_client_s_dn;
-
-				if (NA) cert.valid_to = new Date([NA.substr(2, 2), NA.substr(4, 2), NA.substr(0, 2)].join(&quot;/&quot;) + &quot; &quot; + [NA.substr(6, 2), NA.substr(8, 2), NA.substr(10, 2)].join(&quot;:&quot;));
-
-				if (NB) cert.valid_to = new Date([NB.substr(2, 2), NB.substr(4, 2), NB.substr(0, 2)].join(&quot;/&quot;) + &quot; &quot; + [NB.substr(6, 2), NB.substr(8, 2), NB.substr(10, 2)].join(&quot;:&quot;));
-
-				if (DN) Each(DN.split(&quot;/&quot;), function (n, hdr) {
-					if (hdr) {
-						var sub = hdr.split(&quot;=&quot;);
-						cert.subject[sub[0]] += sub[1];
-					}
-				});
-
-				var CN = cert.subject.CN;
-
-				if (CN) {
-					CN = CN.split(&quot; &quot;);
-					cert.subject.CN = CN[CN.length - 1] + &quot;@coe.ic.gov&quot;;
-				}
-			}
-		} else var cert = { //&lt; default cert
+		var con = req.connection,
+		    cert = (con ? con.getPeerCertificate() : null) || { //&lt; default cert
 			issuer: { O: &quot;xx&quot; },
 			subjectaltname: &quot;&quot;,
 			subject: { C: &quot;xx&quot;, ST: &quot;xx&quot;, L: &quot;xx&quot;, O: &quot;xx&quot;, OU: &quot;&quot;, CN: &quot;&quot;, emailAddress: &quot;&quot; },
 			valid_to: null,
 			valid_from: null
 		};
+
+		if (TOTEM.proxy) {
+			// when going through a proxy, must update cert with originating cert info that was placed in header
+			var NA = Req.headers.ssl_client_notafter,
+			    NB = Req.headers.sll_client_notbefore,
+			    DN = Req.headers.ssl_client_s_dn;
+
+			if (NA) cert.valid_to = new Date([NA.substr(2, 2), NA.substr(4, 2), NA.substr(0, 2)].join(&quot;/&quot;) + &quot; &quot; + [NA.substr(6, 2), NA.substr(8, 2), NA.substr(10, 2)].join(&quot;:&quot;));
+
+			if (NB) cert.valid_to = new Date([NB.substr(2, 2), NB.substr(4, 2), NB.substr(0, 2)].join(&quot;/&quot;) + &quot; &quot; + [NB.substr(6, 2), NB.substr(8, 2), NB.substr(10, 2)].join(&quot;:&quot;));
+
+			if (DN) Each(DN.split(&quot;/&quot;), function (n, hdr) {
+				if (hdr) {
+					var sub = hdr.split(&quot;=&quot;);
+					cert.subject[sub[0]] += sub[1];
+				}
+			});
+
+			var CN = cert.subject.CN;
+
+			if (CN) {
+				CN = CN.split(&quot; &quot;);
+				cert.subject.CN = CN[CN.length - 1] + &quot;@coe.ic.gov&quot;;
+			}
+		}
 
 		return cert;
 	}
@@ -1713,11 +1741,12 @@ function findFile(path, cb) {
 
 function uploadFile(files, area, cb) {
 <span id='MIME-method-uploadFile'>	/**
-</span> * @method uploadFile
- * @param {Object} sql sql connector
- * @param {Array} files files to upload
- * @param {String} area area to upload files into
- * @param {Function} res totem response
+</span> @private
+ @method uploadFile
+ @param {Object} sql sql connector
+ @param {Array} files files to upload
+ @param {String} area area to upload files into
+ @param {Function} res totem response
  */
 
 	function copyFile(source, target, cb) {
@@ -1819,7 +1848,7 @@ function uploadFile(files, area, cb) {
 }
 
 <span id='FETCH'>/**
-</span>@class FETCH external data
+</span>@class FETCH method to pull external data
  */
 
 function fetchWget(req, res) {
@@ -1966,7 +1995,7 @@ function sendTemplate(req,res) {
 */
 
 <span id='ANTIBOT'>/**
-</span>@class ANTIBOT protection
+</span>@class ANTIBOT data theft protection
  */
 
 function checkRiddle(req, res) {
@@ -2128,11 +2157,13 @@ function challengeClient(client, prof) {
 	});
 }
 
-<span id='INITIALIZE'>/**
-</span>@class INITIALIZE
-*/
-
 function Initialize() {
+<span id='TOTEM-method-'>	/**
+</span> @private
+ @member TOTEM
+ @method 
+ Initialize TOTEM.
+ */
 
 	Trace(&quot;INITIALIZED WITH &quot; + TOTEM.riddles + &quot; RIDDLES&quot;);
 
@@ -2140,11 +2171,16 @@ function Initialize() {
 }
 
 <span id='ROUTING'>/**
-</span>@class ROUTING methods
+</span>@class ROUTING methods to route notes byType, byAction, byTable, byActionTable, byArea.
 */
 
 function parseNode(req) {
-
+<span id='ROUTING-method-parseNode'>	/**
+</span> @private
+ @method parseNode
+ Parse node request to define req.table, .path, .area, .query, .search, .type, .file, .flags, and .body.
+ @param {Object} req http session
+ */
 	var node = URL.parse(req.node),
 	    search = req.search = node.query || &quot;&quot;,
 	    query = req.query = search.parse({}),
@@ -2228,8 +2264,10 @@ function parseNode(req) {
 }
 
 function syncNodes(nodes, acks, req, res) {
-<span id='ROUTING-property-'>	/**
-</span> Submit nodes=[/dataset.type, /dataset.type ...]  on the current request thread req to the routeNode() 
+<span id='ROUTING-method-syncNodes'>	/**
+</span> @private
+ @method syncNodes
+ Submit nodes=[/dataset.type, /dataset.type ...]  on the current request thread req to the routeNode() 
  method, aggregate results, then send with supplied response().
  */
 
@@ -2244,9 +2282,11 @@ function syncNodes(nodes, acks, req, res) {
 }
 
 function routeNode(req, res) {
-	/*
- Parse the node=/dataset.type on the current req thread, then route it to the approprate TOTEM sender, 
- reader, emulator, engine or file indexer (see config documentation).
+<span id='ROUTING-method-routeNode'>	/**
+</span> @private
+ @method routeNode
+ Parse the node=/dataset.type on the current req thread, then route it to the approprate TOTEM byArea, 
+ byType, byActionTable, engine or file indexer (see config documentation).
  */
 
 	parseNode(req);
@@ -2267,11 +2307,11 @@ function routeNode(req, res) {
 
 	//console.log([action,req.path,area,table,type]);
 
-	if (req.path) followRoute(route = TOTEM.sender[area] || sendFile, req, res);else if (route = TOTEM.reader[type]) followRoute(route, req, res);else if (route = TOTEM.emulator[action][table]) followRoute(route, req, res);else if (route = TOTEM.worker[table]) followRoute(route, req, res);
+	if (req.path) followRoute(route = TOTEM.byArea[area] || sendFile, req, res);else if (route = TOTEM.byType[type]) followRoute(route, req, res);else if (route = TOTEM.byActionTable[action][table]) followRoute(route, req, res);else if (route = TOTEM.byTable[table]) followRoute(route, req, res);
 
 	/*
  else  // attempt to route to engines then to database
- if ( route = TOTEM.runner ) 
+ if ( route = TOTEM.byAction ) 
  	route[action](req, function (ack) { 
  		if ( (ack||0).constructor == Error)
  			if ( route = TOTEM[action] )
@@ -2287,7 +2327,9 @@ function routeNode(req, res) {
 }
 
 function followRoute(route, req, res) {
-	/*
+<span id='ROUTING-method-followRoute'>	/**
+</span> @private
+ @method followRoute
  Log session metrics, trace the current route, then callback route on the supplied 
  request-response thread
  */
@@ -2356,7 +2398,7 @@ function followRoute(route, req, res) {
 }
 
 <span id='THREAD'>/**
-</span>@class THREAD processing
+</span>@class THREAD sql and session thread processing
 */
 
 function sesThread(Req, Res) {
@@ -2590,6 +2632,12 @@ function sesThread(Req, Res) {
 
 	function startSession(cb) {
 		// Combat denial of service attacks by checking if session is too busy.
+<span id='THREAD-method-startSession'>		/**
+</span>  @private
+  @method startSession
+  Start session and protect from denial of service attacks.
+  @param {Function} callback() when completed
+  */
 
 		if (BUSY &amp;&amp; (busy = TOTEM.errors.tooBusy)) {
 			if (BUSY()) Res.end(TOTEM.errors.pretty(busy));else cb();
@@ -2597,8 +2645,10 @@ function sesThread(Req, Res) {
 	}
 
 	function conThread(req, res) {
-<span id='THREAD-method-con'>		/**
-</span>   * Start a connection thread cb(err) containing a Req.req.sql connector,
+<span id='THREAD-method-conThread'>		/**
+</span>   * @private
+   * @method conThread
+   * Start a connection thread cb(err) containing a Req.req.sql connector,
    * a validated Req.req.cert certificate, and set appropriate Res headers. 
    * 
    * @param {Object} req request
@@ -2683,7 +2733,8 @@ function sesThread(Req, Res) {
 
 function resThread(req, cb) {
 <span id='THREAD-method-resThread'>	/**
-</span>  * @method resThread
+</span>  * @private
+  * @method resThread
   * @param {Object} req Totem request
   * @param {Function} cb sql connector callback(sql)
   *
@@ -2696,7 +2747,8 @@ function resThread(req, cb) {
 
 function sqlThread(cb) {
 <span id='THREAD-method-sqlThread'>	/**
-</span>  * @method sqlThread
+</span>  * @private
+  * @method sqlThread
   * @param {Function} cb sql connector callback(sql)
   *
   * Callback with sql connector
