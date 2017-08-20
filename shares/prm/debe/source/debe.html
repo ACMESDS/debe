@@ -1,0 +1,2103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js">&quot;use strict&quot;;
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+// UNCLASSIFIED 
+
+<span id='DEBE'>/**
+</span>@class DEBE
+@requires child_process
+@requires cluster
+@requires child-process
+@requires fs
+
+@requires i18n-abide
+@requires socket.io
+@requires socket.io-clusterhub
+@requires jade
+@requires jade-filters
+@requires markdown
+@requires optomist
+
+@requires flex
+@requires totem
+@requires engine
+*/
+
+var // globals
+ENV = process.env,
+    WINDOWS = process.platform == 'win32',
+    //&lt; Is Windows platform
+CRUDE = { select: 1, delete: 1, insert: 1, update: 1, execute: 1 };
+
+var // NodeJS modules
+CP = require(&quot;child_process&quot;),
+    //&lt; Child process threads
+CLUSTER = require(&quot;cluster&quot;),
+    //&lt; Support for multiple cores
+FS = require(&quot;fs&quot;); //&lt; NodeJS filesystem and uploads
+
+var // 3rd party modules
+OGEN = null,
+    //require(&quot;officegen&quot;), 	//&lt; MS office generator
+LANG = require('i18n-abide'),
+    //&lt; I18 language translator
+ARGP = require('optimist'),
+    //&lt; Command line argument processor
+TOKML = require(&quot;tokml&quot;),
+    //&lt; geojson to kml concerter
+JADE = require('jade'); //&lt; using jade as the skinner
+
+var // totem modules		
+ENGINE = require(&quot;engine&quot;),
+    FLEX = require(&quot;flex&quot;),
+    TOTEM = require(&quot;totem&quot;),
+    CHIPS = require(&quot;chipper&quot;);
+
+var // shortcuts and globals
+Copy = TOTEM.copy,
+    Each = TOTEM.each;
+
+var DEBE = module.exports = TOTEM.extend({
+
+	&quot;reqflags.traps.&quot;: { //&lt; _flag=name can modify the reqeust
+		save: function save(req) {
+			//&lt; _save=name retains query in named engine
+			var cleanurl = req.url.replace(&quot;_save=&quot; + req.flags.save, &quot;&quot;);
+			Trace(&quot;PUBLISH &quot; + cleanurl + &quot; AT &quot; + req.flags.save);
+			req.sql.query(&quot;INSERT INTO engines SET ?&quot;, {
+				Name: req.flags.save,
+				Enabled: 1,
+				Engine: &quot;url&quot;,
+				Code: cleanurl
+			});
+		},
+
+		browse: function browse(req) {
+			//&lt; _browse=name navigates named folder
+			var query = req.query,
+			    flags = req.flags;
+			query.NodeID = parseInt(query.init) ? &quot;&quot; : query.target || &quot;&quot;;
+			flags.nav = [query.NodeID, query.cmd];
+			delete query.cmd;
+			delete query.init;
+			delete query.target;
+			delete query.tree;
+		},
+
+		view: function view(req) {
+			//&lt; ?_view=name correlates named view to request dataset
+			req.sql.query(&quot;INSERT INTO openv.viewers SET ?&quot;, {
+				Viewer: req.flags.view,
+				Dataset: req.table
+			});
+		}
+	},
+
+	&quot;reqflags.edits.&quot;: { //&lt; _flag=key,key,... edits specified keys in requested dataset
+		blog: function blog(keys, recs, req) {
+			//&lt;  _blog=key,key,... renders keys
+			recs.each(function (n, rec) {
+				keys.each(function (m, key) {
+					if (val = rec[key]) if (val.constructor == String) (&quot;:markdown\n&quot; + val).replace(/   /g, &quot;\t&quot;) // fake tabs
+					.replace(/\n/g, &quot;\n\t&quot;) // indent markdown
+					.replace(/\[(.*?)\]\((.*?)\)/g, function (m, i) {
+						// adjust [x,w,h](u) markdown
+						m = m.substr(1, m.length - 2).split(&quot;](&quot;);
+						var v = m[0].split(&quot;,&quot;),
+						    u = m[1] || &quot;missing url&quot;,
+						    x = v[0] || &quot;&quot;,
+						    w = v[1] || 100,
+						    h = v[2] || 100;
+
+						switch (x) {
+							case &quot;update&quot;:
+								return x.tag(&quot;a&quot;, { href: req.table + &quot;.exe?ID=&quot; + rec.ID }) + &quot;&quot;.tag(&quot;iframe&quot;, { src: u, width: w, height: h });
+							case &quot;image&quot;:
+								return &quot;&quot;.tag(&quot;img&quot;, { src: u, width: w, height: h });
+							case &quot;post&quot;:
+								return &quot;&quot;.tag(&quot;iframe&quot;, { src: u, width: w, height: h });
+							default:
+								return x.tag(&quot;a&quot;, { href: u });
+						}
+					}).replace(/href=(.*?)&gt;/g, function (m, i) {
+						// &lt;a href=B&gt;A&lt;/a&gt; --&gt; followed link
+						var q = i.charAt(0) == &quot;'&quot; ? '&quot;' : &quot;'&quot;;
+						return &quot;href=&quot; + q + &quot;javascript:navigator.follow(&quot; + i + &quot;,BASE.user.client,BASE.user.source)&quot; + q + &quot;&gt;&quot;;
+					}).render(req, function (html) {
+						rec[key] = html;
+					});
+				});
+			});
+		},
+
+		/*
+  jade: function (keys,recs,req) {  	// jade markdown on keys fields
+  		recs.each( function (n, rec) { 
+  		keys.each( function (m, key) {
+  			rec[key] = &quot;=$&quot; + (rec[key]+&quot;&quot;).render(req);
+  		});
+  	});
+  },
+  	kjade: function (keys,recs,req) {  	// kludge jade markdown on keys fields
+  		recs.each( function (n, rec) {  
+  		keys.each( function (m, key) {
+  			rec[key] = (rec[key]+&quot;&quot;).tag(&quot;iframe&quot;, {
+  				width: 400,
+  				height: 400,
+  				src: `/${req.table}.html?ID=${rec.ID}&amp;_kjaded=${key}`
+  			});
+  			//console.log(rec[key]);
+  		});
+  	});
+  },
+  	kjaderaw: function (keys,recs,req) {  // kludge jade markdown
+  		recs.each( function (n, rec) {
+  		var rtn = &quot;&quot;;
+  		keys.each( function (m, key) {  
+  			rtn += (rec[key] + &quot;&quot;).render(req);
+  		});
+  		recs[n] = rtn;
+  	});
+  },
+  
+  mark: function (keys,recs,req) {  	// markdown keys fields
+  
+  	recs.each( function (n, rec) {
+  		keys.each( function (m, key) {  
+  			rec[key] = 
+  `extends layout
+  append layout_body
+  :markdown
+  ${rec[key] }` .render(req);
+  		});
+  	});
+  },
+  */
+
+		json: function json(keys, recs, req) {
+			//&lt; _json=key,key,... jsonize keys
+			var id = 1;
+
+			recs.each(function (n, rec) {
+				var rtn = { ID: id++ };
+
+				keys.each(function (k, key) {
+					var src = rec;
+					key.split(&quot;.&quot;).each(function (k, idx) {
+						if (src) if (k) src = src[idx];else try {
+							src = JSON.parse(src[idx] || &quot;null&quot;);
+						} catch (err) {}
+					});
+
+					rtn[key] = src;
+				});
+
+				recs[n] = rtn;
+			});
+		}
+	},
+
+	admitRule: null, //&lt; admitRule all clients by default 	
+	/*{ &quot;u.s. government&quot;: &quot;required&quot;,
+  * 	&quot;us&quot;: &quot;optional&quot;
+  * }*/
+
+	&quot;site.&quot;: { //&lt; initial site context
+
+<span id='TOTEM-site-method-get'>		/**
+</span>  @member TOTEM.site
+  @method get
+  Provides a data indexer when a skin is being rendered.
+  @param {Array} recs Record source
+  @param {Array} where {recKey:value, ...} to match recs
+  @param {Array} index &quot;recKey,...&quot; keys to retain from recs
+  @param {Array} subs {hash: {recKey: {key:value, ...}. ...}, ...} replace record values
+  */
+
+		get: function get(recs, where, index, subs) {
+			//&lt; index dataset
+			function select(keys) {
+
+				switch ((keys || 0).constructor) {
+					case Object:
+						for (var key in keys) {
+							return &quot;SELECT * FROM ??.?? WHERE least(?,1)&quot;;
+						}return &quot;SELECT * FROM ??.??&quot;;
+
+					case Array:
+						return &quot;&quot;;
+
+					case String:
+						return &quot;SELECT * FROM ??.? WHERE &quot; + keys;
+
+					case Function:
+						return &quot;&quot;;
+
+					default:
+						return &quot;&quot;;
+				}
+			}
+
+			var rtns = [];
+
+			switch ((index || 0).constructor) {
+				case String:
+					var idx = {};
+					index.split(&quot;,&quot;).each(function (n, key) {
+						idx[key] = key;
+					});
+					index = idx;
+					break;
+
+				case Array:
+					return null;
+					break;
+
+				case Function:
+					DEBE.thread(function (sql) {
+						try {
+							sql.query(select(where), [req.group, recs, where], function (err, recs) {
+								index(err ? [] : recs);
+							});
+							sql.release();
+						} catch (err) {
+							index([]);
+						}
+					});
+					return null;
+			}
+
+			recs.each(function (n, rec) {
+				var match = true;
+
+				if (where) for (var x in where) {
+					if (rec[x] != where[x]) match = false;
+				}if (match) {
+					Each(subs, function (pre, sub) {
+						for (var idx in sub) {
+							var keys = sub[idx];
+							if (rec[idx]) for (var key in keys) {
+								rec[idx] = (rec[idx] + &quot;&quot;).replace(pre + key, keys[key]);
+							}
+						}
+					});
+
+					/*
+     if (sub1) {
+     	for (var idx in sub1) {
+     		var keys = sub1[idx];
+     		if ( rec[idx] )
+     			for (var key in keys)
+     				rec[idx] = (rec[idx] + &quot;&quot;).replace(&quot;#&quot; + key, keys[key]);
+     	}
+     }*/
+
+					if (index) {
+						var rtn = new Object();
+						for (var key in index) {
+							var src = rec;
+							key.split(&quot;.&quot;).each(function (k, idx) {
+								src = src[idx];
+							});
+							rtn[index[key]] = src;
+						}
+						rec = rtn;
+					}
+
+					rtns.push(rec);
+				}
+			});
+
+			return rtns;
+		},
+
+<span id='TOTEM-site-method-json'>		/**
+</span>  @member TOTEM.site
+  @method json
+  Jsonize records.
+  @param {Array} recs Record source
+  */
+		json: function json(recs) {
+			//&lt; jsonize dataset
+			return JSON.stringify(recs);
+		},
+
+		tag: function tag(src, el, tags) {
+			return tags ? src.tag(el, tags) : src.tag(&quot;a&quot;, { href: el });;
+		},
+
+		hover: function hover(ti, fn) {
+			if (fn.charAt(0) != &quot;/&quot;) fn = &quot;/shares/&quot; + fn;
+			return ti.tag(&quot;p&quot;, { class: &quot;sm&quot; }) + (&quot;&quot;.tag(&quot;img&quot;, { src: fn + &quot;.jpg&quot; }) + &quot;&quot;.tag(&quot;iframe&quot;, { src: fn + &quot;.html&quot; }).tag(&quot;div&quot;, { class: &quot;ctr&quot; }).tag(&quot;div&quot;, { class: &quot;mid&quot; })).tag(&quot;div&quot;, { class: &quot;container&quot; });
+		},
+
+		gridify: function gridify(recs, noheader) {
+			//&lt; dump dataset as html table
+			function join(recs, sep) {
+				switch (recs.constructor) {
+					case Array:
+						return this.join(sep);
+
+					case Object:
+						var rtn = [];
+						for (var n in this) {
+							rtn.push(this[n]);
+						}return rtn.join(sep);
+
+					default:
+						return this;
+				}
+			}
+
+			function table(recs) {
+				// generate an html table from given data or object
+				switch (recs.constructor) {
+					case Array:
+						// [ {head1:val}, head2:val}, ...]  create table from headers and values
+
+						var rtn = &quot;&quot;,
+						    head = !noheader,
+						    heads = {};
+
+						recs.each(function (n, rec) {
+							Each(rec, function (key, val) {
+								heads[key] = key;
+							});
+						});
+
+						recs.each(function (n, rec) {
+
+							if (head) {
+								var row = &quot;&quot;;
+								Each(heads, function (key, val) {
+									row += key.tag(&quot;th&quot;);
+								});
+								rtn += row.tag(&quot;tr&quot;);
+								head = false;
+							}
+
+							var row = &quot;&quot;,
+							    intro = &quot;&quot;;
+							Each(heads, function (key, val) {
+								if (val = rec[key]) row += val.constructor == Array ? table(val) : (val + &quot;&quot;).tag(&quot;td&quot;, intro ? { class: &quot;intro&quot; } : {});else row += &quot;&quot;.tag(&quot;td&quot;);
+
+								intro = false;
+							});
+							rtn += row.tag(&quot;tr&quot;);
+						});
+
+						return rtn.tag(&quot;table&quot;, {}).tag(&quot;div&quot;, { style: &quot;overflow-x:auto&quot; });
+
+					case Object:
+						// { key:val, ... } create table dump of object hash
+
+						var rtn = &quot;&quot;;
+						Each(recs, function (key, val) {
+							if (val) rtn += val.constructor == Array ? table(val) : (key.tag(&quot;td&quot;) + JSON.stringify(val).tag(&quot;td&quot;)).tag(&quot;tr&quot;);
+						});
+
+						return rtn.tag(&quot;table&quot;);
+
+					default:
+						return recs + &quot;&quot;;
+				}
+			}
+
+			function dump(x) {
+				rtn = &quot;&quot;;
+				for (var n in x) {
+					switch (x[n].constructor) {
+						case Object:
+							rtn += dump(x[n]);break;
+						case Array:
+							rtn += n + &quot;[]&quot;;break;
+						case Function:
+							rtn += n + &quot;()&quot;;break;
+						default:
+							rtn += n;
+					}
+					rtn += &quot;; &quot;;
+				}
+				return rtn;
+			}
+
+			return table(recs);
+		},
+
+		context: { // defines DSVAR contexts when a skin is rendered
+			briefs: {
+				projs: &quot;openv.milestones&quot;
+			},
+			rtpsqd: {
+				apps: &quot;openv.apps&quot;,
+				users: &quot;openv.profiles&quot;,
+				projs: &quot;openv.milestones&quot;,
+				QAs: &quot;app.QAs&quot;
+				//stats:{table:&quot;openv.profiles&quot;,group:&quot;client&quot;,index:&quot;client,event&quot;}
+			}
+		}
+	},
+
+	&quot;sender.&quot;: { //&lt; file.attr senders
+		code: sendCode,
+		jade: sendCode,
+		classif: sendAttr,
+		readability: sendAttr,
+		client: sendAttr,
+		size: sendAttr,
+		risk: sendAttr
+	},
+
+	&quot;converters.&quot;: { // endpoints to convert dataset on req-res thread
+		view: function view(recs, req, res) {
+			//&lt; dataset.view returnsrendered skin
+			res(recs);
+		},
+
+		kml: function kml(recs, req, res) {
+			//&lt; dataset.kml converts to kml
+			res(TOKML({}));
+		},
+
+		flat: function index(recs, req, res) {
+			//&lt; dataset.flat flattens records
+			recs.each(function (n, rec) {
+				var rtns = new Array();
+				for (var key in rec) {
+					rtns.push(rec[key]);
+				}recs[n] = rtns;
+			});
+			res(recs);
+		},
+
+		txt: function txt(recs, req, res) {
+			//&lt; dataset.txt convert to text
+			var head = recs[0],
+			    cols = [],
+			    cr = String.fromCharCode(13),
+			    txt = &quot;&quot;,
+			    list = &quot;,&quot;;
+
+			if (head) {
+				for (var n in head) {
+					cols.push(n);
+				}txt += cols.join(list) + cr;
+
+				recs.each(function (n, rec) {
+					var cols = [];
+					for (var n in rec) {
+						cols.push(rec[n]);
+					}txt += cols.join(list) + cr;
+				});
+			}
+
+			res(txt);
+		},
+
+		html: function html(recs, req, res) {
+			//&lt; dataset.html converts to html
+			res(DEBE.site.gridify(recs));
+		},
+
+		// MS office doc converters
+		xdoc: genDoc,
+		xxls: genDoc,
+		xpps: genDoc,
+		xppt: genDoc,
+
+		tree: function tree(recs, req, res) {
+			//&lt; dataset.tree treeifies records sorted with _sort=keys
+			res({
+				name: &quot;root&quot;,
+				weight: 1,
+				children: recs.treeify(0, recs.length, 0, (req.flags.sort || &quot;&quot;).split(&quot;,&quot;))
+			});
+		},
+
+		delta: function delta(recs, req, res) {
+			//&lt; dataset.delta adds change records from last baseline
+			var sql = req.sql;
+			var ctx = {
+				src: {
+					table: &quot;baseline.&quot; + req.table
+				}
+			};
+
+			sql.context(ctx, function (ctx) {
+				// establish skinning context for requested table
+				ctx.src.rec = function (Recs, me) {
+					// select the baseline records 
+
+					if (Recs.constructor == Error) res(Recs);else res(recs.merge(Recs, Object.keys(Recs[0] || {})));
+				};
+			});
+		},
+
+		encap: function encap(recs, req, res) {
+			//&lt; dataset.encap to encap records
+			res({ encap: recs });
+		},
+
+		nav: function nav(recs, req, res) {
+			//&lt; dataset.nav to navigate records pivoted with _browse=keys
+
+			/*console.log({
+   	i: &quot;nav&quot;,
+   	c: keys,
+   	f: req.flags,
+   	q: req.query
+   });*/
+			var keys = Object.keys(recs[0] || {}),
+			    flags = req.flags,
+			    query = req.query,
+			    Browse = flags.browse.split(&quot;,&quot;),
+			    Cmd = keys.pop(),
+			    Slash = &quot;_&quot;,
+			    Parent = keys.pop(),
+			    Nodes = Parent ? Parent.split(Slash) : [],
+			    Folder = Browse[Nodes.length],
+			    Parent = Parent || &quot;root&quot;,
+			    Files = [{ // prime the side tree area
+				mime: &quot;directory&quot;,
+				ts: 1334071677,
+				read: 1,
+				write: 0,
+				size: recs.length,
+				hash: Parent,
+				volumeid: &quot;v1&quot;,
+				//phash: Back,	// cant do this for some reason
+				name: Parent + (Folder ? &quot;:&quot; + Folder : &quot;&quot;),
+				locked: 1,
+				dirs: 1
+			}];
+
+			Trace(&quot;NAVIGATE Recs=&quot; + recs.length + &quot; Parent=&quot; + Parent + &quot; Nodes=&quot; + Nodes + &quot; Folder=&quot; + Folder);
+
+			if (Folder) // at branch
+				recs.each(function (n, rec) {
+					Files.push({
+						mime: &quot;directory&quot;, // mime type
+						ts: 1310252178, // time stamp format?
+						read: rec.read, // read state
+						write: rec.write, // write state
+						size: rec.NodeCount, // size
+						hash: rec.NodeID, // hash name
+						name: rec.name || &quot;?&quot; + n, // keys name
+						phash: Parent, // parent hash name
+						locked: rec.locked, // lock state
+						volumeid: rec.group,
+						dirs: 1 // place inside tree too
+					});
+				});else // at leaf
+				recs.each(function (n, rec) {
+					// at leafs
+					Files.push({
+						mime: &quot;application/tbd&quot;, //&quot;application/x-genesis-rom&quot;,	//&quot;image/jpg&quot;, // mime type
+						ts: 1310252178, // time stamp format?
+						read: rec.read, // read state
+						write: rec.write, // write state
+						size: rec.NodeCount, // size
+						hash: rec.NodeID, // hash name
+						name: rec.name || &quot;?&quot; + n, // keys name
+						phash: Parent, // parent hash name
+						volumeid: rec.group,
+						locked: rec.locked // lock state
+					});
+				});
+
+			//console.log(Files);	
+
+			switch (Cmd) {// Handle keys nav
+				case &quot;test&quot;:
+					// canonical test case for debugging					
+					res({
+						cwd: {
+							&quot;mime&quot;: &quot;directory&quot;,
+							&quot;ts&quot;: 1334071677,
+							&quot;read&quot;: 1,
+							&quot;write&quot;: 0,
+							&quot;size&quot;: 0,
+							&quot;hash&quot;: &quot;root&quot;,
+							&quot;volumeid&quot;: &quot;l1_&quot;,
+							&quot;name&quot;: &quot;Demo&quot;,
+							&quot;locked&quot;: 1,
+							&quot;dirs&quot;: 1 },
+
+						/*&quot;options&quot;:{
+      	&quot;path&quot;:&quot;&quot;, //&quot;Demo&quot;,
+      	&quot;url&quot;:&quot;&quot;, //&quot;http:\/\/elfinder.org\/files\/demo\/&quot;,
+      	&quot;tmbUrl&quot;:&quot;&quot;, //&quot;http:\/\/elfinder.org\/files\/demo\/.tmb\/&quot;,
+      	&quot;disabled&quot;:[&quot;extract&quot;],
+      	&quot;separator&quot;:&quot;\/&quot;,
+      	&quot;copyOverwrite&quot;:1,
+      	&quot;archivers&quot;: {
+      		&quot;create&quot;:[&quot;application\/x-tar&quot;, &quot;application\/x-gzip&quot;],
+      		&quot;extract&quot;:[] }
+      },*/
+
+						files: [{ // cwd again
+							&quot;mime&quot;: &quot;directory&quot;,
+							&quot;ts&quot;: 1334071677,
+							&quot;read&quot;: 1,
+							&quot;write&quot;: 0,
+							&quot;size&quot;: 0,
+							&quot;hash&quot;: &quot;root&quot;,
+							&quot;volumeid&quot;: &quot;l1_&quot;,
+							&quot;name&quot;: &quot;Demo&quot;,
+							&quot;locked&quot;: 1,
+							&quot;dirs&quot;: 1 },
+
+						/*{
+      &quot;mime&quot;:&quot;directory&quot;,
+      &quot;ts&quot;:1334071677,
+      &quot;read&quot;:1,
+      &quot;write&quot;:0,
+      &quot;size&quot;:0,
+      &quot;hash&quot;:&quot;root&quot;,
+      &quot;volumeid&quot;:&quot;l1_&quot;,
+      &quot;name&quot;:&quot;Demo&quot;,
+      &quot;locked&quot;:1,
+      &quot;dirs&quot;:1},*/
+
+						{
+							&quot;mime&quot;: &quot;directory&quot;,
+							&quot;ts&quot;: 1340114567,
+							&quot;read&quot;: 0,
+							&quot;write&quot;: 0,
+							&quot;size&quot;: 0,
+							&quot;hash&quot;: &quot;l1_QmFja3Vw&quot;,
+							&quot;name&quot;: &quot;Backup&quot;,
+							&quot;phash&quot;: &quot;root&quot;,
+							&quot;locked&quot;: 1 }, {
+							&quot;mime&quot;: &quot;directory&quot;,
+							&quot;ts&quot;: 1310252178,
+							&quot;read&quot;: 1,
+							&quot;write&quot;: 0,
+							&quot;size&quot;: 0,
+							&quot;hash&quot;: &quot;l1_SW1hZ2Vz&quot;,
+							&quot;name&quot;: &quot;Images&quot;,
+							&quot;phash&quot;: &quot;root&quot;,
+							&quot;locked&quot;: 1 }, {
+							&quot;mime&quot;: &quot;directory&quot;,
+							&quot;ts&quot;: 1310250758,
+							&quot;read&quot;: 1,
+							&quot;write&quot;: 0,
+							&quot;size&quot;: 0,
+							&quot;hash&quot;: &quot;l1_TUlNRS10eXBlcw&quot;,
+							&quot;name&quot;: &quot;MIME-types&quot;,
+							&quot;phash&quot;: &quot;root&quot;,
+							&quot;locked&quot;: 1 }, {
+							&quot;mime&quot;: &quot;directory&quot;,
+							&quot;ts&quot;: 1268269762,
+							&quot;read&quot;: 1,
+							&quot;write&quot;: 0,
+							&quot;size&quot;: 0,
+							&quot;hash&quot;: &quot;l1_V2VsY29tZQ&quot;,
+							&quot;name&quot;: &quot;Welcome&quot;,
+							&quot;phash&quot;: &quot;root&quot;,
+							&quot;locked&quot;: 1,
+							&quot;dirs&quot;: 1 }, {
+							&quot;mime&quot;: &quot;directory&quot;,
+							&quot;ts&quot;: 1390785037,
+							&quot;read&quot;: 1,
+							&quot;write&quot;: 1,
+							&quot;size&quot;: 0,
+							&quot;hash&quot;: &quot;l2_Lwxxyyzz&quot;,
+							&quot;volumeid&quot;: &quot;l2_&quot;,
+							&quot;name&quot;: &quot;Test here&quot;,
+							&quot;locked&quot;: 1 }, {
+							&quot;mime&quot;: &quot;application\/x-genesis-rom&quot;,
+							&quot;ts&quot;: 1310347586, &quot;read&quot;: 1,
+							&quot;write&quot;: 0,
+							&quot;size&quot;: 3683,
+							&quot;hash&quot;: &quot;l1_UkVBRE1FLm1k&quot;,
+							&quot;name&quot;: &quot;README.md&quot;,
+							&quot;phash&quot;: &quot;root&quot;,
+							&quot;locked&quot;: 1 }],
+
+						api: &quot;2.0&quot;, &quot;uplMaxSize&quot;: &quot;16M&quot;, &quot;netDrivers&quot;: [],
+
+						debug: {
+							&quot;connector&quot;: &quot;php&quot;,
+							&quot;phpver&quot;: &quot;5.3.26-1~dotdeb.0&quot;,
+							&quot;time&quot;: 0.016080856323242,
+							&quot;memory&quot;: &quot;1307Kb \/ 1173Kb \/ 128M&quot;,
+							&quot;upload&quot;: &quot;&quot;,
+							&quot;volumes&quot;: [{ &quot;id&quot;: &quot;l1_&quot;,
+								&quot;name&quot;: &quot;localfilesystem&quot;,
+								&quot;mimeDetect&quot;: &quot;internal&quot;,
+								&quot;imgLib&quot;: &quot;imagick&quot; }, { &quot;id&quot;: &quot;l2_&quot;,
+								&quot;name&quot;: &quot;localfilesystem&quot;,
+								&quot;mimeDetect&quot;: &quot;internal&quot;,
+								&quot;imgLib&quot;: &quot;gd&quot; }],
+
+							&quot;mountErrors&quot;: [] }
+					});
+					break;
+
+				/*case &quot;tree&quot;: 	// not sure when requested
+    	return {
+    		tree: Files,
+    			debug: {
+    			connector:&quot;php&quot;,
+    			phpver:&quot;5.3.26-1~dotdeb.0&quot;,
+    			time:0.016080856323242,
+    			memory:&quot;1307Kb \/ 1173Kb \/ 128M&quot;,
+    			upload:&quot;&quot;,
+    			volumes:[{	id:&quot;l1_&quot;,
+    						name:&quot;localfilesystem&quot;,
+    						mimeDetect:&quot;internal&quot;,
+    						imgLib:&quot;imagick&quot;},
+    						{	id:&quot;l2_&quot;,
+    						name:&quot;localfilesystem&quot;,
+    						mimeDetect:&quot;internal&quot;,
+    						imgLib:&quot;gd&quot;}],
+    				mountErrors:[]
+    		}		
+    	};	
+    	break;*/
+
+				case &quot;size&quot;:
+					// on directory info
+					res({
+						size: 222
+					});
+					break;
+
+				case &quot;parents&quot;: // not sure when requested
+				case &quot;rename&quot;: // on rename with name=newname
+				case &quot;keys&quot;:
+					// on open via put, on download=1 via get
+					res({
+						message: &quot;TBD&quot;
+					});
+					break;
+
+				case &quot;tree&quot;:
+				case &quot;open&quot;:
+					// on double-click to follow
+					res({
+						cwd: Files[0],
+						/*{ 
+      	mime:&quot;directory&quot;,
+      	ts:1334071677,
+      	read:1,
+      	write:0,
+      	size:999,
+      	hash: flags.NodeID,
+      	phash: &quot;&quot;, //cwdBack,
+      	volumeid:&quot;tbd&quot;, //&quot;l1_&quot;,
+      	name: Folder,
+      	locked:0,
+      	dirs:1},*/
+
+						options: {
+							path: &quot;/&quot;, //cwdPath,
+							url: &quot;/&quot;, //&quot;/root/&quot;,
+							tmbUrl: &quot;/root/.tmb/&quot;,
+							disabled: [&quot;extract&quot;],
+							separator: Slash,
+							copyOverwrite: 1,
+							archivers: {
+								create: [&quot;application/x-tar&quot;, &quot;application/x-gzip&quot;],
+								extract: [] }
+						},
+
+						files: Files,
+
+						api: &quot;2.0&quot;,
+						uplMaxSize: &quot;16M&quot;,
+						netDrivers: [],
+
+						debug: {
+							connector: &quot;php&quot;,
+							phpver: &quot;5.3.26-1~dotdeb.0&quot;,
+							time: 0.016080856323242,
+							memory: &quot;1307Kb \/ 1173Kb \/ 128M&quot;,
+							upload: &quot;&quot;,
+							volumes: [{ id: &quot;v1&quot;,
+								name: &quot;localfilesystem&quot;,
+								mimeDetect: &quot;internal&quot;,
+								imgLib: &quot;imagick&quot; }, { id: &quot;v2&quot;,
+								name: &quot;localfilesystem&quot;,
+								mimeDetect: &quot;internal&quot;,
+								imgLib: &quot;gd&quot; }],
+							mountErrors: []
+						}
+					});
+					break;
+
+				default:
+					res({
+						message: &quot;bad navigation command&quot;
+					});
+			}
+		}
+
+	},
+
+	&quot;worker.&quot;: { //&lt; worker endpoints
+		//kill: sysKill,
+		//start: sysStart,
+		//checkpt: sysCheckpt,
+		help: sysHelp,
+		stop: sysStop,
+		alert: sysAlert,
+		//codes: sysCodes,
+		ping: sysPing,
+		bit: sysBIT
+		//config: sysConfig
+	},
+
+	&quot;reader.&quot;: { //&lt; reader endpoints
+		view: renderSkin,
+		run: renderSkin,
+		plugin: renderSkin,
+		site: renderSkin,
+		brief: renderSkin,
+		pivot: renderSkin,
+		gridbrief: renderSkin,
+		runbrief: renderSkin,
+		pivbrief: renderSkin,
+		exe: executePlugin,
+		add: extendPlugin,
+		sub: retractPlugin
+	},
+
+	&quot;runner.&quot;: ENGINE,
+
+	&quot;emulator.&quot;: {//&lt; virtual table emulation endpoints
+	},
+
+	&quot;errors.&quot;: { //&lt; error messages
+		pretty: function pretty(err) {
+			return &quot;&quot;.tag(&quot;img&quot;, { src: &quot;/shares/reject.jpg&quot;, width: 40, height: 60 }) + (err + &quot;&quot;).replace(/\n/g, &quot;&lt;br&gt;&quot;).replace(process.cwd(), &quot;&quot;) + &quot;.  See issues&quot;.tag(&quot;a&quot;, { href: &quot;/issues.view&quot; }) + &quot; for further information&quot;;
+		},
+		badSkin: new Error(&quot;skin contains invalid jade&quot;),
+		badDataset: new Error(&quot;dataset does not exist&quot;),
+		noCode: new Error(&quot;failed engine code lookup&quot;),
+		badFeature: new Error(&quot;unsupported feature&quot;),
+		noOffice: new Error(&quot;office docs not enabled&quot;),
+		noExe: new Error(&quot;no execute interface&quot;),
+		noUsecase: new Error(&quot;no usecase provided to plugin&quot;),
+		certFailed: new Error(&quot;Failed to create cert&quot;)
+	},
+
+	&quot;paths.&quot;: { //&lt; paths to things
+		default: &quot;home.view&quot;,
+
+		jaderef: &quot;./public/jade/ref.jade&quot;, // jade reference path for includes, exports, appends
+
+		engine: &quot;SELECT *,count(ID) as Count FROM app.engines WHERE least(?,1)&quot;,
+		render: &quot;./public/jade/&quot;,
+
+		sss: { // some streaming services
+			spoof: ENV.DEBUG + &quot;/sss.exe?Name=spoof1&quot;,
+			gaussmix: ENV.DEBUG + &quot;/gaussmix.exe?&quot;,
+			autorun: ENV.DEBUG + &quot;/&quot;,
+			thresher: ENV.SSS_THRESHER
+		},
+
+		wfs: { // wfs services
+			spoof: ENV.DEBUG + &quot;/wfs.exe?Name=spoof1&quot;,
+			ess: ENV.WFS_ESS,
+			dglobe: ENV.WFS_DGLOBE,
+			omar: ENV.WFS_OMAR,
+			geosrv: ENV.WFS_GEOSRV
+		},
+
+		wms: { // wms services
+			spoof: ENV.DEBUG + &quot;/wms.exe?Name=spoof1&quot;,
+			ess: ENV.WMS_ESS,
+			dglobe: ENV.WMS_DGLOBE,
+			omar: ENV.WMS_OMAR,
+			geosrv: ENV.WMS_GEOSRV
+		},
+
+		mime: {
+			tour: &quot;.&quot;, //&lt; enable totem touring 
+			//jobs: &quot;./public/jobs&quot;,		//&lt; path to tau simulator job files
+			stores: &quot;./public&quot;, //&lt; persistant scrape area
+			uploads: &quot;./public&quot;, //&lt; one-time scrape area
+			data: &quot;./public&quot;, //&lt; json data area
+			chips: &quot;./public/images&quot;, //&lt; chipped files
+			tips: &quot;./public/images&quot;, //&lt; tipped files
+			shares: &quot;.&quot;, //&lt; cached file area
+			docs: &quot;.&quot;, //&lt; html documents
+			socketio: &quot;.&quot;, //&lt; path to socket.io
+			clients: &quot;.&quot;, //&lt; path to clients
+			//icons: &quot;.&quot;,				//&lt; path to icons
+			captcha: &quot;.&quot;,
+			index: { //&lt; allowed file indexers
+				shares: &quot;indexer&quot;,
+				uploads: &quot;indexer&quot;,
+				stores: &quot;indexer&quot;,
+				tour: &quot;indexer&quot;
+			}
+		},
+
+		skin: {
+			org1: &quot;./public/jade/Org1&quot;,
+			org2: &quot;./public/jade/Org2&quot;,
+			mood1: &quot;./public/jade/Mood1&quot;
+		},
+
+		code: {
+			py: &quot;./public/py&quot;,
+			js: &quot;./public/js&quot;,
+			mat: &quot;./public/mat&quot;,
+			jade: &quot;./public/jade&quot;,
+			html: &quot;./public/htmls&quot;
+		}
+	},
+
+	benevolent: false, //&lt; enable to give-away plugin services
+
+	Function: Initialize, //&lt; added to ENUM callback stack
+
+	// Prototypes
+
+	String: [// string prototypes
+	/*
+ function indentify(tag) {
+ 	if (tag) 
+ 		return tag + &quot;\n\t&quot; + this.split(&quot;\n&quot;).join(&quot;\n\t&quot;);
+ 	else
+ 		return &quot;\t&quot; + this.split(&quot;\n&quot;).join(&quot;\n\t&quot;);
+ },*/
+
+	function render(req, res) {
+<span id='DEBE-method-render'>		/**
+</span>  @method render
+  Respond with res(html) thats renders this string.  If string is of he form .PATH then an
+  attempt is made to render the file.  If an error occurs, the error is retured as html.
+  **/
+		var ctx = Copy(DEBE.site, {
+			table: req.table,
+			type: req.type,
+			parts: req.parts,
+			action: req.action,
+			org: req.org,
+			client: req.client,
+			flags: req.flags,
+			query: req.query,
+			joined: req.joined,
+			profile: req.profile,
+			group: req.group,
+			search: req.serach,
+			started: DEBE.started,
+			filename: DEBE.paths.jaderef,
+			url: req.url
+		});
+
+		if (this.charAt(0) == &quot;.&quot;) try {
+			res(JADE.renderFile(this + &quot;&quot;, ctx)); // js gets confused so force string
+		} catch (err) {
+			res(err);
+		} else try {
+			if (generator = JADE.compile(this, ctx)) res(generator(ctx));else res(DEBE.errors.badSkin);
+		} catch (err) {
+			return res(err);
+		}
+	}],
+
+	Array: [// array prototypes
+	function merge(Recs, idx) {
+<span id='DEBE-method-merge'>		/**
+</span>  @method merge
+  Merge changes when doing table deltas from their baseline versions.
+  **/
+
+		function changed(rec, Rec) {
+			for (var n in rec) {
+				if (rec[n] != Rec[n]) return true;
+			}return false;
+		}
+
+		var recs = this;
+		// sort records on specified index
+		Recs = Recs.sort(function (a, b) {
+			return a[idx] &gt; b[idx] ? 1 : -1;
+		});
+		recs = recs.sort(function (a, b) {
+			return a[idx] &gt; b[idx] ? 1 : -1;
+		});
+
+		// merge records based on specified index.
+		var k = 0,
+		    Rec = Recs[k],
+		    ID = 10000;
+
+		if (Rec) recs.each(function (n, rec) {
+			//console.log([n,k,recs.length, Recs.length, idx, rec[idx], Rec[idx]]);
+
+			while (Rec &amp;&amp; rec[idx] == Rec[idx]) {
+				if (changed(rec, Rec)) {
+					// return only changed records
+					Rec.Baseline = 1;
+					Rec.ID = ID++;
+					recs.push(Rec);
+				}
+				Rec = Recs[++k];
+			}
+
+			rec.Baseline = 0;
+		});
+
+		recs = recs.sort(function (a, b) {
+			return a[idx] &gt; b[idx] ? 1 : -1;
+		});
+
+		return recs;
+	}, function treeify(idx, kids, level, keys, wt) {
+<span id='DEBE-method-treeify'>		/**
+</span>  @method treeify
+  Return a tree = {name,weight,children: tree} from records having been sorted on keys=[key,...]
+  */
+		var recs = this,
+		    key = keys[level],
+		    len = 0,
+		    pos = idx,
+		    end = idx + kids,
+		    tar = [];
+
+		//console.log([level,keys,ref,idx]);
+
+		if (key) for (var ref = recs[idx][key]; pos &lt; end;) {
+			var rec = recs[idx];
+			var stop = idx == end ? true : rec[key] != ref;
+
+			if (stop) {
+				//console.log([pos,idx,end,key,ref,recs.length]);
+
+				var node = {
+					name: key + &quot; &quot; + ref,
+					weight: wt ? parseInt(rec[wt] || &quot;0&quot;) : len,
+					children: recs.treeify(pos, len, level + 1, keys, wt)
+				};
+
+				tar.push(node);
+				pos = idx;
+				len = 0;
+				ref = idx == end ? null : recs[idx][key];
+			} else {
+				idx++;
+				len++;
+			}
+		} else while (pos &lt; end) {
+			var rec = recs[pos++];
+			tar.push({
+				name: &quot;doc&quot;,
+				weight: 0,
+				doc: rec
+			});
+		}
+
+		return tar;
+	}],
+
+	// DEBE specific 
+
+	isSpawned: false, //&lt; Enabled when this is child server spawned by a master server
+	soapCRUD: { //&lt; action:route hash for XML-driven engines
+		get: &quot;&quot;,
+		put: &quot;&quot;,
+		delete: &quot;&quot;,
+		post: &quot;/service/algorithm/:proxy&quot; //&lt; hydra endpoint
+	}, //&lt; reserved for soap interfaces
+
+	billingcycle: 0, //&lt; job billing interval [s] (0 disables)
+	diagcycle: 0, //&lt; self diagnostics interval [s] (0 disables)
+	hawkingcycle: 0, // job hawking interval [s] (0 disables)		
+
+	loader: function loader(url, met, req, res) {
+		// data loader
+
+		var path = req.plugin ? (url + req.plugin + &quot;.exe?&quot;).tagurl(req) : url.tagurl(req);
+
+		Trace(&quot;FETCHING &quot; + path);
+		met(path, res);
+	},
+
+	ingestEvents: function ingestEvents(path, sql, cb) {
+		var stream = FS.createReadStream(path),
+		    items = [&quot;x&quot;, &quot;y&quot;, &quot;z&quot;, &quot;t&quot;, &quot;n&quot;],
+		    ingested = 0;
+
+		stream.on(&quot;open&quot;, function () {
+			/*stream.pipe( function (buf) {
+   	console.log(buf);
+   });*/
+		});
+
+		stream.on(&quot;error&quot;, function (err) {
+			Trace(err);
+		});
+
+		stream.on(&quot;data&quot;, function (buf) {
+			//console.log(buf.toString());
+			buf.toString().split(&quot;\n&quot;).each(function (n, rec) {
+				var ev = new Object();
+				if (rec.length) {
+					ingested++;
+					rec.split(&quot;,&quot;).each(function (i, item) {
+						ev[items[i]] = item;
+					});
+
+					sql.query(&quot;INSERT INTO app.evcache SET ?, Point=st_GeomFromText(?)&quot;, [{
+						x: ev.x,
+						y: ev.y,
+						z: ev.z,
+						t: ev.t,
+						n: ev.n
+					}, &quot;POINT(&quot; + ev.y + &quot; &quot; + ev.x + &quot;)&quot;]);
+				}
+			});
+		});
+
+		stream.on(&quot;close&quot;, function (err) {
+			if (ingested) CHIPS.ingestCache(sql, cb);
+		});
+	},
+
+	blindTesting: false //&lt; Enable for double-blind testing (make FLEX susceptible to sql injection attacks)
+});
+
+<span id='DEBE-method-SOAPsession'>/**
+</span> * @method SOAPsession
+ * @private
+ * Process an soapCRUD session peer-to-peer request.  Currently customized for Hydra-peer and 
+ * could/should be revised to support more generic peer-to-peer soapCRUD interfaces.
+ * 
+ * @param {Object} req HTTP request
+ * @param {Object} res HTTP response
+ * @param {Function} proxy Name of APP proxy function to handle this session.
+ * */
+/*
+function SOAPsession(req,res,peer,action) {
+	Thread( function (sql) {
+		req.addListener(&quot;data&quot;, function (data) {
+			XML2JS.parseString(data.toString(), function (err,json) {  // hydra specific parse
+
+				hydrareq = false
+					? json[&quot;soapenv:Envelope&quot;][&quot;soapenv:Body&quot;][0][&quot;swag:SWAGRequest&quot;][0]	// hydra soapui request
+					: json[&quot;soap:Envelope&quot;][&quot;soap:Body&quot;][0][&quot;SWAGRequest&quot;][0];				// hydra peer request
+
+				for (var n in hydrareq)
+					switch (n) {
+						case &quot;xmls&quot;:
+						case &quot;$&quot;:
+						case &quot;inFileName&quot;:
+						case &quot;outFileName&quot;:
+						case &quot;feature&quot;:
+							ENV[n.toUpperCase()] = hydrareq[n][0];
+							break;
+
+						default:
+							ENV[n.toUpperCase()] = parseFloat(hydrareq[n][0]);
+					}
+				
+				var VTL = (APP[action]||{})[peer];
+				
+				Trace(action.toUpperCase() + peer + (VTL ? &quot;LOCATED&quot; : &quot;MISSING&quot;));
+				
+				if (VTL) 
+					VTL(req, function (msg) {
+						Trace(&quot;PEER &quot; + peer + &quot;:&quot; + msg);
+					});
+					
+			});
+		});
+		
+		res.statusCode = 200;
+		sql.reply(res,&quot;0&quot;);
+	});
+}
+*/
+
+function icoFavicon(req, res) {
+	// extjs trap
+	res(&quot;No icons here&quot;);
+};
+
+<span id='system'>/**
+</span>@class system
+*/
+
+function sysConfig(req, res) {
+<span id='system-method-sysConfig'>	/**
+</span> @method sysConfig
+ @deprecated
+ Totem(req,res) endpoint to render jade code requested by .table jade engine. 
+ @param {Object} req Totem request
+ @param {Function} res Totem response
+ */
+	function Guard(query, def) {
+		for (var n in query) {
+			return query;
+		}return def;
+	}
+
+	var query = Guard(req.query, false);
+
+	if (query) req.sql.query(&quot;UPDATE config SET ?&quot;, query, function (err) {
+		res(err || &quot;parameter set&quot;);
+	});
+}
+
+function sysCheckpt(req, res) {
+	/*
+ @method sysCheckpt
+ @deprecated
+ Totem(req,res) endpoint to render jade code requested by .table jade engine. 
+ @param {Object} req Totem request
+ @param {Function} res Totem response
+ */
+	CP.exec('source maint.sh checkpoint &quot;checkpoint&quot;');
+	res(&quot;Checkpointing database&quot;);
+}
+
+function sysStart(req, res) {
+	/*
+ @method sysStart
+ @deprecated
+ @param {Object} req Totem request
+ @param {Function} res Totem response
+ */
+	req.sql.query(&quot;select * from openv.apps where least(?)&quot;, { Enabled: true, Name: req.query.name || &quot;node0&quot; }).on(&quot;result&quot;, function (app) {
+		if (false) CP.exec(&quot;node $EXAPP/sigma --start &quot; + app.Name, function (err, stdout, stderr) {
+			if (err) console.warn(err);
+		});else process.exit();
+	}).on(&quot;end&quot;, function () {
+		res(&quot;restarting service&quot;);
+	});
+}
+
+function sysBIT(req, res) {
+<span id='system-method-sysBIT'>	/**
+</span> @method sysBIT
+ Totem(req,res) endpoint for builtin testing
+ @param {Object} req Totem request
+ @param {Function} res Totem response
+ */
+	var N = req.query.N || 20;
+	var lambda = req.query.lambda || 2;
+
+	var actions = [&quot;insert&quot;, &quot;update&quot;, &quot;delete&quot;],
+	    tables = [&quot;test1&quot;, &quot;test2&quot;, &quot;test3&quot;, &quot;test4&quot;, &quot;test5&quot;],
+	    users = [&quot;simuser1&quot;, &quot;simuser2&quot;, &quot;simuser3&quot;, &quot;simuser4&quot;, &quot;simuser5&quot;],
+	    f1 = [&quot;sim1&quot;, &quot;sim2&quot;, &quot;sim3&quot;, &quot;sim4&quot;, &quot;sim5&quot;, &quot;sim6&quot;, &quot;sim7&quot;, &quot;sim&quot;, &quot;sim9&quot;, &quot;sim10&quot;, &quot;sim11&quot;, &quot;sim12&quot;, &quot;sim13&quot;],
+	    f2 = [&quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;, &quot;e&quot;, &quot;f&quot;, &quot;g&quot;, &quot;h&quot;],
+	    f3 = [0, 1, 2, 3, 4, 5, 6, 7,, 9, 10];
+
+	var t0 = 0;
+
+	// Notify startup
+
+	//Trace(`BIT ${N} events at ${lambda} events/s with logstamp ${stamp}`);
+
+	res(&quot;BIT running&quot;);
+
+	// Setup sync for server blocking and notify both sides
+
+	FLEX.BIT = new SYNC(N, {}, function () {
+		FLEX.BIT = null;
+		Trace(&quot;BIT completed&quot;);
+	});
+
+	//DEBE.LOGSTAMP = Stamp;
+
+	// Poisson load model.
+
+	for (var n = 0; n &lt; N; n++) {
+		var t = -1e3 * Math.log(Math.random()) / lambda; // [ms] when lambda [1/s]
+
+		t0 += t;
+
+		var taskID = setTimeout(function (args) {
+			req.body = clone(args.parms);
+			req.query = args.action == &quot;insert&quot; ? {} : { f1: args.parms.f1 };
+			req.ses.source = &quot;testdb.&quot; + args.table;
+			req.ses.action = args.action;
+
+			FLEX.open(req, res); // need cb?			
+		}, t0, { parms: { f1: f1.rand(), f2: f2.rand(), f3: f3.rand() },
+			table: tables.rand(),
+			action: actions.rand(),
+			client: users.rand()
+		});
+	}
+}
+
+function sysPing(req, res) {
+<span id='system-method-sysPing'>	/**
+</span> @method sysPing
+ Totem(req,res) endpoint to test client connection
+ @param {Object} req Totem request
+ @param {Function} res Totem response
+ */
+	res(&quot;hello &quot; + req.client);
+}
+
+function sysCodes(req, res) {
+<span id='system-method-sysCodes'>	/**
+</span> @method sysCodes
+ @deprecated
+ Totem(req,res) endpoint to return html code for testing connection
+ @param {Object} req Totem request
+ @param {Function} res Totem response
+ */
+	res(HTTP.STATUS_CODES);
+}
+
+function sysAlert(req, res) {
+<span id='system-method-sysAlert'>	/**
+</span> @method sysAlert
+ Totem(req,res) endpoint to send notice to all clients
+ @param {Object} req Totem request
+ @param {Function} res Totem response
+ */
+	if (IO = DEBE.IO) IO.sockets.emit(&quot;alert&quot;, { msg: req.query.msg || &quot;system alert&quot;, to: &quot;all&quot;, from: DEBE.site.title });
+
+	res(&quot;Broadcasting alert&quot;);
+}
+
+function sysKill(req, res) {
+	/*
+ @method sysKill
+ @deprecated
+ Totem(req,res) endpoint to render jade code requested by .table jade engine. 
+ @param {Object} req Totem request
+ @param {Function} res Totem response
+ */
+	var killed = [];
+
+	res(&quot;Killing jobs&quot;);
+
+	req.sql.query(&quot;SELECT * FROM queues WHERE pid AND LEAST(?,1)&quot;, req.query).on(&quot;result&quot;, function (job) {
+		req.sql.query(&quot;UPDATE queues SET ? WHERE ?&quot;, [{
+			Notes: &quot;Stopped&quot;,
+			pid: 0,
+			Departed: new Date() }, { ID: job.ID }]);
+
+		CP.exec(&quot;kill &quot; + job.pid);
+	});
+}
+
+function sysStop(req, res) {
+<span id='system-method-sysStop'>	/**
+</span> @method sysStop
+ Totem(req,res) endpoint to send emergency message to all clients then halt totem
+ @param {Object} req Totem request
+ @param {Function} res Totem response
+ */
+	if (IO = DEBE.IO) IO.sockets.emit(&quot;alert&quot;, { msg: req.query.msg || &quot;system halted&quot;, to: &quot;all&quot;, from: DEBE.site.title });
+
+	res(&quot;Server stopped&quot;);
+	process.exit();
+}
+
+function sysHelp(req, res) {
+<span id='system-method-sysHelp'>	/**
+</span> @method sysHelp
+ Totem(req,res) endpoint to return all sys endpoints
+ @param {Object} req Totem request
+ @param {Function} res Totem response
+ */
+	res(&quot;/ping.sys check client-server connectivity&lt;br&gt;&quot; + &quot;/bit.sys built-in test with &amp;N client connections at rate &amp;lambda=events/s&lt;br&gt;&quot; + &quot;/codes.sys returns http error codes&lt;br&gt;&quot; + &quot;/alert.sys broadcast alert &amp;msg to all clients&lt;br&gt;&quot; + &quot;/stop.sys stops server with client alert &amp;msg&lt;br&gt;&quot;);
+}
+
+<span id='senders'>/**
+</span>@class senders
+*/
+
+function sendCode(req, res) {
+	// return file contents tagged as code
+<span id='senders-method-sendCode'>	/**
+</span> @method sendCode
+ Totem(req,res) endpoint to send engine code requested by (.name, .type) 
+ @param {Object} req Totem request
+ @param {Function} res Totem response
+ */
+
+	var paths = DEBE.paths;
+
+	FS.readFile((paths.code[req.type] || paths.code.default) + req.name, &quot;utf-8&quot;, function (err, code) {
+
+		if (err) res(DEBE.errors.noCode);else res(code.tag(&quot;code&quot;, { class: req.type }).tag(&quot;pre&quot;));
+	});
+}
+
+function sendCert(req, res) {
+	// create/return public-private certs
+
+	var owner = req.table,
+	    pass = req.type;
+
+	DEBE.prime(owner, pass, {}, function () {
+
+		CP.exec(&quot;puttygen &quot; + owner + &quot;.key -N &quot; + pass + &quot; -o &quot; + owner + &quot;.ppk&quot;, function (err) {
+
+			if (err) {
+				Trace(err);
+				res(DEBE.errors.certFailed);
+			} else {
+
+				var master = site.urls.master,
+				    paths = DEBE.paths,
+				    site = DEBE.site,
+				    FF = &quot;Firefox&quot;.tag(&quot;a&quot;, { href: master + &quot;/shares.firefox.zip&quot; }),
+				    Putty = &quot;Putty&quot;.tag(&quot;a&quot;, { href: master + &quot;/shares.putty.zip&quot; }),
+				    Cert = &quot;Cert&quot;.tag(&quot;a&quot;, { href: master + &quot;/cert/&quot; + owner });
+
+				res(function () {
+					return {
+						area: &quot;&quot;,
+						name: owner + &quot;.ppk&quot;
+					};
+				});
+
+				APP.sendMail({
+					from: DEBE.site.ASP,
+					to: DEBE.site.ISP,
+					cc: name,
+					subject: DEBE.site.Nick + &quot; account request&quot;,
+					html: (&quot;Greetings from &quot; + site.Nick.tag(&quot;a&quot;, { href: master }) + &quot;-\n\nPlease create an AWS EC2 account for &quot; + owner + &quot; using attached cert.\n\nTo connect to &quot; + site.Nick + &quot; from Windows:\n\n1. establish gateway &quot; + Putty + &quot; | SSH | Tunnels | (SourcePort, Destination):\n\t\n\t5001, &quot; + site.Host + &quot;:22\n\t5100, &quot; + site.Host + &quot;:3389\n\t5200, &quot; + site.Host + &quot;:8080\n\t5910, &quot; + site.Host + &quot;:5910\n\t5555, Dynamic\n\n2. setup &quot; + Putty + &quot; interface:\n\t\n\tPageant | Add Keys | your private ppk cert\n\n3. start a &quot; + site.Nick + &quot; session using one of these methods:\n\n\t&quot; + Putty + &quot; | Session | Host Name = localhost:5001 \n\tRemote Desktop Connect| Computer = localhost:5100 \n\t&quot; + FF + &quot; | Options | Network | Settings | Manual Proxy | Socks Host = localhost, Port = 5555, Socks = v5\n&quot;).replace(/\n/g, &quot;&lt;br&gt;&quot;),
+
+					attachments: [{
+						filename: Cert,
+						path: paths.certs + name + &quot;.pub&quot;
+					}],
+					alternatives: [{
+						contentType: 'text/html; charset=&quot;ISO-59-1&quot;',
+						contents: &quot;&quot;
+					}]
+				});
+			}
+		});
+	});
+}
+
+function sendAttr(req, res) {
+	// send file attribute
+<span id='senders-method-sendAttr'>	/**
+</span> @method sendAttr
+ Totem(req,res) endpoint to send the .area attribute of a .table file 
+ @param {Object} req Totem request
+ @param {Function} res Totem response
+ */
+
+	var attr = req.area,
+	    table = req.table,
+	    sql = req.sql;
+
+	sql.query(&quot;SELECT *,count(ID) AS count FROM files WHERE least(?) LIMIT 0,1&quot;, { Area: area, Name: table }).on(&quot;result&quot;, function (file) {
+		res((&quot;body {background-color:red;}&quot;.tag(&quot;style&quot;) + (file[attr] || &quot;?&quot;).tag(&quot;body&quot;)).tag(&quot;html&quot;));
+	});
+}
+
+/*
+function sendFile(req,res) {
+/ **
+@method sendFile
+Totem(req,res) endpoint to response with mime file requested by .file
+@param {Object} req Totem request
+@param {Function} res Totem response
+* /
+	DEBE.sendFile(req,res);
+}
+*/
+
+<span id='plugins'>/**
+</span>@class plugins
+*/
+
+function extendPlugin(req, res) {
+
+	var sql = req.sql,
+	    ds = req.table,
+	    query = req.query;
+
+	res(&quot;Adding keys&quot;);
+
+	Each(query, function (key, val) {
+		var type = &quot;varchar(32)&quot;;
+
+		if (parseFloat(val)) type = &quot;float&quot;;else if (parseInt(val)) type = &quot;int(11)&quot;;else try {
+			var val = JSON.parse(val);
+			type = val === true || val === false ? &quot;boolean&quot; : &quot;json&quot;;
+		} catch (err) {
+			type = val == &quot;doc&quot; ? &quot;mediumtext&quot; : &quot;varchar(&quot; + val.length + &quot;)&quot;;
+		}
+
+		sql.query(&quot;ALTER TABLE ??.?? ADD ?? &quot; + type, [req.group, ds, key]);
+	});
+}
+
+function retractPlugin(req, res) {
+
+	var sql = req.sql,
+	    ds = req.table,
+	    query = req.query;
+
+	res(&quot;Dropping keys&quot;);
+
+	Each(query, function (key, val) {
+
+		sql.query(&quot;ALTER TABLE ??.?? DROP ?? &quot;, [req.group, ds, key]);
+	});
+}
+
+function executePlugin(req, res) {
+
+	var query = req.query;
+
+	/*
+ var job = { // default required parms
+ 	// job related
+ 	thread: req.client.replace(/\./g,&quot;&quot;) + &quot;.&quot; + req.table,
+ 	qos: req.profile.QoS, 
+ 	priority: 0,
+ 	client: req.client,
+ 	class: &quot;chipping&quot;,
+ 	credit: req.profile.Credit,
+ 	name: req.table,
+ 	// engine related
+ 	engine: req.table,   // engine name
+ 	size: query.size || 50,  // feature size in [m]
+ 	pixels: query.pixels || 512, 	// samples across a chip [pixels]
+ 	scale: query.scale || 8,  // scale^2 is max number of features in a chip
+ 	step: query.step || 0.01, 	// relative seach step size
+ 	range: query.range || 0.1, // relative search size
+ 	detects: query.detects || 8,	// hits required to declare a detect
+ 	limit: query.limit || 1e99 	// limit chips
+ };*/
+
+	if (query.ID || query.Name) // run engine in its dataset ctx
+		FLEX.runPlugin(req, function (ctx, isjob) {
+
+			if (isjob) {
+				// Intercept plugin job request
+
+				res(&quot;Job submitted&quot;);
+
+				var chan = ctx.Job || {},
+				    jobnotes = [(req.table + &quot;?&quot;).tagurl({ Name: query.Name }).tag(&quot;a&quot;, { href: &quot;/&quot; + req.table + &quot;.run&quot; }), (req.profile.Credit &gt; 0 ? &quot;funded&quot; : &quot;unfunded&quot;).tag(&quot;a&quot;, { href: req.url }), &quot;RTP&quot;.tag(&quot;a&quot;, { href: &quot;/rtpsqd.view?task=&quot; + query.Task }), &quot;PMR brief&quot;.tag(&quot;a&quot;, { href: &quot;/briefs.view?options=&quot; + query.Task })],
+				    job = Copy(ctx, { // job related
+					thread: req.client.replace(/\./g, &quot;&quot;) + &quot;.&quot; + req.table,
+					qos: req.profile.QoS,
+					priority: 0,
+					client: req.client,
+					class: req.table,
+					credit: req.profile.Credit,
+					name: req.table,
+					task: query.Task,
+					notes: jobnotes.join(&quot; || &quot;)
+				});
+
+				delete job.ID;
+				delete job.Job;
+
+				console.log({
+					chan: chan,
+					job: job
+				});
+
+				if (chan.tmin) CHIPS.ingestStreams(chan, job, function (twindow, status, sql) {
+					console.log(twindow, status);
+				});else if (chan.evring) CHIPS.ingestEvents(chan, job, function (voxel, status, sql) {});else if (chan.ring) CHIPS.ingestChips(chan, job, function (chip, dets, sql) {
+					var updated = new Date();
+
+					console.log({ save: dets });
+					sql.query(&quot;REPLACE INTO ??.chips SET ?,Ring=st_GeomFromText(?),Point=st_GeomFromText(?)&quot;, [req.group, {
+						Thread: job.thread,
+						Save: JSON.stringify(dets),
+						t: updated,
+						x: chip.pos.lat,
+						y: chip.pos.lon
+					}, chip.ring, chip.point]);
+
+					// reserve voxel detectors above this chip
+					for (var vox = CHIPS.voxelSpecs, alt = vox.minAlt, del = vox.deltaAlt, max = vox.maxAlt; alt &lt; max; alt += del) {
+						sql.query(&quot;REPLACE INTO ??.voxels SET ?,Ring=st_GeomFromText(?),Point=st_GeomFromText(?)&quot;, [req.group, {
+							Thread: job.thread,
+							Save: null,
+							t: updated,
+							x: chip.pos.lat,
+							y: chip.pos.lon,
+							z: alt
+						}, chip.ring, chip.point]);
+					}
+				});else {
+					req.query = ctx;
+					ENGINE.select(req, function (rtn) {
+						console.log({ engrtn: rtn });
+						if (query.Save) req.sql.query(&quot;REPLACE INTO ?? SET ?&quot;, [req.table, { Save: JSON.stringify(rtn) }]);
+					});
+				}
+			} else // respond with plugin results
+				res(ctx);
+		});else // run engine in its req.query ctx
+		if (DEBE.benevolent) ENGINE.select(req, res);else res(DEBE.errors.noUsecase);
+}
+
+<span id='converters'>/**
+</span>@class converters
+*/
+
+function renderSkin(req, res) {
+<span id='converters-method-renderSkin'>	/**
+</span> @method renderSkin
+ Totem(req,res) endpoint to render jade code requested by .table jade engine. 
+ @param {Object} req Totem request
+ @param {Function} res Totem response
+ */
+
+	var sql = req.sql,
+	    paths = DEBE.paths,
+	    site = DEBE.site,
+	    ctx = site.context[req.table];
+
+	function renderJade() {
+
+		function genSkin(req, res, fields) {
+			var _sqltypes;
+
+			// generate skin from plugin.view skinner
+
+			var pluginPath = paths.render + &quot;plugin.jade&quot;,
+			    cols = [],
+			    query = req.query,
+			    sql = req.sql,
+			    query = req.query = {
+				mode: req.parts[1],
+				search: req.search,
+				cols: cols,
+				page: query.page,
+				dims: query.dims || &quot;100%,100%&quot;,
+				ds: req.table
+			},
+			    sqltypes = (_sqltypes = {
+				&quot;varchar(32)&quot;: &quot;t&quot;,
+				&quot;varchar(64)&quot;: &quot;t&quot;,
+				&quot;varchar(128)&quot;: &quot;t&quot;,
+				&quot;int(11)&quot;: &quot;i&quot;,
+				float: &quot;n&quot;,
+				json: &quot;x&quot;,
+				mediumtext: &quot;h&quot;
+			}, _defineProperty(_sqltypes, &quot;json&quot;, &quot;x&quot;), _defineProperty(_sqltypes, &quot;date&quot;, &quot;d&quot;), _defineProperty(_sqltypes, &quot;datetime&quot;, &quot;d&quot;), _defineProperty(_sqltypes, &quot;tinyint(1)&quot;, &quot;c&quot;), _sqltypes);
+
+			switch (fields.constructor) {
+				case Array:
+					fields.each(function (n, field) {
+						if (field.Field != &quot;ID&quot;) cols.push(field.Field + &quot;.&quot; + (sqltypes[field.Type] || &quot;t&quot;));
+					});
+					break;
+
+				case String:
+					fields.split(&quot;,&quot;).each(function (n, field) {
+						if (field.Field != &quot;ID&quot;) cols.push(field.Field);
+					});
+					break;
+
+				case Object:
+				default:
+
+					try {
+						Each(fields, function (n, rec) {
+							if (n != &quot;ID&quot;) cols.push(n);
+						});
+					} catch (err) {}
+			}
+
+			if (query.mode == &quot;gbrief&quot;) sql.query(&quot;SELECT * FROM ??.??&quot;, [req.group, query.ds], function (err, recs) {
+				if (err) res(DEBE.errors.badSkin);else {
+					recs.each(function (n, rec) {
+						delete rec.ID;
+					});
+
+					query.data = recs;
+					pluginPath.render(req, res);
+				}
+			});else pluginPath.render(req, res);
+		}
+
+		Trace(&quot;RENDER &quot; + req.table);
+
+		sql.query(paths.engine, { // Try a skin from the  engine db
+			Name: req.table,
+			Engine: &quot;jade&quot;,
+			Enabled: 1
+		}).on(&quot;result&quot;, function (eng) {
+
+			if (eng.Count) // render using skinning engine
+				eng.Code.render(req, res);else // try to render using skin from disk
+				if (select = FLEX.select[req.table]) // try virtual table
+					select(req, function (recs) {
+						genSkin(req, res, recs[0] || {});
+					});else // try sql table
+					var q = sql.query(&quot;DESCRIBE ??.??&quot;, [req.group, req.table], function (err, fields) {
+
+						if (err) // might be a file
+							(paths.render + req.table + &quot;.jade&quot;).render(req, res);else genSkin(req, res, fields);
+					});
+		}).on(&quot;error&quot;, function (err) {
+			res(DEBE.errors.badSkin);
+		});
+	}
+
+	if (ctx) // render skin in extended context
+		sql.context(ctx, function (ctx) {
+			// establish skinning context for requested table
+
+			for (var n in ctx) {
+				// enumerate thru all the datasets
+				ctx[n].args = { n: n }; // hold ds name for use after select
+				ctx[n].rec = function clone(recs, me) {
+					// select and clone the records 
+					site[me.args.n] = recs; // save data into the context
+				};
+			}
+
+			renderJade(); // render skin in this extended context
+		});else renderJade(); // render skin in default context
+}
+
+function genDoc(recs, req, res) {
+	if (!OGEN) return res(DEBE.errors.noOffice);
+
+	var types = {
+		xdoc: &quot;docx&quot;,
+		xxls: &quot;xlsx&quot;,
+		xppt: &quot;pptx&quot;,
+		xpps: &quot;ppsx&quot;
+	},
+	    type = types[req.type],
+	    docf = &quot;./shares/&quot; + req.table + &quot;.&quot; + type;
+
+	if (type) docx = OGEN({
+		type: type
+		//onend: function (writeBytes) { 	}
+	});else res(DEBE.errors.badOffice);
+
+	var docs = FS.createWriteStream(docf);
+
+	docx.generate(docs);
+	docs.on(&quot;close&quot;, function () {
+		Trace(&quot;CREATED &quot; + docf);
+	});
+
+	if (false) {
+		// debugging
+		var docp = docx.createP();
+		docp.addText(&quot;hello there&quot;);
+
+		docp.addTest(&quot;\nview || edit\n\n1.2 All my users\n\nID\tClient\tLikeus\tUpdated\tBanned\tLiked\tJoined\tSnapInterval\tSnapCount\tCharge\tCredit\tQoS\tTrusted\tCaptcha\tLogin\tEmail\tChallenge\tisHawk\tRequested\tApproved\tGroup\tuid\tgid\tUser\tJournal\tMessage\tIDs\tAdmin\tRepoll\tTimeout\tRoles\tStrength\n34\tbrian.james@guest.org\t0\tMon May 04 2015 05:52:50 GMT-0400 (EDT)\t\t1\tMon Sep 28 2015 20:51:50 GMT-0400 (EDT)\tnull\tnull\tnull\t0\t0\t0\t0\tnull\tnull\t0\t1\tnull\tnull\tapp\tnull\tnull\tbrian.james@guest.org\tnull\tnull\t{\&quot;Login\&quot;:\&quot;me\&quot;,\&quot;Password\&quot;:\&quot;test\&quot;,\&quot;FavColor\&quot;:\&quot;blue\&quot;}\tPlease contact joeschome to unlock your accout\t0\t30000\tPM,R,X\t1\n\nTotem\n\t\n\n{\&quot;a\&quot;:[{\&quot;ID\&quot;:0,\&quot;SORN\&quot;:\&quot;TBD\&quot;,\&quot;SPID\&quot;:\&quot;TBD\&quot;}],\&quot;b\&quot;:[{\&quot;ID\&quot;:1,\&quot;NISTid\&quot;:\&quot;TBD\&quot;,\&quot;NISTtype\&quot;:\&quot;a1\&quot;},{\&quot;ID\&quot;:2,\&quot;NISTid\&quot;:\&quot;TBD\&quot;,\&quot;NISTtype\&quot;:\&quot;TBD\&quot;},{\&quot;ID\&quot;:3,\&quot;NISTtype\&quot;:\&quot;a2\&quot;}]}\n\t\n\nTBD\n\n1.1 SCOPE AND APPLICABILITY\n\nThis document applies to all NGA owned, controlled, outsourced, blah blah\n\n2. INFORMATION SYSTEM CATEGORIZATION\n\n2.1 INFORMATION TYPES\nChapter 1\n\nThe Lorenz Equations x2=0\n\nx\u02D9y\u02D9z\u02D9=\u03C3(y\u2212x)=\u03C1x\u2212y\u2212xz=\u2212\u03B2z+xy\n\nImpressive 'eh\n\nJ\u03B1(x)=\u2211m=0\u221E(\u22121)mm!\u0393(m+\u03B1+1)(x2)2m+\u03B1\nChapter 2\n&quot;);
+	}
+
+	var cols = [];
+	var rows = [cols];
+
+	recs.each(function (n, rec) {
+		if (n == 0) for (var key in rec) {
+			rows.push({
+				val: key,
+				opts: {
+					cellColWidth: 4261,
+					b: true,
+					sz: &quot;48&quot;,
+					shd: {
+						fille: &quot;7F7F7F&quot;,
+						themeFill: &quot;text1&quot;,
+						themeFillTint: &quot;80&quot;
+					},
+					fontFamily: &quot;Avenir Book&quot;
+				}
+			});
+		}var row = new Array();
+
+		rows.push(row);
+		for (var key in rec) {
+			row.push(rec[key]);
+		}
+	});
+
+	if (false) docx.createTable(rows, {
+		tableColWidth: 4261,
+		tableSize: 24,
+		tableColor: &quot;ada&quot;,
+		tableAlign: &quot;left&quot;,
+		tableFontFamily: &quot;Comic Sans MS&quot;,
+		borders: true
+	});
+
+	res(&quot;Claim file &quot; + &quot;here&quot;.link(docf));
+}
+
+<span id='initialize'>/**
+</span>@class initialize
+*/
+
+function Initialize() {
+<span id='initialize-method-Initialize'>	/**
+</span> @method Initialize
+ Initialize DEBE on startup.
+ */
+
+	function initSES(cb) {
+<span id='initialize-method-initSES'>		/**
+</span>   * @method initSES
+   * @private
+   * Initialize the session environment
+   */
+
+		Trace(&quot;INITIALIZING SESSIONS&quot;);
+
+		/*
+  Each( CRUDE, function (n,routes) { // Map engine CRUD to DEBE workers
+  	DEBE.worker[n] = ENGINE[n];
+  });	
+  */
+
+		/*
+  The i18n simply provides an industry standard framework for translating native -&gt; foreign
+  phrases (defined my pot-&gt;po files under XLATE folder).  These pot-&gt;po translations are 
+  not free.  Wordpress, for example, provides a service that allows websites to register
+  for their services that crowd source translations from supplied pot files to their
+  delivered po files.
+  */
+
+		if (path = DEBE.paths.mime.xlate) EXAPP.use(LANG.abide({
+			supported_languages: ['en', 'de', 'fr'],
+			default_lang: 'en',
+			translation_directory: path,
+			translation_type: &quot;json&quot;
+			//locale_on_url: true
+		}));
+
+		if (cb) cb();
+	}
+
+	function initENV(cb) {
+<span id='initialize-method-initENV'>		/**
+</span>   * @method initENV
+   * @private
+   * Initialize the runtime environment
+   */
+
+		Trace(&quot;INTIALIZING ENVIRONMENT&quot;);
+
+		var site = DEBE.site,
+		    args = ARGP.usage(&quot;$0 [options]&quot;).default('spawn', DEBE.isSpawned).boolean('spawn').describe('spawn', 'internal hyper-threading option').check(function (argv) {
+			DEBE.isSpawned = argv.spawn;
+		}).default('blind', DEBE.blindTesting).boolean('blind').describe('blind', 'internal testing flag').check(function (argv) {
+			DEBE.blindTesting = argv.blind;
+		}).default('dump', false).boolean('dump').describe('dump', 'display derived site parameters').check(function (argv) {
+			//console.log(site);
+		})
+
+		/*
+  .default('start',DEBE.site.Name)
+  .describe('start','service to start')  
+  .check(function (argv) {
+  	DEBE.site.Name = argv.start;
+  })
+  * */
+
+		.boolean('version').describe('version', 'display current version').check(function (argv) {
+			if (argv.version) Trace(DEBE.site);
+		})
+
+		/*
+  .default('echo',DEBE.FLAGS.DEBUG)
+  .boolean('echo')
+  .describe('echo','echo adjusted http request parameters')
+  .check(function(argv) {
+  	DEBE.FLAGS.DEBUG = argv.echo;
+  })*/
+
+		.boolean('help').describe('help', 'display usage help').check(function (argv) {
+			if (argv.help) {
+				Trace(ARGP.help());
+
+				Trace(&quot;Available services:&quot;);
+				sql.query(&quot;SELECT * FROM openv.apps WHERE ?&quot;, { Enabled: 1 }).on(&quot;result&quot;, function (app) {
+					Trace(app.Name + &quot; v&quot; + app.Ver + &quot; url=&quot; + app.Host + &quot;:&quot; + app.Port + &quot; db=&quot; + app.DB + &quot; nick=&quot; + app.Nick + &quot; sockted=&quot; + (app.Sockets ? &quot;yes&quot; : &quot;no&quot;) + &quot; cores=&quot; + app.Cores + &quot; pki=&quot; + app.PKI);
+				}).on(&quot;error&quot;, function (err) {
+					Trace(err);
+				}).on(&quot;end&quot;, function () {
+					process.exit();
+				});
+			}
+		}).argv;
+
+		Trace(&quot;HOSTING &quot; + site.title + &quot; ON &quot; + (CLUSTER.isMaster ? &quot;MASTER&quot; : &quot;CORE&quot; + CLUSTER.worker.id) + &quot;\n- USING &quot; + site.db + &quot;\n- FROM &quot; + process.cwd() + &quot;\n- RUNNING &quot; + (DEBE.protected ? &quot;PROTECTED&quot; : &quot;UNPROTECTED&quot;) + &quot;\n- WITH &quot; + (site.urls.socketio || &quot;NO&quot;) + &quot; SOCKETS&quot; + &quot;\n- WITH &quot; + (DEBE.SESSIONS || &quot;UNLIMITED&quot;) + &quot; CONNECTIONS&quot; + &quot;\n- WITH &quot; + (site.Cores || &quot;NO&quot;) + &quot; WORKERS@ &quot; + site.urls.worker + &quot; MASTER@ &quot; + site.urls.master + &quot;\n- BILL,DIAG,HAWK EVERY &quot; + [site.billingcycle, site.diagcycle, site.hawkingcycle] + &quot; SECS&quot;);
+
+		if (cb) cb();
+	}
+
+	function initSQL(cb) {
+<span id='initialize-method-initSQL'>		/**
+</span>   * @method initSQL
+   * @private
+   * Initialize the FLEX and ENGINE interfaces
+   */
+
+		Trace(&quot;INITIALIZING FLEX&quot;);
+
+		Each(CRUDE, function (n, routes) {
+			// redirect dataset crude calls
+			DEBE[n] = FLEX[n].ds;
+			DEBE.emulator[n] = FLEX[n];
+		});
+
+		FLEX.config({
+			thread: DEBE.thread,
+			emitter: DEBE.IO ? DEBE.IO.sockets.emit : null,
+			skinner: JADE,
+			fetcher: DEBE.fetchers.http,
+			indexer: DEBE.indexer,
+			uploader: DEBE.uploader,
+
+			paths: { // urls to supporting services
+				HOST: DEBE.site.urls.master,
+				NEWSREAD: &quot;http://craphound.com:80/?feed=rss2&quot;,
+				AOIREAD: &quot;http://omar.ilabs.ic.gov:80/tbd&quot;
+			},
+
+			billingCycle: DEBE.billingCycle, // job billing cycle [ms]
+			diagCycle: DEBE.diagCycle, // Check period [ms]
+			hawkingCycle: DEBE.hawkingCycle, // job hawking cycle [ms] (0 disables)
+
+			site: DEBE.site, // Site parameters
+
+			/*
+   statefulViews : { 					// Jade views that require the stateful URL
+   	'workflow': 1,
+   	'workflows': 1
+   },*/
+
+			/*NEWSREAD: { 					// Establish news reader
+   	//JOB: APP.INGEST,
+   	PROXY: {
+   		hostname: 'http://omar.ilabs.ic.gov',
+   		port: 80,
+   		path: '/tbd',
+   		method: 'GET'
+   	}
+   },*/
+
+			mailer: { // Email parameters
+				TRACE: true,
+				ONSTART: true,
+				SOURCE: &quot;tbd&quot;
+			}
+
+			/*
+   likeus : {
+   	BILLING : 1,				// Billing cycle [days]
+   	PING : 0.5	 				// Check period [days]
+   },
+   */
+
+		});
+
+		Trace(&quot;INITIALIZING ENGINES&quot;);
+
+		var paths = DEBE.paths,
+		    fetchers = DEBE.fetchers;
+
+		if (loader = DEBE.loader) CHIPS.config({
+			fetch: {
+				catalog: function catalog(req, res) {
+					loader(paths.wfs.spoof, fetchers.http, req, res);
+				},
+				image: function image(req, res) {
+					loader(paths.wms.spoof, fetchers.wget, req, res);
+				},
+				events: function events(req, res) {
+					loader(paths.sss.spoof, fetchers.http, req, res);
+				},
+				stats: function stats(req, res) {
+					loader(paths.sss.gaussmix, fetchers.http, req, res);
+				},
+				autorun: function autorun(req, res) {
+					loader(paths.sss.autorun, fetchers.http, req, res);
+				},
+				save: fetchers.plugin
+			},
+			source: &quot;&quot;,
+			thread: DEBE.thread
+		});
+
+		ENGINE.config({
+			thread: DEBE.thread,
+			cores: DEBE.core
+		});
+
+		ENGINE.plugins.FLEX = FLEX.plugins; // Force add FLEX plugins to engine plugins
+		FLEX.plugins.plugins = FLEX.plugins; // Allows plugins to ref either
+
+		if (cb) cb();
+	}
+
+	initENV(function () {
+		// init the global environment
+		initSES(function () {
+			// init session handelling
+			initSQL(function () {
+				// init the sql interface
+
+				DEBE.thread(function (sql) {
+					var path = DEBE.paths.render;
+
+					DEBE.indexer(path, function (files) {
+						// publish new engines
+						var ignore = { &quot;.&quot;: true, &quot;_&quot;: true };
+						files.each(function (n, file) {
+							if (!ignore[file.charAt(0)]) try {
+								//Trace(&quot;PUBLISH SKIN &quot;+file);							
+								sql.query(&quot;INSERT INTO app.engines SET ?&quot;, {
+									Name: file.replace(&quot;.jade&quot;, &quot;&quot;),
+									Code: FS.readFileSync(path + file, &quot;utf-8&quot;),
+									Engine: &quot;jade&quot;,
+									Enabled: 0
+								});
+							} catch (err) {
+								//Trace(err);
+							}
+						});
+
+						sql.release();
+					});
+				});
+			});
+		});
+	});
+}
+
+function Trace(msg, arg) {
+	TOTEM.trace(&quot;D&gt;&quot;, msg, arg);
+}
+
+// UNCLASSIFIED</pre>
+</body>
+</html>
