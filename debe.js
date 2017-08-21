@@ -208,7 +208,8 @@ append layout_body
 
 		classif: {
 			level: "",
-			purpose: ""
+			purpose: "",
+			banner: ""
 		},
 		
 		info: {
@@ -413,7 +414,7 @@ append layout_body
 							rtn += row.tag("tr");
 						});
 						
-						return rtn.tag("table",{}).tag("div",{style:"overflow-x:auto"});
+						return rtn; //.tag("table",{}); //.tag("div",{style:"overflow-x:auto"});
 						
 					case Object: // { key:val, ... } create table dump of object hash
 					
@@ -450,7 +451,9 @@ append layout_body
 				return rtn;
 			}
 			
-			return table( recs );
+			var x =  table( recs );
+			console.log(x);
+			return x;
 		},
 				
 		/**
@@ -459,6 +462,9 @@ append layout_body
 		@member SKINS
 		*/
 		context: { // defines DSVAR contexts when a skin is rendered
+			plugin: {
+				projs: "openv.milestones"
+			},
 			briefs: {
 				projs: "openv.milestones"
 			},
@@ -1030,7 +1036,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					joined: req.joined,
 					profile: req.profile,
 					group: req.group,
-					search: req.serach,
+					search: req.search,
+					util: {
+						cpu: (req.log.Util*100).toFixed(0),
+						disk: ((req.profile.useDisk / req.profile.maxDisk)*100).toFixed(0)
+					},
 					started: DEBE.started,
 					filename: DEBE.paths.jaderef,
 					url: req.url
@@ -1204,7 +1214,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	loader: function (url,met,req,res) { // data loader
 	/**
 	@member DEBE
-	@pivate
+	@private
 	@method loader
 	@param {String} url path to source
 	@param {String} met method GET/POST/... to use
@@ -1923,9 +1933,30 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		site = DEBE.site,  
 		ctx = site.context[req.table]; 
 		
+	function extendContext(sql, ctx, cb) {
+		sql.context(ctx, function (ctx) {  // establish skinning context for requested table
+
+			var lastds = "";
+			for (lastds in ctx);
+			
+			if (lastds)
+				for (var ds in ctx) { 		// enumerate thru all the datasets before rendering with cb
+					ctx[ds].args = {ds:ds}; 	// hold ds name for use after select
+					ctx[ds].rec = function clone(recs,me) {  // select and clone the records 
+						site[me.args.ds] = recs; 		// save data into the context
+						if (me.args.ds == lastds) cb();  // all loaded so can render with cb
+					};
+				}
+			
+			else
+				cb();
+
+		});
+	}
+	
 	function renderJade() {  
 
-		function genSkin(req, res, fields) { // generate skin from plugin.view skinner
+		function genSkin(req, res, fields) { // generate skin using the plugin skinner
 			
 			var
 				pluginPath = paths.render+"plugin.jade",
@@ -1940,6 +1971,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 					dims: query.dims || "100%,100%",
 					ds: req.table
 				},				
+				ctx = site.context.plugin,
 				sqltypes = {
 					"varchar(32)": "t",
 					"varchar(64)": "t",
@@ -1982,7 +2014,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 					}
 			}
 				
-			if ( query.mode == "gbrief" ) 
+			/*if ( query.mode == "gbrief" ) // better to add this to site.context.plugin
 				sql.query("SELECT * FROM ??.??", [req.group, query.ds], function (err,recs) {
 					if (err)
 						res( DEBE.errors.badSkin );
@@ -1997,14 +2029,21 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 					}
 				});
 
-			else	
+			else	*/
+			
+			if (ctx) 					
+				extendContext(sql, ctx, function () {  // render plugin in its extended context
+					pluginPath.render(req, res);
+				});
+
+			else  // render plugin in its default context
 				pluginPath.render(req, res);
 			
 		}		
 							  
 		Trace("DEBE "+req.table);
 		
-		sql.query(paths.engine, { // Try a skin from the  engine db
+		sql.query(paths.engine, { // Try a skinning engine
 			Name: req.table,
 			Engine: "jade",
 			Enabled: 1
@@ -2023,9 +2062,9 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 			else  // try sql table
 				var q = sql.query(
 					"DESCRIBE ??.??", 
-					[ req.group, req.table ], 
+					[ FLEX.txGroup[req.table] || req.group, req.table ] , 
 					function (err,fields) {
-
+						
 						if (err) // might be a file
 							( paths.render+req.table+".jade" ).render(req, res);
 
@@ -2040,21 +2079,13 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 
 	}
 		
-	if (ctx) 					// render skin in extended context
-		sql.context(ctx, function (ctx) {  // establish skinning context for requested table
-			
-			for (var n in ctx) { 		// enumerate thru all the datasets
-				ctx[n].args = {n:n}; 	// hold ds name for use after select
-				ctx[n].rec = function clone(recs,me) {  // select and clone the records 
-					site[me.args.n] = recs; 		// save data into the context
-				};
-			}
-
-			renderJade(); 			// render skin in this extended context
+	if (ctx) 
+		extendContext(sql, ctx, function () {  // render skin in its extended context
+			renderJade(); 			
 		});
 	
 	else
-		renderJade();  		// render skin in default context
+		renderJade();  		// render skin in its default context
 
 }
 
@@ -2257,7 +2288,7 @@ Initialize DEBE on startup.
 			.boolean('dump')
 			.describe('dump','display derived site parameters')  
 			.check(function (argv) {
-				console.log(site);
+				//console.log(site);
 			})
 		
 			/*
@@ -2342,6 +2373,17 @@ Initialize DEBE on startup.
 			indexer: DEBE.indexer,
 			uploader: DEBE.uploader,
 
+			txGroup: {
+				roles: "openv",
+				aspreqts: "openv",
+				ispreqts: "openv",
+				tta: "openv",
+				milestones: "openv",
+				journal: "openv",
+				hawks: "openv",
+				attrs: "openv"
+			},
+			
 			paths: {  // urls to supporting services
 				HOST: DEBE.site.urls.master,
 				NEWSREAD: "http://craphound.com:80/?feed=rss2",

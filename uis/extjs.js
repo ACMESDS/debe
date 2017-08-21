@@ -3692,6 +3692,7 @@ WIDGET.prototype.folder = function() {
 	
 	this.UI = Ext.create('Ext.tab.Panel', {
 		// Basic
+		//bodyStyle: "background: yellow;color:red;",
 		animCollapse: true,
 		border		: true,
 		title		: this.title, //this.head ? this.title : null,

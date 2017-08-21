@@ -50,6 +50,8 @@ append base_body
 	#hold.Views(path="/VIEWS.db",cols="Name,class")
 	#hold.Uploads(path="/uploads.db",cols="Name")
 	#hold.Stores(path="/stores.db",cols="Name")
+	#hold.Tasks(path="/tasks.db",cols="Name")
+	#hold.Plugins(path="/plugins.db",cols="Name")
 	#hold.Parms(path="/parms.db",cols="Parm,Type,Label,Special",sync="Parm")
 	#hold.Summary(path="/SUMMARY.db",refresh=pulse,cols="Name")
 
@@ -61,7 +63,7 @@ append base_body
 		#hold.Positives(path="/positives.FILES.db",cols="Name")
 		#hold.Negatives(path="/negatives.FILES.db",cols="Name")
 
-	- titlebar = [table.hyper("/edit.view?name="+table), client.hyper("/home.view?option=chat"), ("QoS"+profile.QoS).hyper(":profile"), "Issues".hyper(), "Baseline".hyper("git.exe"), "Moderate".hyper(), (warning ? warning.fontcolor("red") : "ok".fontcolor("blue")).hyper("/ispstatus.view") ].join(" || ")
+	- titlebar = [table.hyper("/edit.view?name="+table), client.hyper("/home.view?option=chat"), (profile.Credit*1e-3).toFixed(0)+"K "+profile.QoS+"qos "+util.cpu + "%cpu " + util.disk+"%disk", "Issues".hyper(), "Baseline".hyper("git.exe"), "Moderate".hyper(), (warning ? warning.fontcolor("red") : "ok".fontcolor("blue")).hyper("/ispstatus.view") ].join(" || ")
 	- goto = query.goto || ""
 	- browsers = {Ok: ["supported","Chrome","Firefox","Opera","Safari"],Bad: ["unsupported","IE","Netscape","Traveler","TheWorld","Maxthon"] }
 
@@ -69,9 +71,9 @@ append base_body
 		when "Min"
 			#border(
 				class=table,
-				head="Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
+				head="Tasks,Plugins,Links,Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
 				LikeUs="/likeus.db",
-				View="/files.view",
+				Manage="/files.view",
 				title=titlebar)
 
 				block site_help
@@ -98,42 +100,15 @@ append base_body
 						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/prm/) [blog](tbd) [JIRA](tbd) By:#{credits}
 
 		when "Basic"
-			#border(
-				class=table,
-				head="Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
-				LikeUs="/likeus.db",
-				View="/files.view",
-				title=titlebar)
-
-				block site_help
-					:markdown
-						*	(#{classif.level}) #{title} #{classif.purpose}
-						*	Options for this view.
-						*	Links to other views.
-						*	Themes preferred.  
-						*	[Likeus](/likeus.view) to impove your QoS.
-						*	Capture screen for administrator.
-						*	Edit this skin. See [skinning guide](skinguide.view)
-						*	Health of system.
-						*	Users connected.
-						*	Engines status.  See [Python,JS,R,Ex,Matlab,etc engines](/api.view) 
-						*	Queues status.  Job are regulated at your existing [QoS level](/api.view)
-						*	Files/Uploads to upload data and receive credit for future job runs.
-						*	Files/Stores to upload shared files.
-
-				#folder(center,dock=dock)
-					block site_body
-						
-				#fit(south,crush)
-					:markdown
-						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
+			#folder(center,dock=dock)
+				block site_body
 		
 		when "Typical"
 			#border(
 				class=table,
-				head="Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
+				head="Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
 				LikeUs="/likeus.db",
-				View="/files.view",
+				Manage="/files.view",
 				title=titlebar)
 
 				block site_help
@@ -240,9 +215,9 @@ append base_body
 			#border(
 				class=table,
 				crush,
-				head="Comfort,Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),Options,Likeus,Help",
+				head="Comfort,Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,Likeus,Help",
 				LikeUs="/likeus.db",
-				View="/files.view",
+				Manage="/files.view",
 				title=titlebar)
 
 				#grid.Search(
@@ -258,9 +233,9 @@ append base_body
 			#border(
 				class=table,
 				title=titlebar,
-				head="System(Health,Users,Links,Engines,Queues),Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),Options,LikeUs,Capture,Help",
+				head="System(Health,Users,Links,Engines,Queues),Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,LikeUs,Capture,Help",
 				LikeUs="/likeus.db",
-				View="/files.view")
+				Manage="/files.view")
 				
 				block site_body
 					:markdown

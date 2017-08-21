@@ -5,7 +5,7 @@ append site_help
 	:markdown
 		See also the companion [api reference](/api.jade) and the [programmers ref manual](/shares/doc/totem/index.html).
 append site_parms
-	- view = "Basic"
+	- view = "Typical"
 	- parms = {tipsheets: "tipsheets", blogs: "blogs", embeds: "embeds", workflows:"workflows", engines:"engines", odbc:"odbc", immersion:"immersion", finders:"finders", navigator:"navigator", techpub:"techpub", briefs:"briefs", visuals:"visuals"}
 append site_body
 
@@ -705,12 +705,13 @@ append site_body
 					+	flags	= request flags (#{json(flags)})  
 					+	joined = time session started (#{json(joined)})
 					
-					client-context keys:
+					session-context keys:
 					+	client	= client's name (#{client})  
 					+	profile	= client's qos profile (#{json(profile)})  
 					+ 	group = client's assigned group (#{group})
 					+ 	org = client organization (#{org})
 					+	email	= client email address (#{email})  
+					+	util = cpu and disk utilization (#{json(util)})
 					
 					site-context keys:
 					+ 	urls	= site urls (#{json(urls)})

@@ -222,6 +222,14 @@ var DEBE = module.exports = TOTEM.extend({
 
 	&quot;site.&quot;: { //&lt; initial site context
 
+		classif: {
+			level: &quot;&quot;,
+			purpose: &quot;&quot;,
+			banner: &quot;&quot;
+		},
+
+		info: {},
+
 		get: function get(recs, where, index, subs) {
 			//&lt; index dataset
 <span id='SKINS-method-get'>			/**
@@ -1024,6 +1032,10 @@ var DEBE = module.exports = TOTEM.extend({
 			profile: req.profile,
 			group: req.group,
 			search: req.serach,
+			util: {
+				cpu: (req.log.Util * 100).toFixed(0),
+				disk: (req.profile.useDisk / req.profile.maxDisk * 100).toFixed(0)
+			},
 			started: DEBE.started,
 			filename: DEBE.paths.jaderef,
 			url: req.url
@@ -1180,7 +1192,7 @@ var DEBE = module.exports = TOTEM.extend({
 		// data loader
 <span id='DEBE-method-loader'>		/**
 </span>  @member DEBE
-  @pivate
+  @private
   @method loader
   @param {String} url path to source
   @param {String} met method GET/POST/... to use
@@ -2020,7 +2032,7 @@ function Initialize() {
 		}).default('blind', DEBE.blindTesting).boolean('blind').describe('blind', 'internal testing flag').check(function (argv) {
 			DEBE.blindTesting = argv.blind;
 		}).default('dump', false).boolean('dump').describe('dump', 'display derived site parameters').check(function (argv) {
-			//console.log(site);
+			console.log(site);
 		})
 
 		/*

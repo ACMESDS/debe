@@ -28,6 +28,7 @@
 @requires constants
 @requires clusters
 @requires child-process
+@requires os
 
 @requires mime
 @requires enum
@@ -55,7 +56,9 @@ CONS = require(&quot;constants&quot;),
     //&lt; NodeJs module
 CLUSTER = require(&quot;cluster&quot;),
     //&lt; NodeJs module
-URL = require(&quot;url&quot;); //&lt; NodeJs module
+URL = require(&quot;url&quot;),
+    //&lt; NodeJs module
+OS = require('os'); // OS utilitites
 
 var // 3rd party modules
 SIO = require('socket.io'),
@@ -618,33 +621,37 @@ var TOTEM = module.exports = ENUM.extend({
  @param {Function} res Totem responder
  */
 	select: selectDS,
-<span id='Format-cfg-update'>	/**
+<span id='TOTEM-cfg-update'>	/**
 </span> @cfg {Function}	
  @method update
+ @member TOTEM	
  CRUDE (req,res) method to respond to a Totem request
  @param {Object} req Totem request
  @param {Function} res Totem responder
  */
 	update: updateDS,
-<span id='Format-cfg-delete'>	/**
+<span id='TOTEM-cfg-delete'>	/**
 </span> @cfg {Function}	
  @method delete
+ @member TOTEM	
  CRUDE (req,res) method to respond to a Totem request
  @param {Object} req Totem request
  @param {Function} res Totem responder
  */
 	delete: deleteDS,
-<span id='Format-cfg-insert'>	/**
+<span id='TOTEM-cfg-insert'>	/**
 </span> @cfg {Function}
  @method insert
+ @member TOTEM	
  CRUDE (req,res) method to respond to a Totem request
  @param {Object} req Totem request
  @param {Function} res Totem responder
  */
 	insert: insertDS,
-<span id='Format-cfg-execute'>	/**
+<span id='TOTEM-cfg-execute'>	/**
 </span> @cfg {Function}
  @method execute
+ @member TOTEM	
  CRUDE (req,res) method to respond to a Totem request
  @param {Object} req Totem request
  @param {Function} res Totem responder
@@ -653,34 +660,39 @@ var TOTEM = module.exports = ENUM.extend({
 
 	//======================================
 
-<span id='Format-cfg-started'>	/**
+<span id='TOTEM-cfg-started'>	/**
 </span> @cfg {Date} 
  @private
+ @member TOTEM	
  totem start time
  */
 	started: null, //&lt; totem start time
 
-<span id='Format-cfg-retries'>	/**
+<span id='TOTEM-cfg-retries'>	/**
 </span> @cfg {Number} [retries=5]
+ @member TOTEM	
  Maximum number of retries the data fetcher will user
  */
 	retries: 5, //&lt; Maximum number of retries the data fetcher will user
 
-<span id='Format-cfg-notify'>	/**
+<span id='TOTEM-cfg-notify'>	/**
 </span> @cfg {Boolean} [notify=true]
+ @member TOTEM	
  Enable/disable tracing of data fetchers
  */
 	notify: true, //&lt; Enable/disable tracing of data fetchers
 
-<span id='Format-cfg-nofaults'>	/**
+<span id='TOTEM-cfg-nofaults'>	/**
 </span> @cfg {Boolean} [nofaults=false]
+ @member TOTEM	
  Enable/disable service protection mode
  */
 	nofaults: false, //&lt; Enable/disable service protection mode
 
-<span id='Format-cfg-protect'>	/**
+<span id='TOTEM-cfg-protect'>	/**
 </span> @cfg {Object} 
  @private
+ @member TOTEM	
  Service protections when in nofaults mode
  */
 	protect: {
@@ -695,15 +707,17 @@ var TOTEM = module.exports = ENUM.extend({
 		SIGSTOP: 1
 	},
 
-<span id='Format-cfg-validator'>	/**
+<span id='TOTEM-cfg-validator'>	/**
 </span> @cfg {Function} 
+ @member TOTEM	
  Additional session validator(req,res) responds will null if client validated, otherwise
  responds with an error.
  */
 	validator: null,
 
-<span id='Format-cfg-admitRule'>	/**
+<span id='TOTEM-cfg-admitRule'>	/**
 </span> @cfg {Object} 
+ @member TOTEM	
  Null to admitRule all clients, or {X:&quot;required&quot;, Y: &quot;optional&quot;, ...} to admitRule clients with cert organizational
  credentials X.
  */
@@ -712,8 +726,9 @@ var TOTEM = module.exports = ENUM.extend({
    	&quot;us&quot;: &quot;optional&quot;
    }*/
 
-<span id='Format-cfg-guestProfile'>	/**
+<span id='TOTEM-cfg-guestProfile'>	/**
 </span> @cfg {Object}
+ @member TOTEM	
  Default guest profile (unencrypted or client profile not found)
  */
 	guestProfile: {
@@ -732,9 +747,10 @@ var TOTEM = module.exports = ENUM.extend({
 		Message: &quot;Welcome guest - what is (riddle)?&quot;
 	},
 
-<span id='Format-cfg-riddleMap'>	/**
+<span id='TOTEM-cfg-riddleMap'>	/**
 </span> @cfg {Object} 
  @private
+ @member TOTEM	
  Riddle digit-to-jpeg map (null to disable riddles)
  */
 	riddleMap: {
@@ -750,15 +766,17 @@ var TOTEM = module.exports = ENUM.extend({
 		9: [&quot;40&quot;, &quot;190&quot;]
 	},
 
-<span id='Format-cfg-riddles'>	/**
+<span id='TOTEM-cfg-riddles'>	/**
 </span> @cfg {Number} [riddles=0]
+ @member TOTEM	
  Number of riddles to protect site (0 to disable anti-bot)
  */
 	riddles: 0,
 
-<span id='Format-cfg-paths'>	/**
+<span id='TOTEM-cfg-paths'>	/**
 </span> @cfg {Object} 
  @private
+ @member TOTEM	
  Default paths to service files
  */
 	paths: {
@@ -792,8 +810,6 @@ var TOTEM = module.exports = ENUM.extend({
 			pocs: &quot;SELECT lower(Hawk) AS Role, group_concat(DISTINCT Client SEPARATOR ';') AS Contact FROM openv.roles GROUP BY hawk&quot;
 		},
 
-		admitGuests: true, //&lt; enable to admit guest clients making https requests
-
 		mime: { // default static file areas
 			files: &quot;.&quot;, // path to shared files 
 			captcha: &quot;.&quot;, // path to antibot captchas
@@ -803,9 +819,17 @@ var TOTEM = module.exports = ENUM.extend({
 		}
 	},
 
-<span id='Format-cfg-errors'>	/**
+<span id='TOTEM-cfg-admitGuests'>	/**
+</span> @cfg {Boolean} 
+ @member TOTEM	
+ Enable to admit guest clients making https requests
+ */
+	admitGuests: true, //&lt; enable to admit guest clients making https requests
+
+<span id='TOTEM-cfg-errors'>	/**
 </span> @cfg {Object} 
  @private
+ @member TOTEM	
  Error messages
  */
 	errors: {
@@ -835,29 +859,33 @@ var TOTEM = module.exports = ENUM.extend({
 		cantConfig: new Error(&quot;cant derive config options&quot;)
 	},
 
-<span id='Format-method-indexer'>	/**
+<span id='TOTEM-method-indexer'>	/**
 </span> @method 
  @config {Function}
+ @member TOTEM	
  	File indexer
  */
 	indexer: indexFile,
 
-<span id='Format-cfg-uploader'>	/**
+<span id='TOTEM-cfg-uploader'>	/**
 </span> @cfg {Function}
  @method uploader
+ @member TOTEM	
  File uploader 
  */
 	uploader: uploadFile,
 
-<span id='Format-cfg-busycycle'>	/**
+<span id='TOTEM-cfg-busycycle'>	/**
 </span> @cfg {Number}
+ @member TOTEM	
  Server toobusy check period in seconds
  */
 	busycycle: 3, //&lt; site too-busy check interval [s] (0 disables)
 
-<span id='Format-cfg-setContext'>	/**
+<span id='TOTEM-cfg-setContext'>	/**
 </span> @cfg {Function}
  @private
+ @member TOTEM	
  Sets the site context parameters available in TOTEM.site.
  */
 	setContext: function setContext(sql, cb) {
@@ -914,8 +942,9 @@ var TOTEM = module.exports = ENUM.extend({
 		else if (cb) cb();
 	},
 
-<span id='Format-cfg-cache'>	/**
+<span id='TOTEM-cfg-cache'>	/**
 </span> @cfg {Object} 
+ @member TOTEM	
  @private
  */
 	cache: { //&lt; by-area cache
@@ -946,9 +975,10 @@ var TOTEM = module.exports = ENUM.extend({
 		certs: {} // reserved for crts in certs area
 	},
 
-<span id='Format-cfg-Function'>	/**
+<span id='TOTEM-cfg-Function'>	/**
 </span> @cfg {Object} 
  @private
+ @member TOTEM	
  ENUM will callback this initializer when the service is started
  */
 	Function: Initialize //&lt; added to ENUM callback stack
@@ -1627,8 +1657,22 @@ function validateCert(req, res) {
 		/* 
   If the client's cert is good,respond with res(null), then add the client's session metric log, org, serverip, 
   group, profile, db journalling flag, time joined, email and client ID to this req request.  The cert is also
-  cached for future data fetching to https sites.  If the cert is bad, then resond res(err).
+  cached for future data fetching to https sites.  If the cert is bad, then respond with res(err).
   */
+
+		function cpuavgutil() {
+			// compute average cpu utilization
+			var avgUtil = 0;
+			var cpus = OS.cpus();
+
+			cpus.each(function (n, cpu) {
+				idle = cpu.times.idle;
+				busy = cpu.times.nice + cpu.times.sys + cpu.times.irq + cpu.times.user;
+				avgUtil += busy / (busy + idle);
+			});
+			return avgUtil / cpus.length;
+		}
+
 		if (TOTEM.encrypt) {
 			// validate client's cert
 
@@ -1651,6 +1695,7 @@ function validateCert(req, res) {
 					ThreadsRunning: stats[3].Value, // sql threads running
 					ThreadsConnected: stats[1].Value, // sql threads connected
 					Stamp: TOTEM.name, // site name
+					Util: cpuavgutil(), // cpu utilization
 					Fault: &quot;isp&quot; // fault codes
 					//Cores: site.Cores, 					// number of safety core hyperthreads
 					//VMs: 1,								// number of VMs
@@ -1718,7 +1763,7 @@ function indexFile(path, cb) {
 	var files = [];
 
 	findFile(path, function (n, file) {
-		files.push(file);
+		files.push(file.indexOf(&quot;.&quot;) &gt;= 0 ? file : file + &quot;/&quot;);
 	});
 
 	cb(files);

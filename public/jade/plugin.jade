@@ -50,6 +50,7 @@ append site_body
 	- dims = dsdims.split(",")
 	- height = dims.pop()
 	- width = dims.pop()
+	- tasks = projs ? get( projs , {Plugin:ds}, "Task,Hours,Complete,FAQ1,FAQ2") : []
 
 	case mode
 		when "plugin"
@@ -63,8 +64,10 @@ append site_body
 				page=dspage )
 
 				:markdown
-					A plugin is a coupled dataset-engine that is used to run an engine with selected usecase parameters.  Simply select
-					a usecase, then click the execute/run button. Uou may also run a plugin from the url bar:
+					This *#{ds}* plugin provides a coupled dataset-engine to execute its engine with the selected usecase.  Simply 
+					select	a usecase, then click the execute/run button. 
+					
+					You may run any plugin from the url bar:
 
 						GET /PLUGIN.exe?ID=CASE 	Run PLUGIN engine using PLUGIN dataset parameters for specified CASE 
 						GET /PLUGIN.exe?Name=CASE 	Run PLUGIN engine using PLUGIN dataset parameters for specified CASE
@@ -77,17 +80,22 @@ append site_body
 							(Description) document CASE
 							
 					Use  [Save+](/#{ds}.add?Save=doc), [Job+](/#{ds}.add?Job=doc), [Task+](/#{ds}.add?Task=name), [Description+](/#{ds}.add?Description=doc) to add,
-					and [Save-](/#{ds}.sub?Save), [Job-](/#{ds}.sub?Job), [Task-](/#{ds}.sub?Task), [Description-](/#{ds}.sub?Description)  to remove
-					these parameters.   When events are ingested, the CASE="ingest" record is cloned with Job parameters afjusted to
-					the new events.
+					and [Save-](/#{ds}.sub?Save), [Job-](/#{ds}.sub?Job), [Task-](/#{ds}.sub?Task), [Description-](/#{ds}.sub?Description) to remove
+					these parameters from the *#{ds}* plugin.   
+					
+					Plugins are tied with #{title}'s data ingest process, so wWhen events are ingested, the CASE="ingest" 
+					record is cloned with Job parameters adjusted to the ingested events.
 
-					A (Description) parameter may contains bloggable markdown  tags
+					A plugin may also contain a (Description) parameter; this may contains bloggable markdown  tags
 
 						[image | post | update | LABEL,W,H](url) 
 
-					to document the test case and its results.  Toggle the blog button to 
-					edit / display the blog.
+					to document the test case and its results.  Toggle the blog button to edit / display the blog.
 
+					The *#{ds}* plugin impacts the following tasks:
+					
+				table!= gridify(tasks)
+	
 			#form.Engine(
 				path="/engines.db?Name=#{ds}",
 				cols="Name,Engine,Enabled.c,Program(Code.x,Vars.x.Context)")

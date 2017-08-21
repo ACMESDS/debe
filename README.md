@@ -49,8 +49,8 @@ Clone from one of the repos.  You will typically want to redirect the following 
 
 ## Databases
 
-openv.apps  Reads on start() to derive command line parms
-app.X Table X read for job parameters in a .exe route
+* openv.apps  Reads on start() to derive command line parms  
+* app.X Table X read for job parameters in a .exe route
 
 ## Use
 
@@ -65,7 +65,7 @@ Simply require, configure and start DEBE:
 		:
 		:
 	}, function (err) {
-		console.log( err ? "something evil happended" : "Im running");
+		console.log( err ? "something evil is lurking" : "look mom - Im running!");
 	});
 
 where its configuration keys follow [ENUM copy()](https://github.com/acmesds/enum) conventions and
