@@ -1258,6 +1258,7 @@ function DS(anchor) {
 * @property {String}
 * name supplied for this DS
 */
+		hover = this.hover = anchor.getAttribute("hover"),  
 		name 	= this.name = anchor.getAttribute("class"),  
 /**
  * @property {String}
@@ -1753,7 +1754,7 @@ Ext.onReady( function () {
 			},
 			ATTRS : {
 				region:"",active:"",refresh:"",
-				dims:"1200,600",title:"",page:"",plugins:"cXF",
+				dims:"1200,600",title:"",page:"",plugins:"cXF",hover:"",
 				//guard:"",
 				dock:"head",sync:"",
 				head:"Status,Insert,Update,Delete,Select,Execute,|,Blog,Print,Refresh,Delta,Help",
@@ -3268,6 +3269,7 @@ WIDGET.prototype.terminal = function (term,opts) {
 
 	this.UI = this.dataUI = Ext.create(term || "Ext.grid.Panel", Copy(opts || {}, {    // create the terminal UI
 		// Basic attribute and appearance 
+		headerOverCls: Widget.hover || "",
 		columnLines	: false,
 		animCollapse: false,  		// EXTJS BUG -- must be disabled due to rendering problems when embedded into other components
 		collapsed	: this.crush,
@@ -3497,7 +3499,8 @@ WIDGET.prototype.content = function () {
 				layout: "fit",
 				html: this.title,
 				region: "north",
-				bodyStyle: "background: yellow;text-align:center;color:black;"
+				bodyCls: "contentClassif"
+				//bodyStyle: "background: yellow;text-align:center;color:black;"
 			}),
 
 			Ext.create('Ext.panel.Panel', { 		// content
@@ -3524,7 +3527,8 @@ WIDGET.prototype.content = function () {
 				layout: "fit",
 				html: this.title,
 				region: "south",
-				bodyStyle: "background: yellow;text-align:center;color:black;"
+				bodyCls: "contentClassif"
+				//bodyStyle: "background: yellow;text-align:center;color:black;"
 			})
 		]
 	});
@@ -3692,7 +3696,7 @@ WIDGET.prototype.folder = function() {
 	
 	this.UI = Ext.create('Ext.tab.Panel', {
 		// Basic
-		//bodyStyle: "background: yellow;color:red;",
+		//style: "background: yellow;color:red;",
 		animCollapse: true,
 		border		: true,
 		title		: this.title, //this.head ? this.title : null,
@@ -4109,6 +4113,7 @@ WIDGET.prototype.form = function () {
 
 	this.UI = this.dataUI = Ext.create('Ext.form.Panel', { 
 		// Basic attribute and appearance 
+		headerOverCls: Widget.hover || "",
 		columnLines	: false,
 		animCollapse: false,			// EXTJS BUG - must not animate the collapse
 		collapsed	: this.crush,

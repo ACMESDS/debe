@@ -61,6 +61,7 @@ append site_body
 				menu="Agents",
 				wrap,
 				dims=dsdims,
+				hover="finished",
 				page=dspage )
 
 				:markdown
@@ -92,12 +93,14 @@ append site_body
 
 					to document the test case and its results.  Toggle the blog button to edit / display the blog.
 
-					The *#{ds}* plugin impacts the following tasks:
+					The header color indicates the status of the *#{ds}* plugin: completed (green), policed (blue),
+					funded construction (orange), unfunded (red).  The *#{ds}* plugin impacts the following tasks:
 					
 				table!= gridify(tasks)
 	
 			#form.Engine(
 				path="/engines.db?Name=#{ds}",
+				hover="pending",
 				cols="Name,Engine,Enabled.c,Program(Code.x,Vars.x.Context)")
 
 				:markdown
@@ -113,6 +116,7 @@ append site_body
 				refresh=dsrefresh,
 				wrap,
 				head="Print,Refresh,Help",
+				hover="policed",
 				page=dspage )
 
 				:markdown

@@ -451,9 +451,7 @@ append layout_body
 				return rtn;
 			}
 			
-			var x =  table( recs );
-			console.log(x);
-			return x;
+			return  table( recs );
 		},
 				
 		/**
