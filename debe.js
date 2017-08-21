@@ -1955,7 +1955,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 	
 	function renderJade() {  
 
-		function genSkin(req, res, fields) { // generate skin using the plugin skinner
+		function dynamicSkin(req, res, fields) { // generate skin using the plugin skinner
 			
 			var
 				pluginPath = paths.render+"plugin.jade",
@@ -2050,16 +2050,22 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		.on("result", function (eng) {
 			
 			if (eng.Count) 			// render using skinning engine
-				eng.Code.render( req, res );
+				if (ctx)
+					extendContext(sql, ctx, function () {
+						eng.Code.render( req, res );
+					});
+			
+				else
+					eng.Code.render( req, res );
 			
 			else 						// try to render using skin from disk
 			if ( select = FLEX.select[req.table] ) // try virtual table
 				select(req, function (recs) {
-					genSkin( req, res, recs[0] || {} );
+					dynamicSkin( req, res, recs[0] || {} );
 				});
 
 			else  // try sql table
-				var q = sql.query(
+				sql.query(
 					"DESCRIBE ??.??", 
 					[ FLEX.txGroup[req.table] || req.group, req.table ] , 
 					function (err,fields) {
@@ -2068,7 +2074,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 							( paths.render+req.table+".jade" ).render(req, res);
 
 						else 
-							genSkin( req, res, fields );
+							dynamicSkin( req, res, fields );
 				});				
 
 		})
