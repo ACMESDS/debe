@@ -1035,6 +1035,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					profile: req.profile,
 					group: req.group,
 					search: req.search,
+					session: req.session,
 					util: {
 						cpu: (req.log.Util*100).toFixed(0),
 						disk: ((req.profile.useDisk / req.profile.maxDisk)*100).toFixed(0)
@@ -1510,7 +1511,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 
 	res("Killing jobs");
 
-	req.sql.query("SELECT * FROM queues WHERE pid AND LEAST(?,1)", req.query)
+	req.sql.query("SELECT * FROM app.queues WHERE pid AND LEAST(?,1)", req.query)
 	.on("result", function (job) {
 		req.sql.query("UPDATE queues SET ? WHERE ?", [{
 			Notes: "Stopped",
@@ -1674,7 +1675,7 @@ Totem(req,res) endpoint to send the .area attribute of a .table file
 		table = req.table,
 		sql = req.sql;
 
-	sql.query("SELECT *,count(ID) AS count FROM files WHERE least(?) LIMIT 0,1",{Area:area,Name:table})
+	sql.query("SELECT *,count(ID) AS count FROM app.files WHERE least(?) LIMIT 0,1",{Area:area,Name:table})
 	.on("result", function (file) {
 		res( ( "body {background-color:red;}".tag("style") 
 				+ (file[attr]||"?").tag("body")).tag("html") );
@@ -2379,7 +2380,8 @@ Initialize DEBE on startup.
 				milestones: "openv",
 				journal: "openv",
 				hawks: "openv",
-				attrs: "openv"
+				attrs: "openv",
+				issues: "openv"
 			},
 			
 			paths: {  // urls to supporting services
@@ -2469,11 +2471,11 @@ Initialize DEBE on startup.
 					if ( !ignore[file.charAt(0)] )
 						try {
 							//Trace("PUBLISH SKIN "+file);							
-							sql.query( "INSERT INTO app.engines SET ?", {
+							sql.query( "REPLACE INTO app.engines SET ?", {
 								Name: file.replace(".jade",""),
 								Code: FS.readFileSync( path+file, "utf-8"),
 								Engine: "jade",
-								Enabled: 0
+								Enabled: 1
 							});
 						}
 						catch (err) {

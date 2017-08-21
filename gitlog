@@ -1,101 +1,172 @@
-bc1137a||debe||g5120089@trbvm.com||Wed Feb 8 19:18:16 2017 -0500||init github
-fe90e33||debe||g5120089@trbvm.com||Wed Feb 8 19:24:01 2017 -0500||init github
-9065fd2||debe||g5120089@trbvm.com||Wed Feb 8 19:34:43 2017 -0500||update github
-45c041e||debe||g5120089@trbvm.com||Wed Feb 8 19:36:31 2017 -0500||update github
-bbe9b37||debe||g5120089@trbvm.com||Thu Feb 9 19:41:36 2017 -0500||add help to d3 jades
-2fb364c||debe||g5120089@trbvm.com||Sat Feb 11 21:23:31 2017 -0500||clean base.jade
-ee1b15b||acme sds||debera34@xxqx3802.com||Mon Mar 6 07:47:56 2017 -0500||add mysql json support. extjs jade post fix
-46f38f7||acme sds||debera34@xxqx3802.com||Mon Mar 6 20:04:07 2017 -0500||uis
-73271b1||acme sds||debera34@xxqx3802.com||Sat Mar 11 16:30:21 2017 -0500||totem converter. extjs fixes
-c0d9045||acme sds||debera34@xxqx3802.com||Sat Mar 11 20:09:50 2017 -0500||guest baseline
-9741022||acme sds||debera34@xxqx3802.com||Sun Mar 12 14:45:01 2017 -0400||guest baseline
-9bb8f34||acme sds||debera34@xxqx3802.com||Sun Mar 12 14:48:35 2017 -0400||guest baseline
-87372cb||acme sds||debera34@xxqx3802.com||Sun Mar 12 14:50:08 2017 -0400||guest baseline
-982fcbd||acme sds||debera34@xxqx3802.com||Sun Mar 12 15:29:29 2017 -0400||add kml converter node_modules
-2d24491||acme sds||debera34@xxqx3802.com||Sun Mar 12 19:35:07 2017 -0400||add kml conv and geo flag
-3bfc733||acme sds||debera34@xxqx3802.com||Mon Mar 13 22:24:59 2017 -0400||guest baseline
-3b2b2a8||acme sds||debera34@xxqx3802.com||Mon Mar 13 22:25:36 2017 -0400||guest baseline
-f141c92||acme sds||debera34@xxqx3802.com||Mon Mar 13 22:28:27 2017 -0400||guest baseline
-a40fbac||acme sds||debera34@xxqx3802.com||Tue Mar 14 07:38:20 2017 -0400||refactor totem node.types and dsvar indexing
-9f17b46||acme sds||debera34@xxqx3802.com||Wed Mar 15 08:47:14 2017 -0400||fix how site context derived
-74c33ba||James||jamesbd@c7gpu01.technology.local||Wed Mar 15 16:56:16 2017 -0500||fix new site ctx code
-25cf87a||acmesds||acmesds@email.com||Thu Mar 16 17:58:47 2017 -0500||add url engine recall+save
-3943de1||acmesds||acmesds@email.com||Sat Mar 25 15:48:44 2017 -0500||fix riddle timing
-ca19ce0||acme sds||debera34@xxqx3802.com||Sun Mar 26 12:01:56 2017 -0400||new config interface. docs updated
-4f10c62||acme sds||debera34@xxqx3802.com||Sun Mar 26 12:04:32 2017 -0400||new config interface. docs updated
-767ca2f||acme sds||debera34@xxqx3802.com||Sun Mar 26 13:23:54 2017 -0400||new config interface. docs updated
-7a575b2||acme sds||debera34@xxqx3802.com||Sun Mar 26 13:37:13 2017 -0400||new config interface. docs updated
-d434749||acme sds||debera34@xxqx3802.com||Sun Mar 26 21:06:10 2017 -0400||revise plot.jade
-4550bdb||acme sds||debera34@xxqx3802.com||Mon Mar 27 07:31:21 2017 -0400||revise plot.jade
-a828c68||acme sds||debera34@xxqx3802.com||Mon Mar 27 11:48:54 2017 -0400||add uis
-b5b44f9||acme sds||debera34@xxqx3802.com||Mon Mar 27 11:51:30 2017 -0400||add uis
-7054c2d||acme sds||debera34@xxqx3802.com||Mon Mar 27 11:54:30 2017 -0400||add uis
-ee165a5||acmesds||acmesds@email.com||Mon Mar 27 11:37:06 2017 -0500||update node modules
-7caf8a7||acme sds||debera34@xxqx3802.com||Fri Mar 31 12:14:31 2017 -0400||cleanup theme-locals
-12ab097||acme sds||debera34@xxqx3802.com||Wed Apr 5 07:51:35 2017 -0400||fix plot.jade
-9530144||acme sds||debera34@xxqx3802.com||Wed Apr 5 07:53:23 2017 -0400||Merge branch 'master' of https://github.com/ACMESDS/debe
-a50cc20||acme sds||debera34@xxqx3802.com||Wed Apr 5 08:00:23 2017 -0400||clear old plot
-3d7d887||acme sds||debera34@xxqx3802.com||Wed Apr 5 08:01:11 2017 -0400||replace plot
-cacf043||acmesds||acmesds@email.com||Thu Apr 6 07:40:24 2017 -0500||add plot
-02708a5||acmesds||acmesds@email.com||Thu Apr 6 16:28:17 2017 -0500||extjs interface
-24fb34b||acme sds||debera34@xxqx3802.com||Thu Apr 6 20:30:44 2017 -0400||minor jade fixes
-0a0fa19||acme sds||debera34@xxqx3802.com||Thu Apr 6 21:07:18 2017 -0400||minor jade fixes
-97f8373||acmesds||acmesds@email.com||Fri Apr 7 16:27:56 2017 -0500||revise siteview
-0fb3408||acmesds||acmesds@email.com||Fri Apr 7 16:30:34 2017 -0500||fix bad push
-5f767e4||acmesds||acmesds@email.com||Fri Apr 7 16:31:44 2017 -0500||fix bad push
-36369a4||acme sds||debera34@xxqx3802.com||Sat Apr 8 21:56:19 2017 -0400||better _json flag
-9e85852||acme sds||debera34@xxqx3802.com||Sun Apr 9 09:03:45 2017 -0400||guest baseline
-f27c322||acme sds||debera34@xxqx3802.com||Sun Apr 9 09:06:01 2017 -0400||guest baseline
-c4a3183||acme sds||debera34@xxqx3802.com||Sun Apr 9 18:16:53 2017 -0400||better _json add _blog
-7518d07||acmesds||acmesds@email.com||Mon Apr 10 17:21:46 2017 -0500||extjs page _limit
-954040d||acme sds||debera34@xxqx3802.com||Mon Apr 10 21:49:28 2017 -0400||add themes
-f91c6e1||acme sds||debera34@xxqx3802.com||Tue Apr 11 08:59:19 2017 -0400||simplified blogs
-934fd8f||acme sds||debera34@xxqx3802.com||Sat Apr 15 09:58:32 2017 -0400||adjust blog
-1671d3d||acme sds||debera34@xxqx3802.com||Sat Apr 15 10:03:59 2017 -0400||guest baseline
-e2970bd||acme sds||debera34@xxqx3802.com||Mon Apr 17 19:08:20 2017 -0400||fix _blog indexing
-bb494f0||acme sds||debera34@xxqx3802.com||Mon Apr 17 22:05:05 2017 -0400||update api and guide
-d781cea||acmesds||acmesds@email.com||Tue Apr 18 16:06:46 2017 -0500||minor
-d055049||acme sds||debera34@xxqx3802.com||Tue Apr 18 22:39:54 2017 -0400||fix .tree and _pivot.  update docs
-960ef71||acme sds||debera34@xxqx3802.com||Wed Apr 19 22:00:07 2017 -0400||fix _tree
-b45c7b9||acme sds||debera34@xxqx3802.com||Fri Apr 21 07:24:16 2017 -0400||fix d3 jades
-6cd691e||acme sds||debera34@xxqx3802.com||Tue Apr 25 07:53:13 2017 -0400|| fix ?
-225eb47||acmesds||acmesds@email.com||Thu Apr 27 18:00:47 2017 -0500||fix blog
-21ead1c||acme sds||debera34@xxqx3802.com||Sat Apr 29 11:17:49 2017 -0400||view openv ds
-a381582||acme sds||debera34@xxqx3802.com||Sun Apr 30 07:59:44 2017 -0400||add officegen. remove forever.
-d9b47e2||acme sds||debera34@xxqx3802.com||Tue May 9 19:14:45 2017 -0400||add officegen
-27e6eeb||acme sds||debera34@xxqx3802.com||Wed May 10 21:04:50 2017 -0400||fix parm parser
-5bc7844||James||jamesbd@wsn3303.technology.local||Thu May 11 16:23:19 2017 -0500||fix base and exsite immersions views
-891d928||acme sds||debera34@xxqx3802.com||Mon May 15 08:14:02 2017 -0400||parse url parms. fix ssp docs
-c3d7b9d||James||jamesbd@wsn3303.technology.local||Tue May 16 15:09:32 2017 -0500||dynamic doc prep fixes
-66ba0be||James||jamesbd@wsn3303.technology.local||Tue May 16 15:57:25 2017 -0500||fix dynamic doc gen
-ec0e99c||acme sds||debera34@xxqx3802.com||Tue May 16 21:27:22 2017 -0400||fix tooltips
-27fe557||acme sds||debera34@xxqx3802.com||Thu May 18 08:20:15 2017 -0400||refactor session metrics
-2d59a81||acmesds@somemail.com||jamesbd@wsn3303.technology.local||Thu May 18 10:33:48 2017 -0500||refactor moderator logic
-7ff564d||acmesds@somemail.com||jamesbd@wsn3303.technology.local||Thu May 18 13:34:06 2017 -0500||dyn doc fix
-f42af13||acme sds||debera34@xxqx3802.com||Fri May 19 08:08:14 2017 -0400||site jade
-db0530f||acmesds@somemail.com||jamesbd@wsn3303.technology.local||Fri May 19 11:36:56 2017 -0500||fix google scrollbar issue
-817d416||acmesds@somemail.com||jamesbd@wsn3303.technology.local||Fri May 19 12:09:52 2017 -0500||show table fix
-0779de8||acme sds||debera34@xxqx3802.com||Sun May 21 18:45:39 2017 -0400||simplify engine. fix sim flows
-004d12c||acme sds||debera34@xxqx3802.com||Sun May 21 18:49:28 2017 -0400||simplify engine. fix sim flows
-8c41d37||acme sds||debera34@xxqx3802.com||Sun May 21 22:18:11 2017 -0400||simplify engine. fix sim flows
-4db0970||acmesds@somemail.com||jamesbd@wsn3303.technology.local||Mon May 22 16:20:06 2017 -0500||fix base.jade
-c157a23||acme sds||debera34@xxqx3802.com||Tue May 23 07:19:05 2017 -0400||fix base.jade
-b76476a||acmesds@somemail.com||jamesbd@wsn3303.technology.local||Tue May 23 16:09:43 2017 -0500||docgen fixes
-5310817||acme sds||debera34@xxqx3802.com||Tue May 23 22:26:08 2017 -0400||add text area keys
-7c1d732||acmesds@somemail.com||acmesds@nowhere.org||Wed May 24 17:39:53 2017 -0500||misc
-cf6679a||acme sds||debera34@xxqx3802.com||Wed May 24 21:15:56 2017 -0400||revert to ext5
-11e5a9f||acmesds@somemail.com||acmesds@nowhere.org||Thu May 25 16:08:49 2017 -0500||fix websocks etc
-04edec0||acme sds||debera34@xxqx3802.com||Fri May 26 20:16:03 2017 -0400||add flex agents
-4347eea||acme sds||debera34@xxqx3802.com||Sat May 27 18:26:03 2017 -0400||refector engines
-606d7e9||acme sds||debera34@xxqx3802.com||Sat May 27 21:51:50 2017 -0400||refector engines
-467330d||acme sds||debera34@xxqx3802.com||Mon May 29 22:44:52 2017 -0400||add agent doc
-fda6b76||acmesds@somemail.com||acmesds@nowhere.org||Tue May 30 10:31:50 2017 -0500||minor context
-e04b92f||acmesds@somemail.com||acmesds@nowhere.org||Wed May 31 09:32:59 2017 -0500||extjs menu options
-3b90f03||acmesds@somemail.com||acmesds@nowhere.org||Wed May 31 14:51:13 2017 -0500||extjs fixed
-26e7242||acmesds@somemail.com||acmesds@nowhere.org||Wed May 31 15:32:28 2017 -0500||engine jade fixed
-a86a69e||acme sds||debera34@xxqx3802.com||Wed May 31 18:34:50 2017 -0400||add missing extjs jades
-dafb792||acme sds||debera34@xxqx3802.com||Thu Jun 1 07:14:33 2017 -0400||doc update.  refactor agents
-a0494e2||acmesds@somemail.com||acmesds@nowhere.org||Thu Jun 1 10:34:48 2017 -0500||client ip discovered
-ef63c22||acmesds@somemail.com||acmesds@nowhere.org||Thu Jun 1 11:17:05 2017 -0500||ip monitors
-872068e||acmesds@somemail.com||acmesds@nowhere.org||Thu Jun 1 15:45:32 2017 -0500||refactor sockets
-35c33e9||acmesds@somemail.com||acmesds@nowhere.org||Thu Jun 1 18:48:01 2017 -0500||doc fix
+fa3e4f0||debe||g5120089@trbvm.com||Wed Feb 8 19:18:16 2017 -0500||init github
+14b20a7||debe||g5120089@trbvm.com||Wed Feb 8 19:24:01 2017 -0500||init github
+708111e||debe||g5120089@trbvm.com||Wed Feb 8 19:34:43 2017 -0500||update github
+df737e5||debe||g5120089@trbvm.com||Wed Feb 8 19:36:31 2017 -0500||update github
+2583b72||debe||g5120089@trbvm.com||Thu Feb 9 19:41:36 2017 -0500||add help to d3 jades
+54d2a9f||debe||g5120089@trbvm.com||Sat Feb 11 21:23:31 2017 -0500||clean base.jade
+5eaefc2||acme sds||debera34@xxqx3802.com||Mon Mar 6 07:47:56 2017 -0500||add mysql json support. extjs jade post fix
+7e0461d||acme sds||debera34@xxqx3802.com||Mon Mar 6 20:04:07 2017 -0500||uis
+fd599c4||acme sds||debera34@xxqx3802.com||Sat Mar 11 16:30:21 2017 -0500||totem converter. extjs fixes
+73251e3||acme sds||debera34@xxqx3802.com||Sat Mar 11 20:09:50 2017 -0500||guest baseline
+9987a5b||acme sds||debera34@xxqx3802.com||Sun Mar 12 14:45:01 2017 -0400||guest baseline
+3d3dbe6||acme sds||debera34@xxqx3802.com||Sun Mar 12 14:48:35 2017 -0400||guest baseline
+38ea75c||acme sds||debera34@xxqx3802.com||Sun Mar 12 14:50:08 2017 -0400||guest baseline
+26b468b||acme sds||debera34@xxqx3802.com||Sun Mar 12 15:29:29 2017 -0400||add kml converter node_modules
+baaa63a||acme sds||debera34@xxqx3802.com||Sun Mar 12 19:35:07 2017 -0400||add kml conv and geo flag
+15b2acf||acme sds||debera34@xxqx3802.com||Mon Mar 13 22:24:59 2017 -0400||guest baseline
+a79ae7a||acme sds||debera34@xxqx3802.com||Mon Mar 13 22:25:36 2017 -0400||guest baseline
+ec28c1b||acme sds||debera34@xxqx3802.com||Mon Mar 13 22:28:27 2017 -0400||guest baseline
+db15213||acme sds||debera34@xxqx3802.com||Tue Mar 14 07:38:20 2017 -0400||refactor totem node.types and dsvar indexing
+b5b44e2||acme sds||debera34@xxqx3802.com||Wed Mar 15 08:47:14 2017 -0400||fix how site context derived
+37121bc||James||jamesbd@c7gpu01.technology.local||Wed Mar 15 16:56:16 2017 -0500||fix new site ctx code
+6da604e||acmesds||acmesds@email.com||Thu Mar 16 17:58:47 2017 -0500||add url engine recall+save
+ff8b818||acmesds||acmesds@email.com||Sat Mar 25 15:48:44 2017 -0500||fix riddle timing
+a780f5a||acme sds||debera34@xxqx3802.com||Sun Mar 26 12:01:56 2017 -0400||new config interface. docs updated
+e047438||acme sds||debera34@xxqx3802.com||Sun Mar 26 12:04:32 2017 -0400||new config interface. docs updated
+26fa293||acme sds||debera34@xxqx3802.com||Sun Mar 26 13:23:54 2017 -0400||new config interface. docs updated
+5b46b71||acme sds||debera34@xxqx3802.com||Sun Mar 26 13:37:13 2017 -0400||new config interface. docs updated
+c029ade||acme sds||debera34@xxqx3802.com||Sun Mar 26 21:06:10 2017 -0400||revise plot.jade
+d61e7fb||acme sds||debera34@xxqx3802.com||Mon Mar 27 07:31:21 2017 -0400||revise plot.jade
+0cfe3e3||acme sds||debera34@xxqx3802.com||Mon Mar 27 11:48:54 2017 -0400||add uis
+2151057||acme sds||debera34@xxqx3802.com||Mon Mar 27 11:51:30 2017 -0400||add uis
+877f7dc||acme sds||debera34@xxqx3802.com||Mon Mar 27 11:54:30 2017 -0400||add uis
+c52a527||acmesds||acmesds@email.com||Mon Mar 27 11:37:06 2017 -0500||update node modules
+677035f||acme sds||debera34@xxqx3802.com||Fri Mar 31 12:14:31 2017 -0400||cleanup theme-locals
+c854d52||acme sds||debera34@xxqx3802.com||Wed Apr 5 07:51:35 2017 -0400||fix plot.jade
+34c93f4||acme sds||debera34@xxqx3802.com||Wed Apr 5 07:53:23 2017 -0400||Merge branch 'master' of https://github.com/ACMESDS/debe
+dd5e177||acme sds||debera34@xxqx3802.com||Wed Apr 5 08:00:23 2017 -0400||clear old plot
+5635596||acme sds||debera34@xxqx3802.com||Wed Apr 5 08:01:11 2017 -0400||replace plot
+4b7be7a||acmesds||acmesds@email.com||Thu Apr 6 07:40:24 2017 -0500||add plot
+c5d738d||acmesds||acmesds@email.com||Thu Apr 6 16:28:17 2017 -0500||extjs interface
+ff0e178||acme sds||debera34@xxqx3802.com||Thu Apr 6 20:30:44 2017 -0400||minor jade fixes
+36f6d8a||acme sds||debera34@xxqx3802.com||Thu Apr 6 21:07:18 2017 -0400||minor jade fixes
+6c1a018||acmesds||acmesds@email.com||Fri Apr 7 16:27:56 2017 -0500||revise siteview
+31f0cfe||acmesds||acmesds@email.com||Fri Apr 7 16:30:34 2017 -0500||fix bad push
+0fd7289||acmesds||acmesds@email.com||Fri Apr 7 16:31:44 2017 -0500||fix bad push
+4a748dc||acme sds||debera34@xxqx3802.com||Sat Apr 8 21:56:19 2017 -0400||better _json flag
+8bed32e||acme sds||debera34@xxqx3802.com||Sun Apr 9 09:03:45 2017 -0400||guest baseline
+4cdfc2e||acme sds||debera34@xxqx3802.com||Sun Apr 9 09:06:01 2017 -0400||guest baseline
+324e7f5||acme sds||debera34@xxqx3802.com||Sun Apr 9 18:16:53 2017 -0400||better _json add _blog
+55a52f8||acmesds||acmesds@email.com||Mon Apr 10 17:21:46 2017 -0500||extjs page _limit
+986d08c||acme sds||debera34@xxqx3802.com||Mon Apr 10 21:49:28 2017 -0400||add themes
+99a221e||acme sds||debera34@xxqx3802.com||Tue Apr 11 08:59:19 2017 -0400||simplified blogs
+596b186||acme sds||debera34@xxqx3802.com||Sat Apr 15 09:58:32 2017 -0400||adjust blog
+20166b7||acme sds||debera34@xxqx3802.com||Sat Apr 15 10:03:59 2017 -0400||guest baseline
+2588e81||acme sds||debera34@xxqx3802.com||Mon Apr 17 19:08:20 2017 -0400||fix _blog indexing
+c1cd59d||acme sds||debera34@xxqx3802.com||Mon Apr 17 22:05:05 2017 -0400||update api and guide
+1680c1a||acmesds||acmesds@email.com||Tue Apr 18 16:06:46 2017 -0500||minor
+dce35bf||acme sds||debera34@xxqx3802.com||Tue Apr 18 22:39:54 2017 -0400||fix .tree and _pivot.  update docs
+42961de||acme sds||debera34@xxqx3802.com||Wed Apr 19 22:00:07 2017 -0400||fix _tree
+3987fd6||acme sds||debera34@xxqx3802.com||Fri Apr 21 07:24:16 2017 -0400||fix d3 jades
+74ecbdc||acme sds||debera34@xxqx3802.com||Tue Apr 25 07:53:13 2017 -0400|| fix ?
+188ac44||acmesds||acmesds@email.com||Thu Apr 27 18:00:47 2017 -0500||fix blog
+3dbdd15||acme sds||debera34@xxqx3802.com||Sat Apr 29 11:17:49 2017 -0400||view openv ds
+fdbedb3||acme sds||debera34@xxqx3802.com||Sun Apr 30 07:59:44 2017 -0400||add officegen. remove forever.
+e8dc070||acme sds||debera34@xxqx3802.com||Tue May 9 19:14:45 2017 -0400||add officegen
+58ae889||acme sds||debera34@xxqx3802.com||Wed May 10 21:04:50 2017 -0400||fix parm parser
+2540d8b||James||jamesbd@wsn3303.technology.local||Thu May 11 16:23:19 2017 -0500||fix base and exsite immersions views
+9292f13||acme sds||debera34@xxqx3802.com||Mon May 15 08:14:02 2017 -0400||parse url parms. fix ssp docs
+8338952||James||jamesbd@wsn3303.technology.local||Tue May 16 15:09:32 2017 -0500||dynamic doc prep fixes
+3292623||James||jamesbd@wsn3303.technology.local||Tue May 16 15:57:25 2017 -0500||fix dynamic doc gen
+4e8199b||acme sds||debera34@xxqx3802.com||Tue May 16 21:27:22 2017 -0400||fix tooltips
+4af9e9f||acme sds||debera34@xxqx3802.com||Thu May 18 08:20:15 2017 -0400||refactor session metrics
+cb1d0e8||acmesds@somemail.com||jamesbd@wsn3303.technology.local||Thu May 18 10:33:48 2017 -0500||refactor moderator logic
+b9665a4||acmesds@somemail.com||jamesbd@wsn3303.technology.local||Thu May 18 13:34:06 2017 -0500||dyn doc fix
+09ea0cd||acme sds||debera34@xxqx3802.com||Fri May 19 08:08:14 2017 -0400||site jade
+bd04c70||acmesds@somemail.com||jamesbd@wsn3303.technology.local||Fri May 19 11:36:56 2017 -0500||fix google scrollbar issue
+07614a7||acmesds@somemail.com||jamesbd@wsn3303.technology.local||Fri May 19 12:09:52 2017 -0500||show table fix
+da8ecd3||acme sds||debera34@xxqx3802.com||Sun May 21 18:45:39 2017 -0400||simplify engine. fix sim flows
+ac6d626||acme sds||debera34@xxqx3802.com||Sun May 21 18:49:28 2017 -0400||simplify engine. fix sim flows
+2018751||acme sds||debera34@xxqx3802.com||Sun May 21 22:18:11 2017 -0400||simplify engine. fix sim flows
+f85ee6e||acmesds@somemail.com||jamesbd@wsn3303.technology.local||Mon May 22 16:20:06 2017 -0500||fix base.jade
+3ac54ab||acme sds||debera34@xxqx3802.com||Tue May 23 07:19:05 2017 -0400||fix base.jade
+09f90b4||acmesds@somemail.com||jamesbd@wsn3303.technology.local||Tue May 23 16:09:43 2017 -0500||docgen fixes
+16c3f57||acme sds||debera34@xxqx3802.com||Tue May 23 22:26:08 2017 -0400||add text area keys
+e3b63cb||acmesds@somemail.com||acmesds@nowhere.org||Wed May 24 17:39:53 2017 -0500||misc
+c65d6c6||acme sds||debera34@xxqx3802.com||Wed May 24 21:15:56 2017 -0400||revert to ext5
+a6408e3||acmesds@somemail.com||acmesds@nowhere.org||Thu May 25 16:08:49 2017 -0500||fix websocks etc
+8ae9c4a||acme sds||debera34@xxqx3802.com||Fri May 26 20:16:03 2017 -0400||add flex agents
+0a5a97d||acme sds||debera34@xxqx3802.com||Sat May 27 18:26:03 2017 -0400||refector engines
+004d618||acme sds||debera34@xxqx3802.com||Sat May 27 21:51:50 2017 -0400||refector engines
+845225f||acme sds||debera34@xxqx3802.com||Mon May 29 22:44:52 2017 -0400||add agent doc
+f029c45||acmesds@somemail.com||acmesds@nowhere.org||Tue May 30 10:31:50 2017 -0500||minor context
+ec8b2e1||acmesds@somemail.com||acmesds@nowhere.org||Wed May 31 09:32:59 2017 -0500||extjs menu options
+c38e4ec||acmesds@somemail.com||acmesds@nowhere.org||Wed May 31 14:51:13 2017 -0500||extjs fixed
+2ecae98||acmesds@somemail.com||acmesds@nowhere.org||Wed May 31 15:32:28 2017 -0500||engine jade fixed
+25c0397||acme sds||debera34@xxqx3802.com||Wed May 31 18:34:50 2017 -0400||add missing extjs jades
+57a8a3e||acme sds||debera34@xxqx3802.com||Thu Jun 1 07:14:33 2017 -0400||doc update.  refactor agents
+8226b28||acmesds@somemail.com||acmesds@nowhere.org||Thu Jun 1 10:34:48 2017 -0500||client ip discovered
+5ba7158||acmesds@somemail.com||acmesds@nowhere.org||Thu Jun 1 11:17:05 2017 -0500||ip monitors
+d91f689||acmesds@somemail.com||acmesds@nowhere.org||Thu Jun 1 15:45:32 2017 -0500||refactor sockets
+3fb81ad||acmesds@somemail.com||acmesds@nowhere.org||Thu Jun 1 18:48:01 2017 -0500||doc fix
+dee7eac||acme sds||debera34@xxqx3802.com||Fri Jun 2 07:46:53 2017 -0400||minor jade changes
+e7dfa3d||acmesds@somemail.com||acmesds@nowhere.org||Fri Jun 2 14:58:44 2017 -0500||doc fix
+f8c19b6||acme sds||debera34@xxqx3802.com||Sun Jun 4 22:26:09 2017 -0400||jade and base jade fixes
+becdc7a||acmesds@somemail.com||acmesds@nowhere.org||Mon Jun 5 15:37:23 2017 -0500||minor tweaks to jade skins
+9a33ddc||acme sds||debera34@xxqx3802.com||Mon Jun 5 21:43:53 2017 -0400||update doc
+b085683||acmesds@somemail.com||acmesds@nowhere.org||Tue Jun 6 15:46:48 2017 -0500||minor jade fixes
+c882c62||acme sds||debera34@xxqx3802.com||Tue Jun 6 23:31:29 2017 -0400||refactor engine interface
+1b9b405||acme sds||debera34@xxqx3802.com||Mon Jun 12 08:41:37 2017 -0400||doc changes engine jade
+69df73a||acmesds@somemail.com||acmesds@nowhere.org||Fri Jun 16 16:46:47 2017 -0500||docs folder
+4df51c9||acmesds@somemail.com||acmesds@nowhere.org||Wed Jul 5 08:12:06 2017 -0500||reveal and context fixes
+06c5653||acmesds@somemail.com||acmesds@nowhere.org||Sat Jul 8 09:47:08 2017 -0500||fix show() context
+d60a87e||acmesds@somemail.com||acmesds@nowhere.org||Mon Jul 17 16:15:39 2017 -0500||cleanup
+2903952||acmesds@somemail.com||acmesds@nowhere.org||Tue Jul 18 14:36:43 2017 -0500||clean
+476dbce||acme sds||debera34@xxqx3802.com||Wed Jul 19 00:20:08 2017 -0400||cleanup
+1ce5a10||acmesds@somemail.com||acmesds@nowhere.org||Wed Jul 19 11:49:48 2017 -0500||cleanup
+2f06bab||acme sds||debera34@xxqx3802.com||Sun Jul 23 22:44:31 2017 -0400||refactor queuing and chipping
+0fd6a91||acmesds@somemail.com||acmesds@nowhere.org||Tue Jul 25 16:42:29 2017 -0500||job chip cleanup
+2b56f94||acme sds||debera34@xxqx3802.com||Wed Jul 26 08:20:10 2017 -0400||doc
+9ba8d42||acmesds@somemail.com||acmesds@nowhere.org||Thu Jul 27 16:47:04 2017 -0500||adjust queu billing
+dc63e29||acme sds||debera34@xxqx3802.com||Fri Jul 28 08:03:12 2017 -0400||improve chip billing
+f2bc2cc||acmesds@somemail.com||acmesds@nowhere.org||Fri Jul 28 15:47:30 2017 -0500||fix chipping and standardize exe interface
+a63e77a||acme sds||debera34@xxqx3802.com||Sun Jul 30 03:37:08 2017 -0400||update doc
+836df75||acme sds||debera34@xxqx3802.com||Sun Jul 30 19:53:21 2017 -0400||rework engines and doc
+0dc22f8||acme sds||debera34@xxqx3802.com||Sun Jul 30 21:48:24 2017 -0400||rework engines and doc
+69c5928||acmesds@somemail.com||acmesds@nowhere.org||Mon Jul 31 08:03:46 2017 -0500||revise api doc
+74d0eae||acmesds@somemail.com||acmesds@nowhere.org||Mon Jul 31 14:43:56 2017 -0500||add streams to chipper
+03f14d4||acme sds||debera34@xxqx3802.com||Tue Aug 1 08:16:37 2017 -0400||perp chip voxels
+a54bc51||acmesds@somemail.com||acmesds@nowhere.org||Tue Aug 1 17:00:17 2017 -0500||fix chip streaming
+75dcffd||acme sds||debera34@xxqx3802.com||Tue Aug 1 22:42:24 2017 -0400||add spoof logic to chipper
+1c096fa||acmesds@somemail.com||acmesds@nowhere.org||Wed Aug 2 16:59:01 2017 -0500||add chip spoofer. fix randpr.  add flex builtins
+d6f76c1||acme sds||debera34@xxqx3802.com||Thu Aug 3 07:24:43 2017 -0400||add .xviews.fix data spooofer
+cba98cd||acmesds@somemail.com||acmesds@nowhere.org||Thu Aug 3 12:04:20 2017 -0500||xview fixups.add followlink logic
+78c33d1||acme sds||debera34@xxqx3802.com||Mon Aug 7 08:52:07 2017 -0400||voxel chipping
+f471c82||acme sds||debera34@xxqx3802.com||Tue Aug 8 07:26:32 2017 -0400||chipping cleanup
+ff36070||acmesds@somemail.com||acmesds@nowhere.org||Tue Aug 8 17:12:53 2017 -0500||cleanup chippin and plugins
+30fa7c1||acme sds||debera34@xxqx3802.com||Wed Aug 9 07:57:27 2017 -0400||more work to chipper interface
+66ecaa9||acmesds@somemail.com||acmesds@nowhere.org||Wed Aug 9 11:23:17 2017 -0500||rework engine/plugin interface
+19f8756||acme sds||debera34@xxqx3802.com||Thu Aug 10 08:33:07 2017 -0400||plugins now working
+2a69fd7||acmesds@somemail.com||acmesds@nowhere.org||Thu Aug 10 12:37:25 2017 -0500||fix queues.adjust plugins
+56f6cb1||acme sds||debera34@xxqx3802.com||Fri Aug 11 07:30:23 2017 -0400||doc plugin views
+141cc71||acmesds@somemail.com||acmesds@nowhere.org||Fri Aug 11 12:45:32 2017 -0500||secure skinning and engines
+4224d68||acmesds@somemail.com||acmesds@nowhere.org||Fri Aug 11 12:47:31 2017 -0500||secure skinning and engines
+a5156cc||acmesds@somemail.com||acmesds@nowhere.org||Fri Aug 11 15:40:12 2017 -0500||secure skinning and engines
+04d9727||acmesds@somemail.com||acmesds@nowhere.org||Fri Aug 11 16:18:58 2017 -0500||secure skinning and engines
+f10da8b||acmesds@somemail.com||acmesds@nowhere.org||Fri Aug 11 16:48:51 2017 -0500||secure skinning and engines
+aba5c9c||acme sds||debera34@xxqx3802.com||Sat Aug 12 07:08:15 2017 -0400||fix
+57ea11d||acme sds||debera34@xxqx3802.com||Sat Aug 12 09:18:49 2017 -0400||add key retractor
+7b51ffa||acme sds||debera34@xxqx3802.com||Sat Aug 12 10:59:09 2017 -0400||add ingester
+189a3fd||acme sds||debera34@xxqx3802.com||Sat Aug 12 17:28:37 2017 -0400||fix no sql db
+4a4bf0e||acme sds||debera34@xxqx3802.com||Mon Aug 14 19:43:47 2017 -0400||refcetor jade frameworks
+f814b9e||acme sds||debera34@xxqx3802.com||Mon Aug 14 23:08:44 2017 -0400||refacetor jade frameworks
+c32f619||acme sds||debera34@xxqx3802.com||Tue Aug 15 00:25:45 2017 -0400||refacetor jade frameworks
+64044bc||ACMESDS||noreply@github.com||Mon Aug 14 23:04:28 2017 -0600||Delete app1.sql
+2d68fe7||acme sds||debera34@xxqx3802.com||Tue Aug 15 01:56:53 2017 -0400||refactor jade framework
+647c769||acme sds||debera34@xxqx3802.com||Tue Aug 15 02:05:46 2017 -0400||Merge branch 'master' of https://github.com/ACMESDS/debe
+d0fb68e||acme sds||debera34@xxqx3802.com||Tue Aug 15 02:09:30 2017 -0400||crap
+f32ccfc||acmesds@somemail.com||acmesds@nowhere.org||Tue Aug 15 11:05:01 2017 -0500||clean up
+5d13a05||acmesds@somemail.com||acmesds@nowhere.org||Tue Aug 15 17:39:56 2017 -0500||ingest add rings to jobs
+8c3e6ea||acme sds||debera34@xxqx3802.com||Tue Aug 15 22:49:07 2017 -0400||autoingest new jobs
+4f4c88f||acmesds@somemail.com||acmesds@nowhere.org||Wed Aug 16 10:24:43 2017 -0500||add ingest autorun
+2955dee||acmesds@somemail.com||acmesds@nowhere.org||Wed Aug 16 16:41:20 2017 -0500||improve ingest workflow
+e19f649||acmesds@somemail.com||acmesds@nowhere.org||Thu Aug 17 11:26:39 2017 -0500||fixed file uploading and voxel processing
+6ecfce9||acme sds||debera34@xxqx3802.com||Thu Aug 17 23:05:12 2017 -0400||api fix
+8268136||acmesds@somemail.com||acmesds@nowhere.org||Fri Aug 18 15:24:48 2017 -0500||fix pki if and riddles
+63d4cd2||acmesds@somemail.com||acmesds@nowhere.org||Fri Aug 18 16:09:11 2017 -0500||fix pki if and riddles
+e675d1c||acmesds@somemail.com||acmesds@nowhere.org||Fri Aug 18 16:11:10 2017 -0500||fix pki if and riddles
+8f9f84c||acme sds||debera34@xxqx3802.com||Sat Aug 19 20:26:31 2017 -0400||major doc. fix render. rename config key. add job var saves
+639acb4||acme sds||debera34@xxqx3802.com||Sat Aug 19 20:27:43 2017 -0400||major doc. fix render. rename config key. add job var saves
+a8ae418||acme sds||debera34@xxqx3802.com||Sat Aug 19 20:40:19 2017 -0400||add prm
+d8dcc5e||acme sds||debera34@xxqx3802.com||Sun Aug 20 21:22:09 2017 -0400||add plugin proj ctx.fix rendering bugs
+16bdab3||acme sds||debera34@xxqx3802.com||Sun Aug 20 23:18:38 2017 -0400||add plugin proj ctx.fix rendering bugs. fix dsvars

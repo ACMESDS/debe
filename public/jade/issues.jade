@@ -2,7 +2,7 @@
 
 extends site
 append site_parms
-	- view = "Min"
+	- view = "Basic"
 	- dock = "left"
 	- parms = {min:"min", more:"more"}
 	- dims = "1000,800"
@@ -19,7 +19,7 @@ append site_body
 			tickets to improve the quality of the #{title}.  The #{title} also welcomes 
 			[your new requirements](/requirements.view).  Requirements and tickets
 			are resolved following IIG's [JIRA](www.jira.com) rapid, agile development process.  Use **execute**
-			to reflect recent GIT change logs to this table.
+			to reflect recent GIT change logs to this table.  
 			
 	#grid.git.logs(
 		path="/git.db",
