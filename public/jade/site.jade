@@ -39,7 +39,6 @@ append base_head
 append base_body
 	#hold.Options(path=JSON.stringify(parms),cols="Name,option")
 	#hold.Users(path="/USERS.db",cols="Name")
-	#hold.Links(path="/LINKS.db?area="+area,cols="Name")
 	#hold.Health(path="/HEALTH.db",cols="Name")
 	#hold.Queues(path="/QUEUES.db",cols="Name")
 	#hold.Engines(path="/ENGINES.db",cols="Name")
@@ -50,8 +49,6 @@ append base_body
 	#hold.Views(path="/VIEWS.db",cols="Name,class")
 	#hold.Uploads(path="/uploads.db",cols="Name")
 	#hold.Stores(path="/stores.db",cols="Name")
-	#hold.Tasks(path="/tasks.db",cols="Name")
-	#hold.Plugins(path="/plugins.db",cols="Name")
 	#hold.Parms(path="/parms.db",cols="Parm,Type,Label,Special",sync="Parm")
 	#hold.Summary(path="/SUMMARY.db",refresh=pulse,cols="Name")
 
@@ -71,7 +68,7 @@ append base_body
 		when "Min"
 			#border(
 				class=table,
-				head="Tasks,Plugins,Links,Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
+				head="Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
 				LikeUs="/likeus.db",
 				Manage="/files.view",
 				title=titlebar)
@@ -104,9 +101,13 @@ append base_body
 				block site_body
 		
 		when "Typical"
+			#hold.Tasks(path="/tasks.db",cols="Name")
+			#hold.Plugins(path="/plugins.db",cols="Name")
+			#hold.Links(path="/LINKS.db?area="+area,cols="Name")
+		
 			#border(
 				class=table,
-				head="Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
+				head="Tasks,Plugins,Links,Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
 				LikeUs="/likeus.db",
 				Manage="/files.view",
 				title=titlebar)
@@ -135,6 +136,8 @@ append base_body
 						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
 
 		when "Home"
+			#hold.Links(path="/LINKS.db?area="+area,cols="Name")
+		
 			#border(
 				class=table,
 				title=titlebar,
@@ -169,6 +172,8 @@ append base_body
 			block site_body
 
 		when "Monster"
+			#hold.Links(path="/LINKS.db?area="+area,cols="Name")
+		
 			#border(
 				class=table,
 				title=titlebar,
@@ -230,6 +235,8 @@ append base_body
 					block site_body
 		
 		default
+			#hold.Links(path="/LINKS.db?area="+area,cols="Name")
+		
 			#border(
 				class=table,
 				title=titlebar,
