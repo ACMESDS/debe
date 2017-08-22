@@ -288,14 +288,15 @@ append layout_body
 						if (rec[x] != where[x]) match = false;
 
 				if (match) {
-					Each(subs, function (pre, sub) {
-						for (var idx in sub) {
-							var keys = sub[idx];
-							if ( rec[idx] )
-								for (var key in keys)
-									rec[idx] = (rec[idx] + "").replace(pre + key, keys[key]);
-						}
-					});
+					if (subs)
+						Each(subs, function (pre, sub) {  // make #key and ##kEy substitutions
+							for (var idx in sub) {
+								var keys = sub[idx];
+								if ( rec[idx] )
+									for (var key in keys)
+										rec[idx] = (rec[idx] + "").replace(pre + key, keys[key]);
+							}
+						});
 
 					/*
 					if (sub1) {
@@ -925,12 +926,13 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		},
 		badSkin: new Error("skin contains invalid jade"),
 		badDataset: new Error("dataset does not exist"),
-		noCode: new Error("failed engine code lookup"),
+		noCode: new Error("engine has no code file"),
 		badFeature: new Error("unsupported feature"),
 		noOffice: new Error("office docs not enabled"),
 		noExe: new Error("no execute interface"),
 		noUsecase: new Error("no usecase provided to plugin"),
-		certFailed: new Error("Failed to create cert")
+		certFailed: new Error("could not create cert"),
+		notUnique: new Error("engine query must be unique")
 	},
 	
 	"paths.": {  //< paths to things
@@ -938,7 +940,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		jaderef: "./public/jade/ref.jade",	// jade reference path for includes, exports, appends
 		
-		engine: "SELECT *,count(ID) as Count FROM app.engines WHERE least(?,1)",
+		engine: "SELECT * FROM app.engines WHERE least(?,1)",
 		render: "./public/jade/",
 		
 		sss: { // some streaming services
@@ -1771,7 +1773,45 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 @param {Object} req http request
 @param {Function} res Totem response callback
 */	
+	
+	function saveResults( sql, ds, stats, ctx ) {
+		var 
+			status = "",
+			updates = {},
+			saves = new Object(stats);
+
+		Each(stats, function (stat, val) {
+			if ( stat in ctx ) {
+				updates[stat] = JSON.stringify(val);
+				delete saves[stat];
+			}
+		});
+
+		if ( !Each(updates) ) {
+			sql.query("UPDATE ?? SET ? WHERE ?", [ 
+				ds, updates, {ID: ctx.ID}
+			]);
+			status += "Split";
+		}
+
+		if ("Save" in ctx) {
+			sql.query("UPDATE ?? SET ? WHERE ?", [
+				ds, {Save: JSON.stringify(saves)}, {ID: ctx.ID}
+			]);
+			status += " Saved";
+		}
+
+		if (ctx.Ingest) {
+			console.log("ingest myself");
+			status += " Ingested";
+		}
+
+		return status || stats;
+	}
+		
 	var
+		ds = req.group+"."+req.table,
+		sql = req.sql,
 		query = req.query;
 
 		/*
@@ -1796,11 +1836,19 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		};*/
 	
 	if (query.ID || query.Name)  // run engine in its dataset ctx
-		FLEX.runPlugin(req, function (ctx, isjob) {
+		FLEX.runPlugin(req, function (err, stats, ctx) {
 
-			if ( isjob ) {  // Intercept plugin job request
+			if ( err )
+				res( err );
+			
+			else
+			if (stats) { // have results to save, ingest, ignore
+				res( saveResults( sql, ds, stats, ctx ) );
+			}
+			
+			else { // Intercept job request
 
-				res("Job submitted");
+				res("Submitted");
 
 				var 
 					chan = ctx.Job || {},
@@ -1808,8 +1856,12 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					jobnotes = [
 							(req.table+"?").tagurl({Name:query.Name}).tag("a", {href:"/" + req.table + ".run"}), 
 							((req.profile.Credit>0) ? "funded" : "unfunded").tag("a",{href:req.url}),
-							"RTP".tag("a",{href:`/rtpsqd.view?task=${query.Task}`}),
-							"PMR brief".tag("a",{href:`/briefs.view?options=${query.Task}`})
+							"RTP".tag("a",{
+								href:`/rtpsqd.view?task=${query.Task}`
+							}),
+							"PMR brief".tag("a",{
+								href:`/briefs.view?options=${query.Task}`
+							})
 					],
 					
 					job = Copy(ctx, { // job related
@@ -1840,29 +1892,9 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				else
 				if (chan.evring) 
 					CHIPS.ingestEvents(chan, job, function (voxel,stats,sql) {
-						var 
-							updates = {},
-							updated = false,
-							saves = new Object(stats);
-						
-						Each(stats, function (stat, val) {
-							if ( stat in voxel ) {
-								updates[stat] = val;
-								updated = true;
-								delete saves[stat];
-							}
+						DEBE.thread( function (sql) {
+							Trace( saveResult( sql, "app.voxels", stats, voxel ) );
 						});
-						
-						if (updated)
-							sql.query("UPDATE ??.voxels SET ? WHERE ?", [ 
-								req.group, updates, {ID: voxel.ID}
-							]);
-						
-						if (voxel.Save)
-							sql.query("UPDATE ??.voxels SET ? WHERE ?", [
-								req.group, saves, {ID: voxel.ID}
-							]);
-								
 					});
 				
 				else
@@ -1904,15 +1936,13 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					req.query = ctx;
 					ENGINE.select(req, function (rtn) {
 						console.log({engrtn:rtn});
-						if (query.Save)
-							req.sql.query("REPLACE INTO ?? SET ?", [ req.table, {Save: JSON.stringify(rtn)} ]);
+						//if (query.Save)
+						//	req.sql.query("REPLACE INTO ?? SET ?", [ req.table, {Save: JSON.stringify(rtn)} ]);
 					});
 				}
 
 			}
 
-			else  // respond with plugin results
-				res( ctx );
 		});
 	
 	else  // run engine in its req.query ctx
@@ -2060,44 +2090,48 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 							  
 		Trace("DEBE "+req.table);
 		
-		sql.query(paths.engine, { // Try a skinning engine
+		sql.eachRec(paths.engine, { // Try a skinning engine
 			Name: req.table,
 			Engine: "jade",
 			Enabled: 1
-		})
-		.on("result", function (eng) {
+		}, function (err, eng, isLast) {
 			
-			if (eng.Count) 			// render using skinning engine
-				if (ctx)
-					extendContext(sql, ctx, function () {
+			if (err) 
+				res( DEBE.errors.badSkin );
+			
+			else
+			if (isLast)
+				if (eng)  // render with this engine
+					if (ctx)  // render in its extended context
+						extendContext(sql, ctx, function () {
+							eng.Code.render( req, res );
+						});
+
+					else  // render using its default context
 						eng.Code.render( req, res );
+				
+				else 	// try to get engine from sql table or from disk
+				if ( select = FLEX.select[req.table] ) // try virtual table
+					select(req, function (recs) {
+						dynamicSkin( req, res, recs[0] || {} );
 					});
-			
-				else
-					eng.Code.render( req, res );
-			
-			else 						// try to render using skin from disk
-			if ( select = FLEX.select[req.table] ) // try virtual table
-				select(req, function (recs) {
-					dynamicSkin( req, res, recs[0] || {} );
-				});
 
-			else  // try sql table
-				sql.query(
-					"DESCRIBE ??.??", 
-					[ FLEX.txGroup[req.table] || req.group, req.table ] , 
-					function (err,fields) {
+				else  // try sql table
+					sql.query(
+						"DESCRIBE ??.??", 
+						[ FLEX.txGroup[req.table] || req.group, req.table ] , 
+						function (err,fields) {
+
+							if (err) // might be a file
+								( paths.render+req.table+".jade" ).render(req, res);
+
+							else 
+								dynamicSkin( req, res, fields );
+					});				
 						
-						if (err) // might be a file
-							( paths.render+req.table+".jade" ).render(req, res);
-
-						else 
-							dynamicSkin( req, res, fields );
-				});				
-
-		})
-		.on("error", function (err) {
-			res( DEBE.errors.badSkin );
+			else  // cant render with multiple engines
+				res( DEBE.errors.notUnique );
+					
 		});
 
 	}
