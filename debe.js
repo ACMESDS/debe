@@ -85,8 +85,8 @@ var
 			recs.each( function (n, rec) { 
 				keys.each( function (m, key) {
 					if (val = rec[key])
-						if (val.constructor == String) 
-								(":markdown\n" + val)
+						if (val.constructor == String) // only strings are bloggable
+								(":markdown\n" + val)  // make blog markdown
 									.replace(/   /g, "\t")  // fake tabs
 									.replace(/\n/g,"\n\t")  // indent markdown
 									.replace(/\[(.*?)\]\((.*?)\)/g, function (m,i) {  // adjust [x,w,h](u) markdown
@@ -114,7 +114,7 @@ var
 										var q = (i.charAt(0) == "'") ? '"' : "'";
 										return `href=${q}javascript:navigator.follow(${i},BASE.user.client,BASE.user.source)${q}>`;
 									})
-									.render(req, function (html) {
+									.render(req, function (html) { // thats all folks
 										rec[key] = html;
 								});
 				});
@@ -348,6 +348,7 @@ append layout_body
 		/**
 		@member SKINS
 		@method hover
+		Title ti filename fn
 		*/
 			if (fn.charAt(0) != "/") fn = "/shares/"+fn;
 			return ti.tag("p",{class:"sm"}) 
@@ -460,6 +461,12 @@ append layout_body
 		@member SKINS
 		*/
 		context: { // defines DSVAR contexts when a skin is rendered
+			swag: {
+				projs: "openv.milestones"
+			},
+			airspace: {
+				projs: "openv.milestones"
+			},
 			plugin: {
 				projs: "openv.milestones"
 			},
@@ -1935,6 +1942,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 	function extendContext(sql, ctx, cb) {
 		sql.context(ctx, function (ctx) {  // establish skinning context for requested table
 
+			/*
 			var lastds = "";
 			for (lastds in ctx);
 			
@@ -1949,6 +1957,16 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 			
 			else
 				cb();
+			*/
+			var isEmpty = Each(ctx, function (ds, x, isLast) {
+				x.args = {ds:ds}; 	// hold ds name for use after select
+				x.rec = function clone(recs,me) {  // select and clone the records 
+					site[me.args.ds] = recs; 		// save data into the context
+					if (isLast) cb();  // all ds loaded so can render with cb
+				};
+			});
+			
+			if ( isEmpty ) cb();
 
 		});
 	}
