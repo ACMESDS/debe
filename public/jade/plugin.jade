@@ -70,19 +70,20 @@ append site_body
 					
 					You may run any plugin from the url bar:
 
-						GET /PLUGIN.exe?ID=CASE 	Run PLUGIN engine using PLUGIN dataset parameters for specified CASE 
-						GET /PLUGIN.exe?Name=CASE 	Run PLUGIN engine using PLUGIN dataset parameters for specified CASE
+						GET /PLUGIN.exe?ID=CASE 	Run PLUGIN engine using PLUGIN dataset parameters for specified use CASE 
+						GET /PLUGIN.exe?Name=CASE 	Run PLUGIN engine using PLUGIN dataset parameters for specified use CASE
 
 					Plugins may also be placed in job workflows when they contain (reserved) parameters:
 
 							(Save) json reserve for storing the results of this CASE
 							(Job) json parameters to place CASE into QoS-Credit regulated queue.
 							(Task) name of project associated with this CASE
-							(Description) document CASE
+							(Description) bloggable report on this CASE
+							(Ingest) switch to ingest results produced by this useCASE
 							
-					Use  [Save+](/#{ds}.add?Save=doc), [Job+](/#{ds}.add?Job=doc), [Task+](/#{ds}.add?Task=name), [Description+](/#{ds}.add?Description=doc) to add,
-					and [Save-](/#{ds}.sub?Save), [Job-](/#{ds}.sub?Job), [Task-](/#{ds}.sub?Task), [Description-](/#{ds}.sub?Description) to remove
-					these parameters from the *#{ds}* plugin.   
+					Use  [Save+](/#{ds}.add?Save=doc), [Job+](/#{ds}.add?Job=doc), [Task+](/#{ds}.add?Task=name), [Description+](/#{ds}.add?Description=doc),
+					[Ingest+](/#{ds}.add?Ingest=true), to add; Save-](/#{ds}.sub?Save), [Job-](/#{ds}.sub?Job), [Task-](/#{ds}.sub?Task), 
+					[Description-](/#{ds}.sub?Description), [Ingest-](/#{ds}.sub?Ingest) to remove these parameters from the *#{ds}* plugin.   
 					
 					Plugins are tied with #{title}'s data ingest process, so wWhen events are ingested, the CASE="ingest" 
 					record is cloned with Job parameters adjusted to the ingested events.

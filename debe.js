@@ -945,8 +945,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		sss: { // some streaming services
 			spoof: ENV.DEBUG + "/sss.exe?Name=spoof1",
+			stats: ENV.DEBUG + "/gaussmix.exe?",
 			gaussmix: ENV.DEBUG + "/gaussmix.exe?",
-			autorun: ENV.DEBUG + "/",
 			thresher: ENV.SSS_THRESHER
 		},
 
@@ -1008,7 +1008,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	@member DEBE
 	Enable to give-away plugin services
 	*/
-	benevolent: false,  //< enable to give-away plugin services
+	probono: false,  //< enable to give-away plugin services
 		
 	Function: Initialize,  //< added to ENUM callback stack
 
@@ -1219,7 +1219,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	*/	
 	hawkingcycle: 0, 	// job hawking interval [s] (0 disables)		
 
-	loader: function (url,met,req,res) { // data loader
+	loader: function (url,met,req,res) { // generic data loader
 	/**
 	@member DEBE
 	@private
@@ -1229,68 +1229,207 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	@param {Object} req http request
 	@param {Function} res Totom response callback
 	*/
-		var 
-			path = req.plugin 
-							? (url+req.plugin+".exe?").tagurl(req)
-							: url.tagurl(req);
-		
-		Trace("FETCHING "+path);
-		met( path, res );
+		Trace("FETCHING "+url.tagurl(req));
+		met( url.tagurl(req), res );
 	},
-		
-	ingestEvents: function (path, sql, cb) {
+
+	loaders: { // data loading services
+		catalog: function (req,res) { DEBE.loader( DEBE.paths.wfs.spoof, DEBE.fetchers.http, req, res ); },
+		image: function (req,res) { DEBE.loader( DEBE.paths.wms.spoof, DEBE.fetchers.wget, req, res ); },
+		events: function (req,res) { DEBE.loader( DEBE.paths.sss.spoof, DEBE.fetchers.http, req, res ); },
+		stats: function (req,res) { DEBE.loader( DEBE.paths.sss.stats, DEBE.fetchers.http, req, res ); },
+		gaussmix: function (req,res) { DEBE.loader( DEBE.paths.sss.gaussmix, DEBE.fetchers.http, req, res ); },
+		save: {}
+	},
+
+	autoIngest: false,
+			
+	ingestEvents: function (path, sql) {
 	/**
 	@member DEBE
 	@private
 	@method ingestEvents
-	@param {String} path to the file being ingested
+	@param {String} path to file, {streaming parms}, or [ ev, ... ] to ingest
 	@param {Object} sql connector
 	@param {Function} cb Response callback( ingested aoi, cb (table,id) to return info )
+	Ingest events and autorun ingestable plugins if enabled.
 	*/
 		
-		var 
-			stream = FS.createReadStream(path),
-			items = ["x", "y", "z", "t", "n"],
-			ingested = 0;
+		function autoIngest(aoi) {  // ingest event file then handle ingested aoi (min-max bounds)
 
-		stream.on("open", function () {
-			/*stream.pipe( function (buf) {
-				console.log(buf);
-			});*/
-		});
+			var 
+				group = "app",
+				TL = [aoi.yMax, aoi.xMin],   // [lon,lat] degs
+				TR = [aoi.yMax, aoi.xMax],
+				BL = [aoi.yMin, aoi.xMin],
+				BR = [aoi.yMin, aoi.xMax], 
+				ring = {evring:[ TL, TR, BR, BL, TL ]};
 
-		stream.on("error", function (err) {
-			Trace(err);
-		});
+			console.log({auto_ingesting_ring: ring.evring});
+			// add this aoi as a usecase to all plugins by cloning the plugin's Name="ingest" usecase
+			sql.eachTable( group, function (table) {  // look for plugins that have a data loader and a Job key
+				var tarkeys = [], srckeys = [], hasJob = false;
 
-		stream.on("data", function (buf) {			
-			//console.log(buf.toString());
-			buf.toString().split("\n").each( function (n,rec) {
-				var ev = new Object();
-				if (rec.length) {
-					ingested++;
-					rec.split(",").each( function (i, item) {
-						ev[items[i]] = item;
+				if (table == "gaussmix") // debug
+				if ( loader = DEBE.loaders[table] )
+					sql.query(  // get plugin keys
+						"SHOW FIELDS FROM ??.?? WHERE Field != 'ID' ", 
+						[ group, table ], 
+						function (err,keys) {
+
+						keys.each( function (n,key) { // look for Job key
+							var keyesc = "`" + key.Field + "`";
+							switch (key.Field) {
+								case "Save":
+									break;
+								case "Job":
+									hasJob = true;
+								case "Name":
+									srckeys.push("? AS "+keyesc);
+									tarkeys.push(keyesc);
+									break;
+								default:
+									srckeys.push(keyesc);
+									tarkeys.push(keyesc);
+							}
+						});
+
+						if (hasJob) 
+							sql.query( // add usecase to plugin by cloning its Name="ingest" usecase
+								"INSERT INTO ??.?? ("+tarkeys.join()+") SELECT "+srckeys.join()+" FROM ??.?? WHERE name='ingest' ", [
+									group, table,
+									"ingest " + new Date(),
+									JSON.stringify(ring),
+									group, table
+							], function (err, info) {
+
+								if ( !err && info.insertId )  // relay fetch request back the usecase that was added to this plugin
+									loader( {ID:info.insertId}, function (rtn) {
+										Trace(`AUTORUN ${table}`);  // rtn = json parsed or null
+									});
+							});
 					});
-
+					/*
 					sql.query(
-						"INSERT INTO app.evcache SET ?, Point=st_GeomFromText(?)", [{
-							x: ev.x,
-							y: ev.y,
-							z: ev.z,
-							t: ev.t,
-							n: ev.n
-						},
-						`POINT(${ev.y} ${ev.x})`
+						"INSERT INTO haar (size,pixels,scale,step,range,detects,limit,name,job) "
+						+ "SELECT size,pixels,scale,step,range,detects,limit, ? AS name, ? AS job FROM haar WHEREname='ingest'", [
+							"ingest" + (++ingests),
+							JSON.stringify(ring)
 					]);
-				}
-			});			
-		});	
+				*/
+			});
+		}
 
-		stream.on("close", function (err) {
-			if (ingested)
-				CHIPS.ingestCache(sql, cb);	
-		});
+		switch (path.constructor) {
+			case Object: // parms for the streaming service
+				break;
+				
+			case String:
+				var 
+					stream = FS.createReadStream(path),
+					items = ["x", "y", "z", "t", "n"],
+					ingested = 0;
+
+				stream.on("open", function () {
+					/*stream.pipe( function (buf) {
+						console.log(buf);
+					});*/
+				});
+
+				stream.on("error", function (err) {
+					Trace(err);
+				});
+
+				stream.on("data", function (buf) {			
+					//console.log(buf.toString());
+					buf.toString().split("\n").each( function (n,rec) {
+						var ev = new Object();
+						if (rec.length) {
+							ingested++;
+							rec.split(",").each( function (i, item) {
+								ev[items[i]] = item;
+							});
+
+							sql.query(
+								"INSERT INTO app.evcache SET ?, Point=st_GeomFromText(?)", [{
+									x: ev.x,
+									y: ev.y,
+									z: ev.z,
+									t: ev.t,
+									n: ev.n
+								},
+								`POINT(${ev.y} ${ev.x})`
+							]);
+						}
+					});			
+				});	
+
+				stream.on("close", function (err) {
+					if (ingested)
+						CHIPS.ingestCache(sql, function (aoi) {
+							if (DEBE.autoIngest) autoIngest(aoi);
+						});
+				});
+				break;
+				
+			case  Array:
+			default:
+				path.each = Array.prototype.each;
+				
+				switch ( path[0].constructor ) {
+					case Array:  // assume [ [x,y,z,t,n], .... ]
+						var isEmpty = path.each( function (n,ev) {
+							sql.query(
+								"INSERT INTO app.evcache SET ?, Point=st_GeomFromText(?)", [{
+									x: ev[0],
+									y: ev[1],
+									z: ev[2],
+									t: ev[3],
+									n: ev[4]
+								},
+								`POINT(${ev[2]} ${ev[1]})`
+							]);
+						});
+						break;
+						
+					case Object: // assume [ {x,y,z,....}, ... ]
+					default:
+						var isEmpty = path.each( function (n, ev) {
+							sql.query(
+								"INSERT INTO app.evcache SET ?, Point=st_GeomFromText(?)", [{
+									x: ev.x,
+									y: ev.y,
+									z: ev.z,
+									t: ev.t,
+									n: ev.n
+								},
+								`POINT(${ev.y} ${ev.x})`
+							]);
+						});
+						break;
+						
+					/*
+					default:
+						path.each( function (n, ev) {
+							sql.query(
+								"INSERT INTO app.evcache SET ?, Point=st_GeomFromText(?)", [{
+									x: 0,
+									y: 0,
+									z: 0,
+									t: 0,
+									n: ev
+								},
+								`POINT(0 0)`
+							]);
+						});*/
+				}
+				
+				if ( !isEmpty )
+					CHIPS.ingestCache(sql, function (aoi) {
+						if (DEBE.autoIngest) autoIngest(aoi);
+					});
+				
+		}
 					
 	},
 	
@@ -1802,7 +1941,12 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		}
 
 		if (ctx.Ingest) {
-			console.log("ingest myself");
+			//console.log(stats);
+			console.log("ingest events:"+stats.steps.length);
+			DEBE.ingestEvents( stats.steps, sql, function (aoi,saver) {
+				console.log({ingested_aoi:aoi});
+			});
+			
 			status += " Ingested";
 		}
 
@@ -1893,7 +2037,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				if (chan.evring) 
 					CHIPS.ingestEvents(chan, job, function (voxel,stats,sql) {
 						DEBE.thread( function (sql) {
-							Trace( saveResult( sql, "app.voxels", stats, voxel ) );
+							Trace( saveResults( sql, "app.voxels", stats, voxel ) );
 						});
 					});
 				
@@ -1934,10 +2078,9 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 				else {
 					req.query = ctx;
-					ENGINE.select(req, function (rtn) {
-						console.log({engrtn:rtn});
-						//if (query.Save)
-						//	req.sql.query("REPLACE INTO ?? SET ?", [ req.table, {Save: JSON.stringify(rtn)} ]);
+					ENGINE.select(req, function (stats) {
+						//console.log({engrtn:stats});
+						Trace( saveResults( sql, ds, stats, ctx ) );
 					});
 				}
 
@@ -1945,8 +2088,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 		});
 	
-	else  // run engine in its req.query ctx
-	if (DEBE.benevolent)
+	else  // run engine in its req.query ctx w/o submitting a job
+	if (DEBE.probono)
 		ENGINE.select(req, res);
 	
 	else
@@ -2442,12 +2585,6 @@ Initialize DEBE on startup.
 				issues: "openv"
 			},
 			
-			paths: {  // urls to supporting services
-				HOST: DEBE.site.urls.master,
-				NEWSREAD: "http://craphound.com:80/?feed=rss2",
-				AOIREAD: "http://omar.ilabs.ic.gov:80/tbd"
-			},
-			
 			billingCycle: DEBE.billingCycle, 		// job billing cycle [ms]
 			diagCycle: DEBE.diagCycle,			// Check period [ms]
 			hawkingCycle: DEBE.hawkingCycle, 	// job hawking cycle [ms] (0 disables)
@@ -2487,23 +2624,11 @@ Initialize DEBE on startup.
 
 		Trace(`INITIALIZING ENGINES`);
 
-		var 
-			paths = DEBE.paths,
-			fetchers = DEBE.fetchers;
-		
-		if ( loader = DEBE.loader )	
-			CHIPS.config({
-				fetch: {
-					catalog: function (req,res) { loader( paths.wfs.spoof, fetchers.http, req, res ); },
-					image: function (req,res) { loader( paths.wms.spoof, fetchers.wget, req, res ); },
-					events: function (req,res) { loader( paths.sss.spoof, fetchers.http, req, res ); },
-					stats: function (req,res) { loader( paths.sss.gaussmix, fetchers.http, req, res ); },
-					autorun: function (req,res) { loader( paths.sss.autorun, fetchers.http, req, res ); },
-					save: fetchers.plugin
-				},
-				source: "",
-				thread: DEBE.thread
-			});
+		CHIPS.config({
+			fetch: DEBE.loaders,
+			source: "",
+			thread: DEBE.thread
+		});
 				
 		ENGINE.config({
 			thread: DEBE.thread,

@@ -416,16 +416,18 @@ append site_body
 		:markdown
 			A plugin -- a dataset-engine pair -- is assessible from the following endpoints:
 			
-					GET /PLUGIN.exe?ID=CASE 	Run PLUGIN engine using PLUGIN dataset parameters for specified CASE 
-					GET /PLUGIN.exe?Name=CASE 	Run PLUGIN engine using PLUGIN dataset parameters for specified CASE
+					GET /PLUGIN.exe?ID=CASE 	Run PLUGIN engine using PLUGIN dataset parameters for specified use CASE 
+					GET /PLUGIN.exe?Name=CASE 	Run PLUGIN engine using PLUGIN dataset parameters for specified use CASE
 			
 			The following (reserved) dataset parameters determine how a PLUGIN operates from an
 			exe-endpoint:
 			
-				(Save) json reserve for storing the results of this CASE
+				(Save) json reserve for storing plugin results for this CASE
 				(Job) json  parameters to place CASE into QoS-Credit regulated queue.  Ingest will clone CASE="ingest" records.
 				(Agent) name of agent to out-source this CASE which will be polled until it returns its results 
 				(Task) name of project associated with this CASE
+				(Description) bloggable report on this CASE				
+				(Ingest) switch to ingest results produced by this CASE
 				
 			### Plugin dataset keys
 			Keys can be added to or dropped from a plugin via:
