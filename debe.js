@@ -54,7 +54,7 @@ var
 		save: function (req) {  //< _save=name retains query in named engine
 			var cleanurl = req.url.replace(`_save=${req.flags.save}`,"");
 			Trace(`PUBLISH ${cleanurl} AT ${req.flags.save}`);
-			req.sql.query("INSERT INTO engines SET ?", {
+			req.sql.query("INSERT INTO app.engines SET ?", {
 				Name: req.flags.save,
 				Enabled: 1,
 				Engine: "url",
@@ -1266,13 +1266,14 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				ring = {evring:[ TL, TR, BR, BL, TL ]};
 
 			console.log({auto_ingesting_ring: ring.evring});
-			// add this aoi as a usecase to all plugins by cloning the plugin's Name="ingest" usecase
+			
+			// add this aoi as a usecase to all applicable plugins 
 			sql.eachTable( group, function (table) {  // look for plugins that have a data loader and a Job key
 				var tarkeys = [], srckeys = [], hasJob = false;
 
 				if (table == "gaussmix") // debug
 				if ( loader = DEBE.loaders[table] )
-					sql.query(  // get plugin keys
+					sql.query(  // get plugin usecase keys
 						"SHOW FIELDS FROM ??.?? WHERE Field != 'ID' ", 
 						[ group, table ], 
 						function (err,keys) {
@@ -1303,7 +1304,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 									group, table
 							], function (err, info) {
 
-								if ( !err && info.insertId )  // relay fetch request back the usecase that was added to this plugin
+								if ( !err && info.insertId )  // relay a fetch request to load the data with the usecase that was just added 
 									loader( {ID:info.insertId}, function (rtn) {
 										Trace(`AUTORUN ${table}`);  // rtn = json parsed or null
 									});
@@ -1372,7 +1373,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				});
 				break;
 				
-			case  Array:
+			case  Array:		// js bug? wont test positive when an array so must default
 			default:
 				path.each = Array.prototype.each;
 				
@@ -1997,18 +1998,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				var 
 					chan = ctx.Job || {},
 					
-					jobnotes = [
-							(req.table+"?").tagurl({Name:query.Name}).tag("a", {href:"/" + req.table + ".run"}), 
-							((req.profile.Credit>0) ? "funded" : "unfunded").tag("a",{href:req.url}),
-							"RTP".tag("a",{
-								href:`/rtpsqd.view?task=${query.Task}`
-							}),
-							"PMR brief".tag("a",{
-								href:`/briefs.view?options=${query.Task}`
-							})
-					],
-					
-					job = Copy(ctx, { // job related
+					job = Copy(ctx, { // job keys
 						thread: req.client.replace(/\./g,"") + "." + req.table,
 						qos: req.profile.QoS, 
 						priority: 0,
@@ -2017,7 +2007,16 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						credit: req.profile.Credit,
 						name: req.table,
 						task: query.Task,
-						notes: jobnotes.join(" || ")
+						notes: [
+								(req.table+"?").tagurl({Name:query.Name}).tag("a", {href:"/" + req.table + ".run"}), 
+								((req.profile.Credit>0) ? "funded" : "unfunded").tag("a",{href:req.url}),
+								"RTP".tag("a",{
+									href:`/rtpsqd.view?task=${query.Task}`
+								}),
+								"PMR brief".tag("a",{
+									href:`/briefs.view?options=${query.Task}`
+								})
+						].join(" || ")
 					});
 
 				delete job.ID;
@@ -2028,13 +2027,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					job: job
 				});
 
-				if (chan.tmin)
-					CHIPS.ingestStreams(chan, job, function (twindow,status,sql) {
-						console.log(twindow,status);
-					});
-
-				else
-				if (chan.evring) 
+				if (chan.voiring) 
 					CHIPS.ingestEvents(chan, job, function (voxel,stats,sql) {
 						DEBE.thread( function (sql) {
 							Trace( saveResults( sql, "app.voxels", stats, voxel ) );
@@ -2042,33 +2035,36 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					});
 				
 				else
-				if (chan.ring)
+				if (chan.aoiring)
 					CHIPS.ingestChips(chan, job, function (chip,dets,sql) {
 						var updated = new Date();
 				
 						console.log({save:dets});
 						sql.query(
-							"REPLACE INTO ??.chips SET ?,Ring=st_GeomFromText(?),Point=st_GeomFromText(?)", [req.group, {
-								Thread: job.thread,
-								Save: JSON.stringify(dets),
-								t: updated,
-								x: chip.pos.lat,
-								y: chip.pos.lon
-							},
-							chip.ring ,
-							chip.point
+							"REPLACE INTO ??.chips SET ?,Ring=st_GeomFromText(?),Point=st_GeomFromText(?)", [ 
+								req.group, {
+									Thread: job.thread,
+									Save: JSON.stringify(dets),
+									t: updated,
+									x: chip.pos.lat,
+									y: chip.pos.lon
+								},
+								chip.ring,
+								chip.point
 						]);
 
 						// reserve voxel detectors above this chip
 						for (var vox=CHIPS.voxelSpecs,alt=vox.minAlt, del=vox.deltaAlt, max=vox.maxAlt; alt<max; alt+=del) 
 							sql.query(
-								"REPLACE INTO ??.voxels SET ?,Ring=st_GeomFromText(?),Point=st_GeomFromText(?)", [req.group, {
+								"REPLACE INTO ??.voxels SET ?,Ring=st_GeomFromText(?),Point=st_GeomFromText(?)", [
+								req.group, {
 									Thread: job.thread,
 									Save: null,
 									t: updated,
 									x: chip.pos.lat,
 									y: chip.pos.lon,
-									z: alt
+									z: alt,
+									Enabled: 1
 								},
 								chip.ring,
 								chip.point
@@ -2079,7 +2075,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				else {
 					req.query = ctx;
 					ENGINE.select(req, function (stats) {
-						//console.log({engrtn:stats});
+						console.log({plugin_rtns:stats});
 						Trace( saveResults( sql, ds, stats, ctx ) );
 					});
 				}
@@ -2176,7 +2172,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 					"tinyint(1)": "c"
 				};				
 			
-			console.log([query, req.search]);
+			//console.log([query, req.search]);
 			
 			switch (fields.constructor) {
 				case Array:
