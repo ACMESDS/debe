@@ -2160,7 +2160,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 					page: query.page,
 					dims: query.dims || "100%,100%",
 					ds: req.table
-				},				
+				},
 				ctx = site.context.plugin,
 				sqltypes = {
 					"varchar(32)": "t",
@@ -2175,6 +2175,8 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 					datetime: "d",
 					"tinyint(1)": "c"
 				};				
+			
+			console.log([query, req.search]);
 			
 			switch (fields.constructor) {
 				case Array:
