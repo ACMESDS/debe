@@ -2010,7 +2010,6 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						notes: [
 								(req.table+"?").tagurl({Name:query.Name}).tag("a", {href:"/" + req.table + ".run"}), 
 								((req.profile.Credit>0) ? "funded" : "unfunded").tag("a",{href:req.url}),
-								"stop".tag("a",{href:"/jobs?stop=x"}),
 								"RTP".tag("a",{
 									href:`/rtpsqd.view?task=${query.Task}`
 								}),
