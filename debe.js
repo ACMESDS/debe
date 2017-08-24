@@ -1263,9 +1263,9 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				TR = [aoi.yMax, aoi.xMax],
 				BL = [aoi.yMin, aoi.xMin],
 				BR = [aoi.yMin, aoi.xMax], 
-				ring = {evring:[ TL, TR, BR, BL, TL ]};
+				ring = {voiring:[ TL, TR, BR, BL, TL ]};
 
-			console.log({auto_ingesting_ring: ring.evring});
+			console.log({auto_ingesting_ring: ring.voiring});
 			
 			// add this aoi as a usecase to all applicable plugins 
 			sql.eachTable( group, function (table) {  // look for plugins that have a data loader and a Job key
