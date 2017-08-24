@@ -1917,20 +1917,37 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 	function saveResults( sql, ds, stats, ctx ) {
 		var 
 			status = "",
-			updates = {},
-			saves = new Object(stats);
-
-		Each(stats, function (stat, val) {
-			if ( stat in ctx ) {
-				updates[stat] = JSON.stringify(val);
-				delete saves[stat];
-			}
-		});
+			updates = {};
+			
+		if ( stats.constructor == Array ) {
+			Each(stats[0], function (key,val) {
+				if ( key in ctx ) {
+					var recs = [];
+					stats.each( function (n,stat) {
+						recs.push( stat[key] );
+					});
+					updates[key] = JSON.stringify(recs);
+				}
+			});
+			var saves = [];
+		}
+		
+		else {
+			var saves = new Object(stats);
+			Each(stats, function (key, val) {
+				if ( key in ctx) {
+					updates[key] = JSON.stringify(val);
+					delete saves[key];
+				}
+			});
+		}
 
 		if ( !Each(updates) ) {
-			sql.query("UPDATE ?? SET ? WHERE ?", [ 
+			var q = sql.query("UPDATE ?? SET ? WHERE ?", [ 
 				ds, updates, {ID: ctx.ID}
-			]);
+			], function (err) {
+				console.log([err,q.sql]);
+			});
 			status += "Split";
 		}
 
@@ -2030,7 +2047,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				if (chan.voiring) 
 					CHIPS.ingestEvents(chan, job, function (voxel,stats,sql) {
 						DEBE.thread( function (sql) {
-							Trace( saveResults( sql, "app.voxels", stats, voxel ) );
+							console.log({save:stats});
+							Trace( saveResults( sql, "app.voxels", stats.gmms, voxel ) );
 						});
 					});
 				
