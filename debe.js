@@ -1919,6 +1919,9 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			status = "",
 			updates = {};
 			
+		if ( !stats )
+			return "Empty";
+		
 		if ( stats.constructor == Array ) {
 			Each(stats[0], function (key,val) {
 				if ( key in ctx ) {
