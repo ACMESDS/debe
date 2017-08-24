@@ -38,29 +38,29 @@ append base_head
 
 append base_body
 	#hold.Options(path=JSON.stringify(parms),cols="Name,option")
-	#hold.Users(path="/USERS.db",cols="Name")
-	#hold.Health(path="/HEALTH.db",cols="Name")
-	#hold.Queues(path="/QUEUES.db",cols="Name")
-	#hold.Engines(path="/ENGINES.db",cols="Name")
-	#hold.Themes(path="/THEMES.db",cols="Name,Path")
+	#hold.Users(path="/users.db",cols="Name")
+	#hold.Health(path="/health.db",cols="Name")
+	#hold.Themes(path="/lookups.db?ref=themes",cols="Name,Path")
 	#hold.Locales(path="/lookups.db?ref=locales",cols="Name,Path")
 	#hold.Datasets(path="/lookups.db",cols="Name,Path")
 	#hold.Agents(path="/lookups.db?ref=agents",cols="Name,Path")
-	#hold.Views(path="/VIEWS.db",cols="Name,class")
+	#hold.Views(path="/views.db",cols="Name,class")
 	#hold.Uploads(path="/uploads.db",cols="Name")
 	#hold.Stores(path="/stores.db",cols="Name")
 	#hold.Parms(path="/parms.db",cols="Parm,Type,Label,Special",sync="Parm")
-	#hold.Summary(path="/SUMMARY.db",refresh=pulse,cols="Name")
+	#hold.Summary(path="/summary.db",refresh=300,cols="Name")
 
 	//
+		#hold.Queues(path="/QUEUES.db",cols="Name")
+		#hold.Engines(path="/ENGINES.db",cols="Name")
 		#hold.AOIs(path="/aois.db",cols="path,label,row,rows,col,cols")
 		#hold.History(path="/history.db?pivot=all",cols="Moderators,Idx",sync="Idx")
-		#hold.Cliques(path="/CLIQUES.db",cols="Name")
+		#hold.Cliques(path="/cliques.db",cols="Name")
 		#hold.Joins(path="/lookups.db",cols="Name,Path")
 		#hold.Positives(path="/positives.FILES.db",cols="Name")
 		#hold.Negatives(path="/negatives.FILES.db",cols="Name")
 
-	- titlebar = [table.hyper("/edit.view?name="+table), client.hyper("/home.view?option=chat"), (profile.Credit*1e-3).toFixed(0)+"K "+profile.QoS+"qos "+util.cpu + "%cpu " + util.disk+"%disk", "Issues".hyper(), "Baseline".hyper("baseline.exe"), "Moderate".hyper(), (warning ? warning.fontcolor("red") : "ok".fontcolor("blue")).hyper("/ispstatus.view") ].join(" || ")
+	- titlebar = [table.hyper("/edit.view?name="+table), client.hyper("/home.view?option=chat"), (profile.Credit*1e-3).toFixed(0)+"$ "+profile.QoS+"qos "+util.cpu + "%cpu " + util.disk+"%disk", "Issues".hyper(), "Baseline".hyper("baseline.exe"), "Moderate".hyper(), (warning ? warning.fontcolor("red") : "ok".fontcolor("blue")).hyper("/ispstatus.view") ].join(" || ")
 	- goto = query.goto || ""
 	- browsers = {Ok: ["supported","Chrome","Firefox","Opera","Safari"],Bad: ["unsupported","IE","Netscape","Traveler","TheWorld","Maxthon"] }
 
@@ -84,8 +84,6 @@ append base_body
 						*	Edit this skin. See [skinning guide](skinguide.view)
 						*	Health of system.
 						*	Users connected.
-						*	Engines status.  See [Python,JS,R,Ex,Matlab,etc engines](/api.view) 
-						*	Queues status.  Job are regulated at your existing [QoS level](/api.view)
 						*	Files/Uploads to upload data and receive credit for future job runs.
 						*	Files/Stores to upload shared files.
 
@@ -103,7 +101,7 @@ append base_body
 		when "Typical"
 			#hold.Tasks(path="/tasks.db",cols="Name")
 			#hold.Plugins(path="/plugins.db",cols="Name")
-			#hold.Links(path="/LINKS.db?area="+area,cols="Name")
+			#hold.Links(path="/links.db",cols="Name")
 		
 			#border(
 				class=table,
@@ -123,8 +121,6 @@ append base_body
 						*	Edit this skin. See [skinning guide](skinguide.view)
 						*	Health of system.
 						*	Users connected.
-						*	Engines status.  See [Python,JS,R,Ex,Matlab,etc engines](/api.view) 
-						*	Queues status.  Job are regulated at your existing [QoS level](/api.view)
 						*	Files/Uploads to upload data and receive credit for future job runs.
 						*	Files/Stores to upload shared files.
 
@@ -136,7 +132,7 @@ append base_body
 						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
 
 		when "Home"
-			#hold.Links(path="/LINKS.db?area="+area,cols="Name")
+			#hold.Links(path="/links.db",cols="Name")
 		
 			#border(
 				class=table,
@@ -156,8 +152,6 @@ append base_body
 						*	Edit this skin. See [skinning guide](skinguide.view)
 						*	Health of system.
 						*	Users connected.
-						*	Engines status.  See [Python,JS,R,Ex,Matlab,etc engines](/api.view) 
-						*	Queues status.  Job are regulated at your existing [QoS level](/api.view)
 						*	Files/Uploads to upload data and receive credit for future job runs.
 						*	Files/Stores to upload shared files.
 
@@ -172,12 +166,12 @@ append base_body
 			block site_body
 
 		when "Monster"
-			#hold.Links(path="/LINKS.db?area="+area,cols="Name")
+			#hold.Links(path="/links.db",cols="Name")
 		
 			#border(
 				class=table,
 				title=titlebar,
-				head="More(Health,Users,Links,Themes),Engines,Queues,Uploads,$uploads,Stores,$stores,Views,Options,LikeUs,Help",
+				head="More(Health,Users,Links,Themes),Uploads,$uploads,Stores,$stores,Views,Options,LikeUs,Help",
 				LikeUs="/likeus.db")
 				
 				block site_body
@@ -191,8 +185,6 @@ append base_body
 						*	Edit this skin. See [skinning guide](skinguide.view)
 						*	Health of system.
 						*	Users connected.
-						*	Engines status.  See [Python,JS,R,Ex,Matlab,etc engines](/api.view) 
-						*	Queues status.  Job are regulated at your existing [QoS level](/api.view)
 						*	Files/Uploads to upload data and receive credit for future job runs.
 						*	Files/Stores to upload shared files.
 
@@ -235,12 +227,14 @@ append base_body
 					block site_body
 		
 		default
-			#hold.Links(path="/LINKS.db?area="+area,cols="Name")
+			#hold.Links(path="/links.db",cols="Name")
+			#hold.Tasks(path="/tasks.db",cols="Name")
+			#hold.Plugins(path="/plugins.db",cols="Name")
 		
 			#border(
 				class=table,
 				title=titlebar,
-				head="System(Health,Users,Links,Engines,Queues),Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,LikeUs,Capture,Help",
+				head="System(Health,Users,Links,Plugins,Tasks),Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,LikeUs,Capture,Help",
 				LikeUs="/likeus.db",
 				Manage="/files.view")
 				
@@ -255,8 +249,6 @@ append base_body
 						*	Edit this skin. See [skinning guide](skinguide.view)
 						*	Health of system.
 						*	Users connected.
-						*	Engines status.  See [Python,JS,R,Ex,Matlab,etc engines](/api.view) 
-						*	Queues status.  Job are regulated at your existing [QoS level](/api.view)
 						*	Files/Uploads to upload data and receive credit for future job runs.
 						*	Files/Stores to upload shared files.
 

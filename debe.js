@@ -520,7 +520,7 @@ append layout_body
 		},
 
 		html: function (recs,req,res) { //< dataset.html converts to html
-			res( DEBE.site.gridify( recs ) );
+			res( DEBE.site.gridify( recs ).tag("table") );
 		},
 		
 		// MS office doc converters
@@ -907,6 +907,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		gridbrief: renderSkin,
 		runbrief: renderSkin,
 		pivbrief: renderSkin,
+		
 		exe: executePlugin,
 		add: extendPlugin,
 		sub: retractPlugin
@@ -944,14 +945,14 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		render: "./public/jade/",
 		
 		sss: { // some streaming services
-			spoof: ENV.DEBUG + "/sss.exe?Name=spoof1",
+			spoof: ENV.DEBUG + "/sss.exe?Name=spoof1&",
 			stats: ENV.DEBUG + "/gaussmix.exe?",
 			gaussmix: ENV.DEBUG + "/gaussmix.exe?",
 			thresher: ENV.SSS_THRESHER
 		},
 
 		wfs: { // wfs services
-			spoof: ENV.DEBUG + "/wfs.exe?Name=spoof1",
+			spoof: ENV.DEBUG + "/wfs.exe?Name=spoof1&",
 			ess: ENV.WFS_ESS,
 			dglobe: ENV.WFS_DGLOBE,
 			omar: ENV.WFS_OMAR,
@@ -959,7 +960,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		},
 
 		wms: { // wms services
-			spoof: ENV.DEBUG + "/wms.exe?Name=spoof1",
+			spoof: ENV.DEBUG + "/wms.exe?Name=spoof1&",
 			ess: ENV.WMS_ESS,
 			dglobe: ENV.WMS_DGLOBE,
 			omar: ENV.WMS_OMAR,
@@ -1229,7 +1230,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	@param {Object} req http request
 	@param {Function} res Totom response callback
 	*/
-		Trace("FETCHING "+url.tagurl(req));
 		met( url.tagurl(req), res );
 	},
 
@@ -2010,6 +2010,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						notes: [
 								(req.table+"?").tagurl({Name:query.Name}).tag("a", {href:"/" + req.table + ".run"}), 
 								((req.profile.Credit>0) ? "funded" : "unfunded").tag("a",{href:req.url}),
+								"stop".tag("a",{href:"/jobs?stop=x"}),
 								"RTP".tag("a",{
 									href:`/rtpsqd.view?task=${query.Task}`
 								}),
