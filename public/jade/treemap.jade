@@ -1,9 +1,20 @@
 //- UNCLASSIFIED
-// d3 treemap chart.
 
 extends base
 append base_parms
 	- tech = "d3"
+
+append base_help
+	:markdown
+		Display treemap chart using parameters:
+
+			ds = source url returning node tree { ID:Name, count:Value, data: [ Children ]}
+			w = drawing width
+			h = drawing height
+			debug = dump derived options
+			pivots = key,key,... data pivots
+			kids = key name of children
+
 append base_head
 
 	style.
@@ -29,35 +40,45 @@ append base_head
 		  text-indent: 2px;
 		}
 
+	script.
+		var opts = {
+			ds: "#{query.ds}",
+			ID: null,
+			w: parseInt("#{query.w}"),
+			h: parseInt("#{query.h}"),
+			debug: "#{query.debug}",
+			pivots: "#{query.pivots}",
+			kids: "#{query.kids}" || "children"
+		};
+
 append base_body
 
-	if query.src
-		script.
+	script.
+		var
+			margin = {top: 40, right: 10, bottom: 10, left: 10},
+			width = (opts.w || 1200) - margin.left - margin.right,
+			height = (opts.h || 500) - margin.top - margin.bottom,
 
-			var 
-				margin = {top: 40, right: 10, bottom: 10, left: 10},
-				width = parseInt("#{query.width}" || 1200),
-				height = parseInt("#{query.height}" || 500);
-				
-				//width = (query.w || 1200) - margin.left - margin.right,
-				//height = (query.h || 500) - margin.top - margin.bottom;
+			color = d3.scale.category20c(),
 
-			var color = d3.scale.category20c();
-
-			var treemap = d3.layout.treemap()
+			treemap = d3.layout.treemap()
 				.size([width, height])
 				.sticky(true)
-				.value(function(d) { return d.size; });
-
-			var div = d3.select("#content").append("div")
+				.value(function(d) { return d.size; }),
+				
+			div = d3.select("#content").append("div")
 				.style("position", "relative")
 				.style("width", (width + margin.left + margin.right) + "px")
 				.style("height", (height + margin.top + margin.bottom) + "px")
 				.style("left", margin.left + "px")
 				.style("top", margin.top + "px");
 
-			d3.json("#{query.src}.tree?_sort=#{query.pivots}", function(root) {
-				var node = div.datum(root).selectAll(".node")
+		source( opts, function(opts) {
+			
+			var 
+				root = opts.data,
+				
+				node = div.datum(root).selectAll(".node")
 					.data(treemap.nodes)
 					.enter().append("div")
 					.attr("class", "node")
@@ -66,48 +87,40 @@ append base_body
 					.text(function(d) { return d.children ? null : d.name; })
 					.on("click", click);
 
-				d3.selectAll("input").on("change", function change() {
-					var value = this.value === "count"
-						? function() { return 1; }
-						: function(d) { return d.size; };
+			d3.selectAll("input").on("change", function change() {
+				var value = this.value === "count"
+					? function() { return 1; }
+					: function(d) { return d.size; };
 
-					node
-						.data(treemap.value(value).nodes)
-						.transition()
-						.duration(1500)
-						.call(position);
-				});
+				node
+					.data(treemap.value(value).nodes)
+					.transition()
+					.duration(1500)
+					.call(position);
 			});
+		});
 
-			function click(d) { 
-				var isView = d.details.constructor == String;
+		function click(d) { 
+			var isView = d.details.constructor == String;
 
-				var doc = window.open(
-					isView ? d.details : "",
-					"_blank",
-					"left="+d.x+"px,"
-					+ "top="+d.y+"px,"
-					+ "width=50,height=50,location=0,menubar=0,status=0,titlebar=0,toolbar=0");
+			var doc = window.open(
+				isView ? d.details : "",
+				"_blank",
+				"left="+d.x+"px,"
+				+ "top="+d.y+"px,"
+				+ "width=50,height=50,location=0,menubar=0,status=0,titlebar=0,toolbar=0");
 
-				if ( !isView )
-					doc.document.write(JSON.stringify( d.details ));
-			}
+			if ( !isView )
+				doc.document.write(JSON.stringify( d.details ));
+		}
 
-			function position() {
-				this
-					.style("left", function(d) { return d.x + "px"; })
-					.style("top", function(d) { return d.y + "px"; })
-					.style("width", function(d) { return Math.max(0, d.dx - 1) + "px"; })
-					.style("height", function(d) { return Math.max(0, d.dy - 1) + "px"; });
-			}
-	else
-		:markdown
-			Display treemap chart using parameters:
-
-				src = source url returns node tree { name:"label", size:Value, children: [ ... ]}
-				pivots = data pivot list = field,field,...
-				w = drawing width
-				h = drawing height
+		function position() {
+			this
+				.style("left", function(d) { return d.x + "px"; })
+				.style("top", function(d) { return d.y + "px"; })
+				.style("width", function(d) { return Math.max(0, d.dx - 1) + "px"; })
+				.style("height", function(d) { return Math.max(0, d.dy - 1) + "px"; });
+		}
 		
 // UNCLASSIFIED
 		

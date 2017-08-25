@@ -1,9 +1,19 @@
 //- UNCLASSIFIED
-// d3 treemap chart
 
 extends base
 append base_parms
 	- tech = "d3"
+	
+append base_help
+	:markdown
+		Display circle packing chart:
+
+			ds = source url returning node tree { ID:Name, count:Value, data: [ Children ]}
+			w = drawing width
+			h = drawing height
+			debug = dump derived options
+			x,y,r,s = position, radius and weight data
+
 append base_head
 
 	style.
@@ -23,62 +33,62 @@ append base_head
 			font: 10px sans-serif;
 		}
 
+	script.
+		var opts = {
+			ds: "#{query.ds}",
+			ID: null,
+			w: parseInt("#{query.w}"),
+			h: parseInt("#{query.h}"),
+			debug: "#{query.debug}",
+			x: "#{query.x}" || "x",
+			y: "#{query.y}" || "y",
+			r: "#{query.r}" || "r",
+			s: "#{query.q}" || "weight"
+		};
+		
 append base_body
 
-	if query.src
-		script.
+	script.
+		var 
+			w = opts.w || 1200,
+			h = opts.h || 500,
+			diameter = Math.min(w,h),
+			format = d3.format(",d");
 
-			var 
-				w = parseInt("#{query.width}" || 1200),
-				h = parseInt("#{query.height}" || 500),			
-				diameter = Math.min(w,h),
-				format = d3.format(",d");
-				
-			var 
-				opts = {
-					x: "#{query.x}" || "x",
-					y: "#{query.y}" || "y",
-					r: "#{query.r}" || "r",
-					s: "#{query.q}" || "weight"
-				};
-
-			var pack = d3.layout.pack()
+		var 
+			pack = d3.layout.pack()
 				.size([diameter - 4, diameter - 4])
-				.value(function(d) { return d[opts.s]; });
+				.value(function(d) { return d[opts.s]; }),
 
-			var svg = d3.select("#content").append("svg")
+			svg = d3.select("#content").append("svg")
 				.attr("width", diameter)
 				.attr("height", diameter)
 				.append("g")
-				.attr("transform", "translate(2,2)");
+				.attr("transform", "translate(2,2)"),
+			
+			vis = d3.select(self.frameElement).style("height", diameter + "px");
 
-			d3.json("#{query.src}.tree?_sort=#{query.pivots}", function(root) {
-				var node = svg.datum(root).selectAll(".node")
+		source( opts, function(opts) {
+			var 
+				root = opts.data,
+				
+				node = svg.datum(root).selectAll(".node")
 					.data(pack.nodes)
 					.enter().append("g")
 					.attr("class", function(d) { return d.children ? "node" : "leaf node"; })
 					.attr("transform", function(d) { return "translate(" + d[opts.x] + "," + d[opts.y] + ")"; });
 
-				node.append("title")
-					.text(function(d) { return d.name + (d.children ? "" : ": " + format(d[opts.s])); });
+			node.append("title")
+				.text(function(d) { return d.name + (d.children ? "" : ": " + format(d[opts.s])); });
 
-				node.append("circle")
-					.attr("r", function(d) { return d[opts.r]; });
+			node.append("circle")
+				.attr("r", function(d) { return d[opts.r]; });
 
-				node.filter(function(d) { return !d.children; }).append("text")
-					.attr("dy", ".3em")
-					.style("text-anchor", "middle")
-					.text(function(d) { return d.name.substring(0, d[opts.r] / 3); });
-				});
+			node.filter(function(d) { return !d.children; }).append("text")
+				.attr("dy", ".3em")
+				.style("text-anchor", "middle")
+				.text(function(d) { return d.name.substring(0, d[opts.r] / 3); });
 
-			d3.select(self.frameElement).style("height", diameter + "px");
-	else
-		:markdown
-			Display treemap chart using parameters:
-
-				src = source url returns node tree { name:"label", size:Value, children: [ ... ]}
-				pivots = data pivot list = field,field,...
-				w = drawing width
-				h = drawing height
+		});
 		
 // UNCLASSIFIED

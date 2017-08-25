@@ -107,11 +107,13 @@ var
 												return "".tag("img",{ src:u, width:w, height:h });
 											case "post":
 												return "".tag("iframe",{ src:u, width:w, height:h });
-											case "plot":
-												console.log("plot id="+rec.ID);
-												return "".tag("iframe",{ src: `/plot.view?ds=${req.table}&ID=${rec.ID}&${p}`, width:w, height:h } );
+											case "nada":
+												return `[nada](${u})`;
 											default:
-												return x.tag("a",{href:u});
+												//console.log("plot id="+rec.ID);
+												return "".tag("iframe",{ src: `/${x}.view?ds=${req.table}&ID=${rec.ID}&${p}`, width:w, height:h } );
+											//default:
+											//	return x.tag("a",{href:u});
 										}										
 									})
 									.replace(/href=(.*?)>/g, function (m,i) { // <a href=B>A</a> --> followed link
@@ -976,9 +978,10 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			//jobs: "./public/jobs",		//< path to tau simulator job files
 			stores: "./public", 		//< persistant scrape area
 			uploads: "./public", 		//< one-time scrape area
-			data: "./public", 			//< json data area
 			chips: "./public/images",	//< chipped files
 			tips: "./public/images",	//< tipped files
+			data: "./public",  //< debug data
+			jade: "./public",
 			shares: ".", 				//< cached file area
 			docs: ".", 					//< html documents
 			socketio: ".",				//< path to socket.io
@@ -989,7 +992,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				shares: "indexer",
 				uploads: "indexer",
 				stores: "indexer",
-				tour: "indexer"
+				tour: "indexer",
+				data: "indexer"
 			}
 		},
 		

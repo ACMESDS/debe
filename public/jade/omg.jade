@@ -1,12 +1,19 @@
 //- UNCLASSIFIED
-//-
-	Display doodle chart using parameters:
-		src = data source (e.g. energy.json.data, some_tagged_data.shares, intake.db, ...)
-		pivots = data pivot list (e.g. name,gender,weight,...)
 
 extends base
 append base_parms
 	- tech = "d3"
+
+append base_help
+	:markdown
+		 Produce d3 doodle interface:
+
+			ds = bogus source url
+			ID = source record id
+			w = drawing width
+			h = drawing height
+			debug = dump derived options
+
 append base_head
 
 	style.
@@ -18,10 +25,20 @@ append base_head
 			stroke-width: 1.5px;
 		}
 
+	script.
+		var opts = {
+			ds: "#{query.ds}",
+			ID: "#{query.ID}",
+			w: parseInt("#{query.w}"),
+			h: parseInt("#{query.h}"),
+			debug: "#{query.debug}"
+		};
+
 append base_body
 	script.
-		var w = 960,
-			h = 500,
+		var 
+			w = opts.w|| 960,
+			h = opts.h || 500,
 			z = d3.scale.category20c(),
 			i = 0;
 

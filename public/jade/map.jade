@@ -1,81 +1,93 @@
 // UNCLASSIFIED
-// d3 datamap chart
 
 extends base
 append base_parms
 	- tech = "d3"
 	- map = "world"
+
+append base_help
+	:markdown
+		Provides a map chart:
+
+			src = path to map data [ {Name, Info, Code, ...}, ...]
+			index = field containing 2-3 letter county/state code
+			details = field containing detailed information
+			fill = field containing fill style
+			trace = display options
+
 append base_head
 	style.
 		div {
 			width: 500px;
 			height: 300px;
 		}
+
+	script.
+		var opts = {
+			ds: "#{query.ds}" || "maps.db",
+			ID: null,
+			index: "#{query.index}" || "Name",
+			details: "#{query.details}" || "Info",
+			fill: "#{query.fill}" || "Code",
+			trace: "#{query.trace}" || false
+		};
+
 append base_body
 
-	if query.src
-		script.
-			//var map = new Datamap({element: document.getElementById('content')});
+	script.
+		//var map = new Datamap({element: document.getElementById('content')});
 
-			var opts = {
-				src: "#{query.src}" || "maps.db",
-				index: "#{query.index}" || "name",
-				details: "#{query.details}" || "Info",
-				fill: "#{query.fill}" || "fillKey",
-				trace: "#{query.trace}" || false
-			};
+		source(opts, function(opts) {
 
-			if (opts.trace) alert(JSON.stringify(opts));
-
-			d3.json(opts.src, function(json) {
-
-				var data = {};
-
-				/*json.Each(function (n,rec) {
-					Copy(rec, data[rec[opts.index].toUpperCase()] = {
-						fillKey: rec[opts.fill] || "UNKNOWN",
-						Info: rec[opts.details] || ""
-					});
-				});*/
-
-				var map = new Datamap({
-					element: document.getElementById('content'),
-
-					geographyConfig: {
-						popupTemplate: function (geo,data) {
-							return (geo.properties.name+"<BR>"+data.Info).tag("div",{class:"hoverinfo"});	
-						}
-					},
-					fills: {
-						HIGH: '#afafaf',
-						LOW: '#123456',
-						MEDIUM: 'blue',
-						UNKNOWN: 'rgb(0,0,0)',
-						defaultFill: 'green'
-					},
-					data: data || {
-						RUSSIA: {
-							fillKey: 'LOW',
-							Info: 2002
-						},
-						USA: {
-							fillKey: 'MEDIUM',
-							Info: 10381
-						}
-					}
+			var data = {};
+		
+			opts.data.each( function (n,rec) {
+				data[ (rec[opts.index] || "") ] = {
+					fillKey: (rec[opts.fill] || "").toUpperCase(),
+					Info: (rec[opts.details] || "").toUpperCase()
+				};
+			});
+		
+			/*json.Each(function (n,rec) {
+				Copy(rec, data[rec[opts.index].toUpperCase()] = {
+					fillKey: rec[opts.fill] || "UNKNOWN",
+					Info: rec[opts.details] || ""
 				});
+			});*/
+			//alert(JSON.stringify(data));
 
-				//draw a legend for this map
-				map.legend();
-			});		
-	else
-		:markdown
-			Provides a datamap chart given:
+			var map = new Datamap({
+				element: document.getElementById('content'),
 
-				src = path to map data
-				index = field containing 2-3 letter county/state code
-				details = field containing detailed information
-				fill = field containing fill style
-				trace = display options
+				geographyConfig: {
+					popupTemplate: function (geo,data) {
+						return [
+							geo ? geo.properties.name : "",
+							data ? data.Info : "nada"
+						].join("<br>").tag("div",{class:"hoverinfo"});
+					}
+				},
+				fills: {
+					HIGH: '#afafaf',
+					LOW: '#123456',
+					MEDIUM: 'blue',
+					UNKNOWN: 'red', //'rgb(1,0,0)',
+					defaultFill: 'green'
+				},
+				data: null || {
+					RUSSIA: {
+						fillKey: 'LOW',
+						Info: 2002
+					},
+					USA: {
+						fillKey: 'MEDIUM',
+						Info: 10381
+					} 
+				} 
+			});
+
+			//draw a legend for this map
+			map.legend();
+		});		
 
 // UNCLASSIFIED

@@ -1,10 +1,14 @@
 extends base
 append base_parms
 	- tech = "three"
+	
+append base_help
+	:markdown
+		Can I get some help here?
+
 append base_body
 
 	script.
-
 		if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
 		var container, stats;

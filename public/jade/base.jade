@@ -58,14 +58,13 @@ append layout_parms
 		- src = query.src
 		- host = {use:"swagdev", geohub: "https://sigma0.ilabs.ic.gov:8083", me: "localhost:8083", win: "http://200.100.50.101:8083", aws: "http://172.31.76.130:8083",local:"http://localhost:8083",swaggpu:"http://swag-gpu-01.ec2.internal:8083", swagws:"http://swag-ws-02.ec2.internal:8083", swagdev: "http://localhost:8083"}
 		- width = 750
-		- height = 500		
+		- height = 500
 		// d3
 		- map = ""
 		// doc
 		- opens = true
-		// content
+		// technology
 		- tech = "nada"  // extjs | jquery | dojo | reveal | voxel | scene | three | cesium | joint | d3 | flow | ...
-		- base = true
 
 append layout_head
 	- locale = query.locale || "en"  // en | fr | de | ...
@@ -82,14 +81,18 @@ append layout_head
 				include base_scene
 			when "dojo"
 				include base_dojo
+			when "voxel"
+				include base_voxel
 			when "jquery"
 				include base_jquery
 			when "extjs"
 				include base_extjs
 			when "flow"
 				include base_flow
+			when "d3"
+				include base_d3
 
-		//- Load underlying tech 
+		//- Load underlying tech
 		case tech
 			when "flow"
 				case "1.x"
@@ -111,6 +114,7 @@ append layout_head
 				script(src="/clients/joint/joint.shapes.erd.min.js")
 
 			when "d3"
+				script(src="/clients/uis/dataif.js")
 				script(src="/clients/d3/d3.min.js")
 				case map
 					when "world"
@@ -121,7 +125,12 @@ append layout_head
 						script(src="/clients/maps/topojson.min.js")
 						script(src="/clients/maps/datamaps.usa.min.js")
 
+			when "voxel"
+				script(src="/clients/uis/dataif.js")
+				script(src="/clients/games/#{game}/bundle.js")
+
 			when "three"
+				script(src="/clients/uis/dataif.js")
 				script(src="/clients/threejs/build/three.min.js")
 				script(src="/clients/threejs/examples/js/Detector.js")
 				script(src="/clients/threejs/examples/js/libs/stats.min.js")
@@ -132,10 +141,11 @@ append layout_head
 				script(src='/clients/reveal/js/reveal.min.js')
 
 			when "scene"
+				script(src="/clients/uis/dataif.js")
 				script(src="/clients/scenejs/scenejs.js")
 				script.
 					SceneJS.setConfigs({
-						pluginPath:"clients/scenejs/plugins"
+						pluginPath:"/clients/scenejs/plugins"
 					});
 
 			when "dojo"
@@ -289,76 +299,38 @@ append layout_body
 				block base_body
 
 			when "flow"
-				table
-					th: input#run.ui-icon-run(type="button",size=4,title="step or pause simulation")
-					th: input#open.ui-icon-open(type="button",size=4,title="open selected system")
-					th: input#save.ui-icon-save(type="button",size=4,title="save model")
-					th: input#load.ui-icon-load(type="button",size=4,title="load model")
-					th: input#clone.ui-icon-clone(type="button",size=4,title="clone selected system")
-					th: input#delete.ui-icon-delete(type="button",size=4,title="delete selected system")
-					th: input#select.ui-icon-select(type="button",size=4,title="select system")
-					th: input#info.ui-icon-info(type="button",size=4,title="info about selected system")
-					th: input#reset.ui-icon-reset(type="button",size=4,title="stop and reset simulation")
-					th.x: #status status
-					th.x: #state state
-					th.x: #step step
-					th.x: #tokens tokens
-					th.x: #jobs jobs
-					th.x: #msg msg
-					th.x: #db LFS
-					th: #progressBar
-						#res
-
-				//- for debugging wrapper
-					svg#Experimental(xmlns="http://-www.w3.org/2000/svg",version="1.1",style="width:150px;height:150px;position:absolute;")
-						ellipse(cx="50%",cy="50%",rx="50%",ry="50%",stroke="#FF0000",stroke-width="2",fill="#800000")
-						ellipse(cx="50%",cy="50%",rx="10%",ry="10%",stroke="#FF0000",stroke-width="2",fill="#880000")
 				block base_body
 
 			when "cesium"
-				iframe(src="#{hosts[host]}/geonode/cesium.html?src=#{src}",width="#{width}",height="#{height}")
+				if query.ds
+					iframe(src="#{hosts[host]}/geonode/cesium.html?src=#{src}",width="#{width}",height="#{height}")
+					block base_body
+				else
+					block base_help
 
 			when "three"
-				block base_body
-				if effect
-					script(src="/clients/threejs/examples/js/effects/#{effect}.js")
+				if query.ds
+					if effect
+						script(src="/clients/threejs/examples/js/effects/#{effect}.js")
+					block base_body
+				else
+					block base_help
 
 			when "dojo"
 				block base_body
 
 			when "scene"
-				block base_body
-				script.
-					SceneJS.setConfigs({
-						pluginPath:"clients/scenejs/plugins"
-					});
-
-			when "voxel"
-				#container
-					#crosshair
-					#battery
-					nav#tools.bar-tab
-						ul.tab-inner
-							li(class="tab-item active")
-								.tab-label
-									| grass
-							li.tab-item
-								.tab-label
-									| dirt
-							li.tab-item
-								.tab-label
-									| obsidian
-							li.tab-item
-								.tab-label
-									| plank
-							li.tab-item
-								.tab-label
-									| dude
-
+				if query.ds
 					block base_body
-
-				script(src="/clients/games/#{game}/bundle.js")
-
+				else
+					block base_help
+					
+			when "voxel"
+				if query.ds
+					block base_body
+				else
+					block base_help
+					
 			when "reveal"
 				.reveal(style="width:100%;height:100%;")
 					// .progress // .control // .state-background // .pause-overlay
@@ -441,9 +413,15 @@ append layout_body
 						// event.fragment = the fragment DOM element
 					} );
 
+			when "d3"
+				if query.ds
+					block base_body
+				else
+					block base_help
+				
 			default
 				script(src="/clients/uis/base.js")
-				script(src="/clients/uis/#{tech}.js")			
+				script(src="/clients/uis/#{tech}.js")
 				block base_body
 
 	//

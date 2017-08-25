@@ -1,9 +1,22 @@
 //- UNCLASSIFIED
-// Display d3 force graph.
 
 extends base
 append base_parms
 	- tech = "d3"
+
+append base_help
+	:markdown
+		Display d3 force graph:
+
+			ds = source url returning node tree { ID:Name, count:Value, data: [ Children ]}
+			w = drawing width
+			h = drawing height
+			debug = dump derived options
+			pivots = key,key,... data pivots
+			kids = key name of children
+
+		Graph nodes are sized to node.weight + length(node.children).
+
 append base_head
 	style.
 		circle.node {
@@ -16,189 +29,190 @@ append base_head
 			stroke: #9ecae1;
 			stroke-width: 1.5px;
 		}
+
+	script.
+		var opts = {
+			ds: "#{query.ds}",
+			ID: null,
+			w: parseInt("#{query.w}"),
+			h: parseInt("#{query.h}"),
+			debug: "#{query.debug}",
+			pivots: "#{query.pivots}",
+			kids: "#{query.kids}" || "children"
+		};
+
 append base_body
 
-	if query.src
-		script.
-			var	
-				width = parseInt("#{query.width}" || 1200),
-				height = parseInt("#{query.height}" || 500),
-				node,
-				link,
-				root;
+	script.
+		function update() {
+			var nodes = flatten(root),
+				links = d3.layout.tree().links(nodes);
 
-			var force = d3.layout.force()
-				.on("tick", tick)
-				.charge(function(d) { return d._children ? -d.size / 100 : -30; })
-				.linkDistance(function(d) { return d.target._children ? 80 : 30; })
-				.size([width, height]);
+			//alert(JSON.stringify(nodes));
 
-			var vis = d3.select("#content").append("svg")
-				.attr("width", width)
-				.attr("height", height);
+			// Restart the force layout.
+			force
+				.nodes(nodes)
+				.links(links)
+				.start();
 
-			d3.json("#{query.src}.tree?_sort=#{query.pivots}", function(json) {
-				root = json;
-				root.fixed = true;
-				root.x = width / 2;
-				root.y = height / 2;
-				update();
-			});
+			// Update the links
+			link = vis.selectAll("line.link")
+				.data(links, function(d) { return d.target.id; });
 
-			function update() {
-				var nodes = flatten(root),
-					links = d3.layout.tree().links(nodes);
+			// Enter any new links.
+			link.enter().insert("line", ".node")
+				.attr("class", "link")
+				.attr("x1", function(d) { return d.source.x; })
+				.attr("y1", function(d) { return d.source.y; })
+				.attr("x2", function(d) { return d.target.x; })
+				.attr("y2", function(d) { return d.target.y; });
 
-				//alert(JSON.stringify(nodes));
+			// Exit any old links.
+			link.exit().remove();
 
-				// Restart the force layout.
-				force
-					.nodes(nodes)
-					.links(links)
-					.start();
+			// Update the nodes
+			node = vis.selectAll("circle.node")
+				.data(nodes, function(d) { return d.id; })
+				.style("fill", color);
 
-				// Update the links
-				link = vis.selectAll("line.link")
-					.data(links, function(d) { return d.target.id; });
+			node.transition()
+				.attr("r", function(d) { 
+					return d.size*2;
+					// return d.children ? (d.size||1)*d.children.length : 10; //d.size ? Math.sqrt(d.size) / 10 : 10; 					
+					// 	return 5; 
+					//	return d.children ? 14.5 : d.size ? Math.sqrt(d.size) / 1 : 200; 
+				});
 
-				// Enter any new links.
-				link.enter().insert("line", ".node")
-					.attr("class", "link")
-					.attr("x1", function(d) { return d.source.x; })
-					.attr("y1", function(d) { return d.source.y; })
-					.attr("x2", function(d) { return d.target.x; })
-					.attr("y2", function(d) { return d.target.y; });
+			// Enter any new nodes.
+			node.enter().append("circle")
+				.attr("class", "node")
+				.attr("cx", function(d) { return d.x; })
+				.attr("cy", function(d) { return d.y; })
+				.attr("r", function(d) { 
+					return d.size*2;
+					//return d.children ? (d.size||1)*d.children.length : d.size ? Math.sqrt(d.size) / 10 : 2; 
+				})
+				.style("fill", color)
+				.on("click", click)
+				.call(force.drag);
 
-				// Exit any old links.
-				link.exit().remove();
+			// Exit any old nodes.
+			node.exit().remove();
+		}
 
-				// Update the nodes
-				node = vis.selectAll("circle.node")
-					.data(nodes, function(d) { return d.id; })
-					.style("fill", color);
+		function details(d) {
+			var isView = d.doc.constructor == String;
 
-				node.transition()
-					.attr("r", function(d) { 
-						return d.size*2;
-						// return d.children ? (d.size||1)*d.children.length : 10; //d.size ? Math.sqrt(d.size) / 10 : 10; 					
-						// 	return 5; 
-						//	return d.children ? 14.5 : d.size ? Math.sqrt(d.size) / 1 : 200; 
-					});
+			var doc = window.open(
+				isView ? d.doc : "",
+				"_blank",
+				"left="+d.x+"px,"
+				+ "top="+d.y+"px,"
+				+ "width=50,height=50,location=0,menubar=0,status=0,titlebar=0,toolbar=0");
 
-				// Enter any new nodes.
-				node.enter().append("circle")
-					.attr("class", "node")
-					.attr("cx", function(d) { return d.x; })
-					.attr("cy", function(d) { return d.y; })
-					.attr("r", function(d) { 
-						return d.size*2;
-						//return d.children ? (d.size||1)*d.children.length : d.size ? Math.sqrt(d.size) / 10 : 2; 
-					})
-					.style("fill", color)
-					.on("click", click)
-					.call(force.drag);
+			if ( !isView )
+				doc.document.write(JSON.stringify( d.doc ));
 
-				// Exit any old nodes.
-				node.exit().remove();
+			//var g = d3.select(this); // the node
+
+			/*var add = d3.select("body")
+				.append("iframe")
+				.attr("src", "/home.view")
+				.attr("width",100)
+				.attr("height",100);*/
+
+			/*var div = d3.select("body")
+					.append("div")
+					.attr("pointer-events","none")
+					.attr("class","tooltip")
+					.style("opacity",1)
+					.html("hello<br>there")
+					.style("left", (d.x+50))
+					.style("top", (d.y));*/
+		}
+
+		function bang() {
+			alert("hello! ");
+		}
+
+		function tick() {
+			link.attr("x1", function(d) { return d.source.x; })
+				.attr("y1", function(d) { return d.source.y; })
+				.attr("x2", function(d) { return d.target.x; })
+				.attr("y2", function(d) { return d.target.y; });
+
+			node.attr("cx", function(d) { return d.x; })
+				.attr("cy", function(d) { return d.y; });
+		}
+
+		// Color leaf nodes orange, and packages white or blue.
+		function color(d) {
+			return d._children ? "#3182bd" : d.children ? "#c6dbef" : "#fd8d3c";
+		}
+
+		// Toggle children on click.
+		function click(d) {
+			if (d.children) {
+				d._children = d.children;
+				d.children = null;
+			} else {
+				d.children = d._children;
+				d._children = null;
 			}
 
-			function details(d) {
-				var isView = d.doc.constructor == String;
+			if (d.doc) details(d);
+			update();
+		}
 
-				var doc = window.open(
-					isView ? d.doc : "",
-					"_blank",
-					"left="+d.x+"px,"
-					+ "top="+d.y+"px,"
-					+ "width=50,height=50,location=0,menubar=0,status=0,titlebar=0,toolbar=0");
+		// Returns a list of all nodes under the root.
+		function flatten(root) {
+			var nodes = [], i = 0;
 
-				if ( !isView )
-					doc.document.write(JSON.stringify( d.doc ));
+			function recurse(node) {
 
-				//var g = d3.select(this); // the node
+				if (node.children)
+					node.size = node.children.reduce(function(weight, node) { 
+						//console.log([node.name, weight, node.weight]);
+						return /*(node.weight||10) +*/ weight + recurse(node); 
+					}, 0);
 
-				/*var add = d3.select("body")
-					.append("iframe")
-					.attr("src", "/home.view")
-					.attr("width",100)
-					.attr("height",100);*/
+				else
+					node.size = node.weight || 1;
 
-				/*var div = d3.select("body")
-						.append("div")
-						.attr("pointer-events","none")
-						.attr("class","tooltip")
-						.style("opacity",1)
-						.html("hello<br>there")
-						.style("left", (d.x+50))
-						.style("top", (d.y));*/
+				if (!node.id) node.id = ++i;
+
+				nodes.push(node);
+				return node.size;
 			}
 
-			function bang() {
-				alert("hello! ");
-			}
+			root.size = recurse(root);
+			return nodes;
+		}
 
-			function tick() {
-				link.attr("x1", function(d) { return d.source.x; })
-					.attr("y1", function(d) { return d.source.y; })
-					.attr("x2", function(d) { return d.target.x; })
-					.attr("y2", function(d) { return d.target.y; });
+		var	
+			width = opts.w || 1200,
+			height = opts.h || 500,
+			node,
+			link,
+			root;
 
-				node.attr("cx", function(d) { return d.x; })
-					.attr("cy", function(d) { return d.y; });
-			}
+		var force = d3.layout.force()
+			.on("tick", tick)
+			.charge(function(d) { return d._children ? -d.size / 100 : -30; })
+			.linkDistance(function(d) { return d.target._children ? 80 : 30; })
+			.size([width, height]);
 
-			// Color leaf nodes orange, and packages white or blue.
-			function color(d) {
-				return d._children ? "#3182bd" : d.children ? "#c6dbef" : "#fd8d3c";
-			}
+		var vis = d3.select("#content").append("svg")
+			.attr("width", width)
+			.attr("height", height);
 
-			// Toggle children on click.
-			function click(d) {
-				if (d.children) {
-					d._children = d.children;
-					d.children = null;
-				} else {
-					d.children = d._children;
-					d._children = null;
-				}
-
-				if (d.doc) details(d);
-				update();
-			}
-
-			// Returns a list of all nodes under the root.
-			function flatten(root) {
-				var nodes = [], i = 0;
-
-				function recurse(node) {
-
-					if (node.children)
-						node.size = node.children.reduce(function(weight, node) { 
-							//console.log([node.name, weight, node.weight]);
-							return /*(node.weight||10) +*/ weight + recurse(node); 
-						}, 0);
-
-					else
-						node.size = node.weight || 1;
-
-					if (!node.id) node.id = ++i;
-
-					nodes.push(node);
-					return node.size;
-				}
-
-				root.size = recurse(root);
-				return nodes;
-			}
-	else
-		:markdown
-			Display force graph using parameters:
-
-				src = source url returns node tree { ID:Name, count:Value, data: [ Children ]}
-				pivots = data pivot list = field,field,...
-				w = drawing width
-				h = drawing height
-
-			Graph nodes are sized to node.weight + length(node.children).
+		source( opts, function (opts) {
+			root = opts.data;
+			root.fixed = true;
+			root.x = width / 2;
+			root.y = height / 2;
+			update();
+		} );
 
 //- UNCLASSIFIED
