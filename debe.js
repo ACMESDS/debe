@@ -96,16 +96,20 @@ var
 											u = m[1] || "missing url",
 											x = v[0] || "",
 											w = v[1] || 100,
-											h = v[2] || 100;
+											h = v[2] || 100,
+											p = u.split(";").join("&");
 									
 										switch (x) {
 											case "update":
 												return x.tag("a",{href:req.table+".exe?ID="+rec.ID}) 
-													+ "".tag("iframe",{src:u,width:w,height:h});
+													+ "".tag("iframe",{ src:u, width:w, height:h });
 											case "image":
-												return "".tag("img",{src:u,width:w,height:h});
+												return "".tag("img",{ src:u, width:w, height:h });
 											case "post":
-												return "".tag("iframe",{src:u,width:w,height:h});
+												return "".tag("iframe",{ src:u, width:w, height:h });
+											case "plot":
+												console.log("plot id="+rec.ID);
+												return "".tag("iframe",{ src: `/plot.view?ds=${req.table}&ID=${rec.ID}&${p}`, width:w, height:h } );
 											default:
 												return x.tag("a",{href:u});
 										}										
