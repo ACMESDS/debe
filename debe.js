@@ -97,7 +97,8 @@ var
 											x = v[0] || "",
 											w = v[1] || 100,
 											h = v[2] || 100,
-											p = u.split(";").join("&");
+											s = v[3] || `${req.table}?ID=${rec.ID}` ,
+											p = u.split(";").join("&") ;
 									
 										switch (x) {
 											case "update":
@@ -109,11 +110,10 @@ var
 												return "".tag("iframe",{ src:u, width:w, height:h });
 											case "nada":
 												return `[nada](${u})`;
+											case "link":
+												return x.tag("a",{href:u});
 											default:
-												//console.log("plot id="+rec.ID);
-												return "".tag("iframe",{ src: `/${x}.view?ds=${req.table}&ID=${rec.ID}&${p}`, width:w, height:h } );
-											//default:
-											//	return x.tag("a",{href:u});
+												return  "".tag("iframe",{ src: `/${x}.view?${p}&w=${w}&h=${h}&ds=${s}`, width:w, height:h } );
 										}										
 									})
 									.replace(/href=(.*?)>/g, function (m,i) { // <a href=B>A</a> --> followed link

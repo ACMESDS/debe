@@ -9,7 +9,6 @@ append base_help
 		 Produce d3 scatter plot:  
 
 			ds = source url returning [ {key:value, ...} ] records
-			ID = source record id
 			w = drawing width
 			h = drawing height
 			debug = dump derived options
@@ -49,8 +48,7 @@ append base_head
 	
 	script.
 		var opts = {  // define plot options
-			ds: "#{query.ds}",
-			ID: "#{query.ID}",
+			ds: "!{query.ds}",
 			w: parseInt("#{query.w}"),
 			h: parseInt("#{query.h}"),			
 			debug: "#{query.debug}",

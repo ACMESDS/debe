@@ -9,7 +9,7 @@ append base_help
 	:markdown
 		Provides a map chart:
 
-			src = path to map data [ {Name, Info, Code, ...}, ...]
+			ds = path to map data [ {Name, Info, Code, ...}, ...]
 			index = field containing 2-3 letter county/state code
 			details = field containing detailed information
 			fill = field containing fill style
@@ -24,8 +24,7 @@ append base_head
 
 	script.
 		var opts = {
-			ds: "#{query.ds}" || "maps.db",
-			ID: null,
+			ds: "!{query.ds}" || "maps.db",
 			index: "#{query.index}" || "Name",
 			details: "#{query.details}" || "Info",
 			fill: "#{query.fill}" || "Code",
@@ -48,14 +47,6 @@ append base_body
 				};
 			});
 		
-			/*json.Each(function (n,rec) {
-				Copy(rec, data[rec[opts.index].toUpperCase()] = {
-					fillKey: rec[opts.fill] || "UNKNOWN",
-					Info: rec[opts.details] || ""
-				});
-			});*/
-			//alert(JSON.stringify(data));
-
 			var map = new Datamap({
 				element: document.getElementById('content'),
 
@@ -74,7 +65,7 @@ append base_body
 					UNKNOWN: 'red', //'rgb(1,0,0)',
 					defaultFill: 'green'
 				},
-				data: null || {
+				data: data || {
 					RUSSIA: {
 						fillKey: 'LOW',
 						Info: 2002

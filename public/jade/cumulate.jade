@@ -1,12 +1,16 @@
 // UNCLASSIFIED
-// Level-2 d3 cummulative chart over x,y for each sequence seq using /cumulate.jade?&_src=table&_pivots=pivotlist&_index=x,y,z
 
-extends layout
-append layoutparms
-	Layout = "charts"
-append layoutarea
+extends base
+append base_parms
+	- tech = "d3"
 
-	style
+appedn base_help
+	:markdown
+		d3 cummulative chart over x,y for each sequence seq using /cumulate.jade?&_src=table&_pivots=pivotlist&_index=x,y,z
+
+append base_head
+
+	style.
 		body {
 			font: 12px sans-serif;
 		}
@@ -20,11 +24,21 @@ append layoutarea
 			stroke: #000;
 		}
 
-	script
-	
+	script.
+		var opts = {
+			ds: "!{query.ds}",
+			ID: "#{query.ID}",
+			w: parseInt("#{query.w}"),
+			h: parseInt("#{query.h}"),
+			debug: "#{query.debug}"
+		};
+
+append base_body
+
+	script.
 		var margin = {top: 20, right: 20, bottom: 30, left: 40},
-			width = 800 - margin.left - margin.right,
-			height = 400 - margin.top - margin.bottom;
+			width = (opts.w || 800) - margin.left - margin.right,
+			height = (opts.h || 400) - margin.top - margin.bottom;
 
 		var x = d3.scale.linear()
 			.range([0, width]);
@@ -49,8 +63,8 @@ append layoutarea
 			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
 		//Load the data
-		d3.json("/#{query.src}?_tree=#{query.pivots}", function(json) {
-			var data = json.data;
+		source( opts, function(opts) {
+			var data = opts.data;
 			var N = data.length;
 			
 			// Find all the sequences

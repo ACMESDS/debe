@@ -50,23 +50,30 @@ function source(opts, cb) {
 		}
 	}
 
-	//alert( `source: /${opts.ds}?ID=${opts.ID}` );
+	//alert( "source: "+opts.ds );
 
 	if (opts.debug)  alert( JSON.stringify(opts) ); 
 
-	if ( opts.ID )
-		d3.json( `/${opts.ds}?ID=${opts.ID}`, function (recs) {
-			//alert("recs="+recs.length);
+	d3.json( opts.ds, function (recs) {
+		//alert( recs ? "got data" : "no data" );
+		//alert(JSON.stringify(recs));
+		
+		if ( opts.data = recs)
+			if ( recs.constructor == Array)
+				if ( rec = recs[0] ) {
+					jsonize( rec );
+					loader( rec, opts );
+					cb( opts );
+				}
+				else {
+				}
+			
+			else
+				cb( opts );
+			
+	}); 
 
-			if ( recs )
-				if ( recs.constructor == Array)
-					if ( rec = opts.data = recs[0] ) {
-						jsonize( rec );
-						loader( rec, opts );
-						cb( opts );
-					}
-		}); 
-	
+	/*
 	else
 	if ( opts.pivots )
 		d3.json( `/${opts.ds}?_pivot=${opts.pivots}`, function (recs) {
@@ -78,6 +85,6 @@ function source(opts, cb) {
 		d3.json( `/${opts.ds}`, function (recs) {
 			if ( opts.data = recs )
 				cb( opts );
-		});
+		});*/
 			
 }

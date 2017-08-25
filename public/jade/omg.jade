@@ -9,7 +9,6 @@ append base_help
 		 Produce d3 doodle interface:
 
 			ds = bogus source url
-			ID = source record id
 			w = drawing width
 			h = drawing height
 			debug = dump derived options
@@ -27,7 +26,7 @@ append base_head
 
 	script.
 		var opts = {
-			ds: "#{query.ds}",
+			ds: "!{query.ds}",
 			ID: "#{query.ID}",
 			w: parseInt("#{query.w}"),
 			h: parseInt("#{query.h}"),

@@ -12,7 +12,6 @@ append base_help
 			w = drawing width
 			h = drawing height
 			debug = dump derived options
-			pivots = key,key,... data pivots
 			kids = key name of children
 
 append base_head
@@ -39,12 +38,10 @@ append base_head
 		
 	script.
 		var opts = {
-			ds: "#{query.ds}",
-			ID: null,
+			ds: "!{query.ds}",
 			w: parseInt("#{query.w}"),
 			h: parseInt("#{query.h}"),
 			debug: "#{query.debug}",
-			pivots: "#{query.pivots}",
 			kids: "#{query.kids}" || "children"
 		};
 		

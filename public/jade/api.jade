@@ -21,13 +21,13 @@ append site_body
 
 			where a NODE:
 
-				DATASET.TYPE ? PARMS
-				ENGINE.TYPE ? PARMS
-				AREA/PATH.TYPE ? PARMS
-				FILE.TYPE ? PARMS
+				DATASET.TYPE ? QUERY
+				ENGINE.TYPE ? QUERY
+				PATH.TYPE ? QUERY
+				FILE.TYPE ? QUERY
 
-			addresses a database **dataset**, a compute **engine**, a static area/path **file**, or a parsable **file**.
-			The dataset TYPE:
+			addresses a database **dataset**, a compute **engine**, a **file path**, or a **file**.   A QUERY = PARM & PARM .... provides a list of
+			KEY=VALUE | KEY=DATA?QUERY | EXPRESSION parameters to the dataset query.  The dataset TYPE:
 
 				db | xml | csv | txt | tab | view | tree | flat | delta | nav | kml | encap | html | 
 				view | run | plugni | pivot | site | spivot | brief | gridbrief | pivbrief | runbrief
@@ -69,8 +69,8 @@ append site_body
 			:markdown
 				File access is provided on the following endpoints:
 
-					GET	/AREA/FILE.TYPE ? PARMS	Return FILE from AREA using query parameters
-					GET	/ATTR/FILE.TYPE ? PARMS	Return ATTRribute of a FILE
+					GET	/AREA/FILE.TYPE?QUERY	Return FILE from AREA using query parameters
+					GET	/ATTR/FILE.TYPE?QUERY	Return ATTRribute of a FILE
 					GET	/AREA/	Return list of files in this AREA
 
 				where AREA references a #{nick} internal file store or a one of its virtual stores:
@@ -313,7 +313,7 @@ append site_body
 
 					_queue	= KEY for queuing record state
 					_json	= KEY,KEY,... json parse selected KEYs and index with KEY=IDX.IDX...
-					_blog	= KEY,KEY,... markdown KEYS containing [image | post | update | SKIN,W,H](url | PARM=r.KEY expression; ...) tags
+					_blog	= KEY,KEY,... markdown KEYs containing [image | post | update | link | SKIN, W, H, DS?QUERY]( /url | PARM=r.KEY expression; ...) tags
 					_nav	= open | tree | rename | size ,root/A/B/... folder navigation 
 
 				# Record parameters
