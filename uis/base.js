@@ -133,6 +133,7 @@ var BASE = {
 	 * Format a string str containing ${X.key} tags.  The String wrapper for this
 	 * method will optionaly provide plugins like X.F = {fn: function (X){}, ...}.
 	 * */
+	/*
 	format: function(X,str) {
 
 		try {
@@ -143,7 +144,7 @@ var BASE = {
 			return "[bad]";
 		}
 
-	},
+	}, */
 
 	//hidden: "_",
 
@@ -427,6 +428,7 @@ function hashify(recs) {
 * @param {hash} input input key-value hash
 * @return {Array} output records
 */
+/*
 function listify(hash,idxkey,valkey) {
 	var list = [];
 	var n = 0;
@@ -455,6 +457,7 @@ function joinify(hash, list, cb) {
 	
 	return rtn.join(list || ",");
 }
+*/
 
 /**
  * @class PARSE
@@ -613,7 +616,7 @@ HTMLDivElement.prototype.Each = function (cb) {
 function DS(anchor) {   // to be overridden by client
 }
 
-function ANCHOR(id,attr,children) { 
+function ANCHOR(id,attr,children) { // creates a new anchor to accept a new widget
 	this.id = id;
 	this.getAttribute = function (idx) { return attr[idx]; };
 	this.setAttribute = function (idx,val) { attr[idx] = val; };
@@ -878,53 +881,16 @@ WIDGET.prototype.status = function (oper,msg) {
  * @param {Function} cb callback(idx,val) returns true to drop
  * @return {Object} target hash
  * 
- * Shallow Copy of source hash under supervision of callback. If
- * a mergekey key is encountered, the Copy becomes a deep mergekey. 
- * If a constructor source key is encountered, the key's methods 
- * are added to the source's prototype.
+ * Shallow Copy of source hash under supervision of callback. 
  */
 function Copy(src,tar,cb) {
 
-	var mergekey = BASE.mergekey;
-	
-	/*if (mergekey)
-		if (cb) {
-			for (var key in src)  {
-				var val = src[key];
-				if ( !cb(key,val) ) 
-					if (val == null) 
-						tar[key] = val;
-					else
-					if (val.constructor == Object)
-						if (mergekey in val) 
-							Copy(val.mergekey, tar[key]);
-						else
-							tar[key] = val;
-					else 
-						tar[key] = val;
-			}
-		}
-		else 
-			for (var key in src) {
-				var val = src[key];
-				if (val == null) 
-					tar[key] = val;
-				else
-				if (val.constructor == Object)
-					if (mergekey in val) 
-						Copy(val[mergekey], tar[key]);
-					else
-						tar[key] = val;
-				else 
-					tar[key] = val;
-			}
-	else */
-		if (cb) 
-			for (var key in src) 
-				tar[key] = cb( key, src[key] );
-		else 
-			for (var key in src) 
-				tar[key] = src[key];
+	if (cb) 
+		for (var key in src) 
+			tar[key] = cb( key, src[key] );
+	else 
+		for (var key in src) 
+			tar[key] = src[key];
 
 	return tar;
 }
@@ -977,11 +943,13 @@ function Each(src,cb) {
 	}
 }
 
+/*
 String.prototype.format = function (req,plugin) {
 	req.plugin = req.F = plugin || {};
 	return BASE.format(req,this);
-}
+} */
 
+/*
 String.prototype.json = function (def) {
 	try {
 		return JSON.parse(this);
@@ -989,6 +957,6 @@ String.prototype.json = function (def) {
 	catch (err) {
 		return def;
 	}
-}
+} */
 
 // UNCLASSIFIED

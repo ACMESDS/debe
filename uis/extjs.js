@@ -38,11 +38,10 @@ var
 		NOSELECT: "please select a record"
 	},	
 		
-	SELECT_CELL = {},					// grid shifting context
+	SELECT_CELL = {},					// holds grid shift left-right context
 	
 	// Syync loaded datasets
-	PARMS = {},								// parameter attributes dataset 
-	HISTORY = {}, 						// change history dataset
+	PARMS = {},								// dataset attributes 
 	ROLES = {},								// role Data Table 
 	
 	CALC = { 								// grid calculator options
@@ -85,12 +84,12 @@ var
 		RELOAD: true						// relink slaves when grid pivots changed
 	},
 	
-	TABLIST = { 								// tracks tabs as they are created due to extjs bug
+	TABLIST = { 				// created tabs tracked (due to extjs bug)
 	},
 
-	DSLIST = {},  				// list of all created dataset
+	DSLIST = {},  				// created datasets
 	WINDOWS = []; 			// reserved for popup windows
-	DATES = {
+	DATES = {					// date formates
 		MediumDate: "d-M-y",
 		DefaultDate: "m-d-Y",
 		ISO8601Long:"Y-m-d H:i:s",
@@ -104,7 +103,7 @@ var
 		SortableDateTime: "Y-m-d\\TH:i:s",
 		UniversalSortableDateTime: "Y-m-d H:i:sO",
 		YearMonth: "F, Y"
-	};
+	};	
 
 Ext.require([
 	// general
@@ -149,7 +148,7 @@ Ext.require([
 	'Ext.util.TaskManager'
 ]);
 
-String.prototype.format = function (xx,pin) {
+String.prototype.parseURL = function (xx,pin) {
 
 	/**
 	 * @method Format
@@ -194,6 +193,38 @@ String.prototype.format = function (xx,pin) {
 	
 	return Format(xx,this);
 };
+
+String.prototype.parseJSON = function (def) {
+	try {
+		return JSON.parse(this);
+	}
+	catch (err) {
+		return def;
+	}
+}
+
+/**
+* @method extendRecs
+* @public
+* Build data records from a hash.
+* @param {String} idxkey index key name
+* @param {String} valkey value key name
+* @param {hash} input input key-value hash
+* @return {Array} output records
+*/
+function extendRecs(hash,idxkey,valkey,recs) {
+	var n = recs.length;
+	
+	for (var idx in hash) {
+		rec = {ID:n++};
+		rec[idxkey] = idx;
+		rec[valkey] = hash[idx] || idx;
+		recs.push( rec );
+	}
+			
+	//alert("recs="+JSON.stringify(recs));
+	return recs;
+}
 
 /**
  * @method defineProxy
@@ -1008,25 +1039,27 @@ function DS(anchor) {
 				try {
 					var Store = This.Store = Ext.create('Ext.data.Store', {
 						model 	: name,
-						data	: (path||"").json([])
+						data	: path.parseJSON([])
 					});
 					Store.setproxy = Store.load = function () {};
 				}
 				catch (err) {
-					alert("Bad Data json for "+name);
+					alert("Bad inline "+path);
 				}
 				break;
 		
 			case "options":  // static options data
 				try {
-					var Store = This.Store = Ext.create('Ext.data.Store', {
+					var 
+						cols = This.cols,
+						Store = This.Store = Ext.create('Ext.data.Store', {
 						model	: name,
-						data	: listify( (path||"").json([]), This.cols[0].dataIndex, This.cols[1].dataIndex  )
+						data	: extendRecs( path.parseJSON([]), cols[0].dataIndex, cols[ cols[1]?1:0 ].dataIndex, []  )
 					});
 					Store.setproxy = Store.load = function () {};
 				}
 				catch (err) {
-					alert("Bad Options json for "+name);
+					alert("Bad options "+path);
 				}
 				break;
 				
@@ -1223,9 +1256,8 @@ function DS(anchor) {
 				Store.load = function () {
 					var
 						dims = Store.ds.dims,
-						src = Store.ds.proxy.url,
 						tags = {
-							src: src,
+							src: (type=="post") ? path : path ? `/${type}.view?ds=${path}` : Store.ds.proxy.url,
 							width: dims[0],
 							height: dims[1]
 						},
@@ -1352,7 +1384,7 @@ function DS(anchor) {
 			fParm = PARMS[ fName ] || {Type:calc ? "html" : "text",Label:fName,Special:""},
 			fType = fOpts[1] || fParm.Type || "text",
 			fLabel = fOpts[2] || fParm.Label || fName,
-			fSum = fOpts[3],
+			fAg = fOpts[3],
 			//fChange = HISTORY[path+"."+fName] || {Moderators:""},
 			fTip = 	fName.tag("a",{href:`/parms.view?parm=${fName}`}) 
 			//		+ " | " + fChange.Moderators 
@@ -1366,13 +1398,13 @@ function DS(anchor) {
 				
 		if (fType=="h") Blogs.push( fName );
 
-		switch (fSum) {			// Add row aggregator if needed
+		switch (fAg) {			// Add row aggregator if needed
 			case "min":
 			case "max":
 			case "count":
 			case "average":
 			case "sum":
-				fCol.summaryType = fSum;
+				fCol.summaryType = fAg;
 				break;
 				
 			case "util":
@@ -1553,7 +1585,7 @@ function DS(anchor) {
 
 	var Links = this.Links = {};
 		
-	url = (path || "").format(Links);
+	url = path.parseURL(Links);
 	if (!url || url.indexOf("undefined")>=0) url = "/undefined.db";
 	//alert(name+":"+path+"->"+url);
 	
@@ -1576,7 +1608,7 @@ function DS(anchor) {
 					var slaveDS = DSLIST[name];
 					
 					slaveDS.relink( function (proxy) {
-						proxy.url = slaveDS.path.format({ 
+						proxy.url = slaveDS.path.parseURL({ 
 							def: masterDS.Store.getById(SELECT_CELL.ID).getData()
 						});
 					});
@@ -1602,7 +1634,7 @@ function DS(anchor) {
 					break;
 
 				case "History":
-					mapper( data, HISTORY, sync );
+					//mapper( data, HISTORY, sync );
 					break;
 			}
 		});	
@@ -1631,7 +1663,7 @@ DS.prototype.relink = function (cb) {  // Relink dataset proxy to a new url
 	/*
 		var recData = rec.getData();
 		for (var n in Soft)	Soft[n] = recData;
-		proxy.url = this.path.format(Soft);
+		proxy.url = this.path.parseURL(Soft);
 	*/
 		
 		Store.setProxy( proxy );
@@ -2041,7 +2073,7 @@ WIDGET.prototype.menuTools = function () {
 				var tarDS = DSLIST[link[0]];
 
 				tarDS.relink( function (proxy) {
-					proxy.url = link.format({ def: rec.getData() });
+					proxy.url = link.parseURL({ def: rec.getData() });
 				});
 			});
 	}
@@ -2078,7 +2110,7 @@ WIDGET.prototype.menuTools = function () {
 			},
 			width: DEFAULT.DROP_WIDTH,
 			displayField: ds.Fields[0].dataIndex,
-			valueField: ds.Fields[1] ? ds.Fields[1].dataIndex : ds.Fields[0].dataIndex,
+			valueField: ds.Fields[ ds.Fields[1]?1:0 ].dataIndex,
 			value: label,
 			//itemTpl: "{"+ds.Fields[0].dataIndex+"}" ,
 			listConfig: {
@@ -2755,7 +2787,7 @@ WIDGET.prototype.menuTools = function () {
 
 							onForm: function (Rec, Form, Data, Status, cb) {
 								Ext.Ajax.request({
-									url : Data.proxy.url.replace(".db",".exe"),
+									url : "/"+Rec.get("Name")+".exe", //Data.proxy.url.replace(".db",""),
 									method: "GET",
 									success: function (res) {
 										Status(res.responseText);
@@ -2965,19 +2997,23 @@ WIDGET.prototype.menuTools = function () {
 						else
 						if (pullDS) 		// pulldown via dataset of another widget
 							return combo( tok, pullDS, function (val,parms) {
-
+//alert(JSON.stringify([val,parms]));
 								if (val.charAt(0) == "/") 
 									window.open(val);
 
 								else  {
-									if (parms.option) {
+									if (parms.options) {
 										var 
-											ps = val.split("+"),
-											ns = val.split("-");
+											mores = val.split("+"),
+											lesses = val.split("-"),
+											more = mores.length-1,
+											less = lesses.length-1;
 
-										parms.more = ps.length-1;
-										parms.less = ns.length-1;
-										parms.option = parms.more ? ps[0] : ns[0];
+										if (more) parms.more = more;
+										if (less) parms.less = less;
+										
+										parms.options = more ? mores[0] : lesses[0];
+										//alert(JSON.stringify(parms));
 									}
 
 									location.search = Ext.Object.toQueryString(
@@ -3438,7 +3474,7 @@ WIDGET.prototype.terminal = function (term,opts) {
 					if (NODE.RELOAD) 					    // relink the slaves
 						Each( data.Slaves , function (n,slave) {
 							slave.relink( function (proxy,flags) {
-								proxy.url = slave.path.format({});
+								proxy.url = slave.path.parseURL({});
 							});
 						});
 				}

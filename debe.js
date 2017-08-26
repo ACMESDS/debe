@@ -89,7 +89,7 @@ var
 								(":markdown\n" + val)  // make blog markdown
 									.replace(/   /g, "\t")  // fake tabs
 									.replace(/\n/g,"\n\t")  // indent markdown
-									.replace(/\[(.*?)\]\((.*?)\)/g, function (m,i) {  // adjust [x,w,h](u) markdown
+									.replace(/\[(.*?)\]\((.*?)\)/g, function (m,i) {  // adjust [x,w,h,s](u) markdown
 										m = m.substr(1,m.length-2).split("]("); 
 										var 
 											v = m[0].split(","),
@@ -113,7 +113,7 @@ var
 											case "link":
 												return x.tag("a",{href:u});
 											default:
-												return  "".tag("iframe",{ src: `/${x}.view?${p}&w=${w}&h=${h}&ds=${s}`, width:w, height:h } );
+												return "".tag("iframe",{ src: `/${x}.view?${p}&w=${w}&h=${h}&ds=${s}`, width:w, height:h } );
 										}										
 									})
 									.replace(/href=(.*?)>/g, function (m,i) { // <a href=B>A</a> --> followed link
@@ -919,7 +919,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		sub: retractPlugin
 	},
 
-	"byAction.": ENGINE,
+	// "byAction.": ENGINE,
 		
 	"byActionTable.": {  //< virtual table emulation endpoints
 	},
@@ -928,7 +928,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		pretty: function (err) {
 			return "".tag("img",{src:"/shares/reject.jpg",width:40,height:60})
 				+ (err+"").replace(/\n/g,"<br>").replace(process.cwd(),"")
-				+ ".  See issues".tag("a",{href: "/issues.view"})
+				+ "; see "
+				+ "issues".tag("a",{href: "/issues.view"})
 				+ " for further information";
 		},
 		badSkin: new Error("skin contains invalid jade"),
@@ -1017,7 +1018,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	@member DEBE
 	Enable to give-away plugin services
 	*/
-	probono: false,  //< enable to give-away plugin services
+	probono: true,  //< enable to run one-time plugin
 		
 	Function: Initialize,  //< added to ENUM callback stack
 
@@ -2137,55 +2138,61 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		site = DEBE.site,  
 		ctx = site.context[req.table]; 
 		
-	function extendContext(sql, ctx, cb) {
-		sql.context(ctx, function (ctx) {  // establish skinning context for requested table
+	function inContext(sql, ctx, cb) {
+		
+		if (ctx) // render in extended context
+			sql.context(ctx, function (ctx) {  // establish skinning context for requested table
 
-			/*
-			var lastds = "";
-			for (lastds in ctx);
-			
-			if (lastds)
-				for (var ds in ctx) { 		// enumerate thru all the datasets before rendering with cb
-					ctx[ds].args = {ds:ds}; 	// hold ds name for use after select
-					ctx[ds].rec = function clone(recs,me) {  // select and clone the records 
+				/*
+				var lastds = "";
+				for (lastds in ctx);
+
+				if (lastds)
+					for (var ds in ctx) { 		// enumerate thru all the datasets before rendering with cb
+						ctx[ds].args = {ds:ds}; 	// hold ds name for use after select
+						ctx[ds].rec = function clone(recs,me) {  // select and clone the records 
+							site[me.args.ds] = recs; 		// save data into the context
+							if (me.args.ds == lastds) cb();  // all loaded so can render with cb
+						};
+					}
+
+				else
+					cb();
+				*/
+				var isEmpty = Each(ctx, function (ds, x, isLast) {
+					x.args = {ds:ds}; 	// hold ds name for use after select
+					x.rec = function clone(recs,me) {  // select and clone the records 
 						site[me.args.ds] = recs; 		// save data into the context
-						if (me.args.ds == lastds) cb();  // all loaded so can render with cb
+						if (isLast) cb();  // all ds loaded so can render with cb
 					};
-				}
-			
-			else
-				cb();
-			*/
-			var isEmpty = Each(ctx, function (ds, x, isLast) {
-				x.args = {ds:ds}; 	// hold ds name for use after select
-				x.rec = function clone(recs,me) {  // select and clone the records 
-					site[me.args.ds] = recs; 		// save data into the context
-					if (isLast) cb();  // all ds loaded so can render with cb
-				};
-			});
-			
-			if ( isEmpty ) cb();
+				});
 
-		});
+				if ( isEmpty ) cb();
+
+			});
+		
+		else  // render in default site context
+			cb();
 	}
 	
-	function renderJade() {  
+	
+	inContext(sql, ctx, function () {  
 
-		function dynamicSkin(req, res, fields) { // generate skin using the plugin skinner
+		function renderPlugin(fields) { // render using plugin skin
 			
 			var
 				pluginPath = paths.render+"plugin.jade",
 				cols = [],
 				query = req.query,
 				sql = req.sql,
-				query = req.query = {
+				query = Copy({
 					mode: req.parts[1],
 					search: req.search,
 					cols: cols,
 					page: query.page,
 					dims: query.dims || "100%,100%",
 					ds: req.table
-				},
+				},req.query),
 				ctx = site.context.plugin,
 				sqltypes = {
 					"varchar(32)": "t",
@@ -2248,16 +2255,26 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 
 			else	*/
 			
-			if (ctx) 					
-				extendContext(sql, ctx, function () {  // render plugin in its extended context
-					pluginPath.render(req, res);
-				});
-
-			else  // render plugin in its default context
+			inContext(sql, ctx, function () {  // render plugin in its plugin context
 				pluginPath.render(req, res);
+			});
 			
 		}		
-							  
+		
+		function renderTable( ) {
+			sql.query(
+				"DESCRIBE ??.??", 
+				[ FLEX.txGroup[req.table] || req.group, req.table ] , 
+				function (err,fields) {
+
+					if (err) // might be a file
+						( paths.render+req.table+".jade" ).render(req, res);
+
+					else 
+						renderPlugin( fields );
+			});	
+		}
+		
 		Trace("DEBE "+req.table);
 		
 		sql.eachRec(paths.engine, { // Try a skinning engine
@@ -2271,49 +2288,37 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 			
 			else
 			if (isLast)
-				if (eng)  // render with this engine
-					if (ctx)  // render in its extended context
-						extendContext(sql, ctx, function () {
-							eng.Code.render( req, res );
-						});
-
-					else  // render using its default context
+				if (eng)  // render with this skinning engine
+					inContext(sql, ctx, function () {
 						eng.Code.render( req, res );
+					});
 				
 				else 	// try to get engine from sql table or from disk
-				if ( select = FLEX.select[req.table] ) // try virtual table
-					select(req, function (recs) {
-						dynamicSkin( req, res, recs[0] || {} );
+				if ( route = DEBE.byActionTable.select[req.table] ) // try virtual table
+					route(req, function (recs) {
+						renderPlugin( recs[0] || {} );
 					});
 
+				else
+				if ( route = DEBE.byAction.select ) // may have an engine interface
+					route(req, function (recs) { 
+						//console.log({eng:recs, ds:req.table});
+						if (recs)
+							renderPlugin( recs[0] || {} );
+						
+						else
+							renderTable( );
+					});	
+
 				else  // try sql table
-					sql.query(
-						"DESCRIBE ??.??", 
-						[ FLEX.txGroup[req.table] || req.group, req.table ] , 
-						function (err,fields) {
-
-							if (err) // might be a file
-								( paths.render+req.table+".jade" ).render(req, res);
-
-							else 
-								dynamicSkin( req, res, fields );
-					});				
+					renderTable( );		
 						
 			else  // cant render with multiple engines
 				res( DEBE.errors.notUnique );
 					
 		});
 
-	}
-		
-	if (ctx) 
-		extendContext(sql, ctx, function () {  // render skin in its extended context
-			renderJade(); 			
-		});
-	
-	else
-		renderJade();  		// render skin in its default context
-
+	});
 }
 
 function genDoc(recs,req,res) {
@@ -2685,7 +2690,7 @@ Initialize DEBE on startup.
 								Name: file.replace(".jade",""),
 								Code: FS.readFileSync( path+file, "utf-8"),
 								Engine: "jade",
-								Enabled: 1
+								Enabled: 0
 							});
 						}
 						catch (err) {

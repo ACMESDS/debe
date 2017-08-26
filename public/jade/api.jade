@@ -416,8 +416,8 @@ append site_body
 		:markdown
 			A plugin -- a dataset-engine pair -- is assessible from the following endpoints:
 			
-					GET /PLUGIN.exe?ID=CASE 	Run PLUGIN engine using PLUGIN dataset parameters for specified use CASE 
-					GET /PLUGIN.exe?Name=CASE 	Run PLUGIN engine using PLUGIN dataset parameters for specified use CASE
+					GET /PLUGIN.exe?id=CASE 	Run PLUGIN engine with id-specified use-CASE parameters
+					GET /PLUGIN.exe?name=CASE 	Run PLUGIN engine with name-specified use-CASE parameters
 			
 			The following (reserved) dataset parameters determine how a PLUGIN operates from an
 			exe-endpoint:
@@ -450,10 +450,10 @@ append site_body
 
 			### Counting jobs
 			Reserved
-			
+
 			### Tagging jobs
 			Reserved
-			
+
 			### Agent workflow
 			An engine can be outsourced to agents at:
 

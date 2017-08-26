@@ -6,17 +6,12 @@ append site_help
 		See also the companion [api reference](/api.jade) and the [programmers ref manual](/shares/doc/totem/index.html).
 append site_parms
 	- view = "Typical"
-	- parms = {tipsheets: "tipsheets", blogs: "blogs", embeds: "embeds", workflows:"workflows", engines:"engines", odbc:"odbc", immersion:"immersion", finders:"finders", navigator:"navigator", techpub:"techpub", briefs:"briefs", visuals:"visuals"}
+	- options = {tipsheets: "", blogs: "", embeds: "", workflows:"", plugins:"", odbc:"", immersions:"", finders:"", navigators:"", techpubs:"", briefs:"", visuals:""}
 append site_body
 
-	- hosts = {geohub: "https://sigma0.ilabs.ic.gov", me: "localhost", win: "http://200.100.50.101", aws: "http://172.31.76.130"}
-	- host = hosts.aws
-	- dims = "800,600"
-	- option = query.options || "main"
-	
-	case option
+	case query.options
 		when "embeds"
-			#post.Simple.Service(path="http://www.w3schools.com",dims="750,500",head="Refresh,Help")
+			#post.Simple.Embed(path=hosts.w3,dims="750,500",head="Refresh,Help",wrap)
 
 				:markdown
 					Here is a sample service embed.  This was embedded with the "refresh" option, so you 
@@ -24,28 +19,29 @@ append site_body
 					the service would be already available.  The "refresh" option is particularly useful 
 					in [large briefings](/tutorial.view) so hold-off posts until they are needed.
 
-			#grid.Complex.Help(
-				path="/news.db",
+			#grid.Complex.Embed(
+				path="/news.db",wrap,
 				head="Edit,Help",
 				cols="Message,To,Category")
 
-				:markdown
-					this is a grid whose help button contains embedded widgets as well.
-
-					p.al The Lorenz Equations $x=y$
-					p.
-						\[
-						\begin{align}
-						\dot{x} & = \sigma(y-x) \\
-						\dot{y} & = \rho x - y - xz \\
-						\dot{z} & = -\beta z + xy
-						\end{align}
-						\]
-
 				#folder.Embeds
-					#post.Another.Site(path="/home.view?options=news",dims="600,300")
-					#post.Tech.Pub(path="/expub.view",dims="600,300")
-					#minielt.Image.Editor(path="/uploads.Welcome9.jpg",dims="600,300")
+					#fit.Deep.Insights
+						:markdown
+							this is a grid whose help button contains embedded widgets as well.
+
+							p.al The Lorenz Equations $x=y$
+							p.
+								\[
+								\begin{align}
+								\dot{x} & = \sigma(y-x) \\
+								\dot{y} & = \rho x - y - xz \\
+								\dot{z} & = -\beta z + xy
+								\end{align}
+								\]
+
+					#post.Home.Site(path="/home.view?options=news",dims="600,300",wrap)
+					#post.Tech.Pub(path="/expub.view",dims="600,300",wrap)
+					#minielt.Image.Editor(path="/uploads/a1.jpg",dims="600,300",wrap)
 						:markdown
 							this is a test image containing a typeset popup
 					
@@ -56,217 +52,72 @@ append site_body
 			#grid.Proxies(path="/proxies.db",
 				cols="Enabled.c,Name,File(Path,Sheet),Period.n,Special.x,Updates.i,Updated.d,Machine(Vars.x,Classif,Engine,Code.x)")
 
-		when "engines"
+		when "plugins"
+			#post.cv.Plugin(path="/haar.plugin",dims="800,600",wrap)
+			#post.py.Plugin(path="/pydemo1.plugin",dims="800,600",wrap)
+			#post.js.Plugin(path="/jsdemo1.plugin",dims="800,600",wrap)
+			#post.ma.Plugin(path="/mademo1.plugin",dims="800,600",wrap)
 
-			#accordion.JS
-			
-				#form.js.engine(
-					path="engines.db?Name=jsdemo1&Engine=js",
-					cols="Name,Engine,Enabled.c,Program(Vars.x,Code.x)")
-
-					:markdown
-						To learn more about JS engines, consult #{title}'s [api](/api.view?goto=Engines).
-
-				#grid.js.endpt(
-					path="/jsdemo1.db?Name=test&M=3",
-					cols="u")
-				#grid.js.inputs(
-					path="/Htest.db",
-					cols="Used.c,Name,Parameters(p0.n,p1.n,p2.n,p3.n,p4.n,p5.n),Observations(FPR.n,TPR.n)")
-				#grid.js.outputs(
-					path="/Hreg.db",
-					cols="Name,Computed.d,Tests.n,Fits(a0.n,a1.n,a2.n,a3.n,a4.n,a5.n)")
-
-			#accordion.Python
-
-				#form.py.engine(
-					path="engines.db?Name=pydemo1&Engine=py",
-					cols="Name,Engine,Enabled.c,Program(Vars.x,Code.x)")
-
-					:markdown
-						To learn more about Python engines, consult #{title}'s [api](/api.view?goto=Engines).
-
-				#grid.py.endpt(path="pydemo1.db?Name=file1",cols="x,y,z")
-
-			#accordion.MatLike
-
-				#form.ml.engine(
-					path="engines.db?Name=matdemo1&Engine=mat",
-					cols="Name,Engine,Enabled.c,Program(Vars.x,Code.x)")
-
-					:markdown
-						To learn more about Matlab-like engines, consult #{title}'s [api](/api.view?goto=Engines).
-
-				#grid.ml.endpt(path="matdemo1.db",cols="x,y,z")
-
-		when "immersion"
-				#folder.Gaming(dock="left")
-						#earth.Cesium(path="HelloWorld")
-						#videobump.Bump(path="cubeland")
-						#spherebounce.Bounce(dims="800,600")
-						#anaglyph.Anagylph(dims="800,600")
-						#voxelpaint.Paint(dims="800,600")
+		when "immersions"
+			#earth.Cesium(path="HelloWorld",dims="800,600",wrap)
+			#bump.Bump(path="cubeland",dims="800,600",wrap)
+			#bounce.Bounce(path="bogus",dims="800,600",wrap)
+			#anaglyph.Anagylph(path="bogus",dims="800,600",wrap)
+			#paint.Paint(path="bogus",dims="800,600",wrap)
 
 		when "blogs"
-			#grid.Blog(
+			#grid.Ex.Blog(
 				path="news.db?_blog=Message",refresh=300,
 				sorts="Stay,Starts",page=30,calc,head="Search,Print,Refresh",
 				cols="Message.h")
 
-			:markdown
-				The cool thing about blogging grids is that they can be printed.  This one is setup
-				to blog Messages and function as a spreadsheet calculator.
+				:markdown
+					The cool thing about blogging grids is that they can be printed.  This one is setup
+					to blog Messages and function as a spreadsheet calculator.
 
 		when "finders"
-			#accordion.Finder
-				#fit.Jade
-					pre: code.mysql.
-						extends site
-							- tech = "jquery"
-						append site_parms
-							- view = "Min"
-						append site_body
-										
-							#pivot.Find(
-								path="/intake.db",
-								page=50,
-								pivots="App,Name,Tech",kiss,
-								cols="Condition(TRL,Track,Reason),General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
+			#pivot.Find(
+				path="/intake.db",
+				page=50,
+				pivots="App,Name,Tech",kiss,
+				cols="Condition(TRL,Track,Reason),General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
 
-							- fby = {"a":"A","b":"B"}
-							#null.FilterBy(path="#{JSON.stringify(fby)}",cols="Name,opt")
+			- fby = {"a":"A","b":"B"}
+			#null.FilterBy(path="#{JSON.stringify(fby)}",cols="Name,opt")
 
-							#grid.List(
-								path="/intake.db?Name=${xs('FIND').Name}",
-								page=50,
-								sorts="App,Name",menu="FilterBy,TestBy(a,b,c)",
-								cols="Name,App,Tech,TRL,Track,General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
+			#grid.List(
+				path="/intake.db?Name=${xs('FIND').Name}",
+				page=50,
+				sorts="App,Name",menu="FilterBy,TestBy(a,b,c)",
+				cols="Name,App,Tech,TRL,Track,General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
 
-							#form.Edit(
-								path="/intake.db?ID=${xs('List').ID}",
-								cols="Name,App,Tech,TRL,Track,General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
+			#form.Edit(
+				path="/intake.db?ID=${xs('List').ID}",
+				cols="Name,App,Tech,TRL,Track,General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
 
-					:markdown
-						To make a jade skin **hello**, create a **hello**  [jade engine](/engines.view) then
-						render it with **/hello.view**.  You can learn more about how to [skin #{title}](/skinguide.view) 
-						and the [#{title} API](/api.view).  
-					
-				#folder.Render
-					#pivot.Find(
-						path="/intake.db",
-						page=50,
-						pivots="App,Name,Tech",kiss,
-						cols="Condition(TRL,Track,Reason),General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
+				:markdown
+					To make a jade skin **hello**, create a **hello**  [jade engine](/engines.view) then
+					render it with **/hello.view**.  You can learn more about how to [skin #{title}](/skinguide.view) 
+					and the [#{title} API](/api.view).  
 
-					- fby = {"a":"A","b":"B"}
-					#null.FilterBy(path="#{JSON.stringify(fby)}",cols="Name,opt")
-
-					#grid.List(
-						path="/intake.db?Name=${xs('FIND').Name}",
-						page=50,
-						sorts="App,Name",menu="FilterBy,TestBy(a,b,c)",
-						cols="Name,App,Tech,TRL,Track,General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
-
-					#form.Edit(
-						path="/intake.db?ID=${xs('List').ID}",
-						cols="Name,App,Tech,TRL,Track,General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
-
-		when "navigator"
-			#accordion.Navigator
-				#fit.Jade
-					pre: code.mysql.
-						extends base
-							- tech = "jquery"
-						append base_parms
-							- pivot = "elFinder"
-							- image = "Darkroom"
-						append base_body
-
-							#folder.Container
-								#fit.Welcome
-									p now is the time A
-									p when all good men should get the time B
-
-								#grid.News(
-									path="/news.db",
-									page=25,actions,check,help,crush,refresh,dims="750,500",
-									cols="ID,Starts,Stay,Message,Category,To")
-
-								#accordion.Info
-									#fit.X1
-										p now is the time A
-										p now is the time B
-									#fit.X2
-										p now is the time for X2
-									#fit.X3
-										p now is the time for X3
-
-								#pivot.elFinder(path="/intake.json",pivots="App,Tech,TRL")
-
-								#image.Light.Table(path="/shares/default.jpg")
-
-				#fit.Render
-					#exnav
+		when "navigators"
+			#fit.Ex.Navigator
+				#exnav.Navs(dims="800,600")
 
 		when "tipsheets"
-			#accordion.Tipsheet
-				#fit.Jade
-					pre: code.mysql.
-						extends base
-							- tech = "jquery"
-						append base_parms
-							- pivot = "Isotope"
-						append base_body
+			#fit.Ex.Tipsheet
+				#tipsheet.Tips(
+					path="/tips.db",
+					pivots="cat,tip,name,symbol,lat,lon,nipf,nipf,links")
 
-							#pivot.Tips(
-								path="#{query.src}",
-								page=25,actions,check,help,crush,refresh,dims="750,500",
-								pivots="#{query.pivots}")
-
-				#fit.Render
-					#tipsheet(
-						path="/tips.db",
-						pivots="cat,tip,name,symbol,lat,lon,nipf,nipf,links")
-
-		when "techpub"
-			#accordion.Paper
-				#fit.Jade
-					pre: code.mysql.
-						extends base
-						append base_body
-							h1 Chapter 1
-							
-							p The Lorenz Equations \(x^2 = 0\)
-							p.
-								$$
-								\begin{align}
-								\dot{x} & = \sigma(y-x) \\
-								\dot{y} & = \rho x - y - xz \\
-								\dot{z} & = -\beta z + xy
-								\end{align}
-								$$
-							br
-							p Impressive 'eh
-							p.
-								\[
-								J_\alpha(x) = \sum\limits_{m=0}^\infty \frac{(-1)^m}{m! \, \Gamma(m + \alpha + 1)}{\left({\frac{x}{2}}\right)}^{2 m + \alpha}
-								\]
-								
-							h1 Chapter 2
-
-					:markdown
-						To make a jade skin **hello**, create a **hello**  [jade engine](/engines.view) then
-						render it with **/hello.view**.  You can learn more about how to [skin #{title}](/skinguide.view) 
-						and the [#{title} API](/api.view).
-										
-				#fit.Render
-					#post.Tech.Pub(path="/expub.view")
+		when "techpubs"
+			#post.Ex.Tech.Pub(path="/expub.view",dims="800,600",wrap)
 
 		when "mobiles"
 			p Pending
 
 		when "briefs"
-			#exbrief.Brief
+			#exbrief.Brief(dims="800,600",wrap)
 
 		when "workflows"
 			#accordion
@@ -308,7 +159,7 @@ append site_body
 			#cpack.CP(path=bpath)
 			#chords.CH(path="/bank.json")
 					
-		when "main"
+		default
 			#fit.Introduction
 				:markdown
 					When a client requests a X.view, **#{nick}** renders this view with the jade skin associated with X.  [Jade](http://jade-lang.com/tutorial/)
@@ -401,7 +252,7 @@ append site_body
 					:markdown
 						Extends the base framework to provide a standard site skinning framework with parameters:
 						
-							parms = {option1: menu1, option2: menu2, ...} dropdown skinning options 
+							options = {menuReturn: menuDisplay | "", ...} dropdown options menu
 							dock = [left | right | top | bottom] folder docking style 
 							dims = width,height maximum widget dimensions 
 							view = [Home | Kiss | Engr | Min | Basic | Nada, ...] site style
