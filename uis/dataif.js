@@ -36,17 +36,25 @@ function parse(x,def) {
 function source(opts, cb) {
 	function jsonize(rec) {
 		for (var key in rec) 
-			try {
-				rec[key] = JSON.parse(rec[key]);
-			}
-			catch (err) {
-			}
+			if ( val = rec[key] )
+				if (val.constructor == String)
+					try {
+						rec[key] = JSON.parse(val);
+					}
+					catch (err) {
+						rec[key] = {};
+					}
 	}
 
 	function loader(r, ctx) {
 		for (var key in {x:1,y:1,ys:1}) {
 			//alert( `index: ctx.${key} = ${ctx[key]}` );
-			eval( `ctx.${key} = ${ctx[key]}` );
+			try {
+				eval( `ctx.${key} = ${ctx[key]}` );
+			}
+			catch (err) {
+				ctx[key] = 0;
+			}
 		}
 	}
 

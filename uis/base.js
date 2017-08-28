@@ -676,7 +676,7 @@ function WIDGET (Anchor) {
 	var opts = BASE.parser;
 	
 	this.id = Anchor.id;
-	this.name = Anchor.getAttribute("class") || "";	
+	this.name = this.class = Anchor.getAttribute("class") || "";	
 		
 /**
  * @property {String}
@@ -704,9 +704,10 @@ function WIDGET (Anchor) {
 * @property {Array}
 * Various array for all arrays specfied in opts.LISTS hash
 */
-	Each(opts.LISTS, function (n,v) {
-		var val = Anchor.getAttribute(n) || v;
-		This[n] = val ? val.split(",") : [];
+	Each(opts.LISTS, function (key,def) {
+		var val = Anchor.getAttribute(key) || def;
+		This[key] = val ? val.split(",") : def;
+		//console.log([This.name,key,This[key]+""]);
 	});
 
 /**

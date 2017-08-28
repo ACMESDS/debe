@@ -40,12 +40,12 @@ append site_parms
 append site_body
 
 	- mode = query.mode
-	- ds = query.ds || "plugin"
+	- ds = query.ds || "myplugin"
 	- dscols = query.cols || []
 	- dspage = query.page || 20
 	- dsquery = query.search || ""
 	- dsrefresh = query.refresh || ""
-	- dspath = `/${ds}.db?${dsquery}`
+	- dspath = `/${ds}.db`
 	- dstitle = ds + " view"
 	- dsdims = query.dims
 	- dims = dsdims.split(",")
@@ -62,6 +62,7 @@ append site_body
 				cols=dscols.join(),
 				menu="Agents",
 				wrap,
+				blogs="Description",
 				dims=dsdims,
 				hover="finished",
 				page=dspage )
@@ -134,6 +135,7 @@ append site_body
 				cols="Arrived.d,Departed.d,Client,Notes.x,QoS.n,Age.n,Funded.c,Finished.c,Priority.n,Work.n,State.n,Task.t,Signoffs(Flagged.c,Sign0.c,Sign1.c,Sign2.c,Sign3.c)",
 				refresh=dsrefresh,
 				wrap,
+				sorts="Work,State",
 				head="Print,Refresh,Execute,Help",
 				hover="policed",
 				page=dspage )

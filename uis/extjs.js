@@ -1283,7 +1283,7 @@ function DS(anchor) {
 			map[rec[key]] = Copy(rec,{});
 		});
 	}
-	
+
 	var  	// Define widget attributes
 		This	= this,
 /**
@@ -1324,7 +1324,10 @@ function DS(anchor) {
  * @property {String}
  * sorts
  */
-		sorts	= hashify( this.sorts = (anchor.getAttribute("sorts") || "").split(",") ),
+		// sorts = this.sorts ? hashify( this.sorts ) : null,
+		sorts = anchor.getAttribute("sorts"),
+		sorts = sorts ? hashify(sorts.split(",")) : null,
+	
 		shifts	= anchor.getAttribute("shifts") ? true : false,
 		
 		page 	= parseInt(anchor.getAttribute("page")) || 0,
@@ -1342,6 +1345,8 @@ function DS(anchor) {
 		calc	= anchor.getAttribute("calc")  ? [] : null,
 		create	= anchor.getAttribute("create") || "";
 
+	//alert(JSON.stringify([name,sorts]));
+		  
 	if (!path && !WIDGET.prototype[anchor.id]) path = this.path = "/"+anchor.id+".view";
 	
 /**
@@ -1358,8 +1363,8 @@ function DS(anchor) {
  * @property {Array}
  * List of  bloggable fields
  */
-		
-	var Blogs = this.Blogs = [];
+	var fixedBlogs = anchor.getAttribute("blogs");
+	var Blogs = this.Blogs = fixedBlogs ? fixedBlogs.split(",") : [];
 	
 	// Derive fields, types, labels, tips and groups if specified.
 
@@ -1392,11 +1397,11 @@ function DS(anchor) {
 					+ "||" + (fOpts[4] || fParm.Special || ""),
 			fChar = fType.charAt(0),
 			fOff = fChar >= "A" && fChar <= "Z",
-			fLock = pivots ? undefined : fName in sorts;
+			fLock = false; //pivots ? true : sorts ? !(fName in sorts) : false;
 		
 		var fCol = gridColumn(fType,fName,fOff,fLock,fLabel,fTip,calc);
 				
-		if (fType=="h") Blogs.push( fName );
+		if ( fType=="h" && !fixedBlogs ) Blogs.push( fName );
 
 		switch (fAg) {			// Add row aggregator if needed
 			case "min":
@@ -1796,7 +1801,7 @@ Ext.onReady( function () {
 				left:"dock",right:"dock",top:"dock",bottom:"dock",head:"dock",
 				north:"region",south:"region",east:"region",west:"region",center:"region"},
 			LISTS : { 
-				sorts:"" 
+				sorts:null, blogs:null
 			}
 		},
 		
@@ -1848,7 +1853,7 @@ Ext.onReady( function () {
 				else
 				if (req.message) {
 					Ext.Msg.alert("Welcome! ".blink().bold().fontcolor('red'), req.message);
-					cb(`${req.callback}?guess=0&ID=${req.ID}`);
+					// cb(`${req.callback}?guess=0&ID=${req.ID}`);
 				}
 
 			},
@@ -2202,7 +2207,7 @@ WIDGET.prototype.menuTools = function () {
 		return {
 			itemId: label,
 			type: actionSign[label],
-			icon: "/clients/icons/tips/"+label+".ico",					
+			icon: "/clients/icons/actions/"+label+".png",
 			//text: label,
 			// EXTJS bug - fails in some versions of Chrome
 			//tooltip: (roles.constructor == String) ? roles : roles[Label+"S"] + " " + label + "s as " +roles[Label],
@@ -2584,7 +2589,9 @@ WIDGET.prototype.menuTools = function () {
 										else
 											parms._blog = Widget.Data.Blogs.join(",");
 
-										proxy.url = unescape(Ext.Object.toQueryString(parms)).replace("?=","?");
+										//alert(JSON.stringify(parms));
+										proxy.url = unescape(Ext.Object.toQueryString(parms)).replace("=&","?&");
+										alert(proxy.url);
 										blogged = !blogged;
 									});
 								}
@@ -3045,13 +3052,16 @@ WIDGET.prototype.menuTools = function () {
  */
 WIDGET.prototype.terminal = function (term,opts) {	
 	
-	/**
-	* @method sortTools
-	* @private
-	*/
-	function sortTools (docks) {
-		// Returns an array of sortData from the sorter buttons
-		function getSorters () {
+	function sortTools (docks) {  // creates toolbars for sorters
+		
+		function doSort( clear ) {
+			if (clear) 
+				Widget.Data.Store.clearFilter();
+			else
+				Widget.Data.Store.sort( getSorters() );
+		}
+
+		function getSorters() {
 			var sorters = [];
 			Ext.each( docks, function (act) {
 				if (act.sortData) 
@@ -3060,34 +3070,25 @@ WIDGET.prototype.terminal = function (term,opts) {
 			return sorters;
 		}
 
-		// Tells the store to sort itself according to our sort data
-		function doSort () {
-			Widget.Data.Store.sort(getSorters());
-		}
-
-		// Callback handler used when a sorter button is clicked or reordered
-		// operations as we wish to preserve ordering there
-		function changeSortDirection (button, changeDirection) {
-			var sortData = button.sortData,
+		function changeSortDirection(button) {  // does a sort
+			var 
+				sortData = button.sortData,
 				iconCls  = button.iconCls;
-		
+
 			if (sortData) {
-				if (changeDirection !== false) {
-					button.sortData.direction = Ext.String.toggle(button.sortData.direction, "ASC", "DESC");
-					button.setIconCls(Ext.String.toggle(iconCls, "sort-asc", "sort-desc"));
-				}
-				Widget.Data.Store.clearFilter();
-				doSort();
+				button.sortData.direction = Ext.String.toggle(button.sortData.direction, "ASC", "DESC");
+				button.setIconCls(Ext.String.toggle(iconCls, "sort-asc", "sort-desc"));		
+				//alert(button.sortData.direction);
+				doSort( false );
 			}
 		}
-
-		// Creates toolbar Buttons that are tied to sorters
-		function createSorterButtonConfig (config) {
+		
+		function sortButton (config) {  // creates a sort button
 			config = config || {};
 			Ext.applyIf(config, {
 				listeners: {
 					click: function(button, e) {
-						changeSortDirection(button, true);
+							changeSortDirection(button);
 					}
 				},
 				iconCls: 'sort-' + config.sortData.direction.toLowerCase(),
@@ -3099,94 +3100,92 @@ WIDGET.prototype.terminal = function (term,opts) {
 
 		// EXTJS BUG - adding sortTools to a grid contained in an accordion causes the accordion to act goofy.
 
-		if (Sorts.length) {	
-			docks.push(nada);
+		//docks.push(nada);
 
-			docks.push( {	
-				xtype: 'tbtext',
-				text: 'Sorts:',
-				reorderable: false 
-			} );
+		docks.push( {	
+			xtype: 'tbtext',
+			text: 'Sorts:',
+			reorderable: false 
+		} );
 
-			Sorts.Each( function (i, sort) {
-				docks.push( createSorterButtonConfig({
-					text: sort,
-					reorderable: true,
-					sortData: {
-						property: sort,
-						direction: 'ASC'
+		Sorts.Each( function (i, sort) {
+			docks.push( sortButton({
+				text: sort,
+				reorderable: true,
+				sortData: {
+					property: sort,
+					direction: 'ASC'
+				}
+			}) );
+		});
+
+		return [ 
+			Ext.create('Ext.ux.BoxReorderer', {	// ordering tool
+				lockableScope: "normal",
+				listeners: {
+					scope: Widget,
+					Drop: function(r, c, button) { //update sort direction when button is dropped
+						changeSortDirection(button);
 					}
-				}) );
-			});
+				}
+			}),
 
-			return [ 
-				Ext.create('Ext.ux.BoxReorderer', {	// ordering tool
-					lockableScope: "normal",
-					listeners: {
-						scope: Widget,
-						Drop: function(r, c, button) { //update sort direction when button is dropped
-							changeSortDirection(button, false);
+			Ext.create('Ext.ux.ToolbarDroppable', {  // dropping tool
+				lockableScope: "normal",
+
+				// Creates the new toolbar item from the drop event
+				createItem: function(data) {
+					var 
+						header = data.header,
+						headerCt = header.ownerCt,
+						reorderer = headerCt.reorderer;
+
+					// hide the drop indicators of the standard HeaderDropZone
+					// in case client had a pending valid drop in 
+					if (reorderer) reorderer.dropZone.invalidateDrop();
+
+					var act = sortButton({
+						text: header.text,
+						sortData: {
+							property: header.dataIndex,
+							direction: "ASC"
 						}
+					});
+
+					docks.push(act);
+					return act;			
+				},
+
+				// Custom canDrop implementation which returns true if a column can be added to the tbar
+				// data from the drag source. For a HeaderContainer, it will
+				// contain a header property which is the anchor being dragged.
+				canDrop: function(dragSource, event, data) {
+					var sorters = getSorters();
+					var header  = data.header;
+					var length = sorters.length;
+					var entryIndex = this.calculateEntryIndex(event);
+					var targetItem = this.toolbar.getComponent(entryIndex);
+					var i;
+					// Group columns have no dataIndex and therefore cannot be sorted
+					// If target isn't reorderable it could not be replaced
+					if (!header.dataIndex || (targetItem && targetItem.reorderable === false)) {
+						return false;
 					}
-				}),
-					
-				Ext.create('Ext.ux.ToolbarDroppable', {  // dropping tool
-					lockableScope: "normal",
 
-					// Creates the new toolbar item from the drop event
-					createItem: function(data) {
-						var header = data.header,
-							headerCt = header.ownerCt,
-							reorderer = headerCt.reorderer;
-					
-						// hide the drop indicators of the standard HeaderDropZone
-						// in case client had a pending valid drop in 
-						if (reorderer) reorderer.dropZone.invalidateDrop();
-
-						var act = createSorterButtonConfig({
-							text: header.text,
-							sortData: {
-								property: header.dataIndex,
-								direction: "ASC"
-							}
-						});
-					
-						docks.push(act);
-						return act;			
-					},
-
-					// Custom canDrop implementation which returns true if a column can be added to the tbar
-					// data from the drag source. For a HeaderContainer, it will
-					// contain a header property which is the anchor being dragged.
-					canDrop: function(dragSource, event, data) {
-						var sorters = getSorters();
-						var header  = data.header;
-						var length = sorters.length;
-						var entryIndex = this.calculateEntryIndex(event);
-						var targetItem = this.toolbar.getComponent(entryIndex);
-						var i;
-						// Group columns have no dataIndex and therefore cannot be sorted
-						// If target isn't reorderable it could not be replaced
-						if (!header.dataIndex || (targetItem && targetItem.reorderable === false)) {
+					for (i = 0; i < length; i++) {
+						if (sorters[i].property == header.dataIndex) {
 							return false;
 						}
+					}
 
-						for (i = 0; i < length; i++) {
-							if (sorters[i].property == header.dataIndex) {
-								return false;
-							}
-						}
+					return true; // alerts prior to exit will cancel the drop
+				},
 
-						return true; // alerts prior to exit will cancel the drop
-					},
-				
-					afterLayout: doSort
-				}) 
-			];
-		}
-		
-		else 
-			return [];
+				afterLayout: function () {
+					doSort(false);
+				}
+			}) 
+		];
 	}
 
 	/**
@@ -3301,6 +3300,8 @@ WIDGET.prototype.terminal = function (term,opts) {
 					break;
 			}
 
+	//alert(JSON.stringify([ this.dock, Sorts, isHead ]));
+		  
 	this.UI = this.dataUI = Ext.create(term || "Ext.grid.Panel", Copy(opts || {}, {    // create the terminal UI
 		// Basic attribute and appearance 
 		headerOverCls: Widget.hover || "",
@@ -3342,14 +3343,14 @@ WIDGET.prototype.terminal = function (term,opts) {
 
 		tools		: isHead ? this.Menu : null,
 		
-		dockedItems	: isHead 
-			? null
-			: { 
+		dockedItems	: Sorts
+			? { 
 				xtype: 'toolbar',
-				dock: this.dock, //"top", //this.dock || "top",
+				dock: this.dock.replace("head","left"), //"top", //this.dock || "top",
 				items: this.Menu,
 				plugins: sortTools(this.Menu)
-			},
+			}
+			: null,
 
 		features	: agTools(),
 		disabled	: this.disable,

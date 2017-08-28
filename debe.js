@@ -113,7 +113,9 @@ var
 											case "link":
 												return x.tag("a",{href:u});
 											default:
-												return "".tag("iframe",{ src: `/${x}.view?${p}&w=${w}&h=${h}&ds=${s}`, width:w, height:h } );
+												var xx = "".tag("iframe",{ src: `/${x}.view?${p}&w=${w}&h=${h}&ds=${s}`, width:w, height:h } );
+												console.log(xx);
+												return xx;
 										}										
 									})
 									.replace(/href=(.*?)>/g, function (m,i) { // <a href=B>A</a> --> followed link
