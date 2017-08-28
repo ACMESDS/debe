@@ -4,28 +4,28 @@ extends site
 append site_help
 	:markdown
 		Provides a &view to the model library &lib [exlib,swaglib,...] at version &ver.
-
-append site_parms
-	- parms = { NodeRed:"red", Threaded:"Threaded",PetriNet:"PetriNet",StateMachine1:"StateMachine1",StateMachine2:"StateMachine2",Python2:"Python2",Python1:"Python1",test5:"test5",test4:"test4",test3:"test3",test2:"test2",test1:"test1",test6:"test6",test7:"test7",test8:"test8",test9:"test9",test10:"test10" }
-	- view = query.view || "Min"
-
-append site_help
-	:markdown
 		Consult the [api](/api.view?goto=Engines) and the [skinguide](/skinguide?goto=Workflows) 
 		for help on how to create engines and use them in workflows.
+
+append site_parms
+	- options = { red:"red", Threaded:"",PetriNet:"",StateMachine1:"",StateMachine2:"",Python2:"",Python1:"",test5:"",test4:"",test3:"",test2:"",test1:"",test6:"",test7:"",test8:"",test9:"",test10:"" }
+	- view = query.view || "Typical"
+
 append site_body
 
-	- src = query.option || query.src || "Python1"
+	- ds = query.option || query.ds || "Python1"
+	- dims = "800,600"
 
-	if src == "red"
-		#post.model(path="http://localhost:1880",dims=dims)
+	if ds == "red"
+		#post.model(path=hosts.red,dims=dims,wrap)
 
 	else
-		#post.model(path="/flow.view?src=#{src}",dims=dims)
+		#flow.model(path=ds,dims=dims,wrap)
 
 		#grid.options(
 			path="/simoptions.db",
 			page=25,
+			wrap,
 			cols="name,steps.n,t.n,delta.n,snappath,snapperiod.n,screen.x,url")
 		//
 			#grid.stats(
@@ -46,19 +46,20 @@ append site_body
 			#grid.engines(
 				path="/engines.db",kiss,
 				page=25,
+				wrap,
 				cols="Name,Vars.x,Engine,Code.x,Classif")
 
 				:markdown
 					Consult the [api](/api.view?goto=Engines) and the [skinguide](/skinguide?goto=Workflows) 
 					for help on how to create engines and use them in workflows.
 
-			#form.engine(
-				path="/engines.db",
-				page=25,
-				cols="Name,Vars.x,Engine,Code.x,Classif")
+				#form.engine(
+					path="/engines.db",
+					page=25,
+					cols="Name,Vars.x,Engine,Code.x,Classif")
 
-					:markdown
-						Consult the [api](/api.view?goto=Engines) and the [skinguide](/skinguide?goto=Workflows) 
-						for help on how to create engines and use them in workflows.
+						:markdown
+							Consult the [api](/api.view?goto=Engines) and the [skinguide](/skinguide?goto=Workflows) 
+							for help on how to create engines and use them in workflows.
 		
 //- UNCLASSIFIED

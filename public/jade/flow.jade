@@ -1,17 +1,47 @@
 //- UNCLASSIFIED
 
 extends base
+append base_help
+	:markdown
+		Flow extends the base framework to provides a simulation network:
+		
+			ds = name of network (Threaded | PetriNet | StateMachine1 | StateMachine2 | Python1 | test0 | ...)
+		
 append base_parms
 	- tech = "flow"
-	- start = query.start || "SIM"
+	- start = "SIM"
 append base_body
 
-	- src = query.src
 	- sectors = 4
 	- features = 2
 	- metrics = 3
 
-	case src
+	table
+		th: input#run.ui-icon-run(type="button",size=4,title="step or pause simulation")
+		th: input#open.ui-icon-open(type="button",size=4,title="open selected system")
+		th: input#save.ui-icon-save(type="button",size=4,title="save model")
+		th: input#load.ui-icon-load(type="button",size=4,title="load model")
+		th: input#clone.ui-icon-clone(type="button",size=4,title="clone selected system")
+		th: input#delete.ui-icon-delete(type="button",size=4,title="delete selected system")
+		th: input#select.ui-icon-select(type="button",size=4,title="select system")
+		th: input#info.ui-icon-info(type="button",size=4,title="info about selected system")
+		th: input#reset.ui-icon-reset(type="button",size=4,title="stop and reset simulation")
+		th.x: #status status
+		th.x: #state state
+		th.x: #step step
+		th.x: #tokens tokens
+		th.x: #jobs jobs
+		th.x: #msg msg
+		th.x: #db LFS
+		th: #progressBar
+			#res
+
+	//- for debugging wrapper
+		svg#Experimental(xmlns="http://-www.w3.org/2000/svg",version="1.1",style="width:150px;height:150px;position:absolute;")
+			ellipse(cx="50%",cy="50%",rx="50%",ry="50%",stroke="#FF0000",stroke-width="2",fill="#800000")
+			ellipse(cx="50%",cy="50%",rx="10%",ry="10%",stroke="#FF0000",stroke-width="2",fill="#880000")
+
+	case query.ds
 		when "Threaded"
 			#SIM.DPF(inputs="NITF.file",outputs="act.C")
 				#A.WARN(inputs="NITF.SIM",outputs="jpg.#{sectors}")
@@ -38,7 +68,7 @@ append base_body
 
 		when "test0"
 			#SIM(inputs="L1,L2,L0",outputs="L3||A,L4")
-				#jsf(inputs="L0||SIM,L1,L2",outputs="L3,L4")
+				#subsys(inputs="L0||SIM,L1,L2",outputs="L3,L4")
 
 		when "test1"
 			#SIM(inputs="fi",outputs="fo")
@@ -60,6 +90,9 @@ append base_body
 				#B(inputs="spec||A||B1,jpg||A|B2",outputs="L3")
 				#C(inputs="msg||A|C1",outputs="L4")
 
+		when "haar"
+		when "jsdemo1"
+		when "pydemo1"
 		when "test5"
 			#SIM(inputs="S1,S2,S0",outputs="S3||B,S5||BIG")
 				#SM(routes="A|B|1>0|n++;k=0|n--,B|C|2>1,C|A|2==3,0|A|start")
@@ -160,7 +193,4 @@ append base_body
 				#jpgsrv.JPG.Service(inputs="dpf|1|SIM|$TEST",outputs="jpg|1")
 				#hack.Image.Index(inputs="Chip|1|JPG Service|jpg",outputs="Land|9")
 				
-		default
-			p invalid or missing &src
-
 //- UNCLASSIFIED

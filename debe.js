@@ -914,12 +914,14 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		runbrief: renderSkin,
 		pivbrief: renderSkin,
 		
+		sim: simEngine,
+		
 		exe: executePlugin,
 		add: extendPlugin,
 		sub: retractPlugin
 	},
 
-	// "byAction.": ENGINE,
+	 //"byAction.": ENGINE,
 		
 	"byActionTable.": {  //< virtual table emulation endpoints
 	},
@@ -2664,11 +2666,12 @@ Initialize DEBE on startup.
 				
 		ENGINE.config({
 			thread: DEBE.thread,
-			cores: DEBE.core
+			cores: DEBE.cores
 		});
 		
-		ENGINE.plugins.FLEX = FLEX.plugins;  // Force add FLEX plugins to engine plugins
-		FLEX.plugins.plugins = FLEX.plugins; // Allows plugins to ref either
+		ENGINE.plugins.MAIL = FLEX.sendMail; // share with plugins
+		ENGINE.plugins.FLEX = FLEX.plugins;  // must force here (FLEX cant add itself)
+		FLEX.plugins.plugins = FLEX.plugins; // So plugins can ref themselves
 
 		if (cb) cb();	
 	}
@@ -2705,6 +2708,10 @@ Initialize DEBE on startup.
 
 	}); }); });
 } 
+
+function simEngine(req,res) {	
+	ENGINE[req.action](req,res);
+}
 
 function Trace(msg,arg) {
 	TOTEM.trace("D>",msg,arg);

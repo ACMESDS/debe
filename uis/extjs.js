@@ -2103,9 +2103,7 @@ WIDGET.prototype.menuTools = function () {
 					//combo.setValue(null); // EXTJS BUG set globally
 				}, 
 				change: function (field,newValue,oldValue,eOpts) {
-					var parms = {};
-					parms[label.toLowerCase()] = newValue;
-					if (cb) cb(newValue,parms);
+					if (cb) cb(newValue);
 				}	
 			},
 			width: DEFAULT.DROP_WIDTH,
@@ -2939,7 +2937,7 @@ WIDGET.prototype.menuTools = function () {
 					case "datasets":
 						
 						if (ds = DSLIST[tok]) 
-							return combo( tok, ds, function (path, parms) {
+							return combo( tok, ds, function (path) {
 								Widget.Data.relink( function (proxy, flags) {
 									proxy.url = path;
 								});
@@ -2951,7 +2949,7 @@ WIDGET.prototype.menuTools = function () {
 					case "agents":
 						
 						if (ds = DSLIST[tok]) 
-							return combo( tok, ds, function (path, parms) {
+							return combo( tok, ds, function (path) {
 								agent = path || "";
 							});
 
@@ -2959,6 +2957,7 @@ WIDGET.prototype.menuTools = function () {
 							return button(tok);
 					
 					default:
+						var parms = Ext.Object.fromQueryString(location.search);
 
 						if (Action)  		// pulldown via attribute to this widget
 							if (pullDS) 
@@ -2996,31 +2995,30 @@ WIDGET.prototype.menuTools = function () {
 						
 						else
 						if (pullDS) 		// pulldown via dataset of another widget
-							return combo( tok, pullDS, function (val,parms) {
+							return combo( tok, pullDS, function (val) {
 //alert(JSON.stringify([val,parms]));
 								if (val.charAt(0) == "/") 
 									window.open(val);
 
-								else  {
-									if (parms.options) {
-										var 
-											mores = val.split("+"),
-											lesses = val.split("-"),
-											more = mores.length-1,
-											less = lesses.length-1;
+								else 
+								if (key == "options") {
+									var 
+										mores = val.split("+"),
+										lesses = val.split("-"),
+										more = mores.length-1,
+										less = lesses.length-1;
 
-										if (more) parms.more = more;
-										if (less) parms.less = less;
-										
-										parms.options = more ? mores[0] : lesses[0];
-										//alert(JSON.stringify(parms));
-									}
+									if (more) parms.more = more; else delete parms.more;
+									if (less) parms.less = less; else delete parms.less;
 
-									location.search = Ext.Object.toQueryString(
-										Ext.apply(
-											Ext.Object.fromQueryString(location.search),
-											parms
-										));
+									parms[key] = more ? mores[0] : lesses[0];
+									location.search = Ext.Object.toQueryString( parms );
+									//alert(JSON.stringify(parms));
+								}
+
+								else {
+									parms[key] = val;
+									location.search = Ext.Object.toQueryString( parms );
 								}
 
 							});
@@ -3530,6 +3528,7 @@ WIDGET.prototype.content = function () {
 		layout: "border",
 		region: "center",
 		overflowY: "auto",  // EXTJS bug - ignored
+		html: this.HTML,
 		items: [ 
 			Ext.create('Ext.panel.Panel', { 		// header
 				layout: "fit",

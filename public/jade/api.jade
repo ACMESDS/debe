@@ -6,7 +6,7 @@ append site_help
 		See also the companion [skinning guide](/skinguide.jade) and the [programmers ref manual](/shares/doc/totem/index.html).
 append site_parms
 	- view = "Typical"
-	- dock = "left"
+	- dock = "top"
 append site_body
 
 	#fit.Intro
@@ -27,14 +27,23 @@ append site_body
 				FILE.TYPE ? QUERY
 
 			addresses a database **dataset**, a compute **engine**, a **file path**, or a **file**.   A QUERY = PARM & PARM .... provides a list of
-			KEY=VALUE | KEY=DATA?QUERY | EXPRESSION parameters to the dataset query.  The dataset TYPE:
+			KEY=VALUE | KEY=DATA?QUERY | EXPRESSION parameters to the dataset query.  
+			
+			Dataset TYPEs format datasets:
 
-				db | xml | csv | txt | tab | view | tree | flat | delta | nav | kml | encap | html | 
-				view | run | plugni | pivot | site | spivot | brief | gridbrief | pivbrief | runbrief
-				exe |
+				db | xml | csv | txt | tab | view | tree | flat | delta | nav | kml | encap | html | json
+				
+			render plugins:
+			
+				view | run | plugin | pivot | site | spivot | brief | gridbrief | pivbrief | runbrief
+				
+			run stateless | stateful engines:
+
+				exe | sim
+				
+			or return file attributes:
+			
 				code | jade | classif | readability | client | size | risk
-
-			specifies how the dataset is formatted, rendered, queued, or attribute returned.
 
 
 	#accordion.Views
@@ -50,17 +59,18 @@ append site_body
 
 		#fit.Parameters
 			:markdown
-				Views parameters are SKIN dependent. For example, [plot.view](/plot.view) with no
-				parameters will generate help for its parameters.
+				Views parameters are SKIN dependent. For example, [plot.view?help](/plot.view?help) will 
+				generate help for the *plot.view*.
 
 		#fit.Examples
 			:markdown
-				[view plot help](/plot.view)  
-				[view the intake dataset using this skin](/intake.view)  
+				[view plot help](/plot.view?help)  
+				[view the news dataset](/news.view)  
+				[view the jsdemo1 plugin](/jsdemo1.run)
 				[view the skinning guide](/skinguide.view)  
 				[view the api](/api.view)  
 				[view a sample application](/swag.view)  
-				[view models](/model.view)  
+				[view models](/flow.view)  
 				[view a sample briefing](/home_brief.view)  
 				[view briefing under the ELT1 area](/ELT1.home_brief.view)
 
@@ -411,13 +421,14 @@ append site_body
 				+	[broadcast messages](/sockets.execute) to [connected users](/sockets.db)  
 				+	[import milestones](/milestone.execute) from internal spreadsheet
 
-	#accordion.Plugins
+	#accordion.Plugin.Engines
 
 		:markdown
 			A plugin -- a dataset-engine pair -- is assessible from the following endpoints:
 			
 					GET /PLUGIN.exe?id=CASE 	Run PLUGIN engine with id-specified use-CASE parameters
 					GET /PLUGIN.exe?name=CASE 	Run PLUGIN engine with name-specified use-CASE parameters
+					GET /PLUGIN.exe?QUERY 	Run PLUGIN engine with QUERY parameters
 			
 			The following (reserved) dataset parameters determine how a PLUGIN operates from an
 			exe-endpoint:
@@ -428,16 +439,13 @@ append site_body
 				(Task) name of project associated with this CASE
 				(Description) bloggable report on this CASE				
 				(Ingest) switch to ingest results produced by this CASE
-				
-			### Plugin dataset keys
-			Keys can be added to or dropped from a plugin via:
+
+			PLUGINs can be extended / retracted using a PLUGIN.run, this viewer providing a key-editor to 
+			add/remove keys.
 			
-				GET /PLUGIN.add?KEY=VALUE&... 	Add KEYs to the PLUGIN that can accomodate VALUEs
-				GET /PLUGIN.sub?KEY&... 	Drop KEYs from the PLUGIN
-			
-			### Detecting jobs
-			A Job = {ring: ... } will attach the requested PLUGIN to a chipping workflow with the following
-			parameters:
+			### AOI jobs
+			A { aoiring: [ ...] } Job will attach the requested PLUGIN to a chipping workflow that expects the 
+			following additional PLUGIN parameters:
 
 				size = 50  	// feature size in [m]
 				pixels = 512 	// samples across a chip [pixels]
@@ -448,11 +456,11 @@ append site_body
 				limit = 1e99 	// restrict maximum number of schips to ingest
 				test = "test" 	// test case to store results
 
-			### Counting jobs
-			Reserved
+			### VOI jobs
+			A { voiring: [ ... ] } Job will attach the requested PLUGIN to a voxel workflow that expects the 
+			following additional PLUGIN parameters:
 
-			### Tagging jobs
-			Reserved
+				tbd
 
 			### Agent workflow
 			An engine can be outsourced to agents at:
@@ -478,76 +486,78 @@ append site_body
 			and the JSON args to the ENGINE).  The AGENT eventually responds at 
 			the pull endpoint with a JOBID, or a "" if no job could be created.  #{title} will periodically 
 			poll the agent for the results of JOBID.
+			
+			The same engines can be run in workflows: see Sim-Engines.
 
-	#accordion.Engines
+	#accordion.Sim.Engines
 
 		#fit.Endpoints
 			:markdown
-				[Engines](/engine.view) are built on cv | py | R | sh | js | res1 | res2 | ... machines and are
-				accessible from the following endpoints:
+				Engines can be accessed from within [workflows](/flow.view?ds=test0) at these endpoints:
 
-					GET /ENGINE.TYPE 	Compile and step ENGINE in a stateless workflow
-					PUT /ENGINE.TYPE 	Compile ENGINE in a stateful workflow
-					POST /ENGINE.TYPE	Step ENGINE  in a stateful workflow
-					DELETE /ENGINE.TYPE	Free ENGINE from a stateful workflow
+					GET /ENGINE.sim 	Compile and step ENGINE in a stateless workflow
+					PUT /ENGINE.sim 	Compile ENGINE in a stateful workflow
+					POST /ENGINE.sim	Step ENGINE  in a stateful workflow
+					DELETE /ENGINE.sim	Free ENGINE from a stateful workflow
 
-				were TYPE = db | txt | view | html | .... specifies how the engine's *context* is delivered to the client
-				(TYPE **does not** imply anything about the engine's machine type).  A TYPE = exe will execute
-				the engine and return its results.  Please know 
-				that **#{nick}** does not provide an interactive development environment; thus engines should be 
-				thoroughly debugged in their native development environment before being [inserted](/engine.view) 
-				into **#{nick}**.  *Engines* become *plugins* when they are paired with a same-named dataset.
-
-				While this endpoint:
+				Please know 
+				that **#{nick}** does not provide an interactive development environment; engines should be 
+				thoroughly debugged in their native development environment before being [inserted](/engines.view) 
+				into **#{nick}**.  
 				
-					GET /ENGINE.TYPE 
-					
-				provides a stateless interface to an engine and its context, this endpoints:
-				
-					PUT /ENGINE.TYPE 
-					POST /ENGINE.TYPE	
-					DELETE /ENGINE.TYPE	
+				An engines become a *plugin* when it is paired with a same-named dataset: see Plugin-Engines
+				for their endpoints.
 
-				provide a stateful interface to engines which are useful in [workflows](/nodeflow.view).  
-				
-				Optional engine parameters are held in a read/write context that follows the pattern:
+				Parameters to engines are held in a read/write context that follows the pattern:
 
 					{
 						tau: [ tau1, tau2, ... ],
 						port1: function () {}, 
 						port2: function() {}, ...
-						entry: {key1: "select ...", ... } || "select ...",
-						exit: {key2: "update ...", ... } || "update ...",
-						key: value, 
-						urlKey: value
+						entry: {key: "select ...", ... } || "select ...",
+						exit: {key: "update ...", ... } || "update ...",
+						key: value
 					}
-					
-				When an engine is accessed, its context is automatically extended with the following modules:
 
-					[DSP](https://www.npmjs.com/package/dsp) ,
-					[LWIP](https://github.com/EyalAr/lwip) ,  
-					[MATH](http://mathjs.org/) ,  
-					[CRYPTO](https://nodejs.org/docs/latest/api/) ,   
-					[FLEX](https://github.com/ACMESDS/flex),
-					[SVD)(https://www.npmjs.com/package/node-svd)
-					
-				FLEX contains several (ctx, res)-methods including:
+				An engine's context may define its i/o ports *portX*, its i/o event tokens *tau*, its "key"
+				parameters, and may  prime/save these keys with the sql entry/exit select/update queries.
 
-					FLEX.get( {ds: "...", where: {key:value, ...}}, (data) => {...} )  
+				Engines are language agnostic : cv | py | R | sh | js | res1 | res2 | ... machines are presently
+				provided.
+
+				When a js-engine is accessed, its context is automatically extended with several modules:
+
+					[DSP](https://www.npmjs.com/package/dsp)
+					[LWIP](https://github.com/EyalAr/lwip)
+					[MATH](http://mathjs.org/)
+					[CRYPTO](https://nodejs.org/docs/latest/api/)
+					[FLEX](https://github.com/ACMESDS/flex)
+					[RAN](https://github.com/ACMESDS/flex), 
+					[SVD](https://www.npmjs.com/package/node-svd)
+					[MLE](linktbd)
+					[MVN](linktbd) 
+					[MAIL](linktbd)
+					
+				While js-engines have access to all FLEX plugins:
+
 					FLEX.randpr( { jumprates, ... }, (data) => {...} )    // generate markov random process
 					FLEX.gaussmix( { events: [ {x,y,z,t ...}, ...], scenario: {}, ... }, (data) => {...} )  // generate (mean,sigma) estimates
 					FLEX.wms( { ... }, (data) => {...} )  // wms response
 					FLEX.wfs( { ... }, (data) => {...} )  // wfs response
 					FLEX.sss( { ... }, (data) => {...} )  // sss response
-					
-				Whereas stateless engines (being memoryless) are initialized at each step, stateful 
-				engines are initialized only when the workflow is initialized.  When initialized, an engine's context 
-				defines its i/o ports *nameX*, its default i/o event tokens *tau*, and its *url key:value* 
-				parameters.  An engine's context variables *varX* are loaded (and stored) 
-				from (to) its underlying sql database using *"select ..."* (an *"update ..."*) queries on
-				engine entry (and exit).
+ 
+				their access the DB is restricted with the:
+				
+					FLEX.get( {ds: "...", where: {key:value, ...}}, (data) => {...} )  
 
-				If used, each *tau* event can contain anything, for example:
+				method.  Engines can read/write files only in the client's designated group folders.
+				
+				While the GET-endpoint provides a stateless interface to an engine and its context, the PUT-, POST-,
+				and DELETE-endpoints provide a stateful interface to engines which are useful in [workflows](/nodeflow.view).				
+				Whereas stateless engines (being memoryless) are initialized at each step, stateful 
+				engines are initialized only when the workflow is initialized.  
+				
+				Each *tau* event (if used) can contain anything ... for example:
 
 					job = "" 	# Fully qualified file path to a jpg chip for ingesting
 					work = 0 	# Anticipated/delivered data volume (dims bits etc)
@@ -556,9 +566,9 @@ append site_body
 					cost = ""	# Billing center
 					policy = ""	# Data retention policy
 					status = 0	# Status code
-					value = 0	# Flow calculation
+					value = [1,2,3,4]	# Calculations
 
-		#folder.Examples
+		#folder.Examples(dock="left")
 			#fit.url
 				:markdown
 					URL engines (experimental) provide a simple method to re-route a request
@@ -937,11 +947,11 @@ append site_body
 
 	#accordion.Machines
 		:markdown
-			An Engines employ the proper MAC = opencv | python | ... machine implemented under
-			**engine/ifs/MAC/MAC.cpp**.  These machines are bound to #{title} using the 
+			Engines employ a MAC = opencv | python | ... machine implemented under
+			**engine/ifs/MAC/MAC.cpp**, these machines being bound to #{title} using the 
 			*node-gyp rebuild* provided by *maint.sh bind*.  
 			
-			All opencv-machines implement the following pattern:
+			All opencv-machines, for example, implement the following pattern:
 
 				class OPORT { 								 	// output port
 					OPORT(str Name, V8OBJECT Parm) { 		// Initiallize 

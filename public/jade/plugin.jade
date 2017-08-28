@@ -28,11 +28,10 @@ append site_parms
 			- view = "Nada"
 		when "plugin"
 			- view = "Basic"
-			- options = { more:"", less:"" }
 			- banner = ""
 		when "run"
 			- view = "Typical"
-			- options = { more:"", less:"" }
+			- options = { "more+":"", "more++":"", less:"" }
 		when "brief"
 			- view = "Nada"
 		default
@@ -53,6 +52,7 @@ append site_body
 	- height = dims.pop()
 	- width = dims.pop()
 	- tasks = projs ? get( projs , {Plugin:ds}, "Task,Hours,Complete,FAQ1,FAQ2") : []
+	- more = parseInt(query.more) || 0
 
 	case mode
 		when "plugin"
@@ -121,10 +121,12 @@ append site_body
 
 				:markdown
 					[Engines](/api.view) contain js | python | matlab | opencv | ... code.  Click the execute 
-					button to test the engine with its default context parameters.  See [DSP](https://www.npmjs.com/package/dsp),
-					[LWIP](https://github.com/EyalAr/lwip),  [MATH](http://mathjs.org/),
-					[CRYPTO](https://nodejs.org/docs/latest/api/), [FLEX](https://github.com/ACMESDS/flex),
-					[RAN](https://github.com/ACMESDS/flex), [SVD](linktbd), [MLE](linktbd), [MVN](linktbd) for 
+					button to test the engine with its default context parameters.  See [DSP](https://www.npmjs.com/package/dsp), 
+					[LWIP](https://github.com/EyalAr/lwip),  [MATH](http://mathjs.org/), 
+					[CRYPTO](https://nodejs.org/docs/latest/api/), [FLEX](https://github.com/ACMESDS/flex), 
+					[MATH](http://mathjs.org/), 
+					[RAN](https://github.com/ACMESDS/flex), [SVD](https://www.npmjs.com/package/node-svd), 
+					[MLE](linktbd), [MVN](linktbd), [MAIL](linktbd) for 
 					the js-modules attached to all js-engines.  Import py-modules as needed for a py-engine.
 					
 			#grid.Jobs(
@@ -144,12 +146,15 @@ append site_body
 					if available, is attached as "RTP", "PMR" etc links.  Earning job credits is easy: simply 
 					upload your data using the Files | Uploads.
 
-			if query.options == "more"
+			if more>0
 				#grid.Keys(
 					path="/keyedit.db?ds=#{ds}",
 					cols="Key,Type,Samples.x,Dist,Parms.x",
 					wrap,
 					page=dspage)
+					
+			if more>1
+				#flow.Flow( path="#{ds}", dims="800,600",wrap )
 
 		when "pivot"
 			- pcol = dscols.pop()

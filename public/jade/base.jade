@@ -1,37 +1,39 @@
 //- UNCLASSIFIED
-//-
-	Extends the layout framework to provide a base framework with parameters:
-		// exjs
-		- carousel = false
-		- charting = false
-		- theme = "crisp"  // crisp | neptune | aria | gray | ...
-		// jquery
-		- grid = "DataTable" // DataTable | w2UI | jqgrid | ... 
-		- image = "Darkroom" // Darkroom | Camen | Vide | Fabric | ...
-		- pivot = "Isotope"	// Isotope | elFinder | apy-X | ...
-		- themer = false
-		- password = false
-		// reveal
-		- highlight = "zenburn"	
-		- more = {}
-		- help = "can I get some help here?"
-		// voxel
-		- game = "cubeland"	// cubeland | ... 
-		// three
-		- effect = "" //  AnaglyphEffect | ... 
-		// cesium
-		- src = query.src
-		- host = {use:"swagdev", geohub: "https://sigma0.ilabs.ic.gov:8083", me: "localhost:8083", win: "http://200.100.50.101:8083", aws: "http://172.31.76.130:8083",local:"http://localhost:8083",swaggpu:"http://swag-gpu-01.ec2.internal:8083", swagws:"http://swag-ws-02.ec2.internal:8083", swagdev: "http://localhost:8083"}
-		- width = 750
-		- height = 500		
-		// d3
-		- map = ""
-		// add doc edit/open links to posts
-		- opens = true
-		// technology to render content
-		- tech = "nada"  // extjs | jquery | dojo | reveal | voxel | scene | three | cesium | joint | d3 | flow | ...
-		
 extends layout
+append layout_help
+	:markdown
+		Base extends the layout framework to provide a base framework with parameters:
+
+			// exjs
+			- carousel = false
+			- charting = false
+			- theme = "crisp"  // crisp | neptune | aria | gray | ...
+			// jquery
+			- grid = "DataTable" // DataTable | w2UI | jqgrid | ... 
+			- image = "Darkroom" // Darkroom | Camen | Vide | Fabric | ...
+			- pivot = "Isotope"	// Isotope | elFinder | apy-X | ...
+			- themer = false
+			- password = false
+			// reveal
+			- highlight = "zenburn"	
+			- more = {}
+			- help = "can I get some help here?"
+			// voxel
+			- game = "cubeland"	// cubeland | ... 
+			// three
+			- effect = "" //  AnaglyphEffect | ... 
+			// cesium
+			- src = query.src
+			- host = {use:"swagdev", geohub: "https://sigma0.ilabs.ic.gov:8083", me: "localhost:8083", win: "http://200.100.50.101:8083", aws: "http://172.31.76.130:8083",local:"http://localhost:8083",swaggpu:"http://swag-gpu-01.ec2.internal:8083", swagws:"http://swag-ws-02.ec2.internal:8083", swagdev: "http://localhost:8083"}
+			- width = 750
+			- height = 500		
+			// d3
+			- map = ""
+			// add doc edit/open links to posts
+			- opens = true
+			// technology to render content
+			- tech = "nada"  // extjs | jquery | dojo | reveal | voxel | scene | three | cesium | joint | d3 | flow | ...
+
 append layout_parms
 	- banner = query.holdoff ? "" : banner
 
@@ -64,214 +66,214 @@ append layout_parms
 		// doc
 		- opens = true
 		// technology
-		- tech = "nada"  // extjs | jquery | dojo | reveal | voxel | scene | three | cesium | joint | d3 | flow | ...
+		- tech = "nada"  // nada | extjs | jquery | dojo | reveal | voxel | scene | three | cesium | joint | d3 | flow | ...
 
 append layout_head
 	- locale = query.locale || "en"  // en | fr | de | ...
 	- holdoff = query.holdoff  // name to holdoff loading via button, or skin,skin, ... to hold loading via accordion
 	- theme = query.theme
 	
-	block base_head
-		case tech
-			when "three"
-				include base_three
-			when "reveal"
-				include base_reveal
-			when "scene"
-				include base_scene
-			when "dojo"
-				include base_dojo
-			when "voxel"
-				include base_voxel
-			when "jquery"
-				include base_jquery
-			when "extjs"
-				include base_extjs
-			when "flow"
-				include base_flow
-			when "d3"
-				include base_d3
+	case tech
+		when "three"
+			include base_three
+		when "reveal"
+			include base_reveal
+		when "scene"
+			include base_scene
+		when "dojo"
+			include base_dojo
+		when "voxel"
+			include base_voxel
+		when "jquery"
+			include base_jquery
+		when "extjs"
+			include base_extjs
+		when "flow"
+			include base_flow
+		when "d3"
+			include base_d3
 
-		//- Load underlying tech
-		case tech
-			when "flow"
-				case "1.x"
-					when "1.x"
-						script(src="/clients/lodash.js")
-						script(src="/clients/backbone.js")
-						script(src='/clients/jquery/js/jquery-3.1.1.js')
-					when "0.x"
-						script(src='/clients/jquery/js/jquery-1.11.0.min.js')
-						//-script(src='/clients/jquery/js/jquery-1.9.1.min.js')
-						//-script(src='/clients/jquery/plugins/misc/jquery.ui.tooltip.min.js')
+	//- Load underlying tech
+	case tech
+		when "flow"
+			case "1.x"
+				when "1.x"
+					script(src="/clients/lodash.js")
+					script(src="/clients/backbone.js")
+					script(src='/clients/jquery/js/jquery-3.1.1.js')
+				when "0.x"
+					script(src='/clients/jquery/js/jquery-1.11.0.min.js')
+					//-script(src='/clients/jquery/js/jquery-1.9.1.min.js')
+					//-script(src='/clients/jquery/plugins/misc/jquery.ui.tooltip.min.js')
 
-				script(src='/clients/jquery/ui/jquery-ui-1.10.3.custom.min.js')
-				//- any changes in these scripts require re-minification
-				script(src="/clients/joint/joint.min.js")
-				script(src="/clients/joint/joint.shapes.devs.js")
-				script(src="/clients/joint/joint.shapes.fsa.min.js")
-				script(src="/clients/joint/joint.shapes.pn.min.js")
-				script(src="/clients/joint/joint.shapes.erd.min.js")
+			script(src='/clients/jquery/ui/jquery-ui-1.10.3.custom.min.js')
+			//- any changes in these scripts require re-minification
+			script(src="/clients/joint/joint.min.js")
+			script(src="/clients/joint/joint.shapes.devs.js")
+			script(src="/clients/joint/joint.shapes.fsa.min.js")
+			script(src="/clients/joint/joint.shapes.pn.min.js")
+			script(src="/clients/joint/joint.shapes.erd.min.js")
 
-			when "d3"
-				script(src="/clients/uis/dataif.js")
-				script(src="/clients/d3/d3.min.js")
-				case map
-					when "world"
-						script(src="/clients/maps/topojson.min.js")
-						script(src="/clients/maps/datamaps.world.min.js")
+		when "d3"
+			script(src="/clients/uis/dataif.js")
+			script(src="/clients/d3/d3.min.js")
+			case map
+				when "world"
+					script(src="/clients/maps/topojson.min.js")
+					script(src="/clients/maps/datamaps.world.min.js")
 
-					when "usa"
-						script(src="/clients/maps/topojson.min.js")
-						script(src="/clients/maps/datamaps.usa.min.js")
+				when "usa"
+					script(src="/clients/maps/topojson.min.js")
+					script(src="/clients/maps/datamaps.usa.min.js")
 
-			when "voxel"
-				script(src="/clients/uis/dataif.js")
-				script(src="/clients/games/#{game}/bundle.js")
+		when "voxel"
+			script(src="/clients/uis/dataif.js")
+			script(src="/clients/games/#{game}/bundle.js")
 
-			when "three"
-				script(src="/clients/uis/dataif.js")
-				script(src="/clients/threejs/build/three.min.js")
-				script(src="/clients/threejs/examples/js/Detector.js")
-				script(src="/clients/threejs/examples/js/libs/stats.min.js")
+		when "three"
+			script(src="/clients/uis/dataif.js")
+			script(src="/clients/threejs/build/three.min.js")
+			script(src="/clients/threejs/examples/js/Detector.js")
+			script(src="/clients/threejs/examples/js/libs/stats.min.js")
 
-			when "reveal"
-				script(src='/clients/reveal/plugin/highlight/highlight.js')
-				script(src='/clients/reveal/lib/js/head.min.js')
-				script(src='/clients/reveal/js/reveal.min.js')
+		when "reveal"
+			script(src='/clients/reveal/plugin/highlight/highlight.js')
+			script(src='/clients/reveal/lib/js/head.min.js')
+			script(src='/clients/reveal/js/reveal.min.js')
 
-			when "scene"
-				script(src="/clients/uis/dataif.js")
-				script(src="/clients/scenejs/scenejs.js")
-				script.
-					SceneJS.setConfigs({
-						pluginPath:"/clients/scenejs/plugins"
-					});
+		when "scene"
+			script(src="/clients/uis/dataif.js")
+			script(src="/clients/scenejs/scenejs.js")
+			script.
+				SceneJS.setConfigs({
+					pluginPath:"/clients/scenejs/plugins"
+				});
 
-			when "dojo"
-				script.
-					var dojoConfig = {
-						async: true,
-						baseUrl: "/clients/dojo/",
-						packages: [
-							//{ name: "dojo" 	},
-							//{ name: "dijit"  },
-							//{ name: "dojox"  }
-						]
-					};
+		when "dojo"
+			script.
+				var dojoConfig = {
+					async: true,
+					baseUrl: "/clients/dojo/",
+					packages: [
+						//{ name: "dojo" 	},
+						//{ name: "dijit"  },
+						//{ name: "dojox"  }
+					]
+				};
 
-				script(src="/clients/dojo/dojo/dojo.js")
+			script(src="/clients/dojo/dojo/dojo.js")
 
-			when "jquery"
-				script(src='/clients/jquery/js/jquery-1.11.0.min.js')
+		when "jquery"
+			script(src='/clients/jquery/js/jquery-1.11.0.min.js')
 
-				if themer
-					script(src='/clients/jquery/plugins/misc/themeswitchertool.js')
+			if themer
+				script(src='/clients/jquery/plugins/misc/themeswitchertool.js')
 
-				case grid
-					when "w2UI"
-						script(src='/clients/w2ui/dist/w2ui.min.js')
+			case grid
+				when "w2UI"
+					script(src='/clients/w2ui/dist/w2ui.min.js')
 
-					when "DataTable"
-						script(src="/clients/datatables/media/js/jquery.dataTables.js")
+				when "DataTable"
+					script(src="/clients/datatables/media/js/jquery.dataTables.js")
 
-					when "jqgrid"
-						script(src="/clients/jqgrid/js/i18n/grid.locale-en.js")
-						script(src="/clients/jqgrid/js/minified/jquery.jqgrid.min.js")
+				when "jqgrid"
+					script(src="/clients/jqgrid/js/i18n/grid.locale-en.js")
+					script(src="/clients/jqgrid/js/minified/jquery.jqgrid.min.js")
 
-				script.
-					var 
-						fabric = null,
-						Darkroom = null,
-						elFinder = null,
-						Caman = null;
+			script.
+				var 
+					fabric = null,
+					Darkroom = null,
+					elFinder = null,
+					Caman = null;
 
-				case image
-					when "Vide"
-						script(src="/clients/vide/src/jquery.vide.js")
+			case image
+				when "Vide"
+					script(src="/clients/vide/src/jquery.vide.js")
 
-					when "Fabric"
-						script(src="/clients/fabric.js/dist/fabric.min.js")
+				when "Fabric"
+					script(src="/clients/fabric.js/dist/fabric.min.js")
 
-					when "Caman"
-						script(src="/clients/caman/dist/caman.full.min.js")
+				when "Caman"
+					script(src="/clients/caman/dist/caman.full.min.js")
 
-					when "Darkroom"
-						//- "npm start" from jquery/plugins/darkroom to recompile lib/icons and lib/js
-						link(href="/clients/darkroom/build/darkroom.css",rel='stylesheet')
-						script(src="/clients/fabricjs/dist/fabric.min.js")
-						script(src="/clients/darkroom/build/darkroom.js")
-						script(src="/clients/darkroom/lib/js/plugins/darkroom.brightness.js")
-						script(src="/clients/darkroom/lib/js/plugins/darkroom.grayscale.js")
-						script(src="/clients/darkroom/lib/js/plugins/darkroom.invert.js")
-						script(src="/clients/darkroom/lib/js/plugins/darkroom.remove.js")
-						script(src="/clients/darkroom/lib/js/plugins/darkroom_help.js")
+				when "Darkroom"
+					//- "npm start" from jquery/plugins/darkroom to recompile lib/icons and lib/js
+					link(href="/clients/darkroom/build/darkroom.css",rel='stylesheet')
+					script(src="/clients/fabricjs/dist/fabric.min.js")
+					script(src="/clients/darkroom/build/darkroom.js")
+					script(src="/clients/darkroom/lib/js/plugins/darkroom.brightness.js")
+					script(src="/clients/darkroom/lib/js/plugins/darkroom.grayscale.js")
+					script(src="/clients/darkroom/lib/js/plugins/darkroom.invert.js")
+					script(src="/clients/darkroom/lib/js/plugins/darkroom.remove.js")
+					script(src="/clients/darkroom/lib/js/plugins/darkroom_help.js")
 
-				case pivot
-					when "elFinder"
-						script(src="/clients/elfinder/js/elfinder.full.js")
-						script.
-							$("").elFinder = true;
-
-						//- uncomment to debug elFinder
-							link(href='/clients/jquery/ui/css/smoothness/jquery-ui.css',rel='stylesheet')
-							script(src='/clients/jquery/js/jquery-1.8.0.min.js')
-							script(src='/clients/jquery/ui/jquery-ui-1.8.23.custom.min.js')
-
-					when "Isotope"
-						script(src="/clients/isotope.pkgd.min.js")
-						script(src="/clients/imagesloaded.pkgd.min.js")
-						script(src="/clients/packery-mode.pkgd.min.js")
-
-					default
-						// nothing
-							script(src="/clients/apy/#{idx}/jquery.js")
-							script(src="/clients/apy/#{idx}/menu.js")
-							a(href="http://-apycom.com/")
-
-				script(src='/clients/jquery/ui/jquery-ui-1.10.3.custom.min.js')
-
-			when "extjs"
-				if carousel  /* unsupported in ExtJS 5.x */
-					//- script(src="/clients/extjs/ext-core.js")
-					script(src="/clients/extjs/plugins/carousel.js")
+			case pivot
+				when "elFinder"
+					script(src="/clients/elfinder/js/elfinder.full.js")
 					script.
-						Ext.onReady( function () {
-							new Ext.ux.carousel('content', {
-								itemSelector: 'img',
-								interval: 4,
-								autoPlay: true,
-								showPlayButton: true,
-								transitionDuration: 2,
-								width: 600,
-								height: 400,
-								pauseOnNavigate: true,
-								freezeOnHover: false,
-								transitionType: 'fade',
-								navigationOnHover: true
-							});
-						});
-				else
-					script(src="/clients/extjs/build/ext-all.js")
+						$("").elFinder = true;
 
-				if charting
-					script(src="/clients/extjs/build/packages/sencha-charts/build/sencha-charts.js")
+					//- uncomment to debug elFinder
+						link(href='/clients/jquery/ui/css/smoothness/jquery-ui.css',rel='stylesheet')
+						script(src='/clients/jquery/js/jquery-1.8.0.min.js')
+						script(src='/clients/jquery/ui/jquery-ui-1.8.23.custom.min.js')
 
+				when "Isotope"
+					script(src="/clients/isotope.pkgd.min.js")
+					script(src="/clients/imagesloaded.pkgd.min.js")
+					script(src="/clients/packery-mode.pkgd.min.js")
+
+				default
+					// nothing
+						script(src="/clients/apy/#{idx}/jquery.js")
+						script(src="/clients/apy/#{idx}/menu.js")
+						a(href="http://-apycom.com/")
+
+			script(src='/clients/jquery/ui/jquery-ui-1.10.3.custom.min.js')
+
+		when "extjs"
+			if carousel  /* unsupported in ExtJS 5.x */
+				//- script(src="/clients/extjs/ext-core.js")
+				script(src="/clients/extjs/plugins/carousel.js")
 				script.
-					Ext.Loader.setConfig({
-						enabled: true, 
-						paths: {
-							'Ext.ux': '/clients/extjs/plugins',
-							'Ext': '/clients/extjs/build/examples'
-					}});
-					/*
-					Ext.Loader.loadScript({
-						//url: "/clients/extjs/packages/ext-locale/build/ext-locale-#{locale}.js",
-						//onLoad: function () { alert("Language loaded"); },
-						onError: function () { alert("Locale failed to load"); },
-						scope: this
+					Ext.onReady( function () {
+						new Ext.ux.carousel('content', {
+							itemSelector: 'img',
+							interval: 4,
+							autoPlay: true,
+							showPlayButton: true,
+							transitionDuration: 2,
+							width: 600,
+							height: 400,
+							pauseOnNavigate: true,
+							freezeOnHover: false,
+							transitionType: 'fade',
+							navigationOnHover: true
+						});
 					});
-					*/
+			else
+				script(src="/clients/extjs/build/ext-all.js")
+
+			if charting
+				script(src="/clients/extjs/build/packages/sencha-charts/build/sencha-charts.js")
+
+			script.
+				Ext.Loader.setConfig({
+					enabled: true, 
+					paths: {
+						'Ext.ux': '/clients/extjs/plugins',
+						'Ext': '/clients/extjs/build/examples'
+				}});
+				/*
+				Ext.Loader.loadScript({
+					//url: "/clients/extjs/packages/ext-locale/build/ext-locale-#{locale}.js",
+					//onLoad: function () { alert("Language loaded"); },
+					onError: function () { alert("Locale failed to load"); },
+					scope: this
+				});
+				*/
+	block base_head
 
 append layout_body
 
@@ -287,6 +289,10 @@ append layout_body
 			#post(class=holdoff,path=url.replace('holdoff='+holdoff, ''),refresh,dims="98%,98%")
 	
 	else
+	if "help" in query
+		block base_help
+		
+	else
 		case tech
 			when "nada"
 				if opens
@@ -299,37 +305,27 @@ append layout_body
 				block base_body
 
 			when "flow"
+				script(src="/clients/uis/base.js")
+				script(src="/clients/uis/#{tech}.js")
 				block base_body
 
 			when "cesium"
-				if query.ds
-					iframe(src="#{hosts[host]}/geonode/cesium.html?src=#{src}",width="#{width}",height="#{height}")
-					block base_body
-				else
-					block base_help
+				iframe(src="#{hosts[host]}/geonode/cesium.html?src=#{src}",width="#{width}",height="#{height}")
+				block base_body
 
 			when "three"
-				if query.ds
-					if effect
-						script(src="/clients/threejs/examples/js/effects/#{effect}.js")
-					block base_body
-				else
-					block base_help
+				if effect
+					script(src="/clients/threejs/examples/js/effects/#{effect}.js")
+				block base_body
 
 			when "dojo"
 				block base_body
 
 			when "scene"
-				if query.ds
-					block base_body
-				else
-					block base_help
+				block base_body
 					
 			when "voxel"
-				if query.ds
-					block base_body
-				else
-					block base_help
+				block base_body
 					
 			when "reveal"
 				.reveal(style="width:100%;height:100%;")
@@ -414,22 +410,9 @@ append layout_body
 					} );
 
 			when "d3"
-				if query.ds
-					block base_body
-				else
-					block base_help
-				
+				block base_body
+
 			default
 				script(src="/clients/uis/base.js")
 				script(src="/clients/uis/#{tech}.js")
 				block base_body
-
-	//
-		case tech
-		when "reveal"
-		when "nada"
-			block base_body
-		default
-			script(src="/clients/uis/base.js")
-			script(src="/clients/uis/#{tech}.js")
-			block base_body

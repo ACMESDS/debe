@@ -38,7 +38,7 @@
  * 		input link = name|N|system|name
  * 		output link = name|N
  * 
- * See SYSTEM, PORTS, EVENTS, and THREADS for more information on how to systems are created.
+ * See SYSTEM, PORTS, primeEvents, and THREADS for more information on how to systems are created.
  * 
  * Variable naming conventions herein:
  * 
@@ -105,7 +105,7 @@ var MODEL = { 				// Model parameters
 		value: 0			// Flow calculation
 	},
 	seq : 0,				// Sequence number for new systems
-	lib : new Object(),		// System library
+	lib : {},				// System library
 	PARSER : {				// Base widget parsing switches, attribues, etc
 		NIXHTML: true,
 		QUERY: "",			// Last query parms set by base
@@ -195,26 +195,13 @@ Array.prototype.threadParallel = function (cb,args,endcb) {
 }		
 
 /**
- * @class client.models.EVENT
- * @constructor
- * Constructs an tau event token.
- * @return {Object} Event token
- */
-
-function EVENT() {
-	return Clone(MODEL.tau);
-}
-
-/**
- * @class client.models.EVENTS
- * @constructor
+ * @method primeEvents
  * Constructs an tau event token.
  * @param {Numeric} N Number of event tokens to return
  * @return {Array} Event tokens
  */
-function EVENTS(N) {
-	var Taus = new Array(N);
-	for (n=0;n<N;n++) Taus[n] = EVENT();
+function primeEvents(N, Taus) {
+	for (n=0;n<N;n++) Taus.push( new Object(MODEL.tau) );
 	return Taus;
 }
 
@@ -228,8 +215,8 @@ function EVENTS(N) {
  */
 function THREADS(N,Port) {
 	var thread = { 				// io thread
-		tau: EVENTS(N),  		// token stream
-		stash: EVENTS(N), 		// token stash used to accelerate system threading
+		tau: primeEvents(N,[]),  		// token stream
+		stash: primeEvents(N,[]), 		// token stash used to accelerate system threading
 		state: new Array(N) 	// signal states
 	};
 	
@@ -316,10 +303,13 @@ function PORTS(Links,Taus,Labels,xPorts) {
  * @param {String} Path url?{arg1:u.x, ...} path to system application (defaults to /Name.db)
  */
 function SYSTEM(Name,Label,Model,iLinks,oLinks,Routes,Markers,Stats,Path) {
-	var x=10,y=10,W=50,H=50,ID="system-"+Name+"-"+(MODEL.seq++);
-	var iLabels = [], oLabels = [];				// i/o port labels
-	var iThreads = [], oThreads = []; 			// i/o port threads
-	var Thread = (Name in MODEL.engines) 		// Engine thread counter
+	var 
+		x=10,y=10,W=50,H=50,ID="system-"+Name+"-"+(MODEL.seq++);
+	
+	var 
+		iLabels = [], oLabels = [],				// i/o port labels
+		iThreads = [], oThreads = [],			// i/o port threads
+		Thread = (Name in MODEL.engines) 		// Engine thread counter
 			? ++MODEL.engines[Name]
 			: MODEL.engines[Name] = 0;
 	
@@ -331,7 +321,6 @@ function SYSTEM(Name,Label,Model,iLinks,oLinks,Routes,Markers,Stats,Path) {
 		label 	: Label, 							// display name
 		id		: ID,								// unique system id (not used)
 		chain  	: new Array(),						// subsystem execution chain
-		
 		snap	: MODEL.options[(Stats||"").toLowerCase()], // stats snapshot options
 		stats 	: {	 								// stats to snapshot at arrival/departure points
 			load:0, 								// number of events arriving to queue
@@ -370,24 +359,23 @@ function SYSTEM(Name,Label,Model,iLinks,oLinks,Routes,Markers,Stats,Path) {
 		pn		: null,								// petri pn
 		parent	: null,								// parent driving system
 		tau 	: {									// reserve event vector for each port
-			i: EVENTS(iLinks.length),				// input 
-			o: EVENTS(oLinks.length)				// output 
+			i: primeEvents(iLinks.length, []),				// input 
+			o: primeEvents(oLinks.length, [])				// output 
 		},
 		graph 	: new joint.dia.Graph,				// reserve jointjs graph for this system
 		config	: {									// config info for cloning system
 			subs : [],			
 			links	: {
-				i: Clone(iLinks),
-				o: Clone(oLinks)
+				i: Copy(iLinks,{}),
+				o: Copy(oLinks,{})
 			},
-			routes	: Clone(Routes),
-			markers	: Clone(Markers),
+			routes	: Copy(Routes,{}),
+			markers	: Copy(Markers,{}),
 			stats 	: Stats,
 			path	: Path
 		},
-		path 	: Path || ("/"+Name+".db") 			// url path to application
-	},
-	this);
+		path 	: Path || ("/"+Name+".sim") 			// url path to application
+	}, this);
 	
 	this.i = PORTS(iLinks,this.tau.i,iLabels,iThreads);		// input ports 
 	this.o = PORTS(oLinks,this.tau.o,oLabels,oThreads);		// output ports
@@ -464,12 +452,12 @@ function SYSTEM(Name,Label,Model,iLinks,oLinks,Routes,Markers,Stats,Path) {
 
 	// Render and compile the graph
 
-	this.status("generating");
-	
 	if (Model)
 		this.compile(Routes,Markers,Model);
 	
-	this.frame.resize(W*(2*this.config.subs.length+3), H*3);
+	//console.log("resize"+this.name);
+	
+	this.frame.resize( W*(2*this.config.subs.length+3), H*3 );
 
 	if (false)  	// auto reroute links when obstacle moved
 		this.graph.on('change:position', function(cell) {
@@ -485,7 +473,7 @@ function SYSTEM(Name,Label,Model,iLinks,oLinks,Routes,Markers,Stats,Path) {
 	
 	var watch = this.watch;
 	Each(Model, function (name,sys) {
-		if (name != Name)
+		if ( name != Name )
 			watch.push({
 				system: sys,
 				view: This.paper.findViewByModel(sys.atom)
@@ -624,7 +612,7 @@ SYSTEM.prototype.delete = function () {
  * @method info
  * Provide general information about this system.
  * */
-SYSTEM.prototype.info = function () {
+SYSTEM.in = function () {
 	alert(JSON.stringify({
 		name: this.name+"/"+this.label,
 		stats: this.stats,
@@ -708,7 +696,7 @@ SYSTEM.prototype.compile = function (Routes,Markers,Model) {
 	
 	// add any system model, state machine, and/or petri net specified
 	
-	this.status("priming");
+	this.status("compiling");
 	
 	this.addTrigSystem(Model);
 	this.addStateMachine(Routes);
@@ -792,15 +780,13 @@ SYSTEM.prototype.driveEngine = function (port,taus,args,cb) {
 	req.onreadystatechange = function() {
 		if (req.readyState==4) 
 			if (req.status==200) {							// Service completed 
-				
-				var rtns = req.responseText.json("bad response");
-
-				if (rtns.constructor == "string")
-					This.stats.faults++;
-				else 
 				if (cb) 								// Callback with delay stats (service time kept at server)
-					cb(args,rtns,stats);
-
+					try {
+						cb(args, JSON.parse(req.responseText || "null") || [], stats);
+					}
+					catch (err) {
+						This.stats.faults++;
+					}
 			}
 	};
 
@@ -1016,7 +1002,7 @@ SYSTEM.prototype.sampleEngine = function () {
 							
 							This.driveEngine(oName,[oPort.tau], oPort, function(oPort,rtns,stats) {  // queue the request
 								Copy(rtns[0],oPort.tau);
-console.log(oPort.tau);
+//console.log(oPort.tau);
 							});
 						}
 					});
@@ -1045,6 +1031,7 @@ SYSTEM.prototype.run = function (options) {
 	var queue = options ? MODEL.queue : this.queue;
 	var sim = MODEL.state;
 
+if (0)
 console.log(JSON.stringify({
 	name: this.name,
 	step: sim.step,
@@ -1265,15 +1252,13 @@ SYSTEM.prototype.status = function (oper) {
 		watch.view.$(".label").text("S"+state.step+"D"+state.drops+"F"+stats.faults+"J"+stats.jobs+"Q"+stats.depth);
 	});
 	
-	MODEL.status = this.name + " " + oper;
-	
 	if (this.trace)
 		//window.status = oper+" "+this.name+" "+(msg||"");
 		if (MODEL.ui)
 			//$(MODEL.ui.status).text(MODEL.status);
-			$(MODEL.ui.progress).find("div").text(MODEL.status);
+			$(MODEL.ui.progress).find("div").text(  this.name + " " + oper );
 		else
-			console.log(MODEL.status);
+			console.log(  this.name + " " + oper );
 }
 
 $().ready(function () {
@@ -1283,7 +1268,7 @@ $().ready(function () {
 		url: MODEL.path.options,
 		success: function (rtn,status) {
 			JSON.parse(rtn).data.Each(function (n,opt) {
-				MODEL.options[opt.name.toLowerCase()] = Clone(opt);
+				MODEL.options[opt.name.toLowerCase()] = Copy(opt,{});
 			});
 		}
 	});
@@ -1395,7 +1380,7 @@ $().ready(function () {
 	});	
 
 	MODEL.ui.info.click(function () {	// status selected system
-		var sys = MODEL.selected || MODEL.root;
+		var sys = MODEL.selected; // || MODEL.root;
 		try {
 			sys.info();
 		}
@@ -1427,28 +1412,29 @@ $().ready(function () {
 	var Select = {el: null, x: 0, y: 0, sys: null};
 
 	MODEL.ui.select.click(function () {	// select a system
-		if (MODEL.selected) {
+console.log("sel", MODEL.selected);
+		
+		if (MODEL.selected) {  // unselect it
 			MODEL.selected.deselect();	
-			MODEL.selected = null;		
+			MODEL.selected = null;
 
 			MODEL.root.paper.on('cell:pointerup',null);
 			MODEL.root.paper.on('cell:pointerdown',null);
 		}
-		else {
+		else {  // select it
 			MODEL.root.paper.on('cell:pointerup',function (cellView,evt,x,y) {
-//console.log("up "+[x,y]+"="+[Select.x,Select.y]);	
+console.log("up "+[x,y]+"="+[Select.x,Select.y], cellView.$(".label").text() );	
 				
-				if (x == Select.x && y == Select.y) { 		// selecting/deselecting system
-					
+				if ( x == Select.x && y == Select.y ) { 		// selecting/deselecting system
 					if (MODEL.selected) MODEL.selected.deselect();
-					
+console.log(cellView.model);
+					MODEL.selected.select(Select.el,cellView.model,x,y);
 					MODEL.selected = Select.sys;
+console.log("selsys",MODEL.selected);
 					
 					while (Select.el.nodeName != "svg") Select.el = Select.el.parentNode;
 
-//console.log("svg ="+Select.el.className+" "+Select.el.id+" sys="+Select.sys.name+" node="+Select.el.nodeName);
-
-					MODEL.selected.select(Select.el,cellView.model,x,y);
+console.log("svg ="+Select.el.className+" "+Select.el.id+" sys="+Select.sys.name+" node="+Select.el.nodeName);
 
 					/*
 					//cellView.remove();
@@ -1465,14 +1451,15 @@ $().ready(function () {
 					//This.paper.off('cell:pointerdown');
 					* */
 				}
-				else {
+				else {  // moving system
 					Select.x = x;
 					Select.y = y;
 				}
 			});
-
+console.log("on up", MODEL.root);
+			
 			MODEL.root.paper.on('cell:pointerdown',function (cellView,evt,x,y) {
-//console.log("down "+[x,y]);	
+console.log("down "+[x,y], cellView);
 				Select.el = cellView.el;
 				Select.x = x;
 				Select.y = y;
@@ -1537,8 +1524,10 @@ SYSTEM.prototype.addEdge = function (oPort,oSys,iPort,iSys,Label) {
 	function connectGraph(oCell, oLabel, iCell, iLabel) {
 //console.log("connect src="+oCell.id+"="+oLabel+" tar="+iCell.id+"="+iLabel);
 		var edge = new joint.shapes.devs.Link({
-			source: { id: oCell.id, selector: oCell.getPortSelector(oLabel) },
-			target: { id: iCell.id, selector: iCell.getPortSelector(iLabel) },
+			source: { id: oCell.id, port: oLabel },
+				//{ id: oCell.id, selector: oCell.getPortSelector(oLabel) },  // jointjs 0.x
+			target: { id: iCell.id, port: iLabel },
+				//{ id: iCell.id, selector: iCell.getPortSelector(iLabel) },
 			//router: { name: 'manhattan' },  	// disables magnetic ports
 			connector: { name: 'rounded' },
 			attrs: {
@@ -1832,6 +1821,8 @@ SYSTEM.prototype.addPetriNet = function (Markers) {
  * */
 SYSTEM.prototype.select = function (jqueryEl,jointAtom,x,y) {
 	var wraps = MODEL.wraps;
+	
+	console.log(wraps);
 	
 	if (wraps) 
         wraps.Each( function (n,wrap) {
@@ -2219,23 +2210,24 @@ WRAPPER.prototype.delete = function () {
 WIDGET.prototype.default = function () {
 	MODEL.depth++;
 	
-	var iLinks = this.inputs;
-	var oLinks = this.outputs;
-	var Routes = this.routes;
-	var Markers = this.markers;
-	var Stats = this.stats;
-	var Name  = this.anchor.id;
-	var Label = this.name;
-	var Path = this.path;
-	var Model = {};
-	var Subs = this.UIs;
+	var 
+		iLinks = this.inputs,
+		oLinks = this.outputs,
+		Routes = this.routes,
+		Markers = this.markers,
+		Stats = this.stats,
+		Name  = this.anchor.id,
+		Label = Name, //this.name;
+		Path = this.path,
+		Model = {},
+		Subs = this.UIs;
 
 	Subs.Each(function (n,sub) { 	// Children widgets are sub-systems of this model
 		Model[sub.label] = sub;
 	});
 	
 	var System = MODEL.root = this.UI = new SYSTEM(Name,Label,Model,iLinks,oLinks,Routes,Markers,Stats,Path);
-//alert("sys="+Name+" subs="+Subs.length);
+//console.log("newsys="+Name+":"+Label+" subs="+Subs.length+" path="+System.path);
 	
 	switch (System.name) { 	// Fetch parmeters for this system
 		case "mux": 		// Special mux system
@@ -2254,8 +2246,8 @@ WIDGET.prototype.default = function () {
 				failure: function () {
 					alert("programming failed");
 				},
-				success: function (tau) {
-					System.status("programmed");
+				success: function (err) {
+					System.status( err || "programmed");
 					
 					//if (Widget.run) 
 					//	MODEL.root.run(MODEL.root.snap || MODEL.options.stats);	

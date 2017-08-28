@@ -87,28 +87,3 @@ style.
 		width: 0;
 		background-color: #0099ff;
 	}
-
-	table
-		th: input#run.ui-icon-run(type="button",size=4,title="step or pause simulation")
-		th: input#open.ui-icon-open(type="button",size=4,title="open selected system")
-		th: input#save.ui-icon-save(type="button",size=4,title="save model")
-		th: input#load.ui-icon-load(type="button",size=4,title="load model")
-		th: input#clone.ui-icon-clone(type="button",size=4,title="clone selected system")
-		th: input#delete.ui-icon-delete(type="button",size=4,title="delete selected system")
-		th: input#select.ui-icon-select(type="button",size=4,title="select system")
-		th: input#info.ui-icon-info(type="button",size=4,title="info about selected system")
-		th: input#reset.ui-icon-reset(type="button",size=4,title="stop and reset simulation")
-		th.x: #status status
-		th.x: #state state
-		th.x: #step step
-		th.x: #tokens tokens
-		th.x: #jobs jobs
-		th.x: #msg msg
-		th.x: #db LFS
-		th: #progressBar
-			#res
-
-	//- for debugging wrapper
-		svg#Experimental(xmlns="http://-www.w3.org/2000/svg",version="1.1",style="width:150px;height:150px;position:absolute;")
-			ellipse(cx="50%",cy="50%",rx="50%",ry="50%",stroke="#FF0000",stroke-width="2",fill="#800000")
-			ellipse(cx="50%",cy="50%",rx="10%",ry="10%",stroke="#FF0000",stroke-width="2",fill="#880000")

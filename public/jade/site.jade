@@ -1,15 +1,17 @@
 //- UNCLASSIFIED
-//- 
-	Extends the extjs framework to provide a standard site skinning framework.
-		- options = {} // dropdown skinning options {key: menuItem, ...} 
-		- dock = "top" // folder docking style left | right | top | bottom
-		- dims = "2048,1200" // width,height maximum widget dimensions 
-		- view = "" // site style Home | Kiss | Engr | Min | Basic | Nada, ..
-		- page = 50 // maximum grid rows
-		- pulse = 120 // system health refresh rate [seconds]
-		- hosts = {use: "", ... } // available hosts 
-
 extends layout
+append layout_help
+	:markdown
+		Extends the base framework to provide a standard site skinning framework.
+
+			- options = {} // dropdown skinning options {key: menuItem, ...} 
+			- dock = "top" // folder docking style left | right | top | bottom
+			- dims = "2048,1200" // width,height maximum widget dimensions 
+			- view = "" // site style Home | Kiss | Engr | Min | Basic | Nada, ..
+			- page = 50 // maximum grid rows
+			- pulse = 120 // system health refresh rate [seconds]
+			- hosts = {use: "", ... } // available hosts 
+
 append layout_parms
 	- capture = true
 	- banner = classif.banner ? (classif.level + " " + classif.banner) : ""
@@ -26,7 +28,7 @@ append base_parms
 		- view = "" // site style Home | Kiss | Engr | Min | Basic | Nada, ..
 		- page = 50 // maximum grid rows
 		- pulse = 120 // system health refresh rate [seconds]
-		- hosts = {use:"aws", w3:"http://www.w3schools.com", geohub: "https://sigma0.ilabs.ic.gov", me: "localhost", win: "http://200.100.50.101", aws: "http://172.31.76.130"}
+		- hosts = {use:"aws", red:"http://localhost:1880", w3:"http://www.w3schools.com", geohub: "https://sigma0.ilabs.ic.gov", me: "localhost", win: "http://200.100.50.101", aws: "http://172.31.76.130"}
 	
 append base_head
 	style.
@@ -40,6 +42,7 @@ append base_head
 	block site_head
 
 append base_body
+
 	#hold.Options(path=JSON.stringify(options||parms),cols="Name,Path")
 	#hold.Users(path="/users.db",cols="Name")
 	#hold.Health(path="/health.db",cols="Name")
@@ -92,7 +95,7 @@ append base_body
 
 				#fit(center)
 					block site_body
-						
+
 				#fit(south,crush)
 					:markdown
 						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/prm/) [blog](tbd) [JIRA](tbd) By:#{credits}
@@ -100,12 +103,12 @@ append base_body
 		when "Basic"
 			#folder(center,dock=dock)
 				block site_body
-		
+
 		when "Typical"
 			#hold.Tasks(path="/tasks.db",cols="Name")
 			#hold.Plugins(path="/plugins.db",cols="Name")
 			#hold.Links(path="/links.db",cols="Name")
-		
+
 			#border(
 				class=table,
 				head="Info(Tasks,Plugins,Links),Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
@@ -129,21 +132,21 @@ append base_body
 
 				#folder(center,dock=dock)
 					block site_body
-						
+
 				#fit(south,crush)
 					:markdown
 						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
 
 		when "Home"
 			#hold.Links(path="/links.db",cols="Name")
-		
+
 			#border(
 				class=table,
 				title=titlebar,
 				head="Health,Users,Themes,Capture,Links,Options,Likeus,Help",
 				LikeUs="/likeus.db",
 				crush)
-				
+
 				block site_body
 					:markdown
 						*	(#{classif.level}) #{title} #{classif.purpose}
@@ -170,13 +173,13 @@ append base_body
 
 		when "Monster"
 			#hold.Links(path="/links.db",cols="Name")
-		
+
 			#border(
 				class=table,
 				title=titlebar,
 				head="More(Health,Users,Links,Themes),Uploads,$uploads,Stores,$stores,Views,Options,LikeUs,Help",
 				LikeUs="/likeus.db")
-				
+
 				block site_body
 					:markdown
 						*	(#{classif.level}) #{title} #{classif.purpose}
@@ -195,10 +198,10 @@ append base_body
 					west,crush,dims="200,600",
 					path="/sidebars.db",
 					cols="Pivot(NodeID,Topic),Special")
-				
+
 				#fit(center)
 					block site_body
-					
+
 				#fit(south,crush)
 					ishtml
 						each brow in browsers.Ok
@@ -228,19 +231,19 @@ append base_body
 
 				#fit(center)
 					block site_body
-		
+
 		default
 			#hold.Links(path="/links.db",cols="Name")
 			#hold.Tasks(path="/tasks.db",cols="Name")
 			#hold.Plugins(path="/plugins.db",cols="Name")
-		
+
 			#border(
 				class=table,
 				title=titlebar,
 				head="System(Health,Users,Links,Plugins,Tasks),Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,LikeUs,Capture,Help",
 				LikeUs="/likeus.db",
 				Manage="/files.view")
-				
+
 				block site_body
 					:markdown
 						*	(#{classif.level}) #{title} #{classif.purpose}
@@ -257,7 +260,7 @@ append base_body
 
 				#fit(center)
 					block site_body
-					
+
 				#fit(south,crush)
 					:markdown
 						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}

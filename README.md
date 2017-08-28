@@ -14,24 +14,24 @@ the [TOTEM base web service](https://github.com/acmesds/totem) to provide a web 
 managing interfaces, requirements, project metrics, geoint products and workflows.  
 
 As documented in its [api](/api.view), DEBE extends [TOTEM](https://github.com/acmesds/totem)'s 
-/DATASET.TYPE?QUERY endpoints with various TYPE convertors:
+DATASET.TYPE endpoints with TYPEs that format datasets:
 
-	kml, flat, txt, tab, tree, delta, encap, nav
-	
-page skinners:
+	db | xml | csv | txt | tab | view | tree | flat | delta | nav | kml | encap | html | json
 
-	view | run | plugni | pivot | site | spivot | brief | gridbrief | pivbrief | runbrief
+render plugins:
 
-an engine / workflow starter:
+	view | run | plugin | pivot | site | spivot | brief | gridbrief | pivbrief | runbrief
 
-	exe
-	
-and file attribute getters:
+run stateless | stateful engines:
 
-	code, jade, classif, readability, client, size, risk
+	exe | sim
+
+or return file attributes:
+
+	code | jade | classif | readability | client | size | risk
 	
 As documented in its [api](/api.view), DEBE also extends  [TOTEM](https://github.com/acmesds/totem)'s  
-QUERY flags with:
+DATASET.TYPE?QUERY flags with:
 
 	_save, _browse, _view, _blog, _json
 
