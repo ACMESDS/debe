@@ -57,7 +57,7 @@ var
 			req.sql.query("INSERT INTO app.engines SET ?", {
 				Name: req.flags.save,
 				Enabled: 1,
-				Engine: "url",
+				Type: "url",
 				Code: cleanurl
 			});
 		},
@@ -2283,7 +2283,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		
 		sql.eachRec(paths.engine, { // Try a skinning engine
 			Name: req.table,
-			Engine: "jade",
+			Type: "jade",
 			Enabled: 1
 		}, function (err, eng, isLast) {
 			
@@ -2694,7 +2694,7 @@ Initialize DEBE on startup.
 							sql.query( "REPLACE INTO app.engines SET ?", {
 								Name: file.replace(".jade",""),
 								Code: FS.readFileSync( path+file, "utf-8"),
-								Engine: "jade",
+								Type: "jade",
 								Enabled: 0
 							});
 						}

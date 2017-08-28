@@ -2582,16 +2582,17 @@ WIDGET.prototype.menuTools = function () {
 							return action( key, {BLOG:"N/A",Special:"Blog."}, {
 								onAction: function () {
 									Widget.Data.relink( function (proxy, flags) {
-										var parms = Ext.Object.fromQueryString(proxy.url);
-
+										var 
+											parts = proxy.url.split("?"),
+											ds = parts[0],
+											parms = parts[1] ? Ext.Object.fromQueryString(parts[1]) : {};
+										
 										if (blogged) 
 											delete parms._blog;
 										else
 											parms._blog = Widget.Data.Blogs.join(",");
 
-										//alert(JSON.stringify(parms));
-										proxy.url = unescape(Ext.Object.toQueryString(parms)).replace("=&","?&");
-										alert(proxy.url);
+										proxy.url = ds + "?" + unescape(Ext.Object.toQueryString(parms));
 										blogged = !blogged;
 									});
 								}

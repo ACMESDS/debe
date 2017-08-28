@@ -355,20 +355,20 @@ append site_body
 				:markdown
 					Source Attributes
 
-						path = "SOURCE"
-						class = "unique widget name"
-						key = "key name of unique record id" (defaults to "ID")
-						index = "KEY, expression, expression as KEY, ..." key indexer and creater (defaults to "*")
+						path = url path to dataset
+						class = unique widget name
+						key = name of unique record key (defaults to "ID")
 
 					Display Attributes
 
-						dims = "WIDTH,HEIGHT" maximum widget dimensions
-						sorts = "field, field, ..." sort columns
-						title = "header" title
-						hover = "css class" to render hover-overs
+						dims = "WIDTH,HEIGHT" widget dimensions
+						title = header title
+						hover = name of css class that renders hover-overs
 						region = north | south | east | west | center border region
 						page = number of records to display 
-						refresh = data store refresh rate (in seconds).  ## in path replaced by refresh count.
+						refresh = data store refresh rate in seconds
+						blogs = "KEY, ..." restrict bloggable fields
+						sorts = "KEY, ..." add sorters
 						plugins = "crbXCRF0" editor(cell/row), selector(boX/Column/Row), Filter(F), disable(0)
 
 					Field Attributes
