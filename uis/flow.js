@@ -114,7 +114,7 @@ var MODEL = { 				// Model parameters
 			{stats:"",path:""},
 		PARMS : {},			// Parameter parms
 		LISTS :  			// List parms
-			{inputs:"",outputs:"",routes:"",markers:""}
+			{inputs:[],outputs:[],routes:[],markers:[]}
 	},
 	arrow : function (Type,x1,y1,x2,y2) {		// Legacy method to make sprite edges
 		x1 += 5;
@@ -1600,7 +1600,7 @@ SYSTEM.prototype.addStateMachine = function (Routes) {
 
 	var sm = this.sm;	
 	var cells = new Object();
-	
+
 	Routes.Each(function (n,route) {
 		var tag = (route+"||||").split("|");
 		var fromState = tag[0], toState = tag[1], onCode = tag[2], exitCode = tag[3], entryCode = tag[4];
@@ -2226,6 +2226,7 @@ WIDGET.prototype.default = function () {
 		Model[sub.label] = sub;
 	});
 	
+	console.log("rts="+Routes.join("/"));
 	var System = MODEL.root = this.UI = new SYSTEM(Name,Label,Model,iLinks,oLinks,Routes,Markers,Stats,Path);
 //console.log("newsys="+Name+":"+Label+" subs="+Subs.length+" path="+System.path);
 	

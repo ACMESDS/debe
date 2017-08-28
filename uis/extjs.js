@@ -3344,12 +3344,12 @@ WIDGET.prototype.terminal = function (term,opts) {
 
 		tools		: isHead ? this.Menu : null,
 		
-		dockedItems	: Sorts
+		dockedItems	: !isHead
 			? { 
 				xtype: 'toolbar',
-				dock: this.dock.replace("head","left"), //"top", //this.dock || "top",
+				dock: this.dock || "left",
 				items: this.Menu,
-				plugins: sortTools(this.Menu)
+				plugins: Sorts ? sortTools(this.Menu) : []
 			}
 			: null,
 
@@ -3745,7 +3745,7 @@ WIDGET.prototype.folder = function() {
 		//height	: this.dims[1],
 		//width	: this.dims[0],
 
-		tabPosition: (this.dock||"top").replace("head","top"),
+		tabPosition: (this.dock||"left").replace("head","left"),
 		
 		// Specific		
 		//tools		: this.menu, 

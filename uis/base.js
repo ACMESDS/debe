@@ -705,7 +705,8 @@ function WIDGET (Anchor) {
 * Various array for all arrays specfied in opts.LISTS hash
 */
 	Each(opts.LISTS, function (key,def) {
-		var val = Anchor.getAttribute(key) || def;
+		var val = Anchor.getAttribute(key);
+		//console.log(key,val,def);
 		This[key] = val ? val.split(",") : def;
 		//console.log([This.name,key,This[key]+""]);
 	});
@@ -729,7 +730,7 @@ function WIDGET (Anchor) {
  
 	this.dims = (this.dims || "100%,100%").split(",");	
 	this.title = Anchor.getAttribute("title") || this.name;
-
+	this.dock = this.sorts ? (this.dock||"left").replace("head","left") : this.dock;
 /**
  * @property {String}
  *UI title
