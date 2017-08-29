@@ -76,11 +76,13 @@ append base_body
 				#SIM(inputs="L1,L2,L0",outputs="L3,L4")
 
 		when "test2"
+		when "haar"
 			#SIM(inputs="L1,L2,$TEST",outputs="L3||B,L4||A",stats)
 				#A(inputs="X||SIM|$TEST,L1,L2",outputs="B1,L4",stats)
 				#B(inputs="IN1||A|B1,IN2||A|L4",outputs="L3,$STEP",stats)
 
 		when "test3"
+		when "gaussmix"
 			#SIM(inputs="L1,L2,L0",outputs="L3||A,L4")
 				#A(inputs="L0||SIM,L1,L2",outputs="L3,L4")
 

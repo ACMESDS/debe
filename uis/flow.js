@@ -2226,7 +2226,6 @@ WIDGET.prototype.default = function () {
 		Model[sub.label] = sub;
 	});
 	
-	console.log("rts="+Routes.join("/"));
 	var System = MODEL.root = this.UI = new SYSTEM(Name,Label,Model,iLinks,oLinks,Routes,Markers,Stats,Path);
 //console.log("newsys="+Name+":"+Label+" subs="+Subs.length+" path="+System.path);
 	
@@ -2241,8 +2240,8 @@ WIDGET.prototype.default = function () {
 				url: System.path,
 				data: {
 					tau: 	"[]",
-					port:	"",
-					thread: System.thread
+					port:	""
+					//thread: "0" //System.thread
 				},
 				failure: function () {
 					alert("programming failed");
