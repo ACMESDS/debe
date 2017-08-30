@@ -1,7 +1,7 @@
 // UNCLASSIFIED
 //-
 	Render a skin when DEBE encounters dynamic view endpoints /DS.MODE where
-		&mode = MODE
+		&mode = MODE = brief | gridbrief | runbrief | pivbrief| run | plugin | view | pivot
 		&cols = [key.type, ...]
 		&page = page size of DS grid
 		&refresh = refresh time of associated job grid
@@ -14,6 +14,7 @@ append base_parms
 		when "brief"
 		when "gridbrief"
 		when "runbrief"
+		when "pivbrief"
 			- tech = "reveal"
 		default
 			- tech = "extjs"
@@ -23,17 +24,15 @@ append site_parms
 	case query.mode
 		when "site"
 			- view = "Basic"
-		when "view"
-		when "pivot"
-			- view = "Nada"
 		when "plugin"
-			- view = "Basic"
-			- banner = ""
+			- view = "Insert"
+			- options = { "more+":"", "more++":"", less:"" }
 		when "run"
 			- view = "Typical"
 			- options = { "more+":"", "more++":"", less:"" }
+		when "view"
+		when "pivot"
 		when "brief"
-			- view = "Nada"
 		default
 			- view = "Nada"
 
@@ -156,7 +155,7 @@ append site_body
 					page=dspage)
 					
 			if more>1
-				#flow.Flow( path="#{ds}", dims="800,600",wrap )
+				#post.Flow( path="/#{ds}_flow.view", dims="800,600",wrap )
 
 		when "pivot"
 			- pcol = dscols.pop()

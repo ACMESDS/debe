@@ -80,18 +80,18 @@ append base_body
 				title=titlebar)
 
 				block site_help
-					:markdown
-						*	(#{classif.level}) #{title} #{classif.purpose}
-						*	Options for this view.
-						*	Links to other views.
-						*	Themes preferred.  
-						*	[Likeus](/likeus.view) to impove your QoS.
-						*	Capture screen for administrator.
-						*	Edit this skin. See [skinning guide](skinguide.view)
-						*	Health of system.
-						*	Users connected.
-						*	Files/Uploads to upload data and receive credit for future job runs.
-						*	Files/Stores to upload shared files.
+				:markdown
+					*	(#{classif.level}) #{title} #{classif.purpose}
+					*	Options for this view.
+					*	Links to other views.
+					*	Themes preferred.  
+					*	[Likeus](/likeus.view) to impove your QoS.
+					*	Capture screen for administrator.
+					*	Edit this skin. See [skinning guide](skinguide.view)
+					*	Health of system.
+					*	Users connected.
+					*	Files/Uploads to upload data and receive credit for future job runs.
+					*	Files/Stores to upload shared files.
 
 				#fit(center)
 					block site_body
@@ -103,6 +103,14 @@ append base_body
 		when "Basic"
 			#folder(center,dock=dock)
 				block site_body
+
+		when "Insert"
+			#border(class=table,head="Options,Help")
+
+				block site_help
+
+				#folder(center,dock=dock)
+					block site_body
 
 		when "Typical"
 			#hold.Tasks(path="/tasks.db",cols="Name")
@@ -117,18 +125,18 @@ append base_body
 				title=titlebar)
 
 				block site_help
-					:markdown
-						*	(#{classif.level}) #{title} #{classif.purpose}
-						*	Options for this view.
-						*	Links to other views.
-						*	Themes preferred.  
-						*	[Likeus](/likeus.view) to impove your QoS.
-						*	Capture screen for administrator.
-						*	Edit this skin. See [skinning guide](skinguide.view)
-						*	Health of system.
-						*	Users connected.
-						*	Files/Uploads to upload data and receive credit for future job runs.
-						*	Files/Stores to upload shared files.
+				:markdown
+					*	(#{classif.level}) #{title} #{classif.purpose}
+					*	Options for this view.
+					*	Links to other views.
+					*	Themes preferred.  
+					*	[Likeus](/likeus.view) to impove your QoS.
+					*	Capture screen for administrator.
+					*	Edit this skin. See [skinning guide](skinguide.view)
+					*	Health of system.
+					*	Users connected.
+					*	Files/Uploads to upload data and receive credit for future job runs.
+					*	Files/Stores to upload shared files.
 
 				#folder(center,dock=dock)
 					block site_body
@@ -148,18 +156,18 @@ append base_body
 				crush)
 
 				block site_body
-					:markdown
-						*	(#{classif.level}) #{title} #{classif.purpose}
-						*	Options for this view.
-						*	Links to other views.
-						*	Themes preferred.  
-						*	[Likeus](/likeus.view) to impove your QoS.
-						*	Capture screen for administrator.
-						*	Edit this skin. See [skinning guide](skinguide.view)
-						*	Health of system.
-						*	Users connected.
-						*	Files/Uploads to upload data and receive credit for future job runs.
-						*	Files/Stores to upload shared files.
+				:markdown
+					*	(#{classif.level}) #{title} #{classif.purpose}
+					*	Options for this view.
+					*	Links to other views.
+					*	Themes preferred.  
+					*	[Likeus](/likeus.view) to impove your QoS.
+					*	Capture screen for administrator.
+					*	Edit this skin. See [skinning guide](skinguide.view)
+					*	Health of system.
+					*	Users connected.
+					*	Files/Uploads to upload data and receive credit for future job runs.
+					*	Files/Stores to upload shared files.
 
 				#fit(center)
 					block site_body
@@ -181,18 +189,18 @@ append base_body
 				LikeUs="/likeus.db")
 
 				block site_body
-					:markdown
-						*	(#{classif.level}) #{title} #{classif.purpose}
-						*	Options for this view.
-						*	Links to other views.
-						*	Themes preferred.  
-						*	[Likeus](/likeus.view) to impove your QoS.
-						*	Capture screen for administrator.
-						*	Edit this skin. See [skinning guide](skinguide.view)
-						*	Health of system.
-						*	Users connected.
-						*	Files/Uploads to upload data and receive credit for future job runs.
-						*	Files/Stores to upload shared files.
+				:markdown
+					*	(#{classif.level}) #{title} #{classif.purpose}
+					*	Options for this view.
+					*	Links to other views.
+					*	Themes preferred.  
+					*	[Likeus](/likeus.view) to impove your QoS.
+					*	Capture screen for administrator.
+					*	Edit this skin. See [skinning guide](skinguide.view)
+					*	Health of system.
+					*	Users connected.
+					*	Files/Uploads to upload data and receive credit for future job runs.
+					*	Files/Stores to upload shared files.
 
 				#pivot.Helpful.Links(
 					west,crush,dims="200,600",
@@ -245,18 +253,18 @@ append base_body
 				Manage="/files.view")
 
 				block site_body
-					:markdown
-						*	(#{classif.level}) #{title} #{classif.purpose}
-						*	Options for this view.
-						*	Links to other views.
-						*	Themes preferred.  
-						*	[Likeus](/likeus.view) to impove your QoS.
-						*	Capture screen for administrator.
-						*	Edit this skin. See [skinning guide](skinguide.view)
-						*	Health of system.
-						*	Users connected.
-						*	Files/Uploads to upload data and receive credit for future job runs.
-						*	Files/Stores to upload shared files.
+				:markdown
+					*	(#{classif.level}) #{title} #{classif.purpose}
+					*	Options for this view.
+					*	Links to other views.
+					*	Themes preferred.  
+					*	[Likeus](/likeus.view) to impove your QoS.
+					*	Capture screen for administrator.
+					*	Edit this skin. See [skinning guide](skinguide.view)
+					*	Health of system.
+					*	Users connected.
+					*	Files/Uploads to upload data and receive credit for future job runs.
+					*	Files/Stores to upload shared files.
 
 				#fit(center)
 					block site_body

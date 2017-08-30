@@ -6,7 +6,9 @@ append base_help
 		Flow extends the base framework to provides a simulation network:
 		
 			ds = name of network (Threaded | PetriNet | StateMachine1 | StateMachine2 | Python1 | test0 | ...)
-		
+			
+	block flow_help
+
 append base_parms
 	- tech = "flow"
 	- start = "SIM"
@@ -36,6 +38,8 @@ append base_body
 		th: #progressBar
 			#res
 
+	block flow_head
+	
 	//- for debugging wrapper
 		svg#Experimental(xmlns="http://-www.w3.org/2000/svg",version="1.1",style="width:150px;height:150px;position:absolute;")
 			ellipse(cx="50%",cy="50%",rx="50%",ry="50%",stroke="#FF0000",stroke-width="2",fill="#800000")
@@ -50,12 +54,16 @@ append base_body
 
 		when "PetriNet"
 			#SIM(inputs="S1,S2,S0",outputs="S3,S5",markers="A||t1||B|C,B|C||t2||D|A,1|0|4|2")
+				block flow_body
 
 		when "StateMachine1"
+		when "StateMachine"
 			#SIM(inputs="S1,S2,S0",outputs="S3,S5",routes="A|B|itau[0].Value==0,B|C|2>1,C|A|2==3,0|A|start")
-
+				block flow_body
+				
 		when "StateMachine2"
 			#SIM(inputs="S1,S2,S0",outputs="S3,S5",routes="A|B|1>0,B|C|2>1,C|A|2==3,0|A|start")
+				block flow_body
 
 		when "Python2"
 			#SIM(inputs="$STEP",outputs="S3||PY2")
@@ -76,13 +84,11 @@ append base_body
 				#SIM(inputs="L1,L2,L0",outputs="L3,L4")
 
 		when "test2"
-		when "haar"
 			#SIM(inputs="L1,L2,$TEST",outputs="L3||B,L4||A",stats)
 				#A(inputs="X||SIM|$TEST,L1,L2",outputs="B1,L4",stats)
 				#B(inputs="IN1||A|B1,IN2||A|L4",outputs="L3,$STEP",stats)
 
 		when "test3"
-		when "gaussmix"
 			#SIM(inputs="L1,L2,L0",outputs="L3||A,L4")
 				#A(inputs="L0||SIM,L1,L2",outputs="L3,L4")
 
@@ -194,5 +200,9 @@ append base_body
 			#SIM(inputs="$TEST|1",outputs="Land|9|Image Index")
 				#jpgsrv.JPG.Service(inputs="dpf|1|SIM|$TEST",outputs="jpg|1")
 				#hack.Image.Index(inputs="Chip|1|JPG Service|jpg",outputs="Land|9")
+				
+		default
+			#SIM(inputs="L1,L2,$TEST",outputs="L3||B,L4||A",stats)
+				block flow_body
 				
 //- UNCLASSIFIED
