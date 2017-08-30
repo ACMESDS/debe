@@ -2578,7 +2578,7 @@ Initialize DEBE on startup.
 			+ "\n- RUNNING " + (DEBE.protected?"PROTECTED":"UNPROTECTED")
 			+ "\n- WITH " + (site.urls.socketio||"NO")+" SOCKETS"
 			+ "\n- WITH " + (DEBE.SESSIONS||"UNLIMITED")+" CONNECTIONS"
-			+ "\n- WITH " + (site.Cores||"NO")+" WORKERS@ "+site.urls.worker+" MASTER@ "+site.urls.master
+			+ "\n- WITH " + (DEBE.cores||"NO")+" WORKERS@ "+site.urls.worker+" MASTER@ "+site.urls.master
 			+ "\n- BILL,DIAG,HAWK EVERY "+[site.billingcycle,site.diagcycle,site.hawkingcycle]+" SECS"
 		);
 
