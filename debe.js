@@ -2668,7 +2668,8 @@ Initialize DEBE on startup.
 				
 		ENGINE.config({
 			thread: DEBE.thread,
-			cores: DEBE.cores
+			cores: DEBE.cores,
+			workerRelay: DEBE.sendMessage
 		});
 		
 		ENGINE.plugins.MAIL = FLEX.sendMail; // share with plugins
