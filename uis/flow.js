@@ -374,7 +374,7 @@ function SYSTEM(Name,Label,Model,iLinks,oLinks,Routes,Markers,Stats,Path) {
 			stats 	: Stats,
 			path	: Path
 		},
-		path 	: Path || ("/"+Name+".sim") 			// url path to application
+		path 	: Path || ("/sim/"+Name) 			// url path to application
 	}, this);
 	
 	this.i = PORTS(iLinks,this.tau.i,iLabels,iThreads);		// input ports 

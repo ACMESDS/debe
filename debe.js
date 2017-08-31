@@ -883,7 +883,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		}
 		
 	},
-		
+
+	"byArea.": {
+		sim: simEngine
+	},
+
 	"byTable.": {	//< worker endpoints
 		//kill: sysKill,
 		//start: sysStart,
@@ -915,8 +919,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		gridbrief: renderSkin,
 		runbrief: renderSkin,
 		pivbrief: renderSkin,
-		
-		sim: simEngine,
 		
 		exe: executePlugin,
 		add: extendPlugin,
@@ -2575,7 +2577,7 @@ Initialize DEBE on startup.
 			"HOSTING " + site.title+" ON "+(CLUSTER.isMaster ? "MASTER" : "CORE"+CLUSTER.worker.id)
 			+ "\n- USING " + site.db 
 			+ "\n- FROM " + process.cwd()
-			+ "\n- RUNNING " + (DEBE.protected?"PROTECTED":"UNPROTECTED")
+			+ "\n- RUNNING " + (DEBE.faultless?"PROTECTED":"UNPROTECTED")
 			+ "\n- WITH " + (site.urls.socketio||"NO")+" SOCKETS"
 			+ "\n- WITH " + (DEBE.SESSIONS||"UNLIMITED")+" CONNECTIONS"
 			+ "\n- WITH " + (DEBE.cores||"NO")+" WORKERS@ "+site.urls.worker+" MASTER@ "+site.urls.master
@@ -2595,7 +2597,6 @@ Initialize DEBE on startup.
 	 */
 
 		Trace(`INITIALIZING FLEX`);
-
 		Each( CRUDE, function (n,routes) {  // redirect dataset crude calls
 			DEBE[n] = FLEX[n].ds;
 			DEBE.byActionTable[n] = FLEX[n];
@@ -2668,8 +2669,7 @@ Initialize DEBE on startup.
 				
 		ENGINE.config({
 			thread: DEBE.thread,
-			cores: DEBE.cores,
-			workerRelay: DEBE.sendMessage
+			cores: DEBE.cores
 		});
 		
 		ENGINE.plugins.MAIL = FLEX.sendMail; // share with plugins
@@ -2712,8 +2712,13 @@ Initialize DEBE on startup.
 	}); }); });
 } 
 
-function simEngine(req,res) {	
-	ENGINE[req.action](req,res);
+function simEngine(req,res) {
+	console.log("sim",CLUSTER.isWorker);
+	
+	if ( DEBE.cores && CLUSTER.isWorker ) 
+		DEBE.proxy(req,res);
+	else
+		ENGINE[req.action](req,res);
 }
 
 function Trace(msg,arg) {
