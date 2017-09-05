@@ -66,7 +66,7 @@ var MODEL = { 				// Model parameters
 	depth : 0,				// Depth of subsystem in current model
 	root: null, 			// Root system
 	paths: { 				// Paths
-		host: "http://localhost:8081/sim/", // to simulator host
+		host: "http://localhost:8080/sim/", // to simulator host
 		options: "/simoptions.db", 	// to simulation options
 		engines: "/engines.db",		// to engines store
 		viewer: "/flow.view" 		// to model viewer
