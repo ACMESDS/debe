@@ -1257,198 +1257,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		save: {}
 	},
 
-	autoIngest: false,
-			
-	ingestEvents: function (path, sql) {
-	/**
-	@member DEBE
-	@private
-	@method ingestEvents
-	@param {String} path to file, {streaming parms}, or [ ev, ... ] to ingest
-	@param {Object} sql connector
-	@param {Function} cb Response callback( ingested aoi, cb (table,id) to return info )
-	Ingest events and autorun ingestable plugins if enabled.
-	*/
+	ingestFile: CHIPS.ingestFile,
 		
-		function autoIngest(aoi) {  // ingest event file then handle ingested aoi (min-max bounds)
-
-			var 
-				group = "app",
-				TL = [aoi.yMax, aoi.xMin],   // [lon,lat] degs
-				TR = [aoi.yMax, aoi.xMax],
-				BL = [aoi.yMin, aoi.xMin],
-				BR = [aoi.yMin, aoi.xMax], 
-				ring = {voiring:[ TL, TR, BR, BL, TL ]};
-
-			console.log({auto_ingesting_ring: ring.voiring});
-			
-			// add this aoi as a usecase to all applicable plugins 
-			sql.eachTable( group, function (table) {  // look for plugins that have a data loader and a Job key
-				var tarkeys = [], srckeys = [], hasJob = false;
-
-				if (table == "gaussmix") // debug
-				if ( loader = DEBE.loaders[table] )
-					sql.query(  // get plugin usecase keys
-						"SHOW FIELDS FROM ??.?? WHERE Field != 'ID' ", 
-						[ group, table ], 
-						function (err,keys) {
-
-						keys.each( function (n,key) { // look for Job key
-							var keyesc = "`" + key.Field + "`";
-							switch (key.Field) {
-								case "Save":
-									break;
-								case "Job":
-									hasJob = true;
-								case "Name":
-									srckeys.push("? AS "+keyesc);
-									tarkeys.push(keyesc);
-									break;
-								default:
-									srckeys.push(keyesc);
-									tarkeys.push(keyesc);
-							}
-						});
-
-						if (hasJob) 
-							sql.query( // add usecase to plugin by cloning its Name="ingest" usecase
-								"INSERT INTO ??.?? ("+tarkeys.join()+") SELECT "+srckeys.join()+" FROM ??.?? WHERE name='ingest' ", [
-									group, table,
-									"ingest " + new Date(),
-									JSON.stringify(ring),
-									group, table
-							], function (err, info) {
-
-								if ( !err && info.insertId )  // relay a fetch request to load the data with the usecase that was just added 
-									loader( {ID:info.insertId}, function (rtn) {
-										Trace(`AUTORUN ${table}`);  // rtn = json parsed or null
-									});
-							});
-					});
-					/*
-					sql.query(
-						"INSERT INTO haar (size,pixels,scale,step,range,detects,limit,name,job) "
-						+ "SELECT size,pixels,scale,step,range,detects,limit, ? AS name, ? AS job FROM haar WHEREname='ingest'", [
-							"ingest" + (++ingests),
-							JSON.stringify(ring)
-					]);
-				*/
-			});
-		}
-
-		switch (path.constructor) {
-			case Object: // parms for the streaming service
-				break;
-				
-			case String:
-				var 
-					stream = FS.createReadStream(path),
-					items = ["x", "y", "z", "t", "n"],
-					ingested = 0;
-
-				stream.on("open", function () {
-					/*stream.pipe( function (buf) {
-						console.log(buf);
-					});*/
-				});
-
-				stream.on("error", function (err) {
-					Trace(err);
-				});
-
-				stream.on("data", function (buf) {			
-					//console.log(buf.toString());
-					buf.toString().split("\n").each( function (n,rec) {
-						var ev = new Object();
-						if (rec.length) {
-							ingested++;
-							rec.split(",").each( function (i, item) {
-								ev[items[i]] = item;
-							});
-
-							sql.query(
-								"INSERT INTO app.evcache SET ?, Point=st_GeomFromText(?)", [{
-									x: ev.x,
-									y: ev.y,
-									z: ev.z,
-									t: ev.t,
-									n: ev.n
-								},
-								`POINT(${ev.y} ${ev.x})`
-							]);
-						}
-					});			
-				});	
-
-				stream.on("close", function (err) {
-					if (ingested)
-						CHIPS.ingestCache(sql, function (aoi) {
-							if (DEBE.autoIngest) autoIngest(aoi);
-						});
-				});
-				break;
-				
-			case  Array:		// js bug? wont test positive when an array so must default
-			default:
-				path.each = Array.prototype.each;
-				
-				switch ( path[0].constructor ) {
-					case Array:  // assume [ [x,y,z,t,n], .... ]
-						var isEmpty = path.each( function (n,ev) {
-							sql.query(
-								"INSERT INTO app.evcache SET ?, Point=st_GeomFromText(?)", [{
-									x: ev[0],
-									y: ev[1],
-									z: ev[2],
-									t: ev[3],
-									n: ev[4]
-								},
-								`POINT(${ev[2]} ${ev[1]})`
-							]);
-						});
-						break;
-						
-					case Object: // assume [ {x,y,z,....}, ... ]
-					default:
-						var isEmpty = path.each( function (n, ev) {
-							sql.query(
-								"INSERT INTO app.evcache SET ?, Point=st_GeomFromText(?)", [{
-									x: ev.x,
-									y: ev.y,
-									z: ev.z,
-									t: ev.t,
-									n: ev.n
-								},
-								`POINT(${ev.y} ${ev.x})`
-							]);
-						});
-						break;
-						
-					/*
-					default:
-						path.each( function (n, ev) {
-							sql.query(
-								"INSERT INTO app.evcache SET ?, Point=st_GeomFromText(?)", [{
-									x: 0,
-									y: 0,
-									z: 0,
-									t: 0,
-									n: ev
-								},
-								`POINT(0 0)`
-							]);
-						});*/
-				}
-				
-				if ( !isEmpty )
-					CHIPS.ingestCache(sql, function (aoi) {
-						if (DEBE.autoIngest) autoIngest(aoi);
-					});
-				
-		}
-					
-	},
-	
 	/**
 	@cfg {Boolean}
 	@member DEBE
@@ -1960,7 +1770,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			});
 		}
 
-		if ( !Each(updates) ) {
+		if ( !Each(updates) ) {   // split stats data across shared sql keys
 			var q = sql.query("UPDATE ?? SET ? WHERE ?", [ 
 				ds, updates, {ID: ctx.ID}
 			], function (err) {
@@ -1969,14 +1779,14 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			status += "Split";
 		}
 
-		if ("Save" in ctx) {
+		if ("Save" in ctx) {  // remaining stats dumped to Save key
 			sql.query("UPDATE ?? SET ? WHERE ?", [
 				ds, {Save: JSON.stringify(saves)}, {ID: ctx.ID}
 			]);
 			status += " Saved";
 		}
 
-		if (ctx.Ingest) {
+		if (ctx.Ingest) {  // pipe events to event ingester
 			//console.log(stats);
 			console.log("ingest events:"+stats.steps.length);
 			DEBE.ingestEvents( stats.steps, sql, function (aoi,saver) {
@@ -2664,6 +2474,7 @@ Initialize DEBE on startup.
 		CHIPS.config({
 			fetch: DEBE.loaders,
 			source: "",
+			pipeIngest: null,
 			thread: DEBE.thread
 		});
 				
