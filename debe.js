@@ -2669,7 +2669,7 @@ Initialize DEBE on startup.
 				
 		ENGINE.config({
 			thread: DEBE.thread,
-			cores: DEBE.cores
+			cores: DEBE.cores	
 		});
 		
 		ENGINE.plugins.MAIL = FLEX.sendMail; // share with plugins
@@ -2713,12 +2713,10 @@ Initialize DEBE on startup.
 } 
 
 function simEngine(req,res) {
-	console.log("sim",CLUSTER.isWorker);
-	
-	if ( DEBE.cores && CLUSTER.isWorker ) 
-		DEBE.proxy(req,res);
-	else
+	if (CLUSTER.isMaster)
 		ENGINE[req.action](req,res);
+	else
+		DEBE.proxy(req,res);
 }
 
 function Trace(msg,arg) {

@@ -92,9 +92,10 @@ append site_body
 					positives	file pulled from positive-proof area
 					negatives	file pulled from negative-proof area
 					cert	generates a PKI cert for the requested user
-					chips
-					tips
-					shares
+					sim		reserved for simulation engines
+					chips	image chipping cache
+					tips	image tipping cache
+					shares 	spot to place skinning content
 
 		#fit.Parameters
 			:markdown
@@ -493,22 +494,22 @@ append site_body
 
 		#fit.Endpoints
 			:markdown
-				Engines can be accessed from within [workflows](/flow.view?ds=test0) at these endpoints:
+				Stateful simulation engines are available at these endpoints:
 
-					GET /ENGINE.sim 	Compile and step ENGINE in a stateless workflow
-					PUT /ENGINE.sim 	Compile ENGINE in a stateful workflow
-					POST /ENGINE.sim	Step ENGINE  in a stateful workflow
-					DELETE /ENGINE.sim	Free ENGINE from a stateful workflow
+					GET /sim/ENGINE 	Compile and step ENGINE in a stateless workflow
+					PUT /sim/ENGINE 	Compile ENGINE in a stateful workflow
+					POST /sim/ENGINE	Step ENGINE  in a stateful workflow
+					DELETE /sim/ENGINE	Free ENGINE from a stateful workflow
 
 				Please know 
 				that **#{nick}** does not provide an interactive development environment; engines should be 
 				thoroughly debugged in their native development environment before being [inserted](/engines.view) 
 				into **#{nick}**.  
 				
-				An engines become a *plugin* when it is paired with a same-named dataset: see Plugin-Engines
-				for their endpoints.
-
-				Parameters to engines are held in a read/write context that follows the pattern:
+				Stateful engine can be accessed, for example, in  [workflows](/flow.view?ds=test0).  The same
+				engines become a *plugin* when it is paired with a same-named dataset: see Plugin-Engines
+				for their endpoints.  Engines can be  cv | py | R | sh | js | res1 | res2 | ... machines.  The parameters 
+				to engines (of any machine type) are held in a read/write (i/o) context that follows the pattern:
 
 					{
 						tau: [ tau1, tau2, ... ],
@@ -519,11 +520,8 @@ append site_body
 						key: value
 					}
 
-				An engine's context may define its i/o ports *portX*, its i/o event tokens *tau*, its "key"
-				parameters, and may  prime/save these keys with the sql entry/exit select/update queries.
-
-				Engines are language agnostic : cv | py | R | sh | js | res1 | res2 | ... machines are presently
-				provided.
+				An engine's context may define  ports *portX*, a common event tokens *tau*, its "key"
+				parameters, and may prime/save its keys with the sql entry/exit select/update queries.
 
 				When a js-engine is accessed, its context is automatically extended with several modules:
 
@@ -546,7 +544,7 @@ append site_body
 					FLEX.wfs( { ... }, (data) => {...} )  // wfs response
 					FLEX.sss( { ... }, (data) => {...} )  // sss response
  
-				their access the DB is restricted with the:
+				their access to #{totem} DB is guarded with the:
 				
 					FLEX.get( {ds: "...", where: {key:value, ...}}, (data) => {...} )  
 

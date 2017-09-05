@@ -65,7 +65,8 @@ var MODEL = { 				// Model parameters
 	mask: true,				// Hide subsystems on load
 	depth : 0,				// Depth of subsystem in current model
 	root: null, 			// Root system
-	path: { 				// Paths
+	paths: { 				// Paths
+		host: "http://localhost:8081/sim/", // to simulator host
 		options: "/simoptions.db", 	// to simulation options
 		engines: "/engines.db",		// to engines store
 		viewer: "/flow.view" 		// to model viewer
@@ -374,7 +375,7 @@ function SYSTEM(Name,Label,Model,iLinks,oLinks,Routes,Markers,Stats,Path) {
 			stats 	: Stats,
 			path	: Path
 		},
-		path 	: Path || ("/sim/"+Name) 			// url path to application
+		path 	: Path || (MODEL.paths.host + Name) 			// url path to application
 	}, this);
 	
 	this.i = PORTS(iLinks,this.tau.i,iLabels,iThreads);		// input ports 
@@ -428,7 +429,7 @@ function SYSTEM(Name,Label,Model,iLinks,oLinks,Routes,Markers,Stats,Path) {
 	
 	$.ajax({
 		type: "GET",
-		url: MODEL.path.engines.tag({Name: Name,Engine:"model"}),
+		url: MODEL.paths.engines.tag({Name: Name,Engine:"model"}),
 		failure: function () {
 			alert("system get failed "+Name);
 		},
@@ -488,11 +489,11 @@ SYSTEM.prototype.open = function () {
 	this.status("opening");
 	
 	q = JSON.parse(MODEL.PARSER.QUERY||"null") || {};
-	//alert( MODEL.path.viewer+"?start="+this.name	);
+	//alert( MODEL.paths.viewer+"?start="+this.name	);
 	//alert("subs="+this.chain.length);
 	
 	var simWindow = window.open(
-		MODEL.path.viewer+"?start="+this.name,
+		MODEL.paths.viewer+"?start="+this.name,
 		this.name,
 		"titlebar=yes,scrollbars=yes,toolbar=yes,menubar=no,width=200,height=100");
 	
@@ -508,7 +509,7 @@ SYSTEM.prototype.open = function () {
 
 SYSTEM.prototype.load = function () {
 	var This = this;
-	var engine = MODEL.path.engines.tag({Name: name,Engine:"model"});
+	var engine = MODEL.paths.engines.tag({Name: name,Engine:"model"});
 	
 	/*
 	$.ajax({
@@ -534,7 +535,7 @@ SYSTEM.prototype.load = function () {
  * */
 SYSTEM.prototype.save = function () {
 	var This = this;
-	var engine = MODEL.path.engines.tag({Name: this.name,Engine:"model"});
+	var engine = MODEL.paths.engines.tag({Name: this.name,Engine:"model"});
 	
 	this.chain.Each( function(n,sys) {
 		sys.save();
@@ -1265,7 +1266,7 @@ $().ready(function () {
 
 	$.ajax({	// Fetch simulation use-case options for this model
 		type: "GET",
-		url: MODEL.path.options,
+		url: MODEL.paths.options,
 		success: function (rtn,status) {
 			JSON.parse(rtn).data.Each(function (n,opt) {
 				MODEL.options[opt.name.toLowerCase()] = Copy(opt,{});
@@ -2229,6 +2230,8 @@ WIDGET.prototype.default = function () {
 	var System = MODEL.root = this.UI = new SYSTEM(Name,Label,Model,iLinks,oLinks,Routes,Markers,Stats,Path);
 //console.log("newsys="+Name+":"+Label+" subs="+Subs.length+" path="+System.path);
 	
+	console.log(System.path);
+	
 	switch (System.name) { 	// Fetch parmeters for this system
 		case "mux": 		// Special mux system
 		case "demux":		// Special demux system
@@ -2248,6 +2251,7 @@ WIDGET.prototype.default = function () {
 				},
 				success: function (err) {
 					System.status( err || "programmed");
+					console.log("system init",Name,System.path, err);
 					
 					//if (Widget.run) 
 					//	MODEL.root.run(MODEL.root.snap || MODEL.options.stats);	
