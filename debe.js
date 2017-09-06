@@ -1748,10 +1748,10 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			return "Empty";
 		
 		if ( stats.constructor == Array ) {
-			Each(stats[0], function (key,val) {
+			Each(stats[0], function (key,val) {  // add keys that are in the plugin context to the updates list
 				if ( key in ctx ) {
 					var recs = [];
-					stats.each( function (n,stat) {
+					stats.each( function (n,stat) {  // concat all records to form one update value
 						recs.push( stat[key] );
 					});
 					updates[key] = JSON.stringify(recs);
@@ -1787,11 +1787,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		}
 
 		if (ctx.Ingest) {  // pipe events to event ingester
-			//console.log(stats);
-			console.log("ingest events:"+stats.steps.length);
-			DEBE.ingestEvents( stats.steps, sql, function (aoi,saver) {
-				console.log({ingested_aoi:aoi});
-			});
+			CHIPS.ingestEvents( sql, stats, client );
 			
 			status += " Ingested";
 		}
@@ -1802,6 +1798,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 	var
 		ds = req.group+"."+req.table,
 		sql = req.sql,
+		client = req.client,
 		query = req.query;
 
 		/*
@@ -1873,7 +1870,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				});
 
 				if (chan.voiring) 
-					CHIPS.ingestEvents(chan, job, function (voxel,stats,sql) {
+					CHIPS.ingestVOI(chan, job, function (voxel,stats,sql) {
 						DEBE.thread( function (sql) {
 							console.log({save:stats});
 							Trace( saveResults( sql, "app.voxels", stats.gmms, voxel ) );
@@ -1882,7 +1879,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				
 				else
 				if (chan.aoiring)
-					CHIPS.ingestChips(chan, job, function (chip,dets,sql) {
+					CHIPS.ingestAOI(chan, job, function (chip,dets,sql) {
 						var updated = new Date();
 				
 						console.log({save:dets});
@@ -2474,7 +2471,7 @@ Initialize DEBE on startup.
 		CHIPS.config({
 			fetch: DEBE.loaders,
 			source: "",
-			pipeIngest: null,
+			autoIngest: null,
 			thread: DEBE.thread
 		});
 				
