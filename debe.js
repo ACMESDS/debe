@@ -1787,7 +1787,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		}
 
 		if (ctx.Ingest) {  // pipe events to event ingester
-			CHIPS.ingestEvents( sql, stats, client );
+			CHIPS.ingestList( sql, stats, client );
 			
 			status += " Ingested";
 		}
@@ -2471,7 +2471,7 @@ Initialize DEBE on startup.
 		CHIPS.config({
 			fetch: DEBE.loaders,
 			source: "",
-			autoIngest: null,
+			taskPlugin: null,
 			thread: DEBE.thread
 		});
 				
