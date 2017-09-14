@@ -12,12 +12,10 @@ append base_help
 			w = drawing width
 			h = drawing height
 			debug = dump derived options
-			x = js-expression like r.KEY, r.get({key:value, ...}, "key,..."), etc
-			y = js-expression
-			ys = js-expression
+			x = js-expression like ds.KEY, ds.get({key:value, ...}, "key,..."), etc
+			y = js-expression like ...
 			line = color,color, ... line color
 			marker = style,style, ... line markers
-			name = name,name, ...  ||  /src,/src, ... data selector
 			label = X,Y labels
 			auto = X,Y auto scales
 			trace = data trace interval
@@ -27,7 +25,6 @@ append base_help
 			ref = [x,y], ... reference path
 			init = [x,y], ... data to prefix
 			extra = [x,y], ... data to append to plots
-			sample = index,index, ... sample data with index=key.key...
 
 append base_head
 
@@ -59,8 +56,6 @@ append base_head
 			trace: "#{query.trace}",
 			label: parse("#{query.label}", []),
 			auto: parse("#{query.auto}", []),
-			//sample: "#{query.sample}",
-			//name: parse("#{query.name}", null),
 			xy: parse("#{query.xy}" , [0,1]),
 			x: "#{query.x}" || "null",
 			y: "#{query.y}" || "null",

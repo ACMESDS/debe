@@ -77,13 +77,19 @@ append site_body
 
 					Plugins may also be placed in job workflows when they contain (reserved) parameters:
 
-							(Save) json reserve for storing the results of this CASE
-							(Job) json parameters to place CASE into QoS-Credit regulated queue.
-							(Task) name of project associated with this CASE
-							(Description) bloggable report on this CASE
-							(Ingest) switch to ingest results produced by this CASE
-							
-					Use  [Save+](/#{ds}.add?Save=doc), [Job+](/#{ds}.add?Job=doc), [Task+](/#{ds}.add?Task=name), [Description+](/#{ds}.add?Description=doc),
+						(Save) json reserve for storing plugin results for this CASE 
+						(Save_KEY) json reserve to store plugin results.KEY for this CASE
+						(Job) json parameters to place CASE into QoS-Credit regulated queue.
+						(Agent) name of agent to out-source this CASE which will be polled until it returns its results 
+						(Task) name of project associated with this CASE
+						(Description) bloggable report on this CASE				
+						(Upload) switch to upload (archive and ingest) results produced by this CASE
+
+					Note that the data ingester will automatically clone an "ingest" CASE using a Job.aoiring (Job.voiring) set to the AOI/VOI just ingested.
+					So plugins are firewalled from auto ingest by simply not providing an "ingest" named CASE.
+
+					PLUGINs can be extended / retracted using its PLUGIN.run viewer, this skin providing a key-editor to add/remove keys.  You may also
+					use  [Save+](/#{ds}.add?Save=doc), [Job+](/#{ds}.add?Job=doc), [Task+](/#{ds}.add?Task=name), [Description+](/#{ds}.add?Description=doc),
 					[Ingest+](/#{ds}.add?Ingest=true), to add; Save-](/#{ds}.sub?Save), [Job-](/#{ds}.sub?Job), [Task-](/#{ds}.sub?Task), 
 					[Description-](/#{ds}.sub?Description), [Ingest-](/#{ds}.sub?Ingest) to remove these parameters from the *#{ds}* plugin.   
 					

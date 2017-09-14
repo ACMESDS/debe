@@ -324,7 +324,7 @@ append site_body
 
 					_queue	= KEY for queuing record state
 					_json	= KEY,KEY,... json parse selected KEYs and index with KEY=IDX.IDX...
-					_blog	= KEY,KEY,... markdown KEYs containing [image | post | update | link | SKIN, W, H, DS?QUERY]( /url | PARM=r.KEY expression; ...) tags
+					_blog	= KEY,KEY,... markdown KEYs containing tags = [image | post | update | link | SKIN, W, H, DS?QUERY]( /url | PARM=ds.KEY expression; ...)
 					_nav	= open | tree | rename | size ,root/A/B/... folder navigation 
 
 				# Record parameters
@@ -431,18 +431,20 @@ append site_body
 					GET /PLUGIN.exe?name=CASE 	Run PLUGIN engine with name-specified use-CASE parameters
 					GET /PLUGIN.exe?QUERY 	Run PLUGIN engine with QUERY parameters
 			
-			The following (reserved) dataset parameters determine how a PLUGIN operates from an
-			exe-endpoint:
+			The following (reserved) dataset parameters determine how a PLUGIN operates from its exe-endpoint:
 			
-				(Save) json reserve for storing plugin results for this CASE
-				(Job) json  parameters to place CASE into QoS-Credit regulated queue.  Ingest will clone CASE="ingest" records.
+				(Save) json reserve for storing plugin results for this CASE 
+				(Save_KEY) json reserve to store plugin results.KEY for this CASE
+				(Job) json parameters to place CASE into QoS-Credit regulated queue.
 				(Agent) name of agent to out-source this CASE which will be polled until it returns its results 
 				(Task) name of project associated with this CASE
 				(Description) bloggable report on this CASE				
-				(Ingest) switch to ingest results produced by this CASE
+				(Upload) switch to upload (archive and ingest) results produced by this CASE
 
-			PLUGINs can be extended / retracted using a PLUGIN.run, this viewer providing a key-editor to 
-			add/remove keys.
+			Note that the data ingester will automatically clone an "ingest" CASE using a Job.aoiring (Job.voiring) set to the AOI/VOI just ingested.
+			So plugins are firewalled from auto ingest by simply not providing an "ingest" named CASE.
+			
+			PLUGINs can be extended / retracted using its PLUGIN.run viewer, this skin providing a key-editor to add/remove keys.
 			
 			### AOI jobs
 			A { aoiring: [ ...] } Job will attach the requested PLUGIN to a chipping workflow that expects the 

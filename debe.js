@@ -45,7 +45,8 @@ var 									// totem modules
 
 var										// shortcuts and globals
 	Copy = TOTEM.copy,
-	Each = TOTEM.each;
+	Each = TOTEM.each,
+	Log = console.log;
 	
 var
 	DEBE = module.exports = TOTEM.extend({
@@ -1740,40 +1741,54 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 	function saveResults( sql, ds, stats, ctx ) {
 		var 
 			status = "",
-			updates = {};
+			splits = {};
 			
 		if ( !stats )
-			return "Empty";
-		
-		if ( stats.constructor == Array ) {
-			Each(stats[0], function (key,val) {  // add keys that are in the plugin context to the updates list
-				if ( key in ctx ) {
-					var recs = [];
-					stats.each( function (n,stat) {  // concat all records to form one update value
-						recs.push( stat[key] );
-					});
-					updates[key] = JSON.stringify(recs);
-				}
-			});
+			return "empty";
+
+		if ( "length" in stats ) {  // keys in the plugin context are used to create list-splits
+			stats.each = Array.prototype.each;	
+			
 			var saves = [];
+			stats.each( function (n,stat) {  // determine all splitable keys
+				var 
+					at = "Save_" + stat.at,
+					ev = ( at in splits )
+						? splits[at]
+						: (at in ctx) 
+								? splits[at] = {prime:true} 
+								: null;
+				
+				if ( ev ) 
+					if (ev.prime) {
+						delete ev["prime"];
+						for (var key in stat) if (key != "at") ev[key] = [ stat[key] ];
+					}
+					else					
+						for (var key in stat) if (key != "at") ev[key].push( stat[key] );
+				
+				else
+					saves.push( stat );
+			});
+			
+			for (var key in splits) 
+				splits[key] = JSON.stringify(splits[key]);
 		}
 		
-		else {
+		else {  // keys in the plugin context are used to create bulk-splits
 			var saves = new Object(stats);
-			Each(stats, function (key, val) {
+			Each(stats, function (key, val) {  // remove splits from bulk save
 				if ( key in ctx) {
-					updates[key] = JSON.stringify(val);
+					splits[key] = JSON.stringify(val);
 					delete saves[key];
 				}
 			});
 		}
 
-		if ( !Each(updates) ) {   // split stats data across shared sql keys
-			var q = sql.query("UPDATE ?? SET ? WHERE ?", [ 
-				ds, updates, {ID: ctx.ID}
-			], function (err) {
-				console.log([err,q.sql]);
-			});
+		if ( !Each(splits) ) {   // split save stats across shared keys
+			sql.query("UPDATE ?? SET ? WHERE ?", [ 
+				ds, splits, {ID: ctx.ID}
+			]);
 			status += "Split";
 		}
 
@@ -1781,23 +1796,30 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			sql.query("UPDATE ?? SET ? WHERE ?", [
 				ds, {Save: JSON.stringify(saves)}, {ID: ctx.ID}
 			]);
+			
 			status += " Saved";
 		}
+		
+		if (ctx.Upload) {  // archive and pipe events to event ingester
+			FS.writeFile( ENV.PUBLIC+"/uploads/"+savename, JSON.stringify(saves), function (err) {
+				Trace( `SAVE AND INGEST ${savename}` );
+			});
 
-		if (ctx.Ingest) {  // pipe events to event ingester
-			CHIPS.ingestList( sql, stats, client );
+			//CHIPS.ingestList( sql, stats, client );
 			
-			status += " Ingested";
+			status += " Uploaded";
 		}
 
 		return status || stats;
 	}
 		
 	var
-		ds = req.group+"."+req.table,
+		dot = ".",
 		sql = req.sql,
 		client = req.client,
-		query = req.query;
+		query = req.query,
+		ds = req.group+dot+req.table,
+		savename = ds+dot+(query.ID || query.Name);
 
 		/*
 		var job = { // default required parms
