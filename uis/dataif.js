@@ -47,7 +47,25 @@ function source(opts, cb) {
 	}
 
 	function loader(r, ctx) {
-		for (var key in {x:1,y:1,ys:1}) {
+		Array.prototype.function = get(idx, key) {
+			var keys = key.split(","), K = keys.length, rtns = [], recs = this, at = Object.keys(idx)[0], match = idx[at];
+			
+			if ( keys[0] && at )
+				for (var n=0, N=recs.length; n<N; n++) {
+					var rec = recs[n], rtn = {};
+
+					if ( rec[at] == match )  {
+						for (var k=0; k<K; k++) {
+							var key = keys[k];
+							rtn[key] = rec[key];
+						}
+						rtns.push(rtn);
+					}
+				}
+			
+		}
+
+		for (var key in {x:1,y:1}) {
 			//alert( `index: ctx.${key} = ${ctx[key]}` );
 			try {
 				eval( `ctx.${key} = ${ctx[key]}` );

@@ -12,9 +12,9 @@ append base_help
 			w = drawing width
 			h = drawing height
 			debug = dump derived options
-			x = r.KEY js-expression
-			y = r.KEY js-expression
-			ys = r.KEY js-expression
+			x = js-expression like r.KEY, r.get({key:value, ...}, "key,..."), etc
+			y = js-expression
+			ys = js-expression
 			line = color,color, ... line color
 			marker = style,style, ... line markers
 			name = name,name, ...  ||  /src,/src, ... data selector
@@ -26,7 +26,7 @@ append base_help
 			xy = xindex,yindex,yindex,... index to data
 			ref = [x,y], ... reference path
 			init = [x,y], ... data to prefix
-			extra = [x,y], ... data to append+
+			extra = [x,y], ... data to append to plots
 			sample = index,index, ... sample data with index=key.key...
 
 append base_head
@@ -64,7 +64,6 @@ append base_head
 			xy: parse("#{query.xy}" , [0,1]),
 			x: "#{query.x}" || "null",
 			y: "#{query.y}" || "null",
-			ys: "#{query.ys}" || "null",
 			initialize: true,
 			ref: parse("#{query.ref}", []),
 			min: parse("#{query.min}", []),
@@ -226,14 +225,15 @@ append base_body
 		source( opts, function plotter (opts) {
 			//var pdata = opts.init.concat(data.concat(opts.extra));
 			var pdata = [];
-			if (ys = opts.ys)
-				for (var x=opts.x, N=x.length, plots=ys[0].length, n=0; n<N; n++)
-					pdata.push( {x: x[n], y: ys[n] } );
-
-			else
+			
 			if (y = opts.y)
-				for (var x=opts.x, N=x.length, plots=1, n=0; n<N; n++)
-					pdata.push( {x: x[n], y: [y[n]]  } );
+				if ( (y[0]||0).constructor == Array )
+					for (var x=opts.x, N=x.length, plots=y[0].length, n=0; n<N; n++)
+						pdata.push( {x: x[n], y: y[n] } );
+			
+				else					
+					for (var x=opts.x, N=x.length, plots=1, n=0; n<N; n++)
+						pdata.push( {x: x[n], y: [y[n]]  } );
 
 			var line = d3.svg.line();
 

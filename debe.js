@@ -102,8 +102,7 @@ var
 									
 										switch (x) {
 											case "update":
-												return x.tag("a",{href:req.table+".exe?ID="+rec.ID}) 
-													+ "".tag("iframe",{ src:u, width:w, height:h });
+												return x.tag("a",{href:req.table+".exe?ID="+rec.ID}) + "".tag("iframe",{ src:u, width:w, height:h });
 											case "image":
 												return "".tag("img",{ src:u, width:w, height:h });
 											case "post":
@@ -113,9 +112,8 @@ var
 											case "link":
 												return x.tag("a",{href:u});
 											default:
-												var xx = "".tag("iframe",{ src: `/${x}.view?${p}&w=${w}&h=${h}&ds=${s}`, width:w, height:h } );
-												console.log(xx);
-												return xx;
+												return "".tag("iframe",{ src: `/${x}.view?${p}&w=${w}&h=${h}&ds=${s}`, width:w, height:h } );
+												//console.log(xx);
 										}										
 									})
 									.replace(/href=(.*?)>/g, function (m,i) { // <a href=B>A</a> --> followed link
@@ -1956,22 +1954,6 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		if (ctx) // render in extended context
 			sql.context(ctx, function (ctx) {  // establish skinning context for requested table
 
-				/*
-				var lastds = "";
-				for (lastds in ctx);
-
-				if (lastds)
-					for (var ds in ctx) { 		// enumerate thru all the datasets before rendering with cb
-						ctx[ds].args = {ds:ds}; 	// hold ds name for use after select
-						ctx[ds].rec = function clone(recs,me) {  // select and clone the records 
-							site[me.args.ds] = recs; 		// save data into the context
-							if (me.args.ds == lastds) cb();  // all loaded so can render with cb
-						};
-					}
-
-				else
-					cb();
-				*/
 				var isEmpty = Each(ctx, function (ds, x, isLast) {
 					x.args = {ds:ds}; 	// hold ds name for use after select
 					x.rec = function clone(recs,me) {  // select and clone the records 
@@ -2087,8 +2069,6 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 						renderPlugin( fields );
 			});	
 		}
-		
-		Trace("DEBE "+req.table);
 		
 		sql.eachRec(paths.engine, { // Try a skinning engine
 			Name: req.table,
