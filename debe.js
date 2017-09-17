@@ -53,9 +53,12 @@ var
 	
 	"reqflags.traps." : {  //< _flag=name can modify the reqeust
 		save: function (req) {  //< _save=name retains query in named engine
-			var cleanurl = req.url.replace(`_save=${req.flags.save}`,"");
-			Trace(`PUBLISH ${cleanurl} AT ${req.flags.save}`);
-			req.sql.query("INSERT INTO app.engines SET ?", {
+			var 
+				sql = req.sql,
+				cleanurl = req.url.replace(`_save=${req.flags.save}`,"");
+			
+			Trace(`PUBLISH ${cleanurl} AT ${req.flags.save} FOR ${req.client}`, sql);
+			sql.query("INSERT INTO app.engines SET ?", {
 				Name: req.flags.save,
 				Enabled: 1,
 				Type: "url",
@@ -114,7 +117,7 @@ var
 												return x.tag("a",{href:u});
 											default:
 												return "".tag("iframe",{ src: `/${x}.view?${p}&w=${w}&h=${h}&ds=${s}`, width:w, height:h } );
-												//console.log(xx);
+												//Log(xx);
 										}										
 									})
 									.replace(/href=(.*?)>/g, function (m,i) { // <a href=B>A</a> --> followed link
@@ -147,7 +150,7 @@ var
 						height: 400,
 						src: `/${req.table}.html?ID=${rec.ID}&_kjaded=${key}`
 					});
-					//console.log(rec[key]);
+					//Log(rec[key]);
 				});
 			});
 		},
@@ -570,7 +573,7 @@ append layout_body
 		
 		nav: function (recs,req,res) {  //< dataset.nav to navigate records pivoted with _browse=keys
 
-/*console.log({
+/*Log({
 	i: "nav",
 	c: keys,
 	f: req.flags,
@@ -636,7 +639,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					});	
 				});
 			
-//console.log(Files);	
+//Log(Files);	
 
 			switch (Cmd) {  	// Handle keys nav
 				case "test":	// canonical test case for debugging					
@@ -1119,7 +1122,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			
 			if (Rec)
 			recs.each( function (n, rec) {
-//console.log([n,k,recs.length, Recs.length, idx, rec[idx], Rec[idx]]);
+//Log([n,k,recs.length, Recs.length, idx, rec[idx], Rec[idx]]);
 
 				while (Rec && (rec[idx]  == Rec[idx])) {
 					if ( changed(rec,Rec) ) { // return only changed records
@@ -1152,7 +1155,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				pos = idx, end = idx+kids,
 				tar = [];
 			
-//console.log([level,keys,ref,idx]);
+//Log([level,keys,ref,idx]);
 			
 			if (key)
 				for (var ref = recs[idx][key]; pos < end; ) {
@@ -1160,7 +1163,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					var stop = (idx==end) ? true : (rec[key] != ref);
 					
 					if ( stop ) {
-						//console.log([pos,idx,end,key,ref,recs.length]);
+						//Log([pos,idx,end,key,ref,recs.length]);
 						
 						var node = {
 							name: key+" "+ref, 
@@ -1565,10 +1568,8 @@ function sendCert(req,res) { // create/return public-private certs
 			
 			function (err) {
 			
-			if (err) {
-				Trace(err);			
+			if (err) 
 				res( DEBE.errors.certFailed );
-			}
 				
 			else {
 				
@@ -1802,7 +1803,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		
 		if (ctx.Upload) {  // archive and pipe events to event ingester
 			FS.writeFile( ENV.PUBLIC+"/uploads/"+savename, JSON.stringify(saves), function (err) {
-				Trace( `SAVE AND INGEST ${savename}` );
+				Trace( `INGEST ${savename}`, sql );
 			});
 
 			//CHIPS.ingestList( sql, stats, client );
@@ -1849,9 +1850,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				res( err );
 			
 			else
-			if (stats) { // have results to save, ingest, ignore
+			if (stats)  // have results to save, ingest, ignore
 				res( saveResults( sql, ds, stats, ctx ) );
-			}
 			
 			else { // Intercept job request
 
@@ -1884,7 +1884,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				delete job.ID;
 				delete job.Job;
 
-				console.log({
+				Log({
 					chan: chan,
 					job: job
 				});
@@ -1892,8 +1892,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				if (chan.voiring) 
 					CHIPS.ingestVOI(chan, job, function (voxel,stats,sql) {
 						DEBE.thread( function (sql) {
-							console.log({save:stats});
-							Trace( saveResults( sql, "app.voxels", stats.gmms, voxel ) );
+							//Log({save:stats});
+							saveResults( sql, "app.voxels", stats.gmms, voxel );
 						});
 					});
 				
@@ -1902,7 +1902,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					CHIPS.ingestAOI(chan, job, function (chip,dets,sql) {
 						var updated = new Date();
 				
-						console.log({save:dets});
+						//Log({save:dets});
 						sql.query(
 							"REPLACE INTO ??.chips SET ?,Ring=st_GeomFromText(?),Point=st_GeomFromText(?)", [ 
 								req.group, {
@@ -1938,8 +1938,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				else {
 					req.query = ctx;
 					ENGINE.select(req, function (stats) {
-						console.log({plugin_rtns:stats});
-						Trace( saveResults( sql, ds, stats, ctx ) );
+						//Log({plugin_rtns:stats});
+						saveResults( sql, ds, stats, ctx );
 					});
 				}
 
@@ -2025,7 +2025,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 					"tinyint(1)": "c"
 				};				
 			
-			//console.log([query, req.search]);
+			//Log([query, req.search]);
 			
 			switch (fields.constructor) {
 				case Array:
@@ -2117,7 +2117,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 				else
 				if ( route = DEBE.byAction.select ) // may have an engine interface
 					route(req, function (recs) { 
-						//console.log({eng:recs, ds:req.table});
+						//Log({eng:recs, ds:req.table});
 						if (recs)
 							renderPlugin( recs[0] || {} );
 						
@@ -2272,7 +2272,7 @@ Initialize DEBE on startup.
 	 * Initialize the session environment
 	 */
 
-		Trace(`INITIALIZING SESSIONS`);
+		Trace(`INIT SESSIONS`);
 
 		/*
 		Each( CRUDE, function (n,routes) { // Map engine CRUD to DEBE workers
@@ -2309,7 +2309,7 @@ Initialize DEBE on startup.
 	 * Initialize the runtime environment
 	 */
 
-		Trace(`INTIALIZING ENVIRONMENT`);
+		Trace(`INIT ENVIRONMENT`);
 
 		var 
 			site = DEBE.site,
@@ -2335,7 +2335,7 @@ Initialize DEBE on startup.
 			.boolean('dump')
 			.describe('dump','display derived site parameters')  
 			.check(function (argv) {
-				//console.log(site);
+				//Log(site);
 			})
 		
 			/*
@@ -2383,7 +2383,7 @@ Initialize DEBE on startup.
 			.argv;
 
 		Trace(
-			"HOSTING " + site.title+" ON "+(CLUSTER.isMaster ? "MASTER" : "CORE"+CLUSTER.worker.id)
+			"HOST " + site.title+" ON "+(CLUSTER.isMaster ? "MASTER" : "CORE"+CLUSTER.worker.id)
 			+ "\n- USING " + site.db 
 			+ "\n- FROM " + process.cwd()
 			+ "\n- RUNNING " + (DEBE.faultless?"PROTECTED":"UNPROTECTED")
@@ -2405,7 +2405,7 @@ Initialize DEBE on startup.
 	 * Initialize the FLEX and ENGINE interfaces
 	 */
 
-		Trace(`INITIALIZING FLEX`);
+		Trace(`INIT FLEX`);
 		Each( CRUDE, function (n,routes) {  // redirect dataset crude calls
 			DEBE[n] = FLEX[n].ds;
 			DEBE.byActionTable[n] = FLEX[n];
@@ -2468,7 +2468,7 @@ Initialize DEBE on startup.
 			
 		});
 
-		Trace(`INITIALIZING ENGINES`);
+		Trace(`INIT ENGINES`);
 
 		CHIPS.config({
 			fetch: DEBE.loaders,
