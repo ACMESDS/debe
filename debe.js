@@ -6,6 +6,7 @@
 @requires cluster
 @requires child-process
 @requires fs
+@requires stream
 
 @requires i18n-abide
 @requires socket.io
@@ -28,6 +29,7 @@ var 									// globals
 var 									// NodeJS modules
 	CP = require("child_process"), 		//< Child process threads
 	CLUSTER = require("cluster"), 		//< Support for multiple cores
+	STREAM = require("stream"), 		//< pipe streaming
 	FS = require("fs"); 				//< NodeJS filesystem and uploads
 	
 var										// 3rd party modules
@@ -1094,6 +1096,28 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	],
 	
 	Array: [  // array prototypes
+		function getStash(ctxTargetKey, ctxTargetPrefix, ctx, stash, cb) {
+			var rem = stash.remainder;
+			this.each( function (n,stat) {  // split-save all stashable keys
+				var 
+					key = ctxTargetPrefix + stat[ctxTargetKey],  // target ctx key 
+					ev = ( key in stash )
+						? stash[key]  // stash was already primed
+						: (key in ctx)  // see if its in the ctx
+								? stash[key] = cb(null,stat, ctx[key]) // prime stash
+								: null;  // not in ctx so stash in remainder
+				
+				if ( ev )  { // found a ctx target key to save results
+					delete stat[ctxTargetKey];
+					cb(ev, stat);
+				}
+				
+				else  
+				if (rem)  // stash remainder 
+					rem.push( stat );
+			});
+		},
+		
 		function merge(Recs,idx) {
 		/**
 		@method merge
@@ -1686,7 +1710,7 @@ function extendPlugin(req,res) {
 		ds = req.table,
 		query = req.query;
 	
-	res("Adding keys");
+	res("ok");
 	
 	Each(query, function (key, val) {
 		var type = "varchar(32)";
@@ -1721,7 +1745,7 @@ function retractPlugin(req,res) {
 		ds = req.table,
 		query = req.query;
 	
-	res("Dropping keys");
+	res("ok");
 	
 	Each(query, function (key, val) {
 			
@@ -1739,45 +1763,73 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 @param {Function} res Totem response callback
 */	
 	
-	function saveResults( sql, ds, stats, ctx ) {
+	function saveResults( sql, saveDS, savefile, stats, ctx ) {
 		var 
-			status = "",
-			splits = {};
+			status = "";
 			
 		if ( !stats )
 			return "empty";
 
-		if ( "length" in stats ) {  // keys in the plugin context are used to create list-splits
+		if ( "length" in stats ) {  // keys in the plugin context are used to create save stashes
 			stats.each = Array.prototype.each;	
+			stats.getStash = Array.prototype.getStash;	
 			
-			var saves = [];
-			stats.each( function (n,stat) {  // split-save all splitable keys
-				var 
-					at = "Save_" + stat.at,  // target ctx key 
-					ev = ( at in splits )
-						? splits[at]  // already started
-						: (at in ctx)  // see if its in the ctx
-								? splits[at] = {prime:true} // tag it to be intialized
-								: null;  // not in ctx so no place to save it
+			var stash = { };  // ingestable keys stash
+			stats.getStash("at", "Ingest_", ctx, stash, function (ev,stat,ctx) {  // add {at:"KEY",...} stats to the Ingest_KEY stash
+				if (ev) 
+					ev.push( stat );
 				
-				if ( ev )   // found a ctx target key to save results
-					if (ev.prime) {  // initialize and save
-						delete ev["prime"];
-						for (var key in stat) if (key != "at") ev[key] = [ stat[key] ];
-					}
-					
-					else	// save
-						for (var key in stat) if (key != "at") ev[key].push( stat[key] );
-				
-				else  // remainders go the the saves list
-					saves.push( stat );
+				else 
+					return ctx ? new Array() : null;
 			});
-			
-			for (var key in splits) 
-				splits[key] = JSON.stringify(splits[key]);
+
+			Each(stash, function (key,evs) {  // archive and pipe ingestable events to event ingester
+				
+				if (evs) {
+					var 
+						evidx = 0,
+						savepath = ENV.PUBLIC+"/uploads/"+savefile,
+						src = new STREAM.Readable({  
+							objectMode: false,
+							read: function () {  
+								if ( ev = evs[evidx++] )
+									this.push( JSON.stringify(ev)+"\n" );
+								else
+									this.push(null);
+							}
+						}),					
+						sink = FS.createWriteStream( savepath, "utf8");
+
+					if (1) src.pipe(sink);
+
+					CHIPS.grader(evs, Copy({ 
+							States: ctx.TxPrs.length,
+							Batch: 20
+						}, ctx), function (stats) {
+							Log("INGEST METRICS", stats);
+					});
+
+					status += " Uploaded";
+				}
+			});
+		
+			var stash = { remainder: [] };  // saveable keys stash
+			stats.getStash("at", "Save_", ctx, stash, function (ev, stat) {  // add {at:"KEY",...} stats to the Save_KEY stash
+				
+				if (ev)
+					for (var key in stat) ev[key].push( stat[key] );
+
+				else {
+					var ev = new Object();
+					for (var key in stat) ev[key] = [ ];
+					return ev;
+				}
+
+			});
+
 		}
 		
-		else {  // keys in the plugin context are used to create bulk-splits
+		else {  // keys in the plugin context are used to create the stash
 			var saves = new Object(stats);
 			Each(stats, function (key, val) {  // remove splits from bulk save
 				if ( key in ctx) {
@@ -1787,29 +1839,24 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			});
 		}
 
-		if ( !Each(splits) ) {   // split save stats across shared keys
-			sql.query("UPDATE ?? SET ? WHERE ?", [ 
-				ds, splits, {ID: ctx.ID}
-			]);
-			status += "Split";
-		}
-
-		if ("Save" in ctx) {  // remaining stats dumped to Save key
+		for (var key in stash) 
+			stash[key] = JSON.stringify(stash[key]);
+		
+		if ("Save" in ctx) {  // remainder dumped to Save key
 			sql.query("UPDATE ?? SET ? WHERE ?", [
-				ds, {Save: JSON.stringify(saves)}, {ID: ctx.ID}
+				saveDS, {Save: JSON.stringify(stash.remainder)}, {ID: ctx.ID}
 			]);
 			
 			status += " Saved";
 		}
 		
-		if (ctx.Upload) {  // archive and pipe events to event ingester
-			FS.writeFile( ENV.PUBLIC+"/uploads/"+savename, JSON.stringify(saves), function (err) {
-				Trace( `INGEST ${savename}`, sql );
-			});
-
-			//CHIPS.ingestList( sql, stats, client );
-			
-			status += " Uploaded";
+		delete stash.remainder;
+		
+		if ( !Each(stash) ) {   // split save stats across shared keys
+			sql.query("UPDATE ?? SET ? WHERE ?", [ 
+				saveDS, stash, {ID: ctx.ID}
+			]);
+			status += " Split";
 		}
 
 		return status || stats;
@@ -1820,8 +1867,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		sql = req.sql,
 		client = req.client,
 		query = req.query,
-		ds = req.group+dot+req.table,
-		savename = ds+dot+(query.ID || query.Name);
+		saveds = req.group+dot+req.table,
+		savefile = dot+saveds+dot+(query.ID || query.Name);
 
 		/*
 		var job = { // default required parms
@@ -1852,7 +1899,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			
 			else
 			if (stats)  // have results to save, ingest, ignore
-				res( saveResults( sql, ds, stats, ctx ) );
+				res( saveResults( sql, saveds, savefile, stats, ctx ) );
 			
 			else { // Intercept job request
 
@@ -1894,7 +1941,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					CHIPS.ingestVOI(chan, job, function (voxel,stats,sql) {
 						DEBE.thread( function (sql) {
 							//Log({save:stats});
-							saveResults( sql, "app.voxels", stats.gmms, voxel );
+							saveResults( sql, "app.voxels", savefile, stats.gmms, voxel );
 						});
 					});
 				
@@ -1940,7 +1987,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					req.query = ctx;
 					ENGINE.select(req, function (stats) {
 						//Log({plugin_rtns:stats});
-						saveResults( sql, ds, stats, ctx );
+						saveResults( sql, saveds, savefile, stats, ctx );
 					});
 				}
 
