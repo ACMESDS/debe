@@ -1751,24 +1751,25 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			stats.each = Array.prototype.each;	
 			
 			var saves = [];
-			stats.each( function (n,stat) {  // determine all splitable keys
+			stats.each( function (n,stat) {  // split-save all splitable keys
 				var 
-					at = "Save_" + stat.at,
+					at = "Save_" + stat.at,  // target ctx key 
 					ev = ( at in splits )
-						? splits[at]
-						: (at in ctx) 
-								? splits[at] = {prime:true} 
-								: null;
+						? splits[at]  // already started
+						: (at in ctx)  // see if its in the ctx
+								? splits[at] = {prime:true} // tag it to be intialized
+								: null;  // not in ctx so no place to save it
 				
-				if ( ev ) 
-					if (ev.prime) {
+				if ( ev )   // found a ctx target key to save results
+					if (ev.prime) {  // initialize and save
 						delete ev["prime"];
 						for (var key in stat) if (key != "at") ev[key] = [ stat[key] ];
 					}
-					else					
+					
+					else	// save
 						for (var key in stat) if (key != "at") ev[key].push( stat[key] );
 				
-				else
+				else  // remainders go the the saves list
 					saves.push( stat );
 			});
 			
