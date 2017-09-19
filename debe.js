@@ -1898,6 +1898,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				res( err );
 			
 			else    // have results to save, ingest, ignore
+			if (stats)
 				res( saveResults( sql, saveds, savefile, stats, ctx ) );
 			
 			else { // Intercept job request
