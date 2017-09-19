@@ -1765,16 +1765,21 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 	
 	function saveResults( sql, saveDS, savefile, stats, ctx ) {
 		var 
-			status = "";
+			status = "", // returned status
+			stash = { };  // ingestable keys stash
 			
 		if ( !stats )
 			return "empty";
-
+		
+		else
+		if ( stats.constructor == Error )
+			return "bad context";
+		
+		else
 		if ( "length" in stats ) {  // keys in the plugin context are used to create save stashes
 			stats.each = Array.prototype.each;	
 			stats.getStash = Array.prototype.getStash;	
 			
-			var stash = { };  // ingestable keys stash
 			stats.getStash("at", "Ingest_", ctx, stash, function (ev,stat,ctx) {  // add {at:"KEY",...} stats to the Ingest_KEY stash
 				if (ev) 
 					ev.push( stat );
@@ -1829,15 +1834,10 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 		}
 		
-		else {  // keys in the plugin context are used to create the stash
-			var saves = new Object(stats);
+		else   // keys in the plugin context are used to create the stash
 			Each(stats, function (key, val) {  // remove splits from bulk save
-				if ( key in ctx) {
-					splits[key] = JSON.stringify(val);
-					delete saves[key];
-				}
+				if ( key in ctx) stash[key] = val;
 			});
-		}
 
 		for (var key in stash) 
 			stash[key] = JSON.stringify(stash[key]);
@@ -1897,8 +1897,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			if ( err )
 				res( err );
 			
-			else
-			if (stats)  // have results to save, ingest, ignore
+			else    // have results to save, ingest, ignore
 				res( saveResults( sql, saveds, savefile, stats, ctx ) );
 			
 			else { // Intercept job request
