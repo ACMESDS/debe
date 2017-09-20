@@ -1776,9 +1776,9 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			return "bad context";
 		
 		else
-		if ( "length" in stats ) {  // keys in the plugin context are used to create save stashes
-			stats.each = Array.prototype.each;	
-			stats.getStash = Array.prototype.getStash;	
+		if ( stats.constructor == Array ) {  // keys in the plugin context are used to create save stashes
+			//stats.each = Array.prototype.each;	
+			//stats.getStash = Array.prototype.getStash;	
 			
 			stats.getStash("at", "Ingest_", ctx, stash, function (ev,stat,ctx) {  // add {at:"KEY",...} stats to the Ingest_KEY stash
 				if (ev) 
@@ -1803,16 +1803,22 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 									this.push(null);
 							}
 						}),					
-						sink = FS.createWriteStream( savepath, "utf8");
+						sink = FS.createWriteStream( savepath, "utf8").on("finish", function () {							
+							DEBE.thread( function (sql) {
+								CHIPS.ingestFile(sql,savepath,savefile,client);
+							});
+						});
 
-					if (1) src.pipe(sink);
+					src.pipe(sink);
 
-					CHIPS.grader(evs, Copy({ 
+					/*
+					CHIPS.ingestGrade(evs, Copy({ 
 							States: ctx.TxPrs.length,
 							Batch: 20
 						}, ctx), function (stats) {
 							Log("INGEST METRICS", stats);
 					});
+					*/
 
 					status += " Uploaded";
 				}
@@ -1899,7 +1905,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			
 			else    // have results to save, ingest, ignore
 			if (stats)
-				res( saveResults( sql, saveds, savefile, stats, ctx ) );
+				res( saveResults( sql, saveds, savefile, Array.from(stats), ctx ) );
 			
 			else { // Intercept job request
 
