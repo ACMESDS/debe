@@ -686,9 +686,9 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 					//minHeight: 200,
 					width: 600
 					// If standalone widget
-					/*enableKeyEvents: true,  
+					/*** enableKeyEvents: true,  
 					listeners: {
-						keypress: function (f,e) {
+						keydown: function (f,e) {
 							e.stopEvent();
 
 							var 
