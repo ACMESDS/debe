@@ -1872,6 +1872,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		dot = ".",
 		sql = req.sql,
 		client = req.client,
+		group = req.group,
 		query = req.query,
 		saveds = req.group+dot+req.table,
 		savefile = dot+saveds+dot+(query.ID || query.Name);
@@ -1910,9 +1911,9 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			else { // Intercept job request
 
 				res("Submitted");
-
+				
 				var 
-					chan = ctx.Job || {},
+					chan = ctx.Job || 0,
 					
 					job = Copy(ctx, { // job keys
 						thread: req.client.replace(/\./g,"") + "." + req.table,
@@ -1943,58 +1944,147 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					job: job
 				});
 
-				if (chan.voiring) 
-					CHIPS.ingestVOI(chan, job, function (voxel,stats,sql) {
-						DEBE.thread( function (sql) {
-							//Log({save:stats});
-							saveResults( sql, "app.voxels", savefile, stats.gmms, voxel );
+				req.query = ctx;
+				
+				function evfeed(batch, ts, cb) {  // ingest a batch of events occuring over next sampe time  
+					var t = 0, evbuf = [];
+
+					Log("feed",t);
+					for (var ev = evStream.read(); ev; ev = evStream.read() ) {
+						if (ev.t - t > ts  || evbuf.length == batch) {
+							t = cb( evbuf ); evbuf = [ev];
+						}
+
+						else
+							evbuf.push (ev );
+					}
+				}
+
+				switch (chan.constructor) {  // event stream for RAN reverse mode
+					case String:
+						var 
+							evStream = FS.createReadStream(ENV.PUBLIC+"/uploads/"+chan,"utf8").on("read", function (buf) {
+								buf.split("\n").each(function (n,ev) {
+									try {
+										cb( JSON.parse(ev) ); 
+									}
+									catch (err) {
+										var vals = ev.split(",");
+										cb( { x: parseFloat(vals[0]), y: parseFloat(vals[1]), z: parseFloat(vals[2]), t: parseFloat(vals[3]), n: parseInt(vals[4]), u: parseInt(vals[5]) } );
+									}
+								});
+							});
+						
+						ctx.Events = evfeed;
+						ENGINE.select(req, function (stats) {
+							//Log({plugin_rtns:stats});
+							saveResults( sql, saveds, savefile, stats, ctx );
 						});
-					});
-				
-				else
-				if (chan.aoiring)
-					CHIPS.ingestAOI(chan, job, function (chip,dets,sql) {
-						var updated = new Date();
-				
-						//Log({save:dets});
-						sql.query(
-							"REPLACE INTO ??.chips SET ?,Ring=st_GeomFromText(?),Point=st_GeomFromText(?)", [ 
-								req.group, {
-									Thread: job.thread,
-									Save: JSON.stringify(dets),
-									t: updated,
-									x: chip.pos.lat,
-									y: chip.pos.lon
-								},
-								chip.ring,
-								chip.point
-						]);
+						
+						break;
 
-						// reserve voxel detectors above this chip
-						for (var vox=CHIPS.voxelSpecs,alt=vox.minAlt, del=vox.deltaAlt, max=vox.maxAlt; alt<max; alt+=del) 
-							sql.query(
-								"REPLACE INTO ??.voxels SET ?,Ring=st_GeomFromText(?),Point=st_GeomFromText(?)", [
-								req.group, {
-									Thread: job.thread,
-									Save: null,
-									t: updated,
-									x: chip.pos.lat,
-									y: chip.pos.lon,
-									z: alt,
-									Enabled: 1
-								},
-								chip.ring,
-								chip.point
-							]);
+					case Array:
+						var 
+							pos = 0,
+							evStream =  new STREAM.Readable({  // source process events from this stream
+								objectMode: true,
+								read: function () {  
+									this.push( chan[pos++] || null );
+								}
+							});	
+						
+						ctx.Events = evfeed;
+						ENGINE.select(req, function (stats) {
+							//Log({plugin_rtns:stats});
+							saveResults( sql, saveds, savefile, stats, ctx );
+						});
+						
+						break;
+						
+					case Object:
+						if (chan.voiring) 
+							CHIPS.ingestVOI(chan, job, function (voxel,stats,sql) {
+								DEBE.thread( function (sql) {
+									//Log({save:stats});
+									saveResults( sql, "app.voxels", savefile, stats.gmms, voxel );
+								});
+							});
 
-					});
+						else
+						if (chan.aoiring)
+							CHIPS.ingestAOI(chan, job, function (chip,dets,sql) {
+								var updated = new Date();
 
-				else {
-					req.query = ctx;
-					ENGINE.select(req, function (stats) {
-						//Log({plugin_rtns:stats});
-						saveResults( sql, saveds, savefile, stats, ctx );
-					});
+								//Log({save:dets});
+								sql.query(
+									"REPLACE INTO ??.chips SET ?,Ring=st_GeomFromText(?),Point=st_GeomFromText(?)", [ 
+										req.group, {
+											Thread: job.thread,
+											Save: JSON.stringify(dets),
+											t: updated,
+											x: chip.pos.lat,
+											y: chip.pos.lon
+										},
+										chip.ring,
+										chip.point
+								]);
+
+								// reserve voxel detectors above this chip
+								for (var vox=CHIPS.voxelSpecs,alt=vox.minAlt, del=vox.deltaAlt, max=vox.maxAlt; alt<max; alt+=del) 
+									sql.query(
+										"REPLACE INTO ??.voxels SET ?,Ring=st_GeomFromText(?),Point=st_GeomFromText(?)", [
+										req.group, {
+											Thread: job.thread,
+											Save: null,
+											t: updated,
+											x: chip.pos.lat,
+											y: chip.pos.lon,
+											z: alt,
+											Enabled: 1
+										},
+										chip.ring,
+										chip.point
+									]);
+
+							});
+
+						else {
+							var 
+								pos = 0, 
+								where = chan.where,
+								group = chan.group,
+								sort = chan.sort,
+								limit = chan.limit,
+								dsq = "SELECT * FROM ??.events LEFT JOIN ??.voxels ON events.voxelID == voxels.ID";
+
+							if (where) dsq += "WHERE least(?,1) ";
+							if (group) dsq += "GROUP BY " + group + " ";
+							dsq += "ORDER BY " + (sort || "t") + " ";
+							if (limit) dsq += "LIMIT 0,?";
+
+							sql.query( dsq, [group, group, where, limit], function (err, evs) {
+
+								ctx.Events = function evfeed(batch, ts, cb) {  // ingest a batch of events occuring over next sampe time  
+									var t = 0, evbuf = [];
+
+									for (var ev = evs[pos++]; ev; ev = evs[pos++] ) {
+										if (ev.t - t > ts  || evbuf.length == batch) {
+											t = cb( evbuf ); evbuf = [ev];
+										}
+
+										else
+											evbuf.push (ev );
+									}
+								};
+								
+								ENGINE.select(req, function (stats) {
+									//Log({plugin_rtns:stats});
+									saveResults( sql, saveds, savefile, stats, ctx );
+								});
+
+							});
+						}
+
 				}
 
 			}
