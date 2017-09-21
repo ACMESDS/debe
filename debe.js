@@ -1805,7 +1805,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						}),					
 						sink = FS.createWriteStream( savepath, "utf8").on("finish", function () {							
 							DEBE.thread( function (sql) {
-								CHIPS.ingestFile(sql,savepath,savefile,client);
+								DEBE.ingestFile(sql,savepath,savefile);
 							});
 						});
 
