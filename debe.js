@@ -1913,6 +1913,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				res("Submitted");
 				
 				var 
+					evstream,
+					
 					chan = ctx.Job || 0,
 					
 					job = Copy(ctx, { // job keys
@@ -1940,8 +1942,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				delete job.Job;
 
 				Log({
-					chan: chan,
-					job: job
+					chan: chan
+					//job: job
 				});
 
 				req.query = ctx;
@@ -1949,8 +1951,9 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				function evfeed(batch, ts, cb) {  // ingest a batch of events occuring over next sampe time  
 					var t = 0, evbuf = [];
 
-					Log("feed",t);
+					Log("feed",t,batch,ts,evStream.read());
 					for (var ev = evStream.read(); ev; ev = evStream.read() ) {
+						Log(ev);
 						if (ev.t - t > ts  || evbuf.length == batch) {
 							t = cb( evbuf ); evbuf = [ev];
 						}
@@ -1958,22 +1961,25 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						else
 							evbuf.push (ev );
 					}
+					Log("feed exit");
 				}
 
 				switch (chan.constructor) {  // event stream for RAN reverse mode
 					case String:
-						var 
-							evStream = FS.createReadStream(ENV.PUBLIC+"/uploads/"+chan,"utf8").on("read", function (buf) {
-								buf.split("\n").each(function (n,ev) {
-									try {
-										cb( JSON.parse(ev) ); 
-									}
-									catch (err) {
-										var vals = ev.split(",");
-										cb( { x: parseFloat(vals[0]), y: parseFloat(vals[1]), z: parseFloat(vals[2]), t: parseFloat(vals[3]), n: parseInt(vals[4]), u: parseInt(vals[5]) } );
-									}
-								});
+						Log("file str");
+						evStream = FS.createReadStream(ENV.PUBLIC+"/uploads/"+chan,"utf8").on("read", function (buf) {
+							Log("read fs");
+							Log("buf",buf);
+							buf.split("\n").each(function (n,ev) {
+								try {
+									cb( JSON.parse(ev) ); 
+								}
+								catch (err) {
+									var vals = ev.split(",");
+									cb( { x: parseFloat(vals[0]), y: parseFloat(vals[1]), z: parseFloat(vals[2]), t: parseFloat(vals[3]), n: parseInt(vals[4]), u: parseInt(vals[5]) } );
+								}
 							});
+						});
 						
 						ctx.Events = evfeed;
 						ENGINE.select(req, function (stats) {
@@ -1984,14 +1990,14 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						break;
 
 					case Array:
-						var 
-							pos = 0,
-							evStream =  new STREAM.Readable({  // source process events from this stream
-								objectMode: true,
-								read: function () {  
-									this.push( chan[pos++] || null );
-								}
-							});	
+						var pos = 0;
+						
+						evStream =  new STREAM.Readable({  // source process events from this stream
+							objectMode: true,
+							read: function () {  
+								this.push( chan[pos++] || null );
+							}
+						});	
 						
 						ctx.Events = evfeed;
 						ENGINE.select(req, function (stats) {
