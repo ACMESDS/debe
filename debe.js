@@ -43,6 +43,7 @@ var 									// totem modules
 	ENGINE = require("engine"), 
 	FLEX = require("flex"),
 	TOTEM = require("totem"),
+	RAN = require("randpr"),
 	CHIPS = require("chipper");
 
 var										// shortcuts and globals
@@ -1096,19 +1097,23 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	],
 	
 	Array: [  // array prototypes
-		function getStash(ctxTargetKey, ctxTargetPrefix, ctx, stash, cb) {
+		function getStash(watchKey, targetPrefix, ctx, stash, cb) {
+			// this = [ { watchKey:"KEY", x:X, y: Y, ...}, ... }
+			// stash = { targetPrefix: { x: [X,...], y: [Y,...], ... }, ... }
+			
 			var rem = stash.remainder;
+			
 			this.each( function (n,stat) {  // split-save all stashable keys
 				var 
-					key = ctxTargetPrefix + stat[ctxTargetKey],  // target ctx key 
+					key = targetPrefix + stat[watchKey],  // target ctx key 
 					ev = ( key in stash )
 						? stash[key]  // stash was already primed
 						: (key in ctx)  // see if its in the ctx
 								? stash[key] = cb(null,stat, ctx[key]) // prime stash
 								: null;  // not in ctx so stash in remainder
-				
+
 				if ( ev )  { // found a ctx target key to save results
-					delete stat[ctxTargetKey];
+					delete stat[watchKey];
 					cb(ev, stat);
 				}
 				
@@ -1227,6 +1232,39 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	*/
 	isSpawned: false, 			//< Enabled when this is child server spawned by a master server
 
+	gradeIngest: function (evs, ctx, cb) {
+		Log("grader ctx",ctx,"evs=",evs.length);
+		
+		var 
+			stats = {},
+			ran = new RAN({ // configure the random process generator
+				N: ctx.Ensemble,  // ensemble size
+				K: ctx.States, 		// number of states
+				batch: ctx.Batch,
+				wiener: ctx.Wiener,  // wiener process switch
+				nyquist: ctx.Nyquist, // oversampling factor
+				events: function batchEvents(maxbuf, maxstep, cb) {  // ingest plugin inputs
+					FLEX.batchEvents(evs,maxbuf,maxstep,cb);
+				},
+				store: [], 	// use sync pipe() since we are running a web service
+				steps: ctx.Steps, // process steps
+				filter: function (str, ev) {  // retain only step info
+					switch ( ev.at ) {
+						case "end":
+							Copy(ev, stats);
+							break;
+
+						default:
+							//Log(ev);
+					}
+				}  // on-event callbacks to retain desired process stats
+			});
+
+		ran.pipe( [], function (evs) {
+			cb( stats );
+		}); 
+	},
+		
 	/**
 	@cfg {Object}
 	@member DEBE
@@ -1283,8 +1321,123 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		save: {}
 	},
 
-	ingestFile: CHIPS.ingestFile,
+	autorunPlugins: function (sql, group, aoi) {  // task and run ingestable plugins
+
+		var
+			TL = [aoi.yMax, aoi.xMin],   // [lon,lat] degs
+			TR = [aoi.yMax, aoi.xMax],
+			BL = [aoi.yMin, aoi.xMin],
+			BR = [aoi.yMin, aoi.xMax], 
+			ring = {voiring:[ TL, TR, BR, BL, TL ]};
 		
+		FLEX.taskPlugins( sql, group, ring, function (taskID, pluginName) {
+			FLEX.runPlugin( {
+				sql: sql,
+				table: pluginName,
+				query: {ID:taskID}
+			}, function (err, rtn, ctx) {
+			});
+				
+		});
+		
+		/*
+		var 
+			group = "app",
+			TL = [aoi.yMax, aoi.xMin],   // [lon,lat] degs
+			TR = [aoi.yMax, aoi.xMax],
+			BL = [aoi.yMin, aoi.xMin],
+			BR = [aoi.yMin, aoi.xMax], 
+			ring = {voiring:[ TL, TR, BR, BL, TL ]};
+
+		// add this aoi as a usecase to all applicable plugins 
+		sql.eachTable( group, function (table) {  // look for plugins that have a data loader and a Job key
+			var tarkeys = [], srckeys = [], hasJob = false;
+
+			// if (table == "gaussmix") // debug filter
+			if ( loader = DEBE.loaders[table] )
+				sql.query(  // get plugin usecase keys
+					"SHOW FIELDS FROM ??.?? WHERE Field != 'ID' ", 
+					[ group, table ], 
+					function (err,keys) {
+
+					keys.each( function (n,key) { // look for Job key
+						var keyesc = "`" + key.Field + "`";
+						switch (key.Field) {
+							case "Save":
+								break;
+							case "Job":
+								hasJob = true;
+							case "Name":
+								srckeys.push("? AS "+keyesc);
+								tarkeys.push(keyesc);
+								break;
+							default:
+								srckeys.push(keyesc);
+								tarkeys.push(keyesc);
+						}
+					});
+
+					if (hasJob) {
+						Trace( `TASKING AOI ${ring.voiring} TO ${table} PLUGIN` );
+
+						sql.query( // add usecase to plugin by cloning its Name="ingest" usecase
+							"INSERT INTO ??.?? ("+tarkeys.join()+") SELECT "+srckeys.join()+" FROM ??.?? WHERE name='ingest' ", [
+								group, table,
+								"ingest " + new Date(),
+								JSON.stringify(ring),
+								group, table
+						], function (err, info) {
+
+							if ( !err && info.insertId )  // relay a fetch request to load the data with the usecase that was just added 
+								loader( {ID:info.insertId}, function (rtn) {
+									Trace(`AUTORUN ${table}`);  // rtn = json parsed or null
+								});
+						});
+					}
+				});
+		});
+		*/
+	},
+		
+	dumpFile: function (savepath, evs, cb) {
+		var 
+			evidx = 0,
+			srcStream = new STREAM.Readable({  
+				objectMode: false,
+				read: function () {  
+					if ( ev = evs[evidx++] )
+						this.push( JSON.stringify(ev)+"\n" );
+					else
+						this.push(null);
+				}
+			}),					
+			sinkStream = FS.createWriteStream( savepath, "utf8").on("finish", cb);
+
+		srcStream.pipe(sinkStream);
+	},
+
+	ingestFile: function(sql, savepath, savefile, cb) {
+		CHIPS.ingestFile(sql, savepath, savefile, function (aoi,evs) {
+			if ( gradeIngest = DEBE.gradeIngest ) {
+				var ctx = {
+					Ensemble: 50,  // ensemble size
+					States: 3, 		// number of states
+					Batch: 20,
+					Wiener: false,
+					Nyquist: 1,
+					Events: function batchEvents(maxbuf, maxstep, cb) {  // ingest plugin inputs
+						FLEX.batchEvents(evs,maxbuf,maxstep,cb);
+					},
+					Steps: 100 // process steps					
+				};
+				
+				gradeIngest( Array.from(evs), ctx, function (stats) {
+					cb(aoi,stats);
+				});
+			}
+		});
+	},
+	
 	/**
 	@cfg {Boolean}
 	@member DEBE
@@ -1763,7 +1916,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 @param {Function} res Totem response callback
 */	
 	
-	function saveResults( sql, saveDS, savefile, stats, ctx ) {
+	function saveResults( stats, ctx ) {  // save plugin output stats
 		var 
 			status = "", // returned status
 			stash = { };  // ingestable keys stash
@@ -1777,9 +1930,6 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		
 		else
 		if ( stats.constructor == Array ) {  // keys in the plugin context are used to create save stashes
-			//stats.each = Array.prototype.each;	
-			//stats.getStash = Array.prototype.getStash;	
-			
 			stats.getStash("at", "Ingest_", ctx, stash, function (ev,stat,ctx) {  // add {at:"KEY",...} stats to the Ingest_KEY stash
 				if (ev) 
 					ev.push( stat );
@@ -1788,37 +1938,17 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					return ctx ? new Array() : null;
 			});
 
-			Each(stash, function (key,evs) {  // archive and pipe ingestable events to event ingester
-				
+			Each(stash, function (key,evs) {  // ingest events 
 				if (evs) {
-					var 
-						evidx = 0,
-						savepath = ENV.PUBLIC+"/uploads/"+savefile,
-						src = new STREAM.Readable({  
-							objectMode: false,
-							read: function () {  
-								if ( ev = evs[evidx++] )
-									this.push( JSON.stringify(ev)+"\n" );
-								else
-									this.push(null);
-							}
-						}),					
-						sink = FS.createWriteStream( savepath, "utf8").on("finish", function () {							
-							DEBE.thread( function (sql) {
-								DEBE.ingestFile(sql,savepath,savefile);
-							});
+					
+					if (true) 
+						DEBE.dumpFile(ENV.PUBLIC+"/stores/"+saveds+"."+client, evs, function () {
+							Log("dumped");
 						});
-
-					src.pipe(sink);
-
-					/*
-					CHIPS.ingestGrade(evs, Copy({ 
-							States: ctx.TxPrs.length,
-							Batch: 20
-						}, ctx), function (stats) {
-							Log("INGEST METRICS", stats);
+				
+					CHIPS.ingestList(sql,evs, function (aoi) {
+						Log(aoi);
 					});
-					*/
 
 					status += " Uploaded";
 				}
@@ -1837,7 +1967,6 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				}
 
 			});
-
 		}
 		
 		else   // keys in the plugin context are used to create the stash
@@ -1850,7 +1979,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		
 		if ("Save" in ctx) {  // remainder dumped to Save key
 			sql.query("UPDATE ?? SET ? WHERE ?", [
-				saveDS, {Save: JSON.stringify(stash.remainder)}, {ID: ctx.ID}
+				saveds, {Save: JSON.stringify(stash.remainder)}, {ID: ctx.ID}
 			]);
 			
 			status += " Saved";
@@ -1860,91 +1989,12 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		
 		if ( !Each(stash) ) {   // split save stats across shared keys
 			sql.query("UPDATE ?? SET ? WHERE ?", [ 
-				saveDS, stash, {ID: ctx.ID}
+				saveds, stash, {ID: ctx.ID}
 			]);
 			status += " Split";
 		}
 
 		return status || stats;
-	}
-		
-	function getEvents(job, maxbuf, maxstep, cb) {
-		var 
-			t = 0, evbuf = [], lastline = "", pos = 0,
-			sink = new STREAM.Writable({
-				objectMode: true,
-				write: function (ev,en,errorcb) {
-					if (ev.t - t > maxstep  || evbuf.length == maxbuf) {
-						t = cb( evbuf ); evbuf = [ev];
-					}
-
-					else
-						evbuf.push (ev );
-
-					errorcb(null);
-				}
-			});
-
-		sink.on("finish", function () {
-			if ( evbuf.length ) cb( evbuf );
-			cb( null );
-		});
-
-		switch ( job.constructor ) {
-			case String:
-				var 
-					src = FS.createReadStream(ENV.PUBLIC+"/uploads/"+job,"utf8"),
-					liner = new STREAM.Transform({ 
-						readableObjectMode: true,
-						writableObjectMode: false,
-						write: function (buf,en,errorcb) {
-							var 
-								str = this,
-								buff = lastline+buf.toString();
-
-							buff.split("\n").each( function (n, line, isLast) {
-								if (isLast) 
-									lastline = line;
-								else
-									str.push( line );										
-							});	
-							errorcb(null);
-						}
-					}),
-					eventer = new STREAM.Transform({
-						readableObjectMode: true,
-						writableObjectMode: true,
-						write: function (line,en,errorcb) {
-							var str = this;
-							try {
-								str.push( JSON.parse(line) );
-							}
-
-							catch (err) {
-								var vals = line.split(",");
-								str.push( { x: parseFloat(vals[0]), y: parseFloat(vals[1]), z: parseFloat(vals[2]), t: parseFloat(vals[3]), n: parseInt(vals[4]), u: parseInt(vals[5]) } );
-							}
-
-							errorcb(null);
-						}
-					});
-				
-				src.pipe(liner).pipe(eventer).pipe(sink);
-				break;
-				
-			case Array:
-				var
-					src =  new STREAM.Readable({  // source process events from this stream
-						objectMode: true,
-						read: function () {  
-							this.push( job[pos++] || null );
-						}
-					});
-
-				src.pipe(sink);
-				break;
-				
-		}
 	}
 	
 	var
@@ -1952,9 +2002,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		sql = req.sql,
 		client = req.client,
 		group = req.group,
-		query = req.query,
 		saveds = req.group+dot+req.table,
-		savefile = dot+saveds+dot+(query.ID || query.Name);
+		query = req.query;
 
 		/*
 		var job = { // default required parms
@@ -1983,9 +2032,9 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			if ( err )
 				res( err );
 			
-			else    // have results to save, ingest, ignore
-			if (stats)
-				res( saveResults( sql, saveds, savefile, Array.from(stats), ctx ) );
+			else    // have results to save
+			if ( stats )
+				res( saveResults( Array.from(stats), ctx ) );
 			
 			else { // Intercept job request
 
@@ -2024,14 +2073,13 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				});
 
 				req.query = ctx;
-				ctx.getEvents = getEvents;
 				
 				if (Job.constructor == Object)
 					if (Job.voiring) 
 						CHIPS.ingestVOI(Job, job, function (voxel,stats,sql) {
 							DEBE.thread( function (sql) {
 								//Log({save:stats});
-								saveResults( sql, "app.voxels", savefile, stats.gmms, voxel );
+								saveResults( Array.from(stats), voxel );
 							});
 						});
 
@@ -2073,35 +2121,22 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 						});
 
-					else {
-						var 
-							pos = 0, 
-							where = Job.where,
-							group = Job.group,
-							sort = Job.sort,
-							limit = Job.limit,
-							dsq = "SELECT * FROM ??.events LEFT JOIN ??.voxels ON events.voxelID == voxels.ID";
+					else 
+						CHIPS.ingestEvents(req, ctx, Job, job, function (evs) {
+							ctx.Events = function batchEvents(maxbuf, maxstep, cb) {  // provide event getter
+								Log("call batch");
+								FLEX.batchEvents(evs,maxbuf,maxstep,cb);
+							};
+							ctx.States = Job.states;
 
-						if (where) dsq += "WHERE least(?,1) ";
-						if (group) dsq += "GROUP BY " + group + " ";
-						dsq += "ORDER BY " + (sort || "t") + " ";
-						if (limit) dsq += "LIMIT 0,?";
-
-						Log(dsq);
-						sql.query( dsq, [group, group, where, limit], function (err, evs) {
-
-							ctx.Job = evs;
-
-							ENGINE.select(req, function (stats) {
-								saveResults( sql, saveds, savefile, stats, ctx );
+							ENGINE.select(req, function (stats) {  // run plugin's engine
+								saveResults( Array.from(stats), ctx );
 							});
-
 						});
-					}
 				
 				else
 					ENGINE.select(req, function (stats) {
-						saveResults( sql, saveds, savefile, stats, ctx );
+						saveResults( Array.from(stats), ctx );
 					});
 
 			}
