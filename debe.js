@@ -43,7 +43,7 @@ var 									// totem modules
 	ENGINE = require("engine"), 
 	FLEX = require("flex"),
 	TOTEM = require("totem"),
-	RAN = require("randpr"),
+	RAND = require("randpr"),
 	CHIPS = require("chipper");
 
 var										// shortcuts and globals
@@ -1237,10 +1237,10 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		var 
 			stats = {},
-			ran = new RAN({ // configure the random process generator
-				N: ctx.Ensemble,  // ensemble size
+			ran = new RAND({ // configure the random process generator
+				N: ctx.Members,  // ensemble size
 				K: ctx.States, 		// number of states
-				batch: ctx.Batch,
+				batch: ctx.Batch,  // batch size in steps
 				wiener: ctx.Wiener,  // wiener process switch
 				nyquist: ctx.Nyquist, // oversampling factor
 				events: function batchEvents(maxbuf, maxstep, cb) {  // ingest plugin inputs
@@ -1321,7 +1321,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		save: {}
 	},
 
-	autorunPlugins: function (sql, group, aoi) {  // task and run ingestable plugins
+	autoRuns: function (sql, group, aoi, cb) {  // task and run ingestable plugins
 
 		var
 			TL = [aoi.yMax, aoi.xMin],   // [lon,lat] degs
@@ -1330,8 +1330,12 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			BR = [aoi.yMin, aoi.xMax], 
 			ring = {voiring:[ TL, TR, BR, BL, TL ]};
 		
-		FLEX.taskPlugins( sql, group, ring, function (taskID, pluginName) {
-			FLEX.runPlugin( {
+		FLEX.taskPlugins( sql, group, function (taskID, pluginName) {
+
+			cb( pluginName, ring );
+
+			if (0)
+			FLEX.runPlugin({
 				sql: sql,
 				table: pluginName,
 				query: {ID:taskID}
@@ -1416,11 +1420,21 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		srcStream.pipe(sinkStream);
 	},
 
-	ingestFile: function(sql, savepath, savefile, cb) {
-		CHIPS.ingestFile(sql, savepath, savefile, function (aoi,evs) {
-			if ( gradeIngest = DEBE.gradeIngest ) {
+	ingestFile: function(sql, savepath, savefile, group, cb) {
+		CHIPS.ingestFile(sql, savepath, savefile, function (aoi, evs) {
+			if ( gradeIngest = DEBE.gradeIngest ) {	
 				var ctx = {
-					Ensemble: 50,  // ensemble size
+					Members: aoi.Members,  // ensemble size
+					Steps: aoi.Steps, 		// process steps						
+					Batch: 20,
+					Wiener: false,
+					Nyquist: 1,
+					States: aoi.States
+				};
+				
+				/*				
+				var ctx = {
+					Members: 50,  // ensemble size
 					States: 3, 		// number of states
 					Batch: 20,
 					Wiener: false,
@@ -1429,9 +1443,27 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						FLEX.batchEvents(evs,maxbuf,maxstep,cb);
 					},
 					Steps: 100 // process steps					
-				};
-				
+				}; */
+
 				gradeIngest( Array.from(evs), ctx, function (stats) {
+
+					if (auto = DEBE.autoRuns) auto(sql, group, aoi, function (pluginName,ring) {
+						var 
+							ctx = {
+								Job: JSON.stringify({
+									states: aoi.States,
+									aoiring: ring
+								}),
+								Name: savefile,
+								Steps:aoi.Steps,
+								Members:aoi.Members
+							};
+
+						Log( sql.query( 
+							"REPLACE INTO ??.?? SET ?", [
+							group, pluginName, ctx] ).sql );
+					});
+					
 					cb(aoi,stats);
 				});
 			}
