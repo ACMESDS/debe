@@ -1321,14 +1321,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		save: {}
 	},
 
+	/*
 	autoRuns: function (sql, group, aoi, cb) {  // task and run ingestable plugins
 
 		var
-			TL = [aoi.yMax, aoi.xMin],   // [lon,lat] degs
-			TR = [aoi.yMax, aoi.xMax],
-			BL = [aoi.yMin, aoi.xMin],
-			BR = [aoi.yMin, aoi.xMax], 
-			ring = {voiring:[ TL, TR, BR, BL, TL ]};
+			ring = aoi.ring;
 		
 		FLEX.taskPlugins( sql, group, function (taskID, pluginName) {
 
@@ -1341,10 +1338,10 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				query: {ID:taskID}
 			}, function (err, rtn, ctx) {
 			});
-				
+
 		});
 		
-		/*
+		/ *
 		var 
 			group = "app",
 			TL = [aoi.yMax, aoi.xMin],   // [lon,lat] degs
@@ -1400,8 +1397,9 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					}
 				});
 		});
-		*/
+		* /
 	},
+	*/
 		
 	dumpFile: function (savepath, evs, cb) {
 		var 
@@ -1420,8 +1418,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		srcStream.pipe(sinkStream);
 	},
 
-	ingestFile: function(sql, savepath, savefile, group, cb) {
-		CHIPS.ingestFile(sql, savepath, savefile, function (aoi, evs) {
+	ingestFile: function(sql, savepath, savefile, saveid, group, client, doc, cb) {  // ingest events from file with callback cb(aoi, stats).
+		CHIPS.ingestFile(sql, savepath, savefile, saveid, function (aoi, evs) {
 			if ( gradeIngest = DEBE.gradeIngest ) {	
 				var ctx = {
 					Members: aoi.Members,  // ensemble size
@@ -1432,41 +1430,52 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					States: aoi.States
 				};
 				
-				/*				
-				var ctx = {
-					Members: 50,  // ensemble size
-					States: 3, 		// number of states
-					Batch: 20,
-					Wiener: false,
-					Nyquist: 1,
-					Events: function batchEvents(maxbuf, maxstep, cb) {  // ingest plugin inputs
-						FLEX.batchEvents(evs,maxbuf,maxstep,cb);
-					},
-					Steps: 100 // process steps					
-				}; */
-
 				gradeIngest( Array.from(evs), ctx, function (stats) {
-
-					if (auto = DEBE.autoRuns) auto(sql, group, aoi, function (pluginName,ring) {
-						var 
-							ctx = {
-								Job: JSON.stringify({
-									states: aoi.States,
-									aoiring: ring
-								}),
-								Name: savefile,
-								Steps:aoi.Steps,
-								Members:aoi.Members
-							};
-
-						Log( sql.query( 
-							"REPLACE INTO ??.?? SET ?", [
-							group, pluginName, ctx] ).sql );
-					});
-					
 					cb(aoi,stats);
+
+					var ctx = {
+						Job: JSON.stringify({
+							states: aoi.States,
+							ring: aoi.ring,
+							where: {fileID: saveid}
+						}),
+						Name: savefile,
+						Steps: aoi.Steps,
+						Members: aoi.Members,
+						Description: doc + [
+								``,
+								`The following initial assessment was credited to your account.`,
+								`coherence_time: ${stats.corr_time.toFixed(6)}`,
+								`coherence_intervals: ${stats.coherence_intervals.toFixed(6)}`,
+								`degeneracy: ${stats.degeneracy.toFixed(6)}`,
+								`snr: ${stats.snr.toFixed(6)}`,
+								`mean_jump_rate: ${stats.avg_rate.toFixed(6)}`
+							].join("<br>")
+
+					};
+
+					if ( task = FLEX.taskPlugins )
+						task( sql, group, function (plugin) {
+							sql.query( 
+								"REPLACE INTO ??.?? SET ?", [ group, plugin, ctx ], function (err, info) {
+									if (!err) {
+										Trace( `TASKING PLUGIN ${plugin} ID=${info.insertId}` );
+										FLEX.runPlugin({
+											sql: sql,
+											table: plugin,
+											group: group,
+											client: client,
+											query: {ID:info.insertId}
+										}, function (err,rtn,ctx) {
+											Log(plugin,err || rtn);
+										});	
+									}								
+							});
+						});
+
 				});
 			}
+			
 		});
 	},
 	
@@ -2155,15 +2164,21 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 					else 
 						CHIPS.ingestEvents(req, ctx, Job, job, function (evs) {
-							ctx.Events = function batchEvents(maxbuf, maxstep, cb) {  // provide event getter
-								Log("call batch");
-								FLEX.batchEvents(evs,maxbuf,maxstep,cb);
-							};
-							ctx.States = Job.states;
+							
+							if (evs) {
+								ctx.Events = function batchEvents(maxbuf, maxstep, cb) {  // provide event getter
+									Log("call batch");
+									FLEX.batchEvents(evs,maxbuf,maxstep,cb);
+								};
+								ctx.States = Job.states;
 
-							ENGINE.select(req, function (stats) {  // run plugin's engine
-								saveResults( Array.from(stats), ctx );
-							});
+								ENGINE.select(req, function (stats) {  // run plugin's engine
+									saveResults( Array.from(stats), ctx );
+								});
+							}
+							
+							else
+								Trace("Bad plugin job request");
 						});
 				
 				else

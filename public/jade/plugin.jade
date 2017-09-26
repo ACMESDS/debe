@@ -138,9 +138,9 @@ append site_body
 			#grid.Jobs(
 				path="/queues.db?Class=#{ds}",
 				cols="Arrived.d,Departed.d,Client,Notes.x,QoS.n,Age.n,Funded.c,Finished.c,Priority.n,Work.n,State.n,Task.t,Signoffs(Flagged.c,Sign0.c,Sign1.c,Sign2.c,Sign3.c)",
+				sorts="Work,State",
 				refresh=dsrefresh,
 				wrap,
-				sorts="Work,State",
 				head="Print,Refresh,Execute,Help",
 				hover="policed",
 				page=dspage )
