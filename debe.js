@@ -1401,9 +1401,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 	*/
 		
-	dumpFile: function (savepath, evs, cb) {
+	dumpFile: function (sql, filename, client, evs, cb) {
+		
 		var 
 			evidx = 0,
+			savepath = ENV.PUBLIC+"/stores/"+filename,
 			srcStream = new STREAM.Readable({  
 				objectMode: false,
 				read: function () {  
@@ -1416,6 +1418,14 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			sinkStream = FS.createWriteStream( savepath, "utf8").on("finish", cb);
 
 		srcStream.pipe(sinkStream);
+		
+		sql.query("REPLACE INTO app.files SET ?", {
+			Name: filename,
+			Client: client,
+			Added: new Date()
+		}, function (err,info) {
+			if (cb) cb(info.insertId);
+		});
 	},
 
 	ingestFile: function(sql, savepath, savefile, saveid, group, client, doc, cb) {  // ingest events from file with callback cb(aoi, stats).
@@ -1453,7 +1463,9 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 							].join("<br>")
 					};
 
-					FLEX.eachPlugin( sql, group, function (plugin) {
+					FLEX.eachPlugin( sql, group, function (eng) {
+						var plugin = eng.Name;
+
 						sql.query( 
 							"REPLACE INTO ??.?? SET ?", [ group, plugin, ctx ], function (err, info) {
 								if (!err) {
@@ -1465,7 +1477,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 										client: client,
 										query: { ID:info.insertId }
 									}, function (err,rtn,ctx) {
-										Log(plugin,err || rtn);
+										Log("TASK ",plugin,err || rtn);
 									});	
 								}
 						});
@@ -1978,16 +1990,13 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 			Each(stash, function (key,evs) {  // ingest events 
 				if (evs) {
-					
-					if (true) 
-						DEBE.dumpFile(ENV.PUBLIC+"/stores/"+saveds+"."+client, evs, function () {
-							Log("dumped");
-						});
-				
-					CHIPS.ingestList(sql,evs, function (aoi) {
-						Log(aoi);
+					DEBE.dumpFile( sql, saveds+"."+ctx.Name+"."+client, client, evs, function (fileID) {
+						if (false)
+							CHIPS.ingestList( sql, evs, fileID, function (aoi, evs) {
+								Log("INGESTED ",aoi);
+							});
 					});
-
+				
 					status += " Uploaded";
 				}
 			});
