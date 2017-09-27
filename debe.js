@@ -1451,28 +1451,25 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 								`snr: ${stats.snr.toFixed(6)}`,
 								`mean_jump_rate: ${stats.avg_rate.toFixed(6)}`
 							].join("<br>")
-
 					};
 
-					if ( task = FLEX.taskPlugins )
-						task( sql, group, function (plugin) {
-							sql.query( 
-								"REPLACE INTO ??.?? SET ?", [ group, plugin, ctx ], function (err, info) {
-									if (!err) {
-										Trace( `TASKING PLUGIN ${plugin} ID=${info.insertId}` );
-										FLEX.runPlugin({
-											sql: sql,
-											table: plugin,
-											group: group,
-											client: client,
-											query: {ID:info.insertId}
-										}, function (err,rtn,ctx) {
-											Log(plugin,err || rtn);
-										});	
-									}								
-							});
+					FLEX.eachPlugin( sql, group, function (plugin) {
+						sql.query( 
+							"REPLACE INTO ??.?? SET ?", [ group, plugin, ctx ], function (err, info) {
+								if (!err) {
+									Trace( `TASKING PLUGIN ${plugin} ID=${info.insertId}` );
+									FLEX.runPlugin({
+										sql: sql,
+										table: plugin,
+										group: group,
+										client: client,
+										query: { ID:info.insertId }
+									}, function (err,rtn,ctx) {
+										Log(plugin,err || rtn);
+									});	
+								}
 						});
-
+					});
 				});
 			}
 			
