@@ -1422,7 +1422,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		sql.query("REPLACE INTO app.files SET ?", {
 			Name: fileName,
 			Client: client,
-			Area: "stores",
+			Area: "uploads",
 			Tag: "",
 			Added: new Date()
 		}, function (err,info) {
