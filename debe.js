@@ -362,7 +362,7 @@ append layout_body
 		/**
 		@member SKINS
 		@method hover
-		Title ti filename fn
+		Title ti fileName fn
 		*/
 			if (fn.charAt(0) != "/") fn = "/shares/"+fn;
 			return ti.tag("p",{class:"sm"}) 
@@ -1071,7 +1071,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						disk: ((req.profile.useDisk / req.profile.maxDisk)*100).toFixed(0)
 					},
 					started: DEBE.started,
-					filename: DEBE.paths.jaderef,
+					fileName: DEBE.paths.jaderef,
 					url: req.url
 				});
 
@@ -1401,11 +1401,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 	*/
 		
-	dumpFile: function (sql, filename, client, evs, cb) {
+	dumpFile: function (sql, fileName, client, evs, cb) {  // pipe events to stores/fileName with callback(fileID,fileName)
 		
 		var 
 			evidx = 0,
-			savepath = ENV.PUBLIC+"/stores/"+filename,
+			filePath = ENV.PUBLIC+"/stores/"+fileName,
 			srcStream = new STREAM.Readable({  
 				objectMode: false,
 				read: function () {  
@@ -1415,21 +1415,23 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						this.push(null);
 				}
 			}),					
-			sinkStream = FS.createWriteStream( savepath, "utf8").on("finish", cb);
+			sinkStream = FS.createWriteStream( filePath, "utf8").on("finish", cb);
 
 		srcStream.pipe(sinkStream);
 		
 		sql.query("REPLACE INTO app.files SET ?", {
-			Name: filename,
+			Name: fileName,
 			Client: client,
+			Area: "stores",
+			Tag: "",
 			Added: new Date()
 		}, function (err,info) {
-			if (cb) cb(info.insertId);
+			if (cb) cb( info.insertId, fileName );
 		});
 	},
 
-	ingestFile: function(sql, savepath, savefile, saveid, group, client, doc, cb) {  // ingest events from file with callback cb(aoi, stats).
-		CHIPS.ingestFile(sql, savepath, savefile, saveid, function (aoi, evs) {
+	ingestFile: function(sql, filePath, fileName, fileID, group, client, doc, cb) {  // ingest events from file with callback(aoi, stats).
+		CHIPS.ingestFile(sql, filePath, fileID, function (aoi, evs) {
 			if ( gradeIngest = DEBE.gradeIngest ) {	
 				var ctx = {
 					Members: aoi.Members,  // ensemble size
@@ -1447,9 +1449,9 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						Job: JSON.stringify({
 							states: aoi.States,
 							ring: aoi.ring,
-							where: {fileID: saveid}
+							where: {fileID: fileID}
 						}),
-						Name: savefile,
+						Name: fileName,
 						Steps: aoi.Steps,
 						Members: aoi.Members,
 						Description: doc + [
@@ -1847,7 +1849,7 @@ To connect to ${site.Nick} from Windows:
 `.replace(/\n/g,"<br>"),
 													
 					attachments: [{
-						filename: Cert,
+						fileName: Cert,
 						path: `${paths.certs+name}.pub`
 					}],	
 					alternatives: [{
@@ -1990,14 +1992,14 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 			Each(stash, function (key,evs) {  // ingest events 
 				if (evs) {
-					DEBE.dumpFile( sql, saveds+"."+ctx.Name+"."+client, client, evs, function (fileID) {
+					DEBE.dumpFile( sql, saveds+"."+ctx.Name+"."+client, client, evs, function (fileID, fileName) {
 						if (false)
 							CHIPS.ingestList( sql, evs, fileID, function (aoi, evs) {
 								Log("INGESTED ",aoi);
 							});
 					});
 				
-					status += " Uploaded";
+					status += " Ingested";
 				}
 			});
 		
