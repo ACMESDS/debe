@@ -1403,7 +1403,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 	saveFile: function (sql, fileName, client, evs, cb) {  // pipe events from client to public/stores/fileName with callback(fileID,fileRef)
 		
-		sql.query("REPLACE INTO app.files SET ?", {
+		sql.query("INSERT INTO app.files SET ?", {
 			Name: fileName,
 			Client: client,
 			Area: "uploads",
@@ -1411,27 +1411,25 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			Added: new Date()
 		}, function (err,info) {
 
-			if ( !err ) {
-				var 
-					evidx = 0,
-					dot = ".",
-					fileRef = fileName+dot+client+dot+info.insertId,
-					filePath = ENV.PUBLIC+"/stores/"+fileRef,
-					srcStream = new STREAM.Readable({  
-						objectMode: false,
-						read: function () {  
-							if ( ev = evs[evidx++] )
-								this.push( JSON.stringify(ev)+"\n" );
-							else
-								this.push(null);
-						}
-					}),
-					sinkStream = FS.createWriteStream( filePath, "utf8").on("finish", cb);
+			var 
+				evidx = 0,
+				dot = ".",
+				fileRef = fileName+dot+client,
+				filePath = ENV.PUBLIC+"/stores/"+fileRef,
+				srcStream = new STREAM.Readable({  
+					objectMode: false,
+					read: function () {  
+						if ( ev = evs[evidx++] )
+							this.push( JSON.stringify(ev)+"\n" );
+						else
+							this.push(null);
+					}
+				}),
+				sinkStream = FS.createWriteStream( filePath, "utf8").on("finish", cb);
 
-				srcStream.pipe(sinkStream);
+			srcStream.pipe(sinkStream);
 
-				if (cb) cb( info.insertId, fileRef );
-			}
+			if (cb) cb( fileRef );
 		});
 	},
 
@@ -1987,13 +1985,14 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		
 		else
 		if ( stats.constructor == Array ) {  // keys in the plugin context are used to create save stashes
+			/*
 			stats.getStash("at", "Ingest_", ctx, stash, function (ev,stat,ctx) {  // add {at:"KEY",...} stats to the Ingest_KEY stash
 				if (ev) 
 					ev.push( stat );
 				
 				else 
 					return ctx ? new Array() : null;
-			});
+			}); 
 
 			Each(stash, function (key,evs) {  // ingest events 
 				if (evs) {
@@ -2006,7 +2005,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				
 					status += " Ingested";
 				}
-			});
+			}); */
 		
 			var stash = { remainder: [] };  // saveable keys stash
 			stats.getStash("at", "Save_", ctx, stash, function (ev, stat) {  // add {at:"KEY",...} stats to the Save_KEY stash
@@ -2031,13 +2030,28 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		for (var key in stash) 
 			stash[key] = JSON.stringify(stash[key]);
 		
-		if ("Save" in ctx) {  // remainder dumped to Save key
-			sql.query("UPDATE ?? SET ? WHERE ?", [
-				saveds, {Save: JSON.stringify(stash.remainder)}, {ID: ctx.ID}
-			]);
+		if (stash.remainder.length) 
+			if ("Save" in ctx) {  // remainder dumped to Save key
+				sql.query("UPDATE ?? SET ? WHERE ?", [
+					saveds, {Save: JSON.stringify(stash.remainder)}, {ID: ctx.ID}
+				]);
+
+				status += " Saved";
+			}
 			
-			status += " Saved";
-		}
+			else
+			if (ctx.Save_file) {
+				DEBE.saveFile( sql, saveds+"."+ctx.Name, client, stash.remainder, function (fileRef) {
+					Trace(`GENERATED ${fileRef}`);
+				});
+
+				status += " Filed";
+			}
+		
+			else
+				CHIPS.ingestList( sql, stash.remainder, fileID, function (aoi, evs) {
+					Log("INGESTED ",aoi);
+				});
 		
 		delete stash.remainder;
 		
@@ -2130,7 +2144,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				
 				if (Job.constructor == Object)
 					if (Job.voiring) 
-						CHIPS.ingestVOI(Job, job, function (voxel,stats,sql) {
+						CHIPS.chipVOI(Job, job, function (voxel,stats,sql) {
 							DEBE.thread( function (sql) {
 								//Log({save:stats});
 								saveResults( Array.from(stats), voxel );
@@ -2179,7 +2193,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				
 					else
 					if (Job.aoiring)
-						CHIPS.ingestAOI(Job, job, function (chip,dets,sql) {
+						CHIPS.chipAOI(Job, job, function (chip,dets,sql) {
 							var updated = new Date();
 
 							//Log({save:dets});
@@ -2215,7 +2229,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						});
 
 					else 
-						CHIPS.ingestEvents(req, ctx, Job, job, function (evs) {
+						CHIPS.chipEvents(req, ctx, Job, job, function (evs) {
 							
 							if (evs) {
 								ctx.Events = function batchEvents(maxbuf, maxstep, cb) {  // provide event getter
