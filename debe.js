@@ -1401,23 +1401,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 	*/
 		
-	dumpFile: function (sql, fileName, client, evs, cb) {  // pipe events to stores/fileName with callback(fileID,fileName)
-		
-		var 
-			evidx = 0,
-			filePath = ENV.PUBLIC+"/stores/"+fileName,
-			srcStream = new STREAM.Readable({  
-				objectMode: false,
-				read: function () {  
-					if ( ev = evs[evidx++] )
-						this.push( JSON.stringify(ev)+"\n" );
-					else
-						this.push(null);
-				}
-			}),					
-			sinkStream = FS.createWriteStream( filePath, "utf8").on("finish", cb);
-
-		srcStream.pipe(sinkStream);
+	saveFile: function (sql, fileName, client, evs, cb) {  // pipe events from client to public/stores/fileName with callback(fileID,fileRef)
 		
 		sql.query("REPLACE INTO app.files SET ?", {
 			Name: fileName,
@@ -1426,7 +1410,28 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			Tag: "",
 			Added: new Date()
 		}, function (err,info) {
-			if (cb) cb( info.insertId, fileName );
+
+			if ( !err ) {
+				var 
+					evidx = 0,
+					dot = ".",
+					fileRef = fileName+dot+client+dot+info.insertId,
+					filePath = ENV.PUBLIC+"/stores/"+fileRef,
+					srcStream = new STREAM.Readable({  
+						objectMode: false,
+						read: function () {  
+							if ( ev = evs[evidx++] )
+								this.push( JSON.stringify(ev)+"\n" );
+							else
+								this.push(null);
+						}
+					}),
+					sinkStream = FS.createWriteStream( filePath, "utf8").on("finish", cb);
+
+				srcStream.pipe(sinkStream);
+
+				if (cb) cb( info.insertId, fileRef );
+			}
 		});
 	},
 
@@ -1992,7 +1997,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 			Each(stash, function (key,evs) {  // ingest events 
 				if (evs) {
-					DEBE.dumpFile( sql, saveds+"."+ctx.Name+"."+client, client, evs, function (fileID, fileName) {
+					DEBE.saveFile( sql, saveds+"."+ctx.Name, client, evs, function (fileID, fileRef) {
 						if (false)
 							CHIPS.ingestList( sql, evs, fileID, function (aoi, evs) {
 								Log("INGESTED ",aoi);
@@ -2133,6 +2138,46 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						});
 
 					else
+					if (Job.divs) {
+						var offs = ctx.Mix.offs, dims = ctx.Mix.dims, divs = Job.divs, t = new Date();
+						
+						sql.beginBulk();
+						
+						for (var z=offs[2], zmax=z+dims[2], zinc=(zmax-z) / divs[2]; z<zmax; z+=zinc)
+						for (var y=offs[1], ymax=y+dims[1], yinc=(ymax-y) / divs[1]; y<ymax; y+=yinc)
+						for (var x=offs[0], xmax=x+dims[0], xinc=(xmax-x) / divs[0]; x<xmax; x+=xinc) {
+							var ring = [
+								[y,x],
+								[y+yinc,x],
+								[y+yinc,x+xinc],
+								[y,x+xinc],
+								[y,x]
+							];
+
+							sql.query(
+								"REPLACE INTO ??.voxels SET ?,Ring=st_GeomFromText(?),Point=st_GeomFromText(?)", [
+								req.group, {
+									t: t,
+									x: x,
+									y: y,
+									z: z
+								},
+
+								'POLYGON((' + [  // [lon,lat] degs
+									ring[0].join(" "),
+									ring[1].join(" "),
+									ring[2].join(" "),
+									ring[3].join(" "),
+									ring[0].join(" ") ].join(",") +'))' ,
+									
+								`POINT(${y} ${x})`
+							]);
+						}
+						
+						sql.endBulk();						
+					}
+				
+					else
 					if (Job.aoiring)
 						CHIPS.ingestAOI(Job, job, function (chip,dets,sql) {
 							var updated = new Date();
@@ -2161,8 +2206,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 										t: updated,
 										x: chip.pos.lat,
 										y: chip.pos.lon,
-										z: alt,
-										Enabled: 1
+										z: alt
 									},
 									chip.ring,
 									chip.point
