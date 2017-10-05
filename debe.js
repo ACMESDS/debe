@@ -1401,35 +1401,28 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 	*/
 		
-	saveFile: function (sql, fileName, client, evs, cb) {  // pipe events from client to public/stores/fileName with callback(fileID,fileRef)
+	saveFile: function (sql, fileName, cb) {  // pipe events from client to public/stores/fileName with callback(fileID,fileRef)
 		
-		sql.query("INSERT INTO app.files SET ?", {
+		sql.query("SELECT ID FROM app.files WHERE least(?,1) LIMIT 1", {
 			Name: fileName,
-			Client: client,
-			Area: "uploads",
-			Tag: "",
-			Added: new Date()
-		}, function (err,info) {
+			Client: "plugin",
+			Area: "uploads"
+		}, function (err,recs) {
+			
+			if ( rec = err ? null : recs[0] )
+				cb( rec.ID );
 
-			var 
-				evidx = 0,
-				dot = ".",
-				fileRef = fileName+dot+client,
-				filePath = ENV.PUBLIC+"/stores/"+fileRef,
-				srcStream = new STREAM.Readable({  
-					objectMode: false,
-					read: function () {  
-						if ( ev = evs[evidx++] )
-							this.push( JSON.stringify(ev)+"\n" );
-						else
-							this.push(null);
-					}
-				}),
-				sinkStream = FS.createWriteStream( filePath, "utf8").on("finish", cb);
-
-			srcStream.pipe(sinkStream);
-
-			if (cb) cb( fileRef );
+			else
+				sql.query("INSERT INTO app.files SET ?", {
+					Name: fileName,
+					Client: "plugin",
+					Area: "uploads",
+					Added: new Date()
+				}, function (err,info) {
+					
+					if (!err) cb( info.insertId );
+				});
+			
 		});
 	},
 
@@ -1974,6 +1967,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 	function saveResults( stats, ctx ) {  // save plugin output stats
 		var 
 			status = "", // returned status
+			fileName = req.table+"."+ctx.Name,
 			stash = { };  // ingestable keys stash
 			
 		if ( !stats )
@@ -1996,7 +1990,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 			Each(stash, function (key,evs) {  // ingest events 
 				if (evs) {
-					DEBE.saveFile( sql, saveds+"."+ctx.Name, client, evs, function (fileID, fileRef) {
+					DEBE.saveFile( sql, pluginds+"."+ctx.Name, client, evs, function (fileID, fileRef) {
 						if (false)
 							CHIPS.ingestList( sql, evs, fileID, function (aoi, evs) {
 								Log("INGESTED ",aoi);
@@ -2007,7 +2001,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				}
 			}); */
 		
-			var stash = { remainder: [] };  // saveable keys stash
+			var rem = [], stash = { remainder: rem };  // stash for saveable keys 
 			stats.getStash("at", "Save_", ctx, stash, function (ev, stat) {  // add {at:"KEY",...} stats to the Save_KEY stash
 				
 				if (ev)
@@ -2027,37 +2021,56 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				if ( key in ctx) stash[key] = val;
 			});
 
-		for (var key in stash) 
-			stash[key] = JSON.stringify(stash[key]);
-		
-		if (stash.remainder.length) 
-			if ("Save" in ctx) {  // remainder dumped to Save key
+		if (rem.length) 
+			if ( "Save" in ctx ) {  // remainder dumped to Save key
 				sql.query("UPDATE ?? SET ? WHERE ?", [
-					saveds, {Save: JSON.stringify(stash.remainder)}, {ID: ctx.ID}
+					pluginds, {Save: JSON.stringify(rem)}, {ID: ctx.ID}
 				]);
 
 				status += " Saved";
 			}
 			
 			else
-			if (ctx.Save_file) {
-				DEBE.saveFile( sql, saveds+"."+ctx.Name, client, stash.remainder, function (fileRef) {
-					Trace(`GENERATED ${fileRef}`);
+			if ( ctx.Save_file ) {
+				DEBE.saveFile( sql, fileName, function (fileID) {
+					var 
+						evidx = 0,
+						evs = rem,
+						filePath = ENV.PUBLIC+"/stores/"+fileName+"."+client,
+						srcStream = new STREAM.Readable({  
+							objectMode: false,
+							read: function () {  
+								if ( ev = evs[evidx++] )
+									this.push( JSON.stringify(ev)+"\n" );
+								else
+									this.push( null );
+							}
+						}),
+						sinkStream = FS.createWriteStream( filePath, "utf8").on("finish", function() {
+							Trace("SAVED "+filePath);
+						});
+
+					srcStream.pipe(sinkStream);
 				});
 
 				status += " Filed";
 			}
 		
 			else
-				CHIPS.ingestList( sql, stash.remainder, fileID, function (aoi, evs) {
-					Log("INGESTED ",aoi);
+				DEBE.saveFile( sql, fileName, function (fileID) {
+					CHIPS.ingestList( sql, rem, fileID, function (aoi, evs) {
+						Log("INGESTED ",aoi);
+					});
 				});
 		
-		delete stash.remainder;
+		delete stash.remainder;		
+		
+		for (var key in stash) 
+			stash[key] = JSON.stringify(stash[key]);
 		
 		if ( !Each(stash) ) {   // split save stats across shared keys
 			sql.query("UPDATE ?? SET ? WHERE ?", [ 
-				saveds, stash, {ID: ctx.ID}
+				pluginds, stash, {ID: ctx.ID}
 			]);
 			status += " Split";
 		}
@@ -2070,7 +2083,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		sql = req.sql,
 		client = req.client,
 		group = req.group,
-		saveds = req.group+dot+req.table,
+		pluginds = req.group+dot+req.table,
 		query = req.query;
 
 		/*
