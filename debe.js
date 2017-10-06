@@ -89,11 +89,21 @@ var
 	
 	"reqflags.edits.": {  //< _flag=key,key,... edits specified keys in requested dataset
 		blog: function (keys,recs,req) {  	//<  _blog=key,key,... renders keys
+			
+			function fmt(ds,src) {
+				try {
+					return eval("`" + src + "`");
+				}
+				catch (err) {
+					return src;
+				}
+			}
+			
 			recs.each( function (n, rec) { 
 				keys.each( function (m, key) {
 					if (val = rec[key])
 						if (val.constructor == String) // only strings are bloggable
-								(":markdown\n" + val)  // make blog markdown
+								(":markdown\n" + fmt(rec,val))  // make blog markdown
 									.replace(/   /g, "\t")  // fake tabs
 									.replace(/\n/g,"\n\t")  // indent markdown
 									.replace(/\[(.*?)\]\((.*?)\)/g, function (m,i) {  // adjust [x,w,h,s](u) markdown
@@ -120,14 +130,13 @@ var
 												return x.tag("a",{href:u});
 											default:
 												return "".tag("iframe",{ src: `/${x}.view?${p}&w=${w}&h=${h}&ds=${s}`, width:w, height:h } );
-												//Log(xx);
 										}										
 									})
-									.replace(/href=(.*?)>/g, function (m,i) { // <a href=B>A</a> --> followed link
+									.replace(/href=(.*?)>/g, function (m,i) { // follow <a href=B>A</a> links
 										var q = (i.charAt(0) == "'") ? '"' : "'";
 										return `href=${q}javascript:navigator.follow(${i},BASE.user.client,BASE.user.source)${q}>`;
 									})
-									.render(req, function (html) { // thats all folks
+									.renderJade(req, function (html) { // thats all folks - render it
 										rec[key] = html;
 								});
 				});
@@ -1044,48 +1053,16 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				return "\t" + this.split("\n").join("\n\t");
 		},*/
 	
-		function render(req,res) { 
+		function renderJade(req,res) { 
 		/**
 		@private
 		@method render
-		Respond with res( err || html) thats renders this string in a new context created for this request.  If string is 
-		of he form .PATH, then anattempt is made to render the file at PTH.  
+		Render Jade string this to res( err || html ) in a new context created for this request. 
 		**/
-			var 
-				ctx = Copy(DEBE.site, {
-					table: req.table,
-					type: req.type,
-					parts: req.parts,
-					action: req.action,
-					org: req.org,
-					client: req.client,
-					flags: req.flags,
-					query: req.query,
-					joined: req.joined,
-					profile: req.profile,
-					group: req.group,
-					search: req.search,
-					session: req.session,
-					util: {
-						cpu: (req.log.Util*100).toFixed(0),
-						disk: ((req.profile.useDisk / req.profile.maxDisk)*100).toFixed(0)
-					},
-					started: DEBE.started,
-					fileName: DEBE.paths.jaderef,
-					url: req.url
-				});
-
-			if ( this.charAt(0) == "." )
+			var jade = this+"";
+			siteContext( req, function (ctx) {
 				try {
-					res( JADE.renderFile( this+"", ctx ) );  // js gets confused so force string
-				}
-				catch (err) {
-					res(  err );
-				}
-			
-			else
-				try {
-					if ( generator = JADE.compile(this, ctx) )
+					if ( generator = JADE.compile(jade, ctx) )
 						res( generator(ctx) );
 					else
 						res( DEBE.errors.badSkin );
@@ -1093,7 +1070,26 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				catch (err) {
 					return res( err );
 				}
+			});
+		},
+		
+		function renderFile(req,res) { 
+		/**
+		@private
+		@method render
+		Render Jade file at path this to res( err || html ) in a new context created for this request.  
+		**/
+			var file = this+"";
+			siteContext( req, function (ctx) {
+				try {
+					res( JADE.renderFile( file, ctx ) );  // js gets confused so force string
+				}
+				catch (err) {
+					res(  err );
+				}
+			});
 		}
+		
 	],
 	
 	Array: [  // array prototypes
@@ -1437,8 +1433,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 							].join("<br>") */
 					};
 					
-				//Log(ctx,group,plugin);
-				var q = sql.query( 
+				sql.query( 
 					"INSERT INTO ??.?? SET ?", [ group, plugin, ctx ], function (err, info) {
 						if (false)
 							FLEX.runPlugin({
@@ -1574,7 +1569,6 @@ function sysConfig(req,res) {
 /**
 @method sysConfig
 @deprecated
-Totem(req,res) endpoint to render jade code requested by .table jade engine. 
 @param {Object} req Totem request
 @param {Function} res Totem response
 */
@@ -1595,7 +1589,6 @@ function sysCheckpt(req,res) {
 /*
 @method sysCheckpt
 @deprecated
-Totem(req,res) endpoint to render jade code requested by .table jade engine. 
 @param {Object} req Totem request
 @param {Function} res Totem response
 */
@@ -1719,7 +1712,6 @@ function sysKill(req,res) {
 /*
 @method sysKill
 @deprecated
-Totem(req,res) endpoint to render jade code requested by .table jade engine. 
 @param {Object} req Totem request
 @param {Function} res Totem response
 */
@@ -2207,7 +2199,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 					else
 					if (Job.divs) {
-						var offs = ctx.Mix.offs, dims = ctx.Mix.dims, divs = Job.divs, t = new Date();
+						var offs = Job.offs, dims = Job.dims, divs = Job.divs, t = 0;
 						
 						sql.beginBulk();
 						
@@ -2223,7 +2215,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 							];
 
 							sql.query(
-								"REPLACE INTO ??.voxels SET ?,Ring=st_GeomFromText(?),Point=st_GeomFromText(?)", [
+								"INSERT INTO ??.voxels SET ?,Ring=st_GeomFromText(?),Point=st_GeomFromText(?)", [
 								group, {
 									t: t,
 									x: x,
@@ -2327,10 +2319,10 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		site = DEBE.site,  
 		ctx = site.context[req.table]; 
 		
-	function inContext(sql, ctx, cb) {
+	function dsContext(sql, ctx, cb) { // callbacl cb() after loading datasets required for this skin
 		
 		if (ctx) // render in extended context
-			sql.context(ctx, function (ctx) {  // establish skinning context for requested table
+			sql.context(ctx, function (ctx) {  // establish a sql dsvar context
 
 				var isEmpty = Each(ctx, function (ds, x, isLast) {
 					x.args = {ds:ds}; 	// hold ds name for use after select
@@ -2349,7 +2341,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 	}
 	
 	
-	inContext(sql, ctx, function () {  
+	dsContext(sql, ctx, function () {  
 
 		function renderPlugin(fields) { // render using plugin skin
 			
@@ -2428,8 +2420,8 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 
 			else	*/
 			
-			inContext(sql, ctx, function () {  // render plugin in its plugin context
-				pluginPath.render(req, res);
+			dsContext(sql, ctx, function () {  // render plugin in its plugin context
+				pluginPath.renderFile(req, res);
 			});
 			
 		}		
@@ -2441,7 +2433,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 				function (err,fields) {
 
 					if (err) // might be a file
-						( paths.render+req.table+".jade" ).render(req, res);
+						( paths.render+req.table+".jade" ).renderFile(req, res);
 
 					else 
 						renderPlugin( fields );
@@ -2460,8 +2452,8 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 			else
 			if (isLast)
 				if (eng)  // render with this skinning engine
-					inContext(sql, ctx, function () {
-						eng.Code.render( req, res );
+					dsContext(sql, ctx, function () {
+						eng.Code.renderJade( req, res );
 					});
 				
 				else 	// try to get engine from sql table or from disk
@@ -2889,4 +2881,31 @@ function Trace(msg,arg) {
 	TOTEM.trace("D>",msg,arg);
 }
 
+function siteContext(req, cb) {
+	
+	cb( Copy(DEBE.site, {
+		table: req.table,
+		type: req.type,
+		parts: req.parts,
+		action: req.action,
+		org: req.org,
+		client: req.client,
+		flags: req.flags,
+		query: req.query,
+		joined: req.joined,
+		profile: req.profile,
+		group: req.group,
+		search: req.search,
+		session: req.session,
+		util: {
+			cpu: (req.log.Util*100).toFixed(0),
+			disk: ((req.profile.useDisk / req.profile.maxDisk)*100).toFixed(0)
+		},
+		started: DEBE.started,
+		fileName: DEBE.paths.jaderef,
+		url: req.url
+	}) );
+	
+}
+	
 // UNCLASSIFIED
