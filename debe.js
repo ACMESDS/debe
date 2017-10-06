@@ -104,7 +104,7 @@ var
 					if (val = rec[key])
 						if (val.constructor == String) // only strings are bloggable
 								(":markdown\n" + fmt(rec,val))  // make blog markdown
-									.replace(/   /g, "\t")  // fake tabs
+									.replace(/   /g, "\t")  // replace fake tabs
 									.replace(/\n/g,"\n\t")  // indent markdown
 									.replace(/\[(.*?)\]\((.*?)\)/g, function (m,i) {  // adjust [x,w,h,s](u) markdown
 										m = m.substr(1,m.length-2).split("]("); 
@@ -1228,30 +1228,18 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	*/
 	isSpawned: false, 			//< Enabled when this is child server spawned by a master server
 
-	gradeIngest: function (evs, aoi, cb) {
-		Log("grader ctx",ctx,"evs=",evs.length);
-		
+	gradeIngest: function (aoi, evs, cb) {
 		var 
 			stats = {},
-			ctx = {
-				Members: aoi.Actors,  // ensemble size
-				Steps: aoi.Steps, 		// process steps						
-				Batch: 20,
-				Wiener: false,
-				Nyquist: 1,
-				States: aoi.States
-			},
 			ran = new RAND({ // configure the random process generator
-				N: ctx.Members,  // ensemble size
-				K: ctx.States, 		// number of states
-				batch: ctx.Batch,  // batch size in steps
-				wiener: ctx.Wiener,  // wiener process switch
-				nyquist: ctx.Nyquist, // oversampling factor
+				N: aoi.Actors,  // ensemble size
+				K: aoi.States, 		// number of states
+				batch: 20,  // batch size in steps
 				events: function batchEvents(maxbuf, maxstep, cb) {  // ingest plugin inputs
 					FLEX.batchEvents(evs,maxbuf,maxstep,cb);
 				},
 				store: [], 	// use sync pipe() since we are running a web service
-				steps: ctx.Steps, // process steps
+				steps: aoi.Steps, // process steps
 				filter: function (str, ev) {  // retain only step info
 					switch ( ev.at ) {
 						case "end":
@@ -1265,8 +1253,14 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			});
 
 		ran.pipe( [], function (evs) {
-			Log(stats);
-			cb( stats );
+			Log("grader",stats);
+			cb({
+				coherence_time: stats.coherence_time,
+				coherence_intervals: stats.coherence_intervals,
+				degeneracy: stats.degeneracy,
+				snr: stats.snr,
+				mean_jump_rate: stats.mean_jump_rate
+			});
 		}); 
 	},
 		
@@ -1406,92 +1400,49 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 	*/
 		
-	ingestFile: function(sql, filePath, fileName, fileID, group, client, doc, cb) {  // ingest events from file with callback(aoi, stats).
+	ingestFile: function(sql, filePath, fileName, fileID, group, doc, cb) {  // ingest events from file with callback(aoi, stats).
 		CHIPS.ingestFile(sql, filePath, fileID, function (aoi, evs) {
 			
-			FLEX.eachPlugin( sql, group, function (eng) {
+			DEBE.gradeIngest( aoi, Array.from(evs), function (stats) {
+
+				function pretty(stats,sigfig) {
+					var rtn = "";
+					Each(stats, function (key,stat) {
+						rtn += key + ": " + stat.toFixed(sigfig) + "<br>";
+					});
+					return rtn;
+				}
+				
+				cb(Copy(stats, aoi));
+					
 				var
-					plugin = eng.Name,
 					ctx = {
 						Job: JSON.stringify({
-							//states: aoi.States,
-							//steps: aoi.Steps,
-							//actors: aoi.Actors,
 							file: fileName
-							//ring: aoi.Ring
 						}),
 						Name: "ingest "+fileName,
-						Description: doc 
-							/*+ [
-								``,
-								`The following initial assessment was credited to your account.`,
-								`coherence_time: ${stats.corr_time.toFixed(6)}`,
-								`coherence_intervals: ${stats.coherence_intervals.toFixed(6)}`,
-								`degeneracy: ${stats.degeneracy.toFixed(6)}`,
-								`snr: ${stats.snr.toFixed(6)}`,
-								`mean_jump_rate: ${stats.avg_rate.toFixed(6)}`
-							].join("<br>") */
+						Description: doc + pretty(stats, 4)
 					};
-					
-				sql.query( 
-					"INSERT INTO ??.?? SET ?", [ group, plugin, ctx ], function (err, info) {
-						if (false)
-							FLEX.runPlugin({
-								sql: sql,
-								table: plugin,
-								group: group,
-								client: client,
-								query: { ID:info.insertId }
-							}, function (err,rtn,ctx) {
-								Log("TASK ",plugin,err || rtn);
-							});	
-				});
-			});
-			
-			/*
-			DEBE.gradeIngest( Array.from(evs), aoi, function (stats) {
-				cb(aoi,stats);
-
-				var ctx = {
-					Job: JSON.stringify({
-						states: aoi.States,
-						steps: aoi.Steps,
-						actors: aoi.Actors,
-						ring: aoi.Ring,
-						fileID: fileID
-					}),
-					Name: fileName,
-					Description: doc + [
-							``,
-							`The following initial assessment was credited to your account.`,
-							`coherence_time: ${stats.corr_time.toFixed(6)}`,
-							`coherence_intervals: ${stats.coherence_intervals.toFixed(6)}`,
-							`degeneracy: ${stats.degeneracy.toFixed(6)}`,
-							`snr: ${stats.snr.toFixed(6)}`,
-							`mean_jump_rate: ${stats.avg_rate.toFixed(6)}`
-						].join("<br>")
-				};
-
+				
 				FLEX.eachPlugin( sql, group, function (eng) {
-					var plugin = eng.Name;
 
 					sql.query( 
-						"REPLACE INTO ??.?? SET ?", [ group, plugin, ctx ], function (err, info) {
-							if (!err) {
-								Trace( `TASKING PLUGIN ${plugin} ID=${info.insertId}` );
+						"INSERT INTO ??.?? SET ? ON DUPLICATE KEY UPDATE ?", [ 
+							group, eng.Name, ctx, {Description: ctx.Description} 
+						], function (err, info) {
+							if (false)
 								FLEX.runPlugin({
 									sql: sql,
-									table: plugin,
+									table: eng.Name,
 									group: group,
 									client: client,
 									query: { ID:info.insertId }
 								}, function (err,rtn,ctx) {
-									Log("TASK ",plugin,err || rtn);
+									Log("TASKED ",eng.Name,err || rtn);
 								});	
-							}
 					});
 				});
-			}); */
+			});
 			
 		});
 	},
@@ -2215,12 +2166,11 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 							];
 
 							sql.query(
-								"INSERT INTO ??.voxels SET ?,Ring=st_GeomFromText(?),Point=st_GeomFromText(?)", [
+								"INSERT INTO ??.voxels SET ?,Ring=st_GeomFromText(?)", [
 								group, {
 									t: t,
-									x: x,
-									y: y,
-									z: z
+									minAlt: z,
+									maxAlt: z+zinc
 								},
 
 								'POLYGON((' + [  // [lon,lat] degs
@@ -2228,9 +2178,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 									ring[1].join(" "),
 									ring[2].join(" "),
 									ring[3].join(" "),
-									ring[0].join(" ") ].join(",") +'))' ,
-									
-								`POINT(${y} ${x})`
+									ring[0].join(" ") ].join(",") +'))' 
 							]);
 						}
 						
@@ -2276,7 +2224,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 					else 
 						CHIPS.chipEvents(req, ctx, job, function (evs) {
-							
+
+							Trace(`PROCESSING ${evs.length} EVENTS`);
 							ctx.Events = function batchEvents(maxbuf, maxstep, cb) {  // provide event getter
 								FLEX.batchEvents(evs,maxbuf,maxstep,cb);
 							};
