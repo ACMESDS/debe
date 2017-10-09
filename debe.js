@@ -36,7 +36,8 @@ var										// 3rd party modules
 	OGEN = null, //require("officegen"), 	//< MS office generator
 	LANG = require('i18n-abide'), 		//< I18 language translator
 	ARGP = require('optimist'),			//< Command line argument processor
-	TOKML = require("tokml"), 			//< geojson to kml concerter
+	TOKML = require("tokml"), 			//< geojson to kml convertor
+	JAX = require("../mathjax/node_modules/mathjax-node"),   
 	JADE = require('jade');				//< using jade as the skinner
 	
 var 									// totem modules		
@@ -54,41 +55,118 @@ var										// shortcuts and globals
 var
 	DEBE = module.exports = TOTEM.extend({
 	
-	"reqflags.traps." : {  //< _flag=name can modify the reqeust
-		save: function (req) {  //< _save=name retains query in named engine
-			var 
-				sql = req.sql,
-				cleanurl = req.url.replace(`_save=${req.flags.save}`,"");
-			
-			Trace(`PUBLISH ${cleanurl} AT ${req.flags.save} FOR ${req.client}`, sql);
-			sql.query("INSERT INTO app.engines SET ?", {
-				Name: req.flags.save,
-				Enabled: 1,
-				Type: "url",
-				Code: cleanurl
-			});
-		},
-				
-		browse: function(req) {	//< _browse=name navigates named folder
-			var query = req.query, flags = req.flags;
-			query.NodeID = parseInt(query.init) ? "" : query.target || "";
-			flags.nav = [query.NodeID, query.cmd];
-			delete query.cmd;
-			delete query.init;
-			delete query.target;
-			delete query.tree;
+	"reqFlags." : {  //< TRAP=name flags modify the request
+		
+		traps: {
+			save: function (req) {  //< _save=name retains query in named engine
+				var 
+					sql = req.sql,
+					cleanurl = req.url.replace(`_save=${req.flags.save}`,"");
+
+				Trace(`PUBLISH ${cleanurl} AT ${req.flags.save} FOR ${req.client}`, sql);
+				sql.query("INSERT INTO app.engines SET ?", {
+					Name: req.flags.save,
+					Enabled: 1,
+					Type: "url",
+					Code: cleanurl
+				});
+			},
+
+			browse: function(req) {	//< _browse=name navigates named folder
+				var query = req.query, flags = req.flags;
+				query.NodeID = parseInt(query.init) ? "" : query.target || "";
+				flags.nav = [query.NodeID, query.cmd];
+				delete query.cmd;
+				delete query.init;
+				delete query.target;
+				delete query.tree;
+			},
+
+			view: function (req) {   //< ?_view=name correlates named view to request dataset
+				req.sql.query("INSERT INTO openv.viewers SET ?", {
+					Viewer: req.flags.view,
+					Dataset: req.table
+				});	
+			}
 		},
 		
-		view: function (req) {   //< ?_view=name correlates named view to request dataset
-			req.sql.query("INSERT INTO openv.viewers SET ?", {
-				Viewer: req.flags.view,
-				Dataset: req.table
-			});	
+		blog: function (src, ds, dsname, cb) {
+			function renderEmac(ds,src) {
+				try {
+					return eval("`" + src + "`");
+				}
+				catch (err) {
+					return src;
+				}
+			}
+			function renderMath(tex,src,cb) {
+				var 
+					rtn = src,
+					isEmpty = tex.each(function (n,tex,isLast) {
+
+						JAX.typeset({
+							math: tex,
+							format: "TeX",  // TeX, inline-TeX, AsciiMath, MathML
+							mml: true
+						}, function (d) {
+							//Log(d.mml);
+							rtn = rtn.replace("$math"+n, d.mml);
+							if ( isLast ) cb(rtn);
+						});
+
+					});
+
+				if (isEmpty) cb(rtn);
+			}
+			
+			var tex = [];
+			
+			renderMath( tex, 
+				//renderEmac(ds,src)
+				src
+				.replace(/\$\$(.*?)\$\$/g, function (m,i) {  // tex markfown
+					tex.push(m.substr(2,m.length-4));
+					return "$math"+(tex.length-1);
+				})
+				.replace(/\[(.*?)\]\((.*?)\)/g, function (m,i) {  // [x,w,h,s](u) markdown
+					m = m.substr(1,m.length-2).split("]("); 
+					var 
+						v = m[0].split(","),
+						u = m[1] || "missing url",
+						x = v[0] || "",
+						w = v[1] || 100,
+						h = v[2] || 100,
+						s = v[3] || `${dsname}?ID=${ds.ID}` ,
+						p = u.split(";").join("&") ;
+
+					switch (x) {
+						case "update":
+							return x.tag("a",{href:dsname+".exe?ID="+ds.ID}) + "".tag("iframe",{ src:u, width:w, height:h });
+						case "image":
+							return "".tag("img",{ src:u, width:w, height:h });
+						case "post":
+							return "".tag("iframe",{ src:u, width:w, height:h });
+						case "nada":
+							return `[nada](${u})`;
+						case "link":
+							return x.tag("a",{href:u});
+						default:
+							return "".tag("iframe",{ src: `/${x}.view?${p}&w=${w}&h=${h}&ds=${s}`, width:w, height:h } );
+					}
+				})
+				
+				.replace(/href=(.*?)>/g, function (m,i) { // follow <a href=B>A</a> links
+					var q = (i.charAt(0) == "'") ? '"' : "'";
+					return `href=${q}javascript:navigator.follow(${i},BASE.user.client,BASE.user.source)${q}>`;
+				}), 
+			cb); 
 		}
+
 	},
 	
-	"reqflags.edits.": {  //< _flag=key,key,... edits specified keys in requested dataset
-		blog: function (keys,recs,req) {  	//<  _blog=key,key,... renders keys
+	/*
+	"reqFlags.edits.": {  //< EDIT=key,key,... flags edit dataset records
+		blog: function (keys,recs,req,res) {  	//<  _blog=key,key,... renders keys
 			
 			function fmt(ds,src) {
 				try {
@@ -102,48 +180,58 @@ var
 			recs.each( function (n, rec) { 
 				keys.each( function (m, key) {
 					if (val = rec[key])
-						if (val.constructor == String) // only strings are bloggable
-								(":markdown\n" + fmt(rec,val))  // make blog markdown
-									.replace(/   /g, "\t")  // replace fake tabs
-									.replace(/\n/g,"\n\t")  // indent markdown
-									.replace(/\[(.*?)\]\((.*?)\)/g, function (m,i) {  // adjust [x,w,h,s](u) markdown
-										m = m.substr(1,m.length-2).split("]("); 
-										var 
-											v = m[0].split(","),
-											u = m[1] || "missing url",
-											x = v[0] || "",
-											w = v[1] || 100,
-											h = v[2] || 100,
-											s = v[3] || `${req.table}?ID=${rec.ID}` ,
-											p = u.split(";").join("&") ;
-									
-										switch (x) {
-											case "update":
-												return x.tag("a",{href:req.table+".exe?ID="+rec.ID}) + "".tag("iframe",{ src:u, width:w, height:h });
-											case "image":
-												return "".tag("img",{ src:u, width:w, height:h });
-											case "post":
-												return "".tag("iframe",{ src:u, width:w, height:h });
-											case "nada":
-												return `[nada](${u})`;
-											case "link":
-												return x.tag("a",{href:u});
-											default:
-												return "".tag("iframe",{ src: `/${x}.view?${p}&w=${w}&h=${h}&ds=${s}`, width:w, height:h } );
-										}										
-									})
-									.replace(/href=(.*?)>/g, function (m,i) { // follow <a href=B>A</a> links
-										var q = (i.charAt(0) == "'") ? '"' : "'";
-										return `href=${q}javascript:navigator.follow(${i},BASE.user.client,BASE.user.source)${q}>`;
-									})
-									.renderJade(req, function (html) { // thats all folks - render it
-										rec[key] = html;
-								});
+						if (val.constructor == String) { // only strings are bloggable
+							var tex = [];
+							
+							//(":markdown\n" + fmt(rec,val))  // make blog markdown
+							//	.replace(/   /g, "\t")  // replace fake tabs
+							//	.replace(/\n/g,"\n\t")  // indent markdown
+							fmt(rec,val)
+							.replace(/\[(.*?)\]\((.*?)\)/g, function (m,i) {  // adjust [x,w,h,s](u) markdown
+								m = m.substr(1,m.length-2).split("]("); 
+								var 
+									v = m[0].split(","),
+									u = m[1] || "missing url",
+									x = v[0] || "",
+									w = v[1] || 100,
+									h = v[2] || 100,
+									s = v[3] || `${req.table}?ID=${rec.ID}` ,
+									p = u.split(";").join("&") ;
+
+								switch (x) {
+									case "update":
+										return x.tag("a",{href:req.table+".exe?ID="+rec.ID}) + "".tag("iframe",{ src:u, width:w, height:h });
+									case "image":
+										return "".tag("img",{ src:u, width:w, height:h });
+									case "post":
+										return "".tag("iframe",{ src:u, width:w, height:h });
+									case "nada":
+										return `[nada](${u})`;
+									case "link":
+										return x.tag("a",{href:u});
+									case "tex":
+										//Log( u.tag("script",{id:"MathJax-Element-1",type:"math/tex",mode:"display"}) );
+										//return u.tag("script",{id:"MathJax-Element-1",type:"math/tex",mode:"display"});
+										tex.push(u);
+										return "$tex"+(tex.length-1);
+									default:
+										return "".tag("iframe",{ src: `/${x}.view?${p}&w=${w}&h=${h}&ds=${s}`, width:w, height:h } );
+								}										
+							})
+							.replace(/href=(.*?)>/g, function (m,i) { // follow <a href=B>A</a> links
+								var q = (i.charAt(0) == "'") ? '"' : "'";
+								return `href=${q}javascript:navigator.follow(${i},BASE.user.client,BASE.user.source)${q}>`;
+							})
+							.renderMath(tex, function (html) { // thats all folks - render it
+								rec[key] = html;
+								Log(key,tex,rec[key]);
+							});
+						}
 				});
 			});
 		},
 		
-		/*
+		/ *
 		jade: function (keys,recs,req) {  	// jade markdown on keys fields
 
 			recs.each( function (n, rec) { 
@@ -190,7 +278,7 @@ append layout_body
 				});
 			});
 		},
-		*/
+		* /
 		
 		json: function json(keys,recs,req) { //< _json=key,key,... jsonize keys
 			var id = 1;
@@ -220,7 +308,8 @@ append layout_body
 			});
 		}
 	},
-	
+	*/
+										 
 	admitRule: null, 	//< admitRule all clients by default 	
 		/*{ "u.s. government": "required",
 		 * 	"us": "optional"
@@ -506,7 +595,7 @@ append layout_body
 		}
 	},
 	
-	"converters." : { // endpoints to convert dataset on req-res thread
+	"reqTypes." : { // endpoints to convert dataset on req-res thread
 		view: function (recs,req,res) {  //< dataset.view returnsrendered skin
 			res( recs );
 		},
@@ -545,7 +634,7 @@ append layout_body
 			res( DEBE.site.gridify( recs ).tag("table") );
 		},
 		
-		// MS office doc converters
+		// MS office doc reqTypes
 		xdoc: genDoc,
 		xxls: genDoc,
 		xpps: genDoc,
@@ -2790,6 +2879,15 @@ Initialize DEBE on startup.
 	initSES( function () {	// init session handelling
 	initSQL( function () {	// init the sql interface
 
+		JAX.config({
+			MathJax: {
+				tex2jax: {
+					//displayMath: [["$$","$$"]]
+				}
+			}
+		});
+		JAX.start();
+		
 		DEBE.thread( function (sql) {
 			var path = DEBE.paths.render;
 			
@@ -2857,4 +2955,5 @@ function siteContext(req, cb) {
 	
 }
 	
+
 // UNCLASSIFIED
