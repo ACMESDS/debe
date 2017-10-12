@@ -109,7 +109,6 @@ var
 							format: "TeX",  // TeX, inline-TeX, AsciiMath, MathML
 							mml: true
 						}, function (d) {
-							//Log(d.mml);
 							rtn = rtn.replace("$math"+n, d.mml);
 							if ( isLast ) cb(rtn);
 						});
@@ -124,11 +123,11 @@ var
 			renderMath( tex, 
 				//renderEmac(ds,src)
 				src
-				.replace(/\$\$(.*?)\$\$/g, function (m,i) {  // tex markfown
+				.replace(/\$\$(.|\n)*\$\$/g, function (m,i) {  // tex markfown
 					tex.push(m.substr(2,m.length-4));
 					return "$math"+(tex.length-1);
 				})
-				.replace(/\[(.*?)\]\((.*?)\)/g, function (m,i) {  // [x,w,h,s](u) markdown
+				.replace(/\[.*\]\((.*?)\)/g, function (m,i) {  // [x,w,h,s](u) markdown
 					m = m.substr(1,m.length-2).split("]("); 
 					var 
 						v = m[0].split(","),
@@ -155,7 +154,7 @@ var
 					}
 				})
 				
-				.replace(/href=(.*?)>/g, function (m,i) { // follow <a href=B>A</a> links
+				.replace(/href=.*>/g, function (m,i) { // follow <a href=B>A</a> links
 					var q = (i.charAt(0) == "'") ? '"' : "'";
 					return `href=${q}javascript:navigator.follow(${i},BASE.user.client,BASE.user.source)${q}>`;
 				}), 
