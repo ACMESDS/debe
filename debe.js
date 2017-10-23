@@ -1056,7 +1056,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		jaderef: "./public/jade/ref.jade",	// jade reference path for includes, exports, appends
 		
-		engine: "SELECT * FROM app.engines WHERE least(?,1)",
+		engine: "SELECT * FROM app.engines WHERE least(?,1) LIMIT 1",
 		render: "./public/jade/",
 		
 		sss: { // some streaming services
@@ -2466,7 +2466,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		function renderTable( ) {
 			sql.query(
 				"DESCRIBE ??.??", 
-				[ FLEX.txGroup[req.table] || req.group, req.table ] , 
+				[ FLEX.dbRoutes[req.table] || req.group, req.table ] , 
 				function (err,fields) {
 
 					if (err) // might be a file
@@ -2477,45 +2477,37 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 			});	
 		}
 		
-		sql.eachRec(paths.engine, { // Try a skinning engine
+		sql.withRecord(paths.engine, { // Try a skinning engine
 			Name: req.table,
 			Type: "jade",
 			Enabled: 1
-		}, function (err, eng, isLast) {
+		}, function (eng) {
 			
-			if (err) 
-				res( DEBE.errors.badSkin );
-			
+			if (eng)  // render with this skinning engine
+				dsContext(sql, ctx, function () {
+					eng.Code.renderJade( req, res );
+				});
+
+			else 	// try to get engine from sql table or from disk
+			if ( route = DEBE.byActionTable.select[req.table] ) // try virtual table
+				route(req, function (recs) {
+					renderPlugin( recs[0] || {} );
+				});
+
 			else
-			if (isLast)
-				if (eng)  // render with this skinning engine
-					dsContext(sql, ctx, function () {
-						eng.Code.renderJade( req, res );
-					});
-				
-				else 	// try to get engine from sql table or from disk
-				if ( route = DEBE.byActionTable.select[req.table] ) // try virtual table
-					route(req, function (recs) {
+			if ( route = DEBE.byAction.select ) // may have an engine interface
+				route(req, function (recs) { 
+					//Log({eng:recs, ds:req.table});
+					if (recs)
 						renderPlugin( recs[0] || {} );
-					});
 
-				else
-				if ( route = DEBE.byAction.select ) // may have an engine interface
-					route(req, function (recs) { 
-						//Log({eng:recs, ds:req.table});
-						if (recs)
-							renderPlugin( recs[0] || {} );
-						
-						else
-							renderTable( );
-					});	
+					else
+						renderTable( );
+				});	
 
-				else  // try sql table
-					renderTable( );		
+			else  // try sql table
+				renderTable( );		
 						
-			else  // cant render with multiple engines
-				res( DEBE.errors.notUnique );
-					
 		});
 
 	});
@@ -2804,7 +2796,7 @@ Initialize DEBE on startup.
 			indexer: DEBE.indexer,
 			uploader: DEBE.uploader,
 
-			txGroup: {
+			dbRoutes: {
 				roles: "openv",
 				aspreqts: "openv",
 				ispreqts: "openv",
