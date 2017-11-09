@@ -1,0 +1,27 @@
+//- UNCLASSIFIED
+
+extends flow
+append flow_help
+	:markdown
+		Extend the flow framework to provide an event network for a GAUSSMIX plugin where
+		
+			ver = network version
+			
+append flow_head
+	- query.ds = "StateMachine"
+
+append flow_body
+
+	case query.ver
+		when 2
+			#A(inputs="L0||SIM,L1,L2",outputs="L3,L4")
+
+		when 3
+			#A(inputs="X||SIM|$TEST,L1,L2",outputs="B1,L4",stats)
+			#B(inputs="IN1||A|B1,IN2||A|L4",outputs="L3,$STEP",stats)
+
+		when 1
+		default
+			#A(inputs="L0||SIM,L1,L2",outputs="L3,L4")
+
+//- UNCLASSIFIED
