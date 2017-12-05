@@ -529,18 +529,20 @@ append site_body
 					[DSP](https://www.npmjs.com/package/dsp)
 					[LWIP](https://github.com/EyalAr/lwip)
 					[MATH](http://mathjs.org/)
-					[CRYPTO](https://nodejs.org/docs/latest/api/)
+					[CRY](https://nodejs.org/docs/latest/api/crypto)
 					[FLEX](https://github.com/ACMESDS/flex)
-					[RAN](https://github.com/ACMESDS/flex), 
+					[RAN](https://github.com/ACMESDS/randpr)
 					[SVD](https://www.npmjs.com/package/node-svd)
-					[MLE](linktbd)
-					[MVN](linktbd) 
-					[MAIL](linktbd)
+					[VITA](https://www.npmjs.com/package/nodehmm)
+					[MLE](https://www.npmjs.com/package/node-svd)
+					[MVN](https://www.npmjs.com/package/multivariate-normal)
+					[MAIL](https://www.npmjs.com/package/nodemailer)
 					
-				While js-engines have access to all FLEX plugins:
+				and has access to FLEX plugins:
 
-					FLEX.randpr( { jumprates, ... }, (data) => {...} )    // generate markov random process
-					FLEX.gaussmix( { events: [ {x,y,z,t ...}, ...], scenario: {}, ... }, (data) => {...} )  // generate (mean,sigma) estimates
+					FLEX.genpr( { jumprates, ... }, (data) => {...} )    // generate markov random process
+					FLEX.genmix( { events: [ {x,y,z,t ...}, ...], scenario: {}, ... }, (data) => {...} )  // generate (mean,sigma) estimates
+					FLEX.estmix( ... ) // estimate gauss mix
 					FLEX.wms( { ... }, (data) => {...} )  // wms response
 					FLEX.wfs( { ... }, (data) => {...} )  // wfs response
 					FLEX.sss( { ... }, (data) => {...} )  // sss response
@@ -725,10 +727,10 @@ append site_body
 									recs.push(rec);
 								})
 								.on("end", function () {
-									CON.log("returning recs="+recs.length);
+									LOG("returning recs="+recs.length);
 									cb(recs);
 								});
-								CON.log("sql command="+q.sql);
+								LOG("sql command="+q.sql);
 							}
 						Context:
 							{ key: value, ...}
@@ -842,14 +844,16 @@ append site_body
 					Consider this [js engine](/engine.view?engine=js&name=demo1):
 
 						Code:
-							CON.log("M = "+M+" name="+query.Name);
-							CON.log("A="+A.length+" by "+A[0].length);
-							CON.log("B="+B.length+" by "+B[0].length);
-							tau[0].u = [M,M+1,M+2];
+							LOG({M:M, url_query:query.Name});
+							LOG("A="+A.length+" by "+A[0].length);
+							LOG("B="+B.length+" by "+B[0].length);
+							tau = [ {u: M}, {u:M+1}, {u:M+2} ];  
 
 						Context: {
 							M: 3, 
-							"case": "file1",
+							query: {  // default sql-entry query parms if none supplied on url
+								Name: "test"
+							},
 							entry: {
 								A: "SELECT a2,a3,a6 FROM MATtest WHERE least(?,1)",
 								B: "SELECT a1,a6 FROM MATtest WHERE least(?,1)"
@@ -880,17 +884,16 @@ append site_body
 					This [js engine](/engine.view?engine=js&name=demo2):
 
 						Code:
-							var Name = query.Name;
 							var scope = {X:X, y:y};
 							var N = X.length;
 
 							MATH.eval("a = inv(X' * X) * X' * y",scope);
-							CON.log(scope.a);
+							LOG(scope.a);
 
 							var b = {Name:Name,Tests:N,Computed:new Date()}, a=scope.a;
 							for (var n=0,N=a.length;n<N;n++) b[n] = a[n];
 
-							CON.log(b);
+							LOG(b);
 
 						Context: {
 							M: 3,
@@ -909,7 +912,7 @@ append site_body
 
 					Automatically added to the context are the following libraries:
 
-						CON console [http://mathjs.org/docs]
+						LOG console log [http://mathjs.org/docs]
 						MATH Matlab-like scripting [http://mathjs.org/docs]
 						DSP digital signals [https://www.npmjs.com/package/digitalsignals]
 						CRYPTO cryptological [http://nodejs.org/api]

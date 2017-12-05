@@ -14,7 +14,9 @@
 @requires jade
 @requires jade-filters
 @requires markdown
-@requires optomist
+@requires optimist
+@requires tokml
+@requires mathjax-node
 
 @requires flex
 @requires totem
@@ -2763,7 +2765,7 @@ Initialize DEBE on startup.
 			"HOST " + site.title+" ON "+(CLUSTER.isMaster ? "MASTER" : "CORE"+CLUSTER.worker.id)
 			+ "\n- USING " + site.db 
 			+ "\n- FROM " + process.cwd()
-			+ "\n- RUNNING " + (DEBE.faultless?"PROTECTED":"UNPROTECTED")
+			+ "\n- RUNNING " + (DEBE.nofaults?"PROTECTED":"UNPROTECTED")
 			+ "\n- WITH " + (site.urls.socketio||"NO")+" SOCKETS"
 			+ "\n- WITH " + (DEBE.SESSIONS||"UNLIMITED")+" CONNECTIONS"
 			+ "\n- WITH " + (DEBE.cores||"NO")+" WORKERS@ "+site.urls.worker+" MASTER@ "+site.urls.master
@@ -2856,7 +2858,8 @@ Initialize DEBE on startup.
 				
 		ENGINE.config({
 			thread: DEBE.thread,
-			cores: DEBE.cores	
+			cores: DEBE.cores,
+			watchFile: DEBE.watchFile
 		});
 		
 		ENGINE.plugins.MAIL = FLEX.sendMail; // share with plugins
