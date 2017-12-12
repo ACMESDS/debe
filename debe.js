@@ -1002,6 +1002,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		//codes: sysCodes,
 		ping: sysPing,
 		bit: sysBIT
+		//agent: sysAgent
 		//config: sysConfig
 	},
 	
@@ -1604,6 +1605,17 @@ function icoFavicon(req,res) {   // extjs trap
 
 /**
 @class MAINT service maintenance endpoints
+*/
+
+/*
+function sysAgent(req,res) {
+	var 
+		query = req.query,
+		cb = ENGINE.mw.cb[query.job];
+	
+	Log("AGENT", query);
+	cb(0);
+}
 */
 
 function sysConfig(req,res) {
@@ -2912,10 +2924,12 @@ Initialize DEBE on startup.
 } 
 
 function simEngine(req,res) {
+	Log("simengine",req.action,req.table,req.filepath,req.area);
 	if (CLUSTER.isMaster)
 		ENGINE[req.action](req,res);
 	else
-		DEBE.proxy(req,res);
+		res("must be on master");
+		//DEBE.proxy(req,res);
 }
 
 function Trace(msg,arg) {
