@@ -1000,7 +1000,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		alert: sysAlert,
 		//codes: sysCodes,
 		ping: sysPing,
-		bit: sysBIT
+		bit: sysBIT,
+		matlab: sysMatlab
 		//agent: sysAgent
 		//config: sysConfig
 	},
@@ -1130,7 +1131,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	@member DEBE
 	Enable to give-away plugin services
 	*/
-	probono: true,  //< enable to run one-time plugin
+	probono: true,  //< enable to run plugins unregulated
 		
 	Function: Initialize,  //< added to ENUM callback stack
 
@@ -2964,5 +2965,21 @@ function siteContext(req, cb) {
 	
 }
 	
+function sysMatlab(req,res) {
+	var
+		sql = req.sql,
+		query = req.query;
+	
+	if ( query.flush )
+		ENGINE.matlab.flush(sql, query.flush);
+	
+	else
+	if ( query.save ) {
+		Log("SAVE MATLAB",query.save);
+	}
+	
+	res("ok");
+		
+}
 
 // UNCLASSIFIED
