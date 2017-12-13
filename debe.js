@@ -989,7 +989,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 
 	"byArea.": {
-		sim: simEngine
 	},
 
 	"byTable.": {	//< worker endpoints
@@ -1024,6 +1023,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		gridbrief: renderSkin,
 		runbrief: renderSkin,
 		pivbrief: renderSkin,
+		
+		sim: simEngine,
 		
 		exe: executePlugin,
 		add: extendPlugin,

@@ -66,7 +66,7 @@ var MODEL = { 				// Model parameters
 	depth : 0,				// Depth of subsystem in current model
 	root: null, 			// Root system
 	paths: { 				// Paths
-		host: "http://localhost:8080/sim/", // to simulator host
+		host: "http://localhost:8080/", // to simulator host
 		options: "/simoptions.db", 	// to simulation options
 		engines: "/engines.db",		// to engines store
 		viewer: "/flow.view" 		// to model viewer
@@ -375,7 +375,7 @@ function SYSTEM(Name,Label,Model,iLinks,oLinks,Routes,Markers,Stats,Path) {
 			stats 	: Stats,
 			path	: Path
 		},
-		path 	: Path || (MODEL.paths.host + Name) 			// url path to application
+		path 	: Path || (MODEL.paths.host + Name + ".sim") 			// url path to application
 	}, this);
 	
 	this.i = PORTS(iLinks,this.tau.i,iLabels,iThreads);		// input ports 
