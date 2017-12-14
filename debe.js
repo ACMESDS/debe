@@ -2975,7 +2975,22 @@ function sysMatlab(req,res) {
 	
 	else
 	if ( query.save ) {
-		Log("SAVE MATLAB",query.save);
+		var
+			thread =  query.save,
+			parts = thread.split("."),
+			id = parts.pop(),
+			plugin = "app." + parts.pop(),
+			results = ENGINE.matlab.path.save + thread + ".out";
+		
+		Log("SAVE MATLAB",query.save,plugin,id,results);
+
+		FS.readFile(results, "utf8", function (err,json) {
+
+			sql.query("UPDATE ?? SET ? WHERE ?", [plugin, {Save: json}, {ID: id}], function (err) {
+				Log("save",err);
+			});
+
+		});			
 	}
 	
 	res("ok");
