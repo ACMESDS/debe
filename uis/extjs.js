@@ -2146,12 +2146,20 @@ WIDGET.prototype.menuTools = function () {
 		else
 		if (Form && cbs.onForm) 
 			cbs.onForm( Form.getRecord(), Form, Data, Status, function (meth, flags, cb) {
+				
+				//alert(JSON.stringify(flags));
+				
 				Ext.Ajax.request({
 					url : Data.proxy.url,
-					params: flags,
+					params: (meth=="GET") ? flags : JSON.stringify(flags),
 					method: meth,
 					success: function (res) {
-						cb( Ext.decode(res.responseText) );
+						//alert("res="+res.responseText);
+						cb( Ext.decode(res.responseText, true) || {
+							success: false,
+							data: [],
+							msg: res.responseText
+						});
 					},
 					failure: function () {
 						Status(STATUS.FAULT);
@@ -2605,8 +2613,17 @@ WIDGET.prototype.menuTools = function () {
 					case "insert":
 
 						return action( key, roles, {
-							onForm: function (Rec, Form, Data, Status) {
-
+							onForm: function (Rec, Form, Data, Status, cb) {
+								cb(
+									"POST",
+									Copy( Rec.getData(), {ID:Rec.getId(), _lock:1} ) ,
+									function (info) {
+										//alert( JSON.stringify(info) );
+										Status(info.msg,Rec);
+										if (info.success) Rec.setId(info.data.insertId);
+								});
+									
+								/*
 								Ext.Ajax.request({
 									url : Data.proxy.url,
 									params: JSON.stringify( Copy( Rec.getData(), {_lock:1} ) ),
@@ -2622,7 +2639,7 @@ WIDGET.prototype.menuTools = function () {
 										var info = Ext.decode(res.responseText);
 										Status(info.msg || STATUS.FAULT);
 									}		
-								});	
+								});	*/	
 							},
 
 							onSelect: function (Recs, Data, Status) {
@@ -2712,8 +2729,8 @@ WIDGET.prototype.menuTools = function () {
 									"DELETE", 
 								   	{ID:Rec.getId(), _lock:1},
 									function (info) {
-										Data.Store.remove(Rec);
-										Status(info.msg || STATUS.OK); 
+										Status(info.msg); 
+										if (info.success) Data.Store.remove(Rec);
 								});								
 							},
 
@@ -2737,8 +2754,7 @@ WIDGET.prototype.menuTools = function () {
 					case "update":
 
 						return action( key, roles, {
-							onForm: function (Rec, Form, Data, Status,cb) {
-								
+							onForm: function (Rec, Form, Data, Status, cb) {
 								cb( 
 									"PUT", 
 								   	Copy( 	
@@ -2747,7 +2763,7 @@ WIDGET.prototype.menuTools = function () {
 									), 
 									function (info) {
 										//Data.Locked = !Data.Locked;
-										Status(info.msg || STATUS.OK);
+										Status(info.msg);
 								});
 							},
 
@@ -2771,11 +2787,19 @@ WIDGET.prototype.menuTools = function () {
 							onForm: function (Rec, Form, Data, Status, cb) {
 								cb(
 									"GET",
-									{_lock: ! Data.Locked},
+									{ID:Rec.getId(), _lock: ! Data.Locked},
 									function (info) {
 										Data.Locked = !Data.Locked;			
 										Status(Data.Locked?"locked":"unlocked");
-										Form.loadRecord( Ext.create(Data.name, info.data[0]) );
+										var 
+											rec = info.data[0],
+											Rec = Ext.create(Data.name, rec);
+											
+										//alert("id="+rec.ID);
+										if (info.success) {
+											Rec.setId( rec.ID );
+											Form.loadRecord( Rec );
+										}
 								});
 							},
 

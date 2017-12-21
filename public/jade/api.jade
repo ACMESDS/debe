@@ -33,13 +33,13 @@ append site_body
 
 				db | xml | csv | txt | tab | view | tree | flat | delta | nav | kml | encap | html | json
 				
-			render plugins:
+			render views:
 			
-				view | run | plugin | pivot | site | spivot | brief | gridbrief | pivbrief | runbrief
+				view | pivot | site | spivot | brief | gridbrief | pivbrief
 				
-			run stateless | stateful engines:
+			run engines:
 
-				exe | sim
+				exe | run | plugin | runbrief
 				
 			or return file attributes:
 			
@@ -422,123 +422,118 @@ append site_body
 				+	[broadcast messages](/sockets.execute) to [connected users](/sockets.db)  
 				+	[import milestones](/milestone.execute) from internal spreadsheet
 
-	#accordion.Plugin.Engines
-
-		:markdown
-			A plugin -- a dataset-engine pair -- is assessible from the following endpoints:
-			
-					GET /PLUGIN.exe?id=CASE 	Run PLUGIN engine with id-specified use-CASE parameters
-					GET /PLUGIN.exe?name=CASE 	Run PLUGIN engine with name-specified use-CASE parameters
-					GET /PLUGIN.exe?QUERY 	Run PLUGIN engine with QUERY parameters
-			
-			The following dataset (keys) determine how a PLUGIN interfaces with #{title}:
-
-				(Save_KEY) store aggregated CASE outputs [{at:"KEY", ...}, ...] were KEY = config | batch | step | jump | end | ...
-				(Job) json parameters to place CASE into a QoS-Credit regulated queue
-				(Export) switch to export CASE outputs to a file
-				(Agent) name of agent to out-source this CASE 
-				(Description) bloggable details on this CASE	
-
-			Job = { file: "plugin.case" || "uploaded file", group: "KEY,...", where: {KEY:VALUE, ...}, order: "KEY,...", limit:, task: "name" } 
-			specifies which event file is consumed by the CASE when run.  There is an implicit order:"t" on any data consuption.
-			Grouping events will regulate the events per QoS-Credit rules.
-			
-			PLUGINs can be extended / retracted via its PLUGIN.run key-editor.
-
-			### AOI jobs
-			A { aoiring: [ ...] } Job will attach the requested PLUGIN to a chipping workflow that expects the 
-			following additional PLUGIN parameters:
-
-				size = 50  	// feature size in [m]
-				pixels = 512 	// samples across a chip [pixels]
-				scale = 8  		// scale^2 is max number of features in a chip
-				step = 0.01 	// relative seach step size
-				range = 0.1 	// relative search size
-				detects = 8		// hits required to declare a detect
-				limit = 1e99 	// restrict maximum number of schips to ingest
-				test = "test" 	// test case to store results
-
-			### VOI jobs
-			A { voiring: [ ... ] } Job will attach the requested PLUGIN to a voxel workflow that expects the 
-			following additional PLUGIN parameters:
-
-				tbd
-
-			### Agent workflow
-			An engine can be outsourced to agents at:
-
-				GET /ENGINE.exe?agent=AGENT&poll=N&QUERY
-				GET /ENGINE.exe?agent=AGENT&QUERY
-
-			where the &poll request will start a job, then poll the AGENT every N seconds for its results.
-			Conversely, a poll-less request will start a job, then reply on the AGENT to claim the job.  In
-			either case, QUERY defines the ENGINE args.
-
-			#{title} reciprocates by providing its own AGENT at its **/agent** endpoint.
-
-			Agents provide a means to outsource an engine, while retaining a thread
-			on each agent request.  A valid agent provided #{title} with the
-			following push/pull endpoints:
-
-				GET http://AGENT?push=totem.CLIENT.ENGINE.ID&args=JSON
-				GET http://AGENT?pull=JOBID
-
-			where the push endpoint defines the job being sent to the AGENT (with the CLIENT 
-			requesting the agent, the ENGINE being outsourced, the ID of the test case,
-			and the JSON args to the ENGINE).  The AGENT eventually responds at 
-			the pull endpoint with a JOBID, or a "" if no job could be created.  #{title} will periodically 
-			poll the agent for the results of JOBID.
-			
-			The same engines can be run in workflows: see Sim-Engines.
-
-	#accordion.Sim.Engines
+	#accordion.Engines
 
 		#fit.Endpoints
 			:markdown
-				Stateful simulation engines are available at these endpoints:
+				# Plugin Engines
+				A plugin -- a dataset-engine pair -- is assessible from the following endpoints:
 
-					GET /sim/ENGINE 	Compile and step ENGINE in a stateless workflow
-					PUT /sim/ENGINE 	Compile ENGINE in a stateful workflow
-					POST /sim/ENGINE	Step ENGINE  in a stateful workflow
-					DELETE /sim/ENGINE	Free ENGINE from a stateful workflow
+						GET /PLUGIN.exe?id=CASE 	Run PLUGIN engine with id-specified CASE parameters
+						GET /PLUGIN.exe?name=CASE 	Run PLUGIN engine with name-specified CASE parameters
+						GET /PLUGIN.exe?QUERY 	Run PLUGIN engine with QUERY parameters
+
+				The following dataset (keys) determine how a plugin interfaces with #{title}:
+
+					(Save_KEY) store aggregated CASE outputs [{at:"KEY", ...}, ...] were KEY = config | batch | step | jump | end | ...
+					(Job) json parameters to place CASE into a QoS-Credit regulated queue
+					(Export) switch to export CASE outputs to a file
+					(Agent) name of agent to out-source this CASE 
+					(Description) bloggable details on this CASE	
+
+				Job = { file: "plugin.case" || "uploaded file", group: "KEY,...", where: {KEY:VALUE, ...}, order: "KEY,...", limit:, task: "name" } 
+				specifies which event file is consumed by the CASE when run.  There is an implicit order:"t" on any data consuption.
+				Grouping events will regulate the events per QoS-Credit rules.
+
+				Any PLUGIN can be extended / retracted via its PLUGIN.run key-editor (options=more).
+
+				### AOI jobs
+				A { aoiring: [ ...] } Job will attach the requested PLUGIN to a chipping workflow that expects the 
+				following additional PLUGIN parameters:
+
+					size = 50  	// feature size in [m]
+					pixels = 512 	// samples across a chip [pixels]
+					scale = 8  		// scale^2 is max number of features in a chip
+					step = 0.01 	// relative seach step size
+					range = 0.1 	// relative search size
+					detects = 8		// hits required to declare a detect
+					limit = 1e99 	// restrict maximum number of schips to ingest
+					test = "test" 	// test case to store results
+
+				### VOI jobs
+				A { voiring: [ ... ] } Job will attach the requested PLUGIN to a voxel workflow that expects the 
+				following additional PLUGIN parameters:
+
+					tbd
+
+				# Engine Agents
+				Engines can be outsourced to an agent at:
+
+					GET /ENGINE.exe?agent=AGENT&poll=N&QUERY
+					GET /ENGINE.exe?agent=AGENT&QUERY
+
+				where the &poll request will start a job, then poll the AGENT every N seconds for its results.
+				Conversely, a poll-less request will start a job, then reply on the AGENT to claim the job.  In
+				either case, QUERY defines the ENGINE args.
+
+				#{title} reciprocates by providing its own AGENT at its **/agent** endpoint.
+
+				Agents provide a means to outsource an engine, while retaining a thread
+				on each agent request.  A valid agent provided #{title} with the
+				following push/pull endpoints:
+
+					GET http://AGENT?push=totem.CLIENT.ENGINE.ID&args=JSON
+					GET http://AGENT?pull=JOBID
+
+				where the push endpoint defines the job being sent to the AGENT (with the CLIENT 
+				requesting the agent, the ENGINE being outsourced, the ID of the test case,
+				and the JSON args to the ENGINE).  The AGENT eventually responds at 
+				the pull endpoint with a JOBID, or a "" if no job could be created.  #{title} will periodically 
+				poll the agent for the results of JOBID.
+
+				The same engines can be run in workflows: see Sim-Engines.
+
+				# Simulation Engines
+				Simulation engines (cv | py | R | sh | js | mw | em | mo | sql | jade | ...) are available at these endpoints:
+
+					GET /ENGINE.exe 	Compile and step ENGINE in a stateless workflow
+					PUT /ENGINE.exe 	Compile ENGINE in a stateful workflow
+					POST /ENGINE.exe	Step ENGINE  in a stateful workflow
+					DELETE /ENGINE.exe	Free ENGINE from a stateful workflow
 
 				Please know 
 				that **#{nick}** does not provide an interactive development environment; engines should be 
 				thoroughly debugged in their native development environment before being [inserted](/engines.view) 
 				into **#{nick}**.  
-				
-				Stateful engine can be accessed, for example, in  [workflows](/flow.view?ds=test0).  The same
-				engines become a *plugin* when it is paired with a same-named dataset: see Plugin-Engines
-				for their endpoints.  Engines can be  cv | py | R | sh | js | res1 | res2 | ... machines.  The parameters 
-				to engines (of any machine type) are held in a read/write (i/o) context that follows the pattern:
+
+				Stateful engines are particularly useful in [workflows](/flow.view?ds=test0).  Engine parameters 
+				are held in a read/write (i/o) context that follows the JSON pattern:
 
 					{
-						tau: [ tau1, tau2, ... ],
-						port1: function () {}, 
-						port2: function() {}, ...
-						entry: {key: "select ...", ... } || "select ...",
-						exit: {key: "update ...", ... } || "update ...",
-						key: value
+						"tau": [ tau1, tau2, ... ],
+						"PORT1": function () {}, 
+						"PORT2": function() {}, ...
+						"entry": { "KEY": "select ...", ... } || "select ...",
+						"exit": { "KEY": "update ...", ... } || "update ...",
+						"KEY": value
 					}
 
-				An engine's context may define  ports *portX*, a common event tokens *tau*, its "key"
-				parameters, and may prime/save its keys with the sql entry/exit select/update queries.
-
-				When a js-engine is accessed, its context is automatically extended with several modules:
-
-					[DSP](https://www.npmjs.com/package/dsp)
-					[LWIP](https://github.com/EyalAr/lwip)
-					[MATH](http://mathjs.org/)
-					[CRY](https://nodejs.org/docs/latest/api/crypto)
-					[FLEX](https://github.com/ACMESDS/flex)
-					[RAN](https://github.com/ACMESDS/randpr)
-					[SVD](https://www.npmjs.com/package/node-svd)
-					[VITA](https://www.npmjs.com/package/nodehmm)
-					[MLE](https://www.npmjs.com/package/node-svd)
-					[MVN](https://www.npmjs.com/package/multivariate-normal)
-					[MAIL](https://www.npmjs.com/package/nodemailer)
-					
-				and has access to FLEX plugins:
+				An engine's context defines its i/o *PORT*s, its common event tokens *tau*, its context "*KEY*"
+				parameters, and may prime/save its context keys using standard sql *entry* / *exit* queries.  
+				
+				When a *js-engine* is accessed, its context is automatically extended with 
+				[DSP](https://www.npmjs.com/package/dsp),
+				[LWIP](https://github.com/EyalAr/lwip),
+				[MATH](http://mathjs.org/),
+				[CRY](https://nodejs.org/docs/latest/api/crypto),
+				[FLEX](https://github.com/ACMESDS/flex),
+				[RAN](https://github.com/ACMESDS/randpr),
+				[SVD](https://www.npmjs.com/package/node-svd),
+				[VITA](https://www.npmjs.com/package/nodehmm),
+				[MLE](https://www.npmjs.com/package/node-svd),
+				[MVN](https://www.npmjs.com/package/multivariate-normal),
+				[MAIL](https://www.npmjs.com/package/nodemailer)
+				modules and has access to FLEX plugins:
 
 					FLEX.genpr( { jumprates, ... }, (data) => {...} )    // generate markov random process
 					FLEX.genmix( { events: [ {x,y,z,t ...}, ...], scenario: {}, ... }, (data) => {...} )  // generate (mean,sigma) estimates
@@ -546,28 +541,15 @@ append site_body
 					FLEX.wms( { ... }, (data) => {...} )  // wms response
 					FLEX.wfs( { ... }, (data) => {...} )  // wfs response
 					FLEX.sss( { ... }, (data) => {...} )  // sss response
- 
-				their access to #{totem} DB is guarded with the:
-				
-					FLEX.get( {ds: "...", where: {key:value, ...}}, (data) => {...} )  
+					FLEX.get( {ds: "...", where: {key:value, ...}}, (data) => {...} )    // dataset access
 
-				method.  Engines can read/write files only in the client's designated group folders.
-				
+				Engines can read/write files only in the client's designated group folders.
+
 				While the GET-endpoint provides a stateless interface to an engine and its context, the PUT-, POST-,
-				and DELETE-endpoints provide a stateful interface to engines which are useful in [workflows](/nodeflow.view).				
+				and DELETE-endpoints provide a stateful interface to engines which are useful in [workflows](/nodeflow.view).
 				Whereas stateless engines (being memoryless) are initialized at each step, stateful 
-				engines are initialized only when the workflow is initialized.  
-				
-				Each *tau* event (if used) can contain anything ... for example:
-
-					job = "" 	# Fully qualified file path to a jpg chip for ingesting
-					work = 0 	# Anticipated/delivered data volume (dims bits etc)
-					disem = "" 	# Disemination channel for this event
-					classif = "" # Classification of this event
-					cost = ""	# Billing center
-					policy = ""	# Data retention policy
-					status = 0	# Status code
-					value = [1,2,3,4]	# Calculations
+				engines are initialized only when the workflow is initialized, and typically define i/o ports to
+				latch input/output events, thus maximizing data stationarity in a workflow.
 
 		#folder.Examples(dock="left")
 			#fit.url
@@ -597,11 +579,9 @@ append site_body
 				:markdown
 					R engines are not yet implemented.
 
-			#fit.ma
+			#fit.em
 				:markdown
-					# Stateless Example1
-					
-					This [mat-like engine](/engine.view?engine=mat&name=demo1):
+					This [emulated matlab](/emdemo1.exe?name=test) example:
 
 						Code:
 							Z = [1,2;3,4];
@@ -609,23 +589,19 @@ append site_body
 							Y = B * B';
 
 						Context: {
-							entry: {
-								A: "SELECT a2,a3,a6 FROM app1.MATtest WHERE least(?,1)",
-								B: "SELECT a1,a6 FROM app1.MATtest WHERE least(?,1)"
+							"entry": {
+								"A": "SELECT a2,a3,a6 FROM app1.MATtest WHERE least(?,1)",
+								"B": "SELECT a1,a6 FROM app1.MATtest WHERE least(?,1)"
 							}
 						}
 
-					illustrates how its context variables *A* and *B* are imported with the sql
-					*entry* hash.  The sql ?-tokens in the *entry* hash evaluate with the 
-					engine query, for example, [? = {Name:test}](/demo1.db?name=test).
-					On [executing](/demo1.db?name=test) this engine places  
-					variables *X*, *Y*, and *Z* into its context.  When an engine terminates,
-					it it free to store any context variables into the sql store with its sql
-					*exit* hash.
+					illustrates how its context variables *A* and *B* are imported with its sql-entry where
+					the sql ?-tokens are sourced from the supplied query parameters.
+					[For example](/demo1.db?name=test) places *X*, *Y*, and *Z* into its context after
+					importing its *A* and *B* context keys.  When an engine terminates,
+					it is free to store its context variables into its database with its sql-exit.
 
-					#Stateless Example2
-
-					[Executing](/demo2.db?name=test) [this](/engine.view?engine=mat&name=demo2) engine
+					This [emulated matlab](/emdemo2.exe?name=test)
 
 						Code:
 							Z = [1,2;3,4];
@@ -634,24 +610,17 @@ append site_body
 							R = addIt(1,2);
 
 						Context: {
-							entry: {
-								A: "SELECT a2,a3,a6 FROM app1.MATtest WHERE least(?,1)",
-								B: "SELECT a1,a6 FROM app1.MATtest WHERE least(?,1)"
+							"entry": {
+								"A": "SELECT a2,a3,a6 FROM app1.MATtest WHERE least(?,1)",
+								"B": "SELECT a1,a6 FROM app1.MATtest WHERE least(?,1)"
 							},
 
-							require: {
-							   addIt :  function (a,b) { return a+b; }
+							"require": {
+							   "addIt" :  function (a,b) { return a+b; }
 							}
 						}
-
-					shows how Matlab-like engines can be readily extended with the **require** hash.
-
-					#Stateful Example
-
-					Stateful engines are operated in [workflows](/nodeflow.view) and extend 
-					stateless engines with the **ports** hash.  These ports are defined by 
-					functions that hold/latch its input/output events, thus maximizing data 
-					stationarity in a workflow.  (More documentation required).
+						
+					shows how these engines are extended with the **require** hash.
 
 			#fit.sh
 				:markdown
@@ -673,13 +642,14 @@ append site_body
 					to directly interface with clients and other workflow engines. And whereas 
 					**#{nick}** is PKI driven, HYDRA is login driven.
 
-					This [demo engine](/engines.db) example (test [here](/demo.db)):
+					This [sh-shell engine](/demo.db) example (test [here](/demo.db)):
 
 						Code:
 							ls
 							python mypgm.py
-						Context:
-							{ key: value, ...}
+						Context: {
+							"KEY": value, ...
+						}
 
 					illustates an engine that simply list the files in the current directory,
 					the call the mypgm python module.
@@ -708,8 +678,9 @@ append site_body
 										res(err || data);	// return error or data
 								});
 							}
-						Context:
-							{ key: value, ...}
+						Context: {
+							"KEY": value, ...
+						}
 
 					The response callback **res** must be called, and must return either
 					an **Error** object, a **String** message, an **Array** list of
@@ -749,6 +720,10 @@ append site_body
 					run interval Period parameter.  A 0-period proxy is run once at **#{nick}** startup.
 					The [job hawkers](/admin.view) are proxy engines.
 
+			#fit.mw
+				:markdown
+					Mathwork / matlab engines.
+					
 			#fit.mo
 				:markdown
 					[Model engines](/engine.view) are used/defined by workflows when 
@@ -785,9 +760,7 @@ append site_body
 
 			#fit.py
 				:markdown
-					## Stateless Engines
-
-					In this [python engine](/engine.view?engine=py&name=demo1):
+					This [stateless python engine](/pydemo1.exe):
 
 						Code:
 							print "welcome to python"
@@ -799,21 +772,17 @@ append site_body
 							for (Rec) in SQL0:
 								print Rec
 
-						Context: 
-							{ }
+						Context: {
+							"x": 1,
+							"y": "this is a test"
+						}
 
-					we display *Htest* sql data at the service console, then return a *tau* JSON data 
-					to the client.  Engine results (returned *tau*) can be: accessed from 
-					a [#grid(path="/demo1.db",cols="x,y") skin](/skinguide.view), viewed
-					directly [/demo1.view](/demo1.view), or simply dumped [/demo1.py](/demo1.py).
-					As well as the 	standard import-export context support (not employed here), Python 
-					engines are provided two sql cursors -- *SQL0* and *SQL1* for read and write -- 
-					as [demonstrated here](/demo1.db).
+					displays *Htest* data at the service console, then returns *tau* JSON data 
+					to the client.  Python 	engines are also provided two sql cursors -- *SQL0* and *SQL1* 
+					for read and write as shown above.
 
-					## Stateful Engines
-
-					Stateful engines are used to maximize data stationarity in workflows.  This
-					[demo2 engine](/engines.db?engine=py&name=demo2) example:
+					This [stateful python engine](/pydemo2.exe) can be used in a workflow to 
+					maximize data stationarity:
 
 						Code:
 							print "executing on port " + port
@@ -831,7 +800,7 @@ append site_body
 							f2: {a:2, b:1} 
 						}
 
-					defines input/output ports *f1* / *f2* to be called during the workflow 
+					by defining its i/o ports *f1* / *f2* to be called during the workflow 
 					with the incoming *tau* event token and the assoicated *parm* hash taken 
 					from the defined *ports* hash.  Although this engine would be typically used
 					in [stateful flows](/nodeflow.view), it can also be used in a stateless flow
@@ -839,9 +808,7 @@ append site_body
 
 			#fit.js
 				:markdown
-					## Stateless Engines
-
-					Consider this [js engine](/engine.view?engine=js&name=demo1):
+					This [stateless js engine](/jsdemo1.exe):
 
 						Code:
 							LOG({M:M, url_query:query.Name});
@@ -850,38 +817,30 @@ append site_body
 							tau = [ {u: M}, {u:M+1}, {u:M+2} ];  
 
 						Context: {
-							M: 3, 
-							query: {  // default sql-entry query parms if none supplied on url
-								Name: "test"
+							"M": 3, 
+							"query": {  // default sql-entry query parms if none supplied on url
+								"Name": "test"
 							},
-							entry: {
-								A: "SELECT a2,a3,a6 FROM MATtest WHERE least(?,1)",
-								B: "SELECT a1,a6 FROM MATtest WHERE least(?,1)"
+							"entry": {
+								"A": "SELECT a2,a3,a6 FROM MATtest WHERE least(?,1)",
+								"B": "SELECT a1,a6 FROM MATtest WHERE least(?,1)"
 							},
-							exit: {
-								A: "INSERT INTO ?? SET ?"
+							"exit": {
+								"A": "INSERT INTO ?? SET ?"
 							}
 						}
 
-					In this example, the [data returned](/demo1.js?name=test) by *tau* can, 
-					for example, be fed to a [dynamic view](/demo1.view).
+					In this example, the [data returned](/jsdemo1.exe?name=test) by *tau* can, 
+					for example, be fed to its [plugin view](/jsdemo1.run).
 
 					On entry to this engine, its context *A* and *B* variables are primed by the entry queries.  On
 					exit, its context *B* variable is exported by the exit query.  Engines (both stateful  and stateless) are 
 					always free to revise their context as needed.
 
-					An engine's context is aways provided a *sql* connector
-					equipped with the *sql.query* and *sql.release* methods to directly access a database
-					(limited only by the client's profile group).  This *sql* connector also provides 
-					*insertJob*, *deleteJob*, *updateJob* and *selectJob* methods to
-					minipilate jobs in the FLEX queues.
+					Because this engine did not define functions -- functions are associated with workflow engine 
+					ports -- this stateless engine is accessible [only at an endpoint](/jsdemo1.exe?name=test).
 
-					Because this engine did not define functions -- functions are associated
-					with workflow engine ports -- this stateless engine is [only accessible at an endpoint](/demo1.view?name=test).
-
-					## Stateless Engines
-
-					This [js engine](/engine.view?engine=js&name=demo2):
+					This [stateful  js engine](/jsdemo2.exe?name=test):
 
 						Code:
 							var scope = {X:X, y:y};
@@ -895,17 +854,18 @@ append site_body
 
 							LOG(b);
 
-						Context: {
-							M: 3,
-							entry: {
-								X: "SELECT p0,p1,p2 FROM Htest WHERE least(?,1)",
-								y: "SELECT FPR from Htest WHERE least(?,1)"
+						Context: {							
+							"M": 3,
+							"entry": {
+								"X": "SELECT p0,p1,p2 FROM Htest WHERE least(?,1)",
+								"y": "SELECT FPR from Htest WHERE least(?,1)"
 							}
 						}
 
-					can be [tested here](/demo2.js?name=file1&Used=1), and makes use of the mathjs 
-					MATH module to do a Matlab-like regression analysis.  Here, the **Name**, **Used** 
-					and **M** parameters -- acquired from the URL query -- are used to retrieve data 
+					makes use of the mathjs 
+					MATH module to do regression analysis via an emulated Matlab machine.  Here, 
+					the **Name**, **Used** 
+					and **M** parameters -- acquired from the URL and/or context query -- are used to retrieve data 
 					from the **Htest** dataset.  This data is then used to setup a regression companion 
 					matrix **X** and measurement vector **y**.  Regression results **a** are then saved into 
 					a **b** vector (which, for example, may be saved with a Context.entry sql).
@@ -923,9 +883,7 @@ append site_body
 						INV Curve invariant learners
 						TXP Transport equation learners
 
-					## Stateful Example
-
-					This [demo3 engine](/engine.view) example:
+					This [stateful js engine](/jsdemo3.exe) example:
 
 						Code:
 							x = 123;

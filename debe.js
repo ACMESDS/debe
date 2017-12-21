@@ -597,7 +597,11 @@ append layout_body
 	},
 	
 	"reqTypes." : { // endpoints to convert dataset on req-res thread
-		view: function (recs,req,res) {  //< dataset.view returnsrendered skin
+		view: function (recs,req,res) {  //< dataset.view returns rendered skin
+			res( recs );
+		},
+		
+		exe: function (recs,req,res) {
 			res( recs );
 		},
 		
@@ -675,12 +679,14 @@ append layout_body
 		
 		nav: function (recs,req,res) {  //< dataset.nav to navigate records pivoted with _browse=keys
 
-/*Log({
-	i: "nav",
-	c: keys,
-	f: req.flags,
-	q: req.query
-});*/
+			/*
+			Log({
+				i: "nav",
+				c: keys,
+				f: req.flags,
+				q: req.query
+			});*/
+			
 			var 
 				keys = Object.keys(recs[0] || {}),
 				flags = req.flags,
@@ -1025,9 +1031,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		runbrief: renderSkin,
 		pivbrief: renderSkin,
 		
-		sim: simEngine,
-		
-		exe: executePlugin,
+		//sim: simEngine,
+		exe: exeEngine,
 		add: extendPlugin,
 		sub: retractPlugin
 	},
@@ -1052,8 +1057,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		noOffice: new Error("office docs not enabled"),
 		noExe: new Error("no execute interface"),
 		noUsecase: new Error("no usecase provided to plugin"),
-		certFailed: new Error("could not create cert"),
-		notUnique: new Error("engine query must be unique")
+		certFailed: new Error("could not create pki cert"),
+		badEntry: new Error("sim engines must be accessed at master url")
 	},
 	
 	"paths.": {  //< paths to things
@@ -1524,13 +1529,13 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 							group, eng.Name, ctx, {Description: ctx.Description} 
 						], function (err, info) {
 							if (false)
-								FLEX.runPlugin({
+								FLEX.runPlugin({  // run the plugin
 									sql: sql,
 									table: eng.Name,
 									group: group,
 									client: client,
 									query: { ID:info.insertId }
-								}, function (err,rtn,ctx) {
+								}, function (ctx) {
 									Log("TASKED ",eng.Name,err || rtn);
 								});	
 					});
@@ -2017,10 +2022,10 @@ function retractPlugin(req,res) {
 	});
 }
 	
-function executePlugin(req,res) {
+function exeEngine(req,res) {
 /**
 @private
-@method executePlugin
+@method exeEngine
 Interface to execute a dataset-engine plugin with a specified usecase as defined in [api](/api.view).
 @param {Object} req http request
 @param {Function} res Totem response callback
@@ -2165,7 +2170,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 		return status || stats;
 	}
-	
+
 	var
 		dot = ".",
 		sql = req.sql,
@@ -2195,24 +2200,19 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			limit: query.limit || 1e99 	// limit chips
 		};*/
 	
-	if ("ID" in query || "Name" in query)  // run engine in its dataset ctx
-		FLEX.runPlugin(req, function (err, stats, ctx) {
+	if ("ID" in query || "Name" in query)  // run engine using requested usecase via the job regulator 
+		FLEX.runPlugin(req, function (ctx) {
 
-			if ( err )
-				res( err );
-			
-			else    // have results to save
-			if ( stats )
-				res( saveResults( Array.from(stats), ctx ) );
-			
-			else { // Intercept job request
+			if ( !ctx)
+				res( new Error("no engine context") );
+					
+			else
+			if (Job = ctx.Job)  { // Intercept job request to run engine via regulator
 
-				res("Submitted");
+				res("Chipping");
 				
 				var 
-					Job = ctx.Job || 0,
-					
-					job = Copy(ctx, { // job keys
+					job = Copy(ctx, { // job descriptor for regulator
 						thread: req.client.replace(/\./g,"") + "." + req.table,
 						qos: req.profile.QoS, 
 						priority: 0,
@@ -2236,15 +2236,12 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				delete job.ID;
 				delete job.Job;
 
-				Log({
-					Job: Job
-					//job: job
-				});
+				Log(Job);
 
 				req.query = ctx;
 				
-				if (Job.constructor == Object)
-					if (Job.voiring) 
+				if (Job.constructor == Object)  
+					if (Job.voiring) // regulate a VOI
 						CHIPS.chipVOI(Job, job, function (voxel,stats,sql) {
 							DEBE.thread( function (sql) {
 								//Log({save:stats});
@@ -2253,7 +2250,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						});
 
 					else
-					if (Job.divs) {
+					if (Job.divs) { // create VOI
 						var offs = Job.offs, dims = Job.dims, divs = Job.divs, t = 0;
 						
 						sql.beginBulk();
@@ -2290,7 +2287,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					}
 				
 					else
-					if (Job.aoiring)
+					if (Job.aoiring)  // regulate a AOI
 						CHIPS.chipAOI(Job, job, function (chip,dets,sql) {
 							var updated = new Date();
 
@@ -2326,7 +2323,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 						});
 
-					else 
+					else // regulate an event stream
 						CHIPS.chipEvents(req, ctx, job, function (evs) {
 
 							Trace(`PROCESSING ${evs.length} EVENTS`);
@@ -2345,16 +2342,20 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					});
 
 			}
-
+					
+			else
+			if ( save = ctx.save )
+				res( saveResults( Array.from(save), ctx ) );
+			
 		});
-	
-	else  // run engine in its req.query ctx w/o submitting a job
+		
+	else  // run engine using its query usecase w/o submitting a job
 	if (DEBE.probono)
 		ENGINE.select(req, res);
 	
 	else
 		res(DEBE.errors.noUsecase);
-	
+
 }
 
 function renderSkin(req,res) {
@@ -2493,13 +2494,13 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 			});	
 		}
 		
-		sql.withRecord(paths.engine, { // Try a skinning engine
+		sql.withRecord(paths.engine, { // Try a jade engine
 			Name: req.table,
 			Type: "jade",
 			Enabled: 1
 		}, function (eng) {
 			
-			if (eng)  // render with this skinning engine
+			if (eng)  // render view with this jade engine
 				dsContext(sql, ctx, function () {
 					eng.Code.renderJade( req, res );
 				});
@@ -2925,14 +2926,15 @@ Initialize DEBE on startup.
 	}); }); });
 } 
 
+/*
 function simEngine(req,res) {
-	Log("simengine",req.action,req.table,req.filepath,req.area);
+	//Log("simengine",req.action,req.table,req.filepath,req.area);
 	if (CLUSTER.isMaster)
 		ENGINE[req.action](req,res);
+	
 	else
-		res("must be on master");
-		//DEBE.proxy(req,res);
-}
+		res( DEBE.errors.badEntry );
+}*/
 
 function Trace(msg,arg) {
 	TOTEM.trace("D>",msg,arg);
