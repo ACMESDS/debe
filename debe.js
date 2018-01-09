@@ -1,4 +1,7 @@
-﻿// UNCLASSIFIED 
+﻿
+
+
+// UNCLASSIFIED 
 
 /**
 @class DEBE
@@ -1056,6 +1059,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		badFeature: new Error("unsupported feature"),
 		noOffice: new Error("office docs not enabled"),
 		noExe: new Error("no execute interface"),
+		noContext: new Error("no engine context") ,
 		noUsecase: new Error("no usecase provided to plugin"),
 		certFailed: new Error("could not create pki cert"),
 		badEntry: new Error("sim engines must be accessed at master url")
@@ -2204,12 +2208,12 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		FLEX.runPlugin(req, function (ctx) {
 
 			if ( !ctx)
-				res( new Error("no engine context") );
+				res( DEBE.errors.noContext );
 					
 			else
 			if (Job = ctx.Job)  { // Intercept job request to run engine via regulator
 
-				res("Chipping");
+				res("Regulating");
 				
 				var 
 					job = Copy(ctx, { // job descriptor for regulator
