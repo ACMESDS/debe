@@ -529,11 +529,10 @@ append site_body
 					IMAGE  		// imaging module
 					SQL			 // db connector module
 					JSON		// json encode-decode module
-					CTX 		// the use CASE context
+					DATA		// read-only dataset provided by the Job regulator
 					PORT		// port name when engine in used in stateful workflow
-					TAU			// workflow event list when a PORT specified
-					DATA		// dataset provided by the Job regulator
-					RES			// results to be saved with this use CASE 
+					CTX 		// read-write stateless context hash containing CASE parameters
+					TAU			// read-write stateful context list when a PORT is provided
 
 		#folder.Examples(dock="left")
 			#fit.url
