@@ -422,19 +422,16 @@ append site_body
 				+	[broadcast messages](/sockets.execute) to [connected users](/sockets.db)  
 				+	[import milestones](/milestone.execute) from internal spreadsheet
 
-	#accordion.Engines
-
+	#accordion.Plugins
 		#fit.Endpoints
 			:markdown
-				# Plugin Engines
 				A plugin -- a dataset-engine pair -- is assessible from the following endpoints:
 
 						GET /PLUGIN.exe?id=CASE 	Run PLUGIN engine with id-specified CASE parameters
 						GET /PLUGIN.exe?name=CASE 	Run PLUGIN engine with name-specified CASE parameters
 						GET /PLUGIN.exe?QUERY 	Run PLUGIN engine with QUERY parameters
 
-				The following reserved dataset (keys) -- added/removed via the PLUGIN.run key-editor -- determine 
-				how a plugin interfaces with #{title}:
+				The following reserved (keys) can be added/removed using the PLUGIN.run key-editor:
 
 					(Save_KEY) store aggregated CASE outputs [{at:"KEY", ...}, ...] were KEY = config | batch | step | jump | end | ...
 					(Job) json dataset chipping and regulation parameters for this CASE
@@ -445,36 +442,29 @@ append site_body
 				where
 				
 					Job = { 
-						file: "plugin.case" || "uploaded file", 
+						file: "plugin.case" || "uploaded file" || "file.jpg" || "file.json"
 						group: "KEY,...", 
 						where: {KEY:VALUE, ...}, 
 						order: "KEY,...",
 						limit: VALUE, 
-						task: "NAME" 
+						task: "NAME",
+						aoi: [ lat-lon ring, ... ],
+						voi: [ lat-lon ring, ...]
 					} 
 					
 				specifies how data is to be chipped and regulated into the PLUGIN during execution.
 				
-				### AOI jobs
-				A { aoiring: [ ...] } Job will attach the requested PLUGIN to a chipping workflow that expects the 
-				following additional PLUGIN parameters:
-
-					size = 50  	// feature size in [m]
-					pixels = 512 	// samples across a chip [pixels]
-					scale = 8  		// scale^2 is max number of features in a chip
-					step = 0.01 	// relative seach step size
-					range = 0.1 	// relative search size
-					detects = 8		// hits required to declare a detect
-					limit = 1e99 	// restrict maximum number of schips to ingest
-					test = "test" 	// test case to store results
-
-				### VOI jobs
-				A { voiring: [ ... ] } Job will attach the requested PLUGIN to a voxel workflow that expects the 
-				following additional PLUGIN parameters:
-
-					tbd
-
-				# Engine Agents
+		#fit.Parameters
+		#fit.Examples
+			:markdown
+				[jsdemo1](/jsdemo1.run)
+				[jsdemo2](/jsdemo2.run)
+				[pydemo1](/pydemo1.run)
+				[pydemo2](/pydemo2.run)
+	
+	#accordion.Agents
+		#fit.Endpoints
+			:markdown
 				Engines can be outsourced to an agent at:
 
 					GET /ENGINE.exe?agent=AGENT&poll=N&QUERY
@@ -499,9 +489,12 @@ append site_body
 				the pull endpoint with a JOBID, or a "" if no job could be created.  #{title} will periodically 
 				poll the agent for the results of JOBID.
 
-				The same engines can be run in workflows: see Sim-Engines.
+		#fit.Examples
+		
+	#accordion.Engines
 
-				# Simulation Engines
+		#fit.Endpoints
+			:markdown
 				Simulation engines are available at these endpoints:
 
 					GET /ENGINE.exe 	Compile and step ENGINE in a stateless workflow
@@ -509,21 +502,19 @@ append site_body
 					POST /ENGINE.exe	Step ENGINE  in a stateful workflow
 					DELETE /ENGINE.exe	Free ENGINE from a stateful workflow
 
-				An engine's context always contains the following modules tailored to its specific machine type:
-				
-					IMAGE  		// imaging module
-					SQL			 // sql db connector module
-					JSON		// json encode and decode module
-					CTX 		// the use CASE context
-					PORT		// port name when engine in stateful workflow
-					DATA		// dataset provided to engine by the Job parameter
-					RES			// results of engine to be saved with this CASE 
+				While the GET-endpoint provides a stateless interface to an engine and its context, the PUT-, POST-,
+				and DELETE-endpoints provide a stateful interface to engines which are useful in [workflows](/nodeflow.view).
+				Whereas stateless engines (being memoryless) are initialized at each step, stateful 
+				engines are initialized only when the workflow is initialized, and typically define i/o ports to
+				latch input/output events, thus maximizing data stationarity in a workflow.
 
 				Please know 
 				that **#{nick}** does not provide an interactive development environment; engines should be 
 				thoroughly debugged in their native development environment before being [inserted](/engines.view) 
 				into **#{nick}**.  
 
+		#fit.Parameters
+			:markdown
 				Engine parameters are held in a read/write JSON context:
 
 					{
@@ -533,11 +524,16 @@ append site_body
 						"KEY": value, ...						
 					}
 
-				While the GET-endpoint provides a stateless interface to an engine and its context, the PUT-, POST-,
-				and DELETE-endpoints provide a stateful interface to engines which are useful in [workflows](/nodeflow.view).
-				Whereas stateless engines (being memoryless) are initialized at each step, stateful 
-				engines are initialized only when the workflow is initialized, and typically define i/o ports to
-				latch input/output events, thus maximizing data stationarity in a workflow.
+				An engine's context will contain the following modules tailored to its specific machine type:
+				
+					IMAGE  		// imaging module
+					SQL			 // db connector module
+					JSON		// json encode-decode module
+					CTX 		// the use CASE context
+					PORT		// port name when engine in used in stateful workflow
+					TAU			// workflow event list when a PORT specified
+					DATA		// dataset provided by the Job regulator
+					RES			// results to be saved with this use CASE 
 
 		#folder.Examples(dock="left")
 			#fit.url
@@ -567,7 +563,8 @@ append site_body
 				:markdown
 					R engines are not yet implemented.
 
-			#fit.em
+			//
+				#fit.em
 				:markdown
 					This [emulated matlab](/emdemo1.exe?name=test) example:
 
@@ -710,7 +707,7 @@ append site_body
 
 			#fit.ma
 				:markdown
-					Mathwork / matlab engines.
+					Matlab engines.
 					
 			#fit.mo
 				:markdown
@@ -722,6 +719,17 @@ append site_body
 				:markdown
 					cv-machines learn, locate and classify objects.  The [haar engine](/engine.view?engine=cv&name=haar),
 					for example, executes a cv-machine in the following context:
+					
+						size = 50  	// feature size in [m]
+						pixels = 512 	// samples across a chip [pixels]
+						step = 0.01 	// relative seach step size
+						range = 0.1 	// relative search size
+						detects = 8		// hits required to declare a detect
+						limit = 1e99 	// restrict maximum number of schips to ingest
+						test = "test" 	// test case to store results
+						scale = [0:1] || 8  		// scale^2 is max number of features in a chip
+
+					which are related to (must cleanup this doc):
 					
 						{ 
 							frame: {
@@ -748,21 +756,21 @@ append site_body
 
 			#fit.py
 				:markdown
-					This [stateless python engine](/pydemo1.exe):
+					This [stateless py-engine](/pydemo1.exe):
 
 						Code:
-							print "welcome to python"
-							tau = [{'x':[11,12],'y':[21,22]}]
-							print tau
-							print query
+							print "welcome to python you lazy bird"
+
+							tau = [ {'x':1, 'y':2, 'z':0}, {'x':3, 'y':4, 'z':10}]
+							print tau, CTX
 
 							SQL0.execute("SELECT * from Htest", () )
+
 							for (Rec) in SQL0:
-								print Rec
+							  print Rec
 
 						Context: {
-							"x": 1,
-							"y": "this is a test"
+							"query": {"Name":"test"}
 						}
 
 					displays *Htest* data at the service console, then returns *tau* JSON data 
@@ -783,9 +791,10 @@ append site_body
 								print "in port f2"
 								return 0
 
-						Context: {
-							f1: {a:1, b:2}, 
-							f2: {a:2, b:1} 
+						Context: { 
+							"query": {"Name":"test"},
+							"ports": {
+							}
 						}
 
 					by defining its i/o ports *f1* / *f2* to be called during the workflow 
@@ -796,18 +805,21 @@ append site_body
 
 			#fit.js
 				:markdown
-					This [stateless js engine](/jsdemo1.exe):
+					This [stateless js-engine](/jsdemo1.exe?Name=test):
 
 						Code:
 							LOG(CTX);
 							LOG("A="+CTX.A.length+" by "+CTX.A[0].length);
 							LOG("B="+CTX.B.length+" by "+CTX.B[0].length);
 							tau = [ {u: CTX.M}, {u:CTX.M+1}, {u:CTX.M+2} ];  
+							LOG(tau);
+							MAT(CTX, "D=A*A'; E=D+D*3; disp(entry); ");
+							LOG( "D=", CTX.D, "E=", CTX.E);
 
 						Context: {
 							"M": 3, 
 							"query": {  // default sql-entry query parms if none supplied on url
-								"Name": "test"
+								"Name": "DefaultTestName"
 							},
 							"entry": {
 								"A": "SELECT a2,a3,a6 FROM MATtest WHERE least(?,1)",
@@ -818,24 +830,20 @@ append site_body
 							}
 						}
 
-					In this example, the [data returned](/jsdemo1.exe?name=test) by *tau* can, 
-					for example, be fed to its [plugin view](/jsdemo1.run).
+					will, on entry, prime its *A* and *B* context variables using its *entry* sql-queries: the "?" therein
+					references its *query* hash (as overridden by url query parameters).  On
+					exit, its context *B* context variable is exported by its *exit* sql-query.    It computes a *tau* variable
+					that is simply discarded on exit (using CTX.tau would have retained).  The MAT matlab emulator
+					computes context *D* and *E* values (the emulator was extended with *disp* etc 
+					functions).
 
-					On entry to this engine, its context *A* and *B* variables are primed by the entry queries.  On
-					exit, its context *B* variable is exported by the exit query.  Engines (both stateful  and stateless) are 
-					always free to revise their context as needed.
-
-					Because this engine did not define functions -- functions are associated with workflow engine 
-					ports -- this stateless engine is accessible [only at an endpoint](/jsdemo1.exe?name=test).
-
-					This [stateful  js engine](/jsdemo2.exe?name=test):
+					This [stateless  js-engine](/jsdemo2.exe?name=test):
 
 						Code:
-							var scope = {X:X, y:y};
-							var N = X.length;
+							CTX.N = X.length;
 
-							MATH.eval("a = inv(X' * X) * X' * y",scope);
-							LOG(scope.a);
+							MAT(CTX, "a = inv(X' * X) * X' * y");
+							LOG(CTX.a);
 
 							var b = {Name:Name,Tests:N,Computed:new Date()}, a=scope.a;
 							for (var n=0,N=a.length;n<N;n++) b[n] = a[n];
@@ -857,8 +865,31 @@ append site_body
 					matrix **X** and measurement vector **y**.  Regression results **a** are then saved into 
 					a **b** vector (which, for example, may be saved with a Context.entry sql).
 
-					The following modues are also available in js-engines: 
-					
+					Whereas the previous engines are stateless -- they do not define functions (i.e. ports) -- this
+					[stateful js-engine](/jsdemo3.exe):
+
+						Code:
+							x = 123;
+							function fi(tau,parm) {
+							  return 0;
+							}; 
+
+							function fo(tau,parm) {
+							  return 0;
+							};
+
+						Context: { 
+							"fi" : {x:10, y:20},
+							"fo": {x:11, y:21} 
+						}
+
+					defines **fi**, **fo** in its context, as [demonstrated here](/demo3.js).
+					Subsequent requests at the step/POST endpoint with **port** = "fi" or "fo" will call the
+					function with the current **tau** workflow events and the **parm** set to the 
+					corresponding "ports" hash.
+
+					The following modues are available to js-engines: 
+
 						[IMAGE](https://github.com/EyalAr/lwip),
 						[JSON](tbd)
 						[SQL](tbd)
@@ -873,38 +904,16 @@ append site_body
 						[MVN](https://www.npmjs.com/package/multivariate-normal),
 						[MAIL](https://www.npmjs.com/package/nodemailer)
 						[FLEX](tbd)
-						
-				where the FLEX module provides:
 
-					FLEX.genpr( { jumprates, ... }, (data) => {...} )    // generate markov random process
-					FLEX.genmix( { events: [ {x,y,z,t ...}, ...], scenario: {}, ... }, (data) => {...} )  // generate (mean,sigma) estimates
-					FLEX.estmix( ... ) // estimate gauss mix
-					FLEX.wms( { ... }, (data) => {...} )  // wms response
-					FLEX.wfs( { ... }, (data) => {...} )  // wfs response
-					FLEX.sss( { ... }, (data) => {...} )  // sss response
-					FLEX.get( {ds: "...", where: {key:value, ...}}, (data) => {...} )    // dataset access
+					where the FLEX module provides:
 
-					This [stateful js engine](/jsdemo3.exe) example:
-
-						Code:
-							x = 123;
-							function fi(tau,parm) {
-							  return 0;
-							}; 
-
-							function fo(tau,parm) {
-							  return 0;
-							};
-
-						Context: { 
-							fi : {x:10, y:20},
-							fo: {x:11, y:21} 
-						}
-
-					places **x** and the ports **fi**, **fo** in its context, as [demonstrated here](/demo3.js).
-					Subsequent requests at the step/POST endpoint with **port** = "fi" or "fo" will call the
-					function with the current **tau** workflow events and the **parm** set to the 
-					corresponding "ports" hash.
+						genpr( { jumprates, ... }, (data) => {...} )    // generate markov random process
+						genmix( { events: [ {x,y,z,t ...}, ...], scenario: {}, ... }, (data) => {...} )  // generate (mean,sigma) estimates
+						estmix( ... ) // estimate gauss mix
+						wms( { ... }, (data) => {...} )  // wms response
+						wfs( { ... }, (data) => {...} )  // wfs response
+						sss( { ... }, (data) => {...} )  // sss response
+						get( {ds: "...", where: {key:value, ...}}, (data) => {...} )    // dataset access
 
 	#accordion.Machines
 		:markdown
@@ -912,7 +921,7 @@ append site_body
 			**engine/ifs/MAC/MAC.cpp**, these machines being bound to #{title} using the 
 			*node-gyp rebuild* provided by *maint.sh bind*.  
 			
-			All opencv-machines, for example, implement the following pattern:
+			All opencv-machines, for example, implements the following pattern:
 
 				class OPORT { 								 	// output port
 					OPORT(str Name, V8OBJECT Parm) { 		// Initiallize 
