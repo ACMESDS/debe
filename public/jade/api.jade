@@ -433,20 +433,28 @@ append site_body
 						GET /PLUGIN.exe?name=CASE 	Run PLUGIN engine with name-specified CASE parameters
 						GET /PLUGIN.exe?QUERY 	Run PLUGIN engine with QUERY parameters
 
-				The following dataset (keys) determine how a plugin interfaces with #{title}:
+				The following reserved dataset (keys) -- added/removed via the PLUGIN.run key-editor -- determine 
+				how a plugin interfaces with #{title}:
 
 					(Save_KEY) store aggregated CASE outputs [{at:"KEY", ...}, ...] were KEY = config | batch | step | jump | end | ...
-					(Job) json parameters to place CASE into a QoS-Credit regulated queue
+					(Job) json dataset chipping and regulation parameters for this CASE
 					(Export) switch to export CASE outputs to a file
 					(Agent) name of agent to out-source this CASE 
 					(Description) bloggable details on this CASE	
 
-				Job = { file: "plugin.case" || "uploaded file", group: "KEY,...", where: {KEY:VALUE, ...}, order: "KEY,...", limit:, task: "name" } 
-				specifies which event file is consumed by the CASE when run.  There is an implicit order:"t" on any data consuption.
-				Grouping events will regulate the events per QoS-Credit rules.
-
-				Any PLUGIN can be extended / retracted via its PLUGIN.run key-editor (options=more).
-
+				where
+				
+					Job = { 
+						file: "plugin.case" || "uploaded file", 
+						group: "KEY,...", 
+						where: {KEY:VALUE, ...}, 
+						order: "KEY,...",
+						limit: VALUE, 
+						task: "NAME" 
+					} 
+					
+				specifies how data is to be chipped and regulated into the PLUGIN during execution.
+				
 				### AOI jobs
 				A { aoiring: [ ...] } Job will attach the requested PLUGIN to a chipping workflow that expects the 
 				following additional PLUGIN parameters:
@@ -494,56 +502,36 @@ append site_body
 				The same engines can be run in workflows: see Sim-Engines.
 
 				# Simulation Engines
-				Simulation engines (cv | py | R | sh | js | ma | em | mo | sql | jade | ...) are available at these endpoints:
+				Simulation engines are available at these endpoints:
 
 					GET /ENGINE.exe 	Compile and step ENGINE in a stateless workflow
 					PUT /ENGINE.exe 	Compile ENGINE in a stateful workflow
 					POST /ENGINE.exe	Step ENGINE  in a stateful workflow
 					DELETE /ENGINE.exe	Free ENGINE from a stateful workflow
 
+				An engine's context always contains the following modules tailored to its specific machine type:
+				
+					IMAGE  		// imaging module
+					SQL			 // sql db connector module
+					JSON		// json encode and decode module
+					CTX 		// the use CASE context
+					PORT		// port name when engine in stateful workflow
+					DATA		// dataset provided to engine by the Job parameter
+					RES			// results of engine to be saved with this CASE 
+
 				Please know 
 				that **#{nick}** does not provide an interactive development environment; engines should be 
 				thoroughly debugged in their native development environment before being [inserted](/engines.view) 
 				into **#{nick}**.  
 
-				Stateful engines are particularly useful in [workflows](/flow.view?ds=test0).  Engine parameters 
-				are held in a read/write (i/o) context that follows the JSON pattern:
+				Engine parameters are held in a read/write JSON context:
 
 					{
-						"tau": [ tau1, tau2, ... ],
-						"PORT1": function () {}, 
-						"PORT2": function() {}, ...
 						"entry": { "KEY": "select ...", ... } || "select ...",
 						"exit": { "KEY": "update ...", ... } || "update ...",
-						"KEY": value
+						"KEY": value, 
+						"KEY": value, ...						
 					}
-
-				An engine's context defines its i/o *PORT*s, its common event tokens *tau*, its context "*KEY*"
-				parameters, and may prime/save its context keys using standard sql *entry* / *exit* queries.  
-				
-				When a *js-engine* is accessed, its context is automatically extended with 
-				[DSP](https://www.npmjs.com/package/dsp),
-				[LWIP](https://github.com/EyalAr/lwip),
-				[MATH](http://mathjs.org/),
-				[CRY](https://nodejs.org/docs/latest/api/crypto),
-				[FLEX](https://github.com/ACMESDS/flex),
-				[RAN](https://github.com/ACMESDS/randpr),
-				[SVD](https://www.npmjs.com/package/node-svd),
-				[VITA](https://www.npmjs.com/package/nodehmm),
-				[MLE](https://www.npmjs.com/package/node-svd),
-				[MVN](https://www.npmjs.com/package/multivariate-normal),
-				[MAIL](https://www.npmjs.com/package/nodemailer)
-				modules and has access to FLEX plugins:
-
-					FLEX.genpr( { jumprates, ... }, (data) => {...} )    // generate markov random process
-					FLEX.genmix( { events: [ {x,y,z,t ...}, ...], scenario: {}, ... }, (data) => {...} )  // generate (mean,sigma) estimates
-					FLEX.estmix( ... ) // estimate gauss mix
-					FLEX.wms( { ... }, (data) => {...} )  // wms response
-					FLEX.wfs( { ... }, (data) => {...} )  // wfs response
-					FLEX.sss( { ... }, (data) => {...} )  // sss response
-					FLEX.get( {ds: "...", where: {key:value, ...}}, (data) => {...} )    // dataset access
-
-				Engines can read/write files only in the client's designated group folders.
 
 				While the GET-endpoint provides a stateless interface to an engine and its context, the PUT-, POST-,
 				and DELETE-endpoints provide a stateful interface to engines which are useful in [workflows](/nodeflow.view).
@@ -811,10 +799,10 @@ append site_body
 					This [stateless js engine](/jsdemo1.exe):
 
 						Code:
-							LOG({M:M, url_query:query.Name});
-							LOG("A="+A.length+" by "+A[0].length);
-							LOG("B="+B.length+" by "+B[0].length);
-							tau = [ {u: M}, {u:M+1}, {u:M+2} ];  
+							LOG(CTX);
+							LOG("A="+CTX.A.length+" by "+CTX.A[0].length);
+							LOG("B="+CTX.B.length+" by "+CTX.B[0].length);
+							tau = [ {u: CTX.M}, {u:CTX.M+1}, {u:CTX.M+2} ];  
 
 						Context: {
 							"M": 3, 
@@ -862,26 +850,39 @@ append site_body
 							}
 						}
 
-					makes use of the mathjs 
-					MATH module to do regression analysis via an emulated Matlab machine.  Here, 
-					the **Name**, **Used** 
-					and **M** parameters -- acquired from the URL and/or context query -- are used to retrieve data 
+					uses the mathjs MATH module to do regression analysis via an emulated Matlab machine.  Here, 
+					the **Name**, **Used** and **M** parameters -- acquired from the URL and/or context query -- are 
+					used to retrieve data 
 					from the **Htest** dataset.  This data is then used to setup a regression companion 
 					matrix **X** and measurement vector **y**.  Regression results **a** are then saved into 
 					a **b** vector (which, for example, may be saved with a Context.entry sql).
 
-					Automatically added to the context are the following libraries:
+					The following modues are also available in js-engines: 
+					
+						[IMAGE](https://github.com/EyalAr/lwip),
+						[JSON](tbd)
+						[SQL](tbd)
+						[DSP](https://www.npmjs.com/package/dsp),
+						[MATH](http://mathjs.org/),
+						[CRY](https://nodejs.org/docs/latest/api/crypto),
+						[FLEX](https://github.com/ACMESDS/flex),
+						[RAN](https://github.com/ACMESDS/randpr),
+						[SVD](https://www.npmjs.com/package/node-svd),
+						[VITA](https://www.npmjs.com/package/nodehmm),
+						[MLE](https://www.npmjs.com/package/node-svd),
+						[MVN](https://www.npmjs.com/package/multivariate-normal),
+						[MAIL](https://www.npmjs.com/package/nodemailer)
+						[FLEX](tbd)
+						
+				where the FLEX module provides:
 
-						LOG console log [http://mathjs.org/docs]
-						MATH Matlab-like scripting [http://mathjs.org/docs]
-						DSP digital signals [https://www.npmjs.com/package/digitalsignals]
-						CRYPTO cryptological [http://nodejs.org/api]
-						LWIP light-weight imaging processing [https://github.com/EyalAr/lwip]
-						SQL mysql connector [https://www.npmjs.com/package/mysql]
-						JSON standard json parsing [w3schools.com]							
-						LIE  Lie group symmetry learners 
-						INV Curve invariant learners
-						TXP Transport equation learners
+					FLEX.genpr( { jumprates, ... }, (data) => {...} )    // generate markov random process
+					FLEX.genmix( { events: [ {x,y,z,t ...}, ...], scenario: {}, ... }, (data) => {...} )  // generate (mean,sigma) estimates
+					FLEX.estmix( ... ) // estimate gauss mix
+					FLEX.wms( { ... }, (data) => {...} )  // wms response
+					FLEX.wfs( { ... }, (data) => {...} )  // wfs response
+					FLEX.sss( { ... }, (data) => {...} )  // sss response
+					FLEX.get( {ds: "...", where: {key:value, ...}}, (data) => {...} )    // dataset access
 
 					This [stateful js engine](/jsdemo3.exe) example:
 
@@ -946,7 +947,8 @@ append site_body
 			(typically 256) MAC machines is reserved to run multiple (context independent) compute 
 			threads at
 
-					error = MAC.call( [ id string, code string, context hash ] )
+				error = MAC.call( [ id string, code string, context hash ] )
+				error = MAC.call( [ id string, port string, context hash or event list] )
 
 			this call returning an interger error code (non-zero if a fault occured).
 
