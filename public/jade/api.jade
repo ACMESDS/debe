@@ -832,7 +832,7 @@ append site_body
 					will, on entry, prime its *A* and *B* context variables using its *entry* sql-queries: the "?" therein
 					references its *query* hash (as overridden by url query parameters).  On
 					exit, its context *B* context variable is exported by its *exit* sql-query.    It computes a *tau* variable
-					that is simply discarded on exit (using CTX.tau would have retained).  The MAT matlab emulator
+					that is simply discarded on exit (placing into CTX.Save to retain).  The MAT matlab emulator
 					computes context *D* and *E* values (the emulator was extended with *disp* etc 
 					functions).
 
