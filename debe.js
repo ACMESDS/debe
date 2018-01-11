@@ -2211,7 +2211,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				res( DEBE.errors.noContext );
 					
 			else
-			if (Job = ctx.Job)  { // Intercept job request to run engine via regulator
+			if ( Job = ctx.Job )  { // Intercept job request to run engine via regulator
 
 				res("Regulating");
 				
@@ -2240,12 +2240,12 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				delete job.ID;
 				delete job.Job;
 
-				Log(Job);
+				Log("REGULATE",Job);
 
 				req.query = ctx;
 				
 				if (Job.constructor == Object)  
-					if (Job.voiring) // regulate a VOI
+					if (Job.voi) // regulate a VOI
 						CHIPS.chipVOI(Job, job, function (voxel,stats,sql) {
 							DEBE.thread( function (sql) {
 								//Log({save:stats});
@@ -2291,7 +2291,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					}
 				
 					else
-					if (Job.aoiring)  // regulate a AOI
+					if (Job.aoi)  // regulate a AOI
 						CHIPS.chipAOI(Job, job, function (chip,dets,sql) {
 							var updated = new Date();
 
@@ -2330,8 +2330,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					else // regulate an event stream
 						CHIPS.chipEvents(req, ctx, job, function (evs) {
 
-							Trace(`PROCESSING ${evs.length} EVENTS`);
-							ctx.Events = function batchEvents(maxbuf, maxstep, cb) {  // provide event getter
+							Trace(`REGULATING ${evs.length} EVENTS`);
+							ctx.Select = function batchEvents(maxbuf, maxstep, cb) {  // provide event getter
 								FLEX.batchEvents(evs,maxbuf,maxstep,cb);
 							};
 
