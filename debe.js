@@ -2983,7 +2983,7 @@ function sysMatlab(req,res) {
 	if ( query.save ) {
 		var
 			thread =  query.save,
-			parts = thread.split("."),
+			parts = thread.split("_"),
 			id = parts.pop(),
 			plugin = "app." + parts.pop(),
 			results = ENGINE.matlab.path.save + thread + ".out";
@@ -2999,7 +2999,7 @@ function sysMatlab(req,res) {
 		});			
 	}
 	
-	res("ok");
+	res("flushed");
 		
 }
 

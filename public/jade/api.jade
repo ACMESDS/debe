@@ -574,8 +574,8 @@ append site_body
 
 						Context: {
 							"entry": {
-								"A": "SELECT a2,a3,a6 FROM app1.MATtest WHERE least(?,1)",
-								"B": "SELECT a1,a6 FROM app1.MATtest WHERE least(?,1)"
+								"A": "SELECT a2,a3,a6 FROM app.MATtest WHERE least(?,1)",
+								"B": "SELECT a1,a6 FROM app.MATtest WHERE least(?,1)"
 							}
 						}
 
@@ -595,8 +595,8 @@ append site_body
 
 						Context: {
 							"entry": {
-								"A": "SELECT a2,a3,a6 FROM app1.MATtest WHERE least(?,1)",
-								"B": "SELECT a1,a6 FROM app1.MATtest WHERE least(?,1)"
+								"A": "SELECT a2,a3,a6 FROM app.MATtest WHERE least(?,1)",
+								"B": "SELECT a1,a6 FROM app.MATtest WHERE least(?,1)"
 							},
 
 							"require": {
@@ -763,7 +763,7 @@ append site_body
 							tau = [ {'x':1, 'y':2, 'z':0}, {'x':3, 'y':4, 'z':10}]
 							print tau, CTX
 
-							SQL0.execute("SELECT * from Htest", () )
+							SQL0.execute("SELECT * from app.Htest", () )
 
 							for (Rec) in SQL0:
 							  print Rec
