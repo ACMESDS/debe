@@ -19,32 +19,32 @@ append site_body
 				(insert) POST 	 /NODE $$ NODE ...
 				(delete) DELETE /NODE $$ NODE ...
 
-			where a NODE:
+			where a NODE can reference a **dataset**, a compute **engine**, a **file path**, or a **file**:
 
 				DATASET.TYPE ? QUERY
 				ENGINE.TYPE ? QUERY
 				PATH.TYPE ? QUERY
 				FILE.TYPE ? QUERY
 
-			addresses a database **dataset**, a compute **engine**, a **file path**, or a **file**.   A QUERY = PARM & PARM .... provides a list of
-			KEY=VALUE | KEY=DATA?QUERY | EXPRESSION parameters to the dataset query.  
+			where each PARM in the QUERY = PARM & PARM .... list provides
 			
-			Dataset TYPEs format datasets:
+				KEY=VALUE | KEY=DATA?QUERY | EXPRESSION
+			
+			and where TYPEs either format data:
 
-				db | xml | csv | txt | tab | view | tree | flat | delta | nav | kml | encap | html | json
+				db | xml | csv | txt | tab | tree | flat | delta | nav | kml | encap | html | json
 				
 			render views:
 			
-				view | pivot | site | spivot | brief | gridbrief | pivbrief
+				view | pivot | site | spivot | brief | gridbrief | pivbrief | run | plugin | runbrief
 				
 			run engines:
 
-				exe | run | plugin | runbrief
-				
-			or return file attributes:
-			
-				code | jade | classif | readability | client | size | risk
+				exe 
 
+			or return attributes:
+
+				stat
 
 	#accordion.Views
 
@@ -433,13 +433,14 @@ append site_body
 
 				The following reserved (keys) can be added/removed using the PLUGIN.run key-editor:
 
-					(Save_KEY) store aggregated CASE outputs [{at:"KEY", ...}, ...] were KEY = config | batch | step | jump | end | ...
-					(Job) json dataset chipping and regulation parameters for this CASE
-					(Export) switch to export CASE outputs to a file
-					(Agent) name of agent to out-source this CASE 
-					(Description) bloggable details on this CASE	
+					(Save_KEY) aggregate and store process results [{at:"KEY", ...}, ...]
+					(Job) json chipping and regulation parameters [*]
+					(Export) switch to export results into a file
+					(Ingest) switch ingest results into the database
+					(Agent) name of agent to out-source this engine
+					(Description) bloggable information about this CASE
 
-				where
+				where [*]
 				
 					Job = { 
 						file: "plugin.case" || "uploaded file" || "file.jpg" || "file.json"
@@ -452,7 +453,7 @@ append site_body
 						voi: [ lat-lon ring, ...]
 					} 
 					
-				specifies how data is to be chipped and regulated into the PLUGIN during execution.
+				specifies how data is to be chipped and regulated during PLUGIN execution.
 				
 		#fit.Parameters
 		#fit.Examples
@@ -531,8 +532,6 @@ append site_body
 					JSON		// json encode-decode module
 					DATA		// read-only dataset provided by the Job regulator
 					PORT		// port name when engine in used in stateful workflow
-					CTX 		// read-write stateless context hash containing CASE parameters
-					TAU			// read-write stateful context list when a PORT is provided
 
 		#folder.Examples(dock="left")
 			#fit.url
@@ -541,19 +540,20 @@ append site_body
 					based on URL parameters, ${req.PARM} and ${plugin.FN(req)} tags; such engines
 					follow the pattern:
 
-						Code:
-							"http://URL?PARM=${req.PARM}&PARM=${plugin.FN(req)}"
-						Context:
+						"http://URL?PARM=${req.PARM}&PARM=${plugin.FN(req)}"
+						
+					with context:
 							{ fn1: function (req) {...}, fn2: ... }
 
 					For example, a **testeng** engine:
 
-						Code:
-							"http://www.someservice.com/ogc?service=wfs&layer=${req.id+"xxx"}&arg=${plugin.angproj(req)}"
-						Context:
-							{ angproj: function (req) { 
-								return Math.cos(req.arg*Math.PI/180); 
-								} }
+						"http://www.someservice.com/ogc?service=wfs&layer=${req.id+"xxx"}&arg=${plugin.angproj(req)}"
+						
+					with context:
+					
+						{ angproj: function (req) { 
+							return Math.cos(req.arg*Math.PI/180); 
+							} }
 
 					would reroute "/testeng.xml?id=abc123&arg=45" to "http://www.someservice.com?service=wfs&layer=abc123xxx&arg=0.70710",
 					then return someservice's response in xml format.
@@ -563,6 +563,37 @@ append site_body
 					R engines are not yet implemented.
 
 			//
+				#fit.Proxy
+				:markdown
+					Proxy engines are [engines](/engine.view) that run periodically given a
+					run interval Period parameter.  A 0-period proxy is run once at **#{nick}** startup.
+					The [job hawkers](/admin.view) are proxy engines.
+			
+				#fit.Virtual
+				:markdown
+					Virtual-dataset engines are JS-engines that can be accessed and customized
+					ny right-clicking its corresponding action button from within a view.  Virtual dataset
+					engines follow this pattern:
+
+						Code:
+							function (req, res) {   		// request-callback
+								var sql = req.sql, 			// sql connector hash
+									query = req.query;		// request query parameters
+
+								sql.query("...", 			// sql query with ?-tokens
+									query, 					// query parameters
+									function (err,data) {  	// query error and data
+										res(err || data);	// return error or data
+								});
+							}
+						Context: {
+							"KEY": value, ...
+						}
+
+					The response callback **res** must be called, and must return either
+					an **Error** object, a **String** message, an **Array** list of
+					records, or an **Object** hash.
+			
 				#fit.em
 				:markdown
 					This [emulated matlab](/emdemo1.exe?name=test) example:
@@ -628,10 +659,12 @@ append site_body
 
 					This [sh-shell engine](/demo.db) example (test [here](/demo.db)):
 
-						Code:
-							ls
-							python mypgm.py
-						Context: {
+						ls
+						python mypgm.py
+						
+					with context: 
+						
+						{
 							"KEY": value, ...
 						}
 
@@ -644,50 +677,25 @@ append site_body
 					views.  A Jade engine is invoked at a **view end-point** with optional
 					parameters defined by the Jade engine.
 
-			//
-				#fit.Virtual
-				:markdown
-					Virtual-dataset engines are JS-engines that can be accessed and customized
-					ny right-clicking its corresponding action button from within a view.  Virtual dataset
-					engines follow this pattern:
-
-						Code:
-							function (req, res) {   		// request-callback
-								var sql = req.sql, 			// sql connector hash
-									query = req.query;		// request query parameters
-
-								sql.query("...", 			// sql query with ?-tokens
-									query, 					// query parameters
-									function (err,data) {  	// query error and data
-										res(err || data);	// return error or data
-								});
-							}
-						Context: {
-							"KEY": value, ...
-						}
-
-					The response callback **res** must be called, and must return either
-					an **Error** object, a **String** message, an **Array** list of
-					records, or an **Object** hash.
-
 			#fit.sq
 				:markdown
 					This [sql engine](/engine.view?engine=sql&name=demo):
 
-						Code:
-							SQL.select = function (sql,recs,cb) {
-								var q = sql.query("SELECT * FROM ?? WHERE ?",["intake",{TRL:2}])
-								.on("result", function (rec) {
-									rec.Cat = rec.Name + rec.Tech;
-									recs.push(rec);
-								})
-								.on("end", function () {
-									LOG("returning recs="+recs.length);
-									cb(recs);
-								});
-								LOG("sql command="+q.sql);
-							}
-						Context:
+						SQL.select = function (sql,recs,cb) {
+							var q = sql.query("SELECT * FROM ?? WHERE ?",["intake",{TRL:2}])
+							.on("result", function (rec) {
+								rec.Cat = rec.Name + rec.Tech;
+								recs.push(rec);
+							})
+							.on("end", function () {
+								LOG("returning recs="+recs.length);
+								cb(recs);
+							});
+							LOG("sql command="+q.sql);
+						}
+
+					with context:
+
 							{ key: value, ...}
 
 					is a CRUD-select [simply selects)(/demo.sql) all records from the **intake** 
@@ -697,17 +705,21 @@ append site_body
 					simply added to **#{nick}**; subsequent executions return the desired records to 
 					the client.
 
-			//
-				#fit.Proxy
-				:markdown
-					Proxy engines are [engines](/engine.view) that run periodically given a
-					run interval Period parameter.  A 0-period proxy is run once at **#{nick}** startup.
-					The [job hawkers](/admin.view) are proxy engines.
-
 			#fit.ma
 				:markdown
-					Matlab engines.
-					
+					This [stateless matlab-engine](/mademo1.exe):
+
+						function res = mademo1(ctx)
+							res = ctx.a + ctx.b;
+						end
+
+					with context: 
+
+						{
+						}
+
+					will return the sum of its context *a* and *b* keys.
+				
 			#fit.mo
 				:markdown
 					[Model engines](/engine.view) are used/defined by workflows when 
@@ -757,18 +769,21 @@ append site_body
 				:markdown
 					This [stateless py-engine](/pydemo1.exe):
 
-						Code:
+						def pydemo1(ctx):
 							print "welcome to python you lazy bird"
+							print ctx	
 
-							tau = [ {'x':1, 'y':2, 'z':0}, {'x':3, 'y':4, 'z':10}]
-							print tau, CTX
+							if False:
+								SQL0.execute("SELECT * from Htest", () )
 
-							SQL0.execute("SELECT * from app.Htest", () )
+								for (Rec) in SQL0:
+								  print Rec
 
-							for (Rec) in SQL0:
-							  print Rec
+							return [ {'x':1, 'y':2, 'z':0}, {'x':3, 'y':4, 'z':10}]	
 
-						Context: {
+					with context:
+
+						{
 							"query": {"Name":"test"}
 						}
 
@@ -779,18 +794,20 @@ append site_body
 					This [stateful python engine](/pydemo2.exe) can be used in a workflow to 
 					maximize data stationarity:
 
-						Code:
-							print "executing on port " + port
+						def f1(tau,parm):
+							print "in port f1"
+							return 0
 
-							def f1(tau,parm):
-								print "in port f1"
-								return 0
+						def f2(tau,parm):
+							print "in port f2"
+							return 0
 
-							def f2(tau,parm):
-								print "in port f2"
-								return 0
+						def pydemo2(ctx):
+							print "executing on port " + PORT
 
-						Context: { 
+					with context: 
+
+						{
 							"query": {"Name":"test"},
 							"ports": {
 							}
@@ -806,16 +823,20 @@ append site_body
 				:markdown
 					This [stateless js-engine](/jsdemo1.exe?Name=test):
 
-						Code:
-							LOG(CTX);
-							LOG("A="+CTX.A.length+" by "+CTX.A[0].length);
-							LOG("B="+CTX.B.length+" by "+CTX.B[0].length);
-							tau = [ {u: CTX.M}, {u:CTX.M+1}, {u:CTX.M+2} ];  
-							LOG(tau);
-							MAT(CTX, "D=A*A'; E=D+D*3; disp(entry); ");
-							LOG( "D=", CTX.D, "E=", CTX.E);
+						function jsdemo1(ctx,res) {
+							res( [ {u: ctx.M}, {u:ctx.M+1}, {u:ctx.M+2} ] );
 
-						Context: {
+							LOG(ctx);
+							LOG("A="+ctx.A.length+" by "+ctx.A[0].length);
+							LOG("B="+ctx.B.length+" by "+ctx.B[0].length);
+
+							MAT(ctx, "D=A*A'; E=D+D*3; disp(entry); ");
+							LOG( "D=", ctx.D, "E=", ctx.E);
+						}						
+
+					with context: 
+
+						{
 							"M": 3, 
 							"query": {  // default sql-entry query parms if none supplied on url
 								"Name": "DefaultTestName"
@@ -838,18 +859,22 @@ append site_body
 
 					This [stateless  js-engine](/jsdemo2.exe?name=test):
 
-						Code:
-							CTX.N = X.length;
+						function jsdemo2(ctx,res) {
+							MAT(ctx, "a = inv(X' * X) * X' * y");
+							
+							LOG(ctx.a);
 
-							MAT(CTX, "a = inv(X' * X) * X' * y");
-							LOG(CTX.a);
-
+							ctx.N = X.length;
 							var b = {Name:Name,Tests:N,Computed:new Date()}, a=scope.a;
 							for (var n=0,N=a.length;n<N;n++) b[n] = a[n];
 
 							LOG(b);
+							res({a:ctx.a,b:b});							
+						}
 
-						Context: {							
+					with context: 
+					
+						{						
 							"M": 3,
 							"entry": {
 								"X": "SELECT p0,p1,p2 FROM Htest WHERE least(?,1)",
@@ -867,7 +892,6 @@ append site_body
 					Whereas the previous engines are stateless -- they do not define functions (i.e. ports) -- this
 					[stateful js-engine](/jsdemo3.exe):
 
-						Code:
 							x = 123;
 							function fi(tau,parm) {
 							  return 0;
@@ -876,8 +900,13 @@ append site_body
 							function fo(tau,parm) {
 							  return 0;
 							};
+							
+							function jsdemo3(ctx,res) {
+							}
 
-						Context: { 
+					with context: 
+					
+						{ 
 							"fi" : {x:10, y:20},
 							"fo": {x:11, y:21} 
 						}

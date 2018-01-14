@@ -1,7 +1,4 @@
-﻿
-
-
-// UNCLASSIFIED 
+﻿// UNCLASSIFIED 
 
 /**
 @class DEBE
@@ -638,6 +635,42 @@ append layout_body
 			res( txt );
 		},
 
+		json: function (recs,req,res) {
+			res(recs);
+		},
+		
+		stat: function (recs,req,res) { // dataset.stat provide info
+			var 
+				table = req.table,
+				group = req.group,
+				uses = [
+					"db", "xml", "csv", "txt", "tab", "view", "tree", "flat", "delta", "nav", "encap", "html", "json",
+					"view","pivot","site","spivot","brief","gridbrief","pivbrief","run","plugin","runbrief",
+					"exe", "stat"];
+
+			uses.each( function (n, use) {
+				uses[n] = use.tag("a",{href: "/"+table+"."+use});
+			});
+			
+			req.sql.query("DESCRIBE ??.??", [group,table], function (err, stats) {
+				
+				if (err)
+					res(err);
+				
+				else {
+					stats.each( function (n,stat) {
+						stats[n] = stat.Field.tag("a",{href: "/"+table+"?_index="+stat.Field});
+					});
+					
+					res(`
+Records: ${recs.length}<br>
+Fields: ${stats.join(",")}<br>
+Usage: ${uses.join(",")}  `);
+				}
+			});
+			
+		},
+		
 		html: function (recs,req,res) { //< dataset.html converts to html
 			res( DEBE.site.gridify( recs ).tag("table") );
 		},
@@ -1140,7 +1173,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	@member DEBE
 	Enable to give-away plugin services
 	*/
-	probono: true,  //< enable to run plugins unregulated
+	probono: false,  //< enable to run plugins unregulated
 		
 	Function: Initialize,  //< added to ENUM callback stack
 
@@ -2110,15 +2143,14 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 			});
 			
-			if (rem.length) 
-				if ( "Save" in ctx ) {  // remainder dumped to Save key
+			if (rem.length) {  // there is a remainder to save
+				if ( "Save" in ctx ) {  // dump to Save key
 					sql.query("UPDATE ??.?? SET ? WHERE ?", [
 						group, table, {Save: JSON.stringify(rem)}, {ID: ctx.ID}
 					]);
 					status += " Saved";
 				}
 
-				else
 				if ( ctx.Export ) {
 					getFile( sql, function (fileID) {
 						var 
@@ -2143,7 +2175,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					status += " Exported";
 				}
 
-				else {
+				if ( ctx.Ingest ) {
 					getFile( sql, function (fileID) {
 						CHIPS.ingestList( sql, rem, fileID, function (aoi, evs) {
 							Log("INGESTED ",aoi);
@@ -2151,7 +2183,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					});
 					status += "Ingested";
 				}
-
+			}
+			
 			delete stash.remainder;	
 		}
 		
@@ -2169,7 +2202,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			sql.query("UPDATE ??.?? SET ? WHERE ?", [ 
 				group, table, stash, {ID: ctx.ID}
 			]);
-			status += " Split";
+			status += " Saved";
 		}
 
 		return status || stats;
