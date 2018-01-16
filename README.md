@@ -7,37 +7,54 @@
 	
 # DEBE
 
-DEBE stacks the [FLEX database extender](https://github.com/acmesds/flex), the
-[CHIPPER earth-focused data segmenter and workflow manager](https://github.com/acmesds/chipper) ,
-and the [ENGINE language agnostic computer](https://github.com/acmesds/engine) above 
-the [TOTEM base web service](https://github.com/acmesds/totem) to provide a web service for 
-managing interfaces, requirements, project metrics, geoint products and workflows.  
+DEBE extends [TOTEM simple web service](https://github.com/acmesds/totem) with
+the [FLEX database extender](https://github.com/acmesds/flex), 
+[CHIPPER earth imaging](https://github.com/acmesds/chipper),
+and [ENGINE compute](https://github.com/acmesds/engine) modules to provide a web service 
+that manages its content, interfaces, requirements, project metrics, geoint products and workflows.  
 
-As documented in its [api](/api.view), DEBE extends [TOTEM](https://github.com/acmesds/totem)'s 
-DATASET.TYPE endpoints with TYPEs that format datasets:
+As documented in its api, DEBE provides ENDPOINTs:
 
-	db | xml | csv | txt | tab | view | tree | flat | delta | nav | kml | encap | html | json
+	(select) GET 	 /NODE $$ NODE ...
+	(update) PUT 	 /NODE $$ NODE ...
+	(insert) POST 	 /NODE $$ NODE ...
+	(delete) DELETE /NODE $$ NODE ...
 
-render plugins:
+ to access a NODE:
 
-	view | run | plugin | pivot | site | spivot | brief | gridbrief | pivbrief | runbrief
+	DATASET.TYPE ? QUERY ? QUERY ...
+	ENGINE.TYPE ? QUERY ? QUERY ...
+	FILEPATH.TYPE ? QUERY ? QUERY ...
+	COMMAND.TYPE ? QUERY ? QUERY ...
 
-run stateless | stateful engines:
+using an optional QUERY:
 
-	exe | sim
+	KEY=VALUE & EXPRESSION ...
 
-or return file attributes:
+DEBE provides default TYPEs to format data:
 
-	code | jade | classif | readability | client | size | risk
+	db | xml | csv | txt | tab | tree | flat | kml | encap | html | json | geojson
+
+render a view/skin:
+
+	view | pivot | site | spivot | brief | gridbrief | pivbrief | run | plugin | runbrief
+
+run an engine:
+
+	exe
+
+provide attributes:
+
+	delta | nav | stat
 	
-As documented in its [api](/api.view), DEBE also extends  [TOTEM](https://github.com/acmesds/totem)'s  
-DATASET.TYPE?QUERY flags with:
+or generate office files:
 
-	_save, _browse, _view, _blog, _json
+	pdf | xdoc | xppt | xxls ...
 
-DEBE provides its page skinners a context of useful parameters and methods, as described in 
-its [skinguide](/skinguide.view).
+By default, DEBE provides the following COMMANDs:
 
+	wget | curl | http | riddle	| help | stop | alert | codes | ping | bit | config
+	
 ## Installation
 
 Clone from one of the repos.  You will typically want to redirect the following to your project

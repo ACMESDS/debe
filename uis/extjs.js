@@ -1794,7 +1794,7 @@ Ext.onReady( function () {
 				dims:"1200,600",title:"",page:"",plugins:"cXF",hover:"",
 				//guard:"",
 				dock:"head",sync:"",
-				head:"Status,Insert,Update,Delete,Select,Execute,|,Blog,Print,Refresh,Delta,Help",
+				head:"Status,Execute,|,Select,Insert,Update,|,Delete,|,Blog,Print,Refresh,Delta,Help",
 				menu: "",
 				update:"",select:"",execute:"",delete:""},
 			PARMS : {
@@ -2271,7 +2271,7 @@ WIDGET.prototype.menuTools = function () {
 		opts = BASE.parser,
 		Tips = true,
 		agent = "",
-		nada = { xtype: "tbseparator" },
+		nada = { xtype: "component", width: 10}, //{ xtype: "tbseparator" },
 		roles = this.roles = ROLES[this.Data.dataset] || DEFAULT.ROLES;
 
 	var actionSign = {
@@ -2370,7 +2370,7 @@ WIDGET.prototype.menuTools = function () {
 									new ANCHOR("grid", {  // anchor new notes widget to a form
 										class: "notes",
 										path: "/notes.db?Dataset=" + Widget.name ,
-										head: "Status,Insert,Update,Delete,Print,Refresh",
+										head: "Status,Insert,Update,|,Delete,|,Print,Refresh",
 										//dims: "500,100",
 										//nowrap: true,
 										crush: true,

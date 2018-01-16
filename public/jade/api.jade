@@ -3,7 +3,7 @@
 extends site
 append site_help
 	:markdown
-		See also the companion [skinning guide](/skinguide.jade) and the [programmers ref manual](/shares/doc/totem/index.html).
+		See also the companion [skinning guide](/skinguide.jade) and the [programmers ref manual](/shares/doc/*#{title}*/index.html).
 append site_parms
 	- view = "Typical"
 	- dock = "top"
@@ -12,39 +12,43 @@ append site_body
 	#fit.Intro
 
 		:markdown
-			TOTEM provides CRUD endpoints to synchronize dataset NODES:
+			As documented in this API, *#{title}* provides ENDPOINTs:
 
 				(select) GET 	 /NODE $$ NODE ...
 				(update) PUT 	 /NODE $$ NODE ...
 				(insert) POST 	 /NODE $$ NODE ...
 				(delete) DELETE /NODE $$ NODE ...
 
-			where a NODE can reference a **dataset**, a compute **engine**, a **file path**, or a **file**:
+			 to access a NODE:
 
-				DATASET.TYPE ? QUERY
-				ENGINE.TYPE ? QUERY
-				PATH.TYPE ? QUERY
-				FILE.TYPE ? QUERY
-
-			where each PARM in the QUERY = PARM & PARM .... list provides
-			
-				KEY=VALUE | KEY=DATA?QUERY | EXPRESSION
-			
-			and where TYPEs either format data:
-
-				db | xml | csv | txt | tab | tree | flat | delta | nav | kml | encap | html | json
+				DATASET.TYPE ? QUERY ? QUERY ...
+				ENGINE.TYPE ? QUERY ? QUERY ...
+				FILEPATH.TYPE ? QUERY ? QUERY ...
+				COMMAND.TYPE ? QUERY ? QUERY ...
 				
-			render views:
+			using an optional QUERY:
 			
+				KEY=VALUE & EXPRESSION ...
+			
+			where the TYPE will format data:
+
+				db | xml | csv | txt | tab | tree | flat | kml | encap | html | json | geojson
+
+			render a [view/skin](/skinguide.view):
+
 				view | pivot | site | spivot | brief | gridbrief | pivbrief | run | plugin | runbrief
+
+			run an engine:
+
+				exe
+
+			provide attributes:
+
+				delta | nav | stat
 				
-			run engines:
+			or generate office files:
 
-				exe 
-
-			or return attributes:
-
-				stat
+				pdf | xdoc | xppt | xxls ...
 
 	#accordion.Views
 
@@ -427,33 +431,58 @@ append site_body
 			:markdown
 				A plugin -- a dataset-engine pair -- is assessible from the following endpoints:
 
-						GET /PLUGIN.exe?id=CASE 	Run PLUGIN engine with id-specified CASE parameters
-						GET /PLUGIN.exe?name=CASE 	Run PLUGIN engine with name-specified CASE parameters
-						GET /PLUGIN.exe?QUERY 	Run PLUGIN engine with QUERY parameters
+					GET /PLUGIN.exe?id=CASE 	Run PLUGIN engine with id-specified CASE context
+					GET /PLUGIN.exe?name=CASE 	Run PLUGIN engine with name-specified CASE context
+					GET /PLUGIN.exe?QUERY 	Run PLUGIN engine with QUERY context
 
-				The following reserved (keys) can be added/removed using the PLUGIN.run key-editor:
+				There are reserved input context keys:
 
-					(Save_KEY) aggregate and store process results [{at:"KEY", ...}, ...]
-					(Job) json chipping and regulation parameters [*]
-					(Export) switch to export results into a file
-					(Ingest) switch ingest results into the database
-					(Agent) name of agent to out-source this engine
-					(Description) bloggable information about this CASE
+					Job - chipping and regulation parameters 
+					Export - switch to save results into a file
+					Ingest - switch ingest results into the database
+					Description - [skin](/skinguide.view) to document this CASE
+					Config - js-engine to dynamically define the CASE context
+					
+				reserved output context keys:
 
-				where [*]
-				
-					Job = { 
+					Save_KEY - aggregate and store process results [{at:"KEY", ...}, ...]
+					Save - store remaing process results pruned by Save_KEY
+					
+				and reserved job context keys:
+
+					File - file information retrieved for Job.file
+					Voxel - voxel information retrieved for Job.aoi
+					Load - query to load regulated Job dataset
+					Dump - query to save regulated Job results
+
+				where the Job key defines plugin regulation parameters (// default values):
+
+					{ 
 						file: "plugin.case" || "uploaded file" || "file.jpg" || "file.json"
-						group: "KEY,...", 
-						where: {KEY:VALUE, ...}, 
-						order: "KEY,...",
-						limit: VALUE, 
-						task: "NAME",
-						aoi: [ lat-lon ring, ... ],
-						voi: [ lat-lon ring, ...]
+						group: "KEY,...", 					// "" to disable
+						where: { KEY: VALUE, ...},   // {} for all
+						order: "KEY,...",   				// "t" implicit
+						limit: VALUE,   					// 1000
+						task: "NAME", 						// "" for all
+						aoi: [ [lat,lon], ... ]  				// closed ring
 					} 
 					
-				specifies how data is to be chipped and regulated during PLUGIN execution.
+				The Description key may contains [blogging tags](/skinguide.view) of the form
+
+					 [image | post | update | link | SKIN, W, H, DS?QUERY]( /url | PARM=r.KEY expression; ...)
+
+				to document the use case.  For example:
+
+					[plot,100,200](x=r.Save.a;ys=[r.Save.b,r.Save.c])
+					[post,500,100](/home.view)
+					[link](https:/go.here)
+					[image](/shares/a1.jpg)
+					[force,100,100,queues.tree?_pivots=class]()
+
+				will embed (1) a plot of the requested x,y data using the [d3 plot](/plot.view), (2) the 
+				[home.view](/home.view), (3) a link to the url, (4) the [image](/shares.jpg), and (5) a
+				force graph of the queues dataset pivoted by class using the [d3 force](/force.view) 
+				into a frame of specified W x H dimensions.
 				
 		#fit.Parameters
 		#fit.Examples
@@ -475,19 +504,19 @@ append site_body
 				Conversely, a poll-less request will start a job, then reply on the AGENT to claim the job.  In
 				either case, QUERY defines the ENGINE args.
 
-				#{title} reciprocates by providing its own AGENT at its **/agent** endpoint.
+				*#{title}* reciprocates by providing its own AGENT at its **/agent** endpoint.
 
 				Agents provide a means to outsource an engine, while retaining a thread
-				on each agent request.  A valid agent provided #{title} with the
+				on each agent request.  A valid agent provided *#{title}* with the
 				following push/pull endpoints:
 
-					GET http://AGENT?push=totem.CLIENT.ENGINE.ID&args=JSON
+					GET http://AGENT?push=*#{title}*.CLIENT.ENGINE.ID&args=JSON
 					GET http://AGENT?pull=JOBID
 
 				where the push endpoint defines the job being sent to the AGENT (with the CLIENT 
 				requesting the agent, the ENGINE being outsourced, the ID of the test case,
 				and the JSON args to the ENGINE).  The AGENT eventually responds at 
-				the pull endpoint with a JOBID, or a "" if no job could be created.  #{title} will periodically 
+				the pull endpoint with a JOBID, or a "" if no job could be created.  *#{title}* will periodically 
 				poll the agent for the results of JOBID.
 
 		#fit.Examples
@@ -525,13 +554,8 @@ append site_body
 						"KEY": value, ...						
 					}
 
-				An engine's context will contain the following modules tailored to its specific machine type:
-				
-					IMAGE  		// imaging module
-					SQL			 // db connector module
-					JSON		// json encode-decode module
-					DATA		// read-only dataset provided by the Job regulator
-					PORT		// port name when engine in used in stateful workflow
+				An engine is automatically provided access to its machine specific LWIP (light weight imaging), 
+				SQL (db connector), and	JSON (encoder-decoder) modules.
 
 		#folder.Examples(dock="left")
 			#fit.url
@@ -542,14 +566,14 @@ append site_body
 
 						"http://URL?PARM=${req.PARM}&PARM=${plugin.FN(req)}"
 						
-					with context:
+					with initial context:
 							{ fn1: function (req) {...}, fn2: ... }
 
 					For example, a **testeng** engine:
 
 						"http://www.someservice.com/ogc?service=wfs&layer=${req.id+"xxx"}&arg=${plugin.angproj(req)}"
 						
-					with context:
+					with initial context:
 					
 						{ angproj: function (req) { 
 							return Math.cos(req.arg*Math.PI/180); 
@@ -662,7 +686,7 @@ append site_body
 						ls
 						python mypgm.py
 						
-					with context: 
+					with initial context: 
 						
 						{
 							"KEY": value, ...
@@ -694,7 +718,7 @@ append site_body
 							LOG("sql command="+q.sql);
 						}
 
-					with context:
+					with initial context:
 
 							{ key: value, ...}
 
@@ -713,7 +737,7 @@ append site_body
 							res = ctx.a + ctx.b;
 						end
 
-					with context: 
+					with initial context: 
 
 						{
 						}
@@ -767,29 +791,28 @@ append site_body
 
 			#fit.py
 				:markdown
-					This [stateless py-engine](/pydemo1.exe):
+					This [stateless py-engine](/pydemo1.run):
 
 						def pydemo1(ctx):
 							print "welcome to python you lazy bird"
-							print ctx	
+							print ctx   # initial engine content
+							ctx['Save'] = [ {'x':1, 'y':2, 'z':0}, {'x':3, 'y':4, 'z':10}]	# its plugin will retain this value
 
-							if False:
-								SQL0.execute("SELECT * from Htest", () )
+							SQL0.execute("SELECT * from Htest", () )	# access database 
 
-								for (Rec) in SQL0:
-								  print Rec
+							for (Rec) in SQL0:
+							  print Rec
 
-							return [ {'x':1, 'y':2, 'z':0}, {'x':3, 'y':4, 'z':10}]	
+							return ctx   # return 0 if an error occured
 
-					with context:
+					with initial context:
 
 						{
 							"query": {"Name":"test"}
 						}
 
-					displays *Htest* data at the service console, then returns *tau* JSON data 
-					to the client.  Python 	engines are also provided two sql cursors -- *SQL0* and *SQL1* 
-					for read and write as shown above.
+					will display *Htest* data at the service console, then returns *Save* data to its plugin context.
+					Python engines are provided two sql cursors -- *SQL0* and *SQL1* -- for read and write.
 
 					This [stateful python engine](/pydemo2.exe) can be used in a workflow to 
 					maximize data stationarity:
@@ -805,7 +828,7 @@ append site_body
 						def pydemo2(ctx):
 							print "executing on port " + PORT
 
-					with context: 
+					with initial context: 
 
 						{
 							"query": {"Name":"test"},
@@ -821,20 +844,21 @@ append site_body
 
 			#fit.js
 				:markdown
-					This [stateless js-engine](/jsdemo1.exe?Name=test):
+					This [stateless js-engine](/jsdemo1.run):
 
 						function jsdemo1(ctx,res) {
-							res( [ {u: ctx.M}, {u:ctx.M+1}, {u:ctx.M+2} ] );
+							ctx.Save = [ {u: ctx.M}, {u:ctx.M+1}, {u:ctx.M+2} ];  // this data will be retained by its plugin
+							res( ctx );  // or respond with null if there was an error
 
 							LOG(ctx);
 							LOG("A="+ctx.A.length+" by "+ctx.A[0].length);
 							LOG("B="+ctx.B.length+" by "+ctx.B[0].length);
 
-							MAT(ctx, "D=A*A'; E=D+D*3; disp(entry); ");
+							MAT(ctx, "D=A*A'; E=D+D*3; disp(entry); ");  // runs the matlab emulator
 							LOG( "D=", ctx.D, "E=", ctx.E);
 						}						
 
-					with context: 
+					with initial context: 
 
 						{
 							"M": 3, 
@@ -850,12 +874,12 @@ append site_body
 							}
 						}
 
-					will, on entry, prime its *A* and *B* context variables using its *entry* sql-queries: the "?" therein
-					references its *query* hash (as overridden by url query parameters).  On
+					On entry, it will prime its *A* and *B* context variables using its *entry* sql-queries: the "?" therein
+					references its context *query* hash (as overridden by url query parameters).  On
 					exit, its context *B* context variable is exported by its *exit* sql-query.    It computes a *tau* variable
 					that is simply discarded on exit (placing into CTX.Save to retain).  The MAT matlab emulator
-					computes context *D* and *E* values (the emulator was extended with *disp* etc 
-					functions).
+					computes context *D* and *E* values.  The default MAT emulator has been extended with *disp* etc 
+					functions.
 
 					This [stateless  js-engine](/jsdemo2.exe?name=test):
 
@@ -872,7 +896,7 @@ append site_body
 							res({a:ctx.a,b:b});							
 						}
 
-					with context: 
+					with initial context: 
 					
 						{						
 							"M": 3,
@@ -904,7 +928,7 @@ append site_body
 							function jsdemo3(ctx,res) {
 							}
 
-					with context: 
+					with initial context: 
 					
 						{ 
 							"fi" : {x:10, y:20},
@@ -912,28 +936,26 @@ append site_body
 						}
 
 					defines **fi**, **fo** in its context, as [demonstrated here](/demo3.js).
+					
 					Subsequent requests at the step/POST endpoint with **port** = "fi" or "fo" will call the
 					function with the current **tau** workflow events and the **parm** set to the 
 					corresponding "ports" hash.
 
-					The following modues are available to js-engines: 
-
-						[IMAGE](https://github.com/EyalAr/lwip),
-						[JSON](tbd)
-						[SQL](tbd)
-						[DSP](https://www.npmjs.com/package/dsp),
-						[MATH](http://mathjs.org/),
-						[CRY](https://nodejs.org/docs/latest/api/crypto),
-						[FLEX](https://github.com/ACMESDS/flex),
-						[RAN](https://github.com/ACMESDS/randpr),
-						[SVD](https://www.npmjs.com/package/node-svd),
-						[VITA](https://www.npmjs.com/package/nodehmm),
-						[MLE](https://www.npmjs.com/package/node-svd),
-						[MVN](https://www.npmjs.com/package/multivariate-normal),
-						[MAIL](https://www.npmjs.com/package/nodemailer)
-						[FLEX](tbd)
-
-					where the FLEX module provides:
+					js-engines are given access to the
+					[LWIP(lightweight imaging)](https://github.com/EyalAr/lwip),
+					[SQL(database connector)](https://www.npmjs.com/package/mysql),
+					[JSON(encoder-decoder)](https://nodejs.org/docs/latest/api/json),
+					[MAT(matlab emulator)](https://www.npmjs.com/package/mathjs),
+					[DSP(digitial signal processing)](https://www.npmjs.com/package/dsp), 
+					[CRY(crypto)](https://nodejs.org/docs/latest/api/crypto),
+					[FLEX(data extender)](https://github.com/ACMESDS/flex),
+					[RAN(markov random process)](https://github.com/ACMESDS/randpr),
+					[SVD(singular value decomposition)](https://www.npmjs.com/package/node-svd),
+					[VITA(hidden markov model solver)](https://www.npmjs.com/package/nodehmm),
+					[MLE(maximum liklihood estimator)](https://www.npmjs.com/package/node-svd),
+					[MVN(normal multivariates](https://www.npmjs.com/package/multivariate-normal),
+					[MAIL(simple mail transfer)](https://www.npmjs.com/package/nodemailer)
+					modules.  The FLEX module provides:
 
 						genpr( { jumprates, ... }, (data) => {...} )    // generate markov random process
 						genmix( { events: [ {x,y,z,t ...}, ...], scenario: {}, ... }, (data) => {...} )  // generate (mean,sigma) estimates
@@ -946,7 +968,7 @@ append site_body
 	#accordion.Machines
 		:markdown
 			Engines employ a MAC = opencv | python | ... machine implemented under
-			**engine/ifs/MAC/MAC.cpp**, these machines being bound to #{title} using the 
+			**engine/ifs/MAC/MAC.cpp**, these machines being bound to *#{title}* using the 
 			*node-gyp rebuild* provided by *maint.sh bind*.  
 			
 			All opencv-machines, for example, implements the following pattern:
@@ -980,7 +1002,7 @@ append site_body
 					// Members follow
 				}
 
-			When bound to #{title} (using *node-gyp rebuild* provided by *maint.sh bind*), a **pool** of 
+			When bound to *#{title}* (using *node-gyp rebuild* provided by *maint.sh bind*), a **pool** of 
 			(typically 256) MAC machines is reserved to run multiple (context independent) compute 
 			threads at
 
@@ -998,9 +1020,9 @@ append site_body
 			Given, however, an empty code string , the machine is stepped in a stateless way, that is, 
 			by latching context to all input ports, then latching all output ports to the context.
 
-	#accordion.System
+	#accordion.Commands
 		:markdown
-			The following routes are used to maintain #{title}:
+			The following commands maintain *#{title}*:
 
 				GET /SITE.yql 	Return data from YQL compliant SITE=select/from/where
 				GET /socket.io	reserved client socket.io connections

@@ -1,0 +1,1 @@
+res=1;save('init.mat','res','-ascii'); disp(webread('http://totem.west.ile.nga.ic.gov:8080/matlab?queue=init));

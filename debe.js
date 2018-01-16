@@ -35,18 +35,18 @@ var 									// NodeJS modules
 	FS = require("fs"); 				//< NodeJS filesystem and uploads
 	
 var										// 3rd party modules
-	OGEN = null, //require("officegen"), 	//< MS office generator
+	OGEN = require("officegen"), 	//< MS office generator
 	LANG = require('i18n-abide'), 		//< I18 language translator
 	ARGP = require('optimist'),			//< Command line argument processor
 	TOKML = require("tokml"), 			//< geojson to kml convertor
-	JAX = require("../mathjax/node_modules/mathjax-node"),   
+	JAX = require("mathjax-node"),   //< servde side mathjax parser
 	JADE = require('jade');				//< using jade as the skinner
 	
 var 									// totem modules		
 	ENGINE = require("engine"), 
 	FLEX = require("flex"),
 	TOTEM = require("totem"),
-	RAND = require("randpr"),
+	RAN = require("randpr"),
 	CHIPS = require("chipper");
 
 var										// shortcuts and globals
@@ -1034,16 +1034,16 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 
 	"byTable.": {	//< worker endpoints
-		//kill: sysKill,
-		//start: sysStart,
-		//checkpt: sysCheckpt,
 		help: sysHelp,
 		stop: sysStop,
 		alert: sysAlert,
-		//codes: sysCodes,
 		ping: sysPing,
 		bit: sysBIT,
 		matlab: sysMatlab
+		//kill: sysKill,
+		//start: sysStart,
+		//checkpt: sysCheckpt,
+		//codes: sysCodes,
 		//agent: sysAgent
 		//config: sysConfig
 	},
@@ -1081,7 +1081,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	"errors.": {  //< error messages
 		pretty: function (err) {
 			return "".tag("img",{src:"/shares/reject.jpg",width:40,height:60})
-				+ (err+"").replace(/\n/g,"<br>").replace(process.cwd(),"")
+				+ (err+"").replace(/\n/g,"<br>").replace(process.cwd(),"").replace("Error:","")
 				+ "; see "
 				+ "issues".tag("a",{href: "/issues.view"})
 				+ " for further information";
@@ -1150,7 +1150,12 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				stores: "indexer",
 				tour: "indexer",
 				data: "indexer"
-			}
+			},
+			extensions: {  // extend mime types as needed
+				rdp: "application/mstsc",
+				run: "text/html",
+				exe: "text/plain",
+			}			
 		},
 		
 		skin: {
@@ -1366,7 +1371,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	gradeIngest: function (aoi, evs, cb) {
 		var 
 			stats = {},
-			ran = new RAND({ // configure the random process generator
+			ran = new RAN({ // configure the random process generator
 				N: aoi.Actors,  // ensemble size
 				K: aoi.States, 		// number of states
 				batch: 20,  // batch size in steps
@@ -2240,6 +2245,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 	if ("ID" in query || "Name" in query)  // run engine using requested usecase via the job regulator 
 		FLEX.runPlugin(req, function (ctx) {
 
+			//Log("exe ctx", ctx);
+			
 			if ( !ctx)
 				res( DEBE.errors.noContext );
 					
@@ -2250,14 +2257,14 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				
 				var 
 					job = Copy(ctx, { // job descriptor for regulator
-						thread: req.client.replace(/\./g,"") + "." + req.table,
+						//thread: req.client.replace(/\./g,"") + "." + req.table,
 						qos: req.profile.QoS, 
 						priority: 0,
 						client: req.client,
-						class: req.table,
+						class: req.client+"."+req.table+".qos"+req.profile.QoS,
 						credit: req.profile.Credit,
 						name: req.table,
-						task: Job.task,
+						task: Job.task || "",
 						notes: [
 								(req.table+"?").tagurl({Name:query.Name}).tag("a", {href:"/" + req.table + ".run"}), 
 								((req.profile.Credit>0) ? "funded" : "unfunded").tag("a",{href:req.url}),
@@ -2273,11 +2280,11 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				delete job.ID;
 				delete job.Job;
 
-				Log("REGULATE",Job);
+				//Log("REGULATE",Job);
 
 				req.query = ctx;
 				
-				if (Job.constructor == Object)  
+				if (Job.constructor == Object)  {  // regulate
 					if (Job.voi) // regulate a VOI
 						CHIPS.chipVOI(Job, job, function (voxel,stats,sql) {
 							DEBE.thread( function (sql) {
@@ -2324,7 +2331,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					}
 				
 					else
-					if (Job.aoi)  // regulate a AOI
+					if (false)  // regulate a AOI ring [ [lat,lon], ... ]
 						CHIPS.chipAOI(Job, job, function (chip,dets,sql) {
 							var updated = new Date();
 
@@ -2361,28 +2368,45 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						});
 
 					else // regulate an event stream
-						CHIPS.chipEvents(req, ctx, job, function (evs) {
+						CHIPS.chipEvents(req, ctx, job, function (job) {
 
-							Trace(`REGULATING ${evs.length} EVENTS`);
+							//Trace(`REGULATING ${evs.length} EVENTS`);
+							/*
 							ctx.Select = function batchEvents(maxbuf, maxstep, cb) {  // provide event getter
 								FLEX.batchEvents(evs,maxbuf,maxstep,cb);
-							};
+							};*/
 
-							ENGINE.select(req, function (stats) {  // run plugin's engine
-								saveResults( Array.from(stats), ctx );
+							req.query = job;
+							ENGINE.select(req, function (ctx) {  // run plugin's engine
+								if (ctx) {
+									if ( "Save" in ctx )
+										saveResults( Array.from(ctx.Save || [] ), ctx );
+								
+									var recs  = ctx.Offset - ctx.OffsetInit
+									Log( `REG ${job.name} ` + (recs ? `ADVANCE ${recs}` : "DONE") );
+								}
+								
+								else
+									Log( `REG ${job.name} HALTED` );
 							});
 						});
+				}
 				
 				else
-					ENGINE.select(req, function (stats) {
-						saveResults( Array.from(stats), ctx );
+					ENGINE.select(req, function (ctx) {
+						if (ctx)
+							if ( "Save" in ctx)
+								saveResults( Array.from( ctx.Save || [] ), ctx );
 					});
 
 			}
 					
 			else
-			if ( save = ctx.save )
-				res( saveResults( Array.from(save), ctx ) );
+			if ( "Save" in ctx )
+				res( saveResults( Array.from( ctx.Save || [] ), ctx ) );
+
+			else
+				res( "ok" );
 			
 		});
 		

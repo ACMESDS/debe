@@ -67,32 +67,50 @@ append site_body
 				page=dspage )
 
 				:markdown
-					This *#{ds}* plugin provides a coupled dataset-engine to execute the #{ds} engine with usecase parameters.  From
-					an plugin view, simply selecta usecase, then click the execute/run button.  You may run any plugin from the url bar:
+					This *#{ds}* plugin provides a coupled dataset-engine to execute the #{ds} engine with its #{ds} usecase 
+					parameters.  From the #{ds}.run view, simply select a usecase, then click the execute/run button.  You 
+					may also run any plugin from the url bar:
 
 						GET /PLUGIN.exe?id=CASE 	Run PLUGIN engine with id-specified use-CASE parameters
 						GET /PLUGIN.exe?name=CASE 	Run PLUGIN engine with name-specified use-CASE parameters
 
-					The following dataset (keys) determine how a PLUGIN interfaces with #{title}:
+					There are reserved ( [Export+](/#{ds}.add?Export=false) [/-](/#{ds}.sub?Export),
+					[Ingest+](/#{ds}.add?Ingest=false) [/-](/#{ds}.sub?Ingest),
+					[Job+](/#{ds}.add?Job=doc) [/-](/#{ds}.sub?Job),
+					[Description+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description)
+					[Config+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) ) input context keys:
 
-						(Save_KEY) store aggregated CASE outputs [{at:"KEY", ...}, ...] were KEY = config | batch | step | jump | end | ...
-						(Job) json parameters to place CASE into a QoS-Credit regulated queue
-						(Export) switch to export CASE outputs to a file
-						(Agent) name of agent to out-source this CASE 
-						(Description) bloggable details on this CASE	
+						Job - chipping and regulation parameters 
+						Export - switch to save results into a file
+						Ingest - switch ingest results into the database
+						Description - [skin](/skinguide.view) to document this CASE
+						Config - js-engine to dynamically define the CASE context
 
-					Job = { file: "plugin.case" || "uploaded file", group: "KEY,...", where: {KEY:VALUE, ...}, order: "KEY,...", limit:, task: "name" } 
-					specifies which event file is consumed by the CASE when run.  There is an implicit order:"t" on any data consuption.
-					Grouping events will regulate the events per QoS-Credit rules.
+					reserved ([Save+](/#{ds}.add?Save=doc) [/-](/#{ds}.sub?Save)) output context keys:
 
-					PLUGINs can be extended / retracted via its PLUGIN.run key-editor, or use
-					[Save+](/#{ds}.add?Save=doc), [Save-](/#{ds}.sub?Save),
-					[Export+](/#{ds}.add?Export=false), [Export-](/#{ds}.sub?Export),
-					[Agent+](/#{ds}.add?Agent=me), [Agent-](/#{ds}.sub?Agent),
-					[Job+](/#{ds}.add?Job=doc), [Job-](/#{ds}.sub?Job),
-					[Description+](/#{ds}.add?Description=doc), [Description-](/#{ds}.sub?Description)
-					
-					A (Description) may contains tags of the form
+						Save_KEY - aggregate and store process results [{at:"KEY", ...}, ...]
+						Save - store remaing process results pruned by Save_KEY
+
+					and reserved auto-defined job context keys:
+
+						File - file information retrieved for Job.file
+						Voxel - voxel information retrieved for Job.aoi
+						Load - query to load regulated Job dataset
+						Dump - query to save regulated Job results
+
+					where the Job key defines plugin regulation parameters (// default values):
+
+						{ 
+							file: "plugin.case" || "uploaded file" || "file.jpg" || "file.json"
+							group: "KEY,...", 					// "" to disable
+							where: { KEY: VALUE, ...},   // {} for all
+							order: "KEY,...",   				// "t" implicit
+							limit: VALUE,   					// 1000
+							task: "NAME", 						// "" for all
+							aoi: [ [lat,lon], ... ]  				// closed ring
+						} 
+
+					The Description key may contains [blogging tags](/skinguide.view) of the form
 
 						 [image | post | update | link | SKIN, W, H, DS?QUERY]( /url | PARM=r.KEY expression; ...)
 
@@ -111,7 +129,7 @@ append site_body
 					
 					Toggle the blog button to edit / blog the Description.
 
-					The header color indicates the status of the *#{ds}* plugin: completed (green), policed (blue),
+					Usecase header color indicates the status of the *#{ds}* plugin: completed (green), policed (blue),
 					funded (orange), unfunded (red).  The *#{ds}* plugin impacts the following tasks:
 					
 				table!= gridify(tasks)
@@ -122,14 +140,18 @@ append site_body
 				cols="ID,Name,Type,Enabled.c,Program(Code.x,State.x.Context)")
 
 				:markdown
-					[Engines](/api.view) contain js | python | matlab | opencv | ... code.  Click the execute 
-					button to test the engine with its default context parameters.  See [DSP](https://www.npmjs.com/package/dsp), 
-					[LWIP](https://github.com/EyalAr/lwip),  [MATH](http://mathjs.org/), 
-					[CRYPTO](https://nodejs.org/docs/latest/api/), [FLEX](https://github.com/ACMESDS/flex), 
-					[MATH](http://mathjs.org/), 
-					[RAN](https://github.com/ACMESDS/flex), [SVD](https://www.npmjs.com/package/node-svd), 
-					[MLE](linktbd), [MVN](linktbd), [MAIL](linktbd) for 
-					the js-modules attached to all js-engines.  Import py-modules as needed for a py-engine.
+					[Engines](api.view) automatically have the LWIP,SQL and JSON modules; js-engines also automatically have the
+					[MAT matlab emulator](https://www.npmjs.com/package/mathjs),
+					[DSP digitial signal processing](https://www.npmjs.com/package/dsp), 
+					[CRY crypto](https://nodejs.org/docs/latest/api/crypto),
+					[FLEX data extender](https://github.com/ACMESDS/flex),
+					[RAN markov random process](https://github.com/ACMESDS/randpr),
+					[SVD singular value decomposition](https://www.npmjs.com/package/node-svd),
+					[VITA hidden markov model solver](https://www.npmjs.com/package/nodehmm),
+					[MLE maximum liklihood estimator](https://www.npmjs.com/package/node-svd),
+					[MVN multivariate normals](https://www.npmjs.com/package/multivariate-normal), and
+					[MAIL simple mail transfer](https://www.npmjs.com/package/nodemailer)
+					modules.  
 					
 			#grid.Jobs(
 				path="/queues.db?Class=#{ds}",
