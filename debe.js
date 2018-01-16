@@ -47,6 +47,7 @@ var 									// totem modules
 	FLEX = require("flex"),
 	TOTEM = require("totem"),
 	RAN = require("randpr"),
+	JSLAB = require("jslab"),
 	CHIPS = require("chipper");
 
 var										// shortcuts and globals
@@ -1141,7 +1142,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			shares: ".", 				//< cached file area
 			docs: ".", 					//< html documents
 			socketio: ".",				//< path to socket.io
-			clients: ".",				//< path to clients
+			clients: ".",				//< path to 3rd party ui clients
+			uis: ".", 					//< path to debe ui drivers
 			//icons: ".",				//< path to icons
 			captcha: ".",				
 			index: { 					//< allowed file indexers
@@ -2935,7 +2937,8 @@ Initialize DEBE on startup.
 		ENGINE.config({
 			thread: DEBE.thread,
 			cores: DEBE.cores,
-			watchFile: DEBE.watchFile
+			watchFile: DEBE.watchFile,
+			plugins: JSLAB
 		});
 		
 		ENGINE.plugins.MAIL = FLEX.sendMail; // share with plugins
