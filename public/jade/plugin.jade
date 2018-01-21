@@ -156,14 +156,14 @@ append site_body
 			#grid.Jobs(
 				path="/queues.db?Class=#{ds}",
 				cols="Arrived.d,Departed.d,Client,Notes.x,QoS.n,Age.n,Funded.c,Finished.c,Priority.n,Work.n,State.n,Task.t,Signoffs(Flagged.c,Sign0.c,Sign1.c,Sign2.c,Sign3.c)",
-				sorts="Work,State",
-				refresh=dsrefresh,
 				wrap,
 				head="Print,Refresh,Execute,Help",
 				hover="policed",
 				page=dspage )
 
 				:markdown
+					sorts="Work,State"
+					refresh=refresh
 					Jobs created by this plugin are show here.  If the job originator exceeded their credits,
 					the job is marked "unfunded"; otherwise the job is marked "funded".  If you would like to 
 					fund an unfended job, simply click its "(un)funded" link.  To decide if this is a wise purchase, 

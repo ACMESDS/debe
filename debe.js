@@ -2257,6 +2257,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 				res("Regulating");
 				
+				/*
 				var 
 					job = Copy(ctx, { // job descriptor for regulator
 						//thread: req.client.replace(/\./g,"") + "." + req.table,
@@ -2281,9 +2282,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 				delete job.ID;
 				delete job.Job;
-
-				//Log("REGULATE",Job);
-
+				*/
+				
 				req.query = ctx;
 				
 				if (Job.constructor == Object)  {  // regulate
@@ -2370,7 +2370,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						});
 
 					else // regulate an event stream
-						CHIPS.chipEvents(req, ctx, job, function (job) {
+						CHIPS.chipEvents(req, ctx, function (job) {
 
 							//Trace(`REGULATING ${evs.length} EVENTS`);
 							/*

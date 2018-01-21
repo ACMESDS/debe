@@ -438,16 +438,15 @@ append site_body
 				There are reserved input context keys:
 
 					Job - chipping and regulation parameters 
-					Export - switch to save results into a file
-					Ingest - switch ingest results into the database
+					Export - switch to write engine results into a file
+					Ingest - switch ingest engine results into the database
 					Description - [skin](/skinguide.view) to document this CASE
 					Config - js-engine to dynamically define the CASE context
-					Flush - function accepts (ctx,recs,t0) returnd true if recs set should be flushed to plugin
 					
 				reserved output context keys:
 
-					Save_KEY - aggregate and store process results [{at:"KEY", ...}, ...]
-					Save - store remaing process results pruned by Save_KEY
+					Save_KEY - aggregate and store engine results [{at:"KEY", ...}, ...]
+					Save - store remaing process engine pruned by Save_KEY
 					
 				and reserved job context keys:
 
@@ -465,9 +464,11 @@ append site_body
 						order: "KEY,...",   				// "t" implicit
 						limit: VALUE,   					// 1000
 						task: "NAME", 						// "" for all
+						flush: "all" | "none" | "byTime" | "byDepth" | "function(ctx,rec,recs) returns false to flush"
+						buffer: N,		// Flush limit parameter 
 						aoi: [ [lat,lon], ... ]  				// closed ring
 					} 
-					
+
 				The Description key may contains [blogging tags](/skinguide.view) of the form
 
 					 [image | post | update | link | SKIN, W, H, DS?QUERY]( /url | PARM=r.KEY expression; ...)
@@ -484,7 +485,7 @@ append site_body
 				[home.view](/home.view), (3) a link to the url, (4) the [image](/shares.jpg), and (5) a
 				force graph of the queues dataset pivoted by class using the [d3 force](/force.view) 
 				into a frame of specified W x H dimensions.
-				
+
 		#fit.Parameters
 		#fit.Examples
 			:markdown
