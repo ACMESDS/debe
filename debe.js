@@ -1450,7 +1450,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	@param {Object} req http request
 	@param {Function} res Totom response callback
 	*/
-		met( url.tagurl(req), res );
+		met( url.tag("?",req), res );
 	},
 
 	loaders: { // data loading services
@@ -2938,7 +2938,8 @@ Initialize DEBE on startup.
 			thread: DEBE.thread,
 			cores: DEBE.cores,
 			watchFile: DEBE.watchFile,
-			plugins: JSLAB
+			plugins: JSLAB,
+			fetcher: DEBE.fetchers.http
 		});
 		
 		ENGINE.plugins.MAIL = FLEX.sendMail; // share with plugins
