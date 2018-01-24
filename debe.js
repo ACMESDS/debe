@@ -69,7 +69,7 @@ var
 		var 
 			trace = "",
 			get = {
-				files: "SELECT files.*,count(events.id) AS evCount FROM events LEFT JOIN files ON events.fileid = files.id WHERE datediff( now(), files.added)>=? GROUP BY fileid"
+				files: "SELECT files.*,count(events.id) AS evCount FROM events LEFT JOIN files ON events.fileid = files.id WHERE datediff( now(), files.added)>=? AND NOT files.canDelete GROUP BY fileid"
 			},
 			maxage = 20;
 		
@@ -86,17 +86,13 @@ var
 ${file.client} has been notified that ${file.Name}, containing ${file.eventCount} events, has been flagged for delete as it is older than ${maxage} days.
 Consult ${paths.admin} to request additional resources.  Further information about this file is available ${paths.info}. `;
 			
-			sql.update("UPDATE files SET ?", {
-				canDelete: true,
-				Notes: notice
-			});
+			sql.update("UPDATE files SET canDelete=?,Notes=concat(Notes,?)", [true,notice]);
 			
-			if ( sendMail = FLEX.sendMail )
-				sendMail({
-					to: file.client,
-					subject: `TOTEM will be removing ${file.Name}`,
-					body: notice
-				}, sql);
+			if ( sendMail = FLEX.sendMail ) sendMail({
+				to: file.client,
+				subject: `TOTEM will be removing ${file.Name}`,
+				body: notice
+			}, sql);
 		})
 		.on("end", function () {
 			sql.release();
