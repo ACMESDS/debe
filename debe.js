@@ -58,6 +58,173 @@ var										// shortcuts and globals
 var
 	DEBE = module.exports = TOTEM.extend({
 	
+	dogs: {  // watch dog timers [secs] (zero to disable)
+		oldFiles: 0,
+		jobBilling: 300,
+		sysDiag: 100,
+		jobHawks: 0
+	},
+		
+	oldFiles: function (sql) {
+		var 
+			trace = "",
+			get = {
+				files: "SELECT files.*,count(events.id) AS evCount FROM events LEFT JOIN files ON events.fileid = files.id WHERE datediff( now(), files.added)>=? GROUP BY fileid"
+			},
+			maxage = 20;
+		
+		sql.getRecord(trace, get.files, maxage, function (file) {
+			
+			var 
+				site = DEBE.site,
+				url = site.urls.worker,
+				paths = {
+					info: "here".tag("a", {href: url + "/files.view"}),
+					admin: "totem resource manages".tag("a", {href: url + "/request.view"})
+				},
+				notice = `
+${file.client} has been notified that ${file.Name}, containing ${file.eventCount} events, has been flagged for delete as it is older than ${maxage} days.
+Consult ${paths.admin} to request additional resources.  Further information about this file is available ${paths.info}. `;
+			
+			sql.update("UPDATE files SET ?", {
+				canDelete: true,
+				Notes: notice
+			});
+			
+			if ( sendMail = FLEX.sendMail )
+				sendMail({
+					to: file.client,
+					subject: `TOTEM will be removing ${file.Name}`,
+					body: notice
+				}, sql);
+		})
+		.on("end", function () {
+			sql.release();
+		});
+	},
+
+	jobBilling: function (sql) {
+		var
+			trace = "BILL",
+			queues = FLEX.queues;
+		
+			sql.query(  // mark job departed if no work remains
+				"UPDATE app.queues SET Departed=now(), Notes=concat(Notes, ' is ', link('billed', '/profile.view')), Age=Age + (now()-Arrived)/3600e3, Finished=1 WHERE least(Departed IS NULL,Done=Work)", 
+				// {ID:job.ID} //jobID
+				function (err) {
+
+				if (err) 
+					Log(err);
+
+				else
+					Each(queues, function (rate, queue) {  // save collected queuing charges to profiles
+						Each(queue.client, function (client, charge) {
+
+							if ( charge.bill ) {
+								if ( trace ) Trace(`${trace} ${client} ${charge.bill} CREDITS`, sql);
+								
+								sql.query(
+									"UPDATE openv.profiles SET Charge=Charge+?,Credit=greatest(0,Credit-?) WHERE ?" , 
+									 [ charge.bill, charge.bill, {Client:client} ], 
+									function (err) {
+										Log({charging:err});
+								});
+								charge.bill = 0;
+							}
+
+						});
+					});
+
+				sql.release();
+			});		
+	},
+
+	jobHawks: function (sql) { // job hawking watch dog
+		/*
+		 * Hawk over jobs in the queues table given {Action,Condition,Period} rules 
+		 * defined in the hawks table.  The rule is run on the interval specfied 
+		 * by Period (minutes).  Condition in any valid sql where clause. Actions 
+		 * supported:
+		 * 		stop=halt=kill to kill matched jobs and update its queuing history
+		 * 		remove=destroy=delete to kill matched jobs and obliterate its queuing history
+		 * 		log=notify=flag=tip to email client a status of matched jobs
+		 * 		improve=promote to increase priority of matched jobs
+		 * 		reduce=demote to reduce priority of matached jobs
+		 * 		start=run to run jobs against dirty records
+		 * 		set expression to revise queuing history of matched jobs	 
+		 * */
+		var
+			trace = "",
+			get = {
+				unbilled: "SELECT * FROM app.queues WHERE Finished AND NOT Billed",
+				unfunded: "SELECT * FROM app.queues WHERE NOT Funded AND now()-Arrived>?"
+			},
+			maxage = 10;
+
+		sql.getRecord(trace, get.unbilled, [], function (job) {
+			Trace(`BILLING ${job} FOR ${job.Client}`, sql);
+			sql.query( "UPDATE openv.profiles SET Charge=Charge+? WHERE ?", [ 
+				job.Done, {Client: job.Client} 
+			]);
+
+			sql.query( "UPDATE app.queues SET Billed=1 WHERE ?", {ID: job.ID})
+		});
+
+		sql.getRecord(trace, get.unfunded, [maxage], function (job) {
+			Trace("KILLING ",job);
+			sql.query(
+				//"DELETE FROM app.queues WHERE ?", {ID:job.ID}
+			);
+		});
+
+		sql.release();
+	},
+
+	diag: {  // self diag parms
+		limits: {
+			pigs : 2,
+			jobs : 5
+		},
+		status: "", 
+		counts: {State:""}
+	},
+
+	sysDiag: function (sql) {  // system diag watch dog
+		var 
+			trace = "",
+			get = {
+				engs: "SELECT count(ID) AS Count FROM app.engines WHERE Enabled",
+				jobs: "SELECT count(ID) AS Count FROM app.queues WHERE Departed IS NULL",
+				pigs: "SELECT sum(DateDiff(Departed,Arrived)>1) AS Count from app.queues",
+				logs: "SELECT sum(Delay>20)+sum(Fault != '') AS Count FROM app.dblogs"
+			},
+			diag = DEBE.diag;
+
+		sql.getRecord(trace, get.engs, [], function (engs) {
+		sql.getRecord(trace, get.jobs, [], function (jobs) {
+		sql.getRecord(trace, get.pigs, [], function (pigs) {
+		sql.getRecord(trace, get.logs, [], function (isps) {
+			var rtn = diag.counts = {Engines:engs.Count,Jobs:jobs.Count,Pigs:pigs.Count,Faults:isps.Count,State:"ok"};
+			var limits = diag.limits;
+
+			for (var n in limits) 
+				if ( rtn[n] > 5*limits[n] ) rtn.State = "critical";
+				else
+				if ( rtn[n] > limits[n] ) rtn.State = "warning";
+
+			sql.release();
+		});
+		});
+		});
+		});
+	}, 
+		
+	/*
+			billingCycle: DEBE.billingCycle, 		// job billing cycle [ms]
+			diagCycle: DEBE.diagCycle,			// Check period [ms]
+			hawkingCycle: DEBE.hawkingCycle, 	// job hawking cycle [ms] (0 disables)
+		*/				
+
 	"reqFlags." : {  //< TRAP=name flags modify the request
 		
 		traps: {
@@ -1419,27 +1586,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		post: "/service/algorithm/:proxy"		//< hydra endpoint
 	},  		//< reserved for soap interfaces
 		
-	/**
-	@cfg {Number}
-	@member DEBE
-	 job billing interval [s] (0 disables)
-	*/
-	billingcycle: 0, //< job billing interval [s] (0 disables)
-	
-	/**
-	@cfg {Number}
-	@member DEBE
-	self diagnostics interval [s] (0 disables)
-	*/		
-	diagcycle: 0, //< self diagnostics interval [s] (0 disables)
-	
-	/**
-	@cfg {Number}
-	@member DEBE
-	job hawking interval [s] (0 disables)
-	*/	
-	hawkingcycle: 0, 	// job hawking interval [s] (0 disables)		
-
 	loader: function (url,met,req,res) { // generic data loader
 	/**
 	@member DEBE
@@ -2847,7 +2993,6 @@ Initialize DEBE on startup.
 			+ "\n- WITH " + (site.urls.socketio||"NO")+" SOCKETS"
 			+ "\n- WITH " + (DEBE.SESSIONS||"UNLIMITED")+" CONNECTIONS"
 			+ "\n- WITH " + (DEBE.cores||"NO")+" WORKERS@ "+site.urls.worker+" MASTER@ "+site.urls.master
-			+ "\n- BILL,DIAG,HAWK EVERY "+[site.billingcycle,site.diagcycle,site.hawkingcycle]+" SECS"
 		);
 
 		if (cb) cb();
@@ -2888,9 +3033,7 @@ Initialize DEBE on startup.
 				issues: "openv"
 			},
 			
-			billingCycle: DEBE.billingCycle, 		// job billing cycle [ms]
-			diagCycle: DEBE.diagCycle,			// Check period [ms]
-			hawkingCycle: DEBE.hawkingCycle, 	// job hawking cycle [ms] (0 disables)
+			diag: DEBE.diag,
 			
 			site: DEBE.site,						// Site parameters
 
@@ -2949,9 +3092,31 @@ Initialize DEBE on startup.
 		if (cb) cb();	
 	}
 	
+	function initDOG( cb ) {
+		Each( DEBE.dogs, function (dog, timer) {
+			if ( timer )
+				if ( watchDog = DEBE[dog] )
+					setInterval( function (args) {
+
+						Trace("DOG "+args.name);
+						
+						DEBE.thread( function (sql) {
+							watchDog(sql);
+						});
+
+					}, timer*1e3, {
+						name: dog
+					});
+
+				else
+					Trace("MISSING WATCH DOG "+dog);
+		});
+	}
+
 	initENV( function () {  // init the global environment
 	initSES( function () {	// init session handelling
 	initSQL( function () {	// init the sql interface
+	initDOG( function () { // init watch dogs
 
 		JAX.config({
 			MathJax: {
@@ -2988,7 +3153,7 @@ Initialize DEBE on startup.
 		});
 		
 
-	}); }); });
+	}); }); }); });
 } 
 
 /*

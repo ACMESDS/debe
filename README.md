@@ -51,10 +51,12 @@ or generate office files:
 
 	pdf | xdoc | xppt | xxls ...
 
-By default, DEBE provides the following COMMANDs:
+By default, DEBE provides the following COMMAND endpoints:
 
-	wget | curl | http | riddle	| help | stop | alert | codes | ping | bit | config
-	
+	help | stop | alert | codes | ping | bit | config
+
+If DEBE was configured for antibot protect, DEBE will also provide a *riddle* endpoint for clients to validate themselves.
+
 ## Installation
 
 Clone from one of the repos.  You will typically want to redirect the following to your project

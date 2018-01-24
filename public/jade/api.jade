@@ -435,7 +435,7 @@ append site_body
 					GET /PLUGIN.exe?name=CASE 	Run PLUGIN engine with name-specified CASE context
 					GET /PLUGIN.exe?QUERY 	Run PLUGIN engine with QUERY context
 
-				There are reserved input context keys:
+				Plugins have reserved input context keys:
 
 					Job - chipping and regulation parameters 
 					Export - switch to write engine results into a file
@@ -448,17 +448,17 @@ append site_body
 					Save_KEY - aggregate and store engine results [{at:"KEY", ...}, ...]
 					Save - store remaing process engine pruned by Save_KEY
 					
-				and reserved job context keys:
+				and reserved Job context keys:
 
 					File - file information retrieved for Job.file
 					Voxel - voxel information retrieved for Job.aoi
 					Load - query to load regulated Job dataset
 					Dump - query to save regulated Job results
 
-				where the Job key defines plugin regulation parameters (// default values):
+				created for a specified Job (// default value):
 
 					{ 
-						file: "plugin.case" || "uploaded file" || "file.jpg" || "file.json"
+						file: "/FILTER?QUERY" || "PLUGIN.CASE" || "uploaded FILENAME" || "FILE.jpg" || "FILE.json"
 						group: "KEY,...", 					// "" to disable
 						where: { KEY: VALUE, ...},   // {} for all
 						order: "KEY,...",   				// "t" implicit
@@ -469,11 +469,11 @@ append site_body
 						aoi: [ [lat,lon], ... ]  				// closed ring
 					} 
 
-				The Description key may contains [blogging tags](/skinguide.view) of the form
+				A plugin's Description key may contains [blogging tags](/skinguide.view) of the form
 
 					 [image | post | update | link | SKIN, W, H, DS?QUERY]( /url | PARM=r.KEY expression; ...)
 
-				to document the use case.  For example:
+				to document its use case.  Some example blogging tags include:
 
 					[plot,100,200](x=r.Save.a;ys=[r.Save.b,r.Save.c])
 					[post,500,100](/home.view)
@@ -481,7 +481,7 @@ append site_body
 					[image](/shares/a1.jpg)
 					[force,100,100,queues.tree?_pivots=class]()
 
-				will embed (1) a plot of the requested x,y data using the [d3 plot](/plot.view), (2) the 
+				to embed (1) a plot of the requested x,y data using the [d3 plot](/plot.view), (2) the 
 				[home.view](/home.view), (3) a link to the url, (4) the [image](/shares.jpg), and (5) a
 				force graph of the queues dataset pivoted by class using the [d3 force](/force.view) 
 				into a frame of specified W x H dimensions.
@@ -509,7 +509,7 @@ append site_body
 				*#{title}* reciprocates by providing its own AGENT at its **/agent** endpoint.
 
 				Agents provide a means to outsource an engine, while retaining a thread
-				on each agent request.  A valid agent provided *#{title}* with the
+				on each agent request.  A valid agent must provide *#{title}* the
 				following push/pull endpoints:
 
 					GET http://AGENT?push=*#{title}*.CLIENT.ENGINE.ID&args=JSON
@@ -547,17 +547,21 @@ append site_body
 
 		#fit.Parameters
 			:markdown
-				Engine parameters are held in a read/write JSON context:
+				An engine's inital context is held in its context JSON store:
 
 					{
+						"query": { "KEY": value, ... },
 						"entry": { "KEY": "select ...", ... } || "select ...",
 						"exit": { "KEY": "update ...", ... } || "update ...",
 						"KEY": value, 
 						"KEY": value, ...						
 					}
 
-				An engine is automatically provided access to its machine specific LWIP (light weight imaging), 
-				SQL (db connector), and	JSON (encoder-decoder) modules.
+				On entry, its context is primed given its *entry* sql-queries: the "?" therein references its 
+				context *query* (as overridden by url query parameters).  On exit, its context context keys 
+				can be exported by its *exit* sql-queries.   An engine is also automatically provided 
+				LWIP (light weight imaging), SQL (db connector), and JSON (encoder-decoder) modules
+				specific to its machine type (js, py, etc...).
 
 		#folder.Examples(dock="left")
 			#fit.url
@@ -755,7 +759,7 @@ append site_body
 			#fit.cv
 				:markdown
 					cv-machines learn, locate and classify objects.  The [haar engine](/engine.view?engine=cv&name=haar),
-					for example, executes a cv-machine in the following context:
+					for example, executes a cv-machine using a context:
 					
 						size = 50  	// feature size in [m]
 						pixels = 512 	// samples across a chip [pixels]
@@ -876,7 +880,7 @@ append site_body
 							}
 						}
 
-					On entry, it will prime its *A* and *B* context variables using its *entry* sql-queries: the "?" therein
+					will, on entry, prime its *A* and *B* context keys using its *entry* sql-queries: the "?" therein
 					references its context *query* hash (as overridden by url query parameters).  On
 					exit, its context *B* context variable is exported by its *exit* sql-query.    It computes a *tau* variable
 					that is simply discarded on exit (placing into CTX.Save to retain).  The MAT matlab emulator
@@ -943,10 +947,10 @@ append site_body
 					function with the current **tau** workflow events and the **parm** set to the 
 					corresponding "ports" hash.
 
-					js-engines are given access to the
-					[LWIP(lightweight imaging)](https://github.com/EyalAr/lwip),
-					[SQL(database connector)](https://www.npmjs.com/package/mysql),
-					[JSON(encoder-decoder)](https://nodejs.org/docs/latest/api/json),
+					In adition to the standard [LWIP(lightweight imaging)](https://github.com/EyalAr/lwip),
+					[SQL(database connector)](https://www.npmjs.com/package/mysql), and
+					[JSON(encoder-decoder)](https://nodejs.org/docs/latest/api/json) modules,  js-engines also 
+					see the
 					[MAT(matlab emulator)](https://www.npmjs.com/package/mathjs),
 					[DSP(digitial signal processing)](https://www.npmjs.com/package/dsp), 
 					[CRY(crypto)](https://nodejs.org/docs/latest/api/crypto),
@@ -957,15 +961,7 @@ append site_body
 					[MLE(maximum liklihood estimator)](https://www.npmjs.com/package/node-svd),
 					[MVN(normal multivariates](https://www.npmjs.com/package/multivariate-normal),
 					[MAIL(simple mail transfer)](https://www.npmjs.com/package/nodemailer)
-					modules.  The FLEX module provides:
-
-						genpr( { jumprates, ... }, (data) => {...} )    // generate markov random process
-						genmix( { events: [ {x,y,z,t ...}, ...], scenario: {}, ... }, (data) => {...} )  // generate (mean,sigma) estimates
-						estmix( ... ) // estimate gauss mix
-						wms( { ... }, (data) => {...} )  // wms response
-						wfs( { ... }, (data) => {...} )  // wfs response
-						sss( { ... }, (data) => {...} )  // sss response
-						get( {ds: "...", where: {key:value, ...}}, (data) => {...} )    // dataset access
+					modules.  
 
 	#accordion.Machines
 		:markdown
@@ -1034,9 +1030,6 @@ append site_body
 				GET /bit	built-in test with &N client connections at rate &lambda=events/s
 				GET /service/algorithm/ENGINE Execute ENGINE with SOAP/XML parameters
 				GET /user 	select,delete,update,insert user profile
-				GET /wget	fetch data from wget endpoint using query parameters
-				GET /curl	fetch data from curl endpoint using query parameters
-				GET /http	fetch data from http endpoint using query parameters
-				GET /test	challenge response endpoint
+				GET /riddle	validate client when antibot protection configured
 
 //- UNCLASSIFIED
