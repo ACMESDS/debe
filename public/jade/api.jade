@@ -799,17 +799,13 @@ append site_body
 				:markdown
 					This [stateless py-engine](/pydemo1.run):
 
-						def pydemo1(ctx):
+						def pydemo1(ctx,os):
 							print "welcome to python you lazy bird"
-							print ctx   # initial engine content
-							ctx['Save'] = [ {'x':1, 'y':2, 'z':0}, {'x':3, 'y':4, 'z':10}]	# its plugin will retain this value
-
-							SQL0.execute("SELECT * from Htest", () )	# access database 
-
-							for (Rec) in SQL0:
-							  print Rec
-
-							return ctx   # return 0 if an error occured
+							ctx['Save'] = [ {'x':1, 'y':2, 'z':0}, {'x':3, 'y':4, 'z':10}]
+							sql = os['SQL0']
+							sql.execute("SELECT * from app.Htest", () )
+							for (Rec) in sql:
+								print Rec			
 
 					with initial context:
 
@@ -852,17 +848,16 @@ append site_body
 				:markdown
 					This [stateless js-engine](/jsdemo1.run):
 
-						function jsdemo1(ctx,res) {
-							ctx.Save = [ {u: ctx.M}, {u:ctx.M+1}, {u:ctx.M+2} ];  // this data will be retained by its plugin
-							res( ctx );  // or respond with null if there was an error
-
-							LOG(ctx);
+						function jsdemo1(ctx, res) {
 							LOG("A="+ctx.A.length+" by "+ctx.A[0].length);
 							LOG("B="+ctx.B.length+" by "+ctx.B[0].length);
 
-							MAT(ctx, "D=A*A'; E=D+D*3; disp(entry); ");  // runs the matlab emulator
-							LOG( "D=", ctx.D, "E=", ctx.E);
-						}						
+							ctx.Save = [ {u: ctx.M}, {u:ctx.M+1}, {u:ctx.M+2} ];
+							res(ctx);
+
+							MAT(ctx, "D=A*A'; E=D+D*3; disp(entry); ");
+							// LOG( "D=", ctx.D, "E=", ctx.E);
+						}
 
 					with initial context: 
 
