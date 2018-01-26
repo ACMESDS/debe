@@ -59,21 +59,73 @@ var
 	DEBE = module.exports = TOTEM.extend({
 	
 	dogs: {  // watch dog timers [secs] (zero to disable)
-		oldFiles: 0,
-		jobBilling: 300,
-		sysDiag: 100,
-		jobHawks: 0
+		dogFiles: 0,
+		dogJobs: 300,
+		dogSystem: 100,
+		dogHawks: 0,
+		dogClients: 0,
+		dogEngines: 0
 	},
-		
-	oldFiles: function (sql) {
+	
+	dogEngines: function (sql) {
 		var 
 			trace = "",
-			get = {
-				files: "SELECT files.*,count(events.id) AS evCount FROM events LEFT JOIN files ON events.fileid = files.id WHERE datediff( now(), files.added)>=? AND NOT files.canDelete GROUP BY fileid"
+			engines = {
+				"undefined": "",
+				buggy: ""
+			},
+			limits = {
+				"undefined": 1,
+				bugs: 10
+			};
+		
+		sql.each(trace, engines.undefined, [limits.undefined], function (client) {
+		});		
+	},
+		
+	dogClients: function (sql) {
+		var 
+			trace = "",
+			clients = {
+				low: "SELECT * FROM openv.profiles WHERE useDisk>?",
+				dormant: "",
+				poor: "",
+				naughty: ""
+			},
+			limits = {
+				disk: 10,
+				qos: 2,
+				unused: 4
+			};
+		
+		if (clients.naughty)
+		sql.each(trace, clients.naughty, [], function (client) {
+		});		
+		
+		if (clients.low)
+		sql.each(trace, clients.low, [limits.disk], function (client) {
+		});		
+		
+		if (clients.dormant)
+		sql.each(trace, clients.dormant, [limits.unused], function (client) {
+		});		
+
+		if (clients.poor)
+		sql.each(trace, clients.poor, [limits.qos], function (client) {
+		});		
+		
+	},
+		
+	dogFiles: function (sql) {
+		var 
+			trace = "",
+			files = {
+				old: "SELECT files.*,count(events.id) AS evCount FROM events LEFT JOIN files ON events.fileid = files.id WHERE datediff( now(), files.added)>=? AND NOT files.canDelete GROUP BY fileid"
 			},
 			maxage = 20;
 		
-		sql.each(trace, get.files, maxage, function (file) {
+		if (files.old)
+		sql.each(trace, files.old, maxage, function (file) {
 			
 			var 
 				site = DEBE.site,
@@ -99,43 +151,44 @@ Consult ${paths.admin} to request additional resources.  Further information abo
 		});
 	},
 
-	jobBilling: function (sql) {
+	dogJobs: function (sql) {
 		var
-			trace = "BILL",
+			trace = "",
+			jobs = {
+				stuck: "UPDATE app.queues SET Departed=now(), Notes=concat(Notes, ' is ', link('billed', '/profile.view')), Age=Age + (now()-Arrived)/3600e3, Finished=1 WHERE least(Departed IS NULL,Done=Work)", 
+			},
 			queues = FLEX.queues;
 		
-			sql.query(  // mark job departed if no work remains
-				"UPDATE app.queues SET Departed=now(), Notes=concat(Notes, ' is ', link('billed', '/profile.view')), Age=Age + (now()-Arrived)/3600e3, Finished=1 WHERE least(Departed IS NULL,Done=Work)", 
-				// {ID:job.ID} //jobID
-				function (err) {
+		if (jobs.stuck)
+		sql.all( trace, jobs.stuck, [], function (info,err) {
 
-				if (err) 
-					Log(err);
+			if (err) 
+				Log(err);
 
-				else
-					Each(queues, function (rate, queue) {  // save collected queuing charges to profiles
-						Each(queue.client, function (client, charge) {
+			else
+				Each(queues, function (rate, queue) {  // save collected queuing charges to profiles
+					Each(queue.client, function (client, charge) {
 
-							if ( charge.bill ) {
-								if ( trace ) Trace(`${trace} ${client} ${charge.bill} CREDITS`, sql);
-								
-								sql.query(
-									"UPDATE openv.profiles SET Charge=Charge+?,Credit=greatest(0,Credit-?) WHERE ?" , 
-									 [ charge.bill, charge.bill, {Client:client} ], 
-									function (err) {
-										Log({charging:err});
-								});
-								charge.bill = 0;
-							}
+						if ( charge.bill ) {
+							if ( trace ) Trace(`${trace} ${client} ${charge.bill} CREDITS`, sql);
 
-						});
+							sql.query(
+								"UPDATE openv.profiles SET Charge=Charge+?,Credit=greatest(0,Credit-?) WHERE ?" , 
+								 [ charge.bill, charge.bill, {Client:client} ], 
+								function (err) {
+									Log({charging:err});
+							});
+							charge.bill = 0;
+						}
+
 					});
+				});
 
-				sql.release();
-			});		
+			sql.release();
+		});		
 	},
 
-	jobHawks: function (sql) { // job hawking watch dog
+	dogHawks: function (sql) { // job hawking watch dog
 		/*
 		 * Hawk over jobs in the queues table given {Action,Condition,Period} rules 
 		 * defined in the hawks table.  The rule is run on the interval specfied 
@@ -151,14 +204,15 @@ Consult ${paths.admin} to request additional resources.  Further information abo
 		 * */
 		var
 			trace = "",
-			get = {
+			jobs = {
 				unbilled: "SELECT * FROM app.queues WHERE Finished AND NOT Billed",
 				unfunded: "SELECT * FROM app.queues WHERE NOT Funded AND now()-Arrived>?"
 			},
 			maxage = 10;
 
-		sql.each(trace, get.unbilled, [], function (job) {
-			Trace(`BILLING ${job} FOR ${job.Client}`, sql);
+		if (jobs.unbilled)
+		sql.each(trace, jobs.unbilled, [], function (job) {
+			//Trace(`BILLING ${job} FOR ${job.Client}`, sql);
 			sql.query( "UPDATE openv.profiles SET Charge=Charge+? WHERE ?", [ 
 				job.Done, {Client: job.Client} 
 			]);
@@ -166,8 +220,9 @@ Consult ${paths.admin} to request additional resources.  Further information abo
 			sql.query( "UPDATE app.queues SET Billed=1 WHERE ?", {ID: job.ID})
 		});
 
-		sql.each(trace, get.unfunded, [maxage], function (job) {
-			Trace("KILLING ",job);
+		if (jobs.unfunded)
+		sql.each(trace, jobs.unfunded, [maxage], function (job) {
+			//Trace("KILLING ",job);
 			sql.query(
 				//"DELETE FROM app.queues WHERE ?", {ID:job.ID}
 			);
@@ -185,10 +240,10 @@ Consult ${paths.admin} to request additional resources.  Further information abo
 		counts: {State:""}
 	},
 
-	sysDiag: function (sql) {  // system diag watch dog
+	dogSystem: function (sql) {  // system diag watch dog
 		var 
 			trace = "",
-			get = {
+			sys = {
 				engs: "SELECT count(ID) AS Count FROM app.engines WHERE Enabled",
 				jobs: "SELECT count(ID) AS Count FROM app.queues WHERE Departed IS NULL",
 				pigs: "SELECT sum(DateDiff(Departed,Arrived)>1) AS Count from app.queues",
@@ -196,10 +251,10 @@ Consult ${paths.admin} to request additional resources.  Further information abo
 			},
 			diag = DEBE.diag;
 
-		sql.each(trace, get.engs, [], function (engs) {
-		sql.each(trace, get.jobs, [], function (jobs) {
-		sql.each(trace, get.pigs, [], function (pigs) {
-		sql.each(trace, get.logs, [], function (isps) {
+		sql.each(trace, sys.engs, [], function (engs) {
+		sql.each(trace, sys.jobs, [], function (jobs) {
+		sql.each(trace, sys.pigs, [], function (pigs) {
+		sql.each(trace, sys.logs, [], function (isps) {
 			var rtn = diag.counts = {Engines:engs.Count,Jobs:jobs.Count,Pigs:pigs.Count,Faults:isps.Count,State:"ok"};
 			var limits = diag.limits;
 
@@ -2699,7 +2754,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 			});	
 		}
 		
-		sql.get("", paths.engine, { // Try a jade engine
+		sql.first("", paths.engine, { // Try a jade engine
 			Name: req.table,
 			Type: "jade",
 			Enabled: 1

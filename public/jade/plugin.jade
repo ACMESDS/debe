@@ -101,14 +101,14 @@ append site_body
 					where the Job key defines plugin regulation parameters (// default values):
 
 						{ 
-							file: "plugin.case" || "uploaded file" || "file.jpg" || "file.json"
+							file: "/SERVICE" || "PLUGIN.CASE" || "FILENAME",
 							group: "KEY,...", 					// "" to disable
 							where: { KEY: VALUE, ...},   // {} for all
 							order: "KEY,...",   				// "t" implicit
 							limit: VALUE,   					// 1000
 							task: "NAME", 						// "" for all
 							flush: "all" | "none" | "byTime" | "byDepth" | "function(ctx,rec,recs) returns false to flush",
-							buffer: N,		// Flush limit parameter 							
+							buffer: N,		// Buffer flush limit
 							aoi: [ [lat,lon], ... ]  				// closed ring
 						} 
 
@@ -139,6 +139,8 @@ append site_body
 			#form.Engine(
 				path="/engines.db?Name=#{ds}",
 				hover="pending",
+				head="select,insert,update,|,delete,|,refresh,login",
+				login="/login?pass=",
 				cols="ID,Name,Type,Enabled.c,Program(Code.x,State.x.Context)")
 
 				:markdown
