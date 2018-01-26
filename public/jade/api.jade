@@ -489,10 +489,12 @@ append site_body
 		#fit.Parameters
 		#fit.Examples
 			:markdown
-				[jsdemo1](/jsdemo1.run)
-				[jsdemo2](/jsdemo2.run)
-				[pydemo1](/pydemo1.run)
-				[pydemo2](/pydemo2.run)
+				js ex1 [ui](/jsdemo1.run) [run usecase test1](/jsdemo1.exe?Name=test1) [get usecases](/jsdemo1)
+				js ex2 [ui](/jsdemo2.run) [run usecase test1](/jsdemo2.exe?Name=test1) [get usecases](/jsdemo2)
+				py ex1 [ui](/pydemo1.run) [run usecase test1](/pydemo1.exe?Name=test1) [get usecases](/pydemo1)
+				py ex2 [ui](/pydemo2.run) [run usecase test1](/pydemo2.exe?Name=test1) [get usecases](/pydemo2)
+				ma ex1 [ui](/mademo1.run) [run usecase test1](/mademo1.exe?Name=test1) [get usecases](/mademo1)
+				ma ex2 [ui](/mademo2.run) [run usecase test1](/mademo2.exe?Name=test1) [get usecases](/mademo2)
 	
 	#accordion.Agents
 		#fit.Endpoints
@@ -560,8 +562,8 @@ append site_body
 				On entry, its context is primed given its *entry* sql-queries: the "?" therein references its 
 				context *query* (as overridden by url query parameters).  On exit, its context context keys 
 				can be exported by its *exit* sql-queries.   An engine is also automatically provided 
-				LWIP (light weight imaging), SQL (db connector), and JSON (encoder-decoder) modules
-				specific to its machine type (js, py, etc...).
+				a REQ (data request supplied by the job workflow), as well as the
+				LWIP (light weight imaging), SQL (db connector), and JSON (encoder-decoder) modules.
 
 		#folder.Examples(dock="left")
 			#fit.url

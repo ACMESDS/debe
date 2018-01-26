@@ -73,7 +73,7 @@ var
 			},
 			maxage = 20;
 		
-		sql.getRecord(trace, get.files, maxage, function (file) {
+		sql.each(trace, get.files, maxage, function (file) {
 			
 			var 
 				site = DEBE.site,
@@ -157,7 +157,7 @@ Consult ${paths.admin} to request additional resources.  Further information abo
 			},
 			maxage = 10;
 
-		sql.getRecord(trace, get.unbilled, [], function (job) {
+		sql.each(trace, get.unbilled, [], function (job) {
 			Trace(`BILLING ${job} FOR ${job.Client}`, sql);
 			sql.query( "UPDATE openv.profiles SET Charge=Charge+? WHERE ?", [ 
 				job.Done, {Client: job.Client} 
@@ -166,7 +166,7 @@ Consult ${paths.admin} to request additional resources.  Further information abo
 			sql.query( "UPDATE app.queues SET Billed=1 WHERE ?", {ID: job.ID})
 		});
 
-		sql.getRecord(trace, get.unfunded, [maxage], function (job) {
+		sql.each(trace, get.unfunded, [maxage], function (job) {
 			Trace("KILLING ",job);
 			sql.query(
 				//"DELETE FROM app.queues WHERE ?", {ID:job.ID}
@@ -196,10 +196,10 @@ Consult ${paths.admin} to request additional resources.  Further information abo
 			},
 			diag = DEBE.diag;
 
-		sql.getRecord(trace, get.engs, [], function (engs) {
-		sql.getRecord(trace, get.jobs, [], function (jobs) {
-		sql.getRecord(trace, get.pigs, [], function (pigs) {
-		sql.getRecord(trace, get.logs, [], function (isps) {
+		sql.each(trace, get.engs, [], function (engs) {
+		sql.each(trace, get.jobs, [], function (jobs) {
+		sql.each(trace, get.pigs, [], function (pigs) {
+		sql.each(trace, get.logs, [], function (isps) {
 			var rtn = diag.counts = {Engines:engs.Count,Jobs:jobs.Count,Pigs:pigs.Count,Faults:isps.Count,State:"ok"};
 			var limits = diag.limits;
 
@@ -2699,7 +2699,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 			});	
 		}
 		
-		sql.withRecord(paths.engine, { // Try a jade engine
+		sql.get("", paths.engine, { // Try a jade engine
 			Name: req.table,
 			Type: "jade",
 			Enabled: 1
@@ -3077,13 +3077,17 @@ Initialize DEBE on startup.
 			thread: DEBE.thread,
 			cores: DEBE.cores,
 			watchFile: DEBE.watchFile,
-			plugins: JSLAB,
+			plugins: Copy({   // share selected FLEX and other modules with engines
+				MAIL: FLEX.sendMail,
+				RAN: require("randpr")
+			}, JSLAB),
 			fetcher: DEBE.fetchers.http
 		});
 		
-		ENGINE.plugins.MAIL = FLEX.sendMail; // share with plugins
-		ENGINE.plugins.FLEX = FLEX.plugins;  // must force here (FLEX cant add itself)
-		FLEX.plugins.plugins = FLEX.plugins; // So plugins can ref themselves
+		//JSLAB.plugins.MAIL = FLEX.sendMail; // share with plugins
+		//JSLAB.plugins.RAN = require("randpr");  // share with 
+		//ENGINE.plugins.FLEX = FLEX.plugins;  // must force here (FLEX cant add itself)
+		//FLEX.plugins.plugins = FLEX.plugins; // So plugins can ref themselves
 
 		if (cb) cb();	
 	}
