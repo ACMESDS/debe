@@ -1021,14 +1021,11 @@ append site_body
 		:markdown
 			The following commands maintain *#{title}*:
 
-				GET /SITE.yql 	Return data from YQL compliant SITE=select/from/where
-				GET /socket.io	reserved client socket.io connections
 				GET /ping	check client-server connectivity
 				GET /alert	broadcast alert &msg to all clients
 				GET /stop	stops the server with alert &msg broadcasted to all clients
 				GET /bit	built-in test with &N client connections at rate &lambda=events/s
 				GET /service/algorithm/ENGINE Execute ENGINE with SOAP/XML parameters
-				GET /user 	select,delete,update,insert user profile
 				GET /riddle	validate client when antibot protection configured
 
 //- UNCLASSIFIED

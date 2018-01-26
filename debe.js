@@ -64,7 +64,8 @@ var
 		dogSystem: 100,
 		dogHawks: 0,
 		dogClients: 0,
-		dogEngines: 0
+		dogEngines: 0,
+		dogUsers: 0
 	},
 	
 	dogEngines: function (sql) {
@@ -79,10 +80,28 @@ var
 				bugs: 10
 			};
 		
+		if (engines.undefined)
 		sql.each(trace, engines.undefined, [limits.undefined], function (client) {
 		});		
 	},
 		
+	dogUsers: function (sql) {
+		var 
+			trace = "",
+			users = {
+				inactive: "",
+				buggy: ""
+			},
+			limits = {
+				inactive: 1,
+				bugs: 10
+			};
+		
+		if (users.inactive)
+		sql.each(trace, users.inactive, [limits.inactive], function (client) {
+		});		
+	},
+
 	dogClients: function (sql) {
 		var 
 			trace = "",
@@ -3072,6 +3091,8 @@ Initialize DEBE on startup.
 			indexer: DEBE.indexer,
 			uploader: DEBE.uploader,
 
+			createCert: DEBE.createCert,
+			
 			dbRoutes: {
 				roles: "openv",
 				aspreqts: "openv",
