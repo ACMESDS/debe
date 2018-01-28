@@ -421,6 +421,8 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				listeners	: fListen
 			};
 			
+		case 'b':
+		case 'boolean':	// boolean			
 		case 'c':
 		case 'check':	// checkbox
 			return {
@@ -540,10 +542,11 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				listeners	: fListen
 			};
 			
+		/*
 		case 'b':
 		case 'boolean':	// boolean
 			return {
-				xtype		: "booleancolumn", 				
+				//xtype		: "booleancolumn", 				
 				fType		: fType,
 				dataIndex	: fName,
 				filter		: "boolean",
@@ -565,7 +568,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				},
 				renderer	: fRender,
 				listeners	: fListen
-			};				
+			};	*/
 			
 		case 'a':
 		case 'i':
@@ -636,6 +639,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 		case 'html':	// html
 		case 'mediumtext':	
 			return  {
+				xtype: 	"",
 				fType		: fType,
 				dataIndex	: fName,
 				//sortable	: true,
@@ -659,10 +663,28 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				//listeners	: fListen   // EXTJS widget gets confused when embedded in grid
 			};			
 			
+		case 'z': 		// ignore
+		case 'zilch':
+		case 'g':
+		case 'geometry':
+			return {
+				xtype	: "",
+				fType		: fType,
+				dataIndex	: fName,
+				sortable	: false,
+				hideable	: true,
+				locked		: true,
+				width		: 10,
+				text		: fLabel,
+				qtip		: fTip, 
+				qtitle	 	: fTipTitle
+			};
+
 		case 'x':		// text area
 		case 'textarea':
 		case 'xtextarea':
 			return {
+				xtype : "",
 				fType		: fType,
 				enableKeyEvents: true,
 				dataIndex	: fName,
@@ -772,6 +794,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 		case 'text':
 		case 'varchar':	// text			
 			return {
+				xtype:	"",
 				fType		: fType,
 				dataIndex	: fName,
 				filter		: "string",
@@ -857,6 +880,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 
 			return comboDS 
 				? {	// DS exists
+					xtype: "",
 					fType		: fType,
 					dataIndex	: fName,
 					filter		: "string",
@@ -909,6 +933,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				}
 				
 				: { // DS does not exists
+					xtype: "",
 					fType		: fType,
 					dataIndex	: fName,
 					filter		: "string",
@@ -966,6 +991,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				}
 				
 				: {	// text
+					xtype: 	"",
 					fType		: fType,
 					dataIndex	: fName,
 					filter			: "string",

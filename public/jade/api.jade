@@ -741,8 +741,9 @@ append site_body
 				:markdown
 					This [stateless matlab-engine](/mademo1.exe):
 
-						function res = mademo1(ctx)
-							res = ctx.a + ctx.b;
+						function mademo1(ctx,res)
+							ctx.Save = ctx.a + ctx.b;
+							res(ctx);
 						end
 
 					with initial context: 

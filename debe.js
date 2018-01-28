@@ -46,15 +46,9 @@ var 									// totem modules
 	ENGINE = require("engine"), 
 	FLEX = require("flex"),
 	TOTEM = require("totem"),
-	RAN = require("randpr"),
 	JSLAB = require("jslab"),
 	CHIPS = require("chipper");
 
-var										// shortcuts and globals
-	Copy = TOTEM.copy,
-	Each = TOTEM.each,
-	Log = console.log;
-	
 var
 	DEBE = module.exports = TOTEM.extend({
 	
@@ -80,7 +74,6 @@ var
 				bugs: 10
 			};
 		
-		if (engines.undefined)
 		sql.each(trace, engines.undefined, [limits.undefined], function (client) {
 		});		
 	},
@@ -97,7 +90,6 @@ var
 				bugs: 10
 			};
 		
-		if (users.inactive)
 		sql.each(trace, users.inactive, [limits.inactive], function (client) {
 		});		
 	},
@@ -117,19 +109,15 @@ var
 				unused: 4
 			};
 		
-		if (clients.naughty)
 		sql.each(trace, clients.naughty, [], function (client) {
 		});		
 		
-		if (clients.low)
 		sql.each(trace, clients.low, [limits.disk], function (client) {
 		});		
 		
-		if (clients.dormant)
 		sql.each(trace, clients.dormant, [limits.unused], function (client) {
 		});		
 
-		if (clients.poor)
 		sql.each(trace, clients.poor, [limits.qos], function (client) {
 		});		
 		
@@ -139,11 +127,14 @@ var
 		var 
 			trace = "",
 			files = {
+				update: "UPDATE files SET canDelete=?,Notes=concat(Notes,?)",
 				old: "SELECT files.*,count(events.id) AS evCount FROM events LEFT JOIN files ON events.fileid = files.id WHERE datediff( now(), files.added)>=? AND NOT files.canDelete GROUP BY fileid"
 			},
 			maxage = 20;
 		
-		if (files.old)
+		/*
+		CP.exec(`git commit -am "archive ${path}"; git push github master; rm ${zip}`, function (err) {
+		});		  */
 		sql.each(trace, files.old, maxage, function (file) {
 			
 			var 
@@ -157,7 +148,7 @@ var
 ${file.client} has been notified that ${file.Name}, containing ${file.eventCount} events, has been flagged for delete as it is older than ${maxage} days.
 Consult ${paths.admin} to request additional resources.  Further information about this file is available ${paths.info}. `;
 			
-			sql.update("UPDATE files SET canDelete=?,Notes=concat(Notes,?)", [true,notice]);
+			sql.query(files.update, [true,notice]);
 			
 			if ( sendMail = FLEX.sendMail ) sendMail({
 				to: file.client,
@@ -178,30 +169,25 @@ Consult ${paths.admin} to request additional resources.  Further information abo
 			},
 			queues = FLEX.queues;
 		
-		if (jobs.stuck)
-		sql.all( trace, jobs.stuck, [], function (info,err) {
+		sql.all( trace, jobs.stuck, [], function (info) {
 
-			if (err) 
-				Log(err);
+			Each(queues, function (rate, queue) {  // save collected queuing charges to profiles
+				Each(queue.client, function (client, charge) {
 
-			else
-				Each(queues, function (rate, queue) {  // save collected queuing charges to profiles
-					Each(queue.client, function (client, charge) {
+					if ( charge.bill ) {
+						if ( trace ) Trace(`${trace} ${client} ${charge.bill} CREDITS`, sql);
 
-						if ( charge.bill ) {
-							if ( trace ) Trace(`${trace} ${client} ${charge.bill} CREDITS`, sql);
+						sql.query(
+							"UPDATE openv.profiles SET Charge=Charge+?,Credit=greatest(0,Credit-?) WHERE ?" , 
+							 [ charge.bill, charge.bill, {Client:client} ], 
+							function (err) {
+								Log({charging:err});
+						});
+						charge.bill = 0;
+					}
 
-							sql.query(
-								"UPDATE openv.profiles SET Charge=Charge+?,Credit=greatest(0,Credit-?) WHERE ?" , 
-								 [ charge.bill, charge.bill, {Client:client} ], 
-								function (err) {
-									Log({charging:err});
-							});
-							charge.bill = 0;
-						}
-
-					});
 				});
+			});
 
 			sql.release();
 		});		
@@ -229,7 +215,6 @@ Consult ${paths.admin} to request additional resources.  Further information abo
 			},
 			maxage = 10;
 
-		if (jobs.unbilled)
 		sql.each(trace, jobs.unbilled, [], function (job) {
 			//Trace(`BILLING ${job} FOR ${job.Client}`, sql);
 			sql.query( "UPDATE openv.profiles SET Charge=Charge+? WHERE ?", [ 
@@ -239,7 +224,6 @@ Consult ${paths.admin} to request additional resources.  Further information abo
 			sql.query( "UPDATE app.queues SET Billed=1 WHERE ?", {ID: job.ID})
 		});
 
-		if (jobs.unfunded)
 		sql.each(trace, jobs.unfunded, [maxage], function (job) {
 			//Trace("KILLING ",job);
 			sql.query(
@@ -615,7 +599,7 @@ append layout_body
 					break;
 					
 				case Function:
-					DEBE.thread( function (sql) {
+					sqlThread( function (sql) {
 						try {
 							sql.query( select(where), [req.group, recs, where], function (err,recs) {								
 								index( err ? [] : recs );
@@ -1607,7 +1591,42 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	*/
 	isSpawned: false, 			//< Enabled when this is child server spawned by a master server
 
-	gradeIngest: function (aoi, evs, cb) {
+	gradeIngest: function (sql, aoi, fileID, cb) {
+		
+		var ctx = {
+			Batch: 100, // batch size in steps
+			Members: aoi.Actors,  // ensemble size
+			States: aoi.States, // number of states consumed by process
+			Steps: aoi.Steps, // number of time steps
+			Load: sql.format(  // event query
+				"SELECT * FROM app.events WHERE fileID=? ORDER BY t LIMIT 10000", [fileID] )
+		};
+		
+		if (true) 
+			JSLAB.libs.GET( { 
+				Load: "SELECT * FROM app.news"
+			}, function (evs) {
+				Log("test get", evs);
+				cb({});
+			});
+			
+		else
+		if (estpr = JSLAB.plugins.estpr) 
+			estpr( ctx, function (ctx) {
+				var stats = ctx.Save || {};
+				cb({
+					coherence_time: stats.coherence_time || 0,
+					coherence_intervals: stats.coherence_intervals || 0,
+					degeneracy: stats.degeneracy || 0,
+					snr: stats.snr || 0,
+					mean_jump_rate: stats.mean_jump_rate || 0
+				});
+			});
+		
+		else
+			cb( {} );
+		
+		/*
 		var 
 			stats = {},
 			ran = new RAN({ // configure the random process generator
@@ -1631,16 +1650,18 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				}  // on-event callbacks to retain desired process stats
 			});
 
+		Log("grader",aoi);
 		ran.pipe( [], function (evs) {
 			Log("grader",stats);
 			cb({
-				coherence_time: stats.coherence_time,
-				coherence_intervals: stats.coherence_intervals,
-				degeneracy: stats.degeneracy,
-				snr: stats.snr,
-				mean_jump_rate: stats.mean_jump_rate
+				coherence_time: stats.coherence_time || 0,
+				coherence_intervals: stats.coherence_intervals || 0,
+				degeneracy: stats.degeneracy || 0,
+				snr: stats.snr || 0,
+				mean_jump_rate: stats.mean_jump_rate || 0
 			});
 		}); 
+		*/
 	},
 		
 	/**
@@ -1758,10 +1779,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 	*/
 		
-	ingestFile: function(sql, filePath, fileName, fileID, group, doc, cb) {  // ingest events from file with callback(aoi, stats).
-		CHIPS.ingestFile(sql, filePath, fileID, function (aoi, evs) {
+	ingestFile: function(sql, filePath, fileName, fileID, group, notes, cb) {  // ingest events from file with callback cb(aoi).
+		
+		CHIPS.ingestFile(sql, filePath, fileID, function (aoi) {
 			
-			DEBE.gradeIngest( aoi, Array.from(evs), function (stats) {
+			DEBE.gradeIngest( sql, aoi, fileID, function (stats) {
 
 				function pretty(stats,sigfig) {
 					var rtn = "";
@@ -1771,17 +1793,33 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					return rtn;
 				}
 				
-				cb(Copy(stats, aoi));
-					
+				cb( Copy(stats, aoi) );
+
+				sql.all(
+					"INGEST",
+					"UPDATE app.files SET ?,Notes=? WHERE ?", [{
+						coherence_time: aoi.coherence_time,
+						coherence_intervals: aoi.coherence_intervals,
+						mean_jump_rate: aoi.mean_jump_rate,
+						degeneracy: aoi.degeneracy,
+						snr: aoi.snr
+					},
+					notes + "Initial quality assessment: " + pretty(stats,4),
+					{ID: fileID} 
+				]).on("error", function (err) {
+					Log("file up",err);
+				});
+				
 				var
 					ctx = {
 						Job: JSON.stringify({
-							file: fileName
+							file: fileName, limit: 1000, aoi: [ [0,0], [0,0], [0,0], [0,0], [0,0] ]
 						}),
-						Name: "ingest "+fileName,
-						Description: doc + pretty(stats, 4)
+						Name: "ingest."+fileName,
+						Description: "see " + fileName.tag("a",{href:`/files.view?ID=${fileID}`}) + " for details"
 					};
 				
+				if (false)  // add use case to ingested file in all listening plugins
 				FLEX.eachPlugin( sql, group, function (eng) {
 
 					sql.query( 
@@ -1813,6 +1851,12 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	blindTesting : false		//< Enable for double-blind testing (eg make FLEX susceptible to sql injection attacks)
 });
 
+var										// shortcuts and globals
+	Copy = TOTEM.copy,
+	Each = TOTEM.each,
+	sqlThread = TOTEM.thread,
+	Log = console.log;
+	
 
 /**
  * @method SOAPsession
@@ -2463,7 +2507,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 	if ("ID" in query || "Name" in query)  // run engine using requested usecase via the job regulator 
 		FLEX.runPlugin(req, function (ctx) {
 
-			//Log("exe ctx", ctx);
+			//Log("run ctx", ctx);
 			
 			if ( !ctx)
 				res( DEBE.errors.noContext );
@@ -2505,7 +2549,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				if (Job.constructor == Object)  {  // regulate
 					if (Job.voi) // regulate a VOI
 						CHIPS.chipVOI(Job, job, function (voxel,stats,sql) {
-							DEBE.thread( function (sql) {
+							sqlThread( function (sql) {
 								//Log({save:stats});
 								saveResults( stats, voxel );
 							});
@@ -2678,6 +2722,27 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 
 		function renderPlugin(fields) { // render using plugin skin
 			
+			function acceptable(field) {
+				var types = {
+					"?": "t",
+					"varchar(32)": "t",
+					"varchar(64)": "t",
+					"varchar(128)": "t",
+					"int(11)": "i",
+					float: "n",
+					json: "x",
+					mediumtext: "h",
+					json: "x",
+					date: "d", 
+					datetime: "d",
+					"tinyint(1)": "c"
+				};				
+				
+				return 	(field.Field != "ID" && field.Type != "geometry") 
+					? field.Field + "." + ( types[ field.Type ] || "t" )
+					: null;	
+			}
+
 			var
 				pluginPath = paths.render+"plugin.jade",
 				cols = [],
@@ -2691,35 +2756,20 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 					dims: query.dims || "100%,100%",
 					ds: req.table
 				},req.query),
-				ctx = site.context.plugin,
-				sqltypes = {
-					"varchar(32)": "t",
-					"varchar(64)": "t",
-					"varchar(128)": "t",
-					"int(11)": "i",
-					float: "n",
-					json: "x",
-					mediumtext: "h",
-					json: "x",
-					date: "d",
-					datetime: "d",
-					"tinyint(1)": "c"
-				};				
+				ctx = site.context.plugin;
 			
 			//Log([query, req.search]);
 			
 			switch (fields.constructor) {
 				case Array:
 					fields.each(function (n,field) {
-						if (field.Field != "ID")
-							cols.push( field.Field + "." + (sqltypes[field.Type] || "t") );
+						if ( col = acceptable(field) ) cols.push( col );
 					});
 					break;
 					
 				case String:
 					fields.split(",").each(function (n,field) {
-						if (field.Field != "ID")
-							cols.push( field.Field );
+						if ( col = acceptable( { Field: field, Type: "?"} ) ) cols.push( col );
 					});					
 					break;
 					
@@ -2728,8 +2778,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 					
 					try{
 						Each(fields, function (n,rec) {
-							if (n != "ID")
-								cols.push( n );
+							if ( col = acceptable( { Field: n, Type: "?"} ) ) cols.push( n );
 						});	
 					}
 					catch (err) {
@@ -3078,13 +3127,14 @@ Initialize DEBE on startup.
 	 */
 
 		Trace(`INIT FLEX`);
+		
 		Each( CRUDE, function (n,routes) {  // redirect dataset crude calls
 			DEBE[n] = FLEX[n].ds;
 			DEBE.byActionTable[n] = FLEX[n];
 		});	
 
 		FLEX.config({ 
-			thread: DEBE.thread,
+			thread: sqlThread,
 			emitter: DEBE.IO ? DEBE.IO.sockets.emit : null,
 			skinner: JADE,
 			fetcher: DEBE.fetchers.http,
@@ -3146,25 +3196,24 @@ Initialize DEBE on startup.
 			fetch: DEBE.loaders,
 			source: "",
 			taskPlugin: null,
-			thread: DEBE.thread
+			thread: sqlThread
 		});
-				
+		
+		JSLAB.config({
+			thread: sqlThread,
+			fetcher: DEBE.fetchers.http
+		});
+		
 		ENGINE.config({
-			thread: DEBE.thread,
+			thread: sqlThread,
 			cores: DEBE.cores,
 			watchFile: DEBE.watchFile,
 			plugins: Copy({   // share selected FLEX and other modules with engines
 				MAIL: FLEX.sendMail,
 				RAN: require("randpr")
-			}, JSLAB),
-			fetcher: DEBE.fetchers.http
+			}, JSLAB.libs)
 		});
 		
-		//JSLAB.plugins.MAIL = FLEX.sendMail; // share with plugins
-		//JSLAB.plugins.RAN = require("randpr");  // share with 
-		//ENGINE.plugins.FLEX = FLEX.plugins;  // must force here (FLEX cant add itself)
-		//FLEX.plugins.plugins = FLEX.plugins; // So plugins can ref themselves
-
 		if (cb) cb();	
 	}
 	
@@ -3176,7 +3225,7 @@ Initialize DEBE on startup.
 
 						Trace("DOG "+args.name);
 						
-						DEBE.thread( function (sql) {
+						sqlThread( function (sql) {
 							watchDog(sql);
 						});
 
@@ -3203,7 +3252,7 @@ Initialize DEBE on startup.
 		});
 		JAX.start();
 		
-		DEBE.thread( function (sql) {
+		sqlThread( function (sql) {
 			var path = DEBE.paths.render;
 			
 			DEBE.indexer( path, function (files) {  // publish new engines
