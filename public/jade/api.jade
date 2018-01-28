@@ -1,4 +1,4 @@
-// UNCLASSIFIED
+I// UNCLASSIFIED
 
 extends site
 append site_help
@@ -439,14 +439,15 @@ append site_body
 
 					Job - chipping and regulation parameters 
 					Export - switch to write engine results into a file
-					Ingest - switch ingest engine results into the database
+					Ingest - switch to ingest engine results into the database
+					Share - switch to return engine results vs. its save status
 					Description - [skin](/skinguide.view) to document this CASE
 					Config - js-engine to dynamically define the CASE context
 					
 				reserved output context keys:
 
-					Save_KEY - aggregate and store engine results [{at:"KEY", ...}, ...]
-					Save - store remaing process engine pruned by Save_KEY
+					Save_KEY - aggregate engine results [{at:"KEY", ...}, ...]
+					Save - aggregate engine results not captured in the Save_KEYs
 					
 				and reserved Job context keys:
 
@@ -469,7 +470,7 @@ append site_body
 						aoi: [ [lat,lon], ... ]  				// closed ring
 					} 
 
-				A plugin's Description key may contains [blogging tags](/skinguide.view) of the form
+				A plugin's Description key may contain [blogging tags](/skinguide.view) of the form
 
 					 [image | post | update | link | SKIN, W, H, DS?QUERY]( /url | PARM=r.KEY expression; ...)
 
@@ -484,7 +485,7 @@ append site_body
 				to embed (1) a plot of the requested x,y data using the [d3 plot](/plot.view), (2) the 
 				[home.view](/home.view), (3) a link to the url, (4) the [image](/shares.jpg), and (5) a
 				force graph of the queues dataset pivoted by class using the [d3 force](/force.view) 
-				into a frame of specified W x H dimensions.
+				into a frame of specified W x H dimensions.  Blogging is toggeled by the blog button.
 
 		#fit.Parameters
 		#fit.Examples

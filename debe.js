@@ -35,7 +35,7 @@ var 									// NodeJS modules
 	FS = require("fs"); 				//< NodeJS filesystem and uploads
 	
 var										// 3rd party modules
-	OGEN = require("officegen"), 	//< MS office generator
+	ODOC = require("officegen"), 	//< office doc generator
 	LANG = require('i18n-abide'), 		//< I18 language translator
 	ARGP = require('optimist'),			//< Command line argument processor
 	TOKML = require("tokml"), 			//< geojson to kml convertor
@@ -49,9 +49,17 @@ var 									// totem modules
 	JSLAB = require("jslab"),
 	CHIPS = require("chipper");
 
+var										// shortcuts and globals
+	Copy = TOTEM.copy,
+	Each = TOTEM.each,
+	sqlThread = TOTEM.thread,
+	Log = console.log;
+	
 var
 	DEBE = module.exports = TOTEM.extend({
 	
+	// watchdog config parameters
+		
 	dogs: {  // watch dog timers [secs] (zero to disable)
 		dogFiles: 0,
 		dogJobs: 300,
@@ -273,15 +281,11 @@ Consult ${paths.admin} to request additional resources.  Further information abo
 		});
 	}, 
 		
-	/*
-			billingCycle: DEBE.billingCycle, 		// job billing cycle [ms]
-			diagCycle: DEBE.diagCycle,			// Check period [ms]
-			hawkingCycle: DEBE.hawkingCycle, 	// job hawking cycle [ms] (0 disables)
-		*/				
+	// request config parameters
 
-	"reqFlags." : {  //< TRAP=name flags modify the request
+	"reqFlags." : {  //< endpoint request flags
 		
-		traps: {
+		traps: {  // TRAP=name flags can modify the request flags
 			save: function (req) {  //< _save=name retains query in named engine
 				var 
 					sql = req.sql,
@@ -314,7 +318,7 @@ Consult ${paths.admin} to request additional resources.  Further information abo
 			}
 		},
 		
-		blog: function (src, ds, dsname, cb) {
+		blog: function (src, ds, dsname, cb) {  // blog=key,... request flag
 			function renderEmac(ds,src) {
 				try {
 					return eval("`" + src + "`");
@@ -386,439 +390,8 @@ Consult ${paths.admin} to request additional resources.  Further information abo
 		}
 
 	},
-	
-	/*
-	"reqFlags.edits.": {  //< EDIT=key,key,... flags edit dataset records
-		blog: function (keys,recs,req,res) {  	//<  _blog=key,key,... renders keys
-			
-			function fmt(ds,src) {
-				try {
-					return eval("`" + src + "`");
-				}
-				catch (err) {
-					return src;
-				}
-			}
-			
-			recs.each( function (n, rec) { 
-				keys.each( function (m, key) {
-					if (val = rec[key])
-						if (val.constructor == String) { // only strings are bloggable
-							var tex = [];
-							
-							//(":markdown\n" + fmt(rec,val))  // make blog markdown
-							//	.replace(/   /g, "\t")  // replace fake tabs
-							//	.replace(/\n/g,"\n\t")  // indent markdown
-							fmt(rec,val)
-							.replace(/\[(.*?)\]\((.*?)\)/g, function (m,i) {  // adjust [x,w,h,s](u) markdown
-								m = m.substr(1,m.length-2).split("]("); 
-								var 
-									v = m[0].split(","),
-									u = m[1] || "missing url",
-									x = v[0] || "",
-									w = v[1] || 100,
-									h = v[2] || 100,
-									s = v[3] || `${req.table}?ID=${rec.ID}` ,
-									p = u.split(";").join("&") ;
-
-								switch (x) {
-									case "update":
-										return x.tag("a",{href:req.table+".exe?ID="+rec.ID}) + "".tag("iframe",{ src:u, width:w, height:h });
-									case "image":
-										return "".tag("img",{ src:u, width:w, height:h });
-									case "post":
-										return "".tag("iframe",{ src:u, width:w, height:h });
-									case "nada":
-										return `[nada](${u})`;
-									case "link":
-										return x.tag("a",{href:u});
-									case "tex":
-										//Log( u.tag("script",{id:"MathJax-Element-1",type:"math/tex",mode:"display"}) );
-										//return u.tag("script",{id:"MathJax-Element-1",type:"math/tex",mode:"display"});
-										tex.push(u);
-										return "$tex"+(tex.length-1);
-									default:
-										return "".tag("iframe",{ src: `/${x}.view?${p}&w=${w}&h=${h}&ds=${s}`, width:w, height:h } );
-								}										
-							})
-							.replace(/href=(.*?)>/g, function (m,i) { // follow <a href=B>A</a> links
-								var q = (i.charAt(0) == "'") ? '"' : "'";
-								return `href=${q}javascript:navigator.follow(${i},BASE.user.client,BASE.user.source)${q}>`;
-							})
-							.renderMath(tex, function (html) { // thats all folks - render it
-								rec[key] = html;
-								Log(key,tex,rec[key]);
-							});
-						}
-				});
-			});
-		},
-		
-		/ *
-		jade: function (keys,recs,req) {  	// jade markdown on keys fields
-
-			recs.each( function (n, rec) { 
-				keys.each( function (m, key) {
-					rec[key] = "=$" + (rec[key]+"").render(req);
-				});
-			});
-		},
-
-		kjade: function (keys,recs,req) {  	// kludge jade markdown on keys fields
-
-			recs.each( function (n, rec) {  
-				keys.each( function (m, key) {
-					rec[key] = (rec[key]+"").tag("iframe", {
-						width: 400,
-						height: 400,
-						src: `/${req.table}.html?ID=${rec.ID}&_kjaded=${key}`
-					});
-					//Log(rec[key]);
-				});
-			});
-		},
-
-		kjaderaw: function (keys,recs,req) {  // kludge jade markdown
-
-			recs.each( function (n, rec) {
-				var rtn = "";
-				keys.each( function (m, key) {  
-					rtn += (rec[key] + "").render(req);
-				});
-				recs[n] = rtn;
-			});
-		},
-		
-		mark: function (keys,recs,req) {  	// markdown keys fields
-		
-			recs.each( function (n, rec) {
-				keys.each( function (m, key) {  
-					rec[key] = 
-`extends layout
-append layout_body
-	:markdown
-		${rec[key] }` .render(req);
-				});
-			});
-		},
-		* /
-		
-		json: function json(keys,recs,req) { //< _json=key,key,... jsonize keys
-			var id = 1;
-			
-			recs.each( function (n,rec) {
-				var rtn = {ID: id++};
-				
-				keys.each( function (k,key) {
-					var src = rec;
-					key.split(".").each( function (k,idx) {
-						if (src)
-							if (k) 
-								src = src[idx];
-
-							else 
-								try {
-									src = JSON.parse( src[idx] || "null" );
-								}
-								catch (err) {
-								}
-					});
-					
-					rtn[key] = src;
-				});
-				
-				recs[n] = rtn;
-			});
-		}
-	},
-	*/
-										 
-	admitRule: null, 	//< admitRule all clients by default 	
-		/*{ "u.s. government": "required",
-		 * 	"us": "optional"
-		 * }*/
-
-	"site.": { 		//< initial site context
-
-		classif: {
-			level: "",
-			purpose: "",
-			banner: ""
-		},
-		
-		info: {
-		},
-		
-		get: function(recs, where, index, subs) {  //< index dataset
-		/**
-		@member SKINS
-		@method get
-		Provides a data indexer when a skin is being rendered.
-		@param {Array} recs Record source
-		@param {Array} where {recKey:value, ...} to match recs
-		@param {Array} index "recKey,..." keys to retain from recs
-		@param {Array} subs {hash: {recKey: {key:value, ...}. ...}, ...} replace record values
-		*/
-		
-			function select(keys) {
-				
-				switch ( (keys||0).constructor) {
-					case Object:
-						for (var key in keys) 
-							return "SELECT * FROM ??.?? WHERE least(?,1)";
-						
-						return "SELECT * FROM ??.??";
-						
-					case Array:
-						return "";
-						
-					case String:
-						return "SELECT * FROM ??.? WHERE " + keys;
-						
-					case Function:
-						return "";
-						
-					default:
-						return "";
-				}
-			}
-			
-			var rtns = [];
-			
-			switch ( (index||0).constructor ) {
-				case String: 
-					var idx = {};
-					index.split(",").each(function (n,key) {
-						idx[key] = key;
-					});
-					index = idx;
-					break;
-					
-				case Array:
-					return null;
-					break;
-					
-				case Function:
-					sqlThread( function (sql) {
-						try {
-							sql.query( select(where), [req.group, recs, where], function (err,recs) {								
-								index( err ? [] : recs );
-							});
-							sql.release();
-						}
-						
-						catch (err) {
-							index( [] );
-						}
-					});
-					return null;					
-			}
-			
-			recs.each(function (n,rec) {
-				var match = true;
-
-				if (where)
-					for (var x in where) 
-						if (rec[x] != where[x]) match = false;
-
-				if (match) {
-					if (subs)
-						Each(subs, function (pre, sub) {  // make #key and ##kEy substitutions
-							for (var idx in sub) {
-								var keys = sub[idx];
-								if ( rec[idx] )
-									for (var key in keys)
-										rec[idx] = (rec[idx] + "").replace(pre + key, keys[key]);
-							}
-						});
-
-					/*
-					if (sub1) {
-						for (var idx in sub1) {
-							var keys = sub1[idx];
-							if ( rec[idx] )
-								for (var key in keys)
-									rec[idx] = (rec[idx] + "").replace("#" + key, keys[key]);
-						}
-					}*/
-					
-					if (index) {
-						var rtn = new Object();
-						for (var key in index) {
-							var src = rec;
-							key.split(".").each( function (k,idx) {
-								src = src[idx];
-							});
-							rtn[ index[key] ] = src;
-						}
-						rec = rtn;
-					}
-					
-					rtns.push( rec );
-				}
-			});
-			
-			return rtns;
-		},
-		
-		json: function(recs) {  //< jsonize dataset
-		/**
-		@member SKINS
-		@method json
-		Jsonize records.
-		@param {Array} recs Record source
-		*/
-			return JSON.stringify(recs);
-		},
-		
-		tag: function (src,el,tags) {
-		/**
-		@member SKINS
-		@method tag
-		*/
-			return tags ? src.tag(el,tags) : src.tag("a",{href:el});;
-		},
-		
-		hover: function (ti,fn) {
-		/**
-		@member SKINS
-		@method hover
-		Title ti fileName fn
-		*/
-			if (fn.charAt(0) != "/") fn = "/shares/"+fn;
-			return ti.tag("p",{class:"sm"}) 
-				+ (
-					   "".tag("img",{src:fn+".jpg"})
-					+ "".tag("iframe",{src:fn+".html"}).tag("div",{class:"ctr"}).tag("div",{class:"mid"})
-				).tag("div",{class:"container"});
-		},
-		
-		gridify: function(recs,noheader) {	//< dump dataset as html table
-		/**
-		@member SKINS
-		@method gridify
-		*/
-			function join(recs,sep) { 
-				switch (recs.constructor) {
-					case Array: 
-						return this.join(sep);
-					
-					case Object:
-						var rtn = [];
-						for (var n in this) rtn.push(this[n]);
-						return rtn.join(sep);
-						
-					default:
-						return this;
-				}
-			}
-			
-			function table(recs) {  // generate an html table from given data or object
-				switch (recs.constructor) {
-					case Array:  // [ {head1:val}, head2:val}, ...]  create table from headers and values
-					
-						var rtn = "", head = !noheader, heads = {};
-						
-						recs.each( function (n,rec) {
-							Each(rec, function (key,val) {
-								heads[key] = key;
-							});
-						});
-						
-						recs.each( function (n,rec) {
-							
-							if (head) {
-								var row = "";
-								Each(heads, function (key,val) {
-									row += key.tag("th");
-								});
-								rtn += row.tag("tr");
-								head = false;
-							}
-							
-							var row = "", intro = "";
-							Each(heads, function (key,val) {
-								if (val = rec[key])
-									row += (val.constructor == Array)
-										? table(val)
-										: (val+"").tag("td", intro ? {class:"intro"} : {});
-								else
-									row += "".tag("td");
-								
-								intro = false;
-							});
-							rtn += row.tag("tr");
-						});
-						
-						return rtn; //.tag("table",{}); //.tag("div",{style:"overflow-x:auto"});
-						
-					case Object: // { key:val, ... } create table dump of object hash
-					
-						var rtn = "";
-						Each(recs, function (key,val) {
-							if (val)
-								rtn += (val.constructor == Array)
-									? table(val)
-									: (key.tag("td") + JSON.stringify(val).tag("td")).tag("tr");
-						});
-						
-						return rtn.tag("table");
-						
-					default:
-						return recs+"";
-				}
-			}
-			
-			function dump(x) {
-				rtn = "";
-				for (var n in x)  {
-					switch ( x[n].constructor ) {
-						case Object:
-							rtn += dump( x[n] ); break;
-						case Array:
-							rtn += n+"[]"; break;
-						case Function:
-							rtn += n+"()"; break;
-						default:
-							rtn += n;
-					}
-					rtn += "; ";
-				}
-				return rtn;
-			}
-			
-			return  table( recs );
-		},
-				
-		/**
-		@private
-		@cfg {Object}
-		@member SKINS
-		*/
-		context: { // defines DSVAR contexts when a skin is rendered
-			swag: {
-				projs: "openv.milestones"
-			},
-			airspace: {
-				projs: "openv.milestones"
-			},
-			plugin: {
-				projs: "openv.milestones"
-			},
-			briefs: {
-				projs: "openv.milestones"
-			},
-			rtpsqd: {
-				apps:"openv.apps",
-				users: "openv.profiles",
-				projs: "openv.milestones",
-				QAs: "app.QAs"
-				//stats:{table:"openv.profiles",group:"client",index:"client,event"}
-			}
-		}
-	},
-	
-	"reqTypes." : { // endpoints to convert dataset on req-res thread
+											 
+	"reqTypes." : { //< endpoint types to convert dataset recs on specifed req-res thread
 		view: function (recs,req,res) {  //< dataset.view returns rendered skin
 			res( recs );
 		},
@@ -1252,10 +825,12 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 	},
 
-	"byArea.": {
+	// endpoint router config parameters
+		
+	"byArea.": { //< routers for endpoints at /AREA/file ...
 	},
 
-	"byTable.": {	//< worker endpoints
+	"byTable.": {	//< routers for endpoints at /TABLE
 		help: sysHelp,
 		stop: sysStop,
 		alert: sysAlert,
@@ -1270,7 +845,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		//config: sysConfig
 	},
 	
-	"byType.": { //< byType endpoints
+	"byType.": { //< routers for endpoint types at /DATASET.TYPE
 		code: sendCode,
 		jade: sendCode,		
 		classif: sendAttr,
@@ -1295,9 +870,294 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		sub: retractPlugin
 	},
 
-	 //"byAction.": ENGINE,
+	"byActionTable.": {  //< routers for CRUD endpoints at /DATASET 
+	},
+	
+	// private parameters
 		
-	"byActionTable.": {  //< virtual table emulation endpoints
+	admitRule: null, 	//< admitRule all clients by default 	
+		/*{ "u.s. government": "required",
+		 * 	"us": "optional"
+		 * }*/
+
+	"site.": { 		//< initial site context
+
+		classif: {
+			level: "",
+			purpose: "",
+			banner: ""
+		},
+		
+		info: {
+		},
+		
+		get: function(recs, where, index, subs) {  //< index dataset
+		/**
+		@member SKINS
+		@method get
+		Provides a data indexer when a skin is being rendered.
+		@param {Array} recs Record source
+		@param {Array} where {recKey:value, ...} to match recs
+		@param {Array} index "recKey,..." keys to retain from recs
+		@param {Array} subs {hash: {recKey: {key:value, ...}. ...}, ...} replace record values
+		*/
+		
+			function select(keys) {
+				
+				switch ( (keys||0).constructor) {
+					case Object:
+						for (var key in keys) 
+							return "SELECT * FROM ??.?? WHERE least(?,1)";
+						
+						return "SELECT * FROM ??.??";
+						
+					case Array:
+						return "";
+						
+					case String:
+						return "SELECT * FROM ??.? WHERE " + keys;
+						
+					case Function:
+						return "";
+						
+					default:
+						return "";
+				}
+			}
+			
+			var rtns = [];
+			
+			switch ( (index||0).constructor ) {
+				case String: 
+					var idx = {};
+					index.split(",").each(function (n,key) {
+						idx[key] = key;
+					});
+					index = idx;
+					break;
+					
+				case Array:
+					return null;
+					break;
+					
+				case Function:
+					sqlThread( function (sql) {
+						try {
+							sql.query( select(where), [req.group, recs, where], function (err,recs) {								
+								index( err ? [] : recs );
+							});
+							sql.release();
+						}
+						
+						catch (err) {
+							index( [] );
+						}
+					});
+					return null;					
+			}
+			
+			recs.each(function (n,rec) {
+				var match = true;
+
+				if (where)
+					for (var x in where) 
+						if (rec[x] != where[x]) match = false;
+
+				if (match) {
+					if (subs)
+						Each(subs, function (pre, sub) {  // make #key and ##kEy substitutions
+							for (var idx in sub) {
+								var keys = sub[idx];
+								if ( rec[idx] )
+									for (var key in keys)
+										rec[idx] = (rec[idx] + "").replace(pre + key, keys[key]);
+							}
+						});
+
+					/*
+					if (sub1) {
+						for (var idx in sub1) {
+							var keys = sub1[idx];
+							if ( rec[idx] )
+								for (var key in keys)
+									rec[idx] = (rec[idx] + "").replace("#" + key, keys[key]);
+						}
+					}*/
+					
+					if (index) {
+						var rtn = new Object();
+						for (var key in index) {
+							var src = rec;
+							key.split(".").each( function (k,idx) {
+								src = src[idx];
+							});
+							rtn[ index[key] ] = src;
+						}
+						rec = rtn;
+					}
+					
+					rtns.push( rec );
+				}
+			});
+			
+			return rtns;
+		},
+		
+		json: function(recs) {  //< jsonize dataset
+		/**
+		@member SKINS
+		@method json
+		Jsonize records.
+		@param {Array} recs Record source
+		*/
+			return JSON.stringify(recs);
+		},
+		
+		tag: function (src,el,tags) {
+		/**
+		@member SKINS
+		@method tag
+		*/
+			return tags ? src.tag(el,tags) : src.tag("a",{href:el});;
+		},
+		
+		hover: function (ti,fn) {
+		/**
+		@member SKINS
+		@method hover
+		Title ti fileName fn
+		*/
+			if (fn.charAt(0) != "/") fn = "/shares/"+fn;
+			return ti.tag("p",{class:"sm"}) 
+				+ (
+					   "".tag("img",{src:fn+".jpg"})
+					+ "".tag("iframe",{src:fn+".html"}).tag("div",{class:"ctr"}).tag("div",{class:"mid"})
+				).tag("div",{class:"container"});
+		},
+		
+		gridify: function(recs,noheader) {	//< dump dataset as html table
+		/**
+		@member SKINS
+		@method gridify
+		*/
+			function join(recs,sep) { 
+				switch (recs.constructor) {
+					case Array: 
+						return this.join(sep);
+					
+					case Object:
+						var rtn = [];
+						for (var n in this) rtn.push(this[n]);
+						return rtn.join(sep);
+						
+					default:
+						return this;
+				}
+			}
+			
+			function table(recs) {  // generate an html table from given data or object
+				switch (recs.constructor) {
+					case Array:  // [ {head1:val}, head2:val}, ...]  create table from headers and values
+					
+						var rtn = "", head = !noheader, heads = {};
+						
+						recs.each( function (n,rec) {
+							Each(rec, function (key,val) {
+								heads[key] = key;
+							});
+						});
+						
+						recs.each( function (n,rec) {
+							
+							if (head) {
+								var row = "";
+								Each(heads, function (key,val) {
+									row += key.tag("th");
+								});
+								rtn += row.tag("tr");
+								head = false;
+							}
+							
+							var row = "", intro = "";
+							Each(heads, function (key,val) {
+								if (val = rec[key])
+									row += (val.constructor == Array)
+										? table(val)
+										: (val+"").tag("td", intro ? {class:"intro"} : {});
+								else
+									row += "".tag("td");
+								
+								intro = false;
+							});
+							rtn += row.tag("tr");
+						});
+						
+						return rtn; //.tag("table",{}); //.tag("div",{style:"overflow-x:auto"});
+						
+					case Object: // { key:val, ... } create table dump of object hash
+					
+						var rtn = "";
+						Each(recs, function (key,val) {
+							if (val)
+								rtn += (val.constructor == Array)
+									? table(val)
+									: (key.tag("td") + JSON.stringify(val).tag("td")).tag("tr");
+						});
+						
+						return rtn.tag("table");
+						
+					default:
+						return recs+"";
+				}
+			}
+			
+			function dump(x) {
+				rtn = "";
+				for (var n in x)  {
+					switch ( x[n].constructor ) {
+						case Object:
+							rtn += dump( x[n] ); break;
+						case Array:
+							rtn += n+"[]"; break;
+						case Function:
+							rtn += n+"()"; break;
+						default:
+							rtn += n;
+					}
+					rtn += "; ";
+				}
+				return rtn;
+			}
+			
+			return  table( recs );
+		},
+				
+		/**
+		@private
+		@cfg {Object}
+		@member SKINS
+		*/
+		context: { // defines DSVAR contexts when a skin is rendered
+			swag: {
+				projs: "openv.milestones"
+			},
+			airspace: {
+				projs: "openv.milestones"
+			},
+			plugin: {
+				projs: "openv.milestones"
+			},
+			briefs: {
+				projs: "openv.milestones"
+			},
+			rtpsqd: {
+				apps:"openv.apps",
+				users: "openv.profiles",
+				projs: "openv.milestones",
+				QAs: "app.QAs"
+				//stats:{table:"openv.profiles",group:"client",index:"client,event"}
+			}
+		}
 	},
 	
 	"errors.": {  //< error messages
@@ -1594,26 +1454,19 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	gradeIngest: function (sql, aoi, fileID, cb) {
 		
 		var ctx = {
-			Batch: 100, // batch size in steps
-			Members: aoi.Actors,  // ensemble size
-			States: aoi.States, // number of states consumed by process
-			Steps: aoi.Steps, // number of time steps
+			Batch: 10, // batch size in steps
+			File: {
+				Actors: aoi.Actors,  // ensemble size
+				States: aoi.States, // number of states consumed by process
+				Steps: aoi.Steps, // number of time steps
+			},
 			Load: sql.format(  // event query
 				"SELECT * FROM app.events WHERE fileID=? ORDER BY t LIMIT 10000", [fileID] )
 		};
 		
-		if (true) 
-			JSLAB.libs.GET( { 
-				Load: "SELECT * FROM app.news"
-			}, function (evs) {
-				Log("test get", evs);
-				cb({});
-			});
-			
-		else
 		if (estpr = JSLAB.plugins.estpr) 
-			estpr( ctx, function (ctx) {
-				var stats = ctx.Save || {};
+			estpr( ctx, function (ctx) {  // estimate/learn hidden process parameters
+				var stats = ctx.Save.pop() || {};  // retain last estimate at end
 				cb({
 					coherence_time: stats.coherence_time || 0,
 					coherence_intervals: stats.coherence_intervals || 0,
@@ -1621,7 +1474,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					snr: stats.snr || 0,
 					mean_jump_rate: stats.mean_jump_rate || 0
 				});
-			});
+			}); 
 		
 		else
 			cb( {} );
@@ -1793,6 +1646,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					return rtn;
 				}
 				
+				Log("grader", stats, aoi);
 				cb( Copy(stats, aoi) );
 
 				sql.all(
@@ -1807,7 +1661,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					notes + "Initial quality assessment: " + pretty(stats,4),
 					{ID: fileID} 
 				]).on("error", function (err) {
-					Log("file up",err);
+					Log("grader save",err);
 				});
 				
 				var
@@ -1850,13 +1704,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	*/
 	blindTesting : false		//< Enable for double-blind testing (eg make FLEX susceptible to sql injection attacks)
 });
-
-var										// shortcuts and globals
-	Copy = TOTEM.copy,
-	Each = TOTEM.each,
-	sqlThread = TOTEM.thread,
-	Log = console.log;
-	
 
 /**
  * @method SOAPsession
@@ -2335,31 +2182,31 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 @param {Function} res Totem response callback
 */	
 	
-	function saveResults( stats, ctx ) {  // save plugin output stats
+	function saveResults( stats, ctx ) {  // save stats to the Save/Save_KEY keys, an Export file, or the Ingest db
 		var 
 			status = "", // returned status
 			stash = { };  // ingestable keys stash
 			
-		function getFile(sql, cb) {  // pipe events from client to public/stores/fileName with callback(fileID,fileRef)
+		function getFile(sql, cb) {  // allocate an output export file with callback cb(fileID)
 
 			var filename = table + "." + ctx.Name;
-			sql.query("SELECT ID FROM app.files WHERE least(?,1) LIMIT 1", {
+			sql.first( "", "SELECT ID FROM app.files WHERE least(?,1) LIMIT 1", {
 				Name: filename,
 				Client: table,
 				Area: group
-			}, function (err,files) {
+			}, function (file) {
 
-				if ( file = err ? null : files[0] )
+				if ( file )
 					cb( file.ID );
 
 				else
-					sql.query("INSERT INTO app.files SET ?", {
+					sql.all( "", "INSERT INTO app.files SET ?", {
 						Name: filename,
 						Client: table,
 						Area: group,
 						Added: new Date()
-					}, function (err,info) {
-						if (!err) cb( info.insertId );
+					}, function (info) {
+						cb( info.insertId );
 					});
 
 			});
@@ -2370,32 +2217,10 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		
 		else
 		if ( stats.constructor == Error )
-			return "bad context";
+			return stats+"";
 		
 		else
 		if ( stats.constructor == Array ) {  // keys in the plugin context are used to create save stashes
-			/*
-			stats.getStash("at", "Ingest_", ctx, stash, function (ev,stat,ctx) {  // add {at:"KEY",...} stats to the Ingest_KEY stash
-				if (ev) 
-					ev.push( stat );
-				
-				else 
-					return ctx ? new Array() : null;
-			}); 
-
-			Each(stash, function (key,evs) {  // ingest events 
-				if (evs) {
-					DEBE.getFile( sql, pluginds+"."+ctx.Name, client, evs, function (fileID, fileRef) {
-						if (false)
-							CHIPS.ingestList( sql, evs, fileID, function (aoi, evs) {
-								Log("INGESTED ",aoi);
-							});
-					});
-				
-					status += " Ingested";
-				}
-			}); */
-		
 			var rem = [], stash = { remainder: rem };  // stash for saveable keys 
 			stats.getStash("at", "Save_", ctx, stash, function (ev, stat) {  // add {at:"KEY",...} stats to the Save_KEY stash
 				
@@ -2472,7 +2297,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			status += " Saved";
 		}
 
-		return status || stats;
+		return ctx.Share ? stats : status;
 	}
 
 	var
@@ -2483,29 +2308,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		table = req.table,
 		query = req.query;
 
-		/*
-		var job = { // default required parms
-			// job related
-			thread: req.client.replace(/\./g,"") + "." + req.table,
-			qos: req.profile.QoS, 
-			priority: 0,
-			client: req.client,
-			class: "chipping",
-			credit: req.profile.Credit,
-			name: req.table,
-			// engine related
-			engine: req.table,   // engine name
-			size: query.size || 50,  // feature size in [m]
-			pixels: query.pixels || 512, 	// samples across a chip [pixels]
-			scale: query.scale || 8,  // scale^2 is max number of features in a chip
-			step: query.step || 0.01, 	// relative seach step size
-			range: query.range || 0.1, // relative search size
-			detects: query.detects || 8,	// hits required to declare a detect
-			limit: query.limit || 1e99 	// limit chips
-		};*/
-	
-	if ("ID" in query || "Name" in query)  // run engine using requested usecase via the job regulator 
-		FLEX.runPlugin(req, function (ctx) {
+	if ("ID" in query || "Name" in query)  
+		FLEX.runPlugin(req, function (ctx) {  // run engine using requested usecase via the job regulator 
 
 			//Log("run ctx", ctx);
 			
@@ -2544,7 +2348,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				delete job.Job;
 				*/
 				
-				req.query = ctx;
+				//req.query = ctx;
 				
 				if (Job.constructor == Object)  {  // regulate
 					if (Job.voi) // regulate a VOI
@@ -2630,22 +2434,25 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						});
 
 					else // regulate an event stream
-						CHIPS.chipEvents(req, ctx, function (job) {
+						CHIPS.chipEvents(req, ctx, function (job) {  // job info for this chip
 
 							//Trace(`REGULATING ${evs.length} EVENTS`);
 							/*
 							ctx.Select = function batchEvents(maxbuf, maxstep, cb) {  // provide event getter
 								FLEX.batchEvents(evs,maxbuf,maxstep,cb);
 							};*/
-
-							req.query = job;
+							
+							req.query = Copy({  // engine request query gets copied to its context
+								File: job.File || {},
+								Voxel: job. Voxel || {},
+								Load: job.Load || "",
+								Dump: job.Dump || ""
+							},ctx);
+							
 							ENGINE.select(req, function (ctx) {  // run plugin's engine
 								if (ctx) {
 									if ( "Save" in ctx )
 										saveResults( Array.from(ctx.Save || [] ), ctx );
-								
-									var recs  = ctx.Offset - ctx.OffsetInit
-									Log( `REG ${job.name} ` + (recs ? `ADVANCE ${recs}` : "DONE") );
 								}
 								
 								else
@@ -2672,8 +2479,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			
 		});
 		
-	else  // run engine using its query usecase w/o submitting a job
-	if (DEBE.probono)
+	else  
+	if (DEBE.probono)  // run engine using its query usecase w/o submitting a job
 		ENGINE.select(req, res);
 	
 	else
@@ -2868,7 +2675,7 @@ Convert recods to requested req.type office file.
 @param {Function} res Totem response
 */
 	
-	if (!OGEN) 
+	if (!ODOC) 
 		return res(DEBE.errors.noOffice);
 	
 	var 
@@ -2882,7 +2689,7 @@ Convert recods to requested req.type office file.
 		docf = `./shares/${req.table}.${type}`;
 	
 	if (type) 
-		docx = OGEN({
+		docx = ODOC({
 			type: type
 			//onend: function (writeBytes) { 	}
 		});

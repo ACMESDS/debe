@@ -69,70 +69,56 @@ append site_body
 				:markdown
 					This *#{ds}* plugin provides a coupled dataset-engine to execute the #{ds} engine with its #{ds} usecase 
 					parameters.  From the #{ds}.run view, simply select a usecase, then click the execute/run button.  You 
-					may also run any plugin from the url bar:
+					may also run a plugin's engine directly from the [url bar](/api.view):
 
-						GET /PLUGIN.exe?id=CASE 	Run PLUGIN engine with id-specified use-CASE parameters
-						GET /PLUGIN.exe?name=CASE 	Run PLUGIN engine with name-specified use-CASE parameters
+						GET /ENGINE.exe?id=CASE 	Run engine with id-specified useCASE parameters
+						GET /ENGINE.exe?name=CASE 	Run engine with name-specified useCASE parameters
 
-					There are reserved ( [Export+](/#{ds}.add?Export=false) [/-](/#{ds}.sub?Export),
-					[Ingest+](/#{ds}.add?Ingest=false) [/-](/#{ds}.sub?Ingest),
-					[Job+](/#{ds}.add?Job=doc) [/-](/#{ds}.sub?Job),
-					[Description+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description)
-					[Config+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) ) input context keys:
+					Reserved usecase keys can be added/removed:  
+					> [Export+](/#{ds}.add?Export=false) [/-](/#{ds}.sub?Export) writes engine results into a file  
+					> [Ingest+](/#{ds}.add?Ingest=false) [/-](/#{ds}.sub?Ingest) ingests engine results into the database  
+					> [Share+](/#{ds}.add?Share=false) [/-](/#{ds}.sub?Share) returns engine results vs. its save status  
+					> [Job+](/#{ds}.add?Job=doc) [/-](/#{ds}.sub?Job) regulates chips and events to an egine  
+					> [Description+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description) documents a useCASE  
+					> [Config+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) ) defines useCASE context with a js-engine  
+					> [Save+](/#{ds}.add?Save=doc) [/-](/#{ds}.sub?Save)) aggregates engine results not captured in the Save_KEYs  
+					> [Save_KEY](/#{ds}.run?options=more) aggregates engine results [{at:"KEY", ...}, ...]  
+					> File holds information retrieved for Job.file  
+					> Voxel holds information retrieved for Job.aoi  
+					> Load holds query defined to regulate a Job  
+					> Dump holds query defined to regulate a Job  
+					
+					where the *Job* json key may contain job regulation parameters (// default value):
 
-						Job - chipping and regulation parameters 
-						Export - switch to save results into a file
-						Ingest - switch ingest results into the database
-						Description - [skin](/skinguide.view) to document this CASE
-						Config - js-engine to dynamically define the CASE context
-
-					reserved ([Save+](/#{ds}.add?Save=doc) [/-](/#{ds}.sub?Save)) output context keys:
-
-						Save_KEY - aggregate and store process results [{at:"KEY", ...}, ...]
-						Save - store remaing process results pruned by Save_KEY
-
-					and reserved auto-defined job context keys:
-
-						File - file information retrieved for Job.file
-						Voxel - voxel information retrieved for Job.aoi
-						Load - query to load regulated Job dataset
-						Dump - query to save regulated Job results
-
-					where the Job key defines plugin regulation parameters (// default values):
-
-						{ 
-							file: "/SERVICE" || "PLUGIN.CASE" || "FILENAME",
+							file: "/FILTER?QUERY" || "PLUGIN.CASE" || "uploaded FILENAME" || "FILE.jpg" || "FILE.json"
 							group: "KEY,...", 					// "" to disable
 							where: { KEY: VALUE, ...},   // {} for all
 							order: "KEY,...",   				// "t" implicit
 							limit: VALUE,   					// 1000
 							task: "NAME", 						// "" for all
 							flush: "all" | "none" | "byTime" | "byDepth" | "function(ctx,rec,recs) returns false to flush",
-							buffer: N,		// Buffer flush limit
+							buffer: N,		// Flush limit parameter 
 							aoi: [ [lat,lon], ... ]  				// closed ring
-						} 
 
-					The Description key may contains [blogging tags](/skinguide.view) of the form
+					and where the *Description* key may contain [blogging tags](/skinguide.view) of the form:
 
 						 [image | post | update | link | SKIN, W, H, DS?QUERY]( /url | PARM=r.KEY expression; ...)
 
-					to document the use case.  For example:
-					
+					to document its usecase, for example:
+
 						[plot,100,200](x=r.Save.a;ys=[r.Save.b,r.Save.c])
 						[post,500,100](/home.view)
 						[link](https:/go.here)
 						[image](/shares/a1.jpg)
 						[force,100,100,queues.tree?_pivots=class]()
-						
-					will embed (1) a plot of the requested x,y data using the [d3 plot](/plot.view), (2) the 
+
+					to embed (1) a plot of the requested x,y data using the [d3 plot](/plot.view), (2) the 
 					[home.view](/home.view), (3) a link to the url, (4) the [image](/shares.jpg), and (5) a
 					force graph of the queues dataset pivoted by class using the [d3 force](/force.view) 
-					into a frame of specified W x H dimensions.
-					
-					Toggle the blog button to edit / blog the Description.
+					into a frame of specified W x H dimensions.  Blogging is toggeled by the usecase blog button.
 
-					Usecase header color indicates the status of the *#{ds}* plugin: completed (green), policed (blue),
-					funded (orange), unfunded (red).  The *#{ds}* plugin impacts the following tasks:
+					Usecase headers are colorized to reflect the status (completed/green, 
+					policed/blue, funded/orange, unfunded/red)  of the *#{ds}* milestones:
 					
 				table!= gridify(tasks)
 	
