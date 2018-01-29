@@ -1,4 +1,9 @@
-function takequiz(rev,doc,nav) {
+function takequiz(rev,doc,nav,state) {
+	function clearQuiz() {
+		quizContainer.innerHTML = "";
+		resultsContainer.innerHTML = "";
+	}
+	
 	function buildQuiz(){
 		var output = [];   // we'll need a place to store the HTML output
 
@@ -77,28 +82,36 @@ function takequiz(rev,doc,nav) {
 			lesson = slide.getAttribute("lesson"),
 			pass = slide.getAttribute("pass");
 
-		var 
-			myQuestions = [],
-			myQuiz = quizes[lesson];
+		if (state) {
+			var 
+				myQuestions = [],
+				myQuiz = quizes[lesson];
 
-		if (myQuiz) {
-			myQuiz.forEach( (quiz,n) => {
-			myQuestions.push({
-				question: quiz.Q,
-				correctAnswer: quiz.A,
-				answers: quiz.S
-			});
-		});
+			if (myQuiz) {
+				myQuiz.forEach( (quiz,n) => {
+					myQuestions.push({
+						question: quiz.Q,
+						correctAnswer: quiz.A,
+						answers: quiz.S
+					});
+				});
 
-			buildQuiz();  // display quiz right away
+				buildQuiz();  // display quiz right away
 
-			submitButton.addEventListener('click', showResults);  // on submit, show results
+				submitButton.addEventListener('click', showResults);  // on submit, show results
+			}
+
+			else
+			if (lesson)
+				alert(`Lesson ${lesson} does not exist`);
 		}
 		
-		else
-		if (lesson)
-			alert(`Lesson ${lesson} does not exist`);
+		else 
+			clearQuiz();
 	}
+	
+	else
+		alert("No quiz on this slide");
 }
 
 navigator.totem.quizes = {

@@ -61,226 +61,232 @@ var
 	// watchdog config parameters
 		
 	dogs: {  // watch dog timers [secs] (zero to disable)
-		dogFiles: 0,
-		dogJobs: 300,
-		dogSystem: 100,
-		dogHawks: 0,
-		dogClients: 0,
-		dogEngines: 0,
-		dogUsers: 0
-	},
-	
-	dogEngines: function (sql) {
-		var 
-			trace = "",
-			engines = {
-				"undefined": "",
-				buggy: ""
-			},
-			limits = {
-				"undefined": 1,
-				bugs: 10
-			};
-		
-		sql.each(trace, engines.undefined, [limits.undefined], function (client) {
-		});		
-	},
-		
-	dogUsers: function (sql) {
-		var 
-			trace = "",
-			users = {
-				inactive: "",
-				buggy: ""
-			},
-			limits = {
-				inactive: 1,
-				bugs: 10
-			};
-		
-		sql.each(trace, users.inactive, [limits.inactive], function (client) {
-		});		
-	},
-
-	dogClients: function (sql) {
-		var 
-			trace = "",
-			clients = {
-				low: "SELECT * FROM openv.profiles WHERE useDisk>?",
-				dormant: "",
-				poor: "",
-				naughty: ""
-			},
-			limits = {
-				disk: 10,
-				qos: 2,
-				unused: 4
-			};
-		
-		sql.each(trace, clients.naughty, [], function (client) {
-		});		
-		
-		sql.each(trace, clients.low, [limits.disk], function (client) {
-		});		
-		
-		sql.each(trace, clients.dormant, [limits.unused], function (client) {
-		});		
-
-		sql.each(trace, clients.poor, [limits.qos], function (client) {
-		});		
-		
-	},
-		
-	dogFiles: function (sql) {
-		var 
-			trace = "",
-			files = {
-				update: "UPDATE files SET canDelete=?,Notes=concat(Notes,?)",
-				old: "SELECT files.*,count(events.id) AS evCount FROM events LEFT JOIN files ON events.fileid = files.id WHERE datediff( now(), files.added)>=? AND NOT files.canDelete GROUP BY fileid"
-			},
-			maxage = 20;
-		
-		/*
-		CP.exec(`git commit -am "archive ${path}"; git push github master; rm ${zip}`, function (err) {
-		});		  */
-		sql.each(trace, files.old, maxage, function (file) {
-			
+		dogFiles: Copy({
+			cycle: 0, // secs
+			trace: "",
+			maxage: 30 // days
+		}, function (sql, lims) {
 			var 
-				site = DEBE.site,
-				url = site.urls.worker,
-				paths = {
-					info: "here".tag("a", {href: url + "/files.view"}),
-					admin: "totem resource manages".tag("a", {href: url + "/request.view"})
-				},
-				notice = `
-${file.client} has been notified that ${file.Name}, containing ${file.eventCount} events, has been flagged for delete as it is older than ${maxage} days.
-Consult ${paths.admin} to request additional resources.  Further information about this file is available ${paths.info}. `;
-			
-			sql.query(files.update, [true,notice]);
-			
-			if ( sendMail = FLEX.sendMail ) sendMail({
-				to: file.client,
-				subject: `TOTEM will be removing ${file.Name}`,
-				body: notice
-			}, sql);
-		})
-		.on("end", function () {
-			sql.release();
-		});
-	},
+				gets = {
+					update: "UPDATE files SET canDelete=?,Notes=concat(Notes,?)",
+					old: "SELECT files.*,count(events.id) AS evCount FROM events LEFT JOIN files ON events.fileid = files.id WHERE datediff( now(), files.added)>=? AND NOT files.canDelete GROUP BY fileid"
+				};
 
-	dogJobs: function (sql) {
-		var
-			trace = "",
-			jobs = {
-				stuck: "UPDATE app.queues SET Departed=now(), Notes=concat(Notes, ' is ', link('billed', '/profile.view')), Age=Age + (now()-Arrived)/3600e3, Finished=1 WHERE least(Departed IS NULL,Done=Work)", 
-			},
-			queues = FLEX.queues;
-		
-		sql.all( trace, jobs.stuck, [], function (info) {
+			/*
+			CP.exec(`git commit -am "archive ${path}"; git push github master; rm ${zip}`, function (err) {
+			});		  */
+			if (lims.maxage)
+				sql.each(lims.trace, gets.old, lims.maxage, function (file) {
 
-			Each(queues, function (rate, queue) {  // save collected queuing charges to profiles
-				Each(queue.client, function (client, charge) {
+					var 
+						site = DEBE.site,
+						url = site.urls.worker,
+						paths = {
+							info: "here".tag("a", {href: url + "/files.view"}),
+							admin: "totem resource manages".tag("a", {href: url + "/request.view"})
+						},
+						notice = `
+		${file.client} has been notified that ${file.Name}, containing ${file.eventCount} events, has been flagged for delete as it is older than ${maxage} days.
+		Consult ${paths.admin} to request additional resources.  Further information about this file is available ${paths.info}. `;
 
-					if ( charge.bill ) {
-						if ( trace ) Trace(`${trace} ${client} ${charge.bill} CREDITS`, sql);
+					sql.query(files.update, [true,notice]);
 
-						sql.query(
-							"UPDATE openv.profiles SET Charge=Charge+?,Credit=greatest(0,Credit-?) WHERE ?" , 
-							 [ charge.bill, charge.bill, {Client:client} ], 
-							function (err) {
-								Log({charging:err});
-						});
-						charge.bill = 0;
-					}
-
+					if ( sendMail = FLEX.sendMail ) sendMail({
+						to: file.client,
+						subject: `TOTEM will be removing ${file.Name}`,
+						body: notice
+					}, sql);
+				})
+				.on("end", function () {
+					sql.release();
 				});
+		}),
+		
+		dogJobs: Copy({
+			cycle: 300,
+			trace: ""
+		}, function (sql, lims) {
+			var
+				gets = {
+					stuck: "UPDATE app.queues SET Departed=now(), Notes=concat(Notes, ' is ', link('billed', '/profile.view')), Age=Age + (now()-Arrived)/3600e3, Finished=1 WHERE least(Departed IS NULL,Done=Work)", 
+				},
+				queues = FLEX.queues;
+
+			sql.all( lims.trace, gets.stuck, [], function (info) {
+
+				Each(queues, function (rate, queue) {  // save collected queuing charges to profiles
+					Each(queue.client, function (client, charge) {
+
+						if ( charge.bill ) {
+							if ( trace ) Trace(`${trace} ${client} ${charge.bill} CREDITS`, sql);
+
+							sql.query(
+								"UPDATE openv.profiles SET Charge=Charge+?,Credit=greatest(0,Credit-?) WHERE ?" , 
+								 [ charge.bill, charge.bill, {Client:client} ], 
+								function (err) {
+									Log({charging:err});
+							});
+							charge.bill = 0;
+						}
+
+					});
+				});
+
+				sql.release();
+			});		
+		}),
+			
+		dogSystem: Copy({
+			cycle: 100,
+			pigs : 2,
+			jobs : 5,
+			trace: ""
+		}, function (sql, lims) {  // system diag watch dog
+			var 
+				gets = {
+					engs: "SELECT count(ID) AS Count FROM app.engines WHERE Enabled",
+					jobs: "SELECT count(ID) AS Count FROM app.queues WHERE Departed IS NULL",
+					pigs: "SELECT sum(DateDiff(Departed,Arrived)>1) AS Count from app.queues",
+					logs: "SELECT sum(Delay>20)+sum(Fault != '') AS Count FROM app.dblogs"
+				},
+				diag = DEBE.diag;
+
+			sql.each(lims.trace, gets.engs, [], function (engs) {
+			sql.each(lims.trace, gets.jobs, [], function (jobs) {
+			sql.each(lims.trace, gets.pigs, [], function (pigs) {
+			sql.each(lims.trace, gets.logs, [], function (isps) {
+				var rtn = diag.counts = {Engines:engs.Count,Jobs:jobs.Count,Pigs:pigs.Count,Faults:isps.Count,State:"ok"};
+
+				for (var n in lims) 
+					if ( rtn[n] > 5*lims[n] ) rtn.State = "critical";
+					else
+					if ( rtn[n] > lims[n] ) rtn.State = "warning";
+
+				sql.release();
+			});
+			});
+			});
+			});
+		}),
+			
+		dogHawks: Copy({
+			cycle: 0,
+			maxage: 10,
+			trace: ""
+		}, function (sql, lims) { // job hawking watch dog
+			/*
+			 * Hawk over jobs in the queues table given {Action,Condition,Period} rules 
+			 * defined in the hawks table.  The rule is run on the interval specfied 
+			 * by Period (minutes).  Condition in any valid sql where clause. Actions 
+			 * supported:
+			 * 		stop=halt=kill to kill matched jobs and update its queuing history
+			 * 		remove=destroy=delete to kill matched jobs and obliterate its queuing history
+			 * 		log=notify=flag=tip to email client a status of matched jobs
+			 * 		improve=promote to increase priority of matched jobs
+			 * 		reduce=demote to reduce priority of matached jobs
+			 * 		start=run to run jobs against dirty records
+			 * 		set expression to revise queuing history of matched jobs	 
+			 * */
+			var
+				gets = {
+					unbilled: "SELECT * FROM app.queues WHERE Finished AND NOT Billed",
+					unfunded: "SELECT * FROM app.queues WHERE NOT Funded AND now()-Arrived>?"
+				};
+
+			sql.each(lims.trace, gets.unbilled, [], function (job) {
+				//Trace(`BILLING ${job} FOR ${job.Client}`, sql);
+				sql.query( "UPDATE openv.profiles SET Charge=Charge+? WHERE ?", [ 
+					job.Done, {Client: job.Client} 
+				]);
+
+				sql.query( "UPDATE app.queues SET Billed=1 WHERE ?", {ID: job.ID})
+			});
+
+			if (lims.maxage)
+			sql.each(trace, gets.unfunded, [lims.maxage], function (job) {
+				//Trace("KILLING ",job);
+				sql.query(
+					//"DELETE FROM app.queues WHERE ?", {ID:job.ID}
+				);
 			});
 
 			sql.release();
-		});		
+		}),
+		
+		dogClients: Copy({
+			cycle: 0,
+			trace: "",
+			disk: 10,
+			qos: 2,
+			unused: 4
+		}, function (sql, lims) {
+			var 
+				gets = {
+					low: "SELECT * FROM openv.profiles WHERE useDisk>?",
+					dormant: "",
+					poor: "",
+					naughty: ""
+				},
+				lims = DEBE.dogs.dogClient;
+
+			sql.each(lims.trace, gets.naughty, [], function (client) {
+			});		
+
+			if (lims.disk)
+			sql.each(lims.trace, gets.low, [lims.disk], function (client) {
+			});		
+
+			if (lims.dormant)
+			sql.each(lims.trace, gets.dormant, [lims.unused], function (client) {
+			});		
+
+			if (lims.poor)
+			sql.each(lims.trace, gets.poor, [lims.qos], function (client) {
+			});		
+
+		}),
+			
+		dogEngines: Copy({
+			cycle: 0,
+			trace: "",
+			"undefined": 123,
+			bugs: 10
+		}, function (sql, lims) {
+			var 
+				gets = {
+					"undefined": "",
+					buggy: ""
+				};
+
+			if (lims.undefined)
+			sql.each(lims.trace, gets.undefined, [lims.undefined], function (client) {
+			});
+		}),
+			
+		dogUsers: Copy({
+			cycle: 0,
+			trace: "",
+			inactive: 1,
+			bugs: 10
+		}, function (sql, lims) {
+			var 
+				gets = {
+					inactive: "",
+					buggy: ""
+				};
+
+			if (lims.inactive)
+			sql.each(lims.trace, gets.inactive, [lims.inactive], function (client) {
+			});		
+		})
+			
 	},
-
-	dogHawks: function (sql) { // job hawking watch dog
-		/*
-		 * Hawk over jobs in the queues table given {Action,Condition,Period} rules 
-		 * defined in the hawks table.  The rule is run on the interval specfied 
-		 * by Period (minutes).  Condition in any valid sql where clause. Actions 
-		 * supported:
-		 * 		stop=halt=kill to kill matched jobs and update its queuing history
-		 * 		remove=destroy=delete to kill matched jobs and obliterate its queuing history
-		 * 		log=notify=flag=tip to email client a status of matched jobs
-		 * 		improve=promote to increase priority of matched jobs
-		 * 		reduce=demote to reduce priority of matached jobs
-		 * 		start=run to run jobs against dirty records
-		 * 		set expression to revise queuing history of matched jobs	 
-		 * */
-		var
-			trace = "",
-			jobs = {
-				unbilled: "SELECT * FROM app.queues WHERE Finished AND NOT Billed",
-				unfunded: "SELECT * FROM app.queues WHERE NOT Funded AND now()-Arrived>?"
-			},
-			maxage = 10;
-
-		sql.each(trace, jobs.unbilled, [], function (job) {
-			//Trace(`BILLING ${job} FOR ${job.Client}`, sql);
-			sql.query( "UPDATE openv.profiles SET Charge=Charge+? WHERE ?", [ 
-				job.Done, {Client: job.Client} 
-			]);
-
-			sql.query( "UPDATE app.queues SET Billed=1 WHERE ?", {ID: job.ID})
-		});
-
-		sql.each(trace, jobs.unfunded, [maxage], function (job) {
-			//Trace("KILLING ",job);
-			sql.query(
-				//"DELETE FROM app.queues WHERE ?", {ID:job.ID}
-			);
-		});
-
-		sql.release();
-	},
-
+	
 	diag: {  // self diag parms
-		limits: {
-			pigs : 2,
-			jobs : 5
-		},
 		status: "", 
 		counts: {State:""}
 	},
 
-	dogSystem: function (sql) {  // system diag watch dog
-		var 
-			trace = "",
-			sys = {
-				engs: "SELECT count(ID) AS Count FROM app.engines WHERE Enabled",
-				jobs: "SELECT count(ID) AS Count FROM app.queues WHERE Departed IS NULL",
-				pigs: "SELECT sum(DateDiff(Departed,Arrived)>1) AS Count from app.queues",
-				logs: "SELECT sum(Delay>20)+sum(Fault != '') AS Count FROM app.dblogs"
-			},
-			diag = DEBE.diag;
-
-		sql.each(trace, sys.engs, [], function (engs) {
-		sql.each(trace, sys.jobs, [], function (jobs) {
-		sql.each(trace, sys.pigs, [], function (pigs) {
-		sql.each(trace, sys.logs, [], function (isps) {
-			var rtn = diag.counts = {Engines:engs.Count,Jobs:jobs.Count,Pigs:pigs.Count,Faults:isps.Count,State:"ok"};
-			var limits = diag.limits;
-
-			for (var n in limits) 
-				if ( rtn[n] > 5*limits[n] ) rtn.State = "critical";
-				else
-				if ( rtn[n] > limits[n] ) rtn.State = "warning";
-
-			sql.release();
-		});
-		});
-		});
-		});
-	}, 
-		
 	// request config parameters
 
 	"reqFlags." : {  //< endpoint request flags
@@ -2914,31 +2920,9 @@ Initialize DEBE on startup.
 		if (cb) cb();	
 	}
 	
-	function initDOG( cb ) {
-		Each( DEBE.dogs, function (dog, timer) {
-			if ( timer )
-				if ( watchDog = DEBE[dog] )
-					setInterval( function (args) {
-
-						Trace("DOG "+args.name);
-						
-						sqlThread( function (sql) {
-							watchDog(sql);
-						});
-
-					}, timer*1e3, {
-						name: dog
-					});
-
-				else
-					Trace("MISSING WATCH DOG "+dog);
-		});
-	}
-
 	initENV( function () {  // init the global environment
 	initSES( function () {	// init session handelling
 	initSQL( function () {	// init the sql interface
-	initDOG( function () { // init watch dogs
 
 		JAX.config({
 			MathJax: {
@@ -2952,12 +2936,14 @@ Initialize DEBE on startup.
 		sqlThread( function (sql) {
 			var path = DEBE.paths.render;
 			
+			if (false)
 			DEBE.indexer( path, function (files) {  // publish new engines
 				var ignore = {".": true, "_": true};
 				files.each( function (n,file) {
 					if ( !ignore[file.charAt(0)] )
 						try {
-							//Trace("PUBLISH SKIN "+file);							
+							Trace("PUBLISHING "+file);
+	
 							sql.query( "REPLACE INTO app.engines SET ?", {
 								Name: file.replace(".jade",""),
 								Code: FS.readFileSync( path+file, "utf-8"),
@@ -2975,18 +2961,8 @@ Initialize DEBE on startup.
 		});
 		
 
-	}); }); }); });
+	}); }); }); 
 } 
-
-/*
-function simEngine(req,res) {
-	//Log("simengine",req.action,req.table,req.filepath,req.area);
-	if (CLUSTER.isMaster)
-		ENGINE[req.action](req,res);
-	
-	else
-		res( DEBE.errors.badEntry );
-}*/
 
 function Trace(msg,arg) {
 	TOTEM.trace("D>",msg,arg);
