@@ -39,9 +39,9 @@ render a view/skin:
 
 	view | pivot | site | spivot | brief | gridbrief | pivbrief | run | plugin | runbrief
 
-run an engine:
+run an engine or return its usecase events:
 
-	exe
+	exe | USECASE
 
 provide attributes:
 

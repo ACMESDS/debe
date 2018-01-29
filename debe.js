@@ -470,6 +470,25 @@ Usage: ${uses.join(",")}  `);
 			res( DEBE.site.gridify( recs ).tag("table") );
 		},
 		
+		// events from engine usecase
+		default: function (recs,req,res) {
+			var 
+				filename = req.table + "." + req.type,
+				group = req.group,
+				type = req.type,
+				sql = req.sql;
+
+			sql.first( type, "SELECT ID FROM ??.files WHERE ?", [group, {Name: filename}], function (file) {
+				
+				if (file)
+					sql.all( type, "SELECT * FROM ??.events WHERE ?", [group, {fileID: file.ID}], res );
+							  
+				else
+					res( null );
+				
+			});
+		},
+		
 		// MS office doc reqTypes
 		xdoc: genDoc,
 		xxls: genDoc,
@@ -2318,156 +2337,27 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					
 			else
 			if ( Job = ctx.Job )  { // Intercept job request to run engine via regulator
-
 				res("Regulating");
 				
-				/*
-				var 
-					job = Copy(ctx, { // job descriptor for regulator
-						//thread: req.client.replace(/\./g,"") + "." + req.table,
-						qos: req.profile.QoS, 
-						priority: 0,
-						client: req.client,
-						class: req.client+"."+req.table+".qos"+req.profile.QoS,
-						credit: req.profile.Credit,
-						name: req.table,
-						task: Job.task || "",
-						notes: [
-								(req.table+"?").tagurl({Name:query.Name}).tag("a", {href:"/" + req.table + ".run"}), 
-								((req.profile.Credit>0) ? "funded" : "unfunded").tag("a",{href:req.url}),
-								"RTP".tag("a", {
-									href:`/rtpsqd.view?task=${Job.task}`
-								}),
-								"PMR brief".tag("a", {
-									href:`/briefs.view?options=${Job.task}`
-								})
-						].join(" || ")
-					});
+				CHIPS.chipEvents(req, Job, function (job) {  // create job for these Job parameters
 
-				delete job.ID;
-				delete job.Job;
-				*/
-				
-				//req.query = ctx;
-				
-				if (Job.constructor == Object)  {  // regulate
-					if (Job.voi) // regulate a VOI
-						CHIPS.chipVOI(Job, job, function (voxel,stats,sql) {
-							sqlThread( function (sql) {
-								//Log({save:stats});
-								saveResults( stats, voxel );
-							});
-						});
+					req.query = Copy({  // engine request query gets copied to its context
+						File: job.File || {},
+						Voxel: job. Voxel || {},
+						Load: job.Load || "",
+						Dump: job.Dump || ""
+					},ctx);
 
-					else
-					if (Job.divs) { // create VOI
-						var offs = Job.offs, dims = Job.dims, divs = Job.divs, t = 0;
-						
-						sql.beginBulk();
-						
-						for (var z=offs[2], zmax=z+dims[2], zinc=(zmax-z) / divs[2]; z<zmax; z+=zinc)
-						for (var y=offs[1], ymax=y+dims[1], yinc=(ymax-y) / divs[1]; y<ymax; y+=yinc)
-						for (var x=offs[0], xmax=x+dims[0], xinc=(xmax-x) / divs[0]; x<xmax; x+=xinc) {
-							var ring = [
-								[y,x],
-								[y+yinc,x],
-								[y+yinc,x+xinc],
-								[y,x+xinc],
-								[y,x]
-							];
-
-							sql.query(
-								"INSERT INTO ??.voxels SET ?,Ring=st_GeomFromText(?)", [
-								group, {
-									t: t,
-									minAlt: z,
-									maxAlt: z+zinc
-								},
-
-								'POLYGON((' + [  // [lon,lat] degs
-									ring[0].join(" "),
-									ring[1].join(" "),
-									ring[2].join(" "),
-									ring[3].join(" "),
-									ring[0].join(" ") ].join(",") +'))' 
-							]);
+					ENGINE.select(req, function (ctx) {  // run plugin's engine
+						if (ctx) {
+							if ( "Save" in ctx )
+								saveResults( Array.from(ctx.Save || [] ), ctx );
 						}
-						
-						sql.endBulk();						
-					}
-				
-					else
-					if (false)  // regulate a AOI ring [ [lat,lon], ... ]
-						CHIPS.chipAOI(Job, job, function (chip,dets,sql) {
-							var updated = new Date();
 
-							//Log({save:dets});
-							sql.query(
-								"REPLACE INTO ??.chips SET ?,Ring=st_GeomFromText(?),Point=st_GeomFromText(?)", [ 
-									group, {
-										Thread: job.thread,
-										Save: JSON.stringify(dets),
-										t: updated,
-										x: chip.pos.lat,
-										y: chip.pos.lon
-									},
-									chip.ring,
-									chip.point
-							]);
-
-							// reserve voxel detectors above this chip
-							for (var vox=CHIPS.voxelSpecs,alt=vox.minAlt, del=vox.deltaAlt, max=vox.maxAlt; alt<max; alt+=del) 
-								sql.query(
-									"REPLACE INTO ??.voxels SET ?,Ring=st_GeomFromText(?),Point=st_GeomFromText(?)", [
-									group, {
-										Thread: job.thread,
-										Save: null,
-										t: updated,
-										x: chip.pos.lat,
-										y: chip.pos.lon,
-										z: alt
-									},
-									chip.ring,
-									chip.point
-								]);
-
-						});
-
-					else // regulate an event stream
-						CHIPS.chipEvents(req, ctx, function (job) {  // job info for this chip
-
-							//Trace(`REGULATING ${evs.length} EVENTS`);
-							/*
-							ctx.Select = function batchEvents(maxbuf, maxstep, cb) {  // provide event getter
-								FLEX.batchEvents(evs,maxbuf,maxstep,cb);
-							};*/
-							
-							req.query = Copy({  // engine request query gets copied to its context
-								File: job.File || {},
-								Voxel: job. Voxel || {},
-								Load: job.Load || "",
-								Dump: job.Dump || ""
-							},ctx);
-							
-							ENGINE.select(req, function (ctx) {  // run plugin's engine
-								if (ctx) {
-									if ( "Save" in ctx )
-										saveResults( Array.from(ctx.Save || [] ), ctx );
-								}
-								
-								else
-									Log( `REG ${job.name} HALTED` );
-							});
-						});
-				}
-				
-				else
-					ENGINE.select(req, function (ctx) {
-						if (ctx)
-							if ( "Save" in ctx)
-								saveResults( Array.from( ctx.Save || [] ), ctx );
+						else
+							Log( `REG ${job.name} HALTED` );
 					});
-
+				});
 			}
 					
 			else
