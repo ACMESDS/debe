@@ -333,10 +333,13 @@ append layout_body
 					.slides
 						block base_body
 
+				script(src="/uis/quiz.js")
 				script.
 					Reveal.initialize({
 						keyboard: {
-							116: function () { alert("tada!"); }
+							112: function () {  // F1
+								takequiz(Reveal, document, navigator);
+							}
 						},
 
 						// Display controls in the bottom right corner

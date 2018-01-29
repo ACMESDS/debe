@@ -1,0 +1,35 @@
+//- UNCLASSIFIED
+
+extends base
+append base_parms
+	- tech = "reveal"
+	- classif = "(U) Unclassified"
+append base_body
+
+	section
+	
+		p.lg hello
+
+	section(lesson="module2", pass=60)
+
+		p.lg SWAG - module2
+		p.al AWS 172.31.76.130:8080/tutorial.view
+		p.al ILE https://fsgalam.east.ile.nga.ic.gov/tutorial.view
+		p.al brian.d.james@nga.mil
+		
+		#quiz.quiz
+		button.quiz F1 Quiz
+		#results.quiz
+
+	section(lesson="module1", pass=50)
+
+		p.lg Module1
+		p.al AWS 172.31.76.130:8080/tutorial.view
+		p.al ILE https://fsgalam.east.ile.nga.ic.gov/tutorial.view
+		p.al brian.d.james@nga.mil
+		
+		#quiz.quiz
+		button.quiz F1 Quiz
+		#results.quiz
+
+//- UNCLASSIFIED

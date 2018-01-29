@@ -1035,7 +1035,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				).tag("div",{class:"container"});
 		},
 		
-		gridify: function(recs,noheader) {	//< dump dataset as html table
+		gridify: function (recs,noheader) {	//< dump dataset as html table
 		/**
 		@member SKINS
 		@method gridify
@@ -1131,7 +1131,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			
 			return  table( recs );
 		},
-				
+		
 		/**
 		@private
 		@cfg {Object}
