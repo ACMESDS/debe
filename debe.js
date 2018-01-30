@@ -865,7 +865,9 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		alert: sysAlert,
 		ping: sysPing,
 		bit: sysBIT,
-		matlab: sysMatlab
+		matlab: sysMatlab,
+		wfs: sysWFS,
+		wms: sysWMS
 		//kill: sysKill,
 		//start: sysStart,
 		//checkpt: sysCheckpt,
@@ -2129,18 +2131,6 @@ Totem(req,res) endpoint to send the .area attribute of a .table file
 
 }
 
-/*
-function sendFile(req,res) {
-/ **
-@method sendFile
-Totem(req,res) endpoint to response with mime file requested by .file
-@param {Object} req Totem request
-@param {Function} res Totem response
-* /
-	DEBE.sendFile(req,res);
-}
-*/
-
 /**
 @class PLUGIN support for dataset-engine plugins
 */
@@ -2900,8 +2890,11 @@ Initialize DEBE on startup.
 		Trace(`INIT ENGINES`);
 
 		CHIPS.config({
-			fetch: DEBE.loaders,
-			source: "",
+			fetch: {
+				http: DEBE.fetchers.http,
+				wget: DEBE.fetchers.wget
+			},
+			//source: "",
 			taskPlugin: null,
 			thread: sqlThread
 		});
@@ -2998,7 +2991,7 @@ function siteContext(req, cb) {
 	}) );
 	
 }
-	
+
 function sysMatlab(req,res) {
 	var
 		sql = req.sql,
@@ -3029,6 +3022,174 @@ function sysMatlab(req,res) {
 	
 	res("flushed");
 		
+}
+
+function sysWMS(req,res) {
+	
+	var 
+		sql = req.sql,
+		query = req.query,
+		fetcher = DEBE.fetchers.wget,
+		src = "",
+		SRC = src.toUpperCase();
+	
+	switch (src) {
+		case "dglobe":
+		case "omar":
+		case "ess":
+		default:
+	}
+	
+	var url = src ? ENV[`WMS_${SRC}`].tag("?", query) : null;
+	
+	Trace("WMS " + url);
+	res("ok");
+	
+	if (url) 
+		fetcher(url, function (rtn) {
+			Log("wms stat", rtn);
+		});
+}
+
+function sysWFS(req,res) {  //< Respond with ess-compatible image catalog to induce image-spoofing in the chipper.
+	
+	var 
+		sql = req.sql,
+		query = req.query,
+		fetcher = DEBE.fetchers.http,
+		src = "",
+		SRC = src.toUpperCase();
+	
+	switch (src) {
+		case "dglobe":
+		case "omar":
+		case "ess":
+		default:
+			query.geometryPolygon = JSON.stringify({rings: query.ring});  // ring being monitored
+			delete query.ring;
+	}
+
+	var url = src ? ENV[`WFS_${SRC}`].tag("?", query) : null;
+
+	Trace("WFS "+url);
+
+	if (url)
+		fetcher( url, function (cat) {  // query catalog for desired data channel
+
+			if ( cat ) {
+				switch ( src ) {  // normalize cat response to ess
+					case "dglobe":
+					case "omar":
+					case "ess":
+						var
+							res = ( cat.GetRecordsResponse || {SearchResults: {}} ).SearchResults,
+							collects = res.DatasetSummary || [],
+							sets = [];
+
+						collects.each( function (n,collect) {  // pull image collects from each catalog entry
+
+							//Log(collect);
+							var 
+								image = collect["Image-Product"].Image,
+								sun = image["Image-Sun-Characteristic"] || {SunElevationDim: "0", SunAzimuth: "0"},
+								restrict = collect["Image-Restriction"] || {Classification: "?", ClassificationSystemId: "?", LimitedDistributionCode: ["?"]},
+								raster = image["Image-Raster-Object-Representation"],
+								region = collect["Image-Country-Coverage"] || {CountryCode: ["??"]},
+								atm = image["Image-Atmospheric-Characteristic"],
+								urls = {
+									wms: collect.WMSUrl,
+									wmts: collect.WMTSUrl,
+									jpip: collect.JPIPUrl
+								};
+
+							if (urls.wms)  // valid collects have a wms url
+								sets.push({
+									imported: new Date(image.ImportDate),
+									collected: new Date(image.QualityRating),
+									mission: image.MissionId,
+									sunEl: parseFloat(sun.SunElevationDim),
+									sunAz: parseFloat(sun.SunAzimuth),
+									layer: collect.CoverId,
+									clouds: atm.CloudCoverPercentageRate,
+									country: region.CountryCode[0],
+									classif: restrict.ClassificationCode + "//" + restrict.LimitedDistributionCode[0],
+									imageID: image.ImageId.replace(/ /g,""),
+											// "12NOV16220905063EA00000 270000EA530040"
+									mode: image.SensorCode,
+									bands: parseInt(image.BandCountQuantity),
+									gsd: parseFloat(image.MeanGroundSpacingDistanceDim)*25.4e-3,
+									wms: 
+										urls.wms.replace(
+											"?REQUEST=GetCapabilities&VERSION=1.3.0",
+											"?request=GetMap&version=1.1.1") 
+
+										+ "".tag("?", {
+											width: aoi.lat.pixels,
+											height: aoi.lon.pixels,
+											srs: "epsg%3A4326",
+											format: "image/jpeg"
+										}).replace("?","&")
+								});
+
+						});
+					}
+
+				res( sets );
+			}
+
+			else
+				res( null );
+		});	
+	
+	else
+		res([{			
+			imported: new Date(),
+			collected: new Date(),
+			mission: "debug", //image.MissionId,
+			sunEl: 0, //parseFloat(sun.SunElevationDim),
+			sunAz: 0, //parseFloat(sun.SunAzimuth),
+			layer: "debug", //collect.CoverId,
+			clouds: 0, //atm.CloudCoverPercentageRate,
+			country: "XX", //region.CountryCode[0],
+			classif: "", //restrict.ClassificationCode + "//" + restrict.LimitedDistributionCode[0],
+			imageID: "debug",
+					// "12NOV16220905063EA00000 270000EA530040"
+			mode: "XX", //image.SensorCode,
+			bands: 0, //parseInt(image.BandCountQuantity),
+			gsd: 0, //parseFloat(image.MeanGroundSpacingDistanceDim)*25.4e-3,
+			wms: DEBE.site.urls.master+"/shares/spoof.jpg"			
+			/*{
+			GetRecordsResponse: {
+				SearchResults: {
+					DatasetSummary: [{
+						"Image-Product": {
+							Image: {
+								ImageId: "spoof",
+								"Image-Sun-Characteristic": {
+									SunElevationDim: "0", 
+									SunAzimuth: "0"
+								},
+								"Image-Raster-Object-Representation": [],
+								"Image-Atmospheric-Characteristic": []
+							},
+							"Image-Restriction": {
+								Classification: "?", 
+								ClassificationSystemId: "?", 
+								LimitedDistributionCode: ["?"]
+							},
+							"Image-Country-Coverage": {
+								CountryCode: ["??"]
+							}
+						},
+						WMSUrl: ENV.SRV_TOTEM+"/shares/spoof.jpg",
+						WMTSUrl: "",
+						JPIPUrl: ""
+					}]
+				}
+			}
+		} */
+		}]);
+
 }
 
 // UNCLASSIFIED
