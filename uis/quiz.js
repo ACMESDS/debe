@@ -1,4 +1,4 @@
-function takequiz(rev,doc,nav,state) {
+function takequiz(state) {
 	function clearQuiz() {
 		quizContainer.innerHTML = "";
 		resultsContainer.innerHTML = "";
@@ -28,10 +28,23 @@ function takequiz(rev,doc,nav,state) {
 		});
 
 		// finally combine our output list into one string of HTML and put it on the page
-		quizContainer.innerHTML = output.join('');
+		quizContainer.innerHTML = 
+			`Module${mod}-${mods}.${set}: ` + output.join('');
 	}
 
 	function showResults(){
+		
+		function sendScore() { // notify proctor
+			//alert("ajax");
+			state.nav.ajax( 
+				"GET", true, 
+				 `/proctor?lesson=${lesson}&score=${100*numCorrect/myQuestions.length}&pass=${pass}&modules=${mods}`,
+				function (rtn) {
+					alert(rtn);
+				}
+			);
+		}
+
 		// gather answer containers from our quiz
 		var answerContainers = quizContainer.querySelectorAll('.answers');
 
@@ -57,35 +70,51 @@ function takequiz(rev,doc,nav,state) {
 	  });
 
 		// show number of correct answers out of total
-		resultsContainer.innerHTML = numCorrect + ' out of ' + myQuestions.length;
-
-		// notify proctor
-		nav.ajax( 
-			"GET", true, 
-			 `/proctor?lesson=${lesson}&score=${100*numCorrect/myQuestions.length}&pass=${pass}`,
-			function (rtn) {
-				alert(rtn);
-			}
-		);
-	}
+		resultsContainer.innerHTML = (myQuestions.length>1)
+				? numCorrect + ' out of ' + myQuestions.length
+				: numCorrect
+					? "pass"
+					: "fail";
 		
+		sendScore();
+
+	}
+
 	var 
+		nav = state.nav,
+		rev = state.rev,
 		slide = rev.getCurrentSlide(),
 		ctrls = slide.getElementsByClassName("quiz");
 	
-	if ( ctrls.length >= 3) {
+	if ( ctrls.length >= 3 ) {
 		var
-			quizes = nav.totem.quizes;
+			quizes = nav.totem.quizes,
+			
 			quizContainer = ctrls[0], //doc.getElementById('quiz'),
 			submitButton = ctrls[1], //doc.getElementById('submit');
 			resultsContainer = ctrls[2], //doc.getElementById('results'),
-			lesson = slide.getAttribute("lesson"),
-			pass = slide.getAttribute("pass");
+			
+			lesson = slide.getAttribute("lesson") || "",
+			mods = slide.getAttribute("modules") || "1",
+			pass = slide.getAttribute("pass") || "100",
+				
+			parts = lesson.split("."),
+			topic = parts[0],
+			mod = parseInt( parts[1] ) || 1,
+			set = parseInt( parts[2] ) || 1;
 
-		if (state) {
+		if ( slide != state.slide ) {
+			state.slide = slide;
+			state.take = true;
+		}
+		
+		else 
+			state.take = !state.take;
+		
+		if ( state.take )  {
 			var 
 				myQuestions = [],
-				myQuiz = quizes[lesson];
+				myQuiz = quizes[topic+"."+mod+"."+set];
 
 			if (myQuiz) {
 				myQuiz.forEach( (quiz,n) => {
@@ -105,18 +134,17 @@ function takequiz(rev,doc,nav,state) {
 			if (lesson)
 				alert(`Lesson ${lesson} does not exist`);
 		}
-		
+
 		else 
 			clearQuiz();
+			
 	}
 	
-	else
-		alert("No quiz on this slide");
 }
 
-navigator.totem.quizes = {
-
-module1: [
+navigator.totem.quizes = {  // topic.module.set
+	
+"swag.1.1": [
 {
 	Q: "Who is the strongest?",
 	S: {
@@ -145,7 +173,27 @@ module1: [
 }
 ], 
 
-module2: [
+"swag.1.2": [
+{
+	Q: "Who is the strongest?",
+	S: {
+		a: "Superman",
+		b: "The Terminator",
+		c: "Waluigi, obviously"
+	},
+	A: "c"
+}, 	{
+	Q: "What is the best site ever created?",
+	S: {
+		a: "SitePoint",
+		b: "Simple Steps Code",
+		c: "Trick question; they're both the best"
+	},
+	A: "c"
+}
+], 
+
+"swag.2.1": [
 {
 	Q: "the best color?",
 	S: {

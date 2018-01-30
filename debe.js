@@ -218,22 +218,23 @@ var
 			trace: "",
 			disk: 10,
 			qos: 2,
-			unused: 4
+			unused: 4,
+			certage: 360 // days
 		}, function (sql, lims) {
 			var 
 				gets = {
-					low: "SELECT * FROM openv.profiles WHERE useDisk>?",
+					needy: "SELECT ID FROM openv.profiles WHERE useDisk>?",
 					dormant: "",
 					poor: "",
-					naughty: ""
-				},
-				lims = DEBE.dogs.dogClient;
+					naughty: "SELECT ID FROM openv.profiles WHERE Banned",
+					uncert: "SELECT ID FROM openv.profiles LEFT JOIN app.quizes ON profiles.Client=quizes.Client WHERE datediff(now(), quizes.Credited)>?",
+				};
 
 			sql.each(lims.trace, gets.naughty, [], function (client) {
 			});		
 
 			if (lims.disk)
-			sql.each(lims.trace, gets.low, [lims.disk], function (client) {
+			sql.each(lims.trace, gets.needy, [lims.disk], function (client) {
 			});		
 
 			if (lims.dormant)
@@ -244,6 +245,10 @@ var
 			sql.each(lims.trace, gets.poor, [lims.qos], function (client) {
 			});		
 
+			if (lims.certage)
+			sql.each(lims.trace, gets.uncert, [lims.certage], function (client) {
+			});		
+			
 		}),
 			
 		dogEngines: Copy({
@@ -279,7 +284,6 @@ var
 			sql.each(lims.trace, gets.inactive, [lims.inactive], function (client) {
 			});		
 		})
-			
 	},
 	
 	diag: {  // self diag parms

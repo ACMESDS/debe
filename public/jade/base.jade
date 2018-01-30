@@ -335,12 +335,11 @@ append layout_body
 
 				script(src="/uis/quiz.js")
 				script.
-					Reveal.F1 = false;
+					var quiz = {take:  false, slide: 0, doc: document, nav: navigator, rev: Reveal};
 					Reveal.initialize({
 						keyboard: {
 							112: function () {  // F1
-								Reveal.F1 = !Reveal.F1;
-								takequiz(Reveal, document, navigator, Reveal.F1);
+								takequiz(quiz);
 							}
 						},
 

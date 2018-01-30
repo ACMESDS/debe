@@ -10,9 +10,9 @@ append base_body
 	
 		p.lg hello
 
-	section(lesson="module2", pass=60)
+	section(lesson="swag.1.1", modules=2, pass=60)
 
-		p.lg SWAG - module2
+		p.lg SWAG - module1
 		p.al AWS 172.31.76.130:8080/tutorial.view
 		p.al ILE https://fsgalam.east.ile.nga.ic.gov/tutorial.view
 		p.al brian.d.james@nga.mil
@@ -21,9 +21,20 @@ append base_body
 		button.quiz F1 Quiz
 		#results.quiz
 
-	section(lesson="module1", pass=50)
+	section(lesson="swag.1.2", modules=2, pass=50)
 
 		p.lg Module1
+		p.al AWS 172.31.76.130:8080/tutorial.view
+		p.al ILE https://fsgalam.east.ile.nga.ic.gov/tutorial.view
+		p.al brian.d.james@nga.mil
+		
+		#quiz.quiz
+		button.quiz F1 Quiz
+		#results.quiz
+
+	section(lesson="swag.2.1", modules=2, pass=10)
+
+		p.lg Module2
 		p.al AWS 172.31.76.130:8080/tutorial.view
 		p.al ILE https://fsgalam.east.ile.nga.ic.gov/tutorial.view
 		p.al brian.d.james@nga.mil
