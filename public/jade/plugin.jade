@@ -83,10 +83,13 @@ append site_body
 					> [Config+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) ) defines useCASE context with a js-engine  
 					> [Save+](/#{ds}.add?Save=doc) [/-](/#{ds}.sub?Save)) aggregates engine results not captured in the Save_KEYs  
 					> [Save_KEY](/#{ds}.run?options=more) aggregates engine results [{at:"KEY", ...}, ...]  
-					> File holds information retrieved for Job.file  
-					> Voxel holds information retrieved for Job.aoi  
-					> Load holds query defined to regulate a Job  
-					> Dump holds query defined to regulate a Job  
+					> _File current file during Job workflow  
+					> _Voxel current voxel being procesed  
+					> _Collects sensor collects made under current voxel  
+					> _Chip  filepath for first jpeg collect under current voxel  
+					> _Flux solar flux at earth's surface under current voxel  
+					> _Load event query for current voxel  
+					> _Dump reserved  
 					
 					where the *Job* json key may contain job regulation parameters (// default value):
 
@@ -115,9 +118,10 @@ append site_body
 					to embed (1) a plot of the requested x,y data using the [d3 plot](/plot.view), (2) the 
 					[home.view](/home.view), (3) a link to the url, (4) the [image](/shares.jpg), and (5) a
 					force graph of the queues dataset pivoted by class using the [d3 force](/force.view) 
-					into a frame of specified W x H dimensions.  Blogging is toggeled by the usecase blog button.
-
-					Usecase headers are colorized to reflect the status (completed/green, 
+					into a frame of specified W x H dimensions.
+					
+					Blogging is toggeled by the usecase blog button.  Usecase headers are colorized 
+					to reflect the status (completed/green, 
 					policed/blue, funded/orange, unfunded/red)  of the *#{ds}* milestones:
 					
 				table!= gridify(tasks)
