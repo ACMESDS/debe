@@ -64,13 +64,32 @@ var
 		dogCatalog: Copy({
 			cycle: 0,
 			trace: ""
-		}, function (sql,lims) {
+		}, function (sql, lims) {
 		}),
-						 
+		
+		dogDetectors: Copy({
+			cycle: 0,
+			trace: ""
+		}, function (sql, lims) {
+		}),
+						   
+		dogVoxels: Copy({
+			cycle: 0,
+			trace: ""
+		}, function (sql, lims) {
+			var gets = {
+				unused: "SELECT voxels.ID AS ID,aois.id AS aoiID FROM app.voxels LEFT JOIN app.aois ON aois.name=voxels.aoi HAVING aoiID IS null"
+			};
+			
+			sql.each(lims.trace, gets.unused, [], function (voxel) {
+				sql.update("DELETE FROM app.voxels WHERE ?", {ID: voxel.ID});
+			});
+		}),
+						
 		dogCache: Copy({
 			cycle: 0,
-			trace: 0
-		}, function (sql,lims) {
+			trace: ""
+		}, function (sql, lims) {
 		}),
 		
 		dogFiles: Copy({
@@ -2332,8 +2351,6 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		dot = ".",
 		sql = req.sql,
 		client = req.client,
-		group = req.group,
-		table = req.table,
 		query = req.query;
 
 	if ("ID" in query || "Name" in query)  
@@ -2355,8 +2372,9 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				CHIPS.chipEvents(req, Job, function (job) {  // create job for these Job parameters
 
 					req.query = Copy({  // engine request query gets copied to its context
+						_Plugin: job.class,
 						_File: job.File,
-						_Voxel: job. Voxel,
+						_Voxel: job.Voxel,
 						_Collects: job.Collects,
 						_Flux: job.Flux,
 						_Load: job.Load || "",
