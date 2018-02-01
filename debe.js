@@ -75,15 +75,26 @@ var
 						   
 		dogVoxels: Copy({
 			cycle: 0,
-			trace: ""
+			trace: "",
+			atmage: 2 // days to age before refresh atm data
 		}, function (sql, lims) {
 			var gets = {
-				unused: "SELECT voxels.ID AS ID,aois.id AS aoiID FROM app.voxels LEFT JOIN app.aois ON aois.name=voxels.aoi HAVING aoiID IS null"
+				unused: "SELECT voxels.ID AS ID,aois.id AS aoiID FROM app.voxels LEFT JOIN app.aois ON aois.name=voxels.aoi HAVING aoiID IS null",
+				refresh: "SELECT ID FROM app.voxels WHERE MBRcontains(ring, GeomFromText(?)) AND datediff(now(), added) > ?"
 			};
 			
 			sql.each(lims.trace, gets.unused, [], function (voxel) {
 				sql.update("DELETE FROM app.voxels WHERE ?", {ID: voxel.ID});
 			});
+			
+			if (lims.atmage) {
+				// fetch new atm data from whatever service and loop over recs (grouped by Point(x y) grid location)
+				
+				sql.each(lims.trace, gets.refresh, [atm.gridLocation, lims.atmage], function (voxel) {
+					// update voxels with atm data
+				});
+			}
+			
 		}),
 						
 		dogCache: Copy({
