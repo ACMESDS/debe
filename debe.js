@@ -20,7 +20,9 @@
 
 @requires flex
 @requires totem
-@requires engine
+@requires atomic
+@requires geohack
+@requires jslab
 */
 
 var 									// globals
@@ -43,11 +45,11 @@ var										// 3rd party modules
 	JADE = require('jade');				//< using jade as the skinner
 	
 var 									// totem modules		
-	ENGINE = require("engine"), 
+	ATOM = require("atomic"), 
 	FLEX = require("flex"),
 	TOTEM = require("totem"),
 	JSLAB = require("jslab"),
-	CHIPS = require("chipper");
+	HACK = require("geohack");
 
 var										// shortcuts and globals
 	Copy = TOTEM.copy,
@@ -1207,8 +1209,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		@cfg {Object}
 		@member SKINS
 		*/
-		context: { // defines DSVAR contexts when a skin is rendered
-			swag: {
+		context: { // define JSDB context keys when a skin is rendered
+			swag: {  // context keys for swag.jade
 				projs: "openv.milestones"
 			},
 			airspace: {
@@ -1704,7 +1706,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 	ingestFile: function(sql, filePath, fileName, fileID, group, notes, cb) {  // ingest events from file with callback cb(aoi).
 		
-		CHIPS.ingestFile(sql, filePath, fileID, function (aoi) {
+		HACK.ingestFile(sql, filePath, fileID, function (aoi) {
 			
 			DEBE.gradeIngest( sql, aoi, fileID, function (stats) {
 
@@ -1839,7 +1841,7 @@ function icoFavicon(req,res) {   // extjs trap
 function sysAgent(req,res) {
 	var 
 		query = req.query,
-		cb = ENGINE.mw.cb[query.job];
+		cb = ATOM.mw.cb[query.job];
 	
 	Log("AGENT", query);
 	cb(0);
@@ -2327,7 +2329,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 				if ( ctx.Ingest ) {
 					getFile( sql, function (fileID) {
-						CHIPS.ingestList( sql, rem, fileID, function (aoi, evs) {
+						HACK.ingestList( sql, rem, fileID, function (aoi, evs) {
 							Log("INGESTED ",aoi);
 						});
 					});
@@ -2380,10 +2382,10 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			if ( Job = ctx.Job )  { // Intercept job request to run engine via regulator
 				res("Regulating");
 				
-				CHIPS.chipEvents(req, Job, function (job) {  // create job for these Job parameters
+				HACK.chipEvents(req, Job, function (job) {  // create job for these Job parameters
 
 					req.query = Copy({  // engine request query gets copied to its context
-						_Plugin: job.class,
+						_Host: job.class,
 						_File: job.File,
 						_Voxel: job.Voxel,
 						_Collects: job.Collects,
@@ -2392,7 +2394,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						_Dump: job.Dump || ""
 					},ctx);
 
-					ENGINE.select(req, function (ctx) {  // run plugin's engine
+					ATOM.select(req, function (ctx) {  // run plugin's engine
 						if (ctx) {
 							if ( "Save" in ctx )
 								saveResults( Array.from(ctx.Save || [] ), ctx );
@@ -2415,7 +2417,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		
 	else  
 	if (DEBE.probono)  // run engine using its query usecase w/o submitting a job
-		ENGINE.select(req, res);
+		ATOM.select(req, res);
 	
 	else
 		res(DEBE.errors.noUsecase);
@@ -2739,7 +2741,7 @@ Initialize DEBE on startup.
 
 		/*
 		Each( CRUDE, function (n,routes) { // Map engine CRUD to DEBE workers
-			DEBE.byTable[n] = ENGINE[n];
+			DEBE.byTable[n] = ATOM[n];
 		});	
 		*/
 		
@@ -2864,7 +2866,7 @@ Initialize DEBE on startup.
 	 * @method initSQL
 	 * @private
 	 * @member DEBE
-	 * Initialize the FLEX and ENGINE interfaces
+	 * Initialize the FLEX and ATOM interfaces
 	 */
 
 		Trace(`INIT FLEX`);
@@ -2931,9 +2933,9 @@ Initialize DEBE on startup.
 			
 		});
 
-		Trace(`INIT ENGINES`);
+		Trace(`INIT ATOMS`);
 
-		CHIPS.config({
+		HACK.config({
 			//source: "",
 			taskPlugin: null,
 			thread: sqlThread
@@ -2944,7 +2946,7 @@ Initialize DEBE on startup.
 			fetcher: DEBE.fetchers.http
 		});
 		
-		ENGINE.config({
+		ATOM.config({
 			thread: sqlThread,
 			cores: DEBE.cores,
 			watchFile: DEBE.watchFile,

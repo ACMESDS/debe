@@ -3,14 +3,14 @@
 	[SourceForge](https://sourceforge.net) 
 	[github](https://github.com/acmesds/debe.git) 
 	[geointapps](https://git.geointapps.org/acmesds/debe)
-	[gitlab](https://gitlab.weat.nga.ic.gov/acmesds/debe.git)
+	[gitlab](https://gitlab.west.nga.ic.gov/acmesds/debe.git)
 	
 # DEBE
 
 DEBE extends [TOTEM simple web service](https://github.com/acmesds/totem) with
 the [FLEX database extender](https://github.com/acmesds/flex), 
-[CHIPPER earth imaging](https://github.com/acmesds/chipper),
-and [ENGINE compute](https://github.com/acmesds/engine) modules to provide a web service 
+[GEOHACK earth event segmenter](https://github.com/acmesds/geohack),
+and [ATOMIC cloud compute](https://github.com/acmesds/atomic) modules to provide a web service 
 that manages its content, interfaces, requirements, project metrics, geoint products and workflows.  
 
 As documented in its api, DEBE provides ENDPOINTs:
@@ -87,8 +87,8 @@ Simply require, configure and start DEBE:
 		console.log( err ? "something evil is lurking" : "look mom - Im running!");
 	});
 
-where its configuration keys follow [ENUM copy()](https://github.com/acmesds/enum) conventions and
-are described in its [PRM](/shares/prm/debe/index.html).
+where its configuration keys follow [ENUM copy()](https://github.com/acmesds/enum) conventions 
+described in its [PRM](/shares/prm/debe/index.html).
 
 The following examples are from TOTEM's test.js unit tester.  You may also find 
 Totem's [DSVAR](https://github.com/acmesds/dsvar) useful, if you wish to learn more about its 

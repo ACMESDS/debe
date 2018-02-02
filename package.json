@@ -23,10 +23,10 @@
     "supermarked": "^2.0.0",
     "togeojson": "^0.16.0",
     "tokml": "^0.4.0",
-    "chipper": "^1.0.0",
+    "geohack": "^1.0.0",
     "randpr": "^1.0.0",
     "totem": "^1.0.0",
-    "engine": "^1.0.0",
+    "atomic": "^1.0.0",
     "jslab": "^1.0.0"
   }
 }
