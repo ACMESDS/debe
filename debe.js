@@ -2364,6 +2364,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		dot = ".",
 		sql = req.sql,
 		client = req.client,
+		group = req.group,
+		table = req.table,
 		query = req.query;
 
 	if ("ID" in query || "Name" in query)  
