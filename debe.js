@@ -85,14 +85,14 @@ var
 				refresh: "SELECT ID FROM app.voxels WHERE MBRcontains(ring, GeomFromText(?)) AND datediff(now(), added) > ?"
 			};
 			
-			sql.each(lims.trace, gets.unused, [], function (voxel) {
+			sql.getEach(lims.trace, gets.unused, [], function (voxel) {
 				sql.update("DELETE FROM app.voxels WHERE ?", {ID: voxel.ID});
 			});
 			
 			if (lims.atmage) {
 				// fetch new atm data from whatever service and loop over recs (grouped by Point(x y) grid location)
 				
-				sql.each(lims.trace, gets.refresh, [atm.gridLocation, lims.atmage], function (voxel) {
+				sql.getEach(lims.trace, gets.refresh, [atm.gridLocation, lims.atmage], function (voxel) {
 					// update voxels with atm data
 				});
 			}
@@ -120,7 +120,7 @@ var
 			CP.exec(`git commit -am "archive ${path}"; git push github master; rm ${zip}`, function (err) {
 			});		  */
 			if (lims.maxage)
-				sql.each(lims.trace, gets.old, lims.maxage, function (file) {
+				sql.getEach(lims.trace, gets.old, lims.maxage, function (file) {
 
 					var 
 						site = DEBE.site,
@@ -156,7 +156,7 @@ var
 				},
 				queues = FLEX.queues;
 
-			sql.all( lims.trace, gets.stuck, [], function (info) {
+			sql.getAll( lims.trace, gets.stuck, [], function (info) {
 
 				Each(queues, function (rate, queue) {  // save collected queuing charges to profiles
 					Each(queue.client, function (client, charge) {
@@ -195,10 +195,10 @@ var
 				},
 				diag = DEBE.diag;
 
-			sql.each(lims.trace, gets.engs, [], function (engs) {
-			sql.each(lims.trace, gets.jobs, [], function (jobs) {
-			sql.each(lims.trace, gets.pigs, [], function (pigs) {
-			sql.each(lims.trace, gets.logs, [], function (isps) {
+			sql.getEach(lims.trace, gets.engs, [], function (engs) {
+			sql.getEach(lims.trace, gets.jobs, [], function (jobs) {
+			sql.getEach(lims.trace, gets.pigs, [], function (pigs) {
+			sql.getEach(lims.trace, gets.logs, [], function (isps) {
 				var rtn = diag.counts = {Engines:engs.Count,Jobs:jobs.Count,Pigs:pigs.Count,Faults:isps.Count,State:"ok"};
 
 				for (var n in lims) 
@@ -237,7 +237,7 @@ var
 					unfunded: "SELECT * FROM app.queues WHERE NOT Funded AND now()-Arrived>?"
 				};
 
-			sql.each(lims.trace, gets.unbilled, [], function (job) {
+			sql.getEach(lims.trace, gets.unbilled, [], function (job) {
 				//Trace(`BILLING ${job} FOR ${job.Client}`, sql);
 				sql.query( "UPDATE openv.profiles SET Charge=Charge+? WHERE ?", [ 
 					job.Done, {Client: job.Client} 
@@ -247,7 +247,7 @@ var
 			});
 
 			if (lims.maxage)
-			sql.each(trace, gets.unfunded, [lims.maxage], function (job) {
+			sql.getEach(trace, gets.unfunded, [lims.maxage], function (job) {
 				//Trace("KILLING ",job);
 				sql.query(
 					//"DELETE FROM app.queues WHERE ?", {ID:job.ID}
@@ -274,23 +274,23 @@ var
 					uncert: "SELECT ID FROM openv.profiles LEFT JOIN app.quizes ON profiles.Client=quizes.Client WHERE datediff(now(), quizes.Credited)>?",
 				};
 
-			sql.each(lims.trace, gets.naughty, [], function (client) {
+			sql.getEach(lims.trace, gets.naughty, [], function (client) {
 			});		
 
 			if (lims.disk)
-			sql.each(lims.trace, gets.needy, [lims.disk], function (client) {
+			sql.getEach(lims.trace, gets.needy, [lims.disk], function (client) {
 			});		
 
 			if (lims.dormant)
-			sql.each(lims.trace, gets.dormant, [lims.unused], function (client) {
+			sql.getEach(lims.trace, gets.dormant, [lims.unused], function (client) {
 			});		
 
 			if (lims.poor)
-			sql.each(lims.trace, gets.poor, [lims.qos], function (client) {
+			sql.getEach(lims.trace, gets.poor, [lims.qos], function (client) {
 			});		
 
 			if (lims.certage)
-			sql.each(lims.trace, gets.uncert, [lims.certage], function (client) {
+			sql.getEach(lims.trace, gets.uncert, [lims.certage], function (client) {
 			});		
 			
 		}),
@@ -308,7 +308,7 @@ var
 				};
 
 			if (lims.undefined)
-			sql.each(lims.trace, gets.undefined, [lims.undefined], function (client) {
+			sql.getEach(lims.trace, gets.undefined, [lims.undefined], function (client) {
 			});
 		}),
 			
@@ -325,7 +325,7 @@ var
 				};
 
 			if (lims.inactive)
-			sql.each(lims.trace, gets.inactive, [lims.inactive], function (client) {
+			sql.getEach(lims.trace, gets.inactive, [lims.inactive], function (client) {
 			});		
 		})
 	},
@@ -532,10 +532,10 @@ Usage: ${uses.join(",")}  `);
 				type = req.type,
 				sql = req.sql;
 
-			sql.first( type, "SELECT ID FROM ??.files WHERE ?", [group, {Name: filename}], function (file) {
+			sql.getFirst( type, "SELECT ID FROM ??.files WHERE ?", [group, {Name: filename}], function (file) {
 				
 				if (file)
-					sql.all( type, "SELECT * FROM ??.events WHERE ?", [group, {fileID: file.ID}], res );
+					sql.getAll( type, "SELECT * FROM ??.events WHERE ?", [group, {fileID: file.ID}], res );
 							  
 				else
 					res( null );
@@ -1721,7 +1721,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				Log("grader", stats, aoi);
 				cb( Copy(stats, aoi) );
 
-				sql.all(
+				sql.getAll(
 					"INGEST",
 					"UPDATE app.files SET ?,Notes=? WHERE ?", [{
 						coherence_time: aoi.coherence_time,
@@ -2250,7 +2250,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		function getFile(sql, cb) {  // allocate an output export file with callback cb(fileID)
 
 			var filename = table + "." + ctx.Name;
-			sql.first( "", "SELECT ID FROM app.files WHERE least(?,1) LIMIT 1", {
+			sql.getFirst( "", "SELECT ID FROM app.files WHERE least(?,1) LIMIT 1", {
 				Name: filename,
 				Client: table,
 				Area: group
@@ -2260,7 +2260,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					cb( file.ID );
 
 				else
-					sql.all( "", "INSERT INTO app.files SET ?", {
+					sql.getAll( "", "INSERT INTO app.files SET ?", {
 						Name: filename,
 						Client: table,
 						Area: group,
@@ -2567,7 +2567,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 			});	
 		}
 		
-		sql.first("", paths.engine, { // Try a jade engine
+		sql.getFirst("", paths.engine, { // Try a jade engine
 			Name: req.table,
 			Type: "jade",
 			Enabled: 1
