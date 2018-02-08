@@ -112,13 +112,18 @@ var
 		}, function (sql, lims) {
 			var 
 				gets = {
-					update: "UPDATE files SET canDelete=?,Notes=concat(Notes,?)",
-					old: "SELECT files.*,count(events.id) AS evCount FROM events LEFT JOIN files ON events.fileid = files.id WHERE datediff( now(), files.added)>=? AND NOT files.canDelete GROUP BY fileid"
+					expired: "SELECT ID FROM app.files WHERE now() > Expired",
+					update: "UPDATE app.files SET canDelete=?,Notes=concat(Notes,?)",
+					old: "SELECT files.*,count(events.id) AS evCount FROM app.events LEFT JOIN app.files ON events.fileid = files.id WHERE datediff( now(), files.added)>=? AND NOT files.canDelete GROUP BY fileid"
 				};
 
 			/*
 			CP.exec(`git commit -am "archive ${path}"; git push github master; rm ${zip}`, function (err) {
 			});		  */
+			sql.each( lims.trace, gets.expired, [], function (file) { 
+				sql.query("DELETE FROM app.events WHERE ?", {fileID: file.ID});
+			});
+																			 
 			if (lims.maxage)
 				sql.getEach(lims.trace, gets.old, lims.maxage, function (file) {
 
@@ -1527,18 +1532,23 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		var ctx = {
 			Batch: 10, // batch size in steps
-			File: {
+			_File: {
 				Actors: aoi.Actors,  // ensemble size
 				States: aoi.States, // number of states consumed by process
 				Steps: aoi.Steps, // number of time steps
 			},
-			Load: sql.format(  // event query
+			_Load: sql.format(  // event query
 				"SELECT * FROM app.events WHERE fileID=? ORDER BY t LIMIT 10000", [fileID] )
 		};
+		
+		Log("ingest stats ctx", ctx);
 		
 		if (estpr = JSLAB.plugins.estpr) 
 			estpr( ctx, function (ctx) {  // estimate/learn hidden process parameters
 				var stats = ctx.Save.pop() || {};  // retain last estimate at end
+				
+				Log("ingest stats", stats);
+				
 				cb({
 					coherence_time: stats.coherence_time || 0,
 					coherence_intervals: stats.coherence_intervals || 0,
@@ -1704,67 +1714,96 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 	*/
 		
-	ingestFile: function(sql, filePath, fileName, fileID, group, notes, cb) {  // ingest events from file with callback cb(aoi).
+	ingestFile: function(sql, filePath, fileName, fileID, cb) {  // ingest events from file with callback cb(aoi).
+		
+		function pretty(stats,sigfig) {
+			var rtn = [];
+			Each(stats, function (key,stat) {
+				rtn.push( stat.toFixed(sigfig) + " " + key );
+			});
+			return rtn.join(", ");
+		}
+
+		var trace = "INGEST";
+		
+		Log("ingest file", filePath, fileName, fileID);
 		
 		HACK.ingestFile(sql, filePath, fileID, function (aoi) {
 			
-			DEBE.gradeIngest( sql, aoi, fileID, function (stats) {
+			Log("ingest aoi", aoi);
+			
+			if ( aoi.Voxelized )
+				DEBE.gradeIngest( sql, aoi, fileID, function (stats) {
 
-				function pretty(stats,sigfig) {
-					var rtn = "";
-					Each(stats, function (key,stat) {
-						rtn += key + ": " + stat.toFixed(sigfig) + "<br>";
+					cb( Copy(stats, aoi) );
+
+					sql.getall(
+						trace,
+						"SELECT ID FROM app.events LEFT JOIN app.voxels ON voxels.ID = events.voxelID WHERE ? < voxels.minSNR AND ?",
+						[ aoi.snr, {fileID: fileID} ],
+						function (evs) {
+							
+							Log("ingest rejected", evs.length);
+							
+							aoi.rejected = evs.length;
+							evs.each( function (n,ev) {
+								sql.query("DELETE FROM app.events WHERE ?", {ID: ev.ID});
+							});
+
+							sql.getAll(
+								trace,
+								"UPDATE app.files SET ?, Notes=concat(Notes,?) WHERE ?", [{
+									rejected: aoi.rejected,
+									coherence_time: aoi.coherence_time,
+									coherence_intervals: aoi.coherence_intervals,
+									mean_jump_rate: aoi.mean_jump_rate,
+									degeneracy: aoi.degeneracy,
+									snr: aoi.snr
+								},
+								"Initial quality assessment: " + pretty(aoi,4),
+								{ID: fileID} 
+							]);
 					});
-					return rtn;
-				}
-				
-				Log("grader", stats, aoi);
-				cb( Copy(stats, aoi) );
 
+					var
+						ctx = {
+							Job: JSON.stringify({
+								file: fileName, limit: 1000, aoi: [ [0,0], [0,0], [0,0], [0,0], [0,0] ]
+							}),
+							Name: "ingest."+fileName,
+							Description: "see " + fileName.tag("a",{href:`/files.view?ID=${fileID}`}) + " for details"
+						};
+
+					if (false)  // add use case to ingested file in all listening plugins
+					FLEX.eachPlugin( sql, "app", function (eng) {
+
+						sql.query( 
+							"INSERT INTO ??.?? SET ? ON DUPLICATE KEY UPDATE ?", [ 
+								group, eng.Name, ctx, {Description: ctx.Description} 
+							], function (err, info) {
+								if (false)
+									FLEX.runPlugin({  // run the plugin
+										sql: sql,
+										table: eng.Name,
+										group: group,
+										client: client,
+										query: { ID:info.insertId }
+									}, function (ctx) {
+										Log("TASKED ",eng.Name,err || rtn);
+									});	
+						});
+					});
+				});
+			
+			else
 				sql.getAll(
-					"INGEST",
-					"UPDATE app.files SET ?,Notes=? WHERE ?", [{
-						coherence_time: aoi.coherence_time,
-						coherence_intervals: aoi.coherence_intervals,
-						mean_jump_rate: aoi.mean_jump_rate,
-						degeneracy: aoi.degeneracy,
-						snr: aoi.snr
-					},
-					notes + "Initial quality assessment: " + pretty(stats,4),
-					{ID: fileID} 
-				]).on("error", function (err) {
-					Log("grader save",err);
-				});
-				
-				var
-					ctx = {
-						Job: JSON.stringify({
-							file: fileName, limit: 1000, aoi: [ [0,0], [0,0], [0,0], [0,0], [0,0] ]
-						}),
-						Name: "ingest."+fileName,
-						Description: "see " + fileName.tag("a",{href:`/files.view?ID=${fileID}`}) + " for details"
-					};
-				
-				if (false)  // add use case to ingested file in all listening plugins
-				FLEX.eachPlugin( sql, group, function (eng) {
-
-					sql.query( 
-						"INSERT INTO ??.?? SET ? ON DUPLICATE KEY UPDATE ?", [ 
-							group, eng.Name, ctx, {Description: ctx.Description} 
-						], function (err, info) {
-							if (false)
-								FLEX.runPlugin({  // run the plugin
-									sql: sql,
-									table: eng.Name,
-									group: group,
-									client: client,
-									query: { ID:info.insertId }
-								}, function (ctx) {
-									Log("TASKED ",eng.Name,err || rtn);
-								});	
-					});
-				});
-			});
+					trace,
+					"UPDATE app.files SET Notes=concat(Notes,?) WHERE ?", [
+						"Scan summary: " + pretty(aoi,4)
+						+ "Initial quality assessment: No events fell into "
+						+ "existing voxels".tag("a",{href:"/aois.run"}) , 
+						{ID: fileID} 
+					]);
 			
 		});
 	},
@@ -2247,31 +2286,6 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			status = "", // returned status
 			stash = { };  // ingestable keys stash
 			
-		function getFile(sql, cb) {  // allocate an output export file with callback cb(fileID)
-
-			var filename = table + "." + ctx.Name;
-			sql.getFirst( "", "SELECT ID FROM app.files WHERE least(?,1) LIMIT 1", {
-				Name: filename,
-				Client: table,
-				Area: group
-			}, function (file) {
-
-				if ( file )
-					cb( file.ID );
-
-				else
-					sql.getAll( "", "INSERT INTO app.files SET ?", {
-						Name: filename,
-						Client: table,
-						Area: group,
-						Added: new Date()
-					}, function (info) {
-						cb( info.insertId );
-					});
-
-			});
-		}
-
 		if ( !stats )
 			return "empty";
 		
@@ -2303,37 +2317,64 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					status += " Saved";
 				}
 
-				if ( ctx.Export ) {
-					getFile( sql, function (fileID) {
+				if ( ctx.Export ) {   // export to ./public/stores/FILENAME
+					var
+						evidx = 0,
+						evs = rem,  // point event source to remainder
+						srcStream = new STREAM.Readable({    // establish source stream for export pipe
+							objectMode: false,
+							read: function () {  // read event source
+								if ( ev = evs[evidx++] )  // still have an event
+									this.push( JSON.stringify(ev)+"\n" );
+								else 		// signal events exhausted
+									this.push( null );
+							}
+						});
+					
+					DEBE.uploader( srcStream, client, `stores/${table}.${ctx.Name}.${group}.${client}` );
+					/*
+					getFile( sql, function (fileID) {  // allocate a file for this export
 						var 
 							evidx = 0,
-							evs = rem,
+							evs = rem,  // point event source to remainder
+							notes = ". Please visit " + "here".tag("a","/files.view") + " to manage your holdings.",
 							filePath = ENV.PUBLIC+"/stores/"+group+"."+table+"."+ctx.Name+"."+client,
-							srcStream = new STREAM.Readable({  
+							srcStream = new STREAM.Readable({    // establish source stream for export pipe
 								objectMode: false,
-								read: function () {  
-									if ( ev = evs[evidx++] )
+								read: function () {  // read event source
+									if ( ev = evs[evidx++] )  // still have an event
 										this.push( JSON.stringify(ev)+"\n" );
-									else
+									else 		// signal events exhausted
 										this.push( null );
 								}
 							}),
-							sinkStream = FS.createWriteStream( filePath, "utf8").on("finish", function() {
-								Trace("EXPORTED "+filePath);
-							});
+							sinkStream = FS.createWriteStream( filePath, "utf8")
+								.on("finish", function() {  // establish sink stream for export pipe
+									//Trace("EXPORTED "+filePath);
+									sql.query("UPDATE apps.files SET ? WHERE ?", {
+										Notes: "Exported on " + new Date() + notes
+									}, {ID: fileID} );
+								})
+								.on("error", function (err) {
+									Log("Ingest File Error", err);
+									sql.query("UPDATE app.files SET ? WHERE ?", {
+										Notes: "Export failed: " + err + notes
+									}, {ID: fileID} );
+								});
 
-						srcStream.pipe(sinkStream);
+						srcStream.pipe(sinkStream);  // start pipe to export events
 					});
+					*/
 					status += " Exported";
 				}
 
-				if ( ctx.Ingest ) {
-					getFile( sql, function (fileID) {
+				if ( ctx.Ingest )  {
+					DEBE.uploader( null, client, `ingest/${table}.${ctx.Name}`, function (fileID) {
 						HACK.ingestList( sql, rem, fileID, function (aoi, evs) {
 							Log("INGESTED ",aoi);
 						});
 					});
-					status += "Ingested";
+					status += " Ingested";
 				}
 			}
 			
@@ -2354,10 +2395,10 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			sql.query("UPDATE ??.?? SET ? WHERE ?", [ 
 				group, table, stash, {ID: ctx.ID}
 			]);
-			status += " Saved";
+			status += " Saved"
 		}
 
-		return ctx.Share ? stats : status;
+		return ctx.Share ? stats : status.tag("a",{href: "/files.view"});
 	}
 
 	var
