@@ -64,7 +64,7 @@ var
 		
 	dogs: {  // watch dog cycle timers [secs] (zero to disable)
 		dogCatalog: Copy({
-			cycle: 0,
+			//cycle: 1000,
 			trace: ""
 		}, function (sql, lims) {
 		}),
@@ -76,7 +76,7 @@ var
 		}),
 						   
 		dogVoxels: Copy({
-			cycle: 0,
+			//cycle: 120,
 			trace: "",
 			atmage: 2 // days to age before refresh atm data
 		}, function (sql, lims) {
@@ -100,33 +100,45 @@ var
 		}),
 						
 		dogCache: Copy({
-			cycle: 0,
+			//cycle: 120,
 			trace: ""
 		}, function (sql, lims) {
 		}),
 		
 		dogFiles: Copy({
-			cycle: 0, // secs
-			trace: "",
-			maxage: 30 // days
+			cycle: 30, // secs
+			trace: "DOG",
+			//maxage: 30 // days
 		}, function (sql, lims) {
+			
+			function pretty(stats,sigfig) {
+				var rtn = [];
+				Each(stats, function (key,stat) {
+					rtn.push( stat.toFixed(sigfig) + " " + key );
+				});
+				return rtn.join(", ");
+			}
+			
 			var 
 				gets = {
+					ungraded: "SELECT ID FROM app.files WHERE NOT graded",
 					expired: "SELECT ID FROM app.files WHERE now() > Expired",
-					update: "UPDATE app.files SET canDelete=?,Notes=concat(Notes,?)",
+					update: "UPDATE app.files SET canDelete=?, Notes=concat(Notes,?)",
 					old: "SELECT files.*,count(events.id) AS evCount FROM app.events LEFT JOIN app.files ON events.fileid = files.id WHERE datediff( now(), files.added)>=? AND NOT files.canDelete GROUP BY fileid"
 				};
 
 			/*
 			CP.exec(`git commit -am "archive ${path}"; git push github master; rm ${zip}`, function (err) {
 			});		  */
-			sql.each( lims.trace, gets.expired, [], function (file) { 
+			sql.getEach( lims.trace, gets.expired, [], function (file) { 
+				Log("expired",file);
 				sql.query("DELETE FROM app.events WHERE ?", {fileID: file.ID});
 			});
 																			 
 			if (lims.maxage)
 				sql.getEach(lims.trace, gets.old, lims.maxage, function (file) {
-
+					Log("maxage", file);
+					
 					var 
 						site = DEBE.site,
 						url = site.urls.worker,
@@ -135,8 +147,8 @@ var
 							admin: "totem resource manages".tag("a", {href: url + "/request.view"})
 						},
 						notice = `
-		${file.client} has been notified that ${file.Name}, containing ${file.eventCount} events, has been flagged for delete as it is older than ${maxage} days.
-		Consult ${paths.admin} to request additional resources.  Further information about this file is available ${paths.info}. `;
+${file.client} has been notified that ${file.Name}, containing ${file.eventCount} events, has been flagged for delete as it is older than ${maxage} days.
+Consult ${paths.admin} to request additional resources.  Further information about this file is available ${paths.info}. `;
 
 					sql.query(files.update, [true,notice]);
 
@@ -149,6 +161,55 @@ var
 				.on("end", function () {
 					sql.release();
 				});
+			
+			sql.getEach(lims.trace, gets.ungraded, [], function (file) {
+				
+				if ( file.Voxelized )
+					DEBE.gradeIngest( sql, file, function (stats) {
+						//cb( Copy(stats, aoi) );
+
+						sql.getall(
+							lims.trace,
+							"SELECT ID FROM app.events LEFT JOIN app.voxels ON voxels.ID = events.voxelID WHERE ? < voxels.minSNR AND ?",
+							[ stats.snr, {fileID: file.ID} ],
+							function (evs) {
+								Log("ingest rejected", evs.length);
+
+								aoi.rejected = evs.length;
+								evs.each( function (n,ev) {
+									sql.query("DELETE FROM app.events WHERE ?", {ID: ev.ID});
+								});
+
+								sql.getAll(
+									lims.trace,
+									"UPDATE app.files SET ?, Notes=concat(Notes,?) WHERE ?", [{
+										rejected: stats.rejected,
+										coherence_time: stats.coherence_time,
+										coherence_intervals: stats.coherence_intervals,
+										mean_jump_rate: stats.mean_jump_rate,
+										degeneracy: stats.degeneracy,
+										snr: stats.snr,
+										graded: true
+									},
+									"Initial quality assessment: " + pretty(stats,2),
+									{ID: file.ID} 
+								]);
+						});
+
+					});
+
+				else
+					sql.getAll(
+						lims.trace,
+						"UPDATE app.files SET ?, Notes=concat(Notes,?) WHERE ?", [{
+							Graded: true}, 
+							+ "Initial quality assessment: No events fell into "
+							+ "existing voxels".tag("a",{href:"/aois.run"}), 
+							{ID: file.ID} 
+						]);
+
+			});
+			
 		}),
 		
 		dogJobs: Copy({
@@ -186,7 +247,7 @@ var
 		}),
 			
 		dogSystem: Copy({
-			cycle: 100,
+			//cycle: 100,
 			pigs : 2,
 			jobs : 5,
 			trace: ""
@@ -219,7 +280,7 @@ var
 		}),
 			
 		dogHawks: Copy({
-			cycle: 0,
+			//cycle: 500,
 			maxage: 10,
 			trace: ""
 		}, function (sql, lims) { // job hawking watch dog
@@ -263,7 +324,7 @@ var
 		}),
 		
 		dogClients: Copy({
-			cycle: 0,
+			//cycle: 100000,
 			trace: "",
 			disk: 10,  //MB
 			qos: 2,  //0,1,2,...
@@ -1528,17 +1589,17 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	*/
 	isSpawned: false, 			//< Enabled when this is child server spawned by a master server
 
-	gradeIngest: function (sql, aoi, fileID, cb) {
+	gradeIngest: function (sql, file, cb) {
 		
 		var ctx = {
 			Batch: 10, // batch size in steps
 			_File: {
-				Actors: aoi.Actors,  // ensemble size
-				States: aoi.States, // number of states consumed by process
-				Steps: aoi.Steps, // number of time steps
+				Actors: file.Actors,  // ensemble size
+				States: file.States, // number of states consumed by process
+				Steps: file.Steps, // number of time steps
 			},
 			_Load: sql.format(  // event query
-				"SELECT * FROM app.events WHERE fileID=? ORDER BY t LIMIT 10000", [fileID] )
+				"SELECT * FROM app.events WHERE fileID=? ORDER BY t LIMIT 10000", [file.ID] )
 		};
 		
 		Log("ingest stats ctx", ctx);
@@ -1716,95 +1777,40 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 	ingestFile: function(sql, filePath, fileName, fileID, cb) {  // ingest events from file with callback cb(aoi).
 		
-		function pretty(stats,sigfig) {
-			var rtn = [];
-			Each(stats, function (key,stat) {
-				rtn.push( stat.toFixed(sigfig) + " " + key );
-			});
-			return rtn.join(", ");
-		}
-
-		var trace = "INGEST";
+		//var trace = "INGEST";
 		
 		Log("ingest file", filePath, fileName, fileID);
 		
 		HACK.ingestFile(sql, filePath, fileID, function (aoi) {
 			
 			Log("ingest aoi", aoi);
-			
-			if ( aoi.Voxelized )
-				DEBE.gradeIngest( sql, aoi, fileID, function (stats) {
+			var
+				ctx = {
+					Job: JSON.stringify({
+						file: fileName, limit: 1000, aoi: [ [0,0], [0,0], [0,0], [0,0], [0,0] ]
+					}),
+					Name: "ingest."+fileName,
+					Description: "see " + fileName.tag("a",{href:`/files.view?ID=${fileID}`}) + " for details"
+				};
 
-					cb( Copy(stats, aoi) );
-
-					sql.getall(
-						trace,
-						"SELECT ID FROM app.events LEFT JOIN app.voxels ON voxels.ID = events.voxelID WHERE ? < voxels.minSNR AND ?",
-						[ aoi.snr, {fileID: fileID} ],
-						function (evs) {
-							
-							Log("ingest rejected", evs.length);
-							
-							aoi.rejected = evs.length;
-							evs.each( function (n,ev) {
-								sql.query("DELETE FROM app.events WHERE ?", {ID: ev.ID});
-							});
-
-							sql.getAll(
-								trace,
-								"UPDATE app.files SET ?, Notes=concat(Notes,?) WHERE ?", [{
-									rejected: aoi.rejected,
-									coherence_time: aoi.coherence_time,
-									coherence_intervals: aoi.coherence_intervals,
-									mean_jump_rate: aoi.mean_jump_rate,
-									degeneracy: aoi.degeneracy,
-									snr: aoi.snr
-								},
-								"Initial quality assessment: " + pretty(aoi,4),
-								{ID: fileID} 
-							]);
-					});
-
-					var
-						ctx = {
-							Job: JSON.stringify({
-								file: fileName, limit: 1000, aoi: [ [0,0], [0,0], [0,0], [0,0], [0,0] ]
-							}),
-							Name: "ingest."+fileName,
-							Description: "see " + fileName.tag("a",{href:`/files.view?ID=${fileID}`}) + " for details"
-						};
-
-					if (false)  // add use case to ingested file in all listening plugins
-					FLEX.eachPlugin( sql, "app", function (eng) {
-
-						sql.query( 
-							"INSERT INTO ??.?? SET ? ON DUPLICATE KEY UPDATE ?", [ 
-								group, eng.Name, ctx, {Description: ctx.Description} 
-							], function (err, info) {
-								if (false)
-									FLEX.runPlugin({  // run the plugin
-										sql: sql,
-										table: eng.Name,
-										group: group,
-										client: client,
-										query: { ID:info.insertId }
-									}, function (ctx) {
-										Log("TASKED ",eng.Name,err || rtn);
-									});	
-						});
-					});
+			if (false)  // add use case to ingested file in all listening plugins
+			FLEX.eachPlugin( sql, "app", function (eng) {
+				sql.query( 
+					"INSERT INTO ??.?? SET ? ON DUPLICATE KEY UPDATE ?", [ 
+						group, eng.Name, ctx, {Description: ctx.Description} 
+					], function (err, info) {
+						if (false)
+							FLEX.runPlugin({  // run the plugin
+								sql: sql,
+								table: eng.Name,
+								group: group,
+								client: client,
+								query: { ID:info.insertId }
+							}, function (ctx) {
+								Log("TASKED ",eng.Name,err || rtn);
+							});	
 				});
-			
-			else
-				sql.getAll(
-					trace,
-					"UPDATE app.files SET Notes=concat(Notes,?) WHERE ?", [
-						"Scan summary: " + pretty(aoi,4)
-						+ "Initial quality assessment: No events fell into "
-						+ "existing voxels".tag("a",{href:"/aois.run"}) , 
-						{ID: fileID} 
-					]);
-			
+			});
 		});
 	},
 	
