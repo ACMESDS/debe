@@ -592,7 +592,7 @@ Usage: ${uses.join(",")}  `);
 			res( DEBE.site.gridify( recs ).tag("table") );
 		},
 		
-		// events from engine usecase
+		// events from engine usecase or engine code
 		default: function (recs,req,res) {
 			var 
 				filename = req.table + "." + req.type,
@@ -606,7 +606,17 @@ Usage: ${uses.join(",")}  `);
 					sql.getAll( type, "SELECT * FROM ??.events WHERE ?", [group, {fileID: file.ID}], res );
 							  
 				else
-					res( null );
+				sql.getFirst( type, "SELECT Code FROM ??.engines WHERE least(?)", [group, {
+					Name: req.table,
+					Type: req.type
+				}], function (eng) {
+					
+					if (eng) 
+						res( eng.Code);
+					
+					else
+						res( null );
+				});
 				
 			});
 		},
@@ -2304,7 +2314,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 							}
 						});
 					
-					DEBE.uploader( srcStream, client, `stores/${table}.${ctx.Name}.${group}.${client}` );
+					DEBE.uploader( srcStream, client, `stores/${table}.${ctx.Name}` );
 					/*
 					getFile( sql, function (fileID) {  // allocate a file for this export
 						var 
