@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js">&quot;use strict&quot;;
+
+// UNCLASSIFIED
+
+<span id='DSVAR'>/**
+</span> * @class DSVAR
+ * @requires cluster
+ * @requires enum
+ * @requires mysql
+ */
+
+var // nodejs
+CLUSTER = require(&quot;cluster&quot;);
+
+var // 3rd party bindings
+MYSQL = require(&quot;mysql&quot;);
+
+var // totem bindings
+ENUM = require(&quot;enum&quot;).extend({
+	String: [function Escape() {
+		var q = &quot;`&quot;;
+		return q + escape(this) + q;
+	}],
+
+	Array: [function Escape(slash, cb) {
+		var q = &quot;`&quot;;
+
+		if (cb) {
+			var rtn = [];
+			this.each(function (n, el) {
+				rtn.push(cb(el));
+			});
+			return rtn.join(slash);
+		} else return q + this.join(slash ? &quot;&quot; + q + slash + q : q + &quot;,&quot; + q) + q;
+	}]
+}),
+    Copy = ENUM.copy,
+    Each = ENUM.each;
+
+var // globals
+DEFAULT = {
+	ATTRS: { // default dataset attributes
+		sql: null, // sql connector
+		query: &quot;&quot;, // sql query
+		opts: null, // ?-options to sql query
+		unsafeok: true, // allow/disallow unsafe queries
+		trace: true, // trace ?-compressed sql queries
+		journal: true, // attempt journally of updates to jou.table database
+		ag: &quot;&quot;, // default aggregator
+		index: { select: &quot;*&quot; }, // data fulltexts and index
+		client: &quot;guest&quot;, // default client 
+		track: false, // change journal tracking
+		geo: &quot;&quot;, // geojson selector = key as key,key as key,...
+		fulltexts: &quot;&quot;, // fulltext selectors = key,key,...
+		doc: &quot;&quot;, // table description
+		json: {} // json vars = key:default
+
+		// {tx: &quot;&quot;,trace:true,unsafeok:false,journal:false,doc:&quot;&quot;,track:0,geo:&quot;&quot;,fulltexts:&quot;&quot;,json:{}}
+	} };
+
+var DSVAR = module.exports = {
+
+	errors: { //&lt; errors messages
+		nillUpdate: new Error(&quot;nill update query&quot;),
+		unsafeQuery: new Error(&quot;unsafe queries not allowed&quot;),
+		unsupportedQuery: new Error(&quot;query not supported&quot;),
+		invalidQuery: new Error(&quot;query invalid&quot;),
+		noTable: new Error(&quot;dataset definition missing table name&quot;)
+	},
+
+	attrs: {//&lt; reserved for dataset attributes derived during config
+	},
+
+	config: function config(opts, cb) {
+
+		if (opts) Copy(opts, DSVAR);
+
+		if (mysql = DSVAR.mysql) {
+			mysql.pool = MYSQL.createPool(mysql.opts);
+
+			if (sqlThread = DSVAR.thread) sqlThread(function (sql) {
+				ENUM.extend(sql.constructor, [// extend sql connector with useful methods
+				indexEach, indexAll, eachTable, jsonKeys, searchableKeys, geometryKeys, textKeys, context]);
+
+				var Attrs = DSVAR.attrs;
+				sql.query( // Defined default dataset attributes
+				&quot;SELECT * FROM openv.attrs&quot;, function (err, attrs) {
+
+					if (err) Trace(err);else attrs.each(function (n, attr) {
+						// defaults
+						var Attr = Attrs[attr.Dataset] = new Object(Copy(DEFAULT.ATTRS, {
+							journal: attr.Journal,
+							tx: attr.Tx,
+							flatten: attr.Flatten,
+							doc: attr.Special,
+							unsafeok: attr.Unsafeok,
+							track: attr.Track,
+							trace: attr.Trace
+						}));
+					});
+
+					sql.eachTable(&quot;app&quot;, function (tab) {
+						// get fulltext searchable and geometry fields in tables
+						var Attr = Attrs[tab],
+						    ds = &quot;app.&quot; + tab;
+
+						if (!Attr) Attr = Attrs[tab] = new Object(DEFAULT.ATTRS);
+
+						sql.searchableKeys(ds, function (keys) {
+							Attr.fulltexts = keys.Escape();
+						});
+
+						if (false) sql.geometryKeys(ds, function (keys) {
+							var q = &quot;`&quot;;
+							Attr.geo = keys.Escape(&quot;,&quot;, function (key) {
+								return &quot;st_asgeojson(&quot; + q + key + q + &quot;) AS j&quot; + key;
+							});
+						});
+					});
+
+					sql.query( // journal all moderated datasets 
+					&quot;SELECT Dataset FROM openv.hawks GROUP BY Dataset&quot;).on(&quot;result&quot;, function (mon) {
+						var Attr = Attrs[mon.Dataset] || DEFULT.ATTRS;
+						Attr.journal = 1;
+					});
+
+					sql.release(); // begone with thee	
+
+					// callback now that dsvar environment has been defined
+					if (cb) cb(sql);
+				});
+			});else Trace(&quot;no thread() method defined&quot;);
+		}
+
+		return DSVAR;
+	},
+
+	msql: null, //&lt; reserved for mysql connector
+
+	io: { //&lt; reserved for socketio
+		sockets: {
+			emit: null
+		}
+	},
+
+	thread: function thread(cb) {
+		// callback cb(sql) with a sql connection
+
+		function nosqlConnection(err) {
+
+			var sql = {
+				query: function query(q, args, cb) {
+					//if (cb||args) (cb||args)( err );
+					Trace(err + &quot;&quot;);
+					return sql;
+				},
+				on: function on(ev, cb) {
+					//cb( err );
+					Trace(err + &quot;&quot;);
+					return sql;
+				},
+				sql: &quot;&quot;,
+				release: function release() {
+					return sql;
+				},
+				createPool: function createPool(opts) {
+					return sql;
+				}
+			};
+
+			return sql;
+		}
+
+		var mysql = DSVAR.mysql;
+
+		if (mysql) {
+			if (mysql.pool) mysql.pool.getConnection(function (err, sql) {
+				if (err) {
+					Trace(err + &quot; total=&quot; + mysql.pool._allConnections.length + &quot; free=&quot; + mysql.pool._freeConnections.length + &quot; queue=&quot; + mysql.pool._connectionQueue.length);
+
+					mysql.pool.end(function (err) {
+						mysql.pool = MYSQL.createPool(mysql.opts);
+					});
+
+					cb(nosqlConnection(err));
+				} else cb(sql);
+			});else cb(MYSQL.createConnection(mysql.opts));
+		} else cb(nosqlConnection(DSVAR.errors.noDB));
+	},
+
+	DS: function DS(sql, ats) {
+		// create dataset with given sql connector and attributes
+
+		if (ats.constructor == String) ats = { table: ats };
+
+		if (ats.table) {
+			// default then override attributes			
+			var def = DSVAR.attrs[ats.table] || DEFAULT.ATTRS; //|| defs || {}; // defaults
+
+			for (var n in def) {
+				switch (n) {
+					case &quot;select&quot;:
+					case &quot;update&quot;:
+					case &quot;delete&quot;:
+					case &quot;insert&quot;:
+						this.prototype[n] = def[n];
+						break;
+					default:
+						this[n] = def[n];
+				}
+			}this.sql = sql; // sql connector
+			this.err = null; // default sql error response
+
+			for (var n in ats) {
+				this[n] = ats[n];
+			}
+		} else Trace(DSVAR.errors.noTable);
+	}
+};
+
+/*
+CRUD interface ds.rec = req where req is an
+		Error: respond with error req
+		Array: respond with statis on inserting records req into ds
+		Object: respond with status on updating ds with req record then respond with status
+		null: respond with status on deleting records matching ds attributes
+		Function: respond on req callback with ds records matching ds attributes
+		&quot;X&quot;: dataset CRUD (ds.rec = ds.data) X=select,update,delete,create,execute 
+		&quot;lock.X&quot;: lock/unlock record for dataset CRUD
+*/
+DSVAR.DS.prototype = {
+
+	x: function xquery(opt, key, buf) {
+		// query builder extends me.query and me.opts
+
+		var me = this,
+		    // target ds 
+		keys = key.split(&quot; &quot;),
+		    // key the the sql command
+		ag = keys[1] || &quot;least(?,1)&quot;,
+		    // method to aggregrate 
+		type = opt ? opt.constructor : null;
+
+		if (type) switch (keys[0]) {
+
+			case &quot;BROWSE&quot;:
+
+				var slash = &quot;_&quot;,
+				    where = me.where,
+				    nodeID = where.NodeID,
+				    nodes = nodeID ? nodeID.split(slash) : [],
+				    pivots = opt.split(&quot;,&quot;);
+
+				me.group = nodes.length &gt;= pivots.length ? pivots.concat([&quot;ID&quot;]) : pivots.slice(0, nodes.length + 1);
+
+				var name = pivots[nodes.length] || &quot;concat('ID',ID)&quot;;
+				var path = me.group.Escape(&quot;,'&quot; + slash + &quot;',&quot;);
+
+				me.query += &quot;, cast(&quot; + name + &quot; AS char) AS name, group_concat(DISTINCT &quot; + path + &quot;) AS NodeID&quot; + &quot;, count(ID) AS NodeCount &quot; + &quot;, '/tbd' AS `path`, 1 AS `read`, 1 AS `write`, 'v1' AS `group`, 1 AS `locked`&quot;;
+
+				delete where.NodeID;
+				nodes.each(function (n, node) {
+					where[pivots[n] || &quot;ID&quot;] = node;
+				});
+				break;
+
+			case &quot;PIVOT&quot;:
+
+				var where = me.where,
+				    nodeID = where.NodeID || &quot;root&quot;;
+
+				if (nodeID == &quot;root&quot;) {
+					me.query += &quot;, group_concat(DISTINCT ID) AS NodeID, count(ID) AS NodeCount,false AS leaf,true AS expandable,false AS expanded&quot;;
+					me.group = opt;
+					delete where.NodeID;
+				} else {
+					me.query += &quot;, '&quot; + nodeID + &quot;' as NodeID, 1 AS NodeCount, true AS leaf,true AS expandable,false AS expanded&quot;;
+					me.where = &quot;instr(',&quot; + nodeID + &quot;,' , concat(',' , ID , ','))&quot;;
+					me.group = null;
+				}
+
+				break;
+
+			case &quot;&quot;:
+			case &quot;IN&quot;:
+			case &quot;WITH&quot;:
+
+				if (me.fulltexts) {
+					me.query += &quot;,MATCH(&quot; + me.fulltexts + &quot;) AGAINST('&quot; + opt + &quot;' &quot; + key + &quot;) AS Score&quot;;
+					me.having = me.score ? &quot;Score&gt;&quot; + me.score : [&quot;Score&quot;];
+					me.searching = opt;
+				}
+				break;
+
+			case &quot;HAS&quot;:
+
+				if (me.fulltexts) {
+					me.query += &quot;,instr(concat(&quot; + me.fulltexts + &quot;),'&quot; + opt + &quot;') AS Score&quot;;
+					me.having = me.score ? &quot;Score&gt;&quot; + me.score : [&quot;Score&quot;];
+					me.searching = opt;
+				}
+				break;
+
+			case &quot;SELECT&quot;:
+
+				switch (type) {
+					case Array:
+						me.query += &quot; &quot; + key + &quot; ??&quot;;
+						me.opts.push(opt);
+						break;
+
+					case String:
+						if (opt == &quot;*&quot;) me.query += &quot; &quot; + key + &quot; *&quot;;else {
+							me.query += &quot; &quot; + key + &quot; &quot; + opt;
+							me.unsafe = true;
+						}
+						break;
+
+					/*
+     case Object:
+     	
+     	if (opt.idx) 
+     		me.x(opt.idx, key);
+     	
+     	else {
+     		me.query += ` ${key} *`;
+     		me.x(opt.nlp, &quot;&quot;);
+     		me.x(opt.bin, &quot;IN BINARY MODE&quot;);
+     		me.x(opt.qex, &quot;WITH QUERY EXPANSION&quot;);
+     		me.x(opt.has,&quot;HAS&quot;);
+     		me.x(opt.browse, &quot;BROWSE&quot;);
+     		me.x(opt.pivot, &quot;PIVOT&quot;);
+     	}
+     	break;
+     */
+				}
+
+				me.x(me.index, &quot;INDEX&quot;);
+
+				if (me.geo) // any geometry fields are returned as geojson
+					me.query += &quot;,&quot; + me.geo;
+
+				break;
+
+			case &quot;JOIN&quot;:
+
+				switch (type) {
+					case Array:
+						me.query += &quot; &quot; + mode + &quot; &quot; + key + &quot; ON ?&quot;;
+						me.opts.push(opt);
+						break;
+
+					case String:
+						me.query += &quot; &quot; + mode + &quot; &quot; + key + &quot; ON &quot; + opt;
+						break;
+
+					case Object:
+
+						var mode = opt.left ? &quot;left&quot; : opt.right ? &quot;right&quot; : &quot;&quot;;
+
+						me.query += &quot; &quot; + mode + &quot; &quot; + key + &quot; ? ON least(?,1)&quot;;
+
+						for (var n in opt.on) {
+							buf[n] = me.table + &quot;.&quot; + opt.on[n];
+						}me.opts.push(opt[mode]);
+						me.opts.push(buf);
+						break;
+				}
+				break;
+
+			case &quot;LIMIT&quot;:
+
+				switch (type) {
+					case Array:
+						me.query += &quot; &quot; + key + &quot; ?&quot;;
+						me.opts.push(opt);
+						break;
+
+					case String:
+						me.query += &quot; &quot; + key + &quot; ?&quot;;
+						me.opts.push(opt.split(&quot;,&quot;));
+						break;
+
+					case Object:
+						me.query += &quot; &quot; + key + &quot; ?&quot;;
+						me.opts.push([opt.start, opt.count]);
+						break;
+				}
+				break;
+
+			case &quot;WHERE&quot;:
+			case &quot;HAVING&quot;:
+
+				me.nowhere = false;
+
+				switch (type) {
+					case Array:
+
+						me.query += &quot; &quot; + key + &quot; ??&quot;;
+						me.opts.push(opt);
+						break;
+
+					case String:
+
+						me.safe = false;
+						me.query += &quot; &quot; + key + &quot; &quot; + opt;
+						break;
+
+					case Object:
+						var rels = [];
+
+						for (var n in opt) {
+							// recast and remove unsafes
+							var test = opt[n];
+
+							if (test == null) {
+								// using unsafe expression query (e.g. &amp;x&lt;10)
+								me.safe = false;
+								rels.push(n);
+								delete opt[n];
+							} else switch (test.constructor) {
+								case Array:
+									// using range query e.g. x=[min,max]
+
+									delete opt[n];
+									switch (test.length) {
+										case 0:
+											rels.push(n.Escape() + &quot; IS null&quot;);
+											break;
+
+										case 2:
+											rels.push(n.Escape() + &quot; BETWEEN &quot; + test[0] + &quot; AND &quot; + test[1]);
+											break;
+
+										default:
+									}
+									break;
+
+								case Object:
+									// using fulltexts query e.g. x={nlp:pattern}
+
+									var fld = n.Escape();
+									if (pat = test.nlp) rels.push(&quot;MATCH(&quot; + fld + &quot;) AGAINST('&quot; + pat + &quot;')&quot;);else if (pat = test.bin) rels.push(&quot;MATCH(&quot; + fld + &quot;) AGAINST('&quot; + pat + &quot;') IN BINARY MODE&quot;);else if (pat = test.qex) rels.push(&quot;MATCH(&quot; + fld + &quot;) AGAINST('&quot; + pat + &quot;') WITH QUERY EXPANSION&quot;);else if (pat = test.has) rels.push(&quot;INSTR(&quot; + fld + &quot;, '&quot; + pat + &quot;')&quot;);else if (pat = test.like) rels.push(fld + &quot; LIKE '&quot; + pat + &quot;'&quot;);else break;
+
+									delete opt[n];
+									break;
+
+								case String: // otherwise using safe query e.g x=value
+								default:
+							}
+						}
+
+						for (var n in opt) {
+							// aggregate where clause using least,sum,etc
+							rels.push(ag);
+							me.opts.push(opt);
+							break;
+						}
+
+						rels = rels.join(&quot; AND &quot;); // aggregate remaining clauses
+						if (rels) me.query += &quot; &quot; + key + &quot; &quot; + rels;else me.nowhere = true;
+
+						break;
+
+					default:
+						me.unsafe = true;
+				}
+				break;
+
+			case &quot;ORDER&quot;:
+
+				switch (type) {
+					case Array:
+						var by = [];
+						opt.each(function (n, opt) {
+							if (opt.property) by.push(opt.property + &quot; &quot; + opt.direction);else for (var n in opt) {
+								by.push(n + &quot; &quot; + opt[n]);
+							}
+						});
+						me.query += &quot; &quot; + key + &quot; &quot; + by.join(&quot;,&quot;);
+						break;
+
+					case String:
+						me.query += &quot; &quot; + key + &quot; ??&quot;;
+						me.opts.push(opt.split(&quot;,&quot;));
+						break;
+
+					case Object:
+						break;
+				}
+				break;
+
+			case &quot;SET&quot;:
+
+				switch (type) {
+					/*case Array:
+     	me.safe = false;
+     	me.query += ` ${key} ??`;
+     	me.opts.push(opt);
+     	break;*/
+
+					case String:
+						me.safe = false;
+						me.query += &quot; &quot; + key + &quot; &quot; + opt;
+						break;
+
+					case Object:
+
+						me.query += &quot; &quot; + key + &quot; ?&quot;;
+
+						/*
+      for (var n in opt) {  // object subkeys are json fields
+      	var js = opt[n];
+      	if (typeof js == &quot;object&quot;) {
+      		var js = JSON.stringify(js);
+      		me.query += `,json_merge(${n},${js})`;
+      		delete opt[n];
+      	}
+      */
+
+						me.opts.push(opt);
+						break;
+
+					default:
+						me.unsafe = true;
+				}
+				break;
+
+			case &quot;INDEX&quot;:
+				//console.log(opt);
+				me.x(opt.nlp, &quot;&quot;);
+				me.x(opt.bin, &quot;IN BINARY MODE&quot;);
+				me.x(opt.qex, &quot;WITH QUERY EXPANSION&quot;);
+				me.x(opt.has, &quot;HAS&quot;);
+				me.x(opt.browse, &quot;BROWSE&quot;);
+				me.x(opt.pivot, &quot;PIVOT&quot;);
+				break;
+
+			default:
+
+				switch (type) {
+					case Array:
+						me.query += &quot; &quot; + key + &quot; ??&quot;;
+						me.opts.push(opt);
+						break;
+
+					case String:
+						me.query += &quot; &quot; + key + &quot; ??&quot;;
+						me.opts.push(opt.split(&quot;,&quot;));
+						break;
+
+					case Object:
+						me.query += &quot; &quot; + key + &quot; ?&quot;;
+						me.opts.push(opt);
+						break;
+				}
+		}
+	},
+
+	update: function update(req, res) {
+		// update record(s) in dataset
+
+		function isEmpty(obj) {
+			for (var n in obj) {
+				return false;
+			}return true;
+		}
+
+		function hawkChange(log) {
+			// journal changes 
+			sql.query(&quot;SELECT * FROM openv.hawks WHERE least(?,Power)&quot;, log).on(&quot;result&quot;, function (hawk) {
+				//console.log(hawk);
+				sql.query(&quot;INSERT INTO openv.journal SET ? ON DUPLICATE KEY UPDATE Updates=Updates+1&quot;, Copy({
+					Hawk: hawk.Hawk, // moderator
+					Power: hawk.Power, // moderator's level
+					Updates: 1 // init number of updates made
+				}, log));
+			});
+		}
+
+		var me = this,
+		    attr = DSVAR.attrs[me.table] || DEFAULT.ATTRS,
+		    table = attr.tx || me.table,
+		    ID = me.where.ID,
+		    client = me.client,
+		    sql = me.sql;
+
+		me.opts = [];me.query = &quot;&quot;;me.safe = true;me.nowhere = true;
+
+		me.x(table, &quot;UPDATE&quot;);
+		me.x(req, &quot;SET&quot;);
+		me.x(me.where, &quot;WHERE &quot; + me.ag);
+		me.x(me.order, &quot;ORDER BY&quot;);
+
+		if (me.nowhere) res(DSVAR.errors.unsafeQuery);else if (isEmpty(req)) res(DSVAR.errors.nillUpdate);else if (me.safe || me.unsafeok) {
+			/*
+   //uncomment to disable journalling
+   me.journal = false;
+   */
+
+			if (me.journal) {
+				// attempt change journal if enabled
+				hawkChange({ Dataset: me.table, Field: &quot;&quot; }); // journal entry for the record itself
+				/*
+    // uncomment to enable
+    for (var key in req) { 		// journal entry for each record key being changed
+    	hawk({Dataset:me.table, Field:key});
+    	hawk({Dataset:&quot;&quot;, Field:key});
+    }
+    */
+			}
+
+			sql.query(me.query, me.opts, function (err, info) {
+
+				if (res) res(err || info);
+
+				if (DSVAR.io.sockets.emit &amp;&amp; ID &amp;&amp; !err) // Notify clients of change.  
+					DSVAR.io.sockets.emit(&quot;update&quot;, {
+						path: &quot;/&quot; + me.table + &quot;.db&quot;,
+						body: req,
+						ID: ID,
+						from: client
+						//flag: flags.client
+					});
+			});
+
+			if (me.trace) Trace(me.query);
+		} else if (res) res(DSVAR.errors.unsafeQuery);
+	},
+
+	select: function select(req, res) {
+		// select record(s) from dataset
+
+		var me = this,
+		    attr = DSVAR.attrs[me.table] || DEFAULT.ATTRS,
+		    table = attr.tx || me.table,
+		    client = me.client,
+		    sql = me.sql;
+
+		me.opts = [];me.query = &quot;&quot;;me.safe = true;me.nowhere = true;
+
+		me.x(me.index.select, &quot;SELECT SQL_CALC_FOUND_ROWS&quot;);
+		me.x(table, &quot;FROM&quot;);
+		me.x(me.join, &quot;JOIN&quot;, {});
+		me.x(me.where, &quot;WHERE &quot; + me.ag);
+		me.x(me.having, &quot;HAVING &quot; + me.ag);
+		me.x(me.order, &quot;ORDER BY&quot;);
+		me.x(me.group, &quot;GROUP BY&quot;);
+		me.x(me.limit, &quot;LIMIT&quot;);
+
+		if (me.safe || me.unsafeok) switch (req.name) {
+			case &quot;each&quot;:
+				sql.query(me.query, me.opts).on(&quot;error&quot;, function (err) {
+					req(err, me);
+				}).on(&quot;result&quot;, function (rec) {
+					req(rec, me);
+				});
+				break;
+
+			case &quot;clone&quot;:
+				var rtn = [];
+				sql.query(me.query, me.opts, function (err, recs) {
+					if (err) return req(err, me);
+
+					recs.each(function (n, rec) {
+						rtn.push(new Object(rec));
+					});
+
+					req(rtn, me);
+				});
+				break;
+
+			case &quot;trace&quot;:
+				Trace(sql.query(me.query, me.opts, function (err, recs) {
+					req(err || recs, me);
+				}));
+				break;
+
+			case &quot;all&quot;:
+			default:
+				Trace(sql.query(me.query, me.opts, function (err, recs) {
+
+					if (me.track &amp;&amp; me.searching &amp;&amp; recs) sql.query(&quot;INSERT INTO openv.tracks SET ? ON DUPLICATE KEY UPDATE Searched=Searched+1,Returned=Returned+?&quot;, [{ Client: client,
+						Searching: me.searching,
+						Searched: 0,
+						Within: me.table,
+						Returned: recs.length
+					}, recs.length]);
+
+					req(err || recs, me);
+				}));
+		} else if (res) res(DSVAR.errors.unsafeQuery);
+
+		if (me.trace) Trace(me.query);
+	},
+
+	delete: function _delete(req, res) {
+		// delete record(s) from dataset
+
+		var me = this,
+		    attr = DSVAR.attrs[me.table] || DEFAULT.ATTRS,
+		    table = attr.tx || me.table,
+		    ID = me.where.ID,
+		    client = me.client,
+		    sql = me.sql;
+
+		me.opts = [];me.query = &quot;&quot;;me.safe = true;me.nowhere = true;
+
+		me.x(table, &quot;DELETE FROM&quot;);
+		me.x(me.where, &quot;WHERE &quot; + me.ag);
+
+		if (me.nowhere) res(DSVAR.errors.unsafeQuery);else if (me.safe || me.unsafeok) {
+			me.sql.query(me.query, me.opts, function (err, info) {
+
+				if (me.res) me.res(err || info);
+
+				if (DSVAR.io.sockets.emit &amp;&amp; ID &amp;&amp; !err) // Notify clients of change.  
+					DSVAR.io.sockets.emit(&quot;delete&quot;, {
+						path: &quot;/&quot; + me.table + &quot;.db&quot;,
+						ID: ID,
+						from: me.client
+						//flag: flags.client
+					});
+			});
+
+			if (me.trace) Trace(me.query);
+		} else if (res) res(DSVAR.errors.unsafeQuery);
+	},
+
+	insert: function insert(req, res) {
+		// insert record(s) into dataset
+
+		function isEmpty(obj) {
+			for (var n in obj) {
+				return false;
+			}return true;
+		}
+
+		var me = this,
+		    attr = DSVAR.attrs[me.table] || DEFAULT.ATTRS,
+		    table = attr.tx || me.table,
+		    ID = me.where.ID,
+		    client = me.client,
+		    sql = me.sql;
+
+		me.opts = [];me.query = &quot;&quot;;me.safe = true;me.nowhere = true;
+
+		if (!req.length) req = [{}]; // force at least one insert attempt
+
+		req.each(function (n, rec) {
+
+			sql.query(me.query = isEmpty(rec) ? &quot;INSERT INTO ?? VALUE ()&quot; : &quot;INSERT INTO ?? SET ?&quot;, [table, rec], function (err, info) {
+
+				if (!n &amp;&amp; res) {
+					// respond only to first insert
+					res(err || info);
+
+					if (DSVAR.io.sockets.emit &amp;&amp; !err) // Notify clients of change.  
+						DSVAR.io.sockets.emit(&quot;insert&quot;, {
+							path: &quot;/&quot; + me.table + &quot;.db&quot;,
+							body: rec,
+							ID: info.insertId,
+							from: client
+							//flag: flags.client
+						});
+				}
+			});
+
+			if (me.trace) Trace(me.query);
+		});
+	},
+
+	get rec() {// reserved
+	},
+
+	unlock: function unlock(ID, cb, lockcb) {
+		// unlock record 
+		var me = this,
+		    sql = me.sql,
+		    lockID = { Lock: me.table + &quot;.&quot; + ID, Client: me.client };
+
+		if (ID) sql.query(&quot;DELETE FROM openv.locks WHERE least(?)&quot;, lockID, function (err, info) {
+
+			if (info.affectedRows) {
+				cb();
+				sql.query(&quot;COMMIT&quot;); // commit queues transaction
+			} else if (lockcb) sql.query(&quot;INSERT INTO openv.locks SET ?&quot;, lockID, function (err, info) {
+
+				if (err) me.res(&quot;record already locked by another&quot;);else sql.query(&quot;START TRANSACTION&quot;, function (err) {
+					// queue this transaction
+					lockcb();
+				});
+			});else me.res(&quot;record must be locked&quot;);
+		});else me.res(&quot;missing record ID&quot;);
+	},
+
+	set rec(req) {
+		// crud interface
+		var me = this,
+		    res = me.res;
+
+		if (req) switch (req.constructor) {
+			case Error:
+
+				if (res) res(req);
+				break;
+
+			case Array:
+
+				me.insert(req, res);
+				break;
+
+			case Object:
+
+				me.update(req, res);
+				break;
+
+			case Function:
+				me.select(req, res);
+				break;
+
+			default:
+
+				if (me.trace) Trace(req.toUpperCase() + &quot; &quot; + me.table + &quot; FOR &quot; + me.client);
+
+				switch (req) {
+					case &quot;lock.select&quot;:
+
+						me.rec = function (recs) {
+
+							if (recs.constructor == Error) res(recs + &quot;&quot;);else if (rec = recs[0]) me.unlock(rec.ID, function () {
+								res(rec);
+							}, function () {
+								res(rec);
+							});else res(&quot;no record found&quot;);
+						};
+
+						break;
+
+					case &quot;lock.delete&quot;:
+
+						me.unlock(me.where.ID, function () {
+							me.rec = null;
+						});
+						break;
+
+					case &quot;lock.insert&quot;:
+
+						me.unlock(me.where.ID, function () {
+							me.rec = [me.data];
+						});
+						break;
+
+					case &quot;lock.update&quot;:
+
+						me.unlock(me.where.ID, function () {
+							me.rec = me.data;
+						});
+						break;
+
+					case &quot;lock.execute&quot;:
+
+						res(&quot;execute undefined&quot;);
+						break;
+
+					case &quot;select&quot;:
+						me.rec = me.res;break;
+					case &quot;update&quot;:
+						me.rec = me.data;break;
+					case &quot;delete&quot;:
+						me.rec = null;break;
+					case &quot;insert&quot;:
+						me.rec = [me.data];break;
+					case &quot;execute&quot;:
+						me.rec = DSVAR.errors.unsupportedQuery;break;
+
+					default:
+						me.rec = DSVAR.errors.invalidQuery;
+				}
+
+		} else me.delete(req, res);
+
+		return this;
+	}
+
+};
+
+function indexEach(query, idx, cb) {
+	this.query(query, function (err, recs) {
+		recs.each(function (n, rec) {
+			cb(rec[idx]);
+		});
+	});
+}
+
+function indexAll(query, idx, rtns, cb) {
+
+	this.query(query, function (err, recs) {
+		recs.each(function (n, rec) {
+			rtns.push(rec[idx]);
+		});
+
+		cb(rtns);
+	});
+}
+
+function eachTable(from, cb) {
+	this.indexEach(&quot;SHOW TABLES FROM &quot; + from, &quot;Tables_in_&quot; + from, cb);
+}
+
+function jsonKeys(from, cb) {
+	this.indexAll(&quot;SHOW FIELDS FROM &quot; + from + &quot; WHERE Type=\&quot;json\&quot; OR Type=\&quot;mediumtext\&quot;&quot;, &quot;Field&quot;, [], cb);
+}
+
+function textKeys(from, cb) {
+	this.indexAll(&quot;SHOW FIELDS FROM &quot; + from + &quot; WHERE Type=\&quot;mediumtext\&quot;&quot;, &quot;Field&quot;, [], cb);
+}
+
+function searchableKeys(from, cb) {
+	this.indexAll(&quot;SHOW KEYS FROM &quot; + from + &quot; WHERE Index_type=\&quot;fulltext\&quot;&quot;, &quot;Column_name&quot;, [], cb);
+}
+
+function geometryKeys(from, cb) {
+	this.indexAll(&quot;SHOW FIELDS FROM &quot; + from + &quot; WHERE Type=\&quot;geometry\&quot;&quot;, &quot;Field&quot;, [], cb);
+}
+
+function context(ctx, cb) {
+	// callback cb(context) with a DSVAR context
+	var sql = this,
+	    context = {};
+
+	for (var n in ctx) {
+		context[n] = new DSVAR.DS(sql, ctx[n]);
+	} //new DSVAR.DS(sql, ctx[n], {table:n});
+
+	if (cb) cb(context);
+}
+
+function Trace(msg, arg) {
+	ENUM.trace(&quot;V&gt;&quot;, msg, arg);
+}</pre>
+</body>
+</html>

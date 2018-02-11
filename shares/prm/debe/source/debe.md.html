@@ -20,40 +20,59 @@
 	[SourceForge](https://sourceforge.net) 
 	[github](https://github.com/acmesds/debe.git) 
 	[geointapps](https://git.geointapps.org/acmesds/debe)
-	[gitlab](https://gitlab.weat.nga.ic.gov/acmesds/debe.git)
+	[gitlab](https://gitlab.west.nga.ic.gov/acmesds/debe.git)
 	
 # DEBE
 
-DEBE stacks the [FLEX database extender](https://github.com/acmesds/flex), the
-[CHIPPER earth-focused data segmenter and workflow manager](https://github.com/acmesds/chipper) ,
-and the [ENGINE language agnostic computer](https://github.com/acmesds/engine) above 
-the [TOTEM base web service](https://github.com/acmesds/totem) to provide a web service for 
-managing interfaces, requirements, project metrics, geoint products and workflows.  
+DEBE extends [TOTEM simple web service](https://github.com/acmesds/totem) with
+the [FLEX database extender](https://github.com/acmesds/flex), 
+[GEOHACK earth event segmenter](https://github.com/acmesds/geohack),
+and [ATOMIC cloud compute](https://github.com/acmesds/atomic) modules to provide a web service 
+that manages its content, interfaces, requirements, project metrics, geoint products and workflows.  
 
-As documented in its [api](/api.view), DEBE extends [TOTEM](https://github.com/acmesds/totem)'s 
-/DATASET.TYPE?QUERY endpoints with various TYPE convertors:
+As documented in its api, DEBE provides ENDPOINTs:
 
-	kml, flat, txt, tab, tree, delta, encap, nav
+	(select) GET 	 /NODE $$ NODE ...
+	(update) PUT 	 /NODE $$ NODE ...
+	(insert) POST 	 /NODE $$ NODE ...
+	(delete) DELETE /NODE $$ NODE ...
+
+ to access a NODE:
+
+	DATASET.TYPE ? QUERY ? QUERY ...
+	ENGINE.TYPE ? QUERY ? QUERY ...
+	FILEPATH.TYPE ? QUERY ? QUERY ...
+	COMMAND.TYPE ? QUERY ? QUERY ...
+
+using an optional QUERY:
+
+	KEY=VALUE &amp; EXPRESSION ...
+
+DEBE provides default TYPEs to format data:
+
+	db | xml | csv | txt | tab | tree | flat | kml | encap | html | json | geojson
+
+render a view/skin:
+
+	view | pivot | site | spivot | brief | gridbrief | pivbrief | run | plugin | runbrief
+
+run an engine or return its usecase events:
+
+	exe | USECASE
+
+provide attributes:
+
+	delta | nav | stat
 	
-page skinners:
+or generate office files:
 
-	view | run | plugni | pivot | site | spivot | brief | gridbrief | pivbrief | runbrief
+	pdf | xdoc | xppt | xxls ...
 
-an engine / workflow starter:
+By default, DEBE provides the following COMMAND endpoints:
 
-	exe
-	
-and file attribute getters:
+	help | stop | alert | codes | ping | bit | config
 
-	code, jade, classif, readability, client, size, risk
-	
-As documented in its [api](/api.view), DEBE also extends  [TOTEM](https://github.com/acmesds/totem)'s  
-QUERY flags with:
-
-	_save, _browse, _view, _blog, _json
-
-DEBE provides its page skinners a context of useful parameters and methods, as described in 
-its [skinguide](/skinguide.view).
+If DEBE was configured for antibot protect, DEBE will also provide a *riddle* endpoint for clients to validate themselves.
 
 ## Installation
 
@@ -85,8 +104,8 @@ Simply require, configure and start DEBE:
 		console.log( err ? &quot;something evil is lurking&quot; : &quot;look mom - Im running!&quot;);
 	});
 
-where its configuration keys follow [ENUM copy()](https://github.com/acmesds/enum) conventions and
-are described in its [PRM](/shares/prm/debe/index.html).
+where its configuration keys follow [ENUM copy()](https://github.com/acmesds/enum) conventions 
+described in its [PRM](/shares/prm/debe/index.html).
 
 The following examples are from TOTEM's test.js unit tester.  You may also find 
 Totem's [DSVAR](https://github.com/acmesds/dsvar) useful, if you wish to learn more about its 
