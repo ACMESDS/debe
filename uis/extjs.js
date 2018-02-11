@@ -702,13 +702,14 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 					format: "",
 					defaultValue: "",
 					//scrollable: true,
+					//minHeight: 200,
 					grow: true,
 					allowBlank: true,
 					disabled: fOff,
-					//minHeight: 200,
 					width: 600
-					// If standalone widget
-					/*** enableKeyEvents: true,  
+					
+					/*
+					//enableKeyEvents: true,  
 					listeners: {
 						keydown: function (f,e) {
 							e.stopEvent();
@@ -743,6 +744,10 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 									
 								case 36: //home
 									pos=0;
+									break;
+									
+								case 38:  //up
+								case 40:  //down
 									break;
 									
 								case 37: //left
@@ -784,8 +789,8 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 							el.setSelectionRange(pos,pos);
 
 						}
-					} */
-				},
+					}  */
+				}, 
 				renderer 	: calcRender,
 				listeners	: fListen
 			};
@@ -1119,16 +1124,19 @@ function DS(anchor) {
 					pageSize	: page,  		// used with paging and vertical scroller
 					remoteSort	: true,			// enable remote sorting
 
-					//defaultRootText: name, 			// root label
-					//defaultRootId: NODE.ROOT,			// root value (EXTJS BUG "" causes bazzare things)
-					//defaultRootProperty: "children", //$$ NODE.CHILDREN,	// root children
 					nodeParam: NODE.ID, 		// property for loading children
-					//parentIdProperty: NODE.PARENT,   // seems to be ignored
-
+					
+					/*
+					defaultRootText: name, 			// root label
+					defaultRootId: NODE.ROOT,			// root value (EXTJS BUG "" causes bazzare things)
+					defaultRootProperty: "children", //$$ NODE.CHILDREN,	// root children
+					parentIdProperty: NODE.PARENT,   // seems to be ignored
+					*/
+					
 					listeners: {
 						/*
-						// EXTJS BUG -- paging support absent so must force support with
-						// this event handler, as well as the Ext.paging.Tree extension class.
+						EXTJS BUG -- paging support absent so must force support with
+						this event handler, as well as the Ext.paging.Tree extension class.
 						beforeload: function ( store, op, eOpts ) {
 							op.params._start = (store.currentPage - 1) * store.pageSize;
 							op.params._limit = store.pageSize;
@@ -1146,59 +1154,53 @@ function DS(anchor) {
 								data = raw.data,
 								root = store.getRootNode();
 
-							//alert("loaded="+data.length);
-							//alert(JSON.stringify(raw));					
-							//alert("nodes="+store.getCount());
+							if (false) {  // following for debugging
+								/* 
+								parentId being derived correctly, and nodes are being added
+								to the store; but will not display when node expanded.  ExtJS
+								seems to be handeling ID,parentId in a logical fashion: parentId
+								returns as expanded NodeID, ID starts at 0 and increments.  ExtJS
+								ignores, however, the ID,parentId returned by the server.  ExtJS
+								will scan for ID,parentId in specified PROXY.ROOT.
+								*/
+								alert("loaded="+data.length);
+								alert(JSON.stringify(raw));					
+								alert("nodes="+store.getCount());
 
-							// parendIf being derived correctly, and nodes are being added
-							// to the store; but will not display when node expanded.  ExdtJS
-							// seems to be handeling ID,parentId in a logical fashion: parentId
-							// returns as expanded NodeID, ID starts at 0 and increments.  ExtJS
-							// ignores, however, the ID,parentId returned by the server.  ExtJS
-							// will scan for ID,parentId in specified PROXY.ROOT.
+								data.Each(function (n,data) {
+									alert([n,data.ID,"("+data.parentId+")",data.leaf,data.expanded]);
+								});
 
-							if (false)
-							data.Each(function (n,data) {
-								alert([n,data.ID,"("+data.parentId+")",data.leaf,data.expanded]);
-							});
+								data.Each(function (n,data) {
+									//data.ID += 100;
+									root.appendChild(data);
+								});
 
-							if (false)
-							data.Each(function (n,data) {
-								//data.ID += 100;
-								root.appendChild(data);
-							});
-
-							if (false && data.length != 5) 
 								root.appendChild({
 									name: "newguy",
 									exapnded: true,
 									children: data
 								});
 
-							// alert("tree loaded "+[store.getCount(),data.length,store.getParentIdProperty()]);
+								store.getRootNode().expand(true);
 
-							//store.getRootNode().expand(true);
+								data.Each(function (n,data) {
+									var rec = Ext.create(name, data);
+									store.add(rec);
+									alert("added "+[n,store.getCount(),rec.get("NodeID")]);
+								});
 
-							if (false)
-							data.Each(function (n,data) {
-								var rec = Ext.create(name, data);
-								store.add(rec);
-								alert("added "+[n,store.getCount(),rec.get("NodeID")]);
-							});
+								data.Each(function (n,datarec) {
+									if (datarec.parentId != "root") {
+										//datarec.NodeID = datarec.NodeID + "." + n;
+										var newRec = Ext.create(name, datarec);
+										store.getNodeById(datarec.parentId).appendChild(newRec);
+										//newRec.save();
+									}
 
-							if (false)
-							data.Each(function (n,datarec) {
-								if (datarec.parentId != "root") {
-									//datarec.NodeID = datarec.NodeID + "." + n;
-									var newRec = Ext.create(name, datarec);
-									store.getNodeById(datarec.parentId).appendChild(newRec);
-									//newRec.save();
-								}
+									alert("added "+[n,store.getCount()]);
+								});
 
-								alert("added "+[n,store.getCount()]);
-							});
-
-							if (false) 
 								data.Each(function (n,datarec) {
 									if (datarec.parentId != "root") 
 										root.appendChild(datarec);
@@ -1206,12 +1208,12 @@ function DS(anchor) {
 									//alert("added "+[n,store.getCount()]);
 								});
 
-							if (false)
-							store.getRange().Each( function (n,rec) {
-								var data = rec.getData();
-								//rec.setId(data.NodeID);
-								//alert([data.ID,data.NodeID,data.name,data.TRL,data.NodeCount,data.leaf,data.expandable,data.expanded]);
-							});
+								store.getRange().Each( function (n,rec) {
+									var data = rec.getData();
+									//rec.setId(data.NodeID);
+									//alert([data.ID,data.NodeID,data.name,data.TRL,data.NodeCount,data.leaf,data.expandable,data.expanded]);
+								});
+							}
 						}
 					}
 				});
@@ -1226,7 +1228,7 @@ function DS(anchor) {
 					model		: name,
 					autoLoad	: isResolved,
 					/*autoLoad: {			// call its load method after store created
-							params: Clone(Link.Flag) // EXTJS BUG - load revises params
+							params: Copy(Link.Flag, {}) // EXTJS BUG - load revises params
 						}, */
 					
 					//autoSync	: false,  	// disabled forces use of update to sync changes
@@ -2081,7 +2083,7 @@ WIDGET.prototype.menuTools = function () {
 				var srcRec = rec.getData();
 				var tarMod = Ext.create(tarDS.name);
 				
-				tarMod.data = Copy(links,Clone(srcRec,{NodeID:1,NodeCount:1}));
+				tarMod.data = Copy(links,Copy(srcRec,{NodeID:1,NodeCount:1}));
 				
 				// Add the target links, clear its ID field (to force
 				// a post), save (vs insert or loadrecs which causes buggy interaction
@@ -4181,13 +4183,13 @@ WIDGET.prototype.form = function () {
 									scope.setValue(rawValue);
 							}
 						}
-					}, Clone(Col.editor) );
+					}, Copy(Col.editor, {}) );
 			
+				/*
 				// EXTJS BUG -- disabled form fields are not submitted.  Ext argues this is the expected
 				// behavior, yet it dutifully submits disabled fields when they are on grids.  Best way to 
 				// normalize this behavior is to make them hidden and enabled on the form.
 				
-				/*
 				if (UI.disabled) {
 					UI.disabled = false;
 					UI.xtype = 'hiddenfield';

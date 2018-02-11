@@ -1,3 +1,47 @@
+String.prototype.tag = function tag(el,at) {
+/**
+* @method tag
+* Tag url (el="?") or tag html using specified attributes.
+* @param {String} el tag element
+* @param {String} at tag attributes
+* @return {String} tagged results
+*/
+
+	if ( el == "?" ) {  // tag a url
+		var rtn = this+"?";
+
+		if (at) for (var n in at) {
+				rtn += n + "=";
+				switch ( (at[n] || 0).constructor ) {
+					//case Array: rtn += at[n].join(",");	break;
+					case Array:
+					case Date:
+					case Object: rtn += JSON.stringify(at[n]); break;
+					default: rtn += at[n];
+				}
+				rtn += "&";
+			}
+
+		return rtn;				
+	}
+
+	else {  // tag html
+		var rtn = "<"+el+" ";
+
+		if (at) for (var n in at) rtn += n + "='" + at[n] + "' ";
+
+		switch (el) {
+			case "embed":
+			case "img":
+			case "link":
+			case "input":
+				return rtn+">" + this;
+			default:
+				return rtn+">" + this + "</"+el+">";
+		}
+	}
+}
+
 function takequiz(state) {
 	function clearQuiz() {
 		quizContainer.innerHTML = "";
@@ -142,7 +186,11 @@ function takequiz(state) {
 	
 }
 
-navigator.totem.quizes = {  // topic.module.set
+//==============================================
+// Below should be modified as needed.  Entires should follow the topic.module.set convention. See
+// the /exquiz.view for usage example.
+
+navigator.totem.quizes = {  
 	
 "swag.1.1": [
 {
@@ -195,7 +243,7 @@ navigator.totem.quizes = {  // topic.module.set
 
 "swag.2.1": [
 {
-	Q: "the best color?",
+	Q: "the best " + "color?".tag("img",{src:"/shares/a1.jpg"}),
 	S: {
 		a: "red",
 		b: "green",

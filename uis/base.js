@@ -2,7 +2,7 @@
 
 /**
  * @module base
- * The base client modules is used by all Totem's framework modules (grids, models, guides, etc) to support 
+ * The base client modules is used by Totem frameworks (grids, models, guides, etc) to support 
  * [Totem's content management](/skinguide.view)nc function. This module is typically used as follows:
  *
  * 		BASE.start( { options .... }, function cb(content widget) { ... } )
@@ -127,14 +127,14 @@ var BASE = {
 		LISTS : { }
 	},
 		
-	/**
+	/*
+	format: function(X,str) {
+	/ **
 	 * @method format
 	 * 
 	 * Format a string str containing ${X.key} tags.  The String wrapper for this
 	 * method will optionaly provide plugins like X.F = {fn: function (X){}, ...}.
-	 * */
-	/*
-	format: function(X,str) {
+	 * * /
 
 		try {
 			var rtn = eval("`" + str + "`");
@@ -148,6 +148,7 @@ var BASE = {
 
 	//hidden: "_",
 
+	reprompt: function(req, cb) {
 	/**
 	 * method reprompt
 	 * 
@@ -155,10 +156,7 @@ var BASE = {
 	 * until req.tries has been reduced to 0, or until test(url) returns true
 	 * to terminate the reprompt.  The dom is destroyed if req.tries is 
 	 * exceeded, or if reprompt was terminated.
-	 * 
-	 * */
-	reprompt: function(req, cb) {
-				
+	 * */				
 		var pass = false;
 		
 		cb( req, function test(url) {  // provide callback this prompt tester
@@ -195,6 +193,7 @@ var BASE = {
 		
 	startDIV: "content",			//< div where start() begins parsing the dom
 	
+	start: function(opts, cb) { // defines user information
 	/**
 	 * @method start
 	 * @param {Object} opts BASE options
@@ -214,8 +213,6 @@ var BASE = {
 	 * The sockets interface takes io(req) callbacks and are utilized if a socketio 
 	 * interface is povided by the server.
 	 * */
-
-	start: function(opts, cb) { // defines user information
 		
 		// Get default div anchor for parse
 		
@@ -286,12 +283,12 @@ var BASE = {
 * @class Date
 */
 
+Date.prototype.toJSON = function () {
 /**
  * @method toJSON
  * Return MySQL compliant date string.
  * @return {String} MySQL compliant version of this date
  */
-Date.prototype.toJSON = function () {
 	return this.toISOString().split(".")[0];
 }
 
@@ -299,6 +296,7 @@ Date.prototype.toJSON = function () {
 * @class String
 */
 
+String.prototype.parse = function parse(parms,cb,endcb) {
 /**
  * @method parse
  * Parse this string using the {@link PARSE#String Parser}.
@@ -306,11 +304,11 @@ Date.prototype.toJSON = function () {
  * @param {Function} cb Callback(token,args) returns an arg for the next args list
  * @return {Array} arg list returned by callback
  */
-String.prototype.parse = function (parms,cb,endcb) {
 	var ps = new PARSE(this,parms,cb,endcb);
 	return ps.args;
 }
 
+/*
 String.prototype.indent = function (tag,at) {	
 	if (tag) 
 		if (at)
@@ -320,50 +318,60 @@ String.prototype.indent = function (tag,at) {
 	else
 		return "\t" + this.split("\n").join("\n\t");
 }
-	
+*/
+
+String.prototype.tag = function tag(el,at) {
 /**
 * @method tag
-* Returns an html tag of the specified element and class.
-* @param {String} el html element (e.g. div, ul)
-* @param {String} cl html class
-* @return {String} html tag
+* Tag url (el="?") or tag html using specified attributes.
+* @param {String} el tag element
+* @param {String} at tag attributes
+* @return {String} tagged results
 */
-String.prototype.tag = function tag(el,at) {
-		
-	if (el.constructor == String) {
+
+	if ( el == "?" ) {  // tag a url
+		var rtn = this+"?";
+
+		if (at) for (var n in at) {
+				rtn += n + "=";
+				switch ( (at[n] || 0).constructor ) {
+					//case Array: rtn += at[n].join(",");	break;
+					case Array:
+					case Date:
+					case Object: rtn += JSON.stringify(at[n]); break;
+					default: rtn += at[n];
+				}
+				rtn += "&";
+			}
+
+		return rtn;				
+	}
+
+	else {  // tag html
 		var rtn = "<"+el+" ";
 
-		if (at)  
-			for (var n in at) rtn += n + "='" + at[n] + "' ";
+		if (at) for (var n in at) rtn += n + "='" + at[n] + "' ";
 
 		switch (el) {
 			case "embed":
 			case "img":
 			case "link":
+			case "input":
 				return rtn+">" + this;
 			default:
 				return rtn+">" + this + "</"+el+">";
 		}
-		//return rtn+">" + this + "</"+el+">";
 	}
-	else {
-		var rtn = this;
-
-		for (var n in el) rtn += "&" + n + "=" + el[n];
-		return rtn;
-	}
-
 }
 
 /**
 * @class Array
 */
 
+Array.prototype.hashify = function (val) {
 /**
  * @method hashify
- *
  */
-Array.prototype.hashify = function (val) {
 	var rtn = new Object();
 	var N = this.length;
 
@@ -375,32 +383,18 @@ Array.prototype.hashify = function (val) {
 	return rtn;
 }
 
+Array.prototype.Each = function (cb) {
 /**
  * @method Each
  * Enumerate with callback
  * @param {Object} cb callback (index,value) returns true to terminate
 */
-Array.prototype.Each = function (cb) {
 	var N = this.length;
 	for (var n=0;n<N;n++) if (cb(n,this[n])) return true;
 	return false;
 }
 
-/**
-* @method listify
-* @public
-* Return an array corresponding to the supplied hash
-* @param {Object} hash supplied hash of values
-* @return {Array} array such that return[hash[n]] = n
-*/
-/*function listify(hash) {
-	var len = 0;
-	for (var n in hash) if (hash[n]>len) len = hash[n];
-	var rtn = new Array(len+1);
-	for (var n in hash) rtn[hash[n]] = n;
-	return rtn;
-}*/
-
+function hashify(recs) { 
 /**
 * @method hashify
 * @public
@@ -409,7 +403,6 @@ Array.prototype.Each = function (cb) {
 * @param {Object} rtn hash to return
 * @param {String} idx index into record
 */
-function hashify(recs) { 
 	rtn = {};
 	
 	recs.Each( function (n,rec) {
@@ -419,7 +412,9 @@ function hashify(recs) {
 	return rtn;
 }
 
-/**
+/*
+function listify(hash,idxkey,valkey) {
+/ **
 * @method listify
 * @public
 * Build data records from a hash.
@@ -427,9 +422,7 @@ function hashify(recs) {
 * @param {String} valkey value key name
 * @param {hash} input input key-value hash
 * @return {Array} output records
-*/
-/*
-function listify(hash,idxkey,valkey) {
+* /
 	var list = [];
 	var n = 0;
 	
@@ -459,6 +452,7 @@ function joinify(hash, list, cb) {
 }
 */
 
+function PARSE(text,parms,cb,fincb) {
 /**
  * @class PARSE
  * @constructor
@@ -475,7 +469,7 @@ function joinify(hash, list, cb) {
  * @param {Function} fincb final callback (asm,depth,count) for assembly at given depth in all count assemblies
  * @return {Array} args returned by cb callback
  */
-function PARSE(text,parms,cb,fincb) {
+	
 /**
  * @property {String}
  * String to parse
@@ -508,10 +502,10 @@ function PARSE(text,parms,cb,fincb) {
 	this.args = this.parse(cb,fincb);
 }
 
+PARSE.prototype.tokens = function (tok) { 
 /**
 * @method tokens
 */
-PARSE.prototype.tokens = function (tok) { 
 	var toks = tok.split("*");
 	var parms = this.parms;
 	
@@ -540,13 +534,13 @@ PARSE.prototype.tokens = function (tok) {
 	return toks;
 }
 
+PARSE.prototype.parse = function (cb,fincb) { 
 /**
  * @method parse
  * Parse this string from current position with callbacks on every token.
  * @param {Function} cb callback(token,[args]) returns an arg.
  * @return {Array} arg array corresponding to Each arg returned by cb 
  */ 
-PARSE.prototype.parse = function (cb,fincb) { 
 	var tok = "", test, args = new Array();
 	var This = this;
 	var asms = this.asms;
@@ -625,6 +619,7 @@ function ANCHOR(id,attr,children) { // creates a new anchor to accept a new widg
 	//this.Each = function () {};
 }
 
+function WIDGET (Anchor) {
 /**
  * @class WIDGET
  * @constructor
@@ -669,7 +664,6 @@ function ANCHOR(id,attr,children) { // creates a new anchor to accept a new widg
 	+ FILE.TYPE inlines html with an appropriate link = [project](/project.view), [engine](/engines.view),
 	[files](/files.view) for the specifed TYPE = db, py | js | mat | ... , jpg | png | ico | ... of FILE.
 */
-function WIDGET (Anchor) {
 	var This = this;
 	var UIs = this.UIs = [];
 	var HTML = "";
@@ -865,16 +859,17 @@ function WIDGET (Anchor) {
 	this.HTML = HTML;
 }
 
+WIDGET.prototype.status = function (oper,msg) {
 /**
 * @method status
 */
-WIDGET.prototype.status = function (oper,msg) {
 	// Set dom.disable_window_status_change = false in FF about:config to get window.status to work
 	if (this.trace)
 		//window.status = oper+" "+this.name+" "+(msg||"");
 		console.log(oper+" "+this.name+" "+(msg||""));
 }
 
+function Copy(src,tar,cb) {
 /**
  * @method Copy
  * @public
@@ -885,7 +880,6 @@ WIDGET.prototype.status = function (oper,msg) {
  * 
  * Shallow Copy of source hash under supervision of callback. 
  */
-function Copy(src,tar,cb) {
 
 	if (cb) 
 		for (var key in src) 
@@ -897,10 +891,12 @@ function Copy(src,tar,cb) {
 	return tar;
 }
 
+/*
 function Clone(src,cb) {
 	return Copy(src,{},cb);
-}
+} */
 
+function Each(src,cb) {
 /**
  * @method Each
  * @public
@@ -909,7 +905,6 @@ function Clone(src,cb) {
  * 
  * Shallow enumeration over source hash until callback returns true.
  * */
-function Each(src,cb) {
 	
 	if (src)
 	switch (src.constructor) {

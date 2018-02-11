@@ -114,25 +114,26 @@ var
 			function pretty(stats,sigfig) {
 				var rtn = [];
 				Each(stats, function (key,stat) {
-					rtn.push( stat.toFixed(sigfig) + " " + key );
+					rtn.push( (stat||0).toFixed(sigfig) + " " + key );
 				});
 				return rtn.join(", ");
 			}
 			
 			var 
 				gets = {
-					ungraded: "SELECT ID FROM app.files WHERE NOT graded",
+					ungraded: "SELECT ID,Voxelized,Actors,States,Steps FROM app.files WHERE NOT graded",
 					expired: "SELECT ID FROM app.files WHERE now() > Expired",
 					update: "UPDATE app.files SET canDelete=?, Notes=concat(Notes,?)",
 					old: "SELECT files.*,count(events.id) AS evCount FROM app.events LEFT JOIN app.files ON events.fileid = files.id WHERE datediff( now(), files.added)>=? AND NOT files.canDelete GROUP BY fileid"
 				};
 
-			/*
+			sql.getEach( lims.trace, gets.expired, [], function (file) { 
+				Log("expired file",file);
+				sql.query("DELETE FROM app.events WHERE ?", {fileID: file.ID});
+				/*
+			need to export events to output file, then archive this output file
 			CP.exec(`git commit -am "archive ${path}"; git push github master; rm ${zip}`, function (err) {
 			});		  */
-			sql.getEach( lims.trace, gets.expired, [], function (file) { 
-				Log("expired",file);
-				sql.query("DELETE FROM app.events WHERE ?", {fileID: file.ID});
 			});
 																			 
 			if (lims.maxage)
@@ -164,18 +165,19 @@ Consult ${paths.admin} to request additional resources.  Further information abo
 			
 			sql.getEach(lims.trace, gets.ungraded, [], function (file) {
 				
+				Log("dog file", file);
+				
 				if ( file.Voxelized )
 					DEBE.gradeIngest( sql, file, function (stats) {
 						//cb( Copy(stats, aoi) );
 
-						sql.getall(
+						sql.getAll(
 							lims.trace,
-							"SELECT ID FROM app.events LEFT JOIN app.voxels ON voxels.ID = events.voxelID WHERE ? < voxels.minSNR AND ?",
+							"SELECT events.ID AS ID FROM app.events LEFT JOIN app.voxels ON voxels.ID = events.voxelID WHERE ? < voxels.minSNR AND ?",
 							[ stats.snr, {fileID: file.ID} ],
 							function (evs) {
-								Log("ingest rejected", evs.length);
+								Log("dog rejected", evs.length);
 
-								aoi.rejected = evs.length;
 								evs.each( function (n,ev) {
 									sql.query("DELETE FROM app.events WHERE ?", {ID: ev.ID});
 								});
@@ -183,17 +185,18 @@ Consult ${paths.admin} to request additional resources.  Further information abo
 								sql.getAll(
 									lims.trace,
 									"UPDATE app.files SET ?, Notes=concat(Notes,?) WHERE ?", [{
-										rejected: stats.rejected,
+										tag: JSON.stringify(stats),
+										rejected: evs.length,
 										coherence_time: stats.coherence_time,
 										coherence_intervals: stats.coherence_intervals,
-										mean_jump_rate: stats.mean_jump_rate,
-										degeneracy: stats.degeneracy,
+										//mean_jump_rate: stats.mean_jump_rate,
+										degeneracy_param: stats.degeneracy_param,
 										snr: stats.snr,
 										graded: true
 									},
-									"Initial quality assessment: " + pretty(stats,2),
+									"Initial SNR assessment: " + (stats.snr||0).toFixed(4),
 									{ID: file.ID} 
-								]);
+								] );
 						});
 
 					});
@@ -203,8 +206,7 @@ Consult ${paths.admin} to request additional resources.  Further information abo
 						lims.trace,
 						"UPDATE app.files SET ?, Notes=concat(Notes,?) WHERE ?", [{
 							Graded: true}, 
-							+ "Initial quality assessment: No events fell into "
-							+ "existing voxels".tag("a",{href:"/aois.run"}), 
+							+ "No events fell into " + "existing voxels".tag("a",{href:"/aois.run"}), 
 							{ID: file.ID} 
 						]);
 
@@ -1589,7 +1591,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	*/
 	isSpawned: false, 			//< Enabled when this is child server spawned by a master server
 
-	gradeIngest: function (sql, file, cb) {
+	gradeIngest: function (sql, file, cb) {  //< callback cb(stats) if no errors
 		
 		var ctx = {
 			Batch: 10, // batch size in steps
@@ -1606,58 +1608,23 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		if (estpr = JSLAB.plugins.estpr) 
 			estpr( ctx, function (ctx) {  // estimate/learn hidden process parameters
-				var stats = ctx.Save.pop() || {};  // retain last estimate at end
 				
-				Log("ingest stats", stats);
-				
+				if ( ctx ) {
+					var stats = ctx.Save.pop() || {};  // retain last estimate at end
+					Log("ingest stats", stats);
+
+					cb(stats);
+				}
+				/*
 				cb({
 					coherence_time: stats.coherence_time || 0,
 					coherence_intervals: stats.coherence_intervals || 0,
-					degeneracy: stats.degeneracy || 0,
-					snr: stats.snr || 0,
-					mean_jump_rate: stats.mean_jump_rate || 0
-				});
+					degeneracy_param: stats.degeneracy_param || 0,
+					snr: stats.snr || 0
+					//mean_jump_rate: stats.mean_jump_rate || 0
+				});  */
 			}); 
 		
-		else
-			cb( {} );
-		
-		/*
-		var 
-			stats = {},
-			ran = new RAN({ // configure the random process generator
-				N: aoi.Actors,  // ensemble size
-				K: aoi.States, 		// number of states
-				batch: 20,  // batch size in steps
-				events: function batchEvents(maxbuf, maxstep, cb) {  // ingest plugin inputs
-					FLEX.batchEvents(evs,maxbuf,maxstep,cb);
-				},
-				store: [], 	// use sync pipe() since we are running a web service
-				steps: aoi.Steps, // process steps
-				filter: function (str, ev) {  // retain only step info
-					switch ( ev.at ) {
-						case "end":
-							Copy(ev, stats);
-							break;
-
-						default:
-							//Log(ev);
-					}
-				}  // on-event callbacks to retain desired process stats
-			});
-
-		Log("grader",aoi);
-		ran.pipe( [], function (evs) {
-			Log("grader",stats);
-			cb({
-				coherence_time: stats.coherence_time || 0,
-				coherence_intervals: stats.coherence_intervals || 0,
-				degeneracy: stats.degeneracy || 0,
-				snr: stats.snr || 0,
-				mean_jump_rate: stats.mean_jump_rate || 0
-			});
-		}); 
-		*/
 	},
 		
 	/**
