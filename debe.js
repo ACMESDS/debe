@@ -2271,6 +2271,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 	function saveResults( stats, ctx ) {  // save stats to the Save/Save_KEY keys, an Export file, or the Ingest db
 		var 
 			status = "", // returned status
+			filename = `${table}.${ctx.Name}`, // export/ingest file name
 			stash = { };  // ingestable keys stash
 			
 		if ( !stats )
@@ -2318,12 +2319,12 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 							}
 						});
 					
-					DEBE.uploader( srcStream, client, `stores/${table}.${ctx.Name}` );
+					DEBE.uploadFile( "", srcStream, `stores/${filename}.${group}.${client}` );
 					status += " Exported";
 				}
 
 				if ( ctx.Ingest )  {
-					DEBE.uploader( null, client, `ingest/${table}.${ctx.Name}`, function (fileID) {
+					DEBE.getFile( client, `ingest/${filename}`, function (fileID) {
 						HACK.ingestList( sql, rem, fileID, function (aoi, evs) {
 							Log("INGESTED ",aoi);
 						});
@@ -2878,8 +2879,8 @@ Initialize DEBE on startup.
 			emitter: DEBE.IO ? DEBE.IO.sockets.emit : null,
 			skinner: JADE,
 			fetchers: DEBE.fetchers,
-			indexer: DEBE.indexer,
-			uploader: DEBE.uploader,
+			indexer: DEBE.indexFile,
+			uploader: DEBE.uploadFile,
 
 			createCert: DEBE.createCert,
 			
