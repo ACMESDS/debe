@@ -182,19 +182,20 @@ Consult ${paths.admin} to request additional resources.  Further information abo
 									sql.query("DELETE FROM app.events WHERE ?", {ID: ev.ID});
 								});
 
+								var unsup = stats.unsupervised;
+								
 								sql.getAll(
 									lims.trace,
 									"UPDATE app.files SET ?, Notes=concat(Notes,?) WHERE ?", [{
 										tag: JSON.stringify(stats),
 										rejected: evs.length,
-										coherence_time: stats.coherence_time,
-										coherence_intervals: stats.coherence_intervals,
-										//mean_jump_rate: stats.mean_jump_rate,
-										degeneracy_param: stats.degeneracy_param,
-										snr: stats.snr,
+										coherence_time: unsup.coherence_time,
+										coherence_intervals: unsup.coherence_intervals,
+										degeneracy_param: unsup.degeneracy_param,
+										snr: unsup.snr,
 										graded: true
 									},
-									"Initial SNR assessment: " + (stats.snr||0).toFixed(4),
+									"Initial SNR assessment: " + (unsup.snr||0).toFixed(4),
 									{ID: file.ID} 
 								] );
 						});
@@ -2315,39 +2316,6 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						});
 					
 					DEBE.uploader( srcStream, client, `stores/${table}.${ctx.Name}` );
-					/*
-					getFile( sql, function (fileID) {  // allocate a file for this export
-						var 
-							evidx = 0,
-							evs = rem,  // point event source to remainder
-							notes = ". Please visit " + "here".tag("a","/files.view") + " to manage your holdings.",
-							filePath = ENV.PUBLIC+"/stores/"+group+"."+table+"."+ctx.Name+"."+client,
-							srcStream = new STREAM.Readable({    // establish source stream for export pipe
-								objectMode: false,
-								read: function () {  // read event source
-									if ( ev = evs[evidx++] )  // still have an event
-										this.push( JSON.stringify(ev)+"\n" );
-									else 		// signal events exhausted
-										this.push( null );
-								}
-							}),
-							sinkStream = FS.createWriteStream( filePath, "utf8")
-								.on("finish", function() {  // establish sink stream for export pipe
-									//Trace("EXPORTED "+filePath);
-									sql.query("UPDATE apps.files SET ? WHERE ?", {
-										Notes: "Exported on " + new Date() + notes
-									}, {ID: fileID} );
-								})
-								.on("error", function (err) {
-									Log("Ingest File Error", err);
-									sql.query("UPDATE app.files SET ? WHERE ?", {
-										Notes: "Export failed: " + err + notes
-									}, {ID: fileID} );
-								});
-
-						srcStream.pipe(sinkStream);  // start pipe to export events
-					});
-					*/
 					status += " Exported";
 				}
 
@@ -2418,7 +2386,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						_Flux: job.Flux,
 						_Load: job.Load || "",
 						_Dump: job.Dump || ""
-					},ctx);
+					}, ctx);
 
 					ATOM.select(req, function (ctx) {  // run plugin's engine
 						if (ctx) {
