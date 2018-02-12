@@ -121,8 +121,8 @@ var
 			
 			var 
 				gets = {
-					ungraded: "SELECT ID,Voxelized,Actors,States,Steps FROM app.files WHERE NOT graded",
-					expired: "SELECT ID FROM app.files WHERE now() > Expired",
+					ungraded: "SELECT ID,Voxelized,Actors,States,Steps FROM app.files WHERE NOT graded AND Voxelized",
+					expired: "SELECT ID FROM app.files WHERE Expires AND now() > Expires",
 					update: "UPDATE app.files SET canDelete=?, Notes=concat(Notes,?)",
 					old: "SELECT files.*,count(events.id) AS evCount FROM app.events LEFT JOIN app.files ON events.fileid = files.id WHERE datediff( now(), files.added)>=? AND NOT files.canDelete GROUP BY fileid"
 				};
@@ -1388,7 +1388,10 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			extensions: {  // extend mime types as needed
 				rdp: "application/mstsc",
 				run: "text/html",
-				exe: "text/plain",
+				exe: "text/html",
+				js: "text/plain",
+				py: "text/plain",
+				ma: "text/plain"
 			}			
 		},
 		
