@@ -170,11 +170,12 @@ Consult ${paths.admin} to request additional resources.  Further information abo
 				if ( file.Voxelized )
 					DEBE.gradeIngest( sql, file, function (stats) {
 						//cb( Copy(stats, aoi) );
+						var unsup = stats.unsupervised;
 
 						sql.getAll(
 							lims.trace,
 							"SELECT events.ID AS ID FROM app.events LEFT JOIN app.voxels ON voxels.ID = events.voxelID WHERE ? < voxels.minSNR AND ?",
-							[ stats.snr, {fileID: file.ID} ],
+							[ stats.snr, {"events.fileID": file.ID} ],
 							function (evs) {
 								Log("dog rejected", evs.length);
 
@@ -182,8 +183,6 @@ Consult ${paths.admin} to request additional resources.  Further information abo
 									sql.query("DELETE FROM app.events WHERE ?", {ID: ev.ID});
 								});
 
-								var unsup = stats.unsupervised;
-								
 								sql.getAll(
 									lims.trace,
 									"UPDATE app.files SET ?, Notes=concat(Notes,?) WHERE ?", [{
