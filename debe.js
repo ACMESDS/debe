@@ -131,10 +131,6 @@ var
 			sql.getEach( lims.trace, gets.expired, [], function (file) { 
 				Trace("EXPIRE "+file.Name);
 				sql.query("DELETE FROM app.events WHERE ?", {fileID: file.ID});
-				/*
-				need to export events to output file, then archive this output file
-				CP.exec(`git commit -am "archive ${path}"; git push github master; rm ${zip}`, function (err) {
-				});		  */
 			});
 																			 
 			if (lims.maxage)
@@ -145,18 +141,26 @@ var
 						site = DEBE.site,
 						url = site.urls.worker,
 						paths = {
-							info: "here".tag("a", {href: url + "/files.view"}),
+							moreinfo: "here".tag("a", {href: url + "/files.view"}),
 							admin: "totem resource manages".tag("a", {href: url + "/request.view"})
 						},
 						notice = `
-${file.client} has been notified that ${file.Name}, containing ${file.eventCount} events, has been flagged for delete as it is older than ${maxage} days.
-Consult ${paths.admin} to request additional resources.  Further information about this file is available ${paths.info}. `;
+Please note that ${site.nick} has moved your sample ${file.Name} to long term storage.  This sample 
+contains ${file.eventCount} events.  Your archived sample will be auto-ingested should a ${site.nick} plugin
+request this sample.  You may also consult ${paths.admin} to request additional resources.  
+Further information about this file is available ${paths.moreinfo}. `;
 
-					sql.query( "UPDATE app.files SET canDelete=?, Notes=concat(Notes,?)", [true,notice]);
+					sql.query( "UPDATE app.files SET ?, Notes=concat(Notes,?)", [{
+						Archived: true} ,notice]);
+
+					/*
+					need to export events to output file, then archive this output file
+					CP.exec(`git commit -am "archive ${path}"; git push github master; rm ${zip}`, function (err) {
+					});*/
 
 					if ( sendMail = FLEX.sendMail ) sendMail({
 						to: file.client,
-						subject: `TOTEM will be removing ${file.Name}`,
+						subject: `TOTEM archived ${file.Name}`,
 						body: notice
 					}, sql);
 				});
@@ -191,6 +195,7 @@ Consult ${paths.admin} to request additional resources.  Further information abo
 							coherence_time: unsup.coherence_time,
 							coherence_intervals: unsup.coherence_intervals,
 							degeneracy_param: unsup.degeneracy_param,
+							duration: stats.t,
 							snr: unsup.snr,
 							graded: true
 						},
@@ -1453,11 +1458,45 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					res(  err );
 				}
 			});
+		},
+		
+		function hyper(ref) { 
+			return [this].linkify(ref);
 		}
 		
+		/*
+		function hyper(ref) {
+		/ **
+		@private
+		@member String
+		Return a hyperlink of given label string.
+		* /
+			if (ref)
+				if (ref.charAt(0) == ":")
+					return this.link( "/"+(ref.substr(1)||this.toLowerCase())+".view" );
+				else
+					return this.link(ref);
+			else
+				return this.link(ref || "/"+this.toLowerCase()+".view");
+		} */
 	],
 	
 	Array: [  // array prototypes
+		/*
+		function hyper(refs, arg) {
+		/ **
+		@private
+		@member Array
+		Returns list containing hyperlink list joined by an arg spearator.
+		@param {Function} cb callback(val) returns item for join
+		* /		
+			var rtns = [], ref = ref[0];
+			this.each( function (n,lab) {
+				rtns.push( lab.hyper(refs[n] || ref) );
+			});
+			return rtns.join(arg);
+		}, */
+
 		function getStash(watchKey, targetPrefix, ctx, stash, cb) {
 			// this = [ { watchKey:"KEY", x:X, y: Y, ...}, ... }
 			// stash = { targetPrefix: { x: [X,...], y: [Y,...], ... }, ... }
@@ -1536,6 +1575,12 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		function treeify(idx,kids,level,keys,wt) {
 		/**
 		@method treeify
+		@member Array
+		@param [Number] idx starting index (0 on first call)
+		@param [Number] kids number of leafs following starting index (this.length on first call)
+		@param [Number] level current depth (0 on first call)
+		@param [Array] piv pivots
+		@param [String] wt key name that contains leaf weight (defaults to "size")
 		Return a tree = {name,weight,children: tree} from records having been sorted on keys=[key,...]
 		*/
 			var	
@@ -1583,6 +1628,40 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				}
 				
 			return tar;
+		},
+		
+		function joinify(sep, cb) {
+			if (cb) {
+				var recs = [];
+				if (cb.constructor == Function) 
+					this.each( function (n,rec) {
+						recs.push( cb(rec) );
+					});
+			
+				else 
+					this.each( function (n,rec) {
+						recs.push( rec[cb] );
+					});
+
+				return recs.join(sep);
+			}
+				
+			else
+				return this.join(sep);
+		},
+		
+		function linkify(ref) {
+			return this.joinify(",", function (label) {
+				
+				if (ref)
+					if (ref.charAt(0) == ":")
+						return label.link( "/"+(ref.substr(1) || label.toLowerCase())+".view" );
+					else
+						return label.link(ref);
+				else
+					return label.link(ref || "/"+label.toLowerCase()+".view");
+				
+			});
 		}
 	],	
 	
