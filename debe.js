@@ -62,7 +62,7 @@ var
 	
 	// watchdog config parameters
 		
-	dogs: {  // watch dog cycle timers [secs] (zero to disable)
+	dogs: {  // watch dogs. cycle time in secs (zero to disable)
 		dogCatalog: Copy({
 			//cycle: 1000,
 			trace: ""
@@ -108,7 +108,7 @@ var
 		dogFiles: Copy({
 			cycle: 30, // secs
 			trace: "DOG",
-			//maxage: 30 // days
+			maxage: 90 // days
 		}, function (sql, lims) {
 			
 			function pretty(stats,sigfig) {
@@ -121,24 +121,25 @@ var
 			
 			var 
 				gets = {
-					ungraded: "SELECT ID,Voxelized,Actors,States,Steps FROM app.files WHERE NOT graded AND Voxelized",
-					expired: "SELECT ID FROM app.files WHERE Expires AND now() > Expires",
-					update: "UPDATE app.files SET canDelete=?, Notes=concat(Notes,?)",
-					old: "SELECT files.*,count(events.id) AS evCount FROM app.events LEFT JOIN app.files ON events.fileid = files.id WHERE datediff( now(), files.added)>=? AND NOT files.canDelete GROUP BY fileid"
+					lowsnr: "SELECT events.ID AS ID FROM app.events LEFT JOIN app.voxels ON voxels.ID = events.voxelID WHERE ? < voxels.minSNR AND ?",
+					unpruned: "SELECT ID,Name,snr FROM app.files WHERE NOT Pruned AND Voxelized",
+					ungraded: "SELECT ID,Name,Actors,States,Steps FROM app.files WHERE NOT Graded AND Voxelized",
+					expired: "SELECT ID,Name FROM app.files WHERE Expires AND now() > Expires",
+					retired: "SELECT files.ID,files.Name,files.Client,count(events.id) AS evCount FROM app.events LEFT JOIN app.files ON events.fileid = files.id WHERE datediff( now(), files.added)>=? AND NOT files.canDelete GROUP BY fileid"
 				};
 
 			sql.getEach( lims.trace, gets.expired, [], function (file) { 
-				Log("expired file",file);
+				Trace("EXPIRE "+file.Name);
 				sql.query("DELETE FROM app.events WHERE ?", {fileID: file.ID});
 				/*
-			need to export events to output file, then archive this output file
-			CP.exec(`git commit -am "archive ${path}"; git push github master; rm ${zip}`, function (err) {
-			});		  */
+				need to export events to output file, then archive this output file
+				CP.exec(`git commit -am "archive ${path}"; git push github master; rm ${zip}`, function (err) {
+				});		  */
 			});
 																			 
 			if (lims.maxage)
-				sql.getEach(lims.trace, gets.old, lims.maxage, function (file) {
-					Log("maxage", file);
+				sql.getEach(lims.trace, gets.retired, lims.maxage, function (file) {
+					TRACE("RETIRE "+file.Name);
 					
 					var 
 						site = DEBE.site,
@@ -151,67 +152,55 @@ var
 ${file.client} has been notified that ${file.Name}, containing ${file.eventCount} events, has been flagged for delete as it is older than ${maxage} days.
 Consult ${paths.admin} to request additional resources.  Further information about this file is available ${paths.info}. `;
 
-					sql.query(files.update, [true,notice]);
+					sql.query( "UPDATE app.files SET canDelete=?, Notes=concat(Notes,?)", [true,notice]);
 
 					if ( sendMail = FLEX.sendMail ) sendMail({
 						to: file.client,
 						subject: `TOTEM will be removing ${file.Name}`,
 						body: notice
 					}, sql);
-				})
-				.on("end", function () {
-					sql.release();
 				});
 			
-			sql.getEach(lims.trace, gets.ungraded, [], function (file) {
+			sql.getEach(lims.trace, gets.unpruned, [], function (file) {
+				Trace("PRUNE "+file.Name);
 				
-				Log("dog file", file);
+				sql.getAll(lims.trace, gets.lowsnr, [ file.snr, {"events.fileID": file.ID} ], function (evs) {
+					//Log("dog rejected", evs.length);
+					sql.query("UPDATE app.files SET ? WHERE ?", [{
+							Pruned: true,
+							Rejected: evs.length
+						}, {ID: file.ID}
+					] );
 				
-				if ( file.Voxelized )
-					DEBE.gradeIngest( sql, file, function (stats) {
-						//cb( Copy(stats, aoi) );
-						var unsup = stats.unsupervised;
-
-						sql.getAll(
-							lims.trace,
-							"SELECT events.ID AS ID FROM app.events LEFT JOIN app.voxels ON voxels.ID = events.voxelID WHERE ? < voxels.minSNR AND ?",
-							[ stats.snr, {"events.fileID": file.ID} ],
-							function (evs) {
-								Log("dog rejected", evs.length);
-
-								evs.each( function (n,ev) {
-									sql.query("DELETE FROM app.events WHERE ?", {ID: ev.ID});
-								});
-
-								sql.getAll(
-									lims.trace,
-									"UPDATE app.files SET ?, Notes=concat(Notes,?) WHERE ?", [{
-										tag: JSON.stringify(stats),
-										rejected: evs.length,
-										coherence_time: unsup.coherence_time,
-										coherence_intervals: unsup.coherence_intervals,
-										degeneracy_param: unsup.degeneracy_param,
-										snr: unsup.snr,
-										graded: true
-									},
-									"Initial SNR assessment: " + (unsup.snr||0).toFixed(4),
-									{ID: file.ID} 
-								] );
-						});
-
+					evs.each( function (n,ev) {
+						sql.query("DELETE FROM app.events WHERE ?", {ID: ev.ID});
 					});
+				});
+			});
+			
+			sql.getEach(lims.trace, gets.ungraded, [], function (file) {
+				Trace("GRADE "+file.Name);
+				
+				DEBE.gradeIngest( sql, file, function (stats) {
+					var unsup = stats.unsupervised;
 
-				else
 					sql.getAll(
 						lims.trace,
 						"UPDATE app.files SET ?, Notes=concat(Notes,?) WHERE ?", [{
-							Graded: true}, 
-							+ "No events fell into " + "existing voxels".tag("a",{href:"/aois.run"}), 
-							{ID: file.ID} 
-						]);
-
+							tag: JSON.stringify(stats),
+							coherence_time: unsup.coherence_time,
+							coherence_intervals: unsup.coherence_intervals,
+							degeneracy_param: unsup.degeneracy_param,
+							snr: unsup.snr,
+							graded: true
+						},
+						"Initial SNR assessment: " + (unsup.snr||0).toFixed(4),
+						{ID: file.ID} 
+					] );
+				});
 			});
 			
+			sql.release();			
 		}),
 		
 		dogJobs: Copy({
@@ -1628,14 +1617,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 
 					cb(stats);
 				}
-				/*
-				cb({
-					coherence_time: stats.coherence_time || 0,
-					coherence_intervals: stats.coherence_intervals || 0,
-					degeneracy_param: stats.degeneracy_param || 0,
-					snr: stats.snr || 0
-					//mean_jump_rate: stats.mean_jump_rate || 0
-				});  */
 			}); 
 		
 	},
