@@ -49,6 +49,7 @@ var 									// totem modules
 	FLEX = require("flex"),
 	TOTEM = require("totem"),
 	JSLAB = require("jslab"),
+	JSDB = require("jsdb"),
 	HACK = require("geohack");
 
 var										// shortcuts and globals
@@ -66,50 +67,47 @@ var
 		dogCatalog: Copy({
 			//cycle: 1000,
 			trace: ""
-		}, function (sql, lims) {
+		}, function (lims) {
 		}),
 		
 		dogDetectors: Copy({
 			cycle: 0,
 			trace: ""
-		}, function (sql, lims) {
+		}, function (lims) {
 		}),
 						   
 		dogVoxels: Copy({
 			//cycle: 120,
 			trace: "",
 			atmage: 2 // days to age before refresh atm data
-		}, function (sql, lims) {
+		}, function (lims) {
 			var gets = {
 				unused: "SELECT voxels.ID AS ID,aois.id AS aoiID FROM app.voxels LEFT JOIN app.aois ON aois.name=voxels.aoi HAVING aoiID IS null",
 				refresh: "SELECT ID FROM app.voxels WHERE MBRcontains(ring, GeomFromText(?)) AND datediff(now(), added) > ?"
 			};
 			
-			sql.forEach(lims.trace, gets.unused, [], function (voxel) {
+			JSDB.forEach(lims.trace, gets.unused, [], function (voxel, sql) {
 				sql.update("DELETE FROM app.voxels WHERE ?", {ID: voxel.ID});
 			});
 			
-			if (lims.atmage) {
-				// fetch new atm data from whatever service and loop over recs (grouped by Point(x y) grid location)
-				
-				sql.forEach(lims.trace, gets.refresh, [atm.gridLocation, lims.atmage], function (voxel) {
-					// update voxels with atm data
-				});
-			}
+			if (lims.atmage)  // fetch new atm data from whatever service and loop over recs (grouped by Point(x y) grid location)
+			JSDB.forEach(lims.trace, gets.refresh, [atm.gridLocation, lims.atmage], function (voxel, sql) {
+				// update voxels with atm data
+			});
 			
 		}),
 						
 		dogCache: Copy({
 			//cycle: 120,
 			trace: ""
-		}, function (sql, lims) {
+		}, function (lims) {
 		}),
 		
 		dogFiles: Copy({
 			cycle: 30, // secs
 			trace: "DOG",
 			maxage: 90 // days
-		}, function (sql, lims) {
+		}, function (lims) {
 			
 			function pretty(stats,sigfig) {
 				var rtn = [];
@@ -128,46 +126,46 @@ var
 					retired: "SELECT files.ID,files.Name,files.Client,count(events.id) AS evCount FROM app.events LEFT JOIN app.files ON events.fileid = files.id WHERE datediff( now(), files.added)>=? AND NOT files.Archived GROUP BY fileid"
 				};
 
-			sql.forEach( lims.trace, gets.expired, [], function (file) { 
+			JSDB.forEach( lims.trace, gets.expired, [], function (file, sql) { 
 				Trace("EXPIRE "+file.Name);
 				sql.query("DELETE FROM app.events WHERE ?", {fileID: file.ID});
 			});
-																			 
+			
 			if (lims.maxage)
-				sql.forEach(lims.trace, gets.retired, lims.maxage, function (file) {
-					TRACE("RETIRE "+file.Name);
-					
-					var 
-						site = DEBE.site,
-						url = site.urls.worker,
-						paths = {
-							moreinfo: "here".tag("a", {href: url + "/files.view"}),
-							admin: "totem resource manages".tag("a", {href: url + "/request.view"})
-						},
-						notice = `
+			JSDB.forEach(lims.trace, gets.retired, lims.maxage, function (file, sql) {
+				TRACE("RETIRE "+file.Name);
+
+				var 
+					site = DEBE.site,
+					url = site.urls.worker,
+					paths = {
+						moreinfo: "here".tag("a", {href: url + "/files.view"}),
+						admin: "totem resource manages".tag("a", {href: url + "/request.view"})
+					},
+					notice = `
 Please note that ${site.nick} has moved your sample ${file.Name} to long term storage.  This sample 
 contains ${file.eventCount} events.  Your archived sample will be auto-ingested should a ${site.nick} plugin
 request this sample.  You may also consult ${paths.admin} to request additional resources.  
 Further information about this file is available ${paths.moreinfo}. `;
 
-					sql.query( "UPDATE app.files SET ?, Notes=concat(Notes,?)", [{
-						Archived: true} ,notice]);
+				sql.query( "UPDATE app.files SET ?, Notes=concat(Notes,?)", [{
+					Archived: true}, notice]);
 
-					/*
-					need to export events to output file, then archive this output file
-					CP.exec(`git commit -am "archive ${path}"; git push github master; rm ${zip}`, function (err) {
-					});*/
+				/*
+				need to export events to output file, then archive this output file
+				CP.exec(`git commit -am "archive ${path}"; git push github master; rm ${zip}`, function (err) {
+				});*/
 
-					if ( sendMail = FLEX.sendMail ) sendMail({
-						to: file.client,
-						subject: `TOTEM archived ${file.Name}`,
-						body: notice
-					}, sql);
-				});
+				if ( sendMail = FLEX.sendMail ) sendMail({
+					to: file.client,
+					subject: `TOTEM archived ${file.Name}`,
+					body: notice
+				}, sql);
+			});
 			
-			sql.forEach(lims.trace, gets.unpruned, [], function (file) {
+			JSDB.forEach(lims.trace, gets.unpruned, [], function (file, sql) {
 				Trace("PRUNE "+file.Name);
-				
+
 				sql.forAll(lims.trace, gets.lowsnr, [ file.snr, {"events.fileID": file.ID} ], function (evs) {
 					//Log("dog rejected", evs.length);
 					sql.query("UPDATE app.files SET ? WHERE ?", [{
@@ -175,48 +173,58 @@ Further information about this file is available ${paths.moreinfo}. `;
 							Rejected: evs.length
 						}, {ID: file.ID}
 					] );
-				
+
 					evs.each( function (n,ev) {
 						sql.query("DELETE FROM app.events WHERE ?", {ID: ev.ID});
 					});
 				});
-			}).then( function (sql) {
-				sql.forEach(lims.trace, gets.ungraded, [], function (file) {
-					Trace("GRADE "+file.Name);
+			});
+			
+			JSDB.forEach(lims.trace, gets.ungraded, [], function (file, sql) {
+				Trace("GRADE "+file.Name);
 
-					DEBE.gradeIngest( sql, file, function (stats) {
+				DEBE.gradeIngest( sql, file, function (stats) {
+
+					Log("grade", stats);
+
+					if (stats) {
 						var unsup = stats.unsupervised;
 
 						sql.forAll(
 							lims.trace,
-							"UPDATE app.files SET ?, Notes=concat(Notes,?) WHERE ?", [{
+							"UPDATE app.files SET Graded=true, ?, Notes=concat(Notes,?) WHERE ?", [{
 								tag: JSON.stringify(stats),
 								coherence_time: unsup.coherence_time,
 								coherence_intervals: unsup.coherence_intervals,
 								degeneracy_param: unsup.degeneracy_param,
 								duration: stats.t,
-								snr: unsup.snr,
-								graded: true
+								snr: unsup.snr
 							},
 							"Initial SNR assessment: " + (unsup.snr||0).toFixed(4),
 							{ID: file.ID} 
-						] );
-					});
-				}).end();
+						]);
+					}
+
+					else
+						sql.query(
+							"UPDATE apps.file SET Graded=true, snr=0, Notes=? WHERE ?", [
+							"Grading failed", {ID: file.ID} 
+						]);
+				});
 			});
 		}),
 		
 		dogJobs: Copy({
 			cycle: 300,
 			trace: ""
-		}, function (sql, lims) {
+		}, function (lims) {
 			var
 				gets = {
 					stuck: "UPDATE app.queues SET Departed=now(), Notes=concat(Notes, ' is ', link('billed', '/profile.view')), Age=Age + (now()-Arrived)/3600e3, Finished=1 WHERE least(Departed IS NULL,Done=Work)", 
 				},
 				queues = FLEX.queues;
 
-			sql.forAll( lims.trace, gets.stuck, [], function (info) {
+			JSDB.forAll( lims.trace, gets.stuck, [], function (info, sql) {
 
 				Each(queues, function (rate, queue) {  // save collected queuing charges to profiles
 					Each(queue.client, function (client, charge) {
@@ -229,12 +237,13 @@ Further information about this file is available ${paths.moreinfo}. `;
 								 [ charge.bill, charge.bill, {Client:client} ], 
 								function (err) {
 									Log({charging:err});
-							}).end();
+							});
 							charge.bill = 0;
 						}
 
 					});
 				});
+
 			});	
 		}),
 			
@@ -243,7 +252,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 			pigs : 2,
 			jobs : 5,
 			trace: ""
-		}, function (sql, lims) {  // system diag watch dog
+		}, function (lims) {  // system diag watch dog
 			var 
 				gets = {
 					engs: "SELECT count(ID) AS Count FROM app.engines WHERE Enabled",
@@ -253,21 +262,23 @@ Further information about this file is available ${paths.moreinfo}. `;
 				},
 				diag = DEBE.diag;
 
-			sql.forEach(lims.trace, gets.engs, [], function (engs) {
-			sql.forEach(lims.trace, gets.jobs, [], function (jobs) {
-			sql.forEach(lims.trace, gets.pigs, [], function (pigs) {
-			sql.forEach(lims.trace, gets.logs, [], function (isps) {
-				var rtn = diag.counts = {Engines:engs.Count,Jobs:jobs.Count,Pigs:pigs.Count,Faults:isps.Count,State:"ok"};
+			sqlThread( function (sql) {
+				sql.forEach(lims.trace, gets.engs, [], function (engs) {
+				sql.forEach(lims.trace, gets.jobs, [], function (jobs) {
+				sql.forEach(lims.trace, gets.pigs, [], function (pigs) {
+				sql.forEach(lims.trace, gets.logs, [], function (isps) {
+					var rtn = diag.counts = {Engines:engs.Count,Jobs:jobs.Count,Pigs:pigs.Count,Faults:isps.Count,State:"ok"};
 
-				for (var n in lims) 
-					if ( rtn[n] > 5*lims[n] ) rtn.State = "critical";
-					else
-					if ( rtn[n] > lims[n] ) rtn.State = "warning";
+					for (var n in lims) 
+						if ( rtn[n] > 5*lims[n] ) rtn.State = "critical";
+						else
+						if ( rtn[n] > lims[n] ) rtn.State = "warning";
 
-				sql.release();
-			});
-			});
-			});
+					sql.release();
+				});
+				});
+				});
+				});
 			});
 		}),
 			
@@ -275,7 +286,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 			//cycle: 500,
 			maxage: 10,
 			trace: ""
-		}, function (sql, lims) { // job hawking watch dog
+		}, function (lims) { // job hawking watch dog
 			/*
 			 * Hawk over jobs in the queues table given {Action,Condition,Period} rules 
 			 * defined in the hawks table.  The rule is run on the interval specfied 
@@ -295,7 +306,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 					unfunded: "SELECT * FROM app.queues WHERE NOT Funded AND now()-Arrived>?"
 				};
 
-			sql.forEach(lims.trace, gets.unbilled, [], function (job) {
+			JSDB.forEach(lims.trace, gets.unbilled, [], function (job, sql) {
 				//Trace(`BILLING ${job} FOR ${job.Client}`, sql);
 				sql.query( "UPDATE openv.profiles SET Charge=Charge+? WHERE ?", [ 
 					job.Done, {Client: job.Client} 
@@ -305,14 +316,13 @@ Further information about this file is available ${paths.moreinfo}. `;
 			});
 
 			if (lims.maxage)
-			sql.forEach(trace, gets.unfunded, [lims.maxage], function (job) {
-				//Trace("KILLING ",job);
-				sql.query(
-					//"DELETE FROM app.queues WHERE ?", {ID:job.ID}
-				);
-			});
+				JSDB.forEach(trace, gets.unfunded, [lims.maxage], function (job, sql) {
+					//Trace("KILLING ",job);
+					sql.query(
+						//"DELETE FROM app.queues WHERE ?", {ID:job.ID}
+					);
+				});
 
-			sql.release();
 		}),
 		
 		dogClients: Copy({
@@ -322,7 +332,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 			qos: 2,  //0,1,2,...
 			unused: 4,  // days
 			certage: 360 // days
-		}, function (sql, lims) {
+		}, function (lims) {
 			var 
 				gets = {
 					needy: "SELECT ID FROM openv.profiles WHERE useDisk>?",
@@ -332,23 +342,23 @@ Further information about this file is available ${paths.moreinfo}. `;
 					uncert: "SELECT ID FROM openv.profiles LEFT JOIN app.quizes ON profiles.Client=quizes.Client WHERE datediff(now(), quizes.Credited)>?",
 				};
 
-			sql.forEach(lims.trace, gets.naughty, [], function (client) {
-			});		
+			JSDB.forEach(lims.trace, gets.naughty, [], function (client, sql) {
+			});
 
 			if (lims.disk)
-			sql.forEach(lims.trace, gets.needy, [lims.disk], function (client) {
+			JSDB.forEach(lims.trace, gets.needy, [lims.disk], function (client, sql) {
 			});		
 
 			if (lims.dormant)
-			sql.forEach(lims.trace, gets.dormant, [lims.unused], function (client) {
+			JSDB.forEach(lims.trace, gets.dormant, [lims.unused], function (client, sql) {
 			});		
 
 			if (lims.poor)
-			sql.forEach(lims.trace, gets.poor, [lims.qos], function (client) {
+			JSDB.forEach(lims.trace, gets.poor, [lims.qos], function (client, sql) {
 			});		
 
 			if (lims.certage)
-			sql.forEach(lims.trace, gets.uncert, [lims.certage], function (client) {
+			JSDB.forEach(lims.trace, gets.uncert, [lims.certage], function (client, sql) {
 			});		
 			
 		}),
@@ -366,7 +376,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 				};
 
 			if (lims.undefined)
-			sql.forEach(lims.trace, gets.undefined, [lims.undefined], function (client) {
+			JSDB.forEach(lims.trace, gets.undefined, [lims.undefined], function (client, sql) {
 			});
 		}),
 			
@@ -375,7 +385,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 			trace: "",
 			inactive: 1,
 			bugs: 10
-		}, function (sql, lims) {
+		}, function (lims) {
 			var 
 				gets = {
 					inactive: "",
@@ -383,7 +393,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 				};
 
 			if (lims.inactive)
-			sql.forEach(lims.trace, gets.inactive, [lims.inactive], function (client) {
+			JSDB.forEach(lims.trace, gets.inactive, [lims.inactive], function (client, sql) {
 			});		
 		})
 	},
@@ -606,7 +616,7 @@ Usage: ${uses.join(",")}  `);
 					
 					else
 						res( null );
-				}).end();
+				});
 				
 			});
 		},
@@ -1668,7 +1678,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	*/
 	isSpawned: false, 			//< Enabled when this is child server spawned by a master server
 
-	gradeIngest: function (sql, file, cb) {  //< callback cb(stats) if no errors
+	gradeIngest: function (sql, file, cb) {  //< callback cb(stats) or cb(null) if error
 		
 		var ctx = {
 			Batch: 10, // batch size in steps
@@ -1692,6 +1702,9 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 
 					cb(stats);
 				}
+				
+				else
+					cb(null);
 			}); 
 		
 	},
