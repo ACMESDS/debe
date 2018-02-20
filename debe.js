@@ -2456,8 +2456,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						_Voxel: job.Voxel,
 						_Collects: job.Collects,
 						_Flux: job.Flux,
-						_Load: job.Load || "",
-						_Dump: job.Dump || ""
+						_Load: job.Load || ""
 					}, ctx);
 
 					ATOM.select(req, function (ctx) {  // run plugin's engine
