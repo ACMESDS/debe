@@ -1311,11 +1311,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			//icons: ".",				//< path to icons
 			captcha: ".",				
 			index: { 					//< allowed file indexers
-				shares: "indexer",
-				uploads: "indexer",
-				stores: "indexer",
-				tour: "indexer",
-				data: "indexer"
+				shares: "",
+				uploads: "",
+				stores: "",
+				tour: "",
+				data: ""
 			},
 			extensions: {  // extend mime types as needed
 				rdp: "application/mstsc",
@@ -2988,7 +2988,10 @@ Initialize DEBE on startup.
 				roles: "openv",
 				aspreqts: "openv",
 				ispreqts: "openv",
+				swreqts: "openv",
+				hwreqts: "openv",
 				tta: "openv",
+				trades: "openv",
 				milestones: "openv",
 				journal: "openv",
 				hawks: "openv",
@@ -3074,7 +3077,7 @@ Initialize DEBE on startup.
 			var path = DEBE.paths.render;
 			
 			if (false)
-			DEBE.indexer( path, function (files) {  // publish new engines
+			DEBE.indexFile( path, function (files) {  // publish new engines
 				var ignore = {".": true, "_": true};
 				files.each( function (n,file) {
 					if ( !ignore[file.charAt(0)] )
