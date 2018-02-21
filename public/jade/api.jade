@@ -448,9 +448,10 @@ append site_body
 					> _File current file during Job workflow  
 					> _Voxel current voxel being procesed  
 					> _Collects sensor collects made under current voxel  
-					> _Chip  filepath for first jpeg collect under current voxel  
+					> _Chip filepath etc info to load jpeg for primary collect under current voxel  
 					> _Flux solar flux at earth's surface under current voxel  
-					> _Load event query for current voxel  
+					> _Load event query for current voxel   
+					> _Flush name of record flushing method  
 					
 					where the *Job* json key may contain job regulation parameters (// default value):
 
@@ -556,9 +557,7 @@ append site_body
 
 				On entry, its context is primed given its *entry* sql-queries: the "?" therein references its 
 				context *query* (as overridden by url query parameters).  On exit, its context context keys 
-				can be exported by its *exit* sql-queries.   An engine is also automatically provided 
-				a REQ (data request supplied by the job workflow), as well as the
-				LWIP (light weight imaging), SQL (db connector), and JSON (encoder-decoder) modules.
+				can be exported by its *exit* sql-queries.   
 
 		#folder.Examples(dock="left")
 			#fit.url
@@ -812,7 +811,9 @@ append site_body
 						}
 
 					will display *Htest* data at the service console, then returns *Save* data to its plugin context.
-					Python engines are provided two sql cursors -- *SQL0* and *SQL1* -- for read and write.
+					Python engines are provided an *os* containing two sql cursors (*SQL0* and *SQL1* 
+					for read and write), the *LWIP* light-weight-imaging PIL module, and the JSON 
+					encoder/decoder module.
 
 					This [stateful python engine](/pydemo2.exe) can be used in a workflow to 
 					maximize data stationarity:

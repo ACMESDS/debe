@@ -1391,8 +1391,7 @@ function DS(anchor) {
  * @property {Array}
  * List of  bloggable fields
  */
-	var fixedBlogs = anchor.getAttribute("blogs");
-	var Blogs = this.Blogs = fixedBlogs ? fixedBlogs.split(",") : [];
+	var Blogs = this.Blogs = [];
 	
 	// Derive fields, types, labels, tips and groups if specified.
 
@@ -1429,7 +1428,7 @@ function DS(anchor) {
 		
 		var fCol = gridColumn(fType,fName,fOff,fLock,fLabel,fTip,calc);
 				
-		if ( fType=="h" && !fixedBlogs ) Blogs.push( fName );
+		if ( fType=="h" ) Blogs.push( fName );
 
 		switch (fAg) {			// Add row aggregator if needed
 			case "min":

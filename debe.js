@@ -449,66 +449,71 @@ Further information about this file is available ${paths.moreinfo}. `;
 					return src;
 				}
 			}
-			function renderMath(tex,src,cb) {
+			function renderMath(texs,src,cb) {
 				var 
 					rtn = src,
-					isEmpty = tex.each(function (n,tex,isLast) {
+					texed = 0;
+				
+				texs.each( function (n,tex) {
 
-						JAX.typeset({
-							math: tex,
-							format: "TeX",  // TeX, inline-TeX, AsciiMath, MathML
-							mml: true
-						}, function (d) {
-							rtn = rtn.replace("$math"+n, d.mml);
-							if ( isLast ) cb(rtn);
-						});
-
+					JAX.typeset({
+						math: tex,
+						format: "TeX",  // TeX, inline-TeX, AsciiMath, MathML
+						mml: true
+					}, function (d) {
+						rtn = rtn.replace("$math"+n, d.mml);
+						
+						if ( ++texed >= texs.length ) cb(rtn);
 					});
 
-				if (isEmpty) cb(rtn);
+				});
+
+				if ( texs.isEmpty() ) cb(rtn);
 			}
 			
 			var tex = [];
 			
-			renderMath( tex, 
-				//renderEmac(ds,src)
-				src
-				.replace(/\$\$(.|\n)*\$\$/g, function (m,i) {  // tex markfown
-					tex.push(m.substr(2,m.length-4));
-					return "$math"+(tex.length-1);
-				})
-				.replace(/\[.*\]\((.*?)\)/g, function (m,i) {  // [x,w,h,s](u) markdown
-					m = m.substr(1,m.length-2).split("]("); 
-					var 
-						v = m[0].split(","),
-						u = m[1] || "missing url",
-						x = v[0] || "",
-						w = v[1] || 100,
-						h = v[2] || 100,
-						s = v[3] || `${dsname}?ID=${ds.ID}` ,
-						p = u.split(";").join("&") ;
+			renderMath( 
+				tex, 
 
-					switch (x) {
-						case "update":
-							return x.tag("a",{href:dsname+".exe?ID="+ds.ID}) + "".tag("iframe",{ src:u, width:w, height:h });
-						case "image":
-							return "".tag("img",{ src:u, width:w, height:h });
-						case "post":
-							return "".tag("iframe",{ src:u, width:w, height:h });
-						case "nada":
-							return `[nada](${u})`;
-						case "link":
-							return x.tag("a",{href:u});
-						default:
-							return "".tag("iframe",{ src: `/${x}.view?${p}&w=${w}&h=${h}&ds=${s}`, width:w, height:h } );
-					}
-				})
-				
-				.replace(/href=.*>/g, function (m,i) { // follow <a href=B>A</a> links
-					var q = (i.charAt(0) == "'") ? '"' : "'";
-					return `href=${q}javascript:navigator.follow(${i},BASE.user.client,BASE.user.source)${q}>`;
-				}), 
-			cb); 
+				src   //renderEmac(ds,src)
+					.replace(/\$\$(.|\n)*\$\$/g, function (m,i) {  // render $$ tex $$ markdown
+						tex.push(m.substr(2,m.length-4));
+						return "$math"+(tex.length-1);
+					})
+					.replace(/\[.*\]\((.*?)\)/g, function (m,i) {  // render [x,w,h,s](u) markdown
+						m = m.substr(1,m.length-2).split("]("); 
+						var 
+							v = m[0].split(","),
+							u = m[1] || "missing url",
+							x = v[0] || "",
+							w = v[1] || 100,
+							h = v[2] || 100,
+							s = v[3] || `${dsname}?ID=${ds.ID}` ,
+							p = u.split(";").join("&") ;
+
+						switch (x) {
+							case "update":
+								return x.tag("a",{href:dsname+".exe?ID="+ds.ID}) + "".tag("iframe",{ src:u, width:w, height:h });
+							case "image":
+								return "".tag("img",{ src:u, width:w, height:h });
+							case "post":
+								return "".tag("iframe",{ src:u, width:w, height:h });
+							case "nada":
+								return `[nada](${u})`;
+							case "link":
+								return x.tag("a",{href:u});
+							default:
+								return "".tag("iframe",{ src: `/${x}.view?${p}&w=${w}&h=${h}&ds=${s}`, width:w, height:h } );
+						}
+					})
+					.replace(/href=.*>/g, function (m,i) { // follow <a href=B>A</a> links
+						var q = (i.charAt(0) == "'") ? '"' : "'";
+						return `href=${q}javascript:navigator.follow(${i},BASE.user.client,BASE.user.source)${q}>`;
+					}), 
+
+				cb
+			); 
 		}
 
 	},
@@ -1503,7 +1508,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			return rtns.join(arg);
 		}, */
 
-		function getStash(watchKey, targetPrefix, ctx, stash, cb) {
+		function isEmpty() {
+			return this.length > 0;
+		},
+		
+		function stashify(watchKey, targetPrefix, ctx, stash, cb) {
 			// this = [ { watchKey:"KEY", x:X, y: Y, ...}, ... }
 			// stash = { targetPrefix: { x: [X,...], y: [Y,...], ... }, ... }
 			
@@ -2352,7 +2361,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		else
 		if ( stats.constructor == Array ) {  // keys in the plugin context are used to create save stashes
 			var rem = [], stash = { remainder: rem };  // stash for saveable keys 
-			stats.getStash("at", "Save_", ctx, stash, function (ev, stat) {  // add {at:"KEY",...} stats to the Save_KEY stash
+			stats.stashify("at", "Save_", ctx, stash, function (ev, stat) {  // add {at:"KEY",...} stats to the Save_KEY stash
 				
 				if (ev)
 					for (var key in stat) ev[key].push( stat[key] );
@@ -2456,7 +2465,9 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						_Voxel: job.Voxel,
 						_Collects: job.Collects,
 						_Flux: job.Flux,
-						_Load: job.Load || ""
+						_Load: job.Load || "",
+						_Flush: job.Flush,
+						_Chip: job.Chip
 					}, ctx);
 
 					ATOM.select(req, function (ctx) {  // run plugin's engine
