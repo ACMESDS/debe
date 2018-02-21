@@ -440,85 +440,13 @@ Further information about this file is available ${paths.moreinfo}. `;
 			}
 		},
 		
-		blog: function (src, ds, dsname, cb) {  // blog=key,... request flag
-			function renderEmac(ds,src) {
-				try {
-					return eval("`" + src + "`");
-				}
-				catch (err) {
-					return src;
-				}
-			}
-			function renderMath(texs,src,cb) {
-				var 
-					rtn = src,
-					texed = 0;
-				
-				texs.each( function (n,tex) {
-
-					JAX.typeset({
-						math: tex,
-						format: "TeX",  // TeX, inline-TeX, AsciiMath, MathML
-						mml: true
-					}, function (d) {
-						rtn = rtn.replace("$math"+n, d.mml);
-						
-						if ( ++texed >= texs.length ) cb(rtn);
-					});
-
-				});
-
-				if ( texs.isEmpty() ) cb(rtn);
-			}
-			
-			var tex = [];
-			
-			renderMath( 
-				tex, 
-
-				src   //renderEmac(ds,src)
-					.replace(/\$\$(.|\n)*\$\$/g, function (m,i) {  // render $$ tex $$ markdown
-						tex.push(m.substr(2,m.length-4));
-						return "$math"+(tex.length-1);
-					})
-					.replace(/\[.*\]\((.*?)\)/g, function (m,i) {  // render [x,w,h,s](u) markdown
-						m = m.substr(1,m.length-2).split("]("); 
-						var 
-							v = m[0].split(","),
-							u = m[1] || "missing url",
-							x = v[0] || "",
-							w = v[1] || 100,
-							h = v[2] || 100,
-							s = v[3] || `${dsname}?ID=${ds.ID}` ,
-							p = u.split(";").join("&") ;
-
-						switch (x) {
-							case "update":
-								return x.tag("a",{href:dsname+".exe?ID="+ds.ID}) + "".tag("iframe",{ src:u, width:w, height:h });
-							case "image":
-								return "".tag("img",{ src:u, width:w, height:h });
-							case "post":
-								return "".tag("iframe",{ src:u, width:w, height:h });
-							case "nada":
-								return `[nada](${u})`;
-							case "link":
-								return x.tag("a",{href:u});
-							default:
-								return "".tag("iframe",{ src: `/${x}.view?${p}&w=${w}&h=${h}&ds=${s}`, width:w, height:h } );
-						}
-					})
-					.replace(/href=.*>/g, function (m,i) { // follow <a href=B>A</a> links
-						var q = (i.charAt(0) == "'") ? '"' : "'";
-						return `href=${q}javascript:navigator.follow(${i},BASE.user.client,BASE.user.source)${q}>`;
-					}), 
-
-				cb
-			); 
-		}
-
+		blog: function (recs,req,res) {  //< renders dataset records
+			recs.blogify( req.flags.blog.split(","), req.table, res );
+		}		
 	},
 											 
 	"reqTypes." : { //< endpoint types to convert dataset recs on specifed req-res thread
+		
 		view: function (recs,req,res) {  //< dataset.view returns rendered skin
 			res( recs );
 		},
@@ -1508,6 +1436,100 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			return rtns.join(arg);
 		}, */
 
+		function blogify( keys, ds, cb ) {
+			
+			function renderRecord(src, rec, ds, cb) {  // blog=key,... request flag
+				function renderEmac(rec,src) {
+					try {
+						return eval("`" + src + "`");
+					}
+					catch (err) {
+						return src;
+					}
+				}
+				function renderMath(texList,src,cb) {
+					var 
+						rtn = src,
+						rendered = 0, renders = texList.length;
+
+					texList.each( function (n,tex) {
+
+						JAX.typeset({
+							math: tex,
+							format: "TeX",  // TeX, inline-TeX, AsciiMath, MathML
+							mml: true
+						}, function (d) {
+							rtn = rtn.replace("$math"+n, d.mml);
+
+							if ( ++rendered == renders ) cb(rtn);
+						});
+
+					});
+
+					if ( !renders ) cb(rtn);
+				}
+
+				var tex = [];
+
+				renderMath( 
+					tex, 
+
+					src   //renderEmac(ds,src)
+						.replace(/\$\$(.|\n)*\$\$/g, function (m,i) {  // render $$ tex $$ markdown
+							tex.push(m.substr(2,m.length-4));
+							return "$math"+(tex.length-1);
+						})
+						.replace(/\[.*\]\((.*?)\)/g, function (m,i) {  // render [x,w,h,s](u) markdown
+							m = m.substr(1,m.length-2).split("]("); 
+							var 
+								v = m[0].split(","),
+								u = m[1] || "missing url",
+								x = v[0] || "",
+								w = v[1] || 100,
+								h = v[2] || 100,
+								s = v[3] || `${ds}?ID=${ds.ID}` ,
+								p = u.split(";").join("&") ;
+
+							switch (x) {
+								case "update":
+									return x.tag("a",{href:ds+".exe?ID="+ds.ID}) + "".tag("iframe",{ src:u, width:w, height:h });
+								case "image":
+									return "".tag("img",{ src:u, width:w, height:h });
+								case "post":
+									return "".tag("iframe",{ src:u, width:w, height:h });
+								case "nada":
+									return `[nada](${u})`;
+								case "link":
+									return x.tag("a",{href:u});
+								default:
+									return "".tag("iframe",{ src: `/${x}.view?${p}&w=${w}&h=${h}&ds=${s}`, width:w, height:h } );
+							}
+						})
+						.replace(/href=[^>]*/g, function (m,i) { // follow <a href=B>A</a> links
+							var ref = m.replace("href=",""), q = (ref.charAt(0) == "'") ? '"' : "'";
+							return `href=${q}javascript:navigator.follow(${ref},BASE.user.client,BASE.user.source)${q}`;
+						}), 
+
+					cb
+				); 
+			}
+		
+			var recs = this, rendered = 0, renders = recs.length;
+
+			keys.each(function (n,key) {
+				recs.each( function (n, rec) {
+					if ( val = rec[key] )
+						if (val.constructor == String)
+							renderRecord( val, rec, ds, function (html) {
+								rec[key] = html;
+								//Log(rendered, renders);
+								if ( ++rendered == renders ) cb(recs);
+							});
+				});
+			});
+			if ( !renders ) cb(recs);								
+		},
+		
 		function isEmpty() {
 			return this.length > 0;
 		},
