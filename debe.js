@@ -2538,7 +2538,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 function sendDoc(req, res) {
 	var
 		site = DEBE.site,
-		master = site.urls.master,	
+		master = "http://localhost:8080", //site.urls.master,	
 		query = req.query,
 		type = req.type.substr(1),
 		name = req.table,
@@ -2551,10 +2551,10 @@ function sendDoc(req, res) {
 			var 
 				url = `${master}/${name}.view`.tag("?", query),
 				res = "1920px",
-				gen = `phantomjs rasterize.js "${url}" ${docf}`;
+				gen = `'./phantomjs rasterize.js "${url}" ${docf}'`;
 			
-			Trace(gen);
-			CP.exec( gen, function (err) {
+			Log(gen);
+			CP.exec( gen, {cwd: process.cwd()}, function (err) {
 				//Log(err);
 			});
 			break;
