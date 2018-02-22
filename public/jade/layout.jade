@@ -6,6 +6,7 @@ block layout_parms
 	- highlight = "zenburn"	// code styling theme zenburn | ...
 	- capture = false // to add screen capture button
 	- math = true // enable mathjax plugin
+	- check = true
 
 html(lang="en")
 	head
@@ -24,40 +25,41 @@ html(lang="en")
 		noscript
 			p Please enable Javascript and Cookies to access #{title}.
 
-		if ! JSON.parse
-			script(src="/clients/json/json2.js")
+		if check
+			if ! JSON.parse
+				script(src="/clients/json/json2.js")
 
-		//- Add global ajax method to navigator.ajax
-		script(src="/uis/ajax.js")
+			//- Add global ajax method to navigator.ajax
+			script(src="/uis/ajax.js")
 
-		//- Add global link follower method to navigator.follow
-		script(src="/uis/follow.js")
+			//- Add global link follower method to navigator.follow
+			script(src="/uis/follow.js")
 
-		//- Add client probe info to navigator.totem
-		script(src="/uis/probe.js")
+			//- Add client probe info to navigator.totem
+			script(src="/uis/probe.js")
 
-		//-
-			Install socketio to communicate with clients.  This interface is establihed when the server does a require('socket.io'), 
-			ths createing end endpoint at urls.socketio (typically /socket.io/socket.io.js) on which the client can source -- via 
-			a <script src="/socket.io/socket.io.js"> tag -- its io() method.  Note: have been unable to get socket.io 2.x working
-			so reverting to socket.io 1.5.0.
+			//-
+				Install socketio to communicate with clients.  This interface is establihed when the server does a require('socket.io'), 
+				ths createing end endpoint at urls.socketio (typically /socket.io/socket.io.js) on which the client can source -- via 
+				a <script src="/socket.io/socket.io.js"> tag -- its io() method.  Note: have been unable to get socket.io 2.x working
+				so reverting to socket.io 1.5.0.
 
-		if sockets && onencrypted
-			script(src=urls.socketio)
-		else
-			script.
-				var io = null;
+			if sockets && onencrypted
+				script(src=urls.socketio)
+			else
+				script.
+					var io = null;
 
-		//- Load mathjax preprocessor if needed
-		if math 
-			script(src="/clients/mathjax/MathJax.js?config=default")
-			script.
-				MathJax.Hub.Queue(["Typeset",MathJax.Hub]);
-				MathJax.Hub.Config({
-					extensions: ["tex2jax.js"],
-					jax: ["input/TeX","output/HTML-CSS"],
-					tex2jax: {inlineMath: [["$","$"],["\\(","\\)"]]}
-				});
+			//- Load mathjax preprocessor if needed
+			if math 
+				script(src="/clients/mathjax/MathJax.js?config=default")
+				script.
+					MathJax.Hub.Queue(["Typeset",MathJax.Hub]);
+					MathJax.Hub.Config({
+						extensions: ["tex2jax.js"],
+						jax: ["input/TeX","output/HTML-CSS"],
+						tex2jax: {inlineMath: [["$","$"],["\\(","\\)"]]}
+					});
 
 		//- Code formatting
 		if highlight

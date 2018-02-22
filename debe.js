@@ -929,14 +929,19 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 	
 	"byType.": { //< routers for endpoint types at /DATASET.TYPE
-		code: sendCode,
-		jade: sendCode,		
+		// file attributes
+		//code: sendCode,
+		//jade: sendCode,		
 		classif: sendAttr,
 		readability: sendAttr,
 		client: sendAttr,
 		size: sendAttr,
 		risk: sendAttr,
 		
+		// file generators
+		xpdf: sendDoc,
+		
+		// skins
 		view: renderSkin,
 		run: renderSkin,
 		plugin: renderSkin,
@@ -947,7 +952,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		runbrief: renderSkin,
 		pivbrief: renderSkin,
 		
-		//sim: simEngine,
+		// plugins
 		exe: exeEngine,
 		add: extendPlugin,
 		sub: retractPlugin
@@ -1487,12 +1492,12 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 								x = v[0] || "",
 								w = v[1] || 100,
 								h = v[2] || 100,
-								s = v[3] || `${ds}?ID=${ds.ID}` ,
+								s = v[3] || `${ds}?ID=${rec.ID}` ,
 								p = u.split(";").join("&") ;
 
 							switch (x) {
 								case "update":
-									return x.tag("a",{href:ds+".exe?ID="+ds.ID}) + "".tag("iframe",{ src:u, width:w, height:h });
+									return x.tag("a",{href:ds+".exe?ID="+rec.ID}) + "".tag("iframe",{ src:u, width:w, height:h });
 								case "image":
 									return "".tag("img",{ src:u, width:w, height:h });
 								case "post":
@@ -2221,9 +2226,9 @@ function sendCert(req,res) { // create/return public-private certs
 			else {
 				
 				var 
-					master = site.urls.master,
 					paths = DEBE.paths,
 					site = DEBE.site,
+					master = site.urls.master,
 					FF = "Firefox".tag("a",{href:master+"/shares.firefox.zip"}),
 					Putty = "Putty".tag("a",{href:master+"/shares.putty.zip"}),
 					Cert = "Cert".tag("a",{href:`${master}/cert/${owner}`});
@@ -2529,6 +2534,34 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 }
 
+function sendDoc(req, res) {
+	var
+		site = DEBE.site,
+		master = site.urls.master,	
+		query = req.query,
+		type = req.type.substr(1),
+		name = req.table,
+		docf = `./shares/${req.table}.${type}`;	
+
+	res( "Claim file "+"here".link(docf) );
+
+	switch (type) {
+		case "pdf":
+			var 
+				url = `${master}/${name}.view`.tag("?", query),
+				gen = `phantomjs rasterize.js "${url}" ${docf}`;
+			
+			Trace(gen);
+			CP.exec( gen, function (err) {
+				//Log(err);
+			});
+			break;
+
+		default:
+
+	}
+}
+
 function renderSkin(req,res) {
 /**
 @method renderSkin
@@ -2564,7 +2597,6 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		else  // render in default site context
 			cb();
 	}
-	
 	
 	dsContext(sql, ctx, function () {  
 
@@ -2729,28 +2761,26 @@ Convert recods to requested req.type office file.
 		type = types[req.type],
 		docf = `./shares/${req.table}.${type}`;
 	
-	if (type) 
-		docx = ODOC({
-			type: type
-			//onend: function (writeBytes) { 	}
+	if (type) {	
+		res( "Claim file "+"here".link(docf) );
+		
+		var
+			docx = ODOC({
+				type: type
+				//onend: function (writeBytes) { 	}
+			}),			
+			docs = FS.createWriteStream(docf);
+
+		docx.generate( docs );
+		docs.on("close", function () {
+			Trace("CREATED "+docf);
 		});
-	
-	else
-		res(DEBE.errors.badOffice);
-	
-	var
-		docs = FS.createWriteStream(docf);
 
-	docx.generate( docs );
-	docs.on("close", function () {
-		Trace("CREATED "+docf);
-	});
+		if (false) {  // debugging
+			var docp = docx.createP();
+			docp.addText("hello there");
 
-	if (false) {  // debugging
-		var docp = docx.createP();
-		docp.addText("hello there");
-	
-		docp.addTest(`
+			docp.addTest(`
 view || edit
 
 1.2 All my users
@@ -2759,10 +2789,10 @@ ID	Client	Likeus	Updated	Banned	Liked	Joined	SnapInterval	SnapCount	Charge	Credi
 34	brian.james@guest.org	0	Mon May 04 2015 05:52:50 GMT-0400 (EDT)		1	Mon Sep 28 2015 20:51:50 GMT-0400 (EDT)	null	null	null	0	0	0	0	null	null	0	1	null	null	app	null	null	brian.james@guest.org	null	null	{"Login":"me","Password":"test","FavColor":"blue"}	Please contact joeschome to unlock your accout	0	30000	PM,R,X	1
 
 Totem
-	
+
 
 {"a":[{"ID":0,"SORN":"TBD","SPID":"TBD"}],"b":[{"ID":1,"NISTid":"TBD","NISTtype":"a1"},{"ID":2,"NISTid":"TBD","NISTtype":"TBD"},{"ID":3,"NISTtype":"a2"}]}
-	
+
 
 TBD
 
@@ -2784,47 +2814,49 @@ Impressive 'eh
 Jα(x)=∑m=0∞(−1)mm!Γ(m+α+1)(x2)2m+α
 Chapter 2
 `);
+		}
+
+		var cols = [];
+		var rows = [cols];
+
+		recs.each( function (n,rec) {
+			if (n == 0) 
+				for (var key in rec)
+					rows.push({
+						val: key,
+						opts: {
+							cellColWidth: 4261,
+							b: true,
+							sz: "48",
+							shd: {
+								fille: "7F7F7F",
+								themeFill: "text1",
+								themeFillTint: "80"
+							},
+							fontFamily: "Avenir Book"
+						}
+					});
+
+			var row = new Array();
+
+			rows.push(row);
+			for (var key in rec)
+				row.push( rec[key] );
+		});
+
+		if (false)
+		docx.createTable(rows, {
+			tableColWidth: 4261,
+			tableSize: 24,
+			tableColor: "ada",
+			tableAlign: "left",
+			tableFontFamily: "Comic Sans MS",
+			borders: true
+		});
 	}
 	
-	var cols = [];
-	var rows = [cols];
-
-	recs.each( function (n,rec) {
-		if (n == 0) 
-			for (var key in rec)
-				rows.push({
-					val: key,
-					opts: {
-						cellColWidth: 4261,
-						b: true,
-						sz: "48",
-						shd: {
-							fille: "7F7F7F",
-							themeFill: "text1",
-							themeFillTint: "80"
-						},
-						fontFamily: "Avenir Book"
-					}
-				});
-
-		var row = new Array();
-
-		rows.push(row);
-		for (var key in rec)
-			row.push( rec[key] );
-	});
-
-	if (false)
-	docx.createTable(rows, {
-		tableColWidth: 4261,
-		tableSize: 24,
-		tableColor: "ada",
-		tableAlign: "left",
-		tableFontFamily: "Comic Sans MS",
-		borders: true
-	});
-
-	res( "Claim file "+"here".link(docf) );
+	else
+		res(DEBE.errors.badOffice);
 }
 
 function Initialize () {

@@ -1,4 +1,6 @@
 module.exports = {
+	clear: true,
+	
 	usecase: {
 		Save: "json"
 	},
