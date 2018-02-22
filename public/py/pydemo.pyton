@@ -1,5 +1,0 @@
-print "in pyreg"
-
-TAU['cur0'].execute("SELECT * from app1.Htest", () )
-for (Rec) in TAU['cur0']:
-	print Rec

@@ -1667,6 +1667,13 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			return tar;
 		},
 		
+		function listify( cb ) {
+			var rtns = [];
+			this.forEach( function (rec) {
+				rtns.push( cb(rec) );
+			});
+		},
+						 
 		function joinify(sep, cb) {
 			if (cb) {
 				var recs = [];
@@ -3131,7 +3138,7 @@ function siteContext(req, cb) {
 			disk: ((req.profile.useDisk / req.profile.maxDisk)*100).toFixed(0)
 		},
 		started: DEBE.started,
-		fileName: DEBE.paths.jaderef,
+		filename: DEBE.paths.jaderef,
 		url: req.url
 	}) );
 	
