@@ -940,6 +940,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		// file generators
 		xpdf: sendDoc,
+		xjpg: sendDoc,
 		
 		// skins
 		view: renderSkin,
@@ -2549,6 +2550,7 @@ function sendDoc(req, res) {
 		case "pdf":
 			var 
 				url = `${master}/${name}.view`.tag("?", query),
+				res = "1920px",
 				gen = `phantomjs rasterize.js "${url}" ${docf}`;
 			
 			Trace(gen);
