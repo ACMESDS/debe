@@ -2551,11 +2551,11 @@ function sendDoc(req, res) {
 			var 
 				url = `${master}/${name}.view`.tag("?", query),
 				res = "1920px",
-				gen = `'./phantomjs rasterize.js "${url}" ${docf}'`;
+				gen = `./phantomjs rasterize.js "${url}" ${docf}`;
 			
 			Log(gen);
-			CP.exec( gen, {cwd: process.cwd()}, function (err) {
-				//Log(err);
+			CP.execFile( "node", ["phantomjs", "rasterize.js", `"${url}"`, docf], {cwd: process.cwd()}, function (err) {
+				Log(err);
 			});
 			break;
 
