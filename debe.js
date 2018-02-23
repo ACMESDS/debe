@@ -2550,12 +2550,11 @@ function sendDoc(req, res) {
 		case "pdf":
 			var 
 				url = `${master}/${name}.view`.tag("?", query),
-				res = "1920px",
-				gen = `./phantomjs rasterize.js "${url}" ${docf}`;
+				res = (type == "jpg") ? "1920px" : "";
 			
-			Log(gen);
-			CP.execFile( "node", ["phantomjs", "rasterize.js", `"${url}"`, docf], {cwd: process.cwd()}, function (err) {
-				Log(err);
+			Trace("SCRAPE "+url);
+			CP.execFile( "node", ["phantomjs", "rasterize.js", url, docf, res], function (err,stdout) { 
+				if (err) Log(err,stdout);
 			});
 			break;
 
