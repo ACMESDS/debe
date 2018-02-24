@@ -63,35 +63,35 @@ var
 	
 	// watchdog config parameters
 		
-	dogs: {  // watch dogs. cycle time in secs (zero to disable)
+	dogs: {  // watch dogs cycle time in secs (zero to disable)
 		dogCatalog: Copy({
 			//cycle: 1000,
 			trace: ""
-		}, function (lims) {
+		}, function (opts) {
 		}),
 		
 		dogDetectors: Copy({
 			cycle: 0,
 			trace: ""
-		}, function (lims) {
+		}, function (opts) {
 		}),
 						   
 		dogVoxels: Copy({
 			//cycle: 120,
 			trace: "",
 			atmage: 2 // days to age before refresh atm data
-		}, function (lims) {
+		}, function (opts) {
 			var gets = {
 				unused: "SELECT voxels.ID AS ID,aois.id AS aoiID FROM app.voxels LEFT JOIN app.aois ON aois.name=voxels.aoi HAVING aoiID IS null",
 				refresh: "SELECT ID FROM app.voxels WHERE MBRcontains(ring, GeomFromText(?)) AND datediff(now(), added) > ?"
 			};
 			
-			JSDB.forEach(lims.trace, gets.unused, [], function (voxel, sql) {
+			JSDB.forEach(opts.trace, gets.unused, [], function (voxel, sql) {
 				sql.update("DELETE FROM app.voxels WHERE ?", {ID: voxel.ID});
 			});
 			
-			if (lims.atmage)  // fetch new atm data from whatever service and loop over recs (grouped by Point(x y) grid location)
-			JSDB.forEach(lims.trace, gets.refresh, [atm.gridLocation, lims.atmage], function (voxel, sql) {
+			if (opts.atmage)  // fetch new atm data from whatever service and loop over recs (grouped by Point(x y) grid location)
+			JSDB.forEach(opts.trace, gets.refresh, [atm.gridLocation, opts.atmage], function (voxel, sql) {
 				// update voxels with atm data
 			});
 			
@@ -100,14 +100,46 @@ var
 		dogCache: Copy({
 			//cycle: 120,
 			trace: ""
-		}, function (lims) {
+		}, function (opts) {
 		}),
 		
+		dogIngest: Copy({
+			cycle: 300,
+			trace: "DOG"
+		}, function (opts) {
+			
+			var 
+				gets = {
+					artillery: "/ingest?ds=opir&type=artillery",
+					missile: "/ingest?ds=opir&type=missle"
+				},
+				fetcher = DEBE.fetcher,
+				advDays = opts.cycle / 86400;
+			
+			sqlThread( function (sql) {
+				Each(gets, function (get, path) {
+					Trace("INGEST "+get);
+					sql.getFirst("", "SELECT FROM app.files WHERE ? LIMIT 1", {Name: path}, function (file) {
+						if (file) {
+							sql.query("DELETE FROM app.events WHERE ?", {FileID: file.ID});
+							sql.query("UPDATE app.files SET ?,Revs=Revs+1 WHERE ?", [{
+								start_time: file.start_time.addDays(advDays),
+								end_time: file.end_time.addDays(advDays),
+								Notes: "reingest"
+							}, {
+								ID: file.ID
+							}]);
+						}
+					});
+				});
+			});
+		}),
+						
 		dogFiles: Copy({
-			cycle: 30, // secs
+			cycle: 300, // secs
 			trace: "DOG",
 			maxage: 90 // days
-		}, function (lims) {
+		}, function (opts) {
 			
 			function pretty(stats,sigfig) {
 				var rtn = [];
@@ -122,17 +154,18 @@ var
 					lowsnr: "SELECT events.ID AS ID FROM app.events LEFT JOIN app.voxels ON voxels.ID = events.voxelID WHERE ? < voxels.minSNR AND ?",
 					unpruned: "SELECT ID,Name,snr FROM app.files WHERE NOT Pruned AND Voxelized",
 					ungraded: "SELECT ID,Name,Actors,States,Steps FROM app.files WHERE NOT Graded AND Voxelized",
+					unfetched: "SELECT ID,Name,Ring,start_time,end_time,sample_time FROM app.files WHERE Notes='reingest' ",
 					expired: "SELECT ID,Name FROM app.files WHERE Expires AND now() > Expires",
-					retired: "SELECT files.ID,files.Name,files.Client,count(events.id) AS evCount FROM app.events LEFT JOIN app.files ON events.fileid = files.id WHERE datediff( now(), files.added)>=? AND NOT files.Archived GROUP BY fileid"
+					retired: "SELECT files.ID,files.Name,files.Client,count(events.id) AS evCount FROM app.events LEFT JOIN app.files ON events.fileID = files.id WHERE datediff( now(), files.added)>=? AND NOT files.Archived GROUP BY fileid"
 				};
 
-			JSDB.forEach( lims.trace, gets.expired, [], function (file, sql) { 
+			JSDB.forEach( opts.trace, gets.expired, [], function (file, sql) { 
 				Trace("EXPIRE "+file.Name);
 				sql.query("DELETE FROM app.events WHERE ?", {fileID: file.ID});
 			});
 			
-			if (lims.maxage)
-			JSDB.forEach(lims.trace, gets.retired, lims.maxage, function (file, sql) {
+			if (opts.maxage)
+			JSDB.forEach(opts.trace, gets.retired, opts.maxage, function (file, sql) {
 				TRACE("RETIRE "+file.Name);
 
 				var 
@@ -163,10 +196,10 @@ Further information about this file is available ${paths.moreinfo}. `;
 				}, sql);
 			});
 			
-			JSDB.forEach(lims.trace, gets.unpruned, [], function (file, sql) {
+			JSDB.forEach(opts.trace, gets.unpruned, [], function (file, sql) {
 				Trace("PRUNE "+file.Name);
 
-				sql.forAll(lims.trace, gets.lowsnr, [ file.snr, {"events.fileID": file.ID} ], function (evs) {
+				sql.forAll(opts.trace, gets.lowsnr, [ file.snr, {"events.fileID": file.ID} ], function (evs) {
 					//Log("dog rejected", evs.length);
 					sql.query("UPDATE app.files SET ? WHERE ?", [{
 							Pruned: true,
@@ -180,7 +213,18 @@ Further information about this file is available ${paths.moreinfo}. `;
 				});
 			});
 			
-			JSDB.forEach(lims.trace, gets.ungraded, [], function (file, sql) {
+			JSDB.forEach(opts.trace, gets.unfetched, [], function (file, sql) {
+				Trace("FETCH "+file.Name);					
+				fetcher( file.Name.tag("&",{fileID: file.ID}), {
+					from: file.start_time,
+					to: file.end_time,
+					ring: file.Ring
+				}, function (stats) {
+					Log("INGEST", stats);
+				});
+			});
+					
+			JSDB.forEach(opts.trace, gets.ungraded, [], function (file, sql) {
 				Trace("GRADE "+file.Name);
 
 				DEBE.gradeIngest( sql, file, function (stats) {
@@ -191,7 +235,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 						var unsup = stats.unsupervised;
 
 						sql.forAll(
-							lims.trace,
+							opts.trace,
 							"UPDATE app.files SET Graded=true, ?, Notes=concat(Notes,?) WHERE ?", [{
 								tag: JSON.stringify(stats),
 								coherence_time: unsup.coherence_time,
@@ -217,14 +261,14 @@ Further information about this file is available ${paths.moreinfo}. `;
 		dogJobs: Copy({
 			cycle: 300,
 			trace: ""
-		}, function (lims) {
+		}, function (opts) {
 			var
 				gets = {
 					stuck: "UPDATE app.queues SET Departed=now(), Notes=concat(Notes, ' is ', link('billed', '/profile.view')), Age=Age + (now()-Arrived)/3600e3, Finished=1 WHERE least(Departed IS NULL,Done=Work)", 
 				},
 				queues = FLEX.queues;
 
-			JSDB.forAll( lims.trace, gets.stuck, [], function (info, sql) {
+			JSDB.forAll( opts.trace, gets.stuck, [], function (info, sql) {
 
 				Each(queues, function (rate, queue) {  // save collected queuing charges to profiles
 					Each(queue.client, function (client, charge) {
@@ -252,7 +296,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 			pigs : 2,
 			jobs : 5,
 			trace: ""
-		}, function (lims) {  // system diag watch dog
+		}, function (opts) {  // system diag watch dog
 			var 
 				gets = {
 					engs: "SELECT count(ID) AS Count FROM app.engines WHERE Enabled",
@@ -263,16 +307,16 @@ Further information about this file is available ${paths.moreinfo}. `;
 				diag = DEBE.diag;
 
 			sqlThread( function (sql) {
-				sql.forEach(lims.trace, gets.engs, [], function (engs) {
-				sql.forEach(lims.trace, gets.jobs, [], function (jobs) {
-				sql.forEach(lims.trace, gets.pigs, [], function (pigs) {
-				sql.forEach(lims.trace, gets.logs, [], function (isps) {
+				sql.forEach(opts.trace, gets.engs, [], function (engs) {
+				sql.forEach(opts.trace, gets.jobs, [], function (jobs) {
+				sql.forEach(opts.trace, gets.pigs, [], function (pigs) {
+				sql.forEach(opts.trace, gets.logs, [], function (isps) {
 					var rtn = diag.counts = {Engines:engs.Count,Jobs:jobs.Count,Pigs:pigs.Count,Faults:isps.Count,State:"ok"};
 
-					for (var n in lims) 
-						if ( rtn[n] > 5*lims[n] ) rtn.State = "critical";
+					for (var n in opts) 
+						if ( rtn[n] > 5*opts[n] ) rtn.State = "critical";
 						else
-						if ( rtn[n] > lims[n] ) rtn.State = "warning";
+						if ( rtn[n] > opts[n] ) rtn.State = "warning";
 
 					sql.release();
 				});
@@ -286,7 +330,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 			//cycle: 500,
 			maxage: 10,
 			trace: ""
-		}, function (lims) { // job hawking watch dog
+		}, function (opts) { // job hawking watch dog
 			/*
 			 * Hawk over jobs in the queues table given {Action,Condition,Period} rules 
 			 * defined in the hawks table.  The rule is run on the interval specfied 
@@ -306,7 +350,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 					unfunded: "SELECT * FROM app.queues WHERE NOT Funded AND now()-Arrived>?"
 				};
 
-			JSDB.forEach(lims.trace, gets.unbilled, [], function (job, sql) {
+			JSDB.forEach(opts.trace, gets.unbilled, [], function (job, sql) {
 				//Trace(`BILLING ${job} FOR ${job.Client}`, sql);
 				sql.query( "UPDATE openv.profiles SET Charge=Charge+? WHERE ?", [ 
 					job.Done, {Client: job.Client} 
@@ -315,8 +359,8 @@ Further information about this file is available ${paths.moreinfo}. `;
 				sql.query( "UPDATE app.queues SET Billed=1 WHERE ?", {ID: job.ID})
 			});
 
-			if (lims.maxage)
-				JSDB.forEach(trace, gets.unfunded, [lims.maxage], function (job, sql) {
+			if (opts.maxage)
+				JSDB.forEach(trace, gets.unfunded, [opts.maxage], function (job, sql) {
 					//Trace("KILLING ",job);
 					sql.query(
 						//"DELETE FROM app.queues WHERE ?", {ID:job.ID}
@@ -332,7 +376,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 			qos: 2,  //0,1,2,...
 			unused: 4,  // days
 			certage: 360 // days
-		}, function (lims) {
+		}, function (opts) {
 			var 
 				gets = {
 					needy: "SELECT ID FROM openv.profiles WHERE useDisk>?",
@@ -342,23 +386,23 @@ Further information about this file is available ${paths.moreinfo}. `;
 					uncert: "SELECT ID FROM openv.profiles LEFT JOIN app.quizes ON profiles.Client=quizes.Client WHERE datediff(now(), quizes.Credited)>?",
 				};
 
-			JSDB.forEach(lims.trace, gets.naughty, [], function (client, sql) {
+			JSDB.forEach(opts.trace, gets.naughty, [], function (client, sql) {
 			});
 
-			if (lims.disk)
-			JSDB.forEach(lims.trace, gets.needy, [lims.disk], function (client, sql) {
+			if (opts.disk)
+			JSDB.forEach(opts.trace, gets.needy, [opts.disk], function (client, sql) {
 			});		
 
-			if (lims.dormant)
-			JSDB.forEach(lims.trace, gets.dormant, [lims.unused], function (client, sql) {
+			if (opts.dormant)
+			JSDB.forEach(opts.trace, gets.dormant, [opts.unused], function (client, sql) {
 			});		
 
-			if (lims.poor)
-			JSDB.forEach(lims.trace, gets.poor, [lims.qos], function (client, sql) {
+			if (opts.poor)
+			JSDB.forEach(opts.trace, gets.poor, [opts.qos], function (client, sql) {
 			});		
 
-			if (lims.certage)
-			JSDB.forEach(lims.trace, gets.uncert, [lims.certage], function (client, sql) {
+			if (opts.certage)
+			JSDB.forEach(opts.trace, gets.uncert, [opts.certage], function (client, sql) {
 			});		
 			
 		}),
@@ -368,15 +412,15 @@ Further information about this file is available ${paths.moreinfo}. `;
 			trace: "",
 			"undefined": 123,
 			bugs: 10
-		}, function (sql, lims) {
+		}, function (sql, opts) {
 			var 
 				gets = {
 					"undefined": "",
 					buggy: ""
 				};
 
-			if (lims.undefined)
-			JSDB.forEach(lims.trace, gets.undefined, [lims.undefined], function (client, sql) {
+			if (opts.undefined)
+			JSDB.forEach(opts.trace, gets.undefined, [opts.undefined], function (client, sql) {
 			});
 		}),
 			
@@ -385,15 +429,15 @@ Further information about this file is available ${paths.moreinfo}. `;
 			trace: "",
 			inactive: 1,
 			bugs: 10
-		}, function (lims) {
+		}, function (opts) {
 			var 
 				gets = {
 					inactive: "",
 					buggy: ""
 				};
 
-			if (lims.inactive)
-			JSDB.forEach(lims.trace, gets.inactive, [lims.inactive], function (client, sql) {
+			if (opts.inactive)
+			JSDB.forEach(opts.trace, gets.inactive, [opts.inactive], function (client, sql) {
 			});		
 		})
 	},
@@ -561,11 +605,13 @@ Usage: ${uses.join(",")}  `);
 		xppt: genDoc,
 		
 		tree: function (recs,req,res) { //< dataset.tree treeifies records sorted with _sort=keys
-			res( {
+			res({
 				name: "root", 
 				weight: 1, 
-				children: recs.treeify( 0, recs.length, 0, (req.flags.sort || "").split(",") )
-			} );
+				children: req.flags.sort 
+					? recs.treeify( 0, recs.length, 0, req.flags.sort.split(",") )
+					: []
+			});
 		},
 		
 		delta: function (recs,req,res) { //< dataset.delta adds change records from last baseline
@@ -919,7 +965,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		stop: sysStop,
 		alert: sysAlert,
 		ping: sysPing,
-		bit: sysBIT
+		bit: sysBIT,
+		ingest: sysIngest
 		//kill: sysKill,
 		//start: sysStart,
 		//checkpt: sysCheckpt,
@@ -938,9 +985,10 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		size: sendAttr,
 		risk: sendAttr,
 		
-		// file generators
+		// doc generators
 		xpdf: sendDoc,
 		xjpg: sendDoc,
+		xgif: sendDoc,
 		
 		// skins
 		view: renderSkin,
@@ -1257,6 +1305,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				+ "issues".tag("a",{href: "/issues.view"})
 				+ " for further information";
 		},
+		noIngest: new Error("invalid/missing ingest dataset"),
 		badSkin: new Error("skin contains invalid jade"),
 		badDataset: new Error("dataset does not exist"),
 		noCode: new Error("engine has no code file"),
@@ -1270,6 +1319,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 	
 	"paths.": {  //< paths to things
+		ingest: {
+			artillery: "https:/widow.nga.ic.gov/wms",
+			missile: "https:/widow.nga.ic.gov/wms"
+		},
+
 		default: "home.view",
 		
 		jaderef: "./public/jade/ref.jade",	// jade reference path for includes, exports, appends
@@ -1622,7 +1676,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		@param [Number] idx starting index (0 on first call)
 		@param [Number] kids number of leafs following starting index (this.length on first call)
 		@param [Number] level current depth (0 on first call)
-		@param [Array] piv pivots
+		@param [Array] keys pivot keys
 		@param [String] wt key name that contains leaf weight (defaults to "size")
 		Return a tree = {name,weight,children: tree} from records having been sorted on keys=[key,...]
 		*/
@@ -1715,6 +1769,13 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		}
 	],	
 	
+	Date: [
+		function addDays(days) {
+			this.setDate( this.getDate() + days );
+			return this;
+		}
+	],
+		
 	/**
 	@cfg {Boolean}
 	@member DEBE
@@ -1766,25 +1827,25 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		post: "/service/algorithm/:proxy"		//< hydra endpoint
 	},  		//< reserved for soap interfaces
 		
-	loader: function (url,met,req,res) { // generic data loader
+	loader: function (url,fetcher,req,res) { // generic data loader
 	/**
 	@member DEBE
 	@private
 	@method loader
 	@param {String} url path to source
-	@param {String} met method GET/POST/... to use
+	@param {String} fetcher data fetcher
 	@param {Object} req http request
 	@param {Function} res Totom response callback
 	*/
-		met( url.tag("?",req), res );
+		fetcher( url.tag("?",req), null, res );
 	},
 
 	loaders: { // data loading services
-		catalog: function (req,res) { DEBE.loader( DEBE.paths.wfs.spoof, DEBE.fetchers.http, req, res ); },
-		image: function (req,res) { DEBE.loader( DEBE.paths.wms.spoof, DEBE.fetchers.wget, req, res ); },
-		events: function (req,res) { DEBE.loader( DEBE.paths.sss.spoof, DEBE.fetchers.http, req, res ); },
-		stats: function (req,res) { DEBE.loader( DEBE.paths.sss.stats, DEBE.fetchers.http, req, res ); },
-		gaussmix: function (req,res) { DEBE.loader( DEBE.paths.sss.gaussmix, DEBE.fetchers.http, req, res ); },
+		catalog: function (req,res) { DEBE.loader( DEBE.paths.wfs.spoof, DEBE.fetcher, req, res ); },
+		image: function (req,res) { DEBE.loader( DEBE.paths.wms.spoof, DEBE.fetcher, req, res ); },
+		events: function (req,res) { DEBE.loader( DEBE.paths.sss.spoof, DEBE.fetcher, req, res ); },
+		stats: function (req,res) { DEBE.loader( DEBE.paths.sss.stats, DEBE.fetcher, req, res ); },
+		gaussmix: function (req,res) { DEBE.loader( DEBE.paths.sss.gaussmix, DEBE.fetcher, req, res ); },
 		save: {}
 	},
 
@@ -1969,7 +2030,7 @@ function SOAPsession(req,res,peer,action) {
 
 function icoFavicon(req,res) {   // extjs trap
 	res("No icons here"); 
-};
+}
 
 /**
 @class MAINT service maintenance endpoints
@@ -1985,6 +2046,35 @@ function sysAgent(req,res) {
 	cb(0);
 }
 */
+
+function sysIngest(req,res) {
+	var 
+		sql = req.sql,
+		query = req.query,
+		body = req.body,
+		ds = query.ds,
+		fileID = query.fileID,
+		path = DEBE.paths.ingest[ds],
+		fetcher = DEBE.fetcher;
+	
+	Log("INGEST", query, body);
+	res("submitted");
+	
+	if ( path ) 
+		fetcher( path.tag("?", Copy( body, {type:ds} )), null, function (evs) {
+			if (evs)
+				HACK.ingestList( sql, evs, fileID, function (aoi) {
+					Log("INGEST aoi", aoi);
+				});
+			
+			else
+				Log("INGEST no events");
+		});
+	
+	else
+		Trace("INGEST no path");
+
+}
 
 function sysConfig(req,res) {
 /**
@@ -2548,9 +2638,12 @@ function sendDoc(req, res) {
 
 	switch (type) {
 		case "pdf":
+		case "jpg":
+		case "gif":
+			
 			var 
 				url = `${master}/${name}.view`.tag("?", query),
-				res = (type == "jpg") ? "1920px" : "";
+				res = (type != "pdf") ? "1920px" : "";
 			
 			Trace("SCRAPE "+url);
 			CP.execFile( "node", ["phantomjs", "rasterize.js", url, docf, res], function (err,stdout) { 
@@ -3018,7 +3111,7 @@ Initialize DEBE on startup.
 			thread: sqlThread,
 			emitter: DEBE.IO ? DEBE.IO.sockets.emit : null,
 			skinner: JADE,
-			fetchers: DEBE.fetchers,
+			fetcher: DEBE.fetcher,
 			indexer: DEBE.indexFile,
 			uploader: DEBE.uploadFile,
 
@@ -3084,7 +3177,7 @@ Initialize DEBE on startup.
 		
 		JSLAB.config({
 			thread: sqlThread,
-			fetcher: DEBE.fetchers.http
+			fetcher: DEBE.fetcher
 		});
 		
 		ATOM.config({
