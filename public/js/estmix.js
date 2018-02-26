@@ -1,9 +1,9 @@
 module.exports = {
-	usecase: `
-add Mixes json
-add Refs json
-add Description mediumtext
-`,
+	usecase: {
+		Mixes: "json",
+		Refs: "json",
+		Description: "mediumtext"
+	},
 	
 	engine: function estmix(ctx,res) {
 		/*

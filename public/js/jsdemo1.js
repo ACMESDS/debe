@@ -2,7 +2,7 @@ module.exports = {
 	usecase: {
 		Save: "json",
 		M: "int(11)",
-		Job: "json",
+		Pipe: "json",
 		Share: "boolean"
 	},
 	
@@ -14,7 +14,7 @@ module.exports = {
 		ctx.Save = [ {u: ctx.M}, {u:ctx.M+1}, {u:ctx.M+2} ];
 		res(ctx);
 
-		LIBS.GET.byStep( ctx, function (evs) {
+		GET.byStep( ctx, function (evs) {
 			LOG(evs);
 		});
 		//MAT(ctx, "D=A*A'; E=D+D*3; disp(entry); ");

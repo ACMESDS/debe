@@ -563,9 +563,10 @@ append site_body
 						"KEY": value, ...						
 					}
 
-				On entry, its context is primed given its *entry* sql-queries: the "?" therein references its 
-				context *query* (as overridden by url query parameters).  On exit, its context context keys 
-				can be exported by its *exit* sql-queries.   
+				On entry, its context is primed using its *entry* sql-queries.  On exit, its context keys 
+				can be exported by its *exit* sql-queries.   The "?" in sql-queries references the 
+				context *query* (as overridden by url query parameters).  The engine's content is also
+				provided an OS, JSON, and an SQL module.
 
 		#folder.Examples(dock="left")
 			#fit.url
@@ -810,7 +811,7 @@ append site_body
 							sql = os['SQL0']
 							sql.execute("SELECT * from app.Htest", () )
 							for (Rec) in sql:
-								print Rec			
+								print Rec
 
 					with initial context:
 
@@ -850,6 +851,13 @@ append site_body
 					from the defined *ports* hash.  Although this engine would be typically used
 					in [stateful flows](/nodeflow.view), it can also be used in a stateless flow
 					by passing *port* (as demonstrated [here](/demo2.py?port=f1)).
+					
+					The context of a Python engine also receives an OS = { 
+					[LWIP(lightweight imaging)](https://github.com/EyalAr/lwip),
+					[SQL(database connector)](https://www.npmjs.com/package/mysql), 
+					[JSON(encoder-decoder)](https://nodejs.org/docs/latest/api/json)
+					} module list.
+					
 
 			#fit.js
 				:markdown
@@ -949,23 +957,23 @@ append site_body
 					function with the current **tau** workflow events and the **parm** set to the 
 					corresponding "ports" hash.
 
-					In adition to the standard [LWIP(lightweight imaging)](https://github.com/EyalAr/lwip),
-					[SQL(database connector)](https://www.npmjs.com/package/mysql), and
-					[JSON(encoder-decoder)](https://nodejs.org/docs/latest/api/json) modules,  js-engines also 
-					see the
+					A js-engine context also receives the following modules:
+					[LWIP(lightweight imaging)](https://github.com/EyalAr/lwip),
+					[SQL(database connector)](https://www.npmjs.com/package/mysql), 
+					[JSON(encoder-decoder)](https://nodejs.org/docs/latest/api/json), 
 					[MAT(matlab emulator)](https://www.npmjs.com/package/mathjs),
 					[DSP(digitial signal processing)](https://www.npmjs.com/package/dsp), 
 					[CRY(crypto)](https://nodejs.org/docs/latest/api/crypto),
-					[FLEX(data extender)](https://github.com/ACMESDS/flex),
-					[BAYS(bayes network interference )](tbd),
-					[GAMMA(standard gamma function)](tbd),
+					[BAYS(bayes network interference )](https://www.npmjs.com/package/jsbayes),
+					[GAMMA(standard gamma function)](https://www.npmjs.com/package/gamma),
 					[RAN(markov random process)](https://github.com/ACMESDS/randpr),
 					[SVD(singular value decomposition)](https://www.npmjs.com/package/node-svd),
 					[VITA(hidden markov model solver)](https://www.npmjs.com/package/nodehmm),
 					[MLE(maximum liklihood estimator)](https://www.npmjs.com/package/node-svd),
 					[MVN(normal multivariates](https://www.npmjs.com/package/multivariate-normal),
-					[MAIL(simple mail transfer)](https://www.npmjs.com/package/nodemailer)
-					modules.  
+					[MAIL(simple mail transfer)](https://www.npmjs.com/package/nodemailer),
+					[NEWRAP(newton-raphson root finder)](https://www.npmjs.com/package/newton-raphson),
+					[GET(data getter)](see totem repo)
 
 	#accordion.Machines
 		:markdown

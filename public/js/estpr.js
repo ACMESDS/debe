@@ -21,7 +21,7 @@ module.exports = {
 		//LOG(ctx);
 
 		var 
-			ran = new LIBS.RAN({ // configure the random process generator
+			ran = new RAN({ // configure the random process generator
 				N: ctx._File.Actors,  // ensemble size
 				wiener: 0,  // wiener process steps
 				sym: ctx.Symbols,  // state symbols
@@ -30,7 +30,7 @@ module.exports = {
 				batch: ctx.Batch, // batch size in steps 
 				K: ctx._File.States,	// number of states 
 				learn: function (cb) {  // event getter callsback cb(events) or cb(null) at end
-					LIBS.GET.byStep(ctx, cb);
+					GET.byStep(ctx, cb);
 				},  // event getter when in learning mode
 				filter: function (str, ev) {  // retain only end event containing last estimates
 					switch ( ev.at ) {
