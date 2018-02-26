@@ -14,6 +14,9 @@ module.exports = {
 		ctx.Save = [ {u: ctx.M}, {u:ctx.M+1}, {u:ctx.M+2} ];
 		res(ctx);
 
+		LIBS.GET.byStep( ctx, function (evs) {
+			LOG(evs);
+		});
 		//MAT(ctx, "D=A*A'; E=D+D*3; disp(entry); ");
 		// LOG( "D=", ctx.D, "E=", ctx.E);
 	}

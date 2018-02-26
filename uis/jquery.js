@@ -277,6 +277,9 @@ String.prototype.grid = function (items,attrs) {
 	}
 	
 	var fields = FIELDS[attrs.Name] = [];
+	//alert("w2grid="+$plugin.w2grid);
+	//alert("jqgrid="+$plugin.jqGrid);
+	//alert("datagrid="+$plugin.dataTable);
 	
 	if ($plugin.w2grid) {
 		var rtn = parse(attrs.cols,fields, {
@@ -317,6 +320,7 @@ String.prototype.grid = function (items,attrs) {
 	if ($plugin.dataTable) {
 		var rtn = parse(attrs.cols,fields);
 	
+		console.log(attrs.path, attrs.cols);
 		return (rtn.tag("thead") + this.tag("tbody")).tag("table",{
 			class: "DataTable",
 			cellpadding: 0,
@@ -653,8 +657,17 @@ function Render() {
 		var path = $this.attr("path");
 		var cols = $this.attr("cols");
 		
+		console.log({
+			ajax: path+"?_index="+cols,
+			loader: $this.DataTable
+		});
 		var dTable = $this.dataTable({
-			sAjaxSource: path+"?_index="+cols+"&_encap=aaData"
+			/*ajax: {
+				url: path+"?_index="+cols,
+				dataSrc: "data"
+			},*/
+			AjaxSource: path+"?_index="+cols,
+			columns: [ {data: "Message"}, {data:"To"} ]
 			/*
 			bProcessing: true,		// enable to show background proccesing
 			bPaginate: true,		// enable to show page fwd/back
@@ -677,8 +690,10 @@ function Render() {
 			sDom:  '<"H"lfr>t<"F"ip>' // Layout [H]eader with [l]ength,[f]ilter,[r]pProcessing, then [t]able, then [F]ooter with [i]nfo,[p]agination
 			* */
 		});
+		console.log("dtable");
 		
 		/* Add the events etc before DataTables hides a column */
+		if (0)
 		$("thead input").keyup( function () {
 			/* Filter on the column (the index) of this element */
 			

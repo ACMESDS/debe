@@ -61,9 +61,9 @@ var										// shortcuts and globals
 var
 	DEBE = module.exports = TOTEM.extend({
 	
-	// watchdog config parameters
+	// watchdog configuration
 		
-	dogs: {  // watch dogs cycle time in secs (zero to disable)
+	dogs: {  //< watch dogs cycle time in secs (zero to disable)
 		dogCatalog: Copy({
 			//cycle: 1000,
 			trace: ""
@@ -106,8 +106,7 @@ var
 		dogIngest: Copy({
 			cycle: 300,
 			trace: "DOG"
-		}, function (opts) {
-			
+		}, function (opts) {		
 			var 
 				gets = {
 					artillery: "/ingest?ds=opir&type=artillery",
@@ -116,21 +115,26 @@ var
 				fetcher = DEBE.fetcher,
 				advDays = opts.cycle / 86400;
 			
-			sqlThread( function (sql) {
-				Each(gets, function (get, path) {
-					Trace("INGEST "+get);
-					sql.getFirst("", "SELECT FROM app.files WHERE ? LIMIT 1", {Name: path}, function (file) {
-						if (file) {
-							sql.query("DELETE FROM app.events WHERE ?", {FileID: file.ID});
-							sql.query("UPDATE app.files SET ?,Revs=Revs+1 WHERE ?", [{
-								start_time: file.start_time.addDays(advDays),
-								end_time: file.end_time.addDays(advDays),
-								Notes: "reingest"
-							}, {
-								ID: file.ID
-							}]);
-						}
-					});
+			Each(gets, function (get, path) {
+				Trace("INGEST "+get);
+				JSDB.forFirst("", "SELECT FROM app.files WHERE ? LIMIT 1", {Name: path}, function (file, sql) {
+					if (file) {
+						var t0 = file.start_time;
+						sql.query("UPDATE app.files SET ?,Revs=Revs+1 WHERE ?", [{
+							fetch_time: file.end_time,
+							start_time: file.start_time.addDays(advDays),
+							end_time: file.end_time.addDays(advDays),
+							Notes: "reingest"
+						}, {
+							ID: file.ID
+						}]);
+
+						sql.query("DELETE FROM app.events WHERE ? AND s<?", [
+							{FileID: file.ID}, 
+							( file.start_time - t0 ) / file.sample_time
+						]);
+
+					}
 				});
 			});
 		}),
@@ -216,7 +220,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 			JSDB.forEach(opts.trace, gets.unfetched, [], function (file, sql) {
 				Trace("FETCH "+file.Name);					
 				fetcher( file.Name.tag("&",{fileID: file.ID}), {
-					from: file.start_time,
+					from: file.fetch_time,
 					to: file.end_time,
 					ring: file.Ring
 				}, function (stats) {
@@ -442,12 +446,12 @@ Further information about this file is available ${paths.moreinfo}. `;
 		})
 	},
 	
-	diag: {  // self diag parms
+	diag: {  //< reserved for self diag parms
 		status: "", 
 		counts: {State:""}
 	},
 
-	// request config parameters
+	// request configuration
 
 	"reqFlags." : {  //< endpoint request flags
 		
@@ -486,7 +490,8 @@ Further information about this file is available ${paths.moreinfo}. `;
 		
 		blog: function (recs,req,res) {  //< renders dataset records
 			recs.blogify( req.flags.blog.split(","), req.table, res );
-		}		
+		}
+		
 	},
 											 
 	"reqTypes." : { //< endpoint types to convert dataset recs on specifed req-res thread
@@ -634,10 +639,6 @@ Usage: ${uses.join(",")}  `);
 			});
 		},
 
-		encap: function encap(recs,req,res) {  //< dataset.encap to encap records
-			res({encap: recs});
-		},
-		
 		nav: function (recs,req,res) {  //< dataset.nav to navigate records pivoted with _browse=keys
 
 			/*
@@ -955,7 +956,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 	},
 
-	// endpoint router config parameters
+	// endpoint configuration
 		
 	"byArea.": { //< routers for endpoints at /AREA/file ...
 	},
@@ -1013,9 +1014,10 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	// private parameters
 		
 	admitRule: null, 	//< admitRule all clients by default 	
-		/*{ "u.s. government": "required",
-		 * 	"us": "optional"
-		 * }*/
+		/*{ 
+			"u.s. government": "required",
+			"us": "optional"
+		}*/
 
 	"site.": { 		//< initial site context
 
@@ -1320,8 +1322,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	
 	"paths.": {  //< paths to things
 		ingest: {
-			artillery: "https:/widow.nga.ic.gov/wms",
-			missile: "https:/widow.nga.ic.gov/wms"
+			artillery: "https://widow.nga.ic.gov/wms",
+			missile: "https://widow.nga.ic.gov/wms"
 		},
 
 		default: "home.view",
@@ -1769,11 +1771,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		}
 	],	
 	
-	Date: [
+	Date: [  // date prototypes
 		function addDays(days) {
-			this.setDate( this.getDate() + days );
+			this.setDate( this.getDate() + days);
 			return this;
-		}
+		}		
 	],
 		
 	/**
@@ -1879,7 +1881,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			ring = {voiring:[ TL, TR, BR, BL, TL ]};
 
 		// add this aoi as a usecase to all applicable plugins 
-		sql.eachTable( group, function (table) {  // look for plugins that have a data loader and a Job key
+		sql.eachTable( group, function (table) {  // look for plugins that have a data loader and a Pipe key
 			var tarkeys = [], srckeys = [], hasJob = false;
 
 			// if (table == "gaussmix") // debug filter
@@ -1889,12 +1891,12 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					[ group, table ], 
 					function (err,keys) {
 
-					keys.each( function (n,key) { // look for Job key
+					keys.each( function (n,key) { // look for Pipe key
 						var keyesc = "`" + key.Field + "`";
 						switch (key.Field) {
 							case "Save":
 								break;
-							case "Job":
+							case "Pipe":
 								hasJob = true;
 							case "Name":
 								srckeys.push("? AS "+keyesc);
@@ -1940,7 +1942,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			Log("ingest aoi", aoi);
 			var
 				ctx = {
-					Job: JSON.stringify({
+					Pipe: JSON.stringify({
 						file: fileName, limit: 1000, aoi: [ [0,0], [0,0], [0,0], [0,0], [0,0] ]
 					}),
 					Name: "ingest."+fileName,
@@ -2579,10 +2581,10 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				res( ctx );
 			
 			else
-			if ( Job = ctx.Job )  { // Intercept job request to run engine via regulator
+			if ( Pipe = ctx.Pipe )  { // Intercept job request to run engine via regulator
 				res("Regulating");
 				
-				HACK.chipEvents(req, Job, function (job) {  // create job for these Job parameters
+				HACK.chipEvents(req, Pipe, function (job) {  // create job for these Pipe parameters
 
 					req.query = Copy({  // engine request query gets copied to its context
 						_Host: job.class,

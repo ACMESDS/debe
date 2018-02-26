@@ -48,7 +48,7 @@ append site_body
 
 		when "capture"
 			#grid.Files(path="/uploads.db",
-				patg=page,dims=dims,typical,top,
+				page=page,dims=dims,typical,top,
 				cols="Ref,Link.h,Area,Name,Size,Tags.x,Tagger")
 
 				:markdown
@@ -77,7 +77,7 @@ append site_body
 
 		when "brief"
 			#home_brief.Briefing(dims="1400,900")
-		
+
 		when "print"
 			#grid.News(
 				path="news.db",
@@ -90,10 +90,10 @@ append site_body
 				#post.Bounce(path="/spherebounce.view",dims=dims)
 				#post.Anagylph(path="/anaglyph.view",dims=dims)
 				#post.Build(path="/voxelpaint.view",dims=dims)
-		
+
 		when "intake"
 			#null.TRLs(path="/states.db?Class=TRL",sync,cols="State,Name,Special")
-			
+
 			#pivot.Find(
 				path="/intake.db",
 				page=50,dims=dims,track="#{type}",kiss,
@@ -107,11 +107,11 @@ append site_body
 				sorts="App,Name,TRL",
 				links="Name.Find.Name",
 				cols="App,Name,TRL,Track,General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
-										
+
 			#form.Edit(
 				path="/intake.db",
 				links="ID.List.ID",
 				page=page,dims=dims,
 				cols="App,Name,TRL,Track,General(Special,HWConfig,SWConfig,Parms),Data Collect Requirements(Reqts(C*),iName,iClassif,iSpec),Host Env Requirements(Reqts(H*),oName,oClassif,oSpec),Dissem Requirements(M*)")
-		
+
 //- UNCLASSIFIED

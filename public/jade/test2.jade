@@ -1,8 +1,5 @@
-extends test
-append test_p
-	- a = "jzzunk"
-	
-append test_b
-	:markdown
-		we are done
-		
+extends base
+append base_parms
+	- tech = "jquery"
+append base_body
+	#grid.x(path="/news.db",cols="Message,To")

@@ -77,7 +77,7 @@ append site_body
 					> [Export+](/#{ds}.add?Export=false) [/-](/#{ds}.sub?Export) writes engine results into a file  
 					> [Ingest+](/#{ds}.add?Ingest=false) [/-](/#{ds}.sub?Ingest) ingests engine results into the database  
 					> [Share+](/#{ds}.add?Share=false) [/-](/#{ds}.sub?Share) returns engine results vs. its save status  
-					> [Job+](/#{ds}.add?Job=doc) [/-](/#{ds}.sub?Job) regulates chips and events to an egine  
+					> [Pipe+](/#{ds}.add?Pipe=doc) [/-](/#{ds}.sub?Pipe) regulates chips and events to an egine  
 					> [Description+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description) documents a useCASE  
 					> [Config+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) defines useCASE context with a js-engine  
 					> [Save+](/#{ds}.add?Save=doc) [/-](/#{ds}.sub?Save) aggregates engine results not captured in the Save_KEYs  
@@ -85,14 +85,14 @@ append site_body
 					
 					and by automatic keys:  
 					> _Host name of plugin  
-					> _File current file during Job workflow  
+					> _File current file during workflow  
 					> _Voxel current voxel being procesed  
 					> _Collects sensor collects made under current voxel  
 					> _Chip  filepath for first jpeg collect under current voxel  
 					> _Flux solar flux at earth's surface under current voxel  
 					> _Load event query for current voxel  
 					
-					A plugin's *Job* context key contains job regulation parameters:  
+					A plugin's *Pipe* context key contains job regulation parameters:  
 					> file: "/FILTER?QUERY" || "PLUGIN.CASE" || "uploaded FILENAME" || "FILE.jpg" || "FILE.json"  
 					> group: "KEY,..." || ""  
 					> where: { KEY: VALUE, ...} || {}  
