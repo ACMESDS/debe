@@ -429,7 +429,7 @@ append site_body
 	#accordion.Plugins
 		#fit.Endpoints
 			:markdown
-				A plugin -- a dataset-engine pair -- can be accessed from the following endpoints:
+				A plugin -- a dataset-engine pair -- is accessed from the following endpoints:
 
 					GET /PLUGIN.exe?id=CASE 	Run PLUGIN engine with id-specified CASE context
 					GET /PLUGIN.exe?name=CASE 	Run PLUGIN engine with name-specified CASE context
@@ -437,17 +437,17 @@ append site_body
 					GET /PLUGIN.view	View and execute selected PLUGIN usecases
 					GET /PLUGIN.run		View, execute, edit engine and manage PLUGIN job queues
 
-				Reserved usecase context keys can be added/removed:  
-				> [Export+](/#{ds}.add?Export=false) [/-](/#{ds}.sub?Export) writes engine results into a file  
-				> [Ingest+](/#{ds}.add?Ingest=false) [/-](/#{ds}.sub?Ingest) ingests engine results into the database  
-				> [Share+](/#{ds}.add?Share=false) [/-](/#{ds}.sub?Share) returns engine results vs. its save status  
-				> [Job+](/#{ds}.add?Job=doc) [/-](/#{ds}.sub?Job) regulates chips and events to an egine  
-				> [Description+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description) documents a useCASE  
-				> [Config+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) ) defines useCASE context with a js-engine  
-				> [Save+](/#{ds}.add?Save=doc) [/-](/#{ds}.sub?Save)) aggregates engine results not captured in the Save_KEYs  
+				Reserved keys can be added (+) / removed (-) from the context:  
+				> [Export+](/#{ds}.add?Export=false) [/ -](/#{ds}.sub?Export) writes engine results into a file  
+				> [Ingest+](/#{ds}.add?Ingest=false) [/ -](/#{ds}.sub?Ingest) ingests engine results into the database  
+				> [Share+](/#{ds}.add?Share=false) [/ -](/#{ds}.sub?Share) returns engine results vs. save status  
+				> [Job+](/#{ds}.add?Job=doc) [/ -](/#{ds}.sub?Job) regulates chips and events to an engine  
+				> [Description+](/#{ds}.add?Description=doc) [/ -](/#{ds}.sub?Description) documents a usecase  
+				> [Config+](/#{ds}.add?Config=doc) [/ -](/#{ds}.sub?Config) defines usecase context with a js-script  
+				> [Save+](/#{ds}.add?Save=doc) [/ -](/#{ds}.sub?Save) aggregates engine results not captured in the Save_KEYs  
 				> [Save_KEY](/#{ds}.run?options=more) aggregates engine results [{at:"KEY", ...}, ...]  
 				
-				and several reserved keys are automatically added to the context:
+				or are automatically added to the context:
 				> _Host name of plugin  
 				> _File current file during Job workflow  
 				> _Voxel current voxel being procesed  
@@ -456,7 +456,7 @@ append site_body
 				> _Flux solar flux at earth's surface under current voxel  
 				> _Load event query for current voxel   
 					
-				where *Job* contains workflow regulation parameters (// default value):
+				where *Job* contains workflow regulation parameters (|| options // defaults):
 
 					file: "/FILTER?QUERY" || "PLUGIN.CASE" || "uploaded FILENAME" || "FILE.jpg" || "FILE.json"
 					group: "KEY,...", 					// "" to disable
@@ -464,16 +464,19 @@ append site_body
 					order: "KEY,...",   				// "t" implicit
 					limit: VALUE,   					// 1000
 					task: "NAME", 						// "" for all
-					flush: "all" | "none" | "byTime" | "byDepth" | "function(ctx,rec,recs) returns false to flush",
-					buffer: N,		// Flush limit parameter 
 					aoi: [ [lat,lon], ... ]  				// closed ring
 
 				and where the *Description* key may contain [blogging tags](/skinguide.view) of the form:
 
-					 [image | post | update | link | SKIN, W, H, DS?QUERY]( /url | PARM=r.KEY expression; ...)
+					 [ image, W, H ]( url )
+					 [ post, W, H ]( url )
+					 [ exelink ]( url )
+					 [ link ]( url )
+					 [ plot || force || treemap || ... , W, H ]( PARM=ds.KEY; ... )
+					 [ plot || force || treemap || ... , W, H, SRC ]( PARM=ds.KEY; ... )
 					 $$ TeX $$
 
-				to document its usecase, for example:
+				to document usecases.  For example:
 
 					[plot,100,200](x=r.Save.a;ys=[r.Save.b,r.Save.c])
 					[post,500,100](/home.view)
@@ -487,7 +490,7 @@ append site_body
 				force graph of the queues dataset pivoted by class using the [d3 force](/force.view) 
 				into a frame of specified W x H dimensions, and (6) a TeX equation.
 
-				Engines placed into #{nick}'s content folder (map drive to #{info.content}) are automatically 
+				Engines placed into #{nick}'s content folder (map drive #{info.content}) are automatically 
 				published to [#{nick}'s engines](/engines.view) on #{nick} startup.
 
 		#fit.Parameters
@@ -805,13 +808,16 @@ append site_body
 				:markdown
 					This [stateless py-engine](/pydemo1.run):
 
-						def pydemo1(ctx,os):
+						def pydemo1(ctx,res):
 							print "welcome to python you lazy bird"
 							ctx['Save'] = [ {'x':1, 'y':2, 'z':0}, {'x':3, 'y':4, 'z':10}]
-							sql = os['SQL0']
-							sql.execute("SELECT * from app.Htest", () )
-							for (Rec) in sql:
-								print Rec
+							res(ctx)
+							if os:
+								SQL0 = OS['SQL0']
+								SQL0.execute("SELECT * from app.Htest", () )
+								#SQL0.execute("SELECT 1 as x, 2 as y", () )
+								for (Rec) in SQL0:
+									print Rec
 
 					with initial context:
 
@@ -820,9 +826,10 @@ append site_body
 						}
 
 					will display *Htest* data at the service console, then returns *Save* data to its plugin context.
-					Python engines are provided an *os* containing two sql cursors (*SQL0* and *SQL1* 
-					for read and write), the *LWIP* light-weight-imaging PIL module, and the JSON 
-					encoder/decoder module.
+					Python engines are also provided an *OS* dictionary containing: an *SQL0* read cursor, 
+					an *SQL1* write cursor, the *LWIP* light-weight-image-processing PIL, the JSON 
+					encoder/decoder, the *GET_[byStep|byDepth|bulk|discard|...](ctx,cb)* event getters,
+					and the	*GET_load(flush,ctx,cb)* event getter.
 
 					This [stateful python engine](/pydemo2.exe) can be used in a workflow to 
 					maximize data stationarity:
@@ -852,26 +859,23 @@ append site_body
 					in [stateful flows](/nodeflow.view), it can also be used in a stateless flow
 					by passing *port* (as demonstrated [here](/demo2.py?port=f1)).
 					
-					The context of a Python engine also receives an OS = { 
-					[LWIP(lightweight imaging)](https://github.com/EyalAr/lwip),
-					[SQL(database connector)](https://www.npmjs.com/package/mysql), 
-					[JSON(encoder-decoder)](https://nodejs.org/docs/latest/api/json)
-					} module list.
-					
-
 			#fit.js
 				:markdown
 					This [stateless js-engine](/jsdemo1.run):
 
-						function jsdemo1(ctx,res) {
-							//LOG(ctx);
+						function jsdemo1(ctx, res) {
+							LOG("jsdemo1 ctx", ctx);
 							LOG("A="+ctx.A.length+" by "+ctx.A[0].length);
 							LOG("B="+ctx.B.length+" by "+ctx.B[0].length);
 
+							ctx.Save = [ {u: ctx.M}, {u:ctx.M+1}, {u:ctx.M+2} ];
+							res(ctx);
+
+							GET.byStep( ctx, function (evs) {
+								LOG(evs);
+							});
 							MAT(ctx, "D=A*A'; E=D+D*3; disp(entry); ");
-							//LOG( "D=", ctx.D, "E=", ctx.E);
-							ctx.Save = [ ctx.M, ctx.M+1, ctx.M+2, {D:ctx.D, E:ctx.E} ];
-							res( ctx );	
+							LOG( "D=", ctx.D, "E=", ctx.E);
 						}
 
 					with initial context: 

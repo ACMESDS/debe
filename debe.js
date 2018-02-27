@@ -1553,7 +1553,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 								p = u.split(";").join("&") ;
 
 							switch (x) {
-								case "update":
+								case "exelink":
 									return x.tag("a",{href:ds+".exe?ID="+rec.ID}) + "".tag("iframe",{ src:u, width:w, height:h });
 								case "image":
 									return "".tag("img",{ src:u, width:w, height:h });

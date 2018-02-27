@@ -11,7 +11,7 @@ module.exports = {
 	
 	engine: function aois(ctx,res) {
 		res(ctx);
-		LIBS.HACK.voxelizeAOI(SQL, ctx);
+		HACK.voxelizeAOI(SQL, ctx);
 	}	
 
 }

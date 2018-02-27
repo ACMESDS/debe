@@ -76,7 +76,7 @@ append site_body
 					A running engine receives its selected usecase *context* agumented by optional keys:  
 					> [Export+](/#{ds}.add?Export=false) [/-](/#{ds}.sub?Export) writes engine results into a file  
 					> [Ingest+](/#{ds}.add?Ingest=false) [/-](/#{ds}.sub?Ingest) ingests engine results into the database  
-					> [Share+](/#{ds}.add?Share=false) [/-](/#{ds}.sub?Share) returns engine results vs. its save status  
+					> [Share+](/#{ds}.add?Share=false) [/-](/#{ds}.sub?Share) returns engine results vs. save status  
 					> [Pipe+](/#{ds}.add?Pipe=doc) [/-](/#{ds}.sub?Pipe) regulates chips and events to an egine  
 					> [Description+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description) documents a useCASE  
 					> [Config+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) defines useCASE context with a js-engine  
@@ -99,11 +99,9 @@ append site_body
 					> order: "KEY,..." || "t"  
 					> limit: VALUE || 1000  
 					> task: "NAME" || ""  
-					> flush: "all" || "none" || "byTime" || "byDepth" || "function(ctx,rec,recs) returns false to flush"  
-					> buffer: N  
 					> aoi: "NAME" || [ [lat,lon], ... ] || []
 
-					and its *Description* context key may contain [blogging tags](/skinguide.view) like: $$ mathjax $$,
+					and its *Description* context key may contain [blogging tags](/api.view) like: $$ mathjax $$,
 					\[plot,100,200](x=r.Save.a;ys=[r.Save.b,r.Save.c]), \[post,500,100](/home.view), \[link](https:/go.here),
 					\[image](/shares/a1.jpg), and \[force,100,100,queues.tree?_pivots=class]().  Blogging is toggeled by the 
 					view's blog button.  
