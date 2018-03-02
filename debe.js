@@ -104,20 +104,20 @@ var
 		}),
 		
 		dogIngest: Copy({
-			cycle: 300,
+			cycle: 30,
 			trace: "DOG"
 		}, function (opts) {		
 			var 
 				gets = {
 					artillery: "/ingest?ds=opir&type=artillery",
-					missile: "/ingest?ds=opir&type=missle"
+					missile: "/ingest?ds=opir&type=missile"
 				},
 				fetcher = DEBE.fetcher,
 				advDays = opts.cycle / 86400;
 			
 			Each(gets, function (get, path) {
 				Trace("INGEST "+get);
-				JSDB.forFirst("", "SELECT FROM app.files WHERE ? LIMIT 1", {Name: path}, function (file, sql) {
+				JSDB.forFirst("", "SELECT ID FROM app.files WHERE ? LIMIT 1", {Name: path}, function (file, sql) {
 					if (file) {
 						var t0 = file.start_time;
 						sql.query("UPDATE app.files SET ?,Revs=Revs+1 WHERE ?", [{
@@ -140,7 +140,7 @@ var
 		}),
 						
 		dogFiles: Copy({
-			cycle: 300, // secs
+			//cycle: 300, // secs
 			trace: "DOG",
 			maxage: 90 // days
 		}, function (opts) {
@@ -156,11 +156,12 @@ var
 			var 
 				gets = {
 					lowsnr: "SELECT events.ID AS ID FROM app.events LEFT JOIN app.voxels ON voxels.ID = events.voxelID WHERE ? < voxels.minSNR AND ?",
-					unpruned: "SELECT ID,Name,snr FROM app.files WHERE NOT Pruned AND Voxelized",
-					ungraded: "SELECT ID,Name,Actors,States,Steps FROM app.files WHERE NOT Graded AND Voxelized",
-					unfetched: "SELECT ID,Name,Ring,start_time,end_time,sample_time FROM app.files WHERE Notes='reingest' ",
-					expired: "SELECT ID,Name FROM app.files WHERE Expires AND now() > Expires",
-					retired: "SELECT files.ID,files.Name,files.Client,count(events.id) AS evCount FROM app.events LEFT JOIN app.files ON events.fileID = files.id WHERE datediff( now(), files.added)>=? AND NOT files.Archived GROUP BY fileid"
+					unpruned: "SELECT ID,Name,snr FROM app.files WHERE NOT Pruned AND Voxelized AND fetch_time IS NULL",
+					ungraded: "SELECT ID,Name,Actors,States,Steps FROM app.files WHERE NOT Graded AND Voxelized AND fetch_time IS NULL",
+					reingest: "SELECT ID,Name,Ring,start_time,end_time,sample_time FROM app.files WHERE Notes='reingest' ",
+					expired: "SELECT ID,Name FROM app.files WHERE Expires AND now() > Expires AND fetch_time IS NULL",
+					retired: "SELECT files.ID,files.Name,files.Client,count(events.id) AS evCount FROM app.events LEFT JOIN app.files ON events.fileID = files.id "
+							+ " WHERE datediff( now(), files.added)>=? AND NOT files.Archived AND fetch_time IS NULL GROUP BY fileid"
 				};
 
 			JSDB.forEach( opts.trace, gets.expired, [], function (file, sql) { 
@@ -217,7 +218,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 				});
 			});
 			
-			JSDB.forEach(opts.trace, gets.unfetched, [], function (file, sql) {
+			JSDB.forEach(opts.trace, gets.reingest, [], function (file, sql) {
 				Trace("FETCH "+file.Name);					
 				fetcher( file.Name.tag("&",{fileID: file.ID}), {
 					from: file.fetch_time,
@@ -263,7 +264,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 		}),
 		
 		dogJobs: Copy({
-			cycle: 300,
+			//cycle: 300,
 			trace: ""
 		}, function (opts) {
 			var
@@ -412,7 +413,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 		}),
 			
 		dogEngines: Copy({
-			cycle: 0,
+			//cycle: 600,
 			trace: "",
 			"undefined": 123,
 			bugs: 10
@@ -429,7 +430,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 		}),
 			
 		dogUsers: Copy({
-			cycle: 0,
+			//cycle: 1000,
 			trace: "",
 			inactive: 1,
 			bugs: 10

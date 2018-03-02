@@ -1,9 +1,0 @@
-TAU.context({
-	A: "SELECT a2,a3,a6 FROM app1.MATtest WHERE least(?,1)",
-	B: "SELECT a1,a6 FROM app1.MATtest WHERE least(?,1)"
-}, "\
-Z = [1,2;3,4]; \
-X = A*A'; \
-Y = B*B'; \
-");
-

@@ -56,7 +56,7 @@ append site_body
 	case mode
 		when "plugin"
 		when "run"
-			#grid.Usecase(
+			#grid.Usecases(
 				path=dspath,
 				cols=dscols.join(),
 				menu="Agents",
@@ -151,7 +151,7 @@ append site_body
 					upload your data using the Files | Uploads.
 
 			if more>0
-				#grid.Keys(
+				#grid.ContextKeys(
 					path="/keyedit.db?ds=#{ds}",
 					cols="Key,Type,Samples.x,Dist,Parms.x",
 					wrap,
