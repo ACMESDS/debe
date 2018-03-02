@@ -66,7 +66,7 @@ append base_body
 		#hold.Positives(path="/positives.FILES.db",cols="Name")
 		#hold.Negatives(path="/negatives.FILES.db",cols="Name")
 
-	- titlebar = [table.hyper("/edit.view?name="+table), client.hyper("/home.view?option=chat"), (profile.Credit*1e-3).toFixed(0)+"$ "+profile.QoS+"qos "+util.cpu + "%cpu " + util.disk+"%disk", "Issues".hyper(), "Baseline".hyper("baseline.exe"), "Moderate".hyper(), (warning ? warning.fontcolor("red") : "ok".fontcolor("blue")).hyper("/ispstatus.view"), "login".hyper("/login?pass=totem")].join(" || ")
+	- titlebar = [nick.hyper("/requirements.view"), table.hyper("/edit.view?name="+table), client.hyper("/home.view?option=chat"), (profile.Credit*1e-3).toFixed(0)+"$ "+profile.QoS+"qos "+util.cpu + "%cpu " + util.disk+"%disk", "Issues".hyper(), "Baseline".hyper("baseline.exe"), "Moderate".hyper(), warning, "login".hyper("/login?pass=totem")].join(" || ")
 	- goto = query.goto || ""
 	- browsers = {Ok: ["supported","Chrome","Firefox","Opera","Safari"],Bad: ["unsupported","IE","Netscape","Traveler","TheWorld","Maxthon"] }
 
@@ -98,7 +98,7 @@ append base_body
 
 				#fit(south,crush)
 					:markdown
-						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/prm/) [blog](tbd) [JIRA](tbd) By:#{credits}
+						Built on [#{nick}](/briefs.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/prm/) [blog](tbd) [JIRA](tbd) By:#{credits}
 
 		when "Basic"
 			#folder(center,dock=dock)
@@ -143,7 +143,7 @@ append base_body
 
 				#fit(south,crush)
 					:markdown
-						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
+						Built on [#{nick}](/briefs.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
 
 		when "Home"
 			#hold.Links(path="/links.db",cols="Name")
@@ -174,7 +174,7 @@ append base_body
 
 				#fit(south,crush)
 					:markdown
-						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
+						Built on [#{nick}](/briefs.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
 
 		when "Nada"
 			block site_body
@@ -272,4 +272,4 @@ append base_body
 
 				#fit(south,crush)
 					:markdown
-						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
+						Built on [#{nick}](/briefs.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}

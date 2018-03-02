@@ -358,22 +358,23 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 
 	var fListen = {
 		afterrender: function (me) {
-			Ext.create('Ext.tip.ToolTip', {
+			Ext.create('Ext.tip.ToolTip', {  // grid tooltip
 				target	: me.getEl(),                 
 				html	 	: me.qtip,
 				title	 	: me.qtitle,
-				autoHide : false, 
+				autoHide : true, 
 				closable: true,
-				resizable: true,
+				//resizable: true,
 				//scrollable: true,
 				//overlapHeader: true,
 				maxWidth : 800,
 				minWidth : 200,
-				mouseOffset: [0,0],
+				maxHeight: 400,
+				//mouseOffset: [0,0],
 				//trackMouse: true,
 				//getTargetXY: function () { return [0,0]; },
-				collapisible: true,
-				dismissDelay: 0
+				collapisible: true
+				//dismissDelay: 0
 			});
 		}
 	},
@@ -1801,8 +1802,9 @@ Ext.onReady( function () {
 		minWidth: 200,
 		showDelay: 1000,    // Show delay after entering target
 		hideDelay: 50,		// hide delay after exiting target
+		//autoHide: true
 		dismissDelay: 0		// disable dismissal
-	});
+	}); 
 
 	Ext.QuickTips.init();
 					
@@ -2438,26 +2440,26 @@ WIDGET.prototype.menuTools = function () {
 
 						return Copy({ 
 								listeners: {
-									render: function (me) {
+									render: function (me) {  // help tooltip
 
 										Ext.create('Ext.tip.ToolTip', {
 											target : me.getEl(),
 											html	 : help ,
 											title	 : name,
-											autoHide : false,
 											items 	 : helpUIs,
 											layout	 : "fit",
 											overflowY  : "scroll",
 											closable : true,
-											maxWidth : "80%",
+											autoHide : false,
+											//maxWidth : "80%",
 											minWidth : 600,
-											minHeight: 100,
-											maxHeight: 800,
-											showDelay: 1000,
-											hideDelay: 50,
+											//minHeight: 100,
+											maxHeight: 400,
+											//showDelay: 1000,
+											//hideDelay: 50,
+											//dismissDelay: 0,
 											collapisible: true,
-											collapseFirst: true,
-											dismissDelay: 0
+											collapseFirst: true
 										});
 									}
 								}
@@ -4148,19 +4150,21 @@ WIDGET.prototype.form = function () {
 						disabled	: false,
 						listeners	: {
 							afterrender: function (me) {
-								Ext.create('Ext.tip.ToolTip', {
+								Ext.create('Ext.tip.ToolTip', {  // field tooltip
 									target	: me.getEl(),
 									html	 : me.qtip,
 									title	 : me.qtitle,
-									autoHide : false,
+									autoHide : true,
 									//closable : true,
-									maxWidth : 300,
-									minWidth : 200,
-									showDelay: 1000,
-									hideDelay: 50,
-									collapisible: true,
+									//maxWidth : 300,
+									maxWidth: 800,
+									maxHeight: 400,
+									//minWidth : 200,
+									//showDelay: 1000,
+									//hideDelay: 50,
+									//dismissDelay: 0,
+									collapisible: true
 									//collapseFirst: true,									
-									dismissDelay: 0
 								});
 							},
 							
@@ -4328,11 +4332,11 @@ for (var chart in DISPLAYS)
 					anchorOffset: 2,
 					closable: true,
 					draggable: true,
-					autoHide: false,
-					trackMouse: false,
-					dismissDelay: 0,
-					showDelay: 1000,
-					hideDelay: 50,	 
+					//autoHide: false,
+					//trackMouse: false,
+					//dismissDelay: 0,
+					//showDelay: 1000,
+					//hideDelay: 50,	 
 					renderer: function(rec) {
 						this.setTitle( JSON.stringify( rec.getData() ) );
 					}				

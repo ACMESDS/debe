@@ -490,10 +490,24 @@ append site_body
 				force graph of the queues dataset pivoted by class using the [d3 force](/force.view) 
 				into a frame of specified W x H dimensions, and (6) a TeX equation.
 
-				Engines placed into #{nick}'s content folder (map drive #{info.content}) are automatically 
-				published to [#{nick}'s engines](/engines.view) on #{nick} startup.
-
-		#fit.Parameters
+		#fit.Publishing
+			:markdown
+				Engines placed into #{nick}'s [content folders](map drive #{info.content})/TYPE/PLUGIN.js
+				are published to [#{nick}'s engines](/engines.view) when #{nick} starts.  Each publishing
+				js is of the form
+				
+					module.exports = {
+						clear: true || false,
+						modify: {
+							KEY: "sql type", ...
+						},
+						usecase: {
+							KEY: "sql type", ...
+						},
+						engine: function jsFunction() { ... } || "code",
+						smop: "name of m-engine to convet to python"
+					}
+			
 		#fit.Examples
 			:markdown
 				js ex1 [ui](/jsdemo1.run) [run usecase test1](/jsdemo1.exe?Name=test1) [get usecases](/jsdemo1)
