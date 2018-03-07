@@ -150,7 +150,7 @@ module.exports = {
 			trP: ctx.TxPrs, // state transition probs 
 			symbols: ctx.Symbols,  // state symbols
 			nyquist: ctx.Nyquist, // oversampling factor
-			store: [], 	// provide an event store (forces a sync pipe) since we are running a web service
+			//store: [], 	// provide an event store (forces a sync pipe) since we are running a web service
 			steps: ctx.Steps, // process steps
 			//batch: ctx.Batch, // batch size in steps
 			obs: ctx.Mix || {		// emission/observation parms
@@ -160,13 +160,9 @@ module.exports = {
 
 			//sigma = mix.sigma || [ [ scalevec([0.4, 0.3, 0],dims), scalevec([0.3, 0.8, 0],dims), scalevec([0, 0, 1],dims)] ],
 
-			solve: ctx.Solve, // solver parms for unsupervised learning
+			solve: ctx.Solve, // learning parameters
 			filter: function (str, ev) {  // append selected events to supplied store/stream
 				switch ( ev.at ) {
-					case "config":
-						str.push(ev);
-						break;
-
 					case "jump":
 						var 
 							idx = ev.idx,
@@ -217,7 +213,9 @@ module.exports = {
 
 						break;
 
+					case "config":
 					case "batch":
+					case "end":
 						str.push(ev);
 						break;
 
@@ -228,10 +226,10 @@ module.exports = {
 			}  // event saver 
 		});  // create a randpr compute thread
 
-		ran.pipe( [], function (evs) {  // advance process until end reached
+		ran.pipe( function (evs) {  // sync pipe
 			ctx.Save = evs;
 			res( ctx );
-		});   // run the process and save event evs results
+		});   // run process and capture results
 
 	}
 

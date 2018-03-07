@@ -26,7 +26,7 @@ module.exports = {
 				N: ctx._File.Actors,  // ensemble size
 				wiener: 0,  // wiener process steps
 				sym: ctx.Symbols,  // state symbols
-				store: [], 	// use sync pipe() since we are running a web service
+				//store: [], 	// use sync pipe() since we are running a web service
 				steps: ctx.Steps || ctx._File.Steps, // process steps
 				//batch: ctx.Batch, // batch size in steps 
 				K: ctx._File.States,	// number of states 
@@ -48,7 +48,7 @@ module.exports = {
 				}  // on-event callbacks
 			});
 
-		ran.pipe( [], function (evs) { // sync pipe
+		ran.pipe( function (evs) { // sync pipe
 			ctx.Save = evs;
 			res( ctx );
 		}); 

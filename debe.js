@@ -117,7 +117,7 @@ var
 			
 			Each(gets, function (get, path) {
 				Trace("INGEST "+get);
-				JSDB.forFirst("", "SELECT ID FROM app.files WHERE ? LIMIT 1", {Name: path}, function (file, sql) {
+				JSDB.forFirst("", "SELECT ID FROM app.files WHERE ? AND start_time LIMIT 1", {Name: path}, function (file, sql) {
 					if (file) {
 						var t0 = file.start_time;
 						sql.query("UPDATE app.files SET ?,Revs=Revs+1 WHERE ?", [{
@@ -1789,7 +1789,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	gradeIngest: function (sql, file, cb) {  //< callback cb(stats) or cb(null) if error
 		
 		var ctx = {
-			Batch: 10, // batch size in steps
+			//Batch: 10, // batch size in steps
+			Solve: {
+				Batch: 50,
+				lma: [70]
+			},
 			_File: {
 				Actors: file.Actors,  // ensemble size
 				States: file.States, // number of states consumed by process
