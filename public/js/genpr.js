@@ -21,7 +21,8 @@ module.exports = {
 			Wiener = number of wiener processes; 0 disables
 			Nyquist = process over-sampling factor
 			Steps = number of process steps	
-			Batch = batch size in steps
+			Solve = learning parameters
+			//Batch = batch size in steps
 		*/
 
 		function randint(a) {
@@ -126,7 +127,7 @@ module.exports = {
 			sampler = samplers[mode], // sampler
 			states = ctx.TxPrs.length;
 
-		LOG({mix:ctx.Mix,txprs:ctx.TxPrs,steps:ctx.Steps,batch:ctx.Batch, States:states}); 
+		LOG({mix:ctx.Mix,txprs:ctx.TxPrs,steps:ctx.Steps,solve:ctx.Solve, States:states}); 
 			/*
 			mix.each( function (k,mix) {  // scale mix mu,sigma to voxel dimensions
 				//LOG([k, floor(k / 20), k % 20, mix, dims]);
@@ -151,7 +152,7 @@ module.exports = {
 			nyquist: ctx.Nyquist, // oversampling factor
 			store: [], 	// provide an event store (forces a sync pipe) since we are running a web service
 			steps: ctx.Steps, // process steps
-			batch: ctx.Batch, // batch size in steps
+			//batch: ctx.Batch, // batch size in steps
 			obs: ctx.Mix || {		// emission/observation parms
 				weights: [1,1,1],  // lat,lon,alt
 				parts: [0.5,0.5,0.1]

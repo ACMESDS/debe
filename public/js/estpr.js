@@ -9,8 +9,8 @@ module.exports = {
 		/* 
 		Return MLEs for random event process [ {x,y,...}, ...] given ctx parameters:
 			Symbols = [sym, ...] state symbols or null to generate
-			Batch = batch size in steps
-			Solve = { compress: true/false, interpolate: true/false, lma: [...], lfs: [...], bfs: [....] }
+			//Batch = batch size in steps
+			Solve = learning parameters
 			File.Actors = ensembe size
 			File.States = number of states consumed by process
 			File.Steps = number of time steps
@@ -28,12 +28,13 @@ module.exports = {
 				sym: ctx.Symbols,  // state symbols
 				store: [], 	// use sync pipe() since we are running a web service
 				steps: ctx.Steps || ctx._File.Steps, // process steps
-				batch: ctx.Batch, // batch size in steps 
+				//batch: ctx.Batch, // batch size in steps 
 				K: ctx._File.States,	// number of states 
 				learn: function (cb) {  // event getter callsback cb(events) or cb(null) at end
 					GET.byStep(ctx, cb);
 				},  // event getter when in learning mode
 				solve: ctx.Solve || {  // solver parms for unsupervised learning
+					batch: 0,
 					compress: true,
 					interpolate: false,
 					lma: [50]
