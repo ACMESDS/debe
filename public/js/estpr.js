@@ -2,6 +2,7 @@ module.exports = {
 	usecase: {
 		Symbols: "json",
 		Steps: "int(11)",
+		Solve: "json",
 		Description: "mediumtext"
 	},
 	

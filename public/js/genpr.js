@@ -7,7 +7,7 @@ module.exports = {
 		Wiener: "int(11)",
 		Nyquist: "float",
 		Steps: "int(11)",
-		Batch: "int(11)",
+		Solve: "json",
 		Description: "mediumtext"
 	},
 	
@@ -21,8 +21,7 @@ module.exports = {
 			Wiener = number of wiener processes; 0 disables
 			Nyquist = process over-sampling factor
 			Steps = number of process steps	
-			Solve = learning parameters
-			//Batch = batch size in steps
+			Solve = { ... } learning parameters
 		*/
 
 		function randint(a) {
@@ -42,27 +41,6 @@ module.exports = {
 		var 
 			//RAN = LIBS.RAN,
 			exp = Math.exp, log = Math.log, sqrt = Math.sqrt, floor = Math.floor, rand = Math.random;
-
-		/*
-		if (!Mix) Mix = [];
-
-		else
-		if (Mix.constructor == Object) {  // generate random gauss mixes
-			var 
-				K = Mix.K, 
-				Mix = [],
-				a = 0, 
-				b = 0, and
-				xx = 0.9, yy = 0.7, xy = yx = 0.4, zz = 0.1;
-
-			for (var k=0; k<K; k++) 
-				Mix.push({
-					mu: [randint(a), randint(a), randint(a)],
-					sigma: [[xx,xy,0],[yx,yy,0],[0,0,zz]]
-				});
-		} */
-
-		//LOG("genpr ctx",ctx);
 
 		var
 			mvd = [], 	// multivariate distribution parms
@@ -150,9 +128,7 @@ module.exports = {
 			trP: ctx.TxPrs, // state transition probs 
 			symbols: ctx.Symbols,  // state symbols
 			nyquist: ctx.Nyquist, // oversampling factor
-			//store: [], 	// provide an event store (forces a sync pipe) since we are running a web service
 			steps: ctx.Steps, // process steps
-			//batch: ctx.Batch, // batch size in steps
 			obs: ctx.Mix || {		// emission/observation parms
 				weights: [1,1,1],  // lat,lon,alt
 				parts: [0.5,0.5,0.1]
@@ -213,8 +189,8 @@ module.exports = {
 
 						break;
 
-					case "config":
 					case "batch":
+					case "config":
 					case "end":
 						str.push(ev);
 						break;

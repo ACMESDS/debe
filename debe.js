@@ -2493,6 +2493,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		else
 		if ( stats.constructor == Array ) {  // keys in the plugin context are used to create save stashes
 			var rem = [], stash = { remainder: rem };  // stash for saveable keys 
+			
 			stats.stashify("at", "Save_", ctx, stash, function (ev, stat) {  // add {at:"KEY",...} stats to the Save_KEY stash
 				
 				if (ev)
@@ -2551,7 +2552,18 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				if ( key in ctx ) stash[key] = val;
 			});
 		}
-		
+
+		status += " Saved"
+		for (var key in stash) {
+			Log("save", key);
+			sql.query(`UPDATE ??.?? SET ${key}=? WHERE ?`, [ 
+				group, table, JSON.stringify(stash[key]), {ID: ctx.ID}
+			], function (err) {
+				if (err) Log("save failed", err);
+			});
+		}
+
+		/*
 		for (var key in stash) 
 			stash[key] = JSON.stringify(stash[key]);
 		
@@ -2560,7 +2572,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				group, table, stash, {ID: ctx.ID}
 			]);
 			status += " Saved"
-		}
+		}*/
 
 		return ctx.Share ? stats : status.tag("a",{href: "/files.view"});
 	}
