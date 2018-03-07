@@ -39,7 +39,7 @@ module.exports = {
 		}
 
 		var 
-			RAN = LIBS.RAN,
+			//RAN = LIBS.RAN,
 			exp = Math.exp, log = Math.log, sqrt = Math.sqrt, floor = Math.floor, rand = Math.random;
 
 		/*
@@ -159,6 +159,7 @@ module.exports = {
 
 			//sigma = mix.sigma || [ [ scalevec([0.4, 0.3, 0],dims), scalevec([0.3, 0.8, 0],dims), scalevec([0, 0, 1],dims)] ],
 
+			solve: ctx.Solve, // solver parms for unsupervised learning
 			filter: function (str, ev) {  // append selected events to supplied store/stream
 				switch ( ev.at ) {
 					case "config":

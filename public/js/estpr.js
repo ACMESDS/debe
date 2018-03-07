@@ -10,6 +10,7 @@ module.exports = {
 		Return MLEs for random event process [ {x,y,...}, ...] given ctx parameters:
 			Symbols = [sym, ...] state symbols or null to generate
 			Batch = batch size in steps
+			Solve = { compress: true/false, interpolate: true/false, lma: [...], lfs: [...], bfs: [....] }
 			File.Actors = ensembe size
 			File.States = number of states consumed by process
 			File.Steps = number of time steps
@@ -32,6 +33,11 @@ module.exports = {
 				learn: function (cb) {  // event getter callsback cb(events) or cb(null) at end
 					GET.byStep(ctx, cb);
 				},  // event getter when in learning mode
+				solve: ctx.Solve || {  // solver parms for unsupervised learning
+					compress: true,
+					interpolate: false,
+					lma: [50]
+				},					
 				filter: function (str, ev) {  // retain only end event containing last estimates
 					switch ( ev.at ) {
 						case "end":
