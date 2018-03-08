@@ -66,14 +66,14 @@ append base_body
 		#hold.Positives(path="/positives.FILES.db",cols="Name")
 		#hold.Negatives(path="/negatives.FILES.db",cols="Name")
 
-	- titlebar = [nick.hyper("/requirements.view"), table.hyper("/edit.view?name="+table), client.hyper("/home.view?option=chat"), (profile.Credit*1e-3).toFixed(0)+"$ "+profile.QoS+"qos "+util.cpu + "%cpu " + util.disk+"%disk", "Issues".hyper(), "Baseline".hyper("baseline.exe"), "Moderate".hyper(), warning, "login".hyper("/login?pass=totem")].join(" || ")
+	- titlebar = [nick.hyper("/requirements.view"), dataset.hyper("/edit.view?name="+dataset), client.hyper("/home.view?option=chat"), (profile.Credit*1e-3).toFixed(0)+"$ "+profile.QoS+"qos "+util.cpu + "%cpu " + util.disk+"%disk", "Issues".hyper(), "Baseline".hyper("baseline.exe"), "Moderate".hyper(), warning, "login".hyper("/login?pass=totem")].join(" || ")
 	- goto = query.goto || ""
 	- browsers = {Ok: ["supported","Chrome","Firefox","Opera","Safari"],Bad: ["unsupported","IE","Netscape","Traveler","TheWorld","Maxthon"] }
 
 	case view
 		when "Min"
 			#border(
-				class=table,
+				class=dataset,
 				head="Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
 				LikeUs="/likeus.db",
 				Manage="/files.view",
@@ -105,7 +105,7 @@ append base_body
 				block site_body
 
 		when "Insert"
-			#border(class=table,head="Options,Help")
+			#border(class=dataset,head="Options,Help")
 
 				block site_help
 
@@ -118,25 +118,14 @@ append base_body
 			#hold.Links(path="/links.db",cols="Name")
 
 			#border(
-				class=table,
+				class=dataset,
 				head="Info(Tasks,Plugins,Links),Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
 				LikeUs="/likeus.db",
 				Manage="/files.view",
 				title=titlebar)
 
 				block site_help
-				:markdown
-					*	(#{classif.level}) #{title} #{classif.purpose}
-					*	Options for this view.
-					*	Links to other views.
-					*	Themes preferred.  
-					*	[Likeus](/likeus.view) to impove your QoS.
-					*	Capture screen for administrator.
-					*	Edit this skin. See [skinning guide](skinguide.view)
-					*	Health of system.
-					*	Users connected.
-					*	Files/Uploads to upload data and receive credit for future job runs.
-					*	Files/Stores to upload shared files.
+				#post.Brief(path="/briefs.view?optins=#{dataset}",dims="600,300")
 
 				#folder(center,dock=dock)
 					block site_body
@@ -149,25 +138,14 @@ append base_body
 			#hold.Links(path="/links.db",cols="Name")
 
 			#border(
-				class=table,
+				class=dataset,
 				title=titlebar,
 				head="Health,Users,Themes,Capture,Links,Options,Likeus,Help",
 				LikeUs="/likeus.db",
 				crush)
 
-				block site_body
-				:markdown
-					*	(#{classif.level}) #{title} #{classif.purpose}
-					*	Options for this view.
-					*	Links to other views.
-					*	Themes preferred.  
-					*	[Likeus](/likeus.view) to impove your QoS.
-					*	Capture screen for administrator.
-					*	Edit this skin. See [skinning guide](skinguide.view)
-					*	Health of system.
-					*	Users connected.
-					*	Files/Uploads to upload data and receive credit for future job runs.
-					*	Files/Stores to upload shared files.
+				block site_help
+				#post.Brief(path="/briefs.view?optins=#{dataset}",dims="600,300")
 
 				#fit(center)
 					block site_body
@@ -183,24 +161,13 @@ append base_body
 			#hold.Links(path="/links.db",cols="Name")
 
 			#border(
-				class=table,
+				class=dataset,
 				title=titlebar,
 				head="More(Health,Users,Links,Themes),Uploads,$uploads,Stores,$stores,Views,Options,LikeUs,Help",
 				LikeUs="/likeus.db")
 
-				block site_body
-				:markdown
-					*	(#{classif.level}) #{title} #{classif.purpose}
-					*	Options for this view.
-					*	Links to other views.
-					*	Themes preferred.  
-					*	[Likeus](/likeus.view) to impove your QoS.
-					*	Capture screen for administrator.
-					*	Edit this skin. See [skinning guide](skinguide.view)
-					*	Health of system.
-					*	Users connected.
-					*	Files/Uploads to upload data and receive credit for future job runs.
-					*	Files/Stores to upload shared files.
+				block site_help
+				#post.Brief(path="/briefs.view?optins=#{dataset}",dims="600,300")
 
 				//
 					#pivot.Helpful.Links(
@@ -225,7 +192,7 @@ append base_body
 		when "Search"
 			#hold.Comfort(path="/lookups.db",cols="Name,Path")
 			#border(
-				class=table,
+				class=dataset,
 				crush,
 				head="Comfort,Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,Likeus,Help",
 				LikeUs="/likeus.db",
@@ -247,25 +214,14 @@ append base_body
 			#hold.Plugins(path="/plugins.db",cols="Name")
 
 			#border(
-				class=table,
+				class=dataset,
 				title=titlebar,
 				head="System(Health,Users,Links,Plugins,Tasks),Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,LikeUs,Capture,Help",
 				LikeUs="/likeus.db",
 				Manage="/files.view")
 
-				block site_body
-				:markdown
-					*	(#{classif.level}) #{title} #{classif.purpose}
-					*	Options for this view.
-					*	Links to other views.
-					*	Themes preferred.  
-					*	[Likeus](/likeus.view) to impove your QoS.
-					*	Capture screen for administrator.
-					*	Edit this skin. See [skinning guide](skinguide.view)
-					*	Health of system.
-					*	Users connected.
-					*	Files/Uploads to upload data and receive credit for future job runs.
-					*	Files/Stores to upload shared files.
+				block site_help
+				#post.Brief(path="/briefs.view?optins=#{dataset}",dims="600,300")
 
 				#fit(center)
 					block site_body

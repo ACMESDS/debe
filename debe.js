@@ -1520,10 +1520,12 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						JAX.typeset({
 							math: tex,
 							format: "TeX",  // TeX, inline-TeX, AsciiMath, MathML
+							html: true,
 							mml: true
 						}, function (d) {
-							rtn = rtn.replace("$math"+n, d.mml);
+							rtn = rtn.replace("!!tex"+n, d.mml).replace("!tex"+n, d.html);
 
+							//Log(d.mml);
 							if ( ++rendered == renders ) cb(rtn);
 						});
 
@@ -1532,16 +1534,20 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					if ( !renders ) cb(rtn);
 				}
 
-				var tex = [];
+				var texList = [];
 
 				renderMath( 
-					tex, 
+					texList, 
 
 					src   //renderEmac(ds,src)
-						.replace(/\$\$(.|\n)*\$\$/g, function (m,i) {  // render $$ tex $$ markdown
-							tex.push(m.substr(2,m.length-4));
-							return "$math"+(tex.length-1);
+						.replace(/\$\$.*?\$\$/g, function (m,i) {  // render $$ tex $$ markdown
+							texList.push(m.substr(2,m.length-4));
+							return "!!tex"+(texList.length-1);
 						})
+						.replace(/\$.*?\$/g, function (m,i) {  // render $$ tex $$ markdown
+							texList.push(m.substr(2,m.length-4));
+							return "!tex"+(texList.length-1);
+						})					
 						.replace(/\[.*\]\((.*?)\)/g, function (m,i) {  // render [x,w,h,s](u) markdown
 							m = m.substr(1,m.length-2).split("]("); 
 							var 
@@ -2478,6 +2484,13 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 */	
 	
 	function saveResults( stats, ctx ) {  // save stats to the Save/Save_KEY keys, an Export file, or the Ingest db
+		
+		function saveKey(sql, key, args) {
+			sql.query(`UPDATE ??.?? SET ${key}=? WHERE ?`, args, function (err) {
+				Log("SAVE", key, err?"failed":"");
+			});
+		}
+
 		var 
 			status = "", // returned status
 			filename = `${table}.${ctx.Name}`, // export/ingest file name
@@ -2554,25 +2567,10 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		}
 
 		status += " Saved"
-		for (var key in stash) {
-			Log("save", key);
-			sql.query(`UPDATE ??.?? SET ${key}=? WHERE ?`, [ 
-				group, table, JSON.stringify(stash[key]), {ID: ctx.ID}
-			], function (err) {
-				if (err) Log("save failed", err);
-			});
-		}
-
-		/*
 		for (var key in stash) 
-			stash[key] = JSON.stringify(stash[key]);
-		
-		if ( !Each(stash) ) {   // split save stats across shared keys
-			sql.query("UPDATE ??.?? SET ? WHERE ?", [ 
-				group, table, stash, {ID: ctx.ID}
+			saveKey(sql, key, [ 
+				group, table, JSON.stringify(stash[key]), {ID: ctx.ID}
 			]);
-			status += " Saved"
-		}*/
 
 		return ctx.Share ? stats : status.tag("a",{href: "/files.view"});
 	}
@@ -3266,6 +3264,7 @@ function siteContext(req, cb) {
 	
 	cb( Copy(DEBE.site, {
 		table: req.table,
+		dataset: req.table,
 		type: req.type,
 		parts: req.parts,
 		action: req.action,

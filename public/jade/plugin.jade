@@ -67,23 +67,21 @@ append site_body
 				page=dspage )
 
 				:markdown
-					You can run your *#{ds}* plugin (a #{ds} dataset-#{ds} engine pair) from within 
-					its [customizable](/skinguide) [run](#{ds}.run), [usecase](#{ds}.view), or 
-					[plugin](#{ds}.plugin) view: select the desired usecase and click its Execute button.
-					You can also run your #{ds} [directly](/apoi.view) by [usecase Name](/#{ds}.exe?name=CASE) 
-					or by [usecase ID](#{fs}.exe?id=CASE).
+					You can execute the *#{ds}* engine from its [customizable](/skinguide) [run](#{ds}.run), [usecase](#{ds}.view), or 
+					[plugin](#{ds}.plugin) view by simply selecting the desired usecase and clicking *Execute*.  You may also 
+					execute *#{ds}* [directly](/api.view) by [usecase Name](/#{ds}.exe?name=CASE) or by [usecase ID](#{fs}.exe?id=CASE).
 					
-					A running engine receives its selected usecase *context* agumented by optional keys:  
+					An engine's usecase *context* can be agumented by optional keys:  
 					> [Export+](/#{ds}.add?Export=false) [/-](/#{ds}.sub?Export) writes engine results into a file  
 					> [Ingest+](/#{ds}.add?Ingest=false) [/-](/#{ds}.sub?Ingest) ingests engine results into the database  
-					> [Share+](/#{ds}.add?Share=false) [/-](/#{ds}.sub?Share) returns engine results vs. save status  
-					> [Pipe+](/#{ds}.add?Pipe=doc) [/-](/#{ds}.sub?Pipe) regulates chips and events to an egine  
-					> [Description+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description) documents a useCASE  
-					> [Config+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) defines useCASE context with a js-engine  
+					> [Share+](/#{ds}.add?Share=false) [/-](/#{ds}.sub?Share) saves engine results to the status area  
+					> [Pipe+](/#{ds}.add?Pipe=doc) [/-](/#{ds}.sub?Pipe) regulates chips and events to the engine  
+					> [Description+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description) documents a usecase  
+					> [Config+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) defines usecase context with a js-engine  
 					> [Save+](/#{ds}.add?Save=doc) [/-](/#{ds}.sub?Save) aggregates engine results not captured in the Save_KEYs  
 					> [Save_KEY](/#{ds}.run?options=more) aggregates engine results [{at:"KEY", ...}, ...]  
 					
-					and by automatic keys:  
+					When executed, an engine's context is automatically extended with the following keys:  
 					> _Host name of plugin  
 					> _File current file during workflow  
 					> _Voxel current voxel being procesed  
@@ -92,7 +90,7 @@ append site_body
 					> _Flux solar flux at earth's surface under current voxel  
 					> _Load event query for current voxel  
 					
-					A plugin's *Pipe* context key contains job regulation parameters:  
+					An engine's *Pipe* context key contains job regulation parameters:  
 					> file: "/FILTER?QUERY" || "PLUGIN.CASE" || "uploaded FILENAME" || "FILE.jpg" || "FILE.json"  
 					> group: "KEY,..." || ""  
 					> where: { KEY: VALUE, ...} || {}  
@@ -101,10 +99,28 @@ append site_body
 					> task: "NAME" || ""  
 					> aoi: "NAME" || [ [lat,lon], ... ] || []
 
-					and its *Description* context key may contain [blogging tags](/api.view) like: $$ mathjax $$,
-					\[plot,100,200](x=r.Save.a;ys=[r.Save.b,r.Save.c]), \[post,500,100](/home.view), \[link](https:/go.here),
-					\[image](/shares/a1.jpg), and \[force,100,100,queues.tree?_pivots=class]().  Blogging is toggeled by the 
-					view's blog button.  
+					and where the *Description* key may contain [blogging tags](/skinguide.view) of the form:
+					> \[ image, W, H ]( url )  
+					> \[ post, W, H ]( url )  
+					> \[ exelink ]( url )  
+					> \[ link ]( url )  
+					> \[ plot || force || treemap || ... , W, H ]( PARM=ds.KEY; ... )  
+					> \[ plot || force || treemap || ... , W, H, SRC ]( PARM=ds.KEY; ... )  
+					> $$ TeX $$  ||  $ inline TeX $
+
+					to document usecases.  For example:
+
+						[plot,100,200](x=r.Save.a;ys=[r.Save.b,r.Save.c])
+						[post,500,100](/home.view)
+						[link](https:/go.here)
+						[image](/shares/a1.jpg)
+						[force,100,100,queues.tree?_pivots=class]()
+						$$ \alpha = 1 + \beta $$ impressive 'eh
+
+					to embed: (1) a plot of the requested x,y data using the [d3 plot](/plot.view), (2) the 
+					[home.view](/home.view), (3) a link to the url, (4) the [image](/shares.jpg), (5) a
+					force graph of the queues dataset pivoted by class using the [d3 force](/force.view) 
+					into a frame of specified W x H dimensions, and (6) a TeX equation.	  Blogging is toggeled by the *Blog* button.  
 					
 					Usecase views are colorized to reflect the plugin's development status: completed/green, policed/blue, 
 					funded/orange, unfunded/red as defined by [project milestones](/milestones.view).
