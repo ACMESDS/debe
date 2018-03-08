@@ -1525,7 +1525,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						}, function (d) {
 							rtn = rtn.replace("!!tex"+n, d.mml).replace("!tex"+n, d.html);
 
-							//Log(d.mml);
 							if ( ++rendered == renders ) cb(rtn);
 						});
 
@@ -1544,7 +1543,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 							texList.push(m.substr(2,m.length-4));
 							return "!!tex"+(texList.length-1);
 						})
-						.replace(/\$.*?\$/g, function (m,i) {  // render $$ tex $$ markdown
+						.replace(/\$.*?\$/g, function (m,i) {  // render $ inline tex $ markdown
 							texList.push(m.substr(2,m.length-4));
 							return "!tex"+(texList.length-1);
 						})					
