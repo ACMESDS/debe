@@ -3581,6 +3581,10 @@ WIDGET.prototype.wrapper = function () {
 */
 WIDGET.prototype.content = function () { 
 
+	var
+		N = Math.floor( Math.random()*10 ),
+		logo = `/shares/header${N}.jpg`;
+	
 	this.UI = Ext.create('Ext.panel.Panel', {
 		layout: "border",
 		region: "center",
@@ -3589,7 +3593,7 @@ WIDGET.prototype.content = function () {
 		items: [ 
 			Ext.create('Ext.panel.Panel', { 		// header
 				layout: "fit",
-				html: this.title,
+				html: this.title + "<br>" + "".tag("img", {src:logo, width:"100%", height:80}),
 				region: "north",
 				bodyCls: "contentClassif"
 				//bodyStyle: "background: yellow;text-align:center;color:black;"

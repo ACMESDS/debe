@@ -61,6 +61,11 @@ var										// shortcuts and globals
 var
 	DEBE = module.exports = TOTEM.extend({
 	
+	onIngest: {   //< Ingest watchers with callbacks cb(evs)
+		default: function (evs, cb) {
+		}
+	},
+		
 	// watchdog configuration
 		
 	dogs: {  //< watch dogs cycle time in secs (zero to disable)
@@ -109,33 +114,29 @@ var
 		}, function (opts) {		
 			var 
 				gets = {
-					artillery: "/ingest?ds=opir&type=artillery",
-					missile: "/ingest?ds=opir&type=missile"
+					reingest: "SELECT ID,Ring,startTime,endTime,advanceDays,sampleTime,Name FROM app.files WHERE now()>startTime"
+					//artillery: "/ingest?src=artillery",
+					//missile: "/ingest?src=missiles"
 				},
-				fetcher = DEBE.fetcher,
-				advDays = opts.cycle / 86400;
+				urls = DEBE.site.urls,
+				fetcher = DEBE.fetcher;
 			
-			Each(gets, function (get, path) {
-				Trace("INGEST "+get);
-				JSDB.forFirst("", "SELECT ID FROM app.files WHERE ? AND start_time LIMIT 1", {Name: path}, function (file, sql) {
-					if (file) {
-						var t0 = file.start_time;
-						sql.query("UPDATE app.files SET ?,Revs=Revs+1 WHERE ?", [{
-							fetch_time: file.end_time,
-							start_time: file.start_time.addDays(advDays),
-							end_time: file.end_time.addDays(advDays),
-							Notes: "reingest"
-						}, {
-							ID: file.ID
-						}]);
-
-						sql.query("DELETE FROM app.events WHERE ? AND s<?", [
-							{FileID: file.ID}, 
-							( file.start_time - t0 ) / file.sample_time
-						]);
-
-					}
+			JSDB.forEach("", gets.reingest, [], function (file, sql) {
+				Trace("INGEST "+file.Name);
+				fetcher( (urls.master+file.Name).tag("&",{
+					fileID: file.ID,
+					from: file.startTime,
+					to: file.endTime,
+					
+					ring: file.Ring
+				}), null, function (msg) {
+					Log("INGEST", msg);
 				});
+
+				sql.query(
+					"UPDATE app.files SET startTime=date_add(startTime, interval advanceDays day), endTime=date_add(endTime, interval advanceDays day), Revs=Revs+1 WHERE ?", 
+					{ ID: file.ID }
+				);
 			});
 		}),
 						
@@ -158,7 +159,6 @@ var
 					lowsnr: "SELECT events.ID AS ID FROM app.events LEFT JOIN app.voxels ON voxels.ID = events.voxelID WHERE ? < voxels.minSNR AND ?",
 					unpruned: "SELECT ID,Name,snr FROM app.files WHERE NOT Pruned AND Voxelized AND fetch_time IS NULL",
 					ungraded: "SELECT ID,Name,Actors,States,Steps FROM app.files WHERE NOT Graded AND Voxelized AND fetch_time IS NULL",
-					reingest: "SELECT ID,Name,Ring,start_time,end_time,sample_time FROM app.files WHERE Notes='reingest' ",
 					expired: "SELECT ID,Name FROM app.files WHERE Expires AND now() > Expires AND fetch_time IS NULL",
 					retired: "SELECT files.ID,files.Name,files.Client,count(events.id) AS evCount FROM app.events LEFT JOIN app.files ON events.fileID = files.id "
 							+ " WHERE datediff( now(), files.added)>=? AND NOT files.Archived AND fetch_time IS NULL GROUP BY fileid"
@@ -218,17 +218,6 @@ Further information about this file is available ${paths.moreinfo}. `;
 				});
 			});
 			
-			JSDB.forEach(opts.trace, gets.reingest, [], function (file, sql) {
-				Trace("FETCH "+file.Name);					
-				fetcher( file.Name.tag("&",{fileID: file.ID}), {
-					from: file.fetch_time,
-					to: file.end_time,
-					ring: file.Ring
-				}, function (stats) {
-					Log("INGEST", stats);
-				});
-			});
-					
 			JSDB.forEach(opts.trace, gets.ungraded, [], function (file, sql) {
 				Trace("GRADE "+file.Name);
 
@@ -1323,8 +1312,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	
 	"paths.": {  //< paths to things
 		ingest: {
-			artillery: "https://widow.nga.ic.gov/wms",
-			missile: "https://widow.nga.ic.gov/wms"
+			artillery: ENV.SRV_ARTILLERY,
+			missiles: ENV.SRV_MISSILES
 		},
 
 		default: "home.view",
@@ -2064,27 +2053,32 @@ function sysIngest(req,res) {
 		sql = req.sql,
 		query = req.query,
 		body = req.body,
-		ds = query.ds,
+		src = query.src,
 		fileID = query.fileID,
-		path = DEBE.paths.ingest[ds],
+		path = DEBE.paths.ingest[src],
+		onIngest = DEBE.onIngest[src],
 		fetcher = DEBE.fetcher;
 	
-	Log("INGEST", query, body);
+	Log("INGEST", query, body, path);
 	res("submitted");
 	
-	if ( path ) 
-		fetcher( path.tag("?", Copy( body, {type:ds} )), null, function (evs) {
+	if ( path && onIngest ) {
+		sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
+		fetcher( path.parseJS(query), null, function (evs) {
 			if (evs)
-				HACK.ingestList( sql, evs, fileID, function (aoi) {
-					Log("INGEST aoi", aoi);
+				onIngest( evs, function (evs) {
+					HACK.ingestList( sql, evs, fileID, function (aoi) {
+						Log("INGEST aoi", aoi);
+					});
 				});
-			
+		
 			else
 				Log("INGEST no events");
 		});
+	}
 	
 	else
-		Trace("INGEST no path");
+		Trace("INGEST bad src");
 
 }
 
