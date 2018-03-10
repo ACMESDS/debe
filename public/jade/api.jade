@@ -472,7 +472,7 @@ append site_body
 				> \[ link ]( url )
 				> \[ plot || force || treemap || ... , W, H ]( PARM=ds.KEY; ... )
 				> \[ plot || force || treemap || ... , W, H, SRC ]( PARM=ds.KEY; ... )
-				> $$ TeX $$  ||  $ inline TeX $
+				> $[ TeX ]  ||  $( inline TeX ) || $$[ AsciiMath ] || $$( MathML )
 
 				to document usecases.  For example:
 
@@ -481,7 +481,7 @@ append site_body
 					[link](https:/go.here)
 					[image](/shares/a1.jpg)
 					[force,100,100,queues.tree?_pivots=class]()
-					$$ \alpha = 1 + \beta $$ impressive 'eh
+					$( \alpha = 1 + \beta ) impressive 'eh
 
 				to embed: (1) a plot of the requested x,y data using the [d3 plot](/plot.view), (2) the 
 				[home.view](/home.view), (3) a link to the url, (4) the [image](/shares.jpg), (5) a

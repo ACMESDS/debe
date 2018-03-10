@@ -127,7 +127,6 @@ var
 					fileID: file.ID,
 					from: file.startTime,
 					to: file.endTime,
-					
 					ring: file.Ring
 				}), null, function (msg) {
 					Log("INGEST", msg);
@@ -1499,20 +1498,20 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						return src;
 					}
 				}
-				function renderMath(texList,src,cb) {
+				function renderMath(jaxList,src,cb) {
 					var 
 						rtn = src,
-						rendered = 0, renders = texList.length;
+						rendered = 0, renders = jaxList.length;
 
-					texList.each( function (n,tex) {
+					jaxList.each( function (n,jax) {
 
 						JAX.typeset({
-							math: tex,
-							format: "TeX",  // TeX, inline-TeX, AsciiMath, MathML
-							html: true,
+							math: jax.jax,
+							format: jax.fmt, //"TeX",  // TeX, inline-TeX, AsciiMath, MathML
+							//html: true,
 							mml: true
 						}, function (d) {
-							rtn = rtn.replace("!!tex"+n, d.mml).replace("!tex"+n, d.html);
+							rtn = rtn.replace("!jax"+n+".", d.mml);
 
 							if ( ++rendered == renders ) cb(rtn);
 						});
@@ -1522,20 +1521,28 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					if ( !renders ) cb(rtn);
 				}
 
-				var texList = [];
+				var jaxList = [];
 
 				renderMath( 
-					texList, 
+					jaxList, 
 
 					src   //renderEmac(ds,src)
-						.replace(/\$\$.*?\$\$/g, function (m,i) {  // render $$ tex $$ markdown
-							texList.push(m.substr(2,m.length-4));
-							return "!!tex"+(texList.length-1);
+						.replace(/\$\[.*?\]/g, function (m,i) {  // render $[ offset TeX ] markdown
+							jaxList.push({ jax: m.substr(2,m.length-3), fmt:"TeX"});
+							return "!jax"+(jaxList.length-1)+".";
 						})
-						.replace(/\$.*?\$/g, function (m,i) {  // render $ inline tex $ markdown
-							texList.push(m.substr(2,m.length-4));
-							return "!tex"+(texList.length-1);
-						})					
+						.replace(/\$\(.*?\)/g, function (m,i) {  // render $( inline TeX ) markdown
+							jaxList.push({ jax: m.substr(2,m.length-3), fmt:"inline-TeX"});
+							return "!jax"+(jaxList.length-1)+".";
+						})
+						.replace(/\$\$\[.*?\]/g, function (m,i) {  // render $$[ asciiMath ] markdown
+							jaxList.push({ jax: m.substr(2,m.length-3), fmt:"AsciiMath"});
+							return "!jax"+(jaxList.length-1)+".";
+						})
+						.replace(/\$\$\(.*?\)/g, function (m,i) {  // render $$( mathML ) markdown
+							jaxList.push({ jax: m.substr(2,m.length-3), fmt:"MathML"});
+							return "!jax"+(jaxList.length-1)+".";
+						})
 						.replace(/\[.*\]\((.*?)\)/g, function (m,i) {  // render [x,w,h,s](u) markdown
 							m = m.substr(1,m.length-2).split("]("); 
 							var 

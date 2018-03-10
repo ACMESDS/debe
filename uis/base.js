@@ -322,15 +322,15 @@ String.prototype.indent = function (tag,at) {
 
 String.prototype.tag = function tag(el,at) {
 /**
-* @method tag
-* Tag url (el="?") or tag html using specified attributes.
-* @param {String} el tag element
-* @param {String} at tag attributes
-* @return {String} tagged results
+@method tag
+Tag url (el=?|&), list (el=;|,), or tag html using specified attributes.
+@param {String} el tag element
+@param {String} at tag attributes
+@return {String} tagged results
 */
 
-	if ( el == "?" ) {  // tag a url
-		var rtn = this+"?";
+	if ( "?&;,".indexOf(el) >= 0 ) {  // tag a url or list
+		var rtn = this+el;
 
 		if (at) for (var n in at) {
 				rtn += n + "=";

@@ -4,17 +4,18 @@ append layout_help
 	:markdown
 		Extends the base framework to provide a standard site skinning framework.
 
-			- options = {} // dropdown skinning options {key: menuItem, ...} 
-			- dock = "top" // folder docking style left | right | top | bottom
-			- dims = "2048,1200" // width,height maximum widget dimensions 
-			- view = "" // site style Home | Kiss | Engr | Min | Basic | Nada, ..
-			- page = 50 // maximum grid rows
-			- pulse = 120 // system health refresh rate [seconds]
-			- hosts = {use: "", ... } // available hosts 
+			options dropdown skinning options {key: menuItem, ...} 
+			dock = folder docking style left | right | top | bottom
+			dims = maximum widget dimensions "width,height"
+			view = site style Home | Kiss | Engr | Min | Basic | Nada, ..
+			page = maximum grid rows
+			pulse = system health refresh rate in seconds
+			hosts = available hosts {use: "", ... } 
+			logo = banner logo html
 
 append layout_parms
 	- capture = true
-	- banner = classif.banner ? (classif.level + " " + classif.banner) : ""
+	- banner = (classif.banner || "") + logo
 
 extends base
 append base_parms
@@ -29,7 +30,9 @@ append base_parms
 		- page = 50 // maximum grid rows
 		- pulse = 120 // system health refresh rate [seconds]
 		- hosts = {use:"aws", red:"http://localhost:1880", w3:"http://www.w3schools.com", geohub: "https://sigma0.ilabs.ic.gov", me: "localhost", win: "http://200.100.50.101", aws: "http://172.31.76.130"}
-	
+		- rand = Math.floor( Math.random() * 10 )
+		- logo = "<br>" + "".tag("img",{src:`/shares/header${rand}.jpg`,width:"100%",height:80})
+
 append base_head
 	style.
 		.AL {text-align:left;}
@@ -74,25 +77,17 @@ append base_body
 		when "Min"
 			#border(
 				class=dataset,
+				crush,
 				head="Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
 				LikeUs="/likeus.db",
 				Manage="/files.view",
 				title=titlebar)
 
 				block site_help
-				:markdown
-					*	(#{classif.level}) #{title} #{classif.purpose}
-					*	Options for this view.
-					*	Links to other views.
-					*	Themes preferred.  
-					*	[Likeus](/likeus.view) to impove your QoS.
-					*	Capture screen for administrator.
-					*	Edit this skin. See [skinning guide](skinguide.view)
-					*	Health of system.
-					*	Users connected.
-					*	Files/Uploads to upload data and receive credit for future job runs.
-					*	Files/Stores to upload shared files.
 
+				#fit(west,crush,head="Prefs(Locales,Themes)")
+					:markdown
+						hello there
 				#fit(center)
 					block site_body
 
@@ -105,7 +100,7 @@ append base_body
 				block site_body
 
 		when "Insert"
-			#border(class=dataset,head="Options,Help")
+			#border(class=dataset,head="Options,Help",crush)
 
 				block site_help
 
@@ -119,6 +114,7 @@ append base_body
 
 			#border(
 				class=dataset,
+				crush,
 				head="Info(Tasks,Plugins,Links),Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
 				LikeUs="/likeus.db",
 				Manage="/files.view",
@@ -140,9 +136,9 @@ append base_body
 			#border(
 				class=dataset,
 				title=titlebar,
+				crush,
 				head="Health,Users,Themes,Capture,Links,Options,Likeus,Help",
-				LikeUs="/likeus.db",
-				crush)
+				LikeUs="/likeus.db" )
 
 				block site_help
 				#post.Brief(path="/briefs.view?optins=#{dataset}",dims="600,300")
@@ -163,6 +159,7 @@ append base_body
 			#border(
 				class=dataset,
 				title=titlebar,
+				crush,
 				head="More(Health,Users,Links,Themes),Uploads,$uploads,Stores,$stores,Views,Options,LikeUs,Help",
 				LikeUs="/likeus.db")
 
@@ -216,6 +213,7 @@ append base_body
 			#border(
 				class=dataset,
 				title=titlebar,
+				crush,
 				head="System(Health,Users,Links,Plugins,Tasks),Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,LikeUs,Capture,Help",
 				LikeUs="/likeus.db",
 				Manage="/files.view")

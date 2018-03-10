@@ -32,6 +32,18 @@ var
 		DELETE: "DELETE"	// CRUD delete
 	},	
 
+	CHARTS = {  			// allowed charts
+		bar:"cartesian",
+		bar3d:"cartesian",
+		candlestick:1,
+		line:"cartesian",
+		scatter:"cartesian",
+		gauge:"polar",
+		pie:"polar",
+		pie3d:"polar",
+		radar:"polar"
+	},
+	
 	STATUS = {								// status messages
 		EMPTY: "empty", 
 		FAULT: "fault", 
@@ -261,6 +273,7 @@ function defineProxy(path,links,key) {
 	};
 }
 
+function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 /**
  * @method gridColumn
  * @private
@@ -276,7 +289,6 @@ function defineProxy(path,links,key) {
  * @return {Object} ExtJS field editor
  * @docauthor Brian James
  */
-function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 	
 	function calcRender(cellVal, cellMeta, rec, rowIdx, colIdx, store, view) { 
 
@@ -1027,6 +1039,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 	
 }
 
+function DS(anchor) {
 /**
  * @class DS
  * @constructor
@@ -1037,7 +1050,6 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
  * 
  * @param {HTMLElement} anchor Associated DOM element defining DS widget attributes.
  */
-function DS(anchor) {
 	
 	function initialize() {  // Defines This.proxy, .Store, .load(), and .setProxy() then starts loading data
 		/**
@@ -2012,6 +2024,7 @@ Ext.onReady( function () {
 	
 });
 
+/*
 String.prototype.tagurl = function (at) {
 	var rtn = this;
 
@@ -2027,7 +2040,7 @@ String.prototype.tagurl = function (at) {
 		rtn += "&";
 	}
 	return rtn;
-}
+} */
 
 WIDGET.prototype.menuTools = function () {
 
@@ -2052,7 +2065,8 @@ WIDGET.prototype.menuTools = function () {
 				url	: url,
 				method	: "POST",
 				params	: 
-						"".tagurl(parms).replace(/&/g,";") 
+						"".tag(";", parms)
+						//"".tagurl(parms).replace(/&/g,";") 
 						+ data.substr(0,idx).replace("data:","type=") 
 						+ "\r\n" 
 						+ data.substr(idx+base64.length)
@@ -3551,11 +3565,11 @@ WIDGET.prototype.terminal = function (term,opts) {
 	if ( this.wrap ) this.wrapper();
 }
 
+WIDGET.prototype.wrapper = function () {
 /**
 * Due to EXTJS BUG -- iframes, forms, and panels do not expose their
 * header, so these componets must be wrapped in yet another panel
 */
-WIDGET.prototype.wrapper = function () {
 	this.UIs = [this.UI];
 	
 	this.menuTools();
@@ -3570,6 +3584,7 @@ WIDGET.prototype.wrapper = function () {
 	});
 }
 
+WIDGET.prototype.content = function () { 
 /**
  * @method content
  * @param {Object[]} UIs A list of components to be aggregated.
@@ -3579,63 +3594,76 @@ WIDGET.prototype.wrapper = function () {
  * Construct a content component for this widget from the supplied component UIs and HTML.  
  * Tab docking qualifiers can be [top,bottom].
 */
-WIDGET.prototype.content = function () { 
-
-	var
-		N = Math.floor( Math.random()*10 ),
-		logo = `/shares/header${N}.jpg`;
-	
 	this.UI = Ext.create('Ext.panel.Panel', {
 		layout: "border",
 		region: "center",
 		overflowY: "auto",  // EXTJS bug - ignored
 		html: this.HTML,
-		items: [ 
-			Ext.create('Ext.panel.Panel', { 		// header
-				layout: "fit",
-				html: this.title + "<br>" + "".tag("img", {src:logo, width:"100%", height:80}),
-				region: "north",
-				bodyCls: "contentClassif"
-				//bodyStyle: "background: yellow;text-align:center;color:black;"
-			}),
+		items: this.title
+			? [ 
+				Ext.create('Ext.panel.Panel', { 		// header
+					layout: "fit",
+					collapsed	: false,
+					collapsible	: this.crush,
+					html: this.title,
+					region: "north",
+					bodyCls: "contentClassif"
+					//bodyStyle: "background: yellow;text-align:center;color:black;"
+				}),
 
-			Ext.create('Ext.panel.Panel', { 		// content
-				// Basic attributes and appearance
-				title		: null, //this.title,
-				header		: false,
-				animCollapse: false,			// EXTJS BUG - must not animate the collapse
-				collapsed	: false, //this.crush,
-				collapsible	: false, //!this.Headless,
-				titleCollapse: false,
-				icon		: "/clients/icons/widgets/"+this.name+".ico",
-				hidden		: this.hide,
-				maximizable	: true,
-				// Container				
-				region		: "center",
-				disabled	: this.disable,
-				// Subcomponents				
-				layout		: "fit",
-				items		: this.UIs,
-				html		: this.HTML
-			}),
+				Ext.create('Ext.panel.Panel', { 		// content
+					title		: null, //this.title,
+					header		: false,
+					animCollapse: false,			// EXTJS BUG - must not animate the collapse
+					collapsed	: false, //this.crush,
+					collapsible	: false, //!this.Headless,
+					titleCollapse: false,
+					icon		: "/clients/icons/widgets/"+this.name+".ico",
+					//frame: true,
+					//hidden		: this.hide,
+					//maximizable	: true,
+					region		: "center",
+					//disabled	: this.disable,
+					layout		: "fit",
+					items		: this.UIs,
+					html		: this.HTML
+				}),
 
-			Ext.create('Ext.panel.Panel', {			// footer
-				layout: "fit",
-				html: this.title,
-				region: "south",
-				bodyCls: "contentClassif"
-				//bodyStyle: "background: yellow;text-align:center;color:black;"
-			})
-		]
+				Ext.create('Ext.panel.Panel', {			// footer
+					layout: "fit",
+					html: "<br>",
+					region: "south",
+					bodyCls: "contentClassif"
+					//bodyStyle: "background: yellow;text-align:center;color:black;"
+				})
+			]
+		
+			: [ 
+				Ext.create('Ext.panel.Panel', { 		// content
+					// Basic attributes and appearance
+					title		: null, //this.title,
+					header		: false,
+					animCollapse: false,			// EXTJS BUG - must not animate the collapse
+					collapsed	: false, //this.crush,
+					collapsible	: false, //!this.Headless,
+					titleCollapse: false,
+					icon		: "/clients/icons/widgets/"+this.name+".ico",
+					hidden		: this.hide,
+					maximizable	: true,
+					layout		: "fit",
+					items		: this.UIs,
+					html		: this.HTML
+				})
+			]
 	});
 }
 
+WIDGET.prototype.hold = function () {
 /**
  * @method hold
  * Returns a null component for holding a data store.  Null components are removed from the parents's UIs list.
  * @return {null} 
  */
-WIDGET.prototype.hold = function () {
 	var 
 		name = this.name,
 		store = this.Data.Store;
@@ -3648,6 +3676,7 @@ WIDGET.prototype.hold = function () {
 	this.UI = null; 
 }
 
+WIDGET.prototype.post = function () { 
 /**
  * @method post
  * @param {Object[]} UIs A list of components to be aggregated.
@@ -3657,24 +3686,24 @@ WIDGET.prototype.hold = function () {
  * Construct a post component for this widget from the supplied component UIs and HTML.  
  * Tab docking qualifiers can be [top,bottom].
  */
-WIDGET.prototype.post = function () { 
 	this.dataUI = this.UI = this.Data.Store;
 
 	if ( this.wrap ) this.wrapper();
 
 }
 
-/**
- * @method layout
- * @param {Object[]} UIs A list of components to be aggregated.
- * @param {String} HTML Help information to append.
- * @return {Object} component created
- *
- * Construct the anchor, fit, hbox, vbox, box, table and colmn wrappers.  
-*/
-
 for (var layout in {anchor:1, fit:1, hbox:1, vbox:1, box:1, table:1, column:1}) 
 	WIDGET.prototype[layout] = function () {
+	/**
+	 * @method layout
+	 * @param {Object[]} UIs A list of components to be aggregated.
+	 * @param {String} HTML Help information to append.
+	 * @return {Object} component created
+	 *
+	 * Construct the anchor, fit, hbox, vbox, box, table and colmn wrappers.  
+	*/
+		//this.menuTools();	
+		
 		if (this.HTML) 
 			this.UIs = [{ 
 				html: this.HTML, 
@@ -3682,46 +3711,42 @@ for (var layout in {anchor:1, fit:1, hbox:1, vbox:1, box:1, table:1, column:1})
 			}].concat(this.UIs);
 			
 		this.UI = Ext.create('Ext.panel.Panel', {
-			// Basic
+			//layout: layout,
 			title		: this.title, //this.head ? this.title : null,
 			header		: this.title ? true : null, //this.head ? true : null, //this.Headless ? false : true,
-			animCollapse: false,	// EXTJS BUG - some componenets must not animate the collapse
+			//animCollapse: false,	// EXTJS BUG - some componenets must not animate the collapse
 			collapsed	: this.crush,
 			collapsible	: this.crush,
-			overflowY	: "auto",
-			frame		: false, //dims[2]>1,
-			//iconCls	: 'Loads-1',
-			icon		: "/clients/icons/widgets/"+this.name+".ico",
-			hidden		: this.hide,
-			maximizable	: true,
-			
-			// Container				
+			//overflowY	: "auto",
+			//frame		: false, //dims[2]>1,
+			////iconCls	: 'Loads-1',
+			//icon		: "/clients/icons/widgets/"+this.name+".ico",
+			//hidden		: this.hide,
+			//maximizable	: true,
 			region		: this.region,
-			disabled	: this.disable,
-			
-			// Specific
-			align: "stretch",
-			pack: "start", 
-
-			// Subcomponents	
-
+			//disabled	: this.disable,
+			//align: "stretch",
+			//pack: "start", 
+			/*
 			defaults		: {
 				overflowX: "auto",
 				overflowY: "auto",
 				//scrollable: true,
 				width: this.dims[0],
 				height: this.dims[1] },
-				
+			*/			
+			/*
 			layout		: {
 				type: this.anchor.id,
 				columns: 2
-			},
-			
+			}, */
+			//tools		: this.Menu, 
 			items		: this.UIs
 			//html		: this.HTML
 		});			
 	}
 
+WIDGET.prototype.default = function () { 
 /**
  * @method default
  * @param {Object[]} UIs A list of components to be aggregated.
@@ -3730,10 +3755,10 @@ for (var layout in {anchor:1, fit:1, hbox:1, vbox:1, box:1, table:1, column:1})
  *
  * Construct the default component for this widget from the supplied component UIs and HTML.  
 */
-WIDGET.prototype.default = function () { 
 	this.post();
 }
 
+WIDGET.prototype.border = function () { 
 /**
  * @method border
  * @param {Object[]} UIs A list of components to be aggregated.
@@ -3742,32 +3767,29 @@ WIDGET.prototype.default = function () {
  *
  * Construct a border component for this widget from the supplied component UIs and HTML.  
  */
-WIDGET.prototype.border = function () { 
 	this.menuTools();	
 	
 	//this.UIs.Each(function (n,ui) { alert(ui.region); });
 
 	this.UI = Ext.create('Ext.panel.Panel', {
-		// Basic
+		layout: "border",
 		title		: this.title,
-		header		: this.title ? true : null,	
-		animCollapse: false,	// EXTJS BUG - some componenets must not animate the collapse
-		collapsed	: this.crush,
+		//header		: this.title ? true : null,	
+		animCollapse: true,	// EXTJS BUG - some componenets must not animate the collapse
+		collapsed	: false, //this.crush,
 		collapsible	: this.crush,
-		titleCollapse: false,
+		//titleCollapse: false,
 		overflowY	: "auto",
-		frame		: false, //dims[2]>1,
-		icon		: "/clients/icons/widgets/"+this.name+".ico",
-		hidden		: this.hide,
-		maximizable	: true,
-		
-		// Specific
-		
+		//frame		: false, //dims[2]>1,
+		//icon		: "/clients/icons/widgets/"+this.name+".ico",
+		//hidden		: this.hide,
+		//maximizable	: true,
 		tools		: this.Menu, 
 		items		: this.UIs
 	});	
 }
 
+WIDGET.prototype.folder = function() {
 /**
  * @method folder
  * @param {Object[]} UIs A list of components to be aggregated.
@@ -3776,7 +3798,6 @@ WIDGET.prototype.border = function () {
  *
  * Construct a folder component for this widget from the supplied component UIs and HTML.  
  */
-WIDGET.prototype.folder = function() {
 	var Widget = this;
 	var Data = this.Data;
 	var crush = this.crush;
@@ -3827,6 +3848,7 @@ WIDGET.prototype.folder = function() {
 	});
 }
 
+WIDGET.prototype.accordion 	= function () {
 /**
  * @method accordion
  * @param {Object[]} UIs A list of components to be aggregated.
@@ -3835,7 +3857,6 @@ WIDGET.prototype.folder = function() {
  *
  * Construct an accordion component for this widget from the supplied component UIs and HTML.  
  */
-WIDGET.prototype.accordion 	= function () {
 	
 	this.UI = Ext.create('Ext.panel.Panel', {
 		// Basic
@@ -3870,6 +3891,7 @@ WIDGET.prototype.accordion 	= function () {
 	});
 }
 
+WIDGET.prototype.window = function (UIs,HTML) { 
 /**
  * @method window
  * @param {Object[]} UIs A list of components to be aggregated.
@@ -3878,7 +3900,6 @@ WIDGET.prototype.accordion 	= function () {
  *
  * Construct a window component for this widget from the supplied component UIs and HTML.  
  */
-WIDGET.prototype.window = function (UIs,HTML) { 
 	Ext.create('Ext.window.Window', {    
 		// Basic		
 		title		: this.title,
@@ -3908,6 +3929,7 @@ WIDGET.prototype.window = function (UIs,HTML) {
 	return null;
 }
 
+WIDGET.prototype.grid = function () { 
 /**
  * @method grid
  * @param {Object[]} UIs A list of components to be aggregated.
@@ -3916,10 +3938,10 @@ WIDGET.prototype.window = function (UIs,HTML) {
  *
  * Construct a grid component for this widget from the supplied component UIs and HTML.  
  */
-WIDGET.prototype.grid = function () { 
 	this.terminal('Ext.grid.Panel'); 
 }
 
+WIDGET.prototype.find = function () { 
 /**
  * @method find
  * @param {Object[]} UIs A list of components to be aggregated.
@@ -3928,7 +3950,6 @@ WIDGET.prototype.grid = function () {
  *
  * Construct a find component for this widget from the supplied component UIs and HTML.  
  */
-WIDGET.prototype.find = function () { 
 	this.terminal('Ext.ux.LiveSearchGridPanel'); 
 }
 
@@ -4035,6 +4056,7 @@ WIDGET.prototype.image = function () {
 			}
 		}) ]*/
 
+WIDGET.prototype.pivot = function () { 
 /**
  * @method pivot
  * @param {Object[]} UIs A list of components to be aggregated.
@@ -4043,7 +4065,6 @@ WIDGET.prototype.image = function () {
  *
  * Construct a pivot component for this widget from the supplied component UIs and HTML.  
  */
-WIDGET.prototype.pivot = function () { 
 	this.terminal('Ext.tree.Panel', {  
 		rootVisible : true,
 		useArrows	: true
@@ -4061,6 +4082,9 @@ WIDGET.prototype.pivot = function () {
 	});
 }
 
+var FieldIDs = {};
+
+WIDGET.prototype.form = function () {
 /**
  * @method form
  * @param {Object[]} UIs A list of components to be aggregated.
@@ -4070,9 +4094,6 @@ WIDGET.prototype.pivot = function () {
  * Construct a form component for this widget from the supplied component UIs and HTML.  
  */
 
-var FieldIDs = {};
-
-WIDGET.prototype.form = function () {
 	var	
 		Widget = this;
 		Data = this.Data;
@@ -4259,6 +4280,8 @@ WIDGET.prototype.form = function () {
 	this.wrapper();
 }
 
+for (var chart in CHARTS)	
+	WIDGET.prototype[chart] = function () {
 /**
  * @method chart
  * @param {Object[]} UIs A list of Ext component objects aggregated around this chart.
@@ -4270,20 +4293,6 @@ WIDGET.prototype.form = function () {
  * axis step size [steps],* enable point and legends [tips,legend], axis data bindig [left,right,top,bottom].
  */
 
-var DISPLAYS = {
-	bar:"cartesian",
-	bar3d:"cartesian",
-	candlestick:1,
-	line:"cartesian",
-	scatter:"cartesian",
-	gauge:"polar",
-	pie:"polar",
-	pie3d:"polar",
-	radar:"polar"
-};
-
-for (var chart in DISPLAYS)	
-	WIDGET.prototype[chart] = function () {
 		var 
 			chart = this.anchor.id,
 			type = DISPLAYS[chart],
