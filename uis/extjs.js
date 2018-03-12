@@ -23,7 +23,7 @@ var
 		KEY: "ID",			// contains unique record ID
 		MESSAGE: "msg",		// contains status message
 		SORT: "_sort",		// contains sort fields
-		START: "_start",	// paging parm for starting record offset 1
+		START: "_offset",	// paging parm for starting record offset 1
 		LIMIT: "_limit",	// paging parm for number of records from offset
 		PAGE: "_page", 		// paging parm for page being requested
 		INSERT: "POST",		// CRUD create
@@ -2007,6 +2007,7 @@ Ext.onReady( function () {
 		
 		Ext.create('Ext.container.Viewport', {  
 			layout: "fit",
+			overflowY: "auto",
 			items: [widget.UI],
 			listeners: {
 				afterRender: function () {
@@ -3597,7 +3598,7 @@ WIDGET.prototype.content = function () {
 	this.UI = Ext.create('Ext.panel.Panel', {
 		layout: "border",
 		region: "center",
-		overflowY: "auto",  // EXTJS bug - ignored
+		overflowY: "auto",  // EXTJS bug - ignored?
 		html: this.HTML,
 		items: this.title
 			? [ 
@@ -3717,7 +3718,7 @@ for (var layout in {anchor:1, fit:1, hbox:1, vbox:1, box:1, table:1, column:1})
 			//animCollapse: false,	// EXTJS BUG - some componenets must not animate the collapse
 			collapsed	: this.crush,
 			collapsible	: this.crush,
-			//overflowY	: "auto",
+			overflowY	: "auto",
 			//frame		: false, //dims[2]>1,
 			////iconCls	: 'Loads-1',
 			//icon		: "/clients/icons/widgets/"+this.name+".ico",
