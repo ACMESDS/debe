@@ -1284,7 +1284,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				projs: "openv.milestones",
 				QAs: "app.QAs"
 				//stats:{table:"openv.profiles",group:"client",index:"client,event"}
-			}
+			} 
 		}
 	},
 	
@@ -1487,6 +1487,14 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			return rtns.join(arg);
 		}, */
 
+		function clone() {
+			var recs = this, copyRecs = [];
+			recs.forEach( function (rec) {  // clone ds recs
+				copyRecs.push( new Object(rec) );
+			});
+			return recs;
+		},
+		
 		function blogify( keys, ds, cb ) {
 			
 			function renderRecord(src, rec, ds, cb) {  // blog=key,... request flag
@@ -2691,6 +2699,14 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 	function dsContext(sql, ctx, cb) { // callbacl cb() after loading datasets required for this skin
 		
 		if (ctx) // render in extended context
+			Each(ctx,  function (siteKey, ds, isLast) {
+				sql.forAll("CTX-"+siteKey, "SELECT * FROM ??", [ds], function (recs) {
+					site[siteKey] = recs.clone();
+					if ( isLast ) cb();
+				});
+			});
+				
+			/*
 			sql.context(ctx, function (ctx) {  // establish a sql dsvar context
 
 				var isEmpty = Each(ctx, function (ds, x, isLast) {
@@ -2703,7 +2719,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 
 				if ( isEmpty ) cb();
 
-			});
+			}); */
 		
 		else  // render in default site context
 			cb();

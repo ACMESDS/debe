@@ -1,14 +1,14 @@
 String.prototype.tag = function tag(el,at) {
 /**
-* @method tag
-* Tag url (el="?") or tag html using specified attributes.
-* @param {String} el tag element
-* @param {String} at tag attributes
-* @return {String} tagged results
+@method tag
+Tag url (el=?|&), list (el=;|,), or tag html using specified attributes.
+@param {String} el tag element
+@param {String} at tag attributes
+@return {String} tagged results
 */
 
-	if ( el == "?" ) {  // tag a url
-		var rtn = this+"?";
+	if ( "?&;,".indexOf(el) >= 0 ) {  // tag a url or list
+		var rtn = this+el;
 
 		if (at) for (var n in at) {
 				rtn += n + "=";
@@ -163,7 +163,12 @@ function takequiz(state) {
 			if (myQuiz) {
 				myQuiz.forEach( (quiz,n) => {
 					myQuestions.push({
-						question: quiz.Q,
+						question: 
+							quiz.Q
+								.replace(/\n/g, "<br>")
+								.replace(/\[.*?\]/g, function (m) {
+									return m.substr(1,m.length-2).tag("div",{class:"in"});
+								}),
 						correctAnswer: quiz.A,
 						answers: quiz.S
 					});

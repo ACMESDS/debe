@@ -644,8 +644,6 @@ function WIDGET (Anchor) {
 				ishtml 
 					widget-free html
 					
-				inline(src="FILE.TYPE", w="WIDTH", h="HEIGHT")
-
 				:FILTER
 					markdown text
 
@@ -790,6 +788,7 @@ function WIDGET (Anchor) {
 			case "#text":
 				break;
 
+			/*
 			case "INLINE": 
 							
 				var	src = childAnchor.getAttribute("src") || "",
@@ -844,7 +843,8 @@ function WIDGET (Anchor) {
 				childAnchor.innerHTML = HTML;
 				
 				break;
-			
+			*/
+
 			default:
 				if (childAnchor.innerHTML) 
 					HTML += childAnchor.innerHTML.tag(childAnchor.nodeName,{});

@@ -282,8 +282,6 @@ append site_body
 						ishtml
 							widget-free html
 
-						inline(src="/PATH/FILE.TYPE", w="WIDTH", h="HEIGHT", g="GOTO", a="ATTRIBUTE", s="CSS")
-
 						:FILTER
 							CONTENT
 
@@ -307,9 +305,6 @@ append site_body
 
 					+ CONTENT include tag-specific content (e.g. markdown, $ mathjax $,  \$$ mathjax \$$ text, javascript, etc)
 
-					+ inline embeds the requested FILE, its file ATTRIBUTE, and a hyperlink 
-					customized for TYPE = db, py | js | mat | ... or TYPE = jpg | png | ico | ... files.
-
 					+ a WIDGET falls into one of the following categories:  
 
 						+ aggregator: **content** | **folder** | **accordion** | **window** | **border** | **post**
@@ -328,7 +323,7 @@ append site_body
 						#SKIN.NAME(path="/SOURCE")
 
 					where SKIN can specify a dataset, skin, file or file area.
-					
+
 					A widget's SOURCE **path** can reference a dataset, define static data, or define view options:
 					+	/DATASET?QUERY
 					+	[{key:val,...}]

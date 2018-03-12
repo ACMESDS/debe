@@ -101,20 +101,22 @@ body
 
 	else
 	if query.inline
-		#content(
-			icons=icons,
-			start=start,
-			client=client,
-			source=table,
-			location=navigator.totem.location,
-			query=JSON.stringify(query),
-			title=banner)
+		img(src=query.inline,width="80%",height="80%")
+		//
+			#content(
+				icons=icons,
+				start=start,
+				client=client,
+				source=table,
+				location=navigator.totem.location,
+				query=JSON.stringify(query),
+				title=banner)
 
-			inline(src=query.inline,w="90%",h="90%",a="Classif",g="Edit",s="rd")
+				inline(src=query.inline,w="90%",h="90%",a="Classif",g="Edit",s="rd")
 
-		script(src="/uis/base.js")
-		script.
-			BASE.start();
+			script(src="/uis/base.js")
+			script.
+				BASE.start();
 
 	else
 		//- The capture plugin allows clients to capture their web canvas.
