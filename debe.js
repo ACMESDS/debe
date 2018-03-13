@@ -1512,15 +1512,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		function blogify( keys, ds, cb ) {
 			
 			function renderRecord(src, rec, ds, cb) {  // blog=key,... request flag
-				function renderEmac(rec,src) {
-					try {
-						return eval("`" + src + "`");
-					}
-					catch (err) {
-						return src;
-					}
-				}
-				function renderMath(jaxList,src,cb) {
+				function renderJAX(jaxList,src,cb) {
 					var 
 						rtn = src,
 						rendered = 0, renders = jaxList.length;
@@ -1542,54 +1534,100 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 
 					if ( !renders ) cb(rtn);
 				}
+				
+				var jaxList = [], js = {}, $ = {};
 
-				var jaxList = [];
-
-				renderMath( 
+				for (var key in rec) try { $[key] = JSON.parse( rec[key] ); } catch (err) {};
+				
+				renderJAX( 
 					jaxList, 
 
-					src   //renderEmac(ds,src)
-						.replace(/\$\[.*?\]/g, function (m,i) {  // render $[ offset TeX ] markdown
-							jaxList.push({ jax: m.substr(2,m.length-3), fmt:"TeX"});
-							return "!jax"+(jaxList.length-1)+".";
+					src   
+						.replace(/get\$(.*?)\$/g, function (str,key) {  // get$ key $ markdown
+							if (  key in js )
+								return js[key];
+							
+							else {
+								try {
+									var val = eval( `$.${key}` );
+								}
+								catch (err) {
+									var val =  rec[key];
+								}
+								return js[key] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : val+"";
+							}							
 						})
-						.replace(/\$\(.*?\)/g, function (m,i) {  // render $( inline TeX ) markdown
-							jaxList.push({ jax: m.substr(2,m.length-3), fmt:"inline-TeX"});
-							return "!jax"+(jaxList.length-1)+".";
-						})
-						.replace(/\$\$\[.*?\]/g, function (m,i) {  // render $$[ asciiMath ] markdown
-							jaxList.push({ jax: m.substr(2,m.length-3), fmt:"AsciiMath"});
-							return "!jax"+(jaxList.length-1)+".";
-						})
-						.replace(/\$\$\(.*?\)/g, function (m,i) {  // render $$( mathML ) markdown
-							jaxList.push({ jax: m.substr(2,m.length-3), fmt:"MathML"});
-							return "!jax"+(jaxList.length-1)+".";
-						})
-						.replace(/\[.*\]\((.*?)\)/g, function (m,i) {  // render [x,w,h,s](u) markdown
-							m = m.substr(1,m.length-2).split("]("); 
-							var 
-								v = m[0].split(","),
-								u = m[1] || "missing url",
-								x = v[0] || "",
-								w = v[1] || 100,
-								h = v[2] || 100,
-								s = v[3] || `${ds}?ID=${rec.ID}` ,
-								p = u.split(";").join("&") ;
-
-							switch (x) {
-								case "exelink":
-									return x.tag("a",{href:ds+".exe?ID="+rec.ID}) + "".tag("iframe",{ src:u, width:w, height:h });
-								case "image":
-									return "".tag("img",{ src:u, width:w, height:h });
-								case "post":
-									return "".tag("iframe",{ src:u, width:w, height:h });
-								case "nada":
-									return `[nada](${u})`;
-								case "link":
-									return x.tag("a",{href:u});
-								default:
-									return "".tag("iframe",{ src: `/${x}.view?${p}&w=${w}&h=${h}&ds=${s}`, width:w, height:h } );
+						.replace(/tex\$(.*?)\$/g, function (str,key) {  // tex$ matrix key $ markdown
+							function texify(recs) {
+								var tex = [];
+								recs.forEach( function (rec) {
+									if (rec.forEach) {
+										rec.forEach( function (val,idx) {
+											rec[idx] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : JSON.stringify(val);
+										});
+										tex.push( rec.join(" & ") );
+									}
+									else
+										tex.push( rec.toFixed ? rec.toFixed(2) : rec.toUpperCase ? rec : JSON.stringify(rec) );
+								});	
+								return  "\\begin{matrix}" + tex.join("\\\\") + "\\end{matrix}";
 							}
+							
+							if (  key in js )
+								return js[key];
+							
+							else {
+								try {
+									var val = eval( `$.${key}` );
+								}
+								catch (err) {
+									var val =  rec[key];
+								}
+								return js[key] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : texify(val);
+							}							
+						})
+						.replace(/\$\$(.*?)\$\$/g, function (str,tex) {  //  $$ standalone TeX $$ markdown
+							jaxList.push({ jax: tex, fmt:"TeX"});
+							return "!jax"+(jaxList.length-1)+".";
+						})
+						.replace(/a\$(.*?)\$/g, function (str,tex) {  // a$ ascii math $ markdown
+							jaxList.push({ jax: tex, fmt:"asciiMatch"});
+							return "!jax"+(jaxList.length-1)+".";
+						})
+						.replace(/m\$(.*?)\$/g, function (str,tex) {  // m$ math ML $ markdown
+							jaxList.push({ jax: tex, fmt:"MathML"});
+							return "!jax"+(jaxList.length-1)+".";
+						})
+						.replace(/\$(.*?)\$/g, function (str,tex) {  // $ inline TeX $ markdown
+							jaxList.push({ jax: tex, fmt:"inline-TeX"});
+							return "!jax"+(jaxList.length-1)+".";
+						})
+						.replace(/image\[(.*?)\]/g, function (str,arg) {  // image[src,w,h] markdown
+							var 
+								args = arg.split(","),
+								src = args[0],
+								w = args[1] || 100,
+								h = args[2] || 100;
+							return "".tag("img", { src:src, width:w, height:h });
+						})	
+						.replace(/post\[(.*?)\]/g, function (str,arg) {  // post[src,w,h] markdown
+							var 
+								args = arg.split(","),
+								src = args[0],
+								w = args[1] || 100,
+								h = args[2] || 100;
+							return "".tag("iframe", { src:src, width:w, height:h });
+						})	
+						.replace(/\[(.*?)\]\((.*?)\)/g, function (str,link,src) {  // [link](src) markdown
+							return link.tag("a",{href:src});
+						})	
+						.replace(/\[(.*?)\]\$(.*?)\$/g, function (str,arg,script) {  // [src,w,h]$script$ markdown
+							var 
+								args = arg.split(","),
+								w = args[1] || 100,
+								h = args[2] || 100,
+								src = args[0];
+							return "".tag("iframe",{ src: ((src.charAt(0) == "/") ? src : "/" + src + ".view" ).tag("?", {w:w, h:h}) + "&" + script, width:w, height:h } );
 						})
 						.replace(/href=[^>]*/g, function (m,i) { // follow <a href=B>A</a> links
 							var ref = m.replace("href=",""), q = (ref.charAt(0) == "'") ? '"' : "'";
@@ -2706,18 +2744,37 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 			
 	var 
 		sql = req.sql,
+		query = req.query,
 		paths = DEBE.paths,
 		site = DEBE.site,  
+		urls = site.urls,
 		ctx = site.context[req.table]; 
 		
 	function dsContext(sql, ctx, cb) { // callbacl cb() after loading datasets required for this skin
 		
 		if (ctx) // render in extended context
 			Each(ctx,  function (siteKey, ds, isLast) {
-				sql.forAll("CTX-"+siteKey, "SELECT * FROM ??", [ds], function (recs) {
-					site[siteKey] = recs.clone();
-					if ( isLast ) cb();
-				});
+				if ( siteKey.charAt(0) == "/" ) 
+					DEBE.fetcher( (urls.master+siteKey).parseJS(query), null, function (data) {
+						switch ( (data||0).constructor ) {
+							case Array:
+								site[siteKey] = data.clone();
+								break;
+							case Object:
+								site[siteKey] = Copy( data, {} );
+								break;
+							default:
+								site[siteKey] = data;
+								break;
+						}
+						if ( isLast ) cb();	
+					});
+
+				else
+					sql.forAll("CTX-"+siteKey, "SELECT * FROM ??", [ds], function (recs) {
+						site[siteKey] = recs.clone();
+						if ( isLast ) cb();
+					});
 			});
 				
 			/*
