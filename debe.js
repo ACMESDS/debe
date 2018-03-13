@@ -65,6 +65,20 @@ var
 		default: function (evs, cb) {
 		}
 	},
+
+	onStartup: function () {
+		var
+			site = DEBE.site,
+			pocs = site.pocs,
+			sendMail = FLEX.sendMail;
+		
+		if (pocs.admin)
+			sendMail({
+				to: pocs.admin,
+				subject: site.title + " started", 
+				body: "Just FYI"
+			});
+	},
 		
 	// watchdog configuration
 		
@@ -3133,7 +3147,7 @@ Initialize DEBE on startup.
 	 * Initialize the FLEX and ATOM interfaces
 	 */
 
-		Trace(`INIT FLEX`);
+		//Trace(`INIT FLEX`);
 		
 		Each( CRUDE, function (n,routes) {  // redirect dataset crude calls
 			DEBE[n] = FLEX[n].ds;
@@ -3167,7 +3181,7 @@ Initialize DEBE on startup.
 			
 			diag: DEBE.diag,
 			
-			site: DEBE.site,						// Site parameters
+			site: DEBE.site						// Site parameters
 
 			/*
 			statefulViews : { 					// Jade views that require the stateful URL
@@ -3185,12 +3199,6 @@ Initialize DEBE on startup.
 				}
 			},*/
 
-			mailer : {						// Email parameters
-				TRACE 	: true,	
-				ONSTART: true,
-				SOURCE: "tbd"
-			},
-
 			/*
 			likeus : {
 				BILLING : 1,				// Billing cycle [days]
@@ -3200,7 +3208,7 @@ Initialize DEBE on startup.
 			
 		});
 
-		Trace(`INIT ATOMS`);
+		//Trace(`INIT ATOMS`);
 
 		HACK.config({
 			//source: "",
@@ -3240,6 +3248,9 @@ Initialize DEBE on startup.
 		JAX.start();
 		
 		sqlThread( function (sql) {
+			
+			if (onStartup = DEBE.onStartup) onStartup();
+			
 			var path = DEBE.paths.render;
 			
 			if (false)
