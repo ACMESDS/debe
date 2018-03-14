@@ -1,4 +1,15 @@
 ﻿// UNCLASSIFIED 
+/*
+TODO
++ devin set meetup later 2pm?
++ lutheran photos return
++ estpr call during file grading should insert/update into estpr usecases testname=filename
++ update genpr blogs
++ test rtpsq
++ make sure sw reqts are uptodate for stu. add swap ID and status to swStatus
++ add /terms to site south.  move Login to south.  make qos-cpu link to /terms
++ check if forms are working
+*/
 
 /**
 @class DEBE
@@ -339,18 +350,19 @@ Further information about this file is available ${paths.moreinfo}. `;
 			trace: ""
 		}, function (opts) { // job hawking watch dog
 			/*
-			 * Hawk over jobs in the queues table given {Action,Condition,Period} rules 
-			 * defined in the hawks table.  The rule is run on the interval specfied 
-			 * by Period (minutes).  Condition in any valid sql where clause. Actions 
-			 * supported:
-			 * 		stop=halt=kill to kill matched jobs and update its queuing history
-			 * 		remove=destroy=delete to kill matched jobs and obliterate its queuing history
-			 * 		log=notify=flag=tip to email client a status of matched jobs
-			 * 		improve=promote to increase priority of matched jobs
-			 * 		reduce=demote to reduce priority of matached jobs
-			 * 		start=run to run jobs against dirty records
-			 * 		set expression to revise queuing history of matched jobs	 
-			 * */
+			Legacy capability overridden by these dogs:
+			Hawk over jobs in the queues table given {Action,Condition,Period} rules 
+			defined in the hawks table.  The rule is run on the interval specfied 
+			by Period (minutes).  Condition in any valid sql where clause. Actions 
+			supported:
+			 		stop=halt=kill to kill matched jobs and update its queuing history
+			 		remove=destroy=delete to kill matched jobs and obliterate its queuing history
+			 		log=notify=flag=tip to email client a status of matched jobs
+			 		improve=promote to increase priority of matched jobs
+			 		reduce=demote to reduce priority of matached jobs
+			 		start=run to run jobs against dirty records
+			 		set expression to revise queuing history of matched jobs	 
+			*/
 			var
 				gets = {
 					unbilled: "SELECT * FROM app.queues WHERE Finished AND NOT Billed",
@@ -1277,10 +1289,12 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		/**
 		@private
 		@cfg {Object}
-		@member SKINS
+		@member context
+		Defines site context keys to load skinning context before a skin is rendered.
+		Each skin has its own {key: "SQL DB.TABLE" || "/URL?QUERY", ... } spec.
 		*/
-		context: { // define JSDB context keys when a skin is rendered
-			swag: {  // context keys for swag.jade
+		context: { 
+			swag: {  // context keys for swag.view
 				projs: "openv.milestones"
 			},
 			airspace: {
@@ -1502,6 +1516,12 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		}, */
 
 		function clone() {
+			/*
+			@member Array
+			@method clone
+			Return a cloned copy of this records
+			*/
+			
 			var recs = this, copyRecs = [];
 			recs.forEach( function (rec) {  // clone ds recs
 				copyRecs.push( new Object(rec) );
@@ -1510,6 +1530,13 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		},
 		
 		function blogify( keys, ds, cb ) {
+			/*
+			@member Array
+			@method blogify
+			@param [List] keys list of keys to blogify
+			@param [String] ds Name of dataset being blogged
+			@param [Function] cb callback(recs) blogified version of records
+			*/
 			
 			function renderRecord(src, rec, ds, cb) {  // blog=key,... request flag
 				function renderJAX(jaxList,src,cb) {
@@ -1605,7 +1632,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						.replace(/image\[(.*?)\]/g, function (str,arg) {  // image[src,w,h] markdown
 							var 
 								args = arg.split(","),
-								src = args[0],
+								src = (args[0].charAt(0) == "/") ? args[0] : "/" + args[0] + ".view",
 								w = args[1] || 100,
 								h = args[2] || 100;
 							return "".tag("img", { src:src, width:w, height:h });
@@ -1613,7 +1640,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						.replace(/post\[(.*?)\]/g, function (str,arg) {  // post[src,w,h] markdown
 							var 
 								args = arg.split(","),
-								src = args[0],
+								src = (args[0].charAt(0) == "/") ? args[0] : "/" + args[0] + ".view",
 								w = args[1] || 100,
 								h = args[2] || 100;
 							return "".tag("iframe", { src:src, width:w, height:h });
@@ -1621,13 +1648,13 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						.replace(/\[(.*?)\]\((.*?)\)/g, function (str,link,src) {  // [link](src) markdown
 							return link.tag("a",{href:src});
 						})	
-						.replace(/\[(.*?)\]\$(.*?)\$/g, function (str,arg,script) {  // [src,w,h]$script$ markdown
+						.replace(/gen\[(.*?)\]\$(.*?)\$/g, function (str,arg,script) {  // gen[src,w,h]$query$ markdown
 							var 
 								args = arg.split(","),
+								src = (args[0].charAt(0) == "/") ? args[0] : "/" + args[0] + ".view",
 								w = args[1] || 100,
-								h = args[2] || 100,
-								src = args[0];
-							return "".tag("iframe",{ src: ((src.charAt(0) == "/") ? src : "/" + src + ".view" ).tag("?", {w:w, h:h}) + "&" + script, width:w, height:h } );
+								h = args[2] || 100;
+							return "".tag("iframe",{ src: src.tag("?", {src:"/"+ds,w:w, h:h}) + "&" + script, width:w, height:h } );
 						})
 						.replace(/href=[^>]*/g, function (m,i) { // follow <a href=B>A</a> links
 							var ref = m.replace("href=",""), q = (ref.charAt(0) == "'") ? '"' : "'";
@@ -1655,12 +1682,20 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		},
 		
 		function isEmpty() {
-			return this.length > 0;
+			return this.length == 0;
 		},
 		
 		function stashify(watchKey, targetPrefix, ctx, stash, cb) {
-			// this = [ { watchKey:"KEY", x:X, y: Y, ...}, ... }
-			// stash = { targetPrefix: { x: [X,...], y: [Y,...], ... }, ... }
+			/*
+			@member Array
+			@method stashify
+			@param [String] watchKey  this = [ { watchKey:"KEY", x:X, y: Y, ...}, ... }
+			@param [String] targetPrefix  stash = { targetPrefix: { x: [X,...], y: [Y,...], ... }, ... } 
+			@param [Object] ctx plugin context keys
+			@param [Object] stash refactored output suitable for a Save_KEY
+			@param [Function] cb callback(ev,stat) returns refactored result to put into stash
+			Used by plugins for refactoring process output into Save_KEY stashes
+			*/
 			
 			var rem = stash.remainder;
 			
@@ -1685,10 +1720,13 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		},
 		
 		function merge(Recs,idx) {
-		/**
-		@method merge
-		Merge changes when doing table deltas from their baseline versions.
-		**/
+			/**
+			@member Array
+			@method merge
+			@param [Array] Recs Source records to merge into this records
+			@param [String] idx Key name to use for detecting record changes
+			Merge changes when doing table deltas from their baseline versions.
+			**/
 			
 			function changed(rec,Rec) {
 				for (var n in rec)
@@ -1734,16 +1772,16 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		},
 		
 		function treeify(idx,kids,level,keys,wt) {
-		/**
-		@method treeify
-		@member Array
-		@param [Number] idx starting index (0 on first call)
-		@param [Number] kids number of leafs following starting index (this.length on first call)
-		@param [Number] level current depth (0 on first call)
-		@param [Array] keys pivot keys
-		@param [String] wt key name that contains leaf weight (defaults to "size")
-		Return a tree = {name,weight,children: tree} from records having been sorted on keys=[key,...]
-		*/
+			/**
+			@member Array
+			@method treeify
+			@param [Number] idx starting index (0 on first call)
+			@param [Number] kids number of leafs following starting index (this.length on first call)
+			@param [Number] level current depth (0 on first call)
+			@param [Array] keys pivot keys
+			@param [String] wt key name that contains leaf weight (defaults to "size")
+			Return a tree = {name,weight,children: tree} from records having been sorted on keys=[key,...]
+			*/
 			var	
 				recs = this,
 				key = keys[level],
@@ -1792,13 +1830,27 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		},
 		
 		function listify( cb ) {
+			/*
+			@member Array
+			@method listify
+			@param {Function} cb callback(rec) returns recordresults to append
+			Returns a sample of each record from this records using a callback to sample
+			*/
 			var rtns = [];
 			this.forEach( function (rec) {
 				rtns.push( cb(rec) );
 			});
+			return rtns;
 		},
 						 
 		function joinify(sep, cb) {
+			/* 
+			@member Array
+			@method joingify
+			@param [String] sep seperator
+			@param [Function] cb callback(rec) returns sample of supplied record
+			*/
+			
 			if (cb) {
 				var recs = [];
 				if (cb.constructor == Function) 
@@ -1819,6 +1871,13 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		},
 		
 		function linkify(ref) {
+			/*
+			@member Array
+			@method linkify
+			@param {String} ref
+			Returns a ref-joined list of links
+			*/
+			
 			return this.joinify(",", function (label) {
 				
 				if (ref)
@@ -2754,8 +2813,8 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		
 		if (ctx) // render in extended context
 			Each(ctx,  function (siteKey, ds, isLast) {
-				if ( siteKey.charAt(0) == "/" ) 
-					DEBE.fetcher( (urls.master+siteKey).parseJS(query), null, function (data) {
+				if ( ds.charAt(0) == "/" ) 
+					DEBE.fetcher( (urls.master+ds).parseJS(query), null, function (data) {
 						switch ( (data||0).constructor ) {
 							case Array:
 								site[siteKey] = data.clone();

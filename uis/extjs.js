@@ -1,5 +1,10 @@
-//
 // UNCLASSIFIED
+
+/*
+TODO
++ The _lock always enabled on form submits to indicate record locking-unlocking request.
++ sql.run will then look at _lock to do a sql.ds = crud
+*/
 
 /**
  * @module grids

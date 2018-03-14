@@ -102,17 +102,17 @@ append site_body
 					and where the *Description* key may contain [blogging tags](/skinguide.view) of the form:
 					> image\[ SRC, W, H ]  
 					> post\[ SRC, W, H ]  
+					> gen\[ SRC , W, H ]$ QUERY $  
 					> \[ LINK ]( URL )   
-					> \[ plot || force || treemap || ... , W, H ]$ SCRIPT $  
 					> $ inline TeX $  ||  $$ break TeX $$ || a$ AsciiMath $ || m$ MathML $ || get$ KEY $ || tex$ KEY $
 
 					to document usecases.  For example:
 
-						[plot,100,200]$x=ds.Save.a;ys=[ds.Save.b,ds.Save.c]$
+						gen[/plot.view,100,200]$x=ds.Save.a&ys=[ds.Save.b,ds.Save.c]$
 						post[/home.view,500,100]
 						[link](https:/go.here)
 						image[/shares/a1.jpg]
-						[force,100,100]$queues.tree?_pivots=class$
+						gen[force,100,100]$queues.tree?_pivots=class$
 						$$ \alpha = 1 + \beta $$ impressive 'eh
 
 					to embed: (1) a plot of the requested x,y data using the [d3 plot](/plot.view), (2) the 
