@@ -1543,7 +1543,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					var 
 						rendered = 0, renders = jaxList.length;
 
-					Log("jax",renders);
+					//Log("jax",renders);
 					jaxList.each( function (n,jax) {
 
 						JAX.typeset({
@@ -1554,7 +1554,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						}, function (d) {
 							rtn = rtn.replace("!jax"+n+".", d.mml);
 
-							Log(rendered, renders);
+							//Log(rendered, renders);
 							if ( ++rendered == renders ) cb(rtn);
 						});
 
@@ -1566,9 +1566,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				var jaxList = [], js = {}, $ = {};
 
 				for (var key in rec) try { $[key] = JSON.parse( rec[key] ); } catch (err) {};
-				
-				cb(rtn);
-				return;
 				
 				renderJAX( 
 					jaxList, 
@@ -1629,48 +1626,31 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 							jaxList.push({ jax: tex, fmt:"MathML"});
 							return "!jax"+(jaxList.length-1)+".";
 						})
-						.replace(/\$(.*?)\$/g, function (str,tex) {  // $ inline TeX $ markdown
+						.replace(/ \$(.*?)\$/g, function (str,tex) {  // $ inline TeX $ markdown
 							jaxList.push({ jax: tex, fmt:"inline-TeX"});
 							return "!jax"+(jaxList.length-1)+".";
 						})				
-						.replace(/\!\{(.*?)\}/g, function (str,link) {  // !{link} or !{view?query} markdown
-							var
-								tags = {w:100, h:100, src: ds, ds: ds},
-								view = link.parsePath(";" , tags),
-								opsrc =  `/${view}.view`.tag("?", tags );
-							
-							Log(view, tags, opsrc);
-							switch (view) {
-								case "image":
-								case "img":
-									return "".tag("img", { src:tags.src, width:tags.w, height:tags.h });
-								case "post":
-								case "iframe":
-									return "".tag("iframe", { src:tags.src, width:tags.w, height:tags.h });
-								default:
-									return (view == link)
-											? link.tag("a",{ href:tags.src }) 
-											: "".tag("iframe",{ src: opsrc, width:tags.w, height:tags.h } ) ;
-							}
-						})
 						.replace(/\[(.*?)\]\((.*?)\)/g, function (str,link,src) {  // [link](src) or [view?query] markdown
 							var
-								tags = {w:100, h:100, src: src || ds},
-								view = link.parsePath(";",tags),
-								opsrc =  `/${view}.view`.tag("?", tags );
+								links = link.split(";"),
+								view = links[0],
+								w = links[1] || 100,
+								h = links[2] || 100,
+								keys = {},
+								opsrc =  `/${view}.view`.tag( "?", Copy({w:w,h:h,src:(src.replace(/;/g,"&") || ds).parsePath(keys)}, keys) );
 							
-							Log(view, tags, opsrc);
+							Log(view, keys, opsrc);
 							switch (view) {
 								case "image":
 								case "img":
-									return "".tag("img", { src:src, width:tags.w, height:tags.h });
+									return "".tag("img", { src:src, width:w, height:h });
 								case "post":
 								case "iframe":
-									return "".tag("iframe", { src:src, width:tags.w, height:tags.h });
+									return "".tag("iframe", { src:src, width:w, height:h });
 								default:
 									return (view == link)
 											? link.tag("a",{ href:src }) 
-											: "".tag("iframe",{ src: opsrc, width:tags.w, height:tags.h } ) ;
+											: "".tag("iframe",{ src: opsrc, width:w, height:h } ) ;
 							}
 						})
 						/*.replace(/href=[^>]* /g, function (m,i) { // follow <a href=B>A</a> links
@@ -1691,7 +1671,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						if (val.constructor == String)
 							renderRecord( val, rec, "/"+ds+"?ID="+rec.ID, function (html) {
 								rec[key] = html;
-								Log("rec",rendered, renders);
+								//Log("rec",rendered, renders);
 								if ( ++rendered == renders ) cb(recs);
 							});
 				});

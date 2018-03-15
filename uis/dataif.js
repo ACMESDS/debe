@@ -2,10 +2,10 @@ Array.prototype.each = function ( cb ) {
 	for (var n=0,N=this.length; n<N; n++) cb( n, this[n] );
 }
 
-
+/*
 Array.prototype.forEach = function ( cb ) {
 	for (var n=0,N=this.length; n<N; n++) cb( this[n] );
-} 
+} */
 
 Array.prototype.get = function(idx, key) {
 	var keys = key.split(","), K = keys.length, rtns = [], recs = this, at = Object.keys(idx)[0], match = idx[at];
@@ -102,27 +102,37 @@ function source(opts, cb) {
 		}
 	}
 
-	//alert( "source: "+opts.ds );
-
 	if (opts.debug || true)  alert( JSON.stringify(opts) ); 
 
-	d3.json( opts.ds.tag("?", {x:opts.x, y:opts.y}) , function (recs) {
+	d3.json( opts.ds , function (recs) {
 		alert( recs ? "got data" : "no data" );
-		//alert(JSON.stringify(recs));
+		alert(JSON.stringify(recs));
 		
 		if ( opts.data = recs)
 			if ( recs.constructor == Array)
-				if ( rec = recs[0] ) {
-					//jsonize( rec );
-					//loader( rec, opts );
-					cb( opts );
-				}
-				else {
-				}
-			
-			else
-				cb( opts );
-			
+				recs.forEach( function (rec) {
+					for ( var key in rec ) 
+						try {
+							rec[key] = JSON.parse( rec[key] );
+						}
+						catch (err) {
+						}
+					
+					alert("rec="+JSON.stringify(rec));
+					cb( rec );
+				});
+		
+			else {
+				for (var key in recs )
+					try {
+						recs[key] = JSON.parse( rec[key] );
+					}
+					catch (err) {
+					}
+				
+				cb( recs );
+			}
+		
 	}); 
 
 	/*

@@ -8,12 +8,13 @@ append base_help
 	:markdown
 		 Produce d3 scatter plot:  
 
-			ds = source url returning [ {key:value, ...} ] records
+			src = forms source dataset /src?ID=ID&x$=x&y$=y returning [ {x:[...], y:[[...] ,[...], ...}, ... ]
+			ID = src record ID
+			x = src json index expression 
+			y = src json index expression 
 			w = drawing width
 			h = drawing height
 			debug = dump derived options
-			x = js-expression like ds.KEY, ds.get({key:value, ...}, "key,..."), etc
-			y = js-expression like ...
 			line = color,color, ... line color
 			marker = style,style, ... line markers
 			label = X,Y labels
@@ -45,7 +46,8 @@ append base_head
 	
 	script.
 		var opts = {  // define plot options
-			ds: "!{query.ds}",
+			src: "!{query.src}",
+			ID: "!{query.ID}",
 			w: parseInt("#{query.w}"),
 			h: parseInt("#{query.h}"),			
 			debug: "#{query.debug}",
@@ -66,6 +68,7 @@ append base_head
 			init:  parse("#{query.init}", []),
 			extra: parse("#{query.extra}", [])
 		};
+		opts.ds = opts.src.tag("?", {ID: opts.ID, "x$":opts.x, "y$":opts.y});
 				 
 append base_body
 
@@ -217,10 +220,19 @@ append base_body
 			}
 		});*/
 
-		source( opts, function plotter (opts) {
+		source( opts, function plotter (rec) {
 			//var pdata = opts.init.concat(data.concat(opts.extra));
-			var pdata = [];
+			var 
+				pdata = [],
+				x = rec.x || [],
+				y = rec.y || [];
+				
+			x.forEach( function (x,n) {
+				pdata.push( { x: x, y: y[n] } );
+			});	
 			
+			alert(JSON.stringify(pdata));
+			/*
 			if (y = opts.y)
 				if ( (y[0]||0).constructor == Array )
 					for (var x=opts.x, N=x.length, plots=y[0].length, n=0; n<N; n++)
@@ -228,7 +240,7 @@ append base_body
 			
 				else
 					for (var x=opts.x, N=x.length, plots=1, n=0; n<N; n++)
-						pdata.push( {x: x[n], y: [y[n]]  } );
+						pdata.push( {x: x[n], y: [y[n]]  } ); */
 
 			var line = d3.svg.line();
 
