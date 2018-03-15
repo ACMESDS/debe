@@ -100,16 +100,14 @@ append site_body
 					> aoi: "NAME" || [ [lat,lon], ... ] || []
 
 					and where the *Description* key may contain [blogging tags](/skinguide.view) of the form:
-					> image\[ SRC, W, H ]  
-					> post\[ SRC, W, H ]  
-					> gen\[ SRC , W, H ]$ QUERY $  
+					> \[ VIEW?w=WIDTH&h=HEIGHT& ...  ]( ALTDS )  
 					> \[ LINK ]( URL )   
 					> $ inline TeX $  ||  $$ break TeX $$ || a$ AsciiMath $ || m$ MathML $ || get$ KEY $ || tex$ KEY $
 
 					to document usecases.  For example:
 
-						gen[/plot.view,100,200]$x=ds.Save.a&ys=[ds.Save.b,ds.Save.c]$
-						post[/home.view,500,100]
+						[plot?w=100&h200]$x=ds.Save.a&ys=[ds.Save.b,ds.Save.c]
+						[post?w=500&h=100](/home.view)
 						[link](https:/go.here)
 						image[/shares/a1.jpg]
 						gen[force,100,100]$queues.tree?_pivots=class$
