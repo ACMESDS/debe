@@ -78,6 +78,7 @@ function parse(x,def) {
 }
 
 function source(opts, cb) {
+	/*
 	function jsonize(rec) {
 		for (var key in rec) 
 			if ( val = rec[key] )
@@ -101,14 +102,15 @@ function source(opts, cb) {
 			}
 		}
 	}
-
-	if (opts.debug || true)  alert( JSON.stringify(opts) ); 
+	*/
+	
+	if (opts.debug)  alert( JSON.stringify(opts) ); 
 
 	d3.json( opts.ds , function (recs) {
-		alert( recs ? "got data" : "no data" );
-		alert(JSON.stringify(recs));
+		//alert( recs ? "got data" : "no data" );
+		//alert(JSON.stringify(recs));
 		
-		if ( opts.data = recs)
+		if ( recs)
 			if ( recs.constructor == Array)
 				recs.forEach( function (rec) {
 					for ( var key in rec ) 
@@ -118,7 +120,7 @@ function source(opts, cb) {
 						catch (err) {
 						}
 					
-					alert("rec="+JSON.stringify(rec));
+					//alert("rec="+JSON.stringify(rec));
 					cb( rec );
 				});
 		

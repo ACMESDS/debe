@@ -1637,9 +1637,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 								w = links[1] || 100,
 								h = links[2] || 100,
 								keys = {},
-								opsrc =  `/${view}.view`.tag( "?", Copy({w:w,h:h,src:(src.replace(/;/g,"&") || ds).parsePath(keys)}, keys) );
+								path = ds.parsePath(keys),
+								path = src.replace(/;/g,"&").parsePath(keys) || path,
+								opsrc =  `/${view}.view`.tag( "?", Copy({w:w,h:h,src:path}, keys) );
 							
-							Log(view, keys, opsrc);
+							//Log(view, keys, opsrc);
 							switch (view) {
 								case "image":
 								case "img":
@@ -1653,11 +1655,10 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 											: "".tag("iframe",{ src: opsrc, width:w, height:h } ) ;
 							}
 						})
-						/*.replace(/href=[^>]* /g, function (m,i) { // follow <a href=B>A</a> links
-							var ref = m.replace("href=",""), q = (ref.charAt(0) == "'") ? '"' : "'";
-							return `href=${q}javascript:navigator.follow(${ref},BASE.user.client,BASE.user.source)${q}`;
-						})*/
-						,  
+						.replace(/href=(.*?)\>/g, function (str,ref) { // follow <a href=REF>A</a> links
+							var q = (ref.charAt(0) == "'") ? '"' : "'";
+							return `href=${q}javascript:navigator.follow(${ref},BASE.user.client,BASE.user.source)${q}>`;
+						}) 	,  
 					
 					cb
 				); 

@@ -223,15 +223,23 @@ append base_body
 		source( opts, function plotter (rec) {
 			//var pdata = opts.init.concat(data.concat(opts.extra));
 			var 
+				plots = 1,
 				pdata = [],
 				x = rec.x || [],
 				y = rec.y || [];
 				
-			x.forEach( function (x,n) {
-				pdata.push( { x: x, y: y[n] } );
-			});	
+			if (ys = rec.ys) {
+				plots = ys.length;
+				x.forEach( function (x,n) {
+					pdata.push( { x: x, y: ys[n] } );
+				});	
+			}
+			else
+				x.forEach( function (x,n) {
+					pdata.push( { x: x, y: [y[n]] } );
+				});	
 			
-			alert(JSON.stringify(pdata));
+			//alert(JSON.stringify(pdata));
 			/*
 			if (y = opts.y)
 				if ( (y[0]||0).constructor == Array )
@@ -244,7 +252,7 @@ append base_body
 
 			var line = d3.svg.line();
 
-			//alert("xs="+opts.x.length+" ys="+opts.y.length+" plots="+plots);
+			//alert("plots="+plots);
 
 			for (var yidx=0; yidx<plots; yidx++) {
 				if (opts.initialize) {  // setup axes on first source
