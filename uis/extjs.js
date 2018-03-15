@@ -674,6 +674,7 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 					xtype: 'htmleditor',
 					//scrollable: true,
 					//grow: true,
+					autoEncode: true,
 					width: 400,
 					height: 400
 					//disabled: fOff

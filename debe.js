@@ -1538,10 +1538,9 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			@param [Function] cb callback(recs) blogified version of records
 			*/
 			
-			function renderRecord(src, rec, ds, cb) {  // blog=key,... request flag
-				function renderJAX(jaxList,src,cb) {
+			function renderRecord(rtn, rec, ds, cb) {  // blog=key,... request flag
+				function renderJAX(jaxList,rtn,cb) {
 					var 
-						rtn = src,
 						rendered = 0, renders = jaxList.length;
 
 					jaxList.each( function (n,jax) {
@@ -1569,22 +1568,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				renderJAX( 
 					jaxList, 
 
-					src   
-						.replace(/get\$(.*?)\$/g, function (str,key) {  // get$ key $ markdown
-							if (  key in js )
-								return js[key];
-							
-							else {
-								try {
-									var val = eval( `$.${key}` );
-								}
-								catch (err) {
-									var val =  rec[key];
-								}
-								return js[key] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : val+"";
-							}							
-						})
-						.replace(/tex\$(.*?)\$/g, function (str,key) {  // tex$ matrix key $ markdown
+					rtn 
+						.replace(/\$\$\{(.*?)\}/g, function (str,key) {  // $${ get matrix key } markdown
 							function texify(recs) {
 								var tex = [];
 								recs.forEach( function (rec) {
@@ -1613,7 +1598,21 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 								return js[key] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : texify(val);
 							}							
 						})
-						.replace(/\$\$(.*?)\$\$/g, function (str,tex) {  //  $$ standalone TeX $$ markdown
+						.replace(/\$\{(.*?)\}/g, function (str,key) {  // ${ get key } markdown
+							if (  key in js )
+								return js[key];
+							
+							else {
+								try {
+									var val = eval( `$.${key}` );
+								}
+								catch (err) {
+									var val =  rec[key];
+								}
+								return js[key] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : val+"";
+							}							
+						})
+						.replace(/\$\$(.*?)\$/g, function (str,tex) {  //  $$ standalone TeX $$ markdown
 							jaxList.push({ jax: tex, fmt:"TeX"});
 							return "!jax"+(jaxList.length-1)+".";
 						})
@@ -1625,37 +1624,30 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 							jaxList.push({ jax: tex, fmt:"MathML"});
 							return "!jax"+(jaxList.length-1)+".";
 						})
-						.replace(/\$(.*?)\$/g, function (str,tex) {  // $ inline TeX $ markdown
+						.replace(/:\$(.*?)\$/g, function (str,tex) {  // $ inline TeX $ markdown
 							jaxList.push({ jax: tex, fmt:"inline-TeX"});
 							return "!jax"+(jaxList.length-1)+".";
 						})
-						.replace(/image\[(.*?)\]/g, function (str,arg) {  // image[src,w,h] markdown
-							var 
-								args = arg.split(","),
-								src = (args[0].charAt(0) == "/") ? args[0] : "/" + args[0] + ".view",
-								w = args[1] || 100,
-								h = args[2] || 100;
-							return "".tag("img", { src:src, width:w, height:h });
+						.replace(/\[(.*?)\]\((.*?)\)/g, function (str,link,src) {  // [link](src) or [path?query] markdown
+							var
+								tags = {w:100, h:100, src: src || ds},
+								op = link.parsePath(tags),
+								opsrc =  `/${op}.view`.tag("?", tags );
+							
+							Log(op, tags, opsrc);
+							switch (op) {
+								case "image":
+								case "img":
+									return "".tag("img", { src:src, width:tags.w, height:tags.h });
+								case "post":
+								case "iframe":
+									return "".tag("iframe", { src:src, width:tags.w, height:tags.h });
+								default:
+									return (args.length==1) 
+											? link.tag("a",{ href:src })
+											: "".tag("iframe",{ src: opsrc, width:tags.w, height:tags.h } );
+							}
 						})	
-						.replace(/post\[(.*?)\]/g, function (str,arg) {  // post[src,w,h] markdown
-							var 
-								args = arg.split(","),
-								src = (args[0].charAt(0) == "/") ? args[0] : "/" + args[0] + ".view",
-								w = args[1] || 100,
-								h = args[2] || 100;
-							return "".tag("iframe", { src:src, width:w, height:h });
-						})	
-						.replace(/\[(.*?)\]\((.*?)\)/g, function (str,link,src) {  // [link](src) markdown
-							return link.tag("a",{href:src});
-						})	
-						.replace(/gen\[(.*?)\]\$(.*?)\$/g, function (str,arg,script) {  // gen[src,w,h]$query$ markdown
-							var 
-								args = arg.split(","),
-								src = (args[0].charAt(0) == "/") ? args[0] : "/" + args[0] + ".view",
-								w = args[1] || 100,
-								h = args[2] || 100;
-							return "".tag("iframe",{ src: src.tag("?", {src:"/"+ds,w:w, h:h}) + "&" + script, width:w, height:h } );
-						})
 						.replace(/href=[^>]*/g, function (m,i) { // follow <a href=B>A</a> links
 							var ref = m.replace("href=",""), q = (ref.charAt(0) == "'") ? '"' : "'";
 							return `href=${q}javascript:navigator.follow(${ref},BASE.user.client,BASE.user.source)${q}`;
@@ -1671,7 +1663,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				recs.each( function (n, rec) {
 					if ( val = rec[key] )
 						if (val.constructor == String)
-							renderRecord( val, rec, ds, function (html) {
+							renderRecord( val, rec, "/"+ds+"?ID="+rec.ID, function (html) {
 								rec[key] = html;
 								//Log(rendered, renders);
 								if ( ++rendered == renders ) cb(recs);
@@ -2887,7 +2879,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 				sql = req.sql,
 				query = Copy({
 					mode: req.parts[1],
-					search: req.search,
+					//search: req.search,
 					cols: cols,
 					page: query.page,
 					dims: query.dims || "100%,100%",
@@ -3418,7 +3410,7 @@ function siteContext(req, cb) {
 		joined: req.joined,
 		profile: req.profile,
 		group: req.group,
-		search: req.search,
+		//search: req.search,
 		session: req.session,
 		util: {
 			cpu: (req.log.Util*100).toFixed(0),
