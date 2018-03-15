@@ -2,9 +2,10 @@ Array.prototype.each = function ( cb ) {
 	for (var n=0,N=this.length; n<N; n++) cb( n, this[n] );
 }
 
+
 Array.prototype.forEach = function ( cb ) {
 	for (var n=0,N=this.length; n<N; n++) cb( this[n] );
-}
+} 
 
 Array.prototype.get = function(idx, key) {
 	var keys = key.split(","), K = keys.length, rtns = [], recs = this, at = Object.keys(idx)[0], match = idx[at];
@@ -23,22 +24,48 @@ Array.prototype.get = function(idx, key) {
 		}
 }
 
-String.prototype.tag = function (el,at) {
-	var rtn = "<"+el+" ";
+String.prototype.tag = function tag(el,at) {
+/**
+@method tag
+Tag url (el=?|&), list (el=;|,), or tag html using specified attributes.
+@param {String} el tag element
+@param {String} at tag attributes
+@return {String} tagged results
+*/
 
-	if (at)  
-		for (var n in at) rtn += n + "='" + at[n] + "' ";
+	if ( "?&;,".indexOf(el) >= 0 ) {  // tag a url or list
+		var rtn = this+el;
 
-	switch (el) {
-		case "embed":
-		case "img":
-		case "link":
-		case "input":
-			return rtn+">" + this;
-		default:
-			return rtn+">" + this + "</"+el+">";
+		if (at) for (var n in at) {
+				rtn += n + "=";
+				switch ( (at[n] || 0).constructor ) {
+					//case Array: rtn += at[n].join(",");	break;
+					case Array:
+					case Date:
+					case Object: rtn += JSON.stringify(at[n]); break;
+					default: rtn += at[n];
+				}
+				rtn += "&";
+			}
+
+		return rtn;				
 	}
 
+	else {  // tag html
+		var rtn = "<"+el+" ";
+
+		if (at) for (var n in at) rtn += n + "='" + at[n] + "' ";
+
+		switch (el) {
+			case "embed":
+			case "img":
+			case "link":
+			case "input":
+				return rtn+">" + this;
+			default:
+				return rtn+">" + this + "</"+el+">";
+		}
+	}
 }
 
 function parse(x,def) {
@@ -77,17 +104,17 @@ function source(opts, cb) {
 
 	//alert( "source: "+opts.ds );
 
-	if (opts.debug)  alert( JSON.stringify(opts) ); 
+	if (opts.debug || true)  alert( JSON.stringify(opts) ); 
 
-	d3.json( opts.ds, function (recs) {
-		//alert( recs ? "got data" : "no data" );
+	d3.json( opts.ds.tag("?", {x:opts.x, y:opts.y}) , function (recs) {
+		alert( recs ? "got data" : "no data" );
 		//alert(JSON.stringify(recs));
 		
 		if ( opts.data = recs)
 			if ( recs.constructor == Array)
 				if ( rec = recs[0] ) {
-					jsonize( rec );
-					loader( rec, opts );
+					//jsonize( rec );
+					//loader( rec, opts );
 					cb( opts );
 				}
 				else {

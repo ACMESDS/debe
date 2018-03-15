@@ -1543,6 +1543,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					var 
 						rendered = 0, renders = jaxList.length;
 
+					Log("jax",renders);
 					jaxList.each( function (n,jax) {
 
 						JAX.typeset({
@@ -1553,6 +1554,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						}, function (d) {
 							rtn = rtn.replace("!jax"+n+".", d.mml);
 
+							Log(rendered, renders);
 							if ( ++rendered == renders ) cb(rtn);
 						});
 
@@ -1565,10 +1567,13 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 
 				for (var key in rec) try { $[key] = JSON.parse( rec[key] ); } catch (err) {};
 				
+				cb(rtn);
+				return;
+				
 				renderJAX( 
 					jaxList, 
 
-					rtn 
+					rtn
 						.replace(/\$\$\{(.*?)\}/g, function (str,key) {  // $${ get matrix key } markdown
 							function texify(recs) {
 								var tex = [];
@@ -1612,7 +1617,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 								return js[key] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : val+"";
 							}							
 						})
-						.replace(/\$\$(.*?)\$/g, function (str,tex) {  //  $$ standalone TeX $$ markdown
+						.replace(/\$\$(.*?)\$\$/g, function (str,tex) {  //  $$ standalone TeX $$ markdown
 							jaxList.push({ jax: tex, fmt:"TeX"});
 							return "!jax"+(jaxList.length-1)+".";
 						})
@@ -1624,18 +1629,38 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 							jaxList.push({ jax: tex, fmt:"MathML"});
 							return "!jax"+(jaxList.length-1)+".";
 						})
-						.replace(/:\$(.*?)\$/g, function (str,tex) {  // $ inline TeX $ markdown
+						.replace(/\$(.*?)\$/g, function (str,tex) {  // $ inline TeX $ markdown
 							jaxList.push({ jax: tex, fmt:"inline-TeX"});
 							return "!jax"+(jaxList.length-1)+".";
+						})				
+						.replace(/\!\{(.*?)\}/g, function (str,link) {  // !{link} or !{view?query} markdown
+							var
+								tags = {w:100, h:100, src: ds, ds: ds},
+								view = link.parsePath(";" , tags),
+								opsrc =  `/${view}.view`.tag("?", tags );
+							
+							Log(view, tags, opsrc);
+							switch (view) {
+								case "image":
+								case "img":
+									return "".tag("img", { src:tags.src, width:tags.w, height:tags.h });
+								case "post":
+								case "iframe":
+									return "".tag("iframe", { src:tags.src, width:tags.w, height:tags.h });
+								default:
+									return (view == link)
+											? link.tag("a",{ href:tags.src }) 
+											: "".tag("iframe",{ src: opsrc, width:tags.w, height:tags.h } ) ;
+							}
 						})
-						.replace(/\[(.*?)\]\((.*?)\)/g, function (str,link,src) {  // [link](src) or [path?query] markdown
+						.replace(/\[(.*?)\]\((.*?)\)/g, function (str,link,src) {  // [link](src) or [view?query] markdown
 							var
 								tags = {w:100, h:100, src: src || ds},
-								op = link.parsePath(tags),
-								opsrc =  `/${op}.view`.tag("?", tags );
+								view = link.parsePath(";",tags),
+								opsrc =  `/${view}.view`.tag("?", tags );
 							
-							Log(op, tags, opsrc);
-							switch (op) {
+							Log(view, tags, opsrc);
+							switch (view) {
 								case "image":
 								case "img":
 									return "".tag("img", { src:src, width:tags.w, height:tags.h });
@@ -1643,16 +1668,17 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 								case "iframe":
 									return "".tag("iframe", { src:src, width:tags.w, height:tags.h });
 								default:
-									return (args.length==1) 
-											? link.tag("a",{ href:src })
-											: "".tag("iframe",{ src: opsrc, width:tags.w, height:tags.h } );
+									return (view == link)
+											? link.tag("a",{ href:src }) 
+											: "".tag("iframe",{ src: opsrc, width:tags.w, height:tags.h } ) ;
 							}
-						})	
-						.replace(/href=[^>]*/g, function (m,i) { // follow <a href=B>A</a> links
+						})
+						/*.replace(/href=[^>]* /g, function (m,i) { // follow <a href=B>A</a> links
 							var ref = m.replace("href=",""), q = (ref.charAt(0) == "'") ? '"' : "'";
 							return `href=${q}javascript:navigator.follow(${ref},BASE.user.client,BASE.user.source)${q}`;
-						}), 
-
+						})*/
+						,  
+					
 					cb
 				); 
 			}
@@ -1665,7 +1691,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						if (val.constructor == String)
 							renderRecord( val, rec, "/"+ds+"?ID="+rec.ID, function (html) {
 								rec[key] = html;
-								//Log(rendered, renders);
+								Log("rec",rendered, renders);
 								if ( ++rendered == renders ) cb(recs);
 							});
 				});
