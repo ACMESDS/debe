@@ -100,17 +100,18 @@ append site_body
 					> aoi: "NAME" || [ [lat,lon], ... ] || []
 
 					and where the *Description* key may contain [blogging tags](/skinguide.view) of the form:
-					> \[ VIEW?w=WIDTH&h=HEIGHT& ...  ]( ALTDS )  
+					> \[ VIEW ; WIDTH ; HEIGHT ]( DS ? PARM ; PARM ; ... )  
 					> \[ LINK ]( URL )   
-					> $ inline TeX $  ||  $$ break TeX $$ || a$ AsciiMath $ || m$ MathML $ || get$ KEY $ || tex$ KEY $
+					> !$ inline TeX $  ||  $$ break TeX $$ || a$ AsciiMath $ || m$ MathML $
+					> ${ KEY } || $${ TeX matrix KEY }
 
 					to document usecases.  For example:
 
-						[plot?w=100&h200]$x=ds.Save.a&ys=[ds.Save.b,ds.Save.c]
-						[post?w=500&h=100](/home.view)
-						[link](https:/go.here)
-						image[/shares/a1.jpg]
-						gen[force,100,100]$queues.tree?_pivots=class$
+						[plot;100;200](x=Save$a;ys=Save$b$c)
+						[post;500;100](/home.view)
+						[go here grasshopper](https:/go.here)
+						[image](/shares/a1.jpg)
+						[force;100;100](/queues?_pivots=class)
 						$$ \alpha = 1 + \beta $$ impressive 'eh
 
 					to embed: (1) a plot of the requested x,y data using the [d3 plot](/plot.view), (2) the 

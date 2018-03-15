@@ -1571,7 +1571,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					jaxList, 
 
 					rtn
-						.replace(/\$\$\{(.*?)\}/g, function (str,key) {  // $${ get matrix key } markdown
+						.replace(/\$\$\{(.*?)\}/g, function (str,key) {  // $${ TeX matrix key } markdown
 							function texify(recs) {
 								var tex = [];
 								recs.forEach( function (rec) {
@@ -1600,7 +1600,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 								return js[key] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : texify(val);
 							}							
 						})
-						.replace(/\$\{(.*?)\}/g, function (str,key) {  // ${ get key } markdown
+						.replace(/\$\{(.*?)\}/g, function (str,key) {  // ${ key } markdown
 							if (  key in js )
 								return js[key];
 							
@@ -1626,11 +1626,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 							jaxList.push({ jax: tex, fmt:"MathML"});
 							return "!jax"+(jaxList.length-1)+".";
 						})
-						.replace(/ \$(.*?)\$/g, function (str,tex) {  // $ inline TeX $ markdown
+						.replace(/!\$(.*?)\$/g, function (str,tex) {  // !$ inline TeX $ markdown
 							jaxList.push({ jax: tex, fmt:"inline-TeX"});
 							return "!jax"+(jaxList.length-1)+".";
 						})				
-						.replace(/\[(.*?)\]\((.*?)\)/g, function (str,link,src) {  // [link](src) or [view?query] markdown
+						.replace(/\[(.*?)\]\((.*?)\)/g, function (str,link,src) {  // [link](src) or [view;w;h;...](src) markdown
 							var
 								links = link.split(";"),
 								view = links[0],
