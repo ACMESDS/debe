@@ -2811,7 +2811,7 @@ WIDGET.prototype.menuTools = function () {
 									"PUT", 
 								   	Copy( 	
 										Form.getValues(false, true, true),
-										{ID:Rec.getId(), _lock:!Data.Locked} 
+										{ID:Rec.getId(), _lock: 1} 
 									), 
 									function (info) {
 										//Data.Locked = !Data.Locked;
@@ -2839,7 +2839,7 @@ WIDGET.prototype.menuTools = function () {
 							onForm: function (Rec, Form, Data, Status, cb) {
 								cb(
 									"GET",
-									{ID:Rec.getId(), _lock: ! Data.Locked},
+									{ID:Rec.getId(), _lock: 1},
 									function (info) {
 										Data.Locked = !Data.Locked;			
 										Status(Data.Locked?"locked":"unlocked");

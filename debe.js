@@ -1563,7 +1563,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					if ( !renders ) cb(rtn);
 				}
 				
-				var jaxList = [], js = {}, $ = {};
+				var jaxList = [], cache = {}, $ = {};
 
 				for (var key in rec) try { $[key] = JSON.parse( rec[key] ); } catch (err) {};
 				
@@ -1587,8 +1587,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 								return  "\\begin{matrix}" + tex.join("\\\\") + "\\end{matrix}";
 							}
 							
-							if (  key in js )
-								return js[key];
+							if (  key in cache )
+								return cache[key];
 							
 							else {
 								try {
@@ -1597,12 +1597,26 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 								catch (err) {
 									var val =  rec[key];
 								}
-								return js[key] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : texify(val);
+								return cache[key] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : texify(val);
+							}							
+						})
+						.replace(/\$\{(.*?)\}\((.*?)\)/g, function (str,key,short) {  // ${ key }( short ) markdown
+							if (  key in cache )
+								return cache[key];
+							
+							else {
+								try {
+									var val = eval( `$.${key}` );
+								}
+								catch (err) {
+									var val =  rec[key];
+								}
+								return cache[key] = cache[short] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : val+"";
 							}							
 						})
 						.replace(/\$\{(.*?)\}/g, function (str,key) {  // ${ key } markdown
-							if (  key in js )
-								return js[key];
+							if (  key in cache )
+								return cache[key];
 							
 							else {
 								try {
@@ -1611,23 +1625,34 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 								catch (err) {
 									var val =  rec[key];
 								}
-								return js[key] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : val+"";
+								return cache[key] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : val+"";
 							}							
 						})
-						.replace(/\$\$(.*?)\$\$/g, function (str,tex) {  //  $$ standalone TeX $$ markdown
-							jaxList.push({ jax: tex, fmt:"TeX"});
+						.replace(/\!{(.*?)\}/g, function (str,expr) { // !{ cexpression } markdown
+							function Eval(expr) {
+								try {
+									return eval(expr);
+								} 
+								catch (err) {
+									return err+"";
+								}
+							}
+							return Eval(expr);
+						})
+						.replace(/\$\$(.*?)\$\$/g, function (str,jax) {  //  $$ standalone TeX $$ markdown
+							jaxList.push({ jax: jax, fmt:"TeX"});
 							return "!jax"+(jaxList.length-1)+".";
 						})
-						.replace(/a\$(.*?)\$/g, function (str,tex) {  // a$ ascii math $ markdown
-							jaxList.push({ jax: tex, fmt:"asciiMatch"});
+						.replace(/a\$(.*?)\$/g, function (str,jax) {  // a$ ascii math $ markdown
+							jaxList.push({ jax: jax, fmt:"asciiMatch"});
 							return "!jax"+(jaxList.length-1)+".";
 						})
-						.replace(/m\$(.*?)\$/g, function (str,tex) {  // m$ math ML $ markdown
-							jaxList.push({ jax: tex, fmt:"MathML"});
+						.replace(/m\$(.*?)\$/g, function (str,jax) {  // m$ math ML $ markdown
+							jaxList.push({ jax: jax, fmt:"MathML"});
 							return "!jax"+(jaxList.length-1)+".";
 						})
-						.replace(/!\$(.*?)\$/g, function (str,tex) {  // !$ inline TeX $ markdown
-							jaxList.push({ jax: tex, fmt:"inline-TeX"});
+						.replace(/!\$(.*?)\$/g, function (str,jax) {  // !$ inline TeX $ markdown
+							jaxList.push({ jax: jax, fmt:"inline-TeX"});
 							return "!jax"+(jaxList.length-1)+".";
 						})				
 						.replace(/\[(.*?)\]\((.*?)\)/g, function (str,link,src) {  // [link](src) or [view;w;h;...](src) markdown
