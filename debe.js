@@ -982,7 +982,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		alert: sysAlert,
 		ping: sysPing,
 		bit: sysBIT,
-		ingest: sysIngest
+		ingest: sysIngest,
+		atom: ATOM.exe
 		//kill: sysKill,
 		//start: sysStart,
 		//checkpt: sysCheckpt,
