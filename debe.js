@@ -139,7 +139,7 @@ var
 		}, function (opts) {		
 			var 
 				gets = {
-					reingest: "SELECT ID,Ring,startTime,endTime,advanceDays,sampleTime,Name FROM app.files WHERE now()>startTime"
+					reingest: "SELECT ID,Ring,startTime,endTime,advanceDays,durationDays,sampleTime,Name FROM app.files WHERE now()>startTime AND now()<endTime"
 					//artillery: "/ingest?src=artillery",
 					//missile: "/ingest?src=missiles"
 				},
@@ -151,14 +151,15 @@ var
 				fetcher( (urls.master+file.Name).tag("&",{
 					fileID: file.ID,
 					from: file.startTime,
-					to: file.endTime,
-					ring: file.Ring
+					to: file.startTime.addDays(file.durationDays),
+					ring: file.Ring,
+					durationDays: file.durationDays
 				}), null, function (msg) {
 					Log("INGEST", msg);
 				});
 
 				sql.query(
-					"UPDATE app.files SET startTime=date_add(startTime, interval advanceDays day), endTime=date_add(endTime, interval advanceDays day), Revs=Revs+1 WHERE ?", 
+					"UPDATE app.files SET startTime=date_add(startTime, interval advanceDays day), endTime=date_add(startTime, interval durationDays day), Revs=Revs+1 WHERE ?", 
 					{ ID: file.ID }
 				);
 			});
@@ -181,8 +182,8 @@ var
 			var 
 				gets = {
 					lowsnr: "SELECT events.ID AS ID FROM app.events LEFT JOIN app.voxels ON voxels.ID = events.voxelID WHERE ? < voxels.minSNR AND ?",
-					unpruned: "SELECT ID,Name,snr FROM app.files WHERE NOT Pruned AND Voxelized AND fetch_time IS NULL",
-					ungraded: "SELECT ID,Name,Actors,States,Steps FROM app.files WHERE NOT Graded AND Voxelized AND fetch_time IS NULL",
+					unpruned: "SELECT ID,Name,snr FROM app.files WHERE NOT Pruned AND Voxels AND fetch_time IS NULL",
+					ungraded: "SELECT ID,Name,Actors,States,Steps FROM app.files WHERE NOT Graded AND Voxels AND fetch_time IS NULL",
 					expired: "SELECT ID,Name FROM app.files WHERE Expires AND now() > Expires AND fetch_time IS NULL",
 					retired: "SELECT files.ID,files.Name,files.Client,count(events.id) AS evCount FROM app.events LEFT JOIN app.files ON events.fileID = files.id "
 							+ " WHERE datediff( now(), files.added)>=? AND NOT files.Archived AND fetch_time IS NULL GROUP BY fileid"
@@ -232,7 +233,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 					//Log("dog rejected", evs.length);
 					sql.query("UPDATE app.files SET ? WHERE ?", [{
 							Pruned: true,
-							Rejected: evs.length
+							Rejects: evs.length
 						}, {ID: file.ID}
 					] );
 
@@ -259,7 +260,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 								coherence_time: unsup.coherence_time,
 								coherence_intervals: unsup.coherence_intervals,
 								degeneracy_param: unsup.degeneracy_param,
-								duration: stats.t,
+								//duration: stats.t,
 								snr: unsup.snr
 							},
 							"Initial SNR assessment: " + (unsup.snr||0).toFixed(4),

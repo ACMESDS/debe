@@ -489,19 +489,19 @@ append site_body
 		#fit.Publishing
 			:markdown
 				Engines placed into #{nick}'s [content folders](map drive #{info.content})/TYPE/PLUGIN.js
-				are published to [#{nick}'s engines](/engines.view) when #{nick} starts.  Each publishing
-				js is of the form
+				are published to [#{nick}'s engines](/engines.view) when #{nick} starts.  Each discoverd
+				TYPE/NAME.js must follow this pattern:
 				
 					module.exports = {
-						clear: true || false,
-						modify: {
+						clear: true || false,		// enable to drop then recreate the usecases 
+						modify: {  // change sql types of existing keys, e.g. MyFloatParm: "int(11)"
 							KEY: "sql type", ...
 						},
-						usecase: {
+						usecase: {  // add sql keys of specified types, e.g. MyJsonParm: "json"
 							KEY: "sql type", ...
 						},
-						engine: function jsFunction() { ... } || "code",
-						smop: "name of m-engine to convet to python"
+						engine: function NAME() { ... } || "def NAME: ..." || ... ,  // engine code
+						smop: "path source" // path to m-engine for converting to python"
 					}
 			
 		#fit.Examples
@@ -871,7 +871,27 @@ append site_body
 					
 			#fit.js
 				:markdown
-					This [stateless js-engine](/jsdemo1.run):
+					js-engines are automatically supplied the following modules:
+					[LWIP(lightweight imaging)](https://github.com/EyalAr/lwip),
+					[SQL(database connector)](https://www.npmjs.com/package/mysql), 
+					[JSON(encoder-decoder)](https://nodejs.org/docs/latest/api/json), 
+					[MAT(matlab emulator)](https://www.npmjs.com/package/mathjs),
+					[DSP(digitial signal processing)](https://www.npmjs.com/package/dsp), 
+					[CRYPTO(crypto)](https://nodejs.org/docs/latest/api/crypto),
+					[BAYS(bayes network interference )](https://www.npmjs.com/package/jsbayes),
+					[GAMMA(standard gamma function)](https://www.npmjs.com/package/gamma),
+					[RAN(markov random process)](https://github.com/ACMESDS/randpr),
+					[SVD(singular value decomposition)](https://www.npmjs.com/package/node-svd),
+					[VITERBI(hidden markov model solver)](https://www.npmjs.com/package/nodehmm),
+					[MLE(maximum liklihood estimator)](https://www.npmjs.com/package/node-svd),
+					[MVN(normal multivariates](https://www.npmjs.com/package/multivariate-normal),
+					[MAIL(simple mail transfer)](https://www.npmjs.com/package/nodemailer),
+					[NRAP(newton-raphson root finder)](https://www.npmjs.com/package/newton-raphson),
+					[ZETA(riemann-zeta function](https://www.npmjs.com/package/math-riemann-zeta),
+					[TASK(tasking sharding)](https://github.com/ACMESDS/jslab), and
+					[GET(data getter)](https://github.com/ACMESDS/jslab)
+
+					This [stateless js-engine example](/jsdemo1.run):
 
 						function jsdemo1(ctx, res) {
 							LOG("jsdemo1 ctx", ctx);
@@ -911,7 +931,7 @@ append site_body
 					computes context *D* and *E* values.  The default MAT emulator has been extended with *disp* etc 
 					functions.
 
-					This [stateless js-engine](/jsdemo2.exe?name=test):
+					This [stateless js-engine example](/jsdemo2.exe?name=test):
 
 						function jsdemo2(ctx,res) {
 							MAT(ctx, "a = inv(X' * X) * X' * y");
@@ -970,25 +990,22 @@ append site_body
 					Subsequent requests at the step/POST endpoint with **port** = "fi" or "fo" will call the
 					function with the current **tau** workflow events and the **parm** set to the 
 					corresponding "ports" hash.
-
-					A js-engine context also receives the following modules:
-					[LWIP(lightweight imaging)](https://github.com/EyalAr/lwip),
-					[SQL(database connector)](https://www.npmjs.com/package/mysql), 
-					[JSON(encoder-decoder)](https://nodejs.org/docs/latest/api/json), 
-					[MAT(matlab emulator)](https://www.npmjs.com/package/mathjs),
-					[DSP(digitial signal processing)](https://www.npmjs.com/package/dsp), 
-					[CRYPTO(crypto)](https://nodejs.org/docs/latest/api/crypto),
-					[BAYS(bayes network interference )](https://www.npmjs.com/package/jsbayes),
-					[GAMMA(standard gamma function)](https://www.npmjs.com/package/gamma),
-					[RAN(markov random process)](https://github.com/ACMESDS/randpr),
-					[SVD(singular value decomposition)](https://www.npmjs.com/package/node-svd),
-					[VITERBI(hidden markov model solver)](https://www.npmjs.com/package/nodehmm),
-					[MLE(maximum liklihood estimator)](https://www.npmjs.com/package/node-svd),
-					[MVN(normal multivariates](https://www.npmjs.com/package/multivariate-normal),
-					[MAIL(simple mail transfer)](https://www.npmjs.com/package/nodemailer),
-					[NEWRAP(newton-raphson root finder and optimizer)](https://www.npmjs.com/package/newton-raphson),
-					[ZETA(riemann-zeta function](https://www.npmjs.com/package/math-riemann-zeta),
-					[GET(data getter)](see totem repo)
+					
+					The following [js-trask example](/jsdemo4.exe) illustrates how to shard tasks 
+					among workers and nodes:
+					
+						TASK.forEach({  // like forAll but callback(msg) after each task completes
+							keys: "i,j,k",  	// e.g. array index variables
+							i: [0,1,2,3],  		// domain of index i
+							j: [4,8],				// domain of index j
+							k: [0],					// domain of index k
+							workers: 4, 		// number of workers (aka cores) per node
+							nodes: 3, 			// number of nodes (ala locales) in the cluster
+							task: 					// here, a simple message to construct
+								($) => "my result is " + (i + j*k) + " from " + $.worker + " on "  $.node
+						}, 
+							(msg) => console.log(msg) 
+						);
 
 	#accordion.Machines
 		:markdown
