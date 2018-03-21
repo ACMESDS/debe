@@ -991,19 +991,22 @@ append site_body
 					function with the current **tau** workflow events and the **parm** set to the 
 					corresponding "ports" hash.
 					
-					The following [js-trask example](/jsdemo4.exe) illustrates how to shard tasks 
+					The following [multi tasking example](/jsdemo4.exe) illustrates how to shard tasks 
 					among workers and nodes:
 					
-						TASK.forEach({  // like forAll but callback(msg) after each task completes
-							keys: "i,j,k",  	// e.g. array index variables
+						TASK({  
+							keys: "i,j,k",  	// e.g. array indecies
 							i: [0,1,2,3],  		// domain of index i
 							j: [4,8],				// domain of index j
 							k: [0],					// domain of index k
+							qos: 0,				// regulation time in ms if not zero
 							workers: 4, 		// number of workers (aka cores) per node
-							nodes: 3, 			// number of nodes (ala locales) in the cluster
-							task: 					// here, a simple message to construct
-								($) => "my result is " + (i + j*k) + " from " + $.worker + " on "  $.node
+							nodes: 3 			// number of nodes (ala locales) in the cluster
 						}, 
+							// here, a simple task that returns a message 
+							($) => "my result is " + (i + j*k) + " from " + $.worker + " on "  + $.node,
+							
+							// here, a simple callback that displays the task results
 							(msg) => console.log(msg) 
 						);
 
