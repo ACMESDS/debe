@@ -4,10 +4,7 @@ TODO
 + devin set meetup later 2pm?
 + lutheran photos return
 + estpr call during file grading should insert/update into estpr usecases testname=filename
-+ update genpr blogs
-+ test rtpsq
 + make sure sw reqts are uptodate for stu. add swap ID and status to swStatus
-+ add /terms to site south.  move Login to south.  make qos-cpu link to /terms
 + check if forms are working
 */
 
@@ -72,6 +69,8 @@ var										// shortcuts and globals
 var
 	DEBE = module.exports = TOTEM.extend({
 	
+	plugins: JSLAB.libs,
+		
 	onIngest: {   //< Ingest watchers with callbacks cb(evs)
 		default: function (evs, cb) {
 		}
@@ -3369,7 +3368,8 @@ Initialize DEBE on startup.
 			watchFile: DEBE.watchFile,
 			plugins: Copy({   // share selected FLEX and other modules with engines
 				MAIL: FLEX.sendMail,
-				RAN: require("randpr")
+				RAN: require("randpr"),
+				TASK: DEBE.tasker
 			}, JSLAB.libs)
 		});
 		
