@@ -14,8 +14,9 @@ module.exports = {
 	engine: function genpr(ctx,res) {
 		/* 
 		Return random [ {x,y,...}, ...] for ctx parameters:
-			Mix = [ {dims, offs}, .... ] = desired mixing parms
-			TxPrs = [ [rate, ...], ... ] = (KxK) from-to state transition probs
+			TxPrs = KxK transition probs [ [pr, ...], ... ] or {fr: {to: pr, ...}, ...} 
+			K = number of states or [ dim, ... ]
+			Mix = mixing params { mu: [...], sigma: [...] }
 			Symbols = [sym, ...] state symbols or null to generate
 			Members = number in process ensemble
 			Wiener = number of wiener processes; 0 disables
@@ -129,10 +130,7 @@ module.exports = {
 			symbols: ctx.Symbols,  // state symbols
 			nyquist: ctx.Nyquist, // oversampling factor
 			steps: ctx.Steps, // process steps
-			obs: ctx.Mix || {		// emission/observation parms
-				weights: [1,1,1],  // lat,lon,alt
-				parts: [0.5,0.5,0.1]
-			},  	// observation parms
+			obs: ctx.Mix,  	// mixing/emission/observation parms
 
 			//sigma = mix.sigma || [ [ scalevec([0.4, 0.3, 0],dims), scalevec([0.3, 0.8, 0],dims), scalevec([0, 0, 1],dims)] ],
 
