@@ -2742,28 +2742,52 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			else
 			if ( Pipe = ctx.Pipe )  { // Intercept job request to run engine via regulator
 				res("Regulating");
-				
-				HACK.chipEvents(req, Pipe, function (job) {  // create job for these Pipe parameters
+				var
+					profile = req.profile,
+					job = { // job descriptor for regulator
+						qos: profile.QoS, 
+						priority: 0,
+						client: req.client,
+						class: req.table,
+						credit: profile.Credit,
+						name: req.table,
+						task: Pipe.task || "",
+						notes: [
+								req.table.tag("?",req.query).tag("a", {href:"/" + req.table + ".run"}), 
+								((profile.Credit>0) ? "funded" : "unfunded").tag("a",{href:req.url}),
+								"RTP".tag("a", {
+									href:`/rtpsqd.view?task=${Pipe.task}`
+								}),
+								"PMR brief".tag("a", {
+									href:`/briefs.view?options=${Pipe.task}`
+								})
+						].join(" || ")
+					};
 
-					req.query = Copy({  // engine request query gets copied to its context
-						_Host: job.class,
-						_File: job.File,
-						_Voxel: job.Voxel,
-						_Collects: job.Collects,
-						_Flux: job.Flux,
-						_Load: job.Load || "",
-						_Flush: job.Flush,
-						_Chip: job.Chip
-					}, ctx);
+				HACK.chipEvents(req, Pipe, function ( specs ) {  // create job for these Pipe parameters
 
-					ATOM.select(req, function (ctx) {  // run plugin's engine
-						if (ctx) {
-							if ( "Save" in ctx )
-								saveResults( Array.from(ctx.Save || [] ), ctx );
-						}
+					sql.insertJob( Copy(specs,job), function (sql, job) {  // put job into the job queue
+					
+						req.query = Copy({  // engine request query gets copied to its context
+							_Host: job.class,
+							_File: job.File,
+							_Voxel: job.Voxel,
+							_Collects: job.Collects,
+							_Flux: job.Flux,
+							_Load: job.Load || "",
+							_Flush: job.Flush,
+							_Chip: job.Chip
+						}, ctx);
 
-						else
-							Log( `REG ${job.name} HALTED` );
+						ATOM.select(req, function (ctx) {  // run plugin's engine
+							if (ctx) {
+								if ( "Save" in ctx )
+									saveResults( Array.from(ctx.Save || [] ), ctx );
+							}
+
+							else
+								Log( `REG ${job.name} HALTED` );
+						});
 					});
 				});
 			}
