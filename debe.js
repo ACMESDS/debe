@@ -1944,7 +1944,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				States: file.States, // number of states consumed by process
 				Steps: file.Steps, // number of time steps
 			},
-			_Load: sql.format(  // event query
+			_Events: sql.format(  // event query
 				"SELECT * FROM app.events WHERE fileID=? ORDER BY t LIMIT 10000", [file.ID] )
 		};
 		
@@ -1979,8 +1979,9 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		post: "/service/algorithm/:proxy"		//< hydra endpoint
 	},  		//< reserved for soap interfaces
 		
+	/*
 	loader: function (url,fetcher,req,res) { // generic data loader
-	/**
+	/ **
 	@member DEBE
 	@private
 	@method loader
@@ -1988,7 +1989,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	@param {String} fetcher data fetcher
 	@param {Object} req http request
 	@param {Function} res Totom response callback
-	*/
+	* /
 		fetcher( url.tag("?",req), null, res );
 	},
 
@@ -2000,7 +2001,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		gaussmix: function (req,res) { DEBE.loader( DEBE.paths.sss.gaussmix, DEBE.fetcher, req, res ); },
 		save: {}
 	},
-
+	*/
+		
 	/*
 	autoRuns: function (sql, group, aoi, cb) {  // task and run ingestable plugins
 
@@ -2745,7 +2747,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				var
 					profile = req.profile,
 					job = { // job descriptor for regulator
-						qos: profile.QoS, 
+						qos: 1, //profile.QoS, 
 						priority: 0,
 						client: req.client,
 						class: req.table,
@@ -2767,14 +2769,13 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				HACK.chipEvents(req, Pipe, function ( specs ) {  // create job for these Pipe parameters
 
 					sql.insertJob( Copy(specs,job), function (sql, job) {  // put job into the job queue
-					
 						req.query = Copy({  // engine request query gets copied to its context
-							_Host: job.class,
+							_Host: req.table,
 							_File: job.File,
 							_Voxel: job.Voxel,
 							_Collects: job.Collects,
 							_Flux: job.Flux,
-							_Load: job.Load || "",
+							_Events: job.Events || "",
 							_Flush: job.Flush,
 							_Chip: job.Chip
 						}, ctx);
@@ -3378,6 +3379,7 @@ Initialize DEBE on startup.
 		HACK.config({
 			//source: "",
 			taskPlugin: null,
+			fetcher: DEBE.fetcher,
 			thread: sqlThread
 		});
 		
