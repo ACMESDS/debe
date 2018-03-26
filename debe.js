@@ -1339,11 +1339,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 	
 	"paths.": {  //< paths to things
-		ingest: {
-			artillery: ENV.SRV_ARTILLERY,
-			missiles: ENV.SRV_MISSILES
-		},
-
 		default: "home.view",
 		
 		jaderef: "./public/jade/ref.jade",	// jade reference path for includes, exports, appends
@@ -1656,7 +1651,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 							jaxList.push({ jax: jax, fmt:"inline-TeX"});
 							return "!jax"+(jaxList.length-1)+".";
 						})				
-						.replace(/\[(.*?)\]\((.*?)\)/g, function (str,link,src) {  // [link](src) or [view;w;h;...](src) markdown
+						.replace(/\[(.[^\[\]]?)\]\((.*?)\)/g, function (str,link,src) {  // [link](src) or [view;w;h;...](src) markdown
 							var
 								links = link.split(";"),
 								view = links[0],
@@ -2208,25 +2203,17 @@ function sysIngest(req,res) {
 		body = req.body,
 		src = query.src,
 		fileID = query.fileID,
-		path = DEBE.paths.ingest[src],
-		onIngest = DEBE.onIngest[src],
-		fetcher = DEBE.fetcher;
+		onIngest = DEBE.onIngest[src];
 	
-	Log("INGEST", query, body, path);
+	Log("INGEST", query, body);
 	res("submitted");
 	
-	if ( path && onIngest ) {
+	if ( onIngest ) {
 		sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
-		fetcher( path.parseJS(query), null, function (evs) {
-			if (evs)
-				onIngest( evs, function (evs) {
-					HACK.ingestList( sql, evs, fileID, function (aoi) {
-						Log("INGEST aoi", aoi);
-					});
-				});
-		
-			else
-				Log("INGEST no events");
+		onIngest( src, query, function (evs) {
+			HACK.ingestList( sql, evs, fileID, function (aoi) {
+				Log("INGEST aoi", aoi);
+			});
 		});
 	}
 	

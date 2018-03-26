@@ -679,6 +679,20 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 					height: 400
 					//disabled: fOff
 				}
+				/*
+				listeners: {
+					afterrender: function () {
+						alert("cked" + CKEDITOR);
+						//CKEDITOR.replace( "ckedit1" );
+					}
+				},
+				renderer: function (cellVal, cellMeta, rec, rowIdx, colIdx, store, view) { 
+					//console.log("val-meta", cellVal, cellMeta);
+					if (cellMeta.column.dataIndex == "Description")
+						return cellVal.tag("textarea", {id: "ckedit1", name: "ckeditor", rows: 10, cols: 60});
+					else
+						return cellVal;
+				}*/
 				//renderer 	: fCalc ? calcRender : null,
 				//listeners	: fListen   // EXTJS widget gets confused when embedded in grid
 			};			
