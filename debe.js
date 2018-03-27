@@ -1651,7 +1651,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 							jaxList.push({ jax: jax, fmt:"inline-TeX"});
 							return "!jax"+(jaxList.length-1)+".";
 						})				
-						.replace(/\[(.[^\[\]]?)\]\((.*?)\)/g, function (str,link,src) {  // [link](src) or [view;w;h;...](src) markdown
+						.replace(/\[([^\[\]]*?)\]\((.*?)\)/g, function (str,link,src) {  // [link](src) or [view;w;h;...](src) markdown
 							var
 								links = link.split(";"),
 								view = links[0],

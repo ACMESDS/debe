@@ -670,7 +670,20 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				cellWrap: true,
 				qtip		: fTip, 
 				qtitle	 	: fTipTitle,
-				/*editor		: {	
+				editor	: {
+					xtype: "htmleditor",
+					clicksToEdit: 2,
+					listeners: {
+						beforeadd: function (container, add, idx) {
+							alert("tada " + container.column.dataIndex);
+							//add.setValue("hello there wise one!");
+							//container.value = "hello there oh wise one";
+							console.log(container,add);							
+						}
+					}
+				}
+				/*
+				editor		: {	
 					xtype: 'htmleditor',
 					//scrollable: true,
 					//grow: true,
@@ -683,10 +696,10 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 							enableMultipleToolbars: false //true
 						})
 					],	* /
-					width: 400,
-					height: 400
+					//width: 400,
+					//height: 400
 					//disabled: fOff
-				}*/
+				} */
 				/*
 				listeners: {
 					afterrender: function () {
@@ -3324,11 +3337,11 @@ WIDGET.prototype.terminal = function (term,opts) {
 		];
 	}
 
+	function agTools  () {
 	/**
 	* @method agTools
 	* @private
 	*/
-	function agTools  () {
 		var features = [];
 
 		if (Widget.summary) 
@@ -3337,11 +3350,11 @@ WIDGET.prototype.terminal = function (term,opts) {
 		return features;
 	}
 
+	function pageTools () {
 	/**
 	* @method pageTools
 	* @private
 	*/
-	function pageTools () {
 		var ctrls = [];
 
 		ctrls.push( Ext.create('Ext.PagingToolbar', {
@@ -3375,6 +3388,17 @@ WIDGET.prototype.terminal = function (term,opts) {
 	var Menu = this.Menu;
 	
 	Widget.Editor = [];
+	/*
+	Widget.Editor.push( Ext.create('Ext.grid.plugin.CellEditing', {
+		clicksToEdit: 2,
+		listeners: {
+			beforeedit: function (ed,ctx) {
+				console.log(ctx);
+			}
+		}
+	}));	*/
+	
+	//Plugins = "F";
 	for (var n=0,N=Plugins.length; n<N; n++) 
 		switch (Plugins.charAt(n)) {
 				case "c": 
@@ -3564,11 +3588,12 @@ WIDGET.prototype.terminal = function (term,opts) {
 				SELECT_CELL.idx = cellIdx; //-1;
 			},
 			
+			/*
 			celldblclick: function (This,td,cellIndex,Rec,tr,rowIndex) {
-				console.log(td,cellIndex,tr,rowIndex);
+				console.log(td,cellIndex,tr,rowIndex,"type=", This.xtype, This.fType, "idx=", This.dataIndex);
 				var rec = Rec.getData();
 				console.log(rec);
-			},
+			},  */
 
 			// regen pivots and slaved posts if pivot column moved
 			columnmove: function ( header, column, fromIdx, toIdx, eOpts ) {  
