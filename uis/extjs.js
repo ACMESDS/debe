@@ -670,15 +670,23 @@ function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
 				cellWrap: true,
 				qtip		: fTip, 
 				qtitle	 	: fTipTitle,
-				editor		: {	
+				/*editor		: {	
 					xtype: 'htmleditor',
 					//scrollable: true,
 					//grow: true,
-					autoEncode: true,
+					//autoEncode: true,
+					/ *enableColors: true,
+					enableAlignments: true,
+					plugins: [
+						Ext.create('Ext.ux.form.plugin.HtmlEditor', {
+							enableAll:  true,
+							enableMultipleToolbars: false //true
+						})
+					],	* /
 					width: 400,
 					height: 400
 					//disabled: fOff
-				}
+				}*/
 				/*
 				listeners: {
 					afterrender: function () {
@@ -2024,6 +2032,43 @@ Ext.onReady( function () {
 		}
 		
 	}, function (widget) {
+		
+		var 
+			ed = Ext.create( 'Ext.form.field.HtmlEditor', {				
+				value: "hello there",
+				enableColors: true,
+				enableAlignments: true,
+				plugins: [
+					Ext.create('Ext.ux.form.plugin.HtmlEditor', {
+						enableAll:  true,
+						enableMultipleToolbars: false //true
+					})
+				] 
+			}),
+			win = Ext.create('Ext.window.Window', {
+				title: 'Hello',
+				closeAction: "hide",
+				height: 200,
+				width: 400,
+				layout: 'fit',
+				buttons: [{
+					text: 'Save'
+				},{
+					text: 'Cancel'
+				}],
+				items: [ ed ]
+				/*				
+				{
+					xtype: 'htmleditor',
+					//value: "hello there",
+					enableColors: false,
+					enableAlignments: false
+				} */
+			});
+		
+		win.show();
+		ed.setValue("this is a test");
+		//win.hide();
 		
 		Ext.create('Ext.container.Viewport', {  
 			layout: "fit",
@@ -3519,6 +3564,12 @@ WIDGET.prototype.terminal = function (term,opts) {
 				SELECT_CELL.idx = cellIdx; //-1;
 			},
 			
+			celldblclick: function (This,td,cellIndex,Rec,tr,rowIndex) {
+				console.log(td,cellIndex,tr,rowIndex);
+				var rec = Rec.getData();
+				console.log(rec);
+			},
+
 			// regen pivots and slaved posts if pivot column moved
 			columnmove: function ( header, column, fromIdx, toIdx, eOpts ) {  
 				var data = Widget.Data;
