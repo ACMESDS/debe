@@ -1,11 +1,5 @@
 // UNCLASSIFIED
 
-/*
-TODO
-+ The _lock always enabled on form submits to indicate record locking-unlocking request.
-+ sql.run will then look at _lock to do a sql.ds = crud
-*/
-
 /**
  * @module grids
  * extjs 5.1 https://cdn.sencha.com/ext/gpl/ext-5.1.0-gpl.zip
@@ -221,6 +215,7 @@ String.prototype.parseJSON = function (def) {
 	}
 }
 
+function extendRecs(hash,idxkey,valkey,recs) {
 /**
 * @method extendRecs
 * @public
@@ -230,7 +225,6 @@ String.prototype.parseJSON = function (def) {
 * @param {hash} input input key-value hash
 * @return {Array} output records
 */
-function extendRecs(hash,idxkey,valkey,recs) {
 	var n = recs.length;
 	
 	for (var idx in hash) {
@@ -244,11 +238,11 @@ function extendRecs(hash,idxkey,valkey,recs) {
 	return recs;
 }
 
+function defineProxy(path,links,key) {  
 /**
  * @method defineProxy
  * @private
 */
-function defineProxy(path,links,key) {  
 	//if (links) alert(JSON.stringify(links)); 
 	return {								// Proxy to read/write from/to the server.
 		type: 'rest',						// wonderful restful
@@ -276,808 +270,6 @@ function defineProxy(path,links,key) {
 		actionMethods: 						// HTTP methods corresponding to CRUD operations
 			{create: PROXY.INSERT, read: PROXY.SELECT, update: PROXY.UPDATE, destroy: PROXY.DELETE}
 	};
-}
-
-function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
-/**
- * @method gridColumn
- * @private
- *
- * Return a editor for the given field type {fType} residing in the specified Data Table 
- * named {DDname}.  Will attempt to contruct a combobox/multiselect field from the specified 
- * 
- * @param {String} fType The field type is one of checkbox, text, date, %, numeric, integer, boolean, 
- * price, svg (reserved), autonum, html, xtended text, file, combobox (:DS;F1:...), or 
- * multiselect (;DS;F1;...).
- * @param {String} FTname name of Data Table that owns this field.
- * 
- * @return {Object} ExtJS field editor
- * @docauthor Brian James
- */
-	
-	function calcRender(cellVal, cellMeta, rec, rowIdx, colIdx, store, view) { 
-
-		function calc(val,meta,rc,d,a) {
-			var r = rc.row, c = rc.col;
-			var f = Math;
-
-			try {
-
-				var tags = {
-					text: CALC.TAGTEXT[val.substr(0,2)],
-					cell: CALC.TAGCELL[val.substr(0,2)]
-					//blog: val.substr(0,1) == "/",
-					//jade: val.substr(0,1) == "$" 
-				};
-					
-				if (tags.text)
-					return val.substr(2).fontcolor(tags.text);
-					
-				else
-				if (tags.cell) {
-					meta.tdCls = tags.cell;
-					return val.substr(2);
-				}
-				
-				/*
-				else
-				if (tags.blog)
-					if (CALC.BLOG) {
-						CALC.BLOG.src= val;
-						return CALC.BLOG.src+"<br>" + "".tag("iframe",CALC.BLOG);
-					}
-					else
-						return val.fontcolor("red");
-				*/
-				
-				/*
-				else 
-				if (tags.jade)  { 
-					CALC.BLOG.srcdoc = val.substr(1);
-					return "".tag("iframe",CALC.BLOG);
-				}
-				*/
-				
-				else {
-					eval("var rtn="+val);
-					return rtn;
-				}
-			}
-			catch (err) {
-				return (err+"").fontcolor("red");
-			}
-		}
-		
-		if (cellVal == null)
-			return "";
-			
-		else  
-		if (cellVal.constructor == Object) 
-			for (var n in cellVal) 
-				return "".tag(n,cellVal[n]);
-				
-		else
-		if (cellVal.charAt(0) == "=") {
-			if (!fCalc.length) 
-				store.getRange().Each( function (n,rec) {
-					fCalc.push( rec.getData() );
-				});
-			
-			return calc(cellVal.substr(1),cellMeta,{r:rowIdx,c:colIdx},rec.getData(),fCalc);
-		}
-		else 
-			return cellVal;
-	}	
-
-	function fRender(value,meta,rec,row,col) {
-		meta.tdAttr = "field="+fName;
-		return value;
-	}
-
-	var fListen = {
-		afterrender: function (me) {
-			Ext.create('Ext.tip.ToolTip', {  // grid tooltip
-				target	: me.getEl(),                 
-				html	 	: me.qtip,
-				title	 	: me.qtitle,
-				autoHide : true, 
-				closable: true,
-				//resizable: true,
-				//scrollable: true,
-				//overlapHeader: true,
-				maxWidth : 800,
-				minWidth : 200,
-				maxHeight: 400,
-				//mouseOffset: [0,0],
-				//trackMouse: true,
-				//getTargetXY: function () { return [0,0]; },
-				collapisible: true
-				//dismissDelay: 0
-			});
-		}
-	},
-	
-	fTips = fTip.split("||"),
-	fTip = fTips.pop() || "",
-	fTipTitle = fTips.pop() || fName;
-		
-	switch (fType || "text") {
-		case '#': 	// actions		
-			var actions = [];
-
-			fType.Each(function (i,type) {
-				actions.push({
-					getClass: function(val, meta, rec, rowIdx, colIdx, store) {
-						var states = rec.get(fName);
-						var icons = val.split("<img");
-						return "Action-" + states.charAt(icons.length-1);
-					},
-					handler: function(grid, rowIndex, colIndex) {
-						// Ext.Msg.alert(fName,"Cannot edit an action field");
-					}
-				});
-			});
-				
-			return {
-				xtype		: "actioncolumn", 
-				fType		: fType,
-				dataIndex	: fName,
-				sortable	: false,
-				hideable	: true,
-				layout		: "hbox",
-				menuDisabled: true,
-				locked		: fLock,
-				disabled	: fOff,
-				width		: fType.length*20,
-				text		: fLabel,
-				qtip		: fTip, 
-				qtitle	 	: fTipTitle,
-				renderer 	: function(cellVal, cellMeta, rec, rowIdx, colIdx, store, view) { 
-					return "";
-				},
-				items		: actions,
-				renderer	: fRender,				
-				listeners	: fListen
-			};
-			
-		case 'b':
-		case 'boolean':	// boolean			
-		case 'c':
-		case 'check':	// checkbox
-			return {
-				xtype		: "checkcolumn", 
-				fType		: fType,
-				dataIndex	: fName,
-				filter		: "boolean",
-				sortable	: true,
-				hideable	: true,
-				locked		: fLock,
-				disabled	: fOff,
-				width		: 50,
-				text		: fLabel,
-				qtip		: fTip, 
-				qtitle	 	: fTipTitle,
-				editor		: {
-					xtype: 'checkboxfield',
-					defaultValue: 0,
-					format: "",
-					uncheckedValue: 0,
-					inputValue: 1,
-					disabled: fOff,					
-					cls: 'x-grid-checkheader-editor',
-					width: 20
-				},
-				//renderer	: fRender,				// EXTJS BUG
-				listeners	: fListen
-			};
-					
-		case 'd':
-		case 'date':	// date
-		case 'datetime':
-			return {
-				xtype		: "datecolumn", 				
-				fType		: fType,
-				dataIndex	: fName,
-				filter		: "date",
-				sortable	: true,
-				hideable	: true,
-				locked		: fLock,
-				disabled	: fOff,
-				width		: 100,
-				text		: fLabel,
-				qtip		: fTip, 
-				qtitle	 	: fTipTitle,
-				editor		: {	
-					xtype: 'datefield',
-					format: DATES.MediumDate,
-					defaultValue: "", //new Date(),	
-					allowBlank: false,
-					minValue: '01/01/1900',
-					disabled: fOff,
-					disabledDays: [],
-					disabledDaysText: 'Invalid date',
-					width: 100
-				},
-				formatter	: "date('Y-m-d')",
-				renderer	: fRender,				
-				listeners	: fListen
-			};		
-		
-		case 'p': 		// percentage
-		case 'percent':
-			return {
-				xtype		: "numbercolumn", 				
-				fType		: fType,
-				dataIndex	: fName,
-				filter		: "number",
-				sortable	: true,
-				hideable	: true,
-				locked		: fLock,
-				disabled	: fOff,
-				width		: 50,
-				text		: fLabel,
-				qtip		: fTip, 
-				qtitle	 	: fTipTitle,
-				editor		: {	
-					xtype: 'numberfield',
-					format: "0.0%",
-					defaultValue: "",
-					allowBlank: true,
-					width: 75
-				},
-				formatter	: "percent('0.00')",
-				renderer	: fRender,				
-				listeners	: fListen
-			};
-			
-		case 'n':
-		case 'number':
-		case 'float':	// numeric
-		case 'double':
-			return {
-				xtype		: "numbercolumn", 				
-				fType		: fType,
-				dataIndex	: fName,
-				filter		: "number",
-				sortable	: true,
-				hideable	: true,
-				locked		: fLock,
-				disabled	: fOff,
-				width		: 50,
-				text		: fLabel,
-				qtip		: fTip, 
-				qtitle	 	: fTipTitle,
-				editor		: {	
-					xtype: 'numberfield',
-					format: "0.0000",
-					decimalPrecision: 4,
-					defaultValue: "",
-					disabled: fOff,					
-					allowBlank: true,
-					width: 150
-				},
-				formatter	: "number('0.0000')",
-				renderer	: fRender,				
-				listeners	: fListen
-			};
-			
-		/*
-		case 'b':
-		case 'boolean':	// boolean
-			return {
-				//xtype		: "booleancolumn", 				
-				fType		: fType,
-				dataIndex	: fName,
-				filter		: "boolean",
-				sortable	: true,
-				hideable	: true,
-				locked		: fLock,
-				disabled	: fOff,
-				width		: 50,
-				text		: fLabel,
-				qtip		: fTip, 
-				qtitle	 	: fTipTitle,
-				editor		: {	
-					xtype: 'numberfield',
-					format: "0",
-					defaultValue: "",
-					disabled: fOff,
-					allowBlank: true,
-					width: 75
-				},
-				renderer	: fRender,
-				listeners	: fListen
-			};	*/
-			
-		case 'a':
-		case 'i':
-		case 'auto':	// autonum
-		case 'autonum':
-		case 'int':	// integer
-		case 'tinyint':
-		case 'bigint':
-			return {
-				xtype		: "numbercolumn", 				
-				fType		: fType,
-				dataIndex	: fName,
-				filter		: "number",
-				sortable	: true,
-				hideable	: true,
-				locked		: fLock,
-				disabled	: fOff,
-				width		: 50,
-				text		: fLabel,
-				qtip		: fTip, 
-				qtitle	 	: fTipTitle,
-				formatter	: "number('0')",
-				editor		: {	
-					xtype: 'numberfield',
-					format: "0",
-					defaultValue: "",
-					disabled: fOff,					
-					allowBlank: true,
-					width: 150
-				},
-				renderer	: fRender,				
-				listeners	: fListen
-			};			
-			
-		case 'm':
-		case 'money':	// currency
-			return {
-				xtype		: "numbercolumn", 				
-				fType		: fType,
-				dataIndex	: fName,
-				filter		: "number",
-				sortable	: true,
-				hideable	: true,
-				locked		: fLock,
-				disabled	: fOff,
-				width		: 75,
-				text		: fLabel,
-				qtip		: fTip, 
-				qtitle	 	: fTipTitle,
-				formatter	: "number('$0.00')",
-				editor		: {
-					xtype: 'numberfield',
-					format: "$0.00",
-					defaultValue: "",
-					disabled: fOff,
-					allowBlank: false,
-					minValue: 0,
-					width: 75
-				},
-				renderer	: fRender,
-				listeners	: fListen
-			};			
-
-		case 'svg':	// SVG
-			return {};
-			
-		case 'h':
-		case 'html':	// html
-		case 'mediumtext':	
-			return  {
-				xtype: 	"",
-				fType		: fType,
-				dataIndex	: fName,
-				//sortable	: true,
-				//hideable	: true,
-				//locked		: fLock,
-				//disabled	: fOff,
-				width		: 400,
-				text		: fLabel,
-				cellWrap: true,
-				qtip		: fTip, 
-				qtitle	 	: fTipTitle,
-				editor	: {
-					xtype: "htmleditor",
-					clicksToEdit: 2,
-					listeners: {
-						beforeadd: function (container, add, idx) {
-							alert("tada " + container.column.dataIndex);
-							//add.setValue("hello there wise one!");
-							//container.value = "hello there oh wise one";
-							console.log(container,add);							
-						}
-					}
-				}
-				/*
-				editor		: {	
-					xtype: 'htmleditor',
-					//scrollable: true,
-					//grow: true,
-					//autoEncode: true,
-					/ *enableColors: true,
-					enableAlignments: true,
-					plugins: [
-						Ext.create('Ext.ux.form.plugin.HtmlEditor', {
-							enableAll:  true,
-							enableMultipleToolbars: false //true
-						})
-					],	* /
-					//width: 400,
-					//height: 400
-					//disabled: fOff
-				} */
-				/*
-				listeners: {
-					afterrender: function () {
-						alert("cked" + CKEDITOR);
-						//CKEDITOR.replace( "ckedit1" );
-					}
-				},
-				renderer: function (cellVal, cellMeta, rec, rowIdx, colIdx, store, view) { 
-					//console.log("val-meta", cellVal, cellMeta);
-					if (cellMeta.column.dataIndex == "Description")
-						return cellVal.tag("textarea", {id: "ckedit1", name: "ckeditor", rows: 10, cols: 60});
-					else
-						return cellVal;
-				}*/
-				//renderer 	: fCalc ? calcRender : null,
-				//listeners	: fListen   // EXTJS widget gets confused when embedded in grid
-			};			
-			
-		case 'z': 		// ignore
-		case 'zilch':
-		case 'g':
-		case 'geometry':
-			return {
-				xtype	: "",
-				fType		: fType,
-				dataIndex	: fName,
-				sortable	: false,
-				hideable	: true,
-				locked		: true,
-				width		: 10,
-				text		: fLabel,
-				qtip		: fTip, 
-				qtitle	 	: fTipTitle
-			};
-
-		case 'x':		// text area
-		case 'textarea':
-		case 'xtextarea':
-			return {
-				xtype : "",
-				fType		: fType,
-				enableKeyEvents: true,
-				dataIndex	: fName,
-				sortable	: true,
-				hideable	: true,
-				cellWrap: true,
-				locked		: fLock,
-				disabled	: fOff,
-				width		: 400,
-				text		: fLabel,
-				qtip		: fTip, 
-				qtitle	 	: fTipTitle,
-				editor		: {	
-					xtype: 'textareafield', 
-					format: "",
-					defaultValue: "",
-					//scrollable: true,
-					//minHeight: 200,
-					grow: true,
-					allowBlank: true,
-					disabled: fOff,
-					width: 600
-					
-					/*
-					//enableKeyEvents: true,  
-					listeners: {
-						keydown: function (f,e) {
-							e.stopEvent();
-
-							var 
-								el = f.inputEl.dom, 
-								key = e.getKey(),
-								pos = el.selectionStart;
-								
-							//alert(key);
-							switch (key) {
-								case 8:  //backspace
-									if (pos) {
-										el.value = el.value.substring(0,pos-1) + el.value.substring(pos);
-										pos--; 
-									}
-									//el.setSelectionRange(pos,pos);
-									break;
-									
-								case 13: //return
-								case 9:  //tab
-									el.value = 
-										el.value.substring(0,pos) 
-										+ String.fromCharCode(key) 
-										+ el.value.substring(el.selectionEnd);
-									pos++;
-									break;
-									
-								case 35: //end
-									pos = el.value.length;
-									break;
-									
-								case 36: //home
-									pos=0;
-									break;
-									
-								case 38:  //up
-								case 40:  //down
-									break;
-									
-								case 37: //left
-									if (pos) pos--;
-									break;
-									
-								case 39: //right
-									if (pos<el.value.length) pos++;
-									break;
-										
-								case 46:  //del
-									el.value = 
-										el.value.substring(0,pos) 
-										+ el.value.substring(el.selectionEnd);								
-									break;
-									
-								case 112:
-								case 113:
-								case 114:
-								case 115:
-								case 116:
-								case 117:
-								case 118:
-									el.value = 
-										el.value.substring(0,pos) 
-										+ "." 
-										+ el.value.substring(el.selectionEnd);
-									pos++;
-									break;
-									
-								default:
-									el.value = 
-										el.value.substring(0,pos) 
-										+ String.fromCharCode(key) 
-										+ el.value.substring(el.selectionEnd);
-									pos++;
-							}
-
-							el.setSelectionRange(pos,pos);
-
-						}
-					}  */
-				}, 
-				renderer 	: calcRender,
-				listeners	: fListen
-			};
-						
-		case 't':
-		case 'text':
-		case 'varchar':	// text			
-			return {
-				xtype:	"",
-				fType		: fType,
-				dataIndex	: fName,
-				filter		: "string",
-				sortable	: true,
-				hideable	: true,
-				locked		: fLock,
-				width		: 100,
-				text		: fLabel,
-				qtip		: fTip, 
-				qtitle	 	: fTipTitle,
-				editor		: {	
-					xtype		: 'textfield',
-					disabled: fOff
-					//stripCharsRe: /[A-Z]/,
-					//maxLength: 4,
-					//defaultValue: "",
-					//format: "",
-					//minLength: 0,
-					//allowBlank: true,
-					//width: 400,
-					//disabled: fOff
-				},
-				renderer	: fRender,
-				listeners	: fListen
-			};		
-			
-		case 'f':
-		case 'file':	// file
-			return {
-				xtype		: "actioncolumn",
-				fType		: fType,
-				dataIndex	: fName,
-				sortable	: true,
-				hideable	: true,
-				locked		: fLock,
-				disabled	: fOff,
-				width		: 30,
-				text		: fLabel,
-				qtip		: fTip, 
-				qtitle	 	: fTipTitle,
-				editor		: {	
-					xtype: 'filefield',
-					format: "",
-					defaultValue: "",
-					allowBlank: true,
-					width: 50
-				},
-				items 		: [{
-					icon: 'default.ico',  
-					tooltip: 'Upload file',
-					handler: function(grid, rowIndex, colIndex) {
-						// todo: need to add hidden form with the Field.File component (xtype=filefield)
-						var uploadField = Ext.getCmp('Field.File');
-						
-						uploadField.fileInputEl.dom.click();
-					}
-				}],
-				renderer	: fRender,
-				listeners	: fListen /*{
-					afterrender: tipRender function (me) {
-						Ext.create('Ext.tip.ToolTip', {
-							target	 : me.getEl(),                 
-							html	 : me.qtip,
-							title	 : me.qtitle,
-							autoHide : false,
-							draggable: true,
-							maxWidth : 500,
-							minWidth : 200,
-							dismissDelay: 0
-						});
-					}
-				}*/
-			};		
-								
-		case 'combo': 	// queue pulldown
-			
-			var comboDS = DSLIST[ fName ] || { Fields: [] },
-				fParms = fType.split(":"),
-				f0 = comboDS.Fields[0] || {dataIndex:"Name"},
-				f1 = comboDS.Fields[1] || f0,
-				fDisp = fParms[1] || f0.dataIndex,
-				fValue = fParms[2] || f1.dataIndex;
-
-			return comboDS 
-				? {	// DS exists
-					xtype: "",
-					fType		: fType,
-					dataIndex	: fName,
-					filter		: "string",
-					sortable	: true,
-					hideable	: true,
-					locked		: fLock,
-					disabled	: fOff,
-					width		: 100,
-					text		: fLabel,
-					qtip		: fTip, 
-					qtitle	 	: fTipTitle,
-					editor		: {
-						xtype: 'combobox',
-						disabled: fOff,
-						defaultValue: "",
-						forceSelection: false,
-						//format: "",
-						emptyText: '<<null>>',
-						listConfig : { minWidth: 400 }, //, itemTpl: "{"+fDisp+"}" },
-						allowBlank: true,
-						typeAhead: true,
-						triggerAction: 'all',
-						//multiSelect: false, 
-						store : comboDS.Store,
-						displayField : fDisp,
-						valueField : fValue,
-						selectOnTab: true,
-						queryMode: 'local',	
-						//submitValue: true, 
-						width: 100,
-						renderer	: fRender,
-						listeners	: {
-							// EXTJS BUG - combobox bound to out-of-band store (i.e. store not containing the
-							// target valueField) always sets newValue to null.  Must slap EXTJS upside its
-							// head by resetting value to selected value.
-							
-							change: function ( scope, newValue, oldValue, eOpts ) {
-								var rawValue = scope.getRawValue();
-								
-								if (isArray(oldValue)) 
-									scope.setRawValue(rawValue.split(","));
-								else
-								if (newValue === null) 
-									scope.setValue(rawValue);
-								
-								return true;
-							}
-						} 
-					}
-				}
-				
-				: { // DS does not exists
-					xtype: "",
-					fType		: fType,
-					dataIndex	: fName,
-					filter		: "string",
-					sortable	: true,
-					hideable	: true,
-					locked		: fLock,
-					disabled	: fOff,
-					width		: 100,
-					text			: fLabel,
-					qtip			: fTip, 
-					qtitle	 	: fTipTitle,
-					editor		: {	
-						xtype: 'textfield',
-						disabled: fOff,
-						defaultValue: "",
-						format: "",
-						minLength: 0,
-						allowBlank: true,
-						width: 400
-					},
-					renderer	: fRender,
-					listeners	: fListen
-				};
-			
-		default:	// punt
-
-			return DATES[fType]
-				? {	// date
-					xtype		: "datecolumn", 				
-					fType		: fType,
-					dataIndex	: fName,
-					filter		: "date",
-					sortable	: true,
-					hideable	: true,
-					locked		: fLock,
-					disabled	: fOff,
-					width		: 100,
-					text			: fLabel,
-					qtip			: fTip, 
-					qtitle	 		: fTipTitle,
-					editor		: {	
-						xtype: 'datefield',
-						format: DATES.MediumDate,
-						defaultValue: "", //new Date(),						
-						allowBlank: false,
-						//minValue: '01/01/1900',
-						disabled: fOff,
-						disabledDays: [],
-						disabledDaysText: 'Invalid date',
-						width: 100
-					},
-					formatter	: "date('Y-m-d')",
-					renderer	: fRender,
-					listeners	: fListen
-				}
-				
-				: {	// text
-					xtype: 	"",
-					fType		: fType,
-					dataIndex	: fName,
-					filter			: "string",
-					sortable	: true,
-					hideable	: true,
-					locked		: fLock,
-					disabled	: fOff,
-					width		: 100,
-					text			: fLabel,
-					qtip			: fTip, 
-					qtitle	 		: fTipTitle,
-					editor		: {	
-						xtype: 'textfield',
-						defaultValue: "",
-						format: "",
-						disabled: fOff,						
-						minLength: 0,
-						allowBlank: true,
-						width: 400
-					},
-					renderer 	: fRender,
-					listeners	: fListen
-				};		
-
-	}
-	
 }
 
 function DS(anchor) {
@@ -1366,7 +558,7 @@ function DS(anchor) {
 			map[rec[key]] = Copy(rec,{});
 		});
 	}
-
+	
 	var  	// Define widget attributes
 		This	= this,
 /**
@@ -1465,6 +657,810 @@ function DS(anchor) {
 
 	cols = this.cols = cols.parse( PARMS, function cb(tok,args) {
 
+		function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
+		/**
+		 * @method gridColumn
+		 * @private
+		 *
+		 * Return a editor for the given field type {fType} residing in the specified Data Table 
+		 * named {DDname}.  Will attempt to contruct a combobox/multiselect field from the specified 
+		 * 
+		 * @param {String} fType The field type is one of checkbox, text, date, %, numeric, integer, boolean, 
+		 * price, svg (reserved), autonum, html, xtended text, file, combobox (:DS;F1:...), or 
+		 * multiselect (;DS;F1;...).
+		 * @param {String} FTname name of Data Table that owns this field.
+		 * 
+		 * @return {Object} ExtJS field editor
+		 * @docauthor Brian James
+		 */
+
+			function calcRender(cellVal, cellMeta, rec, rowIdx, colIdx, store, view) { 
+				function calc(val,meta,rc,d,a) {
+					var r = rc.row, c = rc.col;
+					var f = Math;
+
+					try {
+
+						var tags = {
+							text: CALC.TAGTEXT[val.substr(0,2)],
+							cell: CALC.TAGCELL[val.substr(0,2)]
+							//blog: val.substr(0,1) == "/",
+							//jade: val.substr(0,1) == "$" 
+						};
+
+						if (tags.text)
+							return val.substr(2).fontcolor(tags.text);
+
+						else
+						if (tags.cell) {
+							meta.tdCls = tags.cell;
+							return val.substr(2);
+						}
+
+						/*
+						else
+						if (tags.blog)
+							if (CALC.BLOG) {
+								CALC.BLOG.src= val;
+								return CALC.BLOG.src+"<br>" + "".tag("iframe",CALC.BLOG);
+							}
+							else
+								return val.fontcolor("red");
+						*/
+
+						/*
+						else 
+						if (tags.jade)  { 
+							CALC.BLOG.srcdoc = val.substr(1);
+							return "".tag("iframe",CALC.BLOG);
+						}
+						*/
+
+						else {
+							eval("var rtn="+val);
+							return rtn;
+						}
+					}
+					catch (err) {
+						return (err+"").fontcolor("red");
+					}
+				}
+
+				if (cellVal == null)
+					return "";
+
+				else  
+				if (cellVal.constructor == Object) 
+					for (var n in cellVal) 
+						return "".tag(n,cellVal[n]);
+
+				else
+				if (cellVal.charAt(0) == "=") {
+					if (!fCalc.length) 
+						store.getRange().Each( function (n,rec) {
+							fCalc.push( rec.getData() );
+						});
+
+					return calc(cellVal.substr(1),cellMeta,{r:rowIdx,c:colIdx},rec.getData(),fCalc);
+				}
+				else 
+					return cellVal;
+			}	
+
+			function fRender(value,meta,rec,row,col) {
+				meta.tdAttr = "field="+fName;
+				return value;
+			}
+
+			var 
+				fListen = {
+					afterrender: function (me) {
+						Ext.create('Ext.tip.ToolTip', {  // grid tooltip
+							target	: me.getEl(),                 
+							html	 	: me.qtip,
+							title	 	: me.qtitle,
+							autoHide : true, 
+							closable: true,
+							//resizable: true,
+							//scrollable: true,
+							//overlapHeader: true,
+							maxWidth : 800,
+							minWidth : 200,
+							maxHeight: 400,
+							//mouseOffset: [0,0],
+							//trackMouse: true,
+							//getTargetXY: function () { return [0,0]; },
+							collapisible: true
+							//dismissDelay: 0
+						});
+					}
+				},
+				fTips = fTip.split("||"),
+				fTip = fTips.pop() || "",
+				fTipTitle = fTips.pop() || fName;
+
+			switch (fType || "text") {
+				case '#': 	// actions		
+					var actions = [];
+
+					fType.Each(function (i,type) {
+						actions.push({
+							getClass: function(val, meta, rec, rowIdx, colIdx, store) {
+								var states = rec.get(fName);
+								var icons = val.split("<img");
+								return "Action-" + states.charAt(icons.length-1);
+							},
+							handler: function(grid, rowIndex, colIndex) {
+								// Ext.Msg.alert(fName,"Cannot edit an action field");
+							}
+						});
+					});
+
+					return {
+						xtype		: "actioncolumn", 
+						fType		: fType,
+						dataIndex	: fName,
+						sortable	: false,
+						hideable	: true,
+						layout		: "hbox",
+						menuDisabled: true,
+						locked		: fLock,
+						disabled	: fOff,
+						width		: fType.length*20,
+						text		: fLabel,
+						qtip		: fTip, 
+						qtitle	 	: fTipTitle,
+						renderer 	: function(cellVal, cellMeta, rec, rowIdx, colIdx, store, view) { 
+							return "";
+						},
+						items		: actions,
+						renderer	: fRender,				
+						listeners	: fListen
+					};
+
+				case 'b':
+				case 'boolean':	// boolean			
+				case 'c':
+				case 'check':	// checkbox
+					return {
+						xtype		: "checkcolumn", 
+						fType		: fType,
+						dataIndex	: fName,
+						filter		: "boolean",
+						sortable	: true,
+						hideable	: true,
+						locked		: fLock,
+						disabled	: fOff,
+						width		: 50,
+						text		: fLabel,
+						qtip		: fTip, 
+						qtitle	 	: fTipTitle,
+						editor		: {
+							xtype: 'checkboxfield',
+							defaultValue: 0,
+							format: "",
+							uncheckedValue: 0,
+							inputValue: 1,
+							disabled: fOff,					
+							cls: 'x-grid-checkheader-editor',
+							width: 20
+						},
+						//renderer	: fRender,				// EXTJS BUG
+						listeners	: fListen
+					};
+
+				case 'd':
+				case 'date':	// date
+				case 'datetime':
+					return {
+						xtype		: "datecolumn", 				
+						fType		: fType,
+						dataIndex	: fName,
+						filter		: "date",
+						sortable	: true,
+						hideable	: true,
+						locked		: fLock,
+						disabled	: fOff,
+						width		: 100,
+						text		: fLabel,
+						qtip		: fTip, 
+						qtitle	 	: fTipTitle,
+						editor		: {	
+							xtype: 'datefield',
+							format: DATES.MediumDate,
+							defaultValue: "", //new Date(),	
+							allowBlank: false,
+							minValue: '01/01/1900',
+							disabled: fOff,
+							disabledDays: [],
+							disabledDaysText: 'Invalid date',
+							width: 100
+						},
+						formatter	: "date('Y-m-d')",
+						renderer	: fRender,				
+						listeners	: fListen
+					};
+
+				case 'p': 		// percentage
+				case 'percent':
+					return {
+						xtype		: "numbercolumn", 				
+						fType		: fType,
+						dataIndex	: fName,
+						filter		: "number",
+						sortable	: true,
+						hideable	: true,
+						locked		: fLock,
+						disabled	: fOff,
+						width		: 50,
+						text		: fLabel,
+						qtip		: fTip, 
+						qtitle	 	: fTipTitle,
+						editor		: {	
+							xtype: 'numberfield',
+							format: "0.0%",
+							defaultValue: "",
+							allowBlank: true,
+							width: 75
+						},
+						formatter	: "percent('0.00')",
+						renderer	: fRender,				
+						listeners	: fListen
+					};
+
+				case 'n':
+				case 'number':
+				case 'float':	// numeric
+				case 'double':
+					return {
+						xtype		: "numbercolumn", 				
+						fType		: fType,
+						dataIndex	: fName,
+						filter		: "number",
+						sortable	: true,
+						hideable	: true,
+						locked		: fLock,
+						disabled	: fOff,
+						width		: 50,
+						text		: fLabel,
+						qtip		: fTip, 
+						qtitle	 	: fTipTitle,
+						editor		: {	
+							xtype: 'numberfield',
+							format: "0.0000",
+							decimalPrecision: 4,
+							defaultValue: "",
+							disabled: fOff,					
+							allowBlank: true,
+							width: 150
+						},
+						formatter	: "number('0.0000')",
+						renderer	: fRender,				
+						listeners	: fListen
+					};
+
+				/*
+				case 'b':
+				case 'boolean':	// boolean
+					return {
+						//xtype		: "booleancolumn", 				
+						fType		: fType,
+						dataIndex	: fName,
+						filter		: "boolean",
+						sortable	: true,
+						hideable	: true,
+						locked		: fLock,
+						disabled	: fOff,
+						width		: 50,
+						text		: fLabel,
+						qtip		: fTip, 
+						qtitle	 	: fTipTitle,
+						editor		: {	
+							xtype: 'numberfield',
+							format: "0",
+							defaultValue: "",
+							disabled: fOff,
+							allowBlank: true,
+							width: 75
+						},
+						renderer	: fRender,
+						listeners	: fListen
+					};	*/
+
+				case 'a':
+				case 'i':
+				case 'auto':	// autonum
+				case 'autonum':
+				case 'int':	// integer
+				case 'tinyint':
+				case 'bigint':
+					return {
+						xtype		: "numbercolumn", 				
+						fType		: fType,
+						dataIndex	: fName,
+						filter		: "number",
+						sortable	: true,
+						hideable	: true,
+						locked		: fLock,
+						disabled	: fOff,
+						width		: 50,
+						text		: fLabel,
+						qtip		: fTip, 
+						qtitle	 	: fTipTitle,
+						formatter	: "number('0')",
+						editor		: {	
+							xtype: 'numberfield',
+							format: "0",
+							defaultValue: "",
+							disabled: fOff,					
+							allowBlank: true,
+							width: 150
+						},
+						renderer	: fRender,				
+						listeners	: fListen
+					};			
+
+				case 'm':
+				case 'money':	// currency
+					return {
+						xtype		: "numbercolumn", 				
+						fType		: fType,
+						dataIndex	: fName,
+						filter		: "number",
+						sortable	: true,
+						hideable	: true,
+						locked		: fLock,
+						disabled	: fOff,
+						width		: 75,
+						text		: fLabel,
+						qtip		: fTip, 
+						qtitle	 	: fTipTitle,
+						formatter	: "number('$0.00')",
+						editor		: {
+							xtype: 'numberfield',
+							format: "$0.00",
+							defaultValue: "",
+							disabled: fOff,
+							allowBlank: false,
+							minValue: 0,
+							width: 75
+						},
+						renderer	: fRender,
+						listeners	: fListen
+					};			
+
+				case 'svg':	// SVG
+					return {};
+
+				case 'h':
+				case 'html':	// html
+				case 'mediumtext':	
+					Blogs.push( fName );
+
+					return  {
+						xtype: 	"",
+						fType		: fType,
+						dataIndex	: fName,
+						//sortable	: true,
+						//hideable	: true,
+						//locked		: fLock,
+						//disabled	: fOff,
+						width		: 400,
+						text		: fLabel,
+						cellWrap: true,
+						qtip		: fTip, 
+						qtitle	 	: fTipTitle
+						/*
+						editor	: {
+							xtype: "htmleditor",
+							clicksToEdit: 2,
+							listeners: {
+								beforeadd: function (container, add, idx) {
+									alert("tada " + container.column.dataIndex);
+									//container.value = "hello there oh wise one";
+									console.log(container,add);							
+								}
+							}
+						}*/
+						/*
+						editor		: {	
+							xtype: 'htmleditor',
+							//scrollable: true,
+							//grow: true,
+							//autoEncode: true,
+							/ *enableColors: true,
+							enableAlignments: true,
+							plugins: [
+								Ext.create('Ext.ux.form.plugin.HtmlEditor', {
+									enableAll:  true,
+									enableMultipleToolbars: false //true
+								})
+							],	* /
+							//width: 400,
+							//height: 400
+							//disabled: fOff
+						} */
+						/*
+						listeners: {
+							afterrender: function () {
+								alert("cked" + CKEDITOR);
+								//CKEDITOR.replace( "ckedit1" );
+							}
+						},
+						renderer: function (cellVal, cellMeta, rec, rowIdx, colIdx, store, view) { 
+							//console.log("val-meta", cellVal, cellMeta);
+							if (cellMeta.column.dataIndex == "Description")
+								return cellVal.tag("textarea", {id: "ckedit1", name: "ckeditor", rows: 10, cols: 60});
+							else
+								return cellVal;
+						}*/
+						//renderer 	: fCalc ? calcRender : null,
+						//listeners	: fListen   // EXTJS widget gets confused when embedded in grid
+					};			
+
+				case 'z': 		// ignore
+				case 'zilch':
+				case 'g':
+				case 'geometry':
+					return {
+						xtype	: "",
+						fType		: fType,
+						dataIndex	: fName,
+						sortable	: false,
+						hideable	: true,
+						locked		: true,
+						width		: 10,
+						text		: fLabel,
+						qtip		: fTip, 
+						qtitle	 	: fTipTitle
+					};
+
+				case 'x':		// text area
+				case 'textarea':
+				case 'xtextarea':
+					return {
+						xtype : "",
+						fType		: fType,
+						enableKeyEvents: true,
+						dataIndex	: fName,
+						sortable	: true,
+						hideable	: true,
+						cellWrap: true,
+						locked		: fLock,
+						disabled	: fOff,
+						width		: 400,
+						text		: fLabel,
+						qtip		: fTip, 
+						qtitle	 	: fTipTitle,
+						editor		: {	
+							xtype: 'textareafield', 
+							format: "",
+							defaultValue: "",
+							//scrollable: true,
+							//minHeight: 200,
+							grow: true,
+							allowBlank: true,
+							disabled: fOff,
+							width: 600
+
+							/*
+							//enableKeyEvents: true,  
+							listeners: {
+								keydown: function (f,e) {
+									e.stopEvent();
+
+									var 
+										el = f.inputEl.dom, 
+										key = e.getKey(),
+										pos = el.selectionStart;
+
+									//alert(key);
+									switch (key) {
+										case 8:  //backspace
+											if (pos) {
+												el.value = el.value.substring(0,pos-1) + el.value.substring(pos);
+												pos--; 
+											}
+											//el.setSelectionRange(pos,pos);
+											break;
+
+										case 13: //return
+										case 9:  //tab
+											el.value = 
+												el.value.substring(0,pos) 
+												+ String.fromCharCode(key) 
+												+ el.value.substring(el.selectionEnd);
+											pos++;
+											break;
+
+										case 35: //end
+											pos = el.value.length;
+											break;
+
+										case 36: //home
+											pos=0;
+											break;
+
+										case 38:  //up
+										case 40:  //down
+											break;
+
+										case 37: //left
+											if (pos) pos--;
+											break;
+
+										case 39: //right
+											if (pos<el.value.length) pos++;
+											break;
+
+										case 46:  //del
+											el.value = 
+												el.value.substring(0,pos) 
+												+ el.value.substring(el.selectionEnd);								
+											break;
+
+										case 112:
+										case 113:
+										case 114:
+										case 115:
+										case 116:
+										case 117:
+										case 118:
+											el.value = 
+												el.value.substring(0,pos) 
+												+ "." 
+												+ el.value.substring(el.selectionEnd);
+											pos++;
+											break;
+
+										default:
+											el.value = 
+												el.value.substring(0,pos) 
+												+ String.fromCharCode(key) 
+												+ el.value.substring(el.selectionEnd);
+											pos++;
+									}
+
+									el.setSelectionRange(pos,pos);
+
+								}
+							}  */
+						}, 
+						renderer 	: calcRender,
+						listeners	: fListen
+					};
+
+				case 't':
+				case 'text':
+				case 'varchar':	// text			
+					return {
+						xtype:	"",
+						fType		: fType,
+						dataIndex	: fName,
+						filter		: "string",
+						sortable	: true,
+						hideable	: true,
+						locked		: fLock,
+						width		: 100,
+						text		: fLabel,
+						qtip		: fTip, 
+						qtitle	 	: fTipTitle,
+						editor		: {	
+							xtype		: 'textfield',
+							disabled: fOff
+							//stripCharsRe: /[A-Z]/,
+							//maxLength: 4,
+							//defaultValue: "",
+							//format: "",
+							//minLength: 0,
+							//allowBlank: true,
+							//width: 400,
+							//disabled: fOff
+						},
+						renderer	: fRender,
+						listeners	: fListen
+					};		
+
+				case 'f':
+				case 'file':	// file
+					return {
+						xtype		: "actioncolumn",
+						fType		: fType,
+						dataIndex	: fName,
+						sortable	: true,
+						hideable	: true,
+						locked		: fLock,
+						disabled	: fOff,
+						width		: 30,
+						text		: fLabel,
+						qtip		: fTip, 
+						qtitle	 	: fTipTitle,
+						editor		: {	
+							xtype: 'filefield',
+							format: "",
+							defaultValue: "",
+							allowBlank: true,
+							width: 50
+						},
+						items 		: [{
+							icon: 'default.ico',  
+							tooltip: 'Upload file',
+							handler: function(grid, rowIndex, colIndex) {
+								// todo: need to add hidden form with the Field.File component (xtype=filefield)
+								var uploadField = Ext.getCmp('Field.File');
+
+								uploadField.fileInputEl.dom.click();
+							}
+						}],
+						renderer	: fRender,
+						listeners	: fListen /*{
+							afterrender: tipRender function (me) {
+								Ext.create('Ext.tip.ToolTip', {
+									target	 : me.getEl(),                 
+									html	 : me.qtip,
+									title	 : me.qtitle,
+									autoHide : false,
+									draggable: true,
+									maxWidth : 500,
+									minWidth : 200,
+									dismissDelay: 0
+								});
+							}
+						}*/
+					};		
+
+				case 'combo': 	// queue pulldown
+
+					var 
+						comboDS = DSLIST[ fName ] || { Fields: [] },
+						fParms = fType.split(":"),
+						f0 = comboDS.Fields[0] || {dataIndex:"Name"},
+						f1 = comboDS.Fields[1] || f0,
+						fDisp = fParms[1] || f0.dataIndex,
+						fValue = fParms[2] || f1.dataIndex;
+
+					return comboDS 
+						? {	// DS exists
+							xtype: "",
+							fType		: fType,
+							dataIndex	: fName,
+							filter		: "string",
+							sortable	: true,
+							hideable	: true,
+							locked		: fLock,
+							disabled	: fOff,
+							width		: 100,
+							text		: fLabel,
+							qtip		: fTip, 
+							qtitle	 	: fTipTitle,
+							editor		: {
+								xtype: 'combobox',
+								disabled: fOff,
+								defaultValue: "",
+								forceSelection: false,
+								//format: "",
+								emptyText: '<<null>>',
+								listConfig : { minWidth: 400 }, //, itemTpl: "{"+fDisp+"}" },
+								allowBlank: true,
+								typeAhead: true,
+								triggerAction: 'all',
+								//multiSelect: false, 
+								store : comboDS.Store,
+								displayField : fDisp,
+								valueField : fValue,
+								selectOnTab: true,
+								queryMode: 'local',	
+								//submitValue: true, 
+								width: 100,
+								renderer	: fRender,
+								listeners	: {
+									// EXTJS BUG - combobox bound to out-of-band store (i.e. store not containing the
+									// target valueField) always sets newValue to null.  Must slap EXTJS upside its
+									// head by resetting value to selected value.
+
+									change: function ( scope, newValue, oldValue, eOpts ) {
+										var rawValue = scope.getRawValue();
+
+										if (isArray(oldValue)) 
+											scope.setRawValue(rawValue.split(","));
+										else
+										if (newValue === null) 
+											scope.setValue(rawValue);
+
+										return true;
+									}
+								} 
+							}
+						}
+
+						: { // DS does not exists
+							xtype: "",
+							fType		: fType,
+							dataIndex	: fName,
+							filter		: "string",
+							sortable	: true,
+							hideable	: true,
+							locked		: fLock,
+							disabled	: fOff,
+							width		: 100,
+							text			: fLabel,
+							qtip			: fTip, 
+							qtitle	 	: fTipTitle,
+							editor		: {	
+								xtype: 'textfield',
+								disabled: fOff,
+								defaultValue: "",
+								format: "",
+								minLength: 0,
+								allowBlank: true,
+								width: 400
+							},
+							renderer	: fRender,
+							listeners	: fListen
+						};
+
+				default:	// punt
+
+					return DATES[fType]
+						? {	// date
+							xtype		: "datecolumn", 				
+							fType		: fType,
+							dataIndex	: fName,
+							filter		: "date",
+							sortable	: true,
+							hideable	: true,
+							locked		: fLock,
+							disabled	: fOff,
+							width		: 100,
+							text			: fLabel,
+							qtip			: fTip, 
+							qtitle	 		: fTipTitle,
+							editor		: {	
+								xtype: 'datefield',
+								format: DATES.MediumDate,
+								defaultValue: "", //new Date(),						
+								allowBlank: false,
+								//minValue: '01/01/1900',
+								disabled: fOff,
+								disabledDays: [],
+								disabledDaysText: 'Invalid date',
+								width: 100
+							},
+							formatter	: "date('Y-m-d')",
+							renderer	: fRender,
+							listeners	: fListen
+						}
+
+						: {	// text
+							xtype: 	"",
+							fType		: fType,
+							dataIndex	: fName,
+							filter			: "string",
+							sortable	: true,
+							hideable	: true,
+							locked		: fLock,
+							disabled	: fOff,
+							width		: 100,
+							text			: fLabel,
+							qtip			: fTip, 
+							qtitle	 		: fTipTitle,
+							editor		: {	
+								xtype: 'textfield',
+								defaultValue: "",
+								format: "",
+								disabled: fOff,						
+								minLength: 0,
+								allowBlank: true,
+								width: 400
+							},
+							renderer 	: fRender,
+							listeners	: fListen
+						};		
+
+			}
+
+		}		
+		
 		var 
 			fOpts = tok.split("."),
 			fName = fOpts[0],
@@ -1473,17 +1469,18 @@ function DS(anchor) {
 			fLabel = fOpts[2] || fParm.Label || fName,
 			fAg = fOpts[3],
 			//fChange = HISTORY[path+"."+fName] || {Moderators:""},
-			fTip = 	fName.tag("a",{href:`/parms.view?parm=${fName}`}) 
-			//		+ " | " + fChange.Moderators 
-					+ " | " + "moderate".tag("a", {href:"/moderate.view"})
-					+ "||" + (fOpts[4] || fParm.Special || ""),
+			fTip = 	[
+				fName.tag("a",{href:`/parms.view?parm=${fName}`}) ,
+		//		fChange.Moderators,
+				"moderate".tag("a", {href:"/moderate.view"}),
+				fOpts[4] || fParm.Special || "" 
+			].join(" || "),
 			fChar = fType.charAt(0),
 			fOff = fChar >= "A" && fChar <= "Z",
+			fCalc = calc,
 			fLock = false; //pivots ? true : sorts ? !(fName in sorts) : false;
 		
-		var fCol = gridColumn(fType,fName,fOff,fLock,fLabel,fTip,calc);
-				
-		if ( fType=="h" ) Blogs.push( fName );
+		var fCol = gridColumn(fType,fName,fOff,fLock,fLabel,fTip,fCalc);
 
 		switch (fAg) {			// Add row aggregator if needed
 			case "min":
@@ -1548,7 +1545,7 @@ function DS(anchor) {
 				};
 				
 				break;
-		};
+		}
 		
 		switch (fName) {		// Handle reserved field names
 			case "NodeCount":
@@ -1841,11 +1838,12 @@ Ext.define('Ext.paging.TreeStore', {
 	
 });
 
+Ext.onReady( function () {
 /*
  * Define Ext extend classes, establish a view portal for all components, and
  * setup defaul quick tips.
  */
-Ext.onReady( function () {
+
 	// Enable the display
 	
 	Ext.ux.grid.Printer.printAutomatically = false;
@@ -3189,6 +3187,7 @@ WIDGET.prototype.menuTools = function () {
 		
 }
 
+WIDGET.prototype.terminal = function (term,opts) {	
 /**
  * @method terminal
  * @param {Array} UIs list of components under this terminal widget.
@@ -3199,7 +3198,6 @@ WIDGET.prototype.menuTools = function () {
  *
  * Creates a terminal data UI (e.g. a grid, form etc) for this widget.
  */
-WIDGET.prototype.terminal = function (term,opts) {	
 	
 	function sortTools (docks) {  // creates toolbars for sorters
 		
@@ -3588,12 +3586,12 @@ WIDGET.prototype.terminal = function (term,opts) {
 				SELECT_CELL.idx = cellIdx; //-1;
 			},
 			
-			/*
-			celldblclick: function (This,td,cellIndex,Rec,tr,rowIndex) {
-				console.log(td,cellIndex,tr,rowIndex,"type=", This.xtype, This.fType, "idx=", This.dataIndex);
+			celldblclick: function (Cell,td,cellIndex,Rec,tr,rowIndex) {
+				console.log(td,cellIndex,tr,rowIndex, "idx=", Cell.dataIndex);
 				var rec = Rec.getData();
+				console.log(Cell);
 				console.log(rec);
-			},  */
+			}, 
 
 			// regen pivots and slaved posts if pivot column moved
 			columnmove: function ( header, column, fromIdx, toIdx, eOpts ) {  
