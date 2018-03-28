@@ -13,14 +13,101 @@
  * 			Ext.Loader.setPath('Ext.ux', 'clients/extjs/plugins');
  * 		script(src="/clients/grids.js")
  * */
+Ext.require([
+	// general
+	'Ext.toolbar.*',
+	'Ext.tip.*',
+	'Ext.data.*',
+	'Ext.util.*',
+	'Ext.grid.*',
+	'Ext.tab.*',
+	'Ext.tree.*',
+	'Ext.form.*',
+	'Ext.window.*',
+	'Ext.panel.*', 
+	'Ext.ux.IFrame',
+
+	'Ext.container.Viewport', 
+	'Ext.dd.DD',
+
+	// grids
+	'Ext.ux.statusbar.StatusBar',
+	'Ext.ux.BoxReorderer',
+	'Ext.ux.ToolbarDroppable',
+	'Ext.ux.data.PagingMemoryProxy',
+	'Ext.ux.SlidingPager',
+	'Ext.ux.CheckColumn',
+	'Ext.ux.grid.Printer',
+	'Ext.selection.CellModel',
+	'Ext.selection.RowModel',
+	'Ext.XTemplate',
+	'Ext.chart.*',
+	'Ext.filters.file.*',
+
+	// htmleditor
+	'Ext.layout.component.field.HtmlEditor',
+	'Ext.layout.container.VBox',
+	'Ext.layout.container.boxOverflow.Menu',
+	'Ext.picker.Color',
+	'Ext.tip.QuickTipManager',
+	'Ext.toolbar.Item',
+	'Ext.toolbar.Toolbar',
+	'Ext.util.Format',
+	'Ext.util.TaskManager'
+]);
 
 var 
+	EDITOR = Ext.create( 'Ext.form.field.HtmlEditor', {				
+		value: "hello there",
+		enableColors: true,
+		enableAlignments: true,
+		plugins: [
+			Ext.create('Ext.ux.form.plugin.HtmlEditor', {
+				enableAll:  true,
+				enableMultipleToolbars: false //true
+			})
+		] 
+	}),
+	
+	EDCTX = {},
+		
+	EDWIN = Ext.create('Ext.window.Window', {
+		title: 'Editor',
+		closeAction: "hide",
+		height: 200,
+		width: 400,
+		layout: 'fit',
+		buttons: [{
+			text: 'Save',
+			listeners: {
+				click: function () {
+					//console.log(EDCTX);
+					var 
+						store = EDCTX.store,
+						rec = store.getAt(EDCTX.row);
+					
+					rec.set(EDCTX.key, EDITOR.getValue());
+					EDWIN.hide();
+				}
+			}
+		},{
+			text: 'Cancel',
+			listeners: {
+				click: function () {
+					EDWIN.hide();
+				}
+			}
+		}],
+		items: [ EDITOR ]
+	}),
+		
 	PROXY = {				// proxy parameters
 		ROOT: "data",		// contains array of data records
 		TOTAL: "count",		// contains max number of records
 		STATE: "success",	// contains success state
 		KEY: "ID",			// contains unique record ID
 		MESSAGE: "msg",		// contains status message
+		FILTER: "_filters",  // contains filter fields
 		SORT: "_sort",		// contains sort fields
 		START: "_offset",	// paging parm for starting record offset 1
 		LIMIT: "_limit",	// paging parm for number of records from offset
@@ -96,11 +183,11 @@ var
 		RELOAD: true						// relink slaves when grid pivots changed
 	},
 	
-	TABLIST = { 				// created tabs tracked (due to extjs bug)
+	TABLIST = { 				// must track all created tabsdue to extjs bug
 	},
 
 	DSLIST = {},  				// created datasets
-	WINDOWS = []; 			// reserved for popup windows
+	WINDOWS = [], 			// reserved for popup windows
 	DATES = {					// date formates
 		MediumDate: "d-M-y",
 		DefaultDate: "m-d-Y",
@@ -116,49 +203,6 @@ var
 		UniversalSortableDateTime: "Y-m-d H:i:sO",
 		YearMonth: "F, Y"
 	};	
-
-Ext.require([
-	// general
-	'Ext.toolbar.*',
-	'Ext.tip.*',
-	'Ext.data.*',
-	'Ext.util.*',
-	'Ext.grid.*',
-	'Ext.tab.*',
-	'Ext.tree.*',
-	'Ext.form.*',
-	'Ext.window.*',
-	'Ext.panel.*', 
-	'Ext.ux.IFrame',
-
-	'Ext.container.Viewport', 
-	'Ext.dd.DD',
-
-	// grids
-	'Ext.ux.statusbar.StatusBar',
-	'Ext.ux.BoxReorderer',
-	'Ext.ux.ToolbarDroppable',
-	'Ext.ux.data.PagingMemoryProxy',
-	'Ext.ux.SlidingPager',
-	'Ext.ux.CheckColumn',
-	'Ext.ux.grid.Printer',
-	'Ext.selection.CellModel',
-	'Ext.selection.RowModel',
-	'Ext.XTemplate',
-	'Ext.chart.*',
-	'Ext.filters.file.*',
-
-	// htmleditor
-	'Ext.layout.component.field.HtmlEditor',
-	'Ext.layout.container.VBox',
-	'Ext.layout.container.boxOverflow.Menu',
-	'Ext.picker.Color',
-	'Ext.tip.QuickTipManager',
-	'Ext.toolbar.Item',
-	'Ext.toolbar.Toolbar',
-	'Ext.util.Format',
-	'Ext.util.TaskManager'
-]);
 
 String.prototype.parseURL = function (xx,pin) {
 
@@ -262,6 +306,7 @@ function defineProxy(path,links,key) {
 		},
 		appendId: false,					// no sense in appending as server has this info in its req
 		idParam	: key || PROXY.KEY,			// record ID (yet again)
+		filterParam: PROXY.FILTER,
 		sortParam:	PROXY.SORT,				
 		startParam: PROXY.START,
 		limitParam: PROXY.LIMIT,				
@@ -480,8 +525,9 @@ function DS(anchor) {
 					
 					//autoSync	: false,  	// disabled forces use of update to sync changes
 					//buffered	: false, 	// used with paging and verticalScroller but EXTJS BUG
-					pageSize	: page  	// used with paging and verticalScroller
-					//remoteSort	: true	// enable remote sorting
+					pageSize	: page,  	// used with paging and verticalScroller
+					remoteFilter: true,
+					remoteSort	: true	// enable remote sorting
 				});
 				break;
 
@@ -1035,6 +1081,7 @@ function DS(anchor) {
 				case 'h':
 				case 'html':	// html
 				case 'mediumtext':	
+				case 'longtest':
 					Blogs.push( fName );
 
 					return  {
@@ -2043,43 +2090,6 @@ Ext.onReady( function () {
 		}
 		
 	}, function (widget) {
-		
-		var 
-			ed = Ext.create( 'Ext.form.field.HtmlEditor', {				
-				value: "hello there",
-				enableColors: true,
-				enableAlignments: true,
-				plugins: [
-					Ext.create('Ext.ux.form.plugin.HtmlEditor', {
-						enableAll:  true,
-						enableMultipleToolbars: false //true
-					})
-				] 
-			}),
-			win = Ext.create('Ext.window.Window', {
-				title: 'Hello',
-				closeAction: "hide",
-				height: 200,
-				width: 400,
-				layout: 'fit',
-				buttons: [{
-					text: 'Save'
-				},{
-					text: 'Cancel'
-				}],
-				items: [ ed ]
-				/*				
-				{
-					xtype: 'htmleditor',
-					//value: "hello there",
-					enableColors: false,
-					enableAlignments: false
-				} */
-			});
-		
-		win.show();
-		ed.setValue("this is a test");
-		//win.hide();
 		
 		Ext.create('Ext.container.Viewport', {  
 			layout: "fit",
@@ -3369,7 +3379,7 @@ WIDGET.prototype.terminal = function (term,opts) {
 	var 
 		Widget = this,
 		Sorts = this.sorts,
-		Plugins = this.plugins || "",
+		//Plugins = this.plugins || "",
 		page = parseInt(this.page) || 0,
 		Data = this.Data,
 		Name = Data.name,
@@ -3385,8 +3395,8 @@ WIDGET.prototype.terminal = function (term,opts) {
 	this.menuTools();
 	var Menu = this.Menu;
 	
-	Widget.Editor = [];
 	/*
+	Widget.Editor = [];
 	Widget.Editor.push( Ext.create('Ext.grid.plugin.CellEditing', {
 		clicksToEdit: 2,
 		listeners: {
@@ -3396,68 +3406,61 @@ WIDGET.prototype.terminal = function (term,opts) {
 		}
 	}));	*/
 	
-	//Plugins = "F";
-	for (var n=0,N=Plugins.length; n<N; n++) 
-		switch (Plugins.charAt(n)) {
-				case "c": 
-					Widget.Editor.push(Ext.create('Ext.grid.plugin.CellEditing', {
-						clicksToEdit: 1
-					}));
-					break;
-					
-				case "r":
-					Widget.Editor.push(Ext.create('Ext.grid.plugin.RowEditing', {
-						clicksToEdit: 2,
-						autoCancel: false
-					}));
-					break;
-					
-				case "X":
-				case "x":
-					Widget.Selector = Ext.create('Ext.selection.CheckboxModel', {	
-						mode: 'multi',
-						checkOnly: true,
-						showHeaderCheckbox: true,
-						listeners: {
-							select: function( sel, rec, idx, eOpts ) {
-								var kids = rec.childNodes;
+	switch ( "check" ) { 
+		case "cell": 
+			var 
+				Editor = Ext.create('Ext.grid.plugin.CellEditing', {
+					clicksToEdit: 1
+				}),
+				Selector = Ext.create('Ext.selection.CellModel', {	
+					mode: 'multi',
+					ignoreRightMouseSelection: true
+				});
+			break;
 
-								if (kids) { 	// expand/contract tree node
-									if (rec.isExpanded())
-										Selector.select(kids,false,true);
-								}
-								/*
-								rec.expand(false, function () { 
-									rec.cascadeBy(function (n) { 
-										n.set('checked', true); 
-									}); 
-								})
-								*/
+		case "row":
+			var 
+				Editor = Ext.create('Ext.grid.plugin.RowEditing', {
+					clicksToEdit: 2,
+					autoCancel: false
+				}),
+				Selector = Ext.create('Ext.selection.RowModel', {	
+					mode: 'multi',
+					ignoreRightMouseSelection: true
+				});
+			break;
+
+		case "check":
+			var
+				Editor = Ext.create('Ext.grid.plugin.CellEditing', {
+					clicksToEdit: 1
+				}),
+				Selector = Ext.create('Ext.selection.CheckboxModel', {	
+					mode: 'multi',
+					checkOnly: true,
+					showHeaderCheckbox: true,
+					listeners: {
+						select: function( sel, rec, idx, eOpts ) {
+							var kids = rec.childNodes;
+
+							if (kids) { 	// expand/contract tree node
+								if (rec.isExpanded())
+									Selector.select(kids,false,true);
 							}
+							/*
+							rec.expand(false, function () { 
+								rec.cascadeBy(function (n) { 
+									n.set('checked', true); 
+								}); 
+							})
+							*/
 						}
-					});
-					break;
-					
-				case "R":
-					Widget.Selector = Ext.create('Ext.selection.RowModel', {	
-						mode: 'multi',
-						ignoreRightMouseSelection: true
-					});
-					break;
-					
-				case "C":
-					Widget.Selector = Ext.create('Ext.selection.CellModel', {	
-						mode: 'multi',
-						ignoreRightMouseSelection: true
-					});
-					break;
-					
-				case "F":
-				case "f":
-					Widget.Editor.push("gridfilters");
-					break;
-			}
+					}
+				});
+			break;
 
+	}
+	
 	//alert(JSON.stringify([ this.dock, Sorts, isHead ]));
 		  
 	this.UI = this.dataUI = Ext.create(term || "Ext.grid.Panel", Copy(opts || {}, {    // create the terminal UI
@@ -3493,9 +3496,9 @@ WIDGET.prototype.terminal = function (term,opts) {
 		layout		: "fit",
 
 		// Toolbars, selection models, sorters and features
-		plugins		: Widget.Editor,
+		plugins		: [Editor, "gridfilters"], //Widget.Editor,
 
-		selModel	: Widget.Selector, 
+		selModel: Selector, //Widget.Selector, 
 
 		bbar		: page ? pageTools() : null,
 
@@ -3586,11 +3589,25 @@ WIDGET.prototype.terminal = function (term,opts) {
 				SELECT_CELL.idx = cellIdx; //-1;
 			},
 			
-			celldblclick: function (Cell,td,cellIndex,Rec,tr,rowIndex) {
-				console.log(td,cellIndex,tr,rowIndex, "idx=", Cell.dataIndex);
-				var rec = Rec.getData();
-				console.log(Cell);
-				console.log(rec);
+			celldblclick: function (ctx,td,cellIndex,Rec,tr,rowIndex) {
+				//console.log(ctx);
+				var 
+					grid = ctx.grid,
+					cols = grid.getColumnManager(),
+					head = cols.getHeaderAtIndex(cellIndex),
+					key = head.dataIndex,
+					val = Rec.get(key);
+					
+				//console.log(td,cellIndex,tr,rowIndex);
+				//console.log("idx=", key,val);
+				EDCTX = {
+					row: rowIndex,
+					store: grid.getStore(),
+					key: key
+				};
+				EDITOR.setValue(val);
+				EDWIN.setTitle( Name + "." + key);
+				EDWIN.show();
 			}, 
 
 			// regen pivots and slaved posts if pivot column moved

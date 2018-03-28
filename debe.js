@@ -504,7 +504,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 		},
 		
 		blog: function (recs,req,res) {  //< renders dataset records
-			recs.blogify( req.flags.blog.split(","), req.table, res );
+			recs.blogify( req.sql, req.client, req.flags.blog.split(","), req.table, res );
 		}
 		
 	},
@@ -1525,7 +1525,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			return recs;
 		},
 		
-		function blogify( keys, ds, cb ) {
+		function blogify( sql, client, keys, ds, cb ) {
 			/*
 			@member Array
 			@method blogify
@@ -1558,15 +1558,13 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 
 					if ( !renders ) cb(rtn);
 				}
+				var 
+					jaxList = [], cache = {}, $ = {}, tags = [];
 				
-				var jaxList = [], cache = {}, $ = {};
-
 				for (var key in rec) try { $[key] = JSON.parse( rec[key] ); } catch (err) {};
-				
-				renderJAX( 
-					jaxList, 
-
-					rtn
+							
+				var			
+					msg = rtn
 						.replace(/\$\$\{(.*?)\}/g, function (str,key) {  // $${ TeX matrix key } markdown
 							function texify(recs) {
 								var tex = [];
@@ -1679,10 +1677,23 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						.replace(/href=(.*?)\>/g, function (str,ref) { // follow <a href=REF>A</a> links
 							var q = (ref.charAt(0) == "'") ? '"' : "'";
 							return `href=${q}javascript:navigator.follow(${ref},BASE.user.client,BASE.user.source)${q}>`;
-						}) 	,  
-					
-					cb
-				); 
+						})
+						.replace(/\#(.*?) /g, function (str,tag) {  // #topic tag
+							tags.push(tag);
+							return "";
+						});
+
+				renderJAX( jaxList, msg, cb	); 
+				
+				tags.each( function (n,tag) {  // tag topics
+					sql.query("INSERT INTO app.tags SET `On`=now(),? ON DUPLICATE KEY UPDATE `On`=now(),Views=Views+1,?", [{
+							Tag: tag,
+							Message: msg,
+							To: client
+						}, {Message: msg}
+					]); 
+				});
+				
 			}
 		
 			var recs = this, rendered = 0, renders = recs.length;
@@ -2906,6 +2917,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 					float: "n",
 					json: "x",
 					mediumtext: "h",
+					longtext: "h",
 					json: "x",
 					date: "d", 
 					datetime: "d",
