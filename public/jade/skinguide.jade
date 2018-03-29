@@ -368,29 +368,24 @@ append site_body
 
 					Field Attributes
 
-						cols = "KEY.type.label.sum.tip, KEY*, KEY*count, ... " field list
+						cols = "KEY.type.label, KEY*, KEY*count, ... " field list
 						cols = "group(KEY,group(KEY, ...), ...), ..." field groups
 						cols = "Pivot(NodeID,NodeCount,KEY,KEY, ...), ..." field pivots
 						pivots = "KEY,KEY,..." pivot shortcut
 
 					where
-					>	KEY* matches "KEY0, KEY1, ..." in the **Parms** dataset  
-					>	KEY*count returns "KEY0, KEY1, ... KEY[count-1]" in the **Parms** dataset  
-					>	label display label  
-					>	sum	aggregates by sum | min | max | average | count | any | all | prod | nills | uti  
-
-					Field Types
-					+	integer: int | bigint | tinyint | autonum | auto  
-					+	binary: checkbox | boolean  
-					+	text: varchar | text | html | xtextarea  
-					+	special: file | svg | zilch | combo | geometry
-					+	numeric: number | float | double | percent | money  
-					+	date: date | datetime | mediumdate | defaultdate | iso8601long | iso8601short |shortdate | longdate | fulldatetime | monthday | shorttime | longtime | sortabledatetime | universalsortabledatetime | yearmonth  
-					+	icon: ##... (make icon list from class img-Action-value[0, 1, ...])
-
-					Capitalized types flag a read only field (mandatory for fields derived by selects).
-					The first character abbreviates a type. **Due to browser bugs (1) an html grid field may revert to xtextarea and (2) a numeric 
-					form field may revert to text.**
+					> KEY* matches "KEY0, KEY1, ..." in the **Parms** dataset  
+					> KEY*count returns "KEY0, KEY1, ... KEY[count-1]" in the **Parms** dataset  
+					> type can be (capitialized hides field)  
+						>	int | bigint | tinyint | autonum | auto  
+						>	checkbox | boolean  
+						>	varchar | text  
+						>	html | longtext | mediumtext  
+						>	xtextarea  
+						>	file | svg | zilch | combo | geometry  
+						>	number | float | double | percent | money  
+						>	date | datetime | mediumdate | defaultdate | iso8601long | iso8601short |shortdate | longdate | fulldatetime | monthday | shorttime | longtime | sortabledatetime | universalsortabledatetime | yearmonth  
+						>	##... action tokens from class img-Action-value0 | 1 | 2 ...
 
 					Grid Switches
 
@@ -405,18 +400,12 @@ append site_body
 						save	save view state (experimental)
 						kiss	display simple linking cues
 						wrap	forces display of header menu  
-						summary = min | max | average | count | sum | util | any | all | prod | nills row aggregator
+						summary = min | max | average | count | sum | util | any | all | prod | nills 
 
 					When the **calc** switch is provided, grids will evaluate =prefixed cells as follows:
-					>	=F text specifies font F=RGBKO... for text  
-					>	=C text specifies cell style C=0...9 for text  
-					>	=JS expression 
-
-					where a JS expression can include:
-					>	r,c returns the current grid row,col index  
-					>	d.COLUMN returns grid value at COLUMN in current row  
-					>	a[ROW].COLUMN returns grid value at ROW and COLUMN  
-					>	f.FUNCTION addresses a MathJS function
+					>	=Font R|G|B|K|O... 
+					>	=Style 0|1|2... 
+					>	=EXPRESSION like $f.FUNC( $.KEY ) ...
 
 					Content Attributes
 

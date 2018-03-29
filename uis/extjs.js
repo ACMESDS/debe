@@ -662,9 +662,9 @@ function DS(anchor) {
  */
 		cols	= anchor.getAttribute("cols")	 || "",
 		index	= anchor.getAttribute("index") || "",  
-		summary	= anchor.getAttribute("summary"),
-		calc	= anchor.getAttribute("calc")  ? [] : null,
-		create	= anchor.getAttribute("create") || "";
+		ag	= anchor.getAttribute("summary"),
+		calc	= anchor.getAttribute("calc")  ? [] : null;
+		//create	= anchor.getAttribute("create") || "";
 
 	//alert(JSON.stringify([name,sorts]));
 		  
@@ -703,7 +703,7 @@ function DS(anchor) {
 
 	cols = this.cols = cols.parse( PARMS, function cb(tok,args) {
 
-		function gridColumn(fType, fName, fOff, fLock, fLabel, fTip, fCalc) {
+		function gridColumn(fSpec, fCalc) { //fType, fKey, fLock, fLabel, fTip, fCalc) {
 		/**
 		 * @method gridColumn
 		 * @private
@@ -721,9 +721,9 @@ function DS(anchor) {
 		 */
 
 			function calcRender(cellVal, cellMeta, rec, rowIdx, colIdx, store, view) { 
-				function calc(val,meta,rc,d,a) {
-					var r = rc.row, c = rc.col;
-					var f = Math;
+				function calc(val,meta,$f,$) { //rc,d,a) {
+					//var r = rc.row, c = rc.col;
+					//var f = Math;
 
 					try {
 
@@ -782,23 +782,37 @@ function DS(anchor) {
 
 				else
 				if (cellVal.charAt(0) == "=") {
-					if (!fCalc.length) 
+					/*if (!fCalc.length) 
 						store.getRange().Each( function (n,rec) {
 							fCalc.push( rec.getData() );
-						});
+						});*/
 
-					return calc(cellVal.substr(1),cellMeta,{r:rowIdx,c:colIdx},rec.getData(),fCalc);
+					return calc(cellVal.substr(1),cellMeta,Math, rec.getData()); //{r:rowIdx,c:colIdx},rec.getData(),fCalc);
 				}
 				else 
 					return cellVal;
 			}	
 
-			function fRender(value,meta,rec,row,col) {
-				meta.tdAttr = "field="+fName;
+			/*function fieldRender(value,meta,rec,row,col) {
+				meta.tdAttr = "field="+fKey;
 				return value;
-			}
+			}*/
 
-			var 
+			var 			
+				fOpts = fSpec.split("."),
+				fKey = fOpts[0],
+				fParm = PARMS[ fKey ] || {Type: calc ? "mediumtext" : "text", Label:fKey, Special:""},
+				fType = fOpts[1] || fParm.Type || "text",
+				fLabel = fOpts[2] || fParm.Label || fKey,
+				//fChange = HISTORY[path+"."+fKey] || {Moderators:""},
+				fTips = [
+					fKey.tag("a",{href:`/parms.view?parm=${fKey}`}) ,
+			//		fChange.Moderators,
+					"moderate".tag("a", {href:"/moderate.view"}),
+					fParm.Special || "" 
+				],
+				fTip = fTips.join(" || "),
+				fLock = false,  //pivots ? true : sorts ? !(fKey in sorts) : false,			
 				fListen = {
 					afterrender: function (me) {
 						Ext.create('Ext.tip.ToolTip', {  // grid tooltip
@@ -821,33 +835,37 @@ function DS(anchor) {
 						});
 					}
 				},
-				fTips = fTip.split("||"),
-				fTip = fTips.pop() || "",
-				fTipTitle = fTips.pop() || fName;
+				//fTips = fTip.split("||"),
+				//fTip = fTips.pop() || "",
+				fChar = fType.charAt(0),
+				fHide = fChar >= "A" && fChar <= "Z",
+				fOff = false,
+				fTipTitle = fTips[0] || fKey; //fTips.pop() || fKey;
 
-			switch (fType || "text") {
+			switch (fType.toLowerCase()) {
 				case '#': 	// actions		
 					var actions = [];
 
 					fType.Each(function (i,type) {
 						actions.push({
 							getClass: function(val, meta, rec, rowIdx, colIdx, store) {
-								var states = rec.get(fName);
+								var states = rec.get(fKey);
 								var icons = val.split("<img");
 								return "Action-" + states.charAt(icons.length-1);
 							},
 							handler: function(grid, rowIndex, colIndex) {
-								// Ext.Msg.alert(fName,"Cannot edit an action field");
+								// Ext.Msg.alert(fKey,"Cannot edit an action field");
 							}
 						});
 					});
 
 					return {
 						xtype		: "actioncolumn", 
-						fType		: fType,
-						dataIndex	: fName,
+						//fType		: fType,
+						dataIndex	: fKey,
 						sortable	: false,
 						hideable	: true,
+						hidden: fHide,
 						layout		: "hbox",
 						menuDisabled: true,
 						locked		: fLock,
@@ -860,7 +878,7 @@ function DS(anchor) {
 							return "";
 						},
 						items		: actions,
-						renderer	: fRender,				
+						//renderer	: fieldRender,				
 						listeners	: fListen
 					};
 
@@ -868,13 +886,15 @@ function DS(anchor) {
 				case 'boolean':	// boolean			
 				case 'c':
 				case 'check':	// checkbox
+				case 'tinyint':
 					return {
 						xtype		: "checkcolumn", 
-						fType		: fType,
-						dataIndex	: fName,
+						//fType		: fType,
+						dataIndex	: fKey,
 						filter		: "boolean",
 						sortable	: true,
 						hideable	: true,
+						hidden: fHide,
 						locked		: fLock,
 						disabled	: fOff,
 						width		: 50,
@@ -891,7 +911,7 @@ function DS(anchor) {
 							cls: 'x-grid-checkheader-editor',
 							width: 20
 						},
-						//renderer	: fRender,				// EXTJS BUG
+						//renderer	: fieldRender,				// EXTJS BUG
 						listeners	: fListen
 					};
 
@@ -900,11 +920,12 @@ function DS(anchor) {
 				case 'datetime':
 					return {
 						xtype		: "datecolumn", 				
-						fType		: fType,
-						dataIndex	: fName,
+						//fType		: fType,
+						dataIndex	: fKey,
 						filter		: "date",
 						sortable	: true,
 						hideable	: true,
+						hidden: fHide,
 						locked		: fLock,
 						disabled	: fOff,
 						width		: 100,
@@ -923,7 +944,7 @@ function DS(anchor) {
 							width: 100
 						},
 						formatter	: "date('Y-m-d')",
-						renderer	: fRender,				
+						//renderer	: fieldRender,				
 						listeners	: fListen
 					};
 
@@ -931,11 +952,12 @@ function DS(anchor) {
 				case 'percent':
 					return {
 						xtype		: "numbercolumn", 				
-						fType		: fType,
-						dataIndex	: fName,
+						//fType		: fType,
+						dataIndex	: fKey,
 						filter		: "number",
 						sortable	: true,
 						hideable	: true,
+						hidden: fHide,
 						locked		: fLock,
 						disabled	: fOff,
 						width		: 50,
@@ -950,7 +972,7 @@ function DS(anchor) {
 							width: 75
 						},
 						formatter	: "percent('0.00')",
-						renderer	: fRender,				
+						//renderer	: fieldRender,				
 						listeners	: fListen
 					};
 
@@ -960,11 +982,12 @@ function DS(anchor) {
 				case 'double':
 					return {
 						xtype		: "numbercolumn", 				
-						fType		: fType,
-						dataIndex	: fName,
+						//fType		: fType,
+						dataIndex	: fKey,
 						filter		: "number",
 						sortable	: true,
 						hideable	: true,
+						hidden: fHide,
 						locked		: fLock,
 						disabled	: fOff,
 						width		: 50,
@@ -981,7 +1004,7 @@ function DS(anchor) {
 							width: 150
 						},
 						formatter	: "number('0.0000')",
-						renderer	: fRender,				
+						//renderer	: fieldRender,				
 						listeners	: fListen
 					};
 
@@ -990,8 +1013,8 @@ function DS(anchor) {
 				case 'boolean':	// boolean
 					return {
 						//xtype		: "booleancolumn", 				
-						fType		: fType,
-						dataIndex	: fName,
+						//fType		: fType,
+						dataIndex	: fKey,
 						filter		: "boolean",
 						sortable	: true,
 						hideable	: true,
@@ -1009,7 +1032,7 @@ function DS(anchor) {
 							allowBlank: true,
 							width: 75
 						},
-						renderer	: fRender,
+						renderer	: fieldRender,
 						listeners	: fListen
 					};	*/
 
@@ -1022,11 +1045,12 @@ function DS(anchor) {
 				case 'bigint':
 					return {
 						xtype		: "numbercolumn", 				
-						fType		: fType,
-						dataIndex	: fName,
+						//fType		: fType,
+						dataIndex	: fKey,
 						filter		: "number",
 						sortable	: true,
 						hideable	: true,
+						hidden: fHide,
 						locked		: fLock,
 						disabled	: fOff,
 						width		: 50,
@@ -1042,7 +1066,7 @@ function DS(anchor) {
 							allowBlank: true,
 							width: 150
 						},
-						renderer	: fRender,				
+						//renderer	: fieldRender,				
 						listeners	: fListen
 					};			
 
@@ -1050,11 +1074,12 @@ function DS(anchor) {
 				case 'money':	// currency
 					return {
 						xtype		: "numbercolumn", 				
-						fType		: fType,
-						dataIndex	: fName,
+						//fType		: fType,
+						dataIndex	: fKey,
 						filter		: "number",
 						sortable	: true,
 						hideable	: true,
+						hidden: fHide,
 						locked		: fLock,
 						disabled	: fOff,
 						width		: 75,
@@ -1071,7 +1096,7 @@ function DS(anchor) {
 							minValue: 0,
 							width: 75
 						},
-						renderer	: fRender,
+						//renderer	: fieldRender,
 						listeners	: fListen
 					};			
 
@@ -1081,17 +1106,18 @@ function DS(anchor) {
 				case 'h':
 				case 'html':	// html
 				case 'mediumtext':	
-				case 'longtest':
-					Blogs.push( fName );
+				case 'longtext':
+					Blogs.push( fKey );
 
 					return  {
 						xtype: 	"",
-						fType		: fType,
-						dataIndex	: fName,
+						//fType		: fType,
+						dataIndex	: fKey,
 						//sortable	: true,
 						//hideable	: true,
 						//locked		: fLock,
 						//disabled	: fOff,
+						hidden: fHide,
 						width		: 400,
 						text		: fLabel,
 						cellWrap: true,
@@ -1151,10 +1177,11 @@ function DS(anchor) {
 				case 'geometry':
 					return {
 						xtype	: "",
-						fType		: fType,
-						dataIndex	: fName,
+						//fType		: fType,
+						dataIndex	: fKey,
 						sortable	: false,
 						hideable	: true,
+						hidden: fHide,
 						locked		: true,
 						width		: 10,
 						text		: fLabel,
@@ -1163,15 +1190,17 @@ function DS(anchor) {
 					};
 
 				case 'x':		// text area
+				case 'json':
 				case 'textarea':
 				case 'xtextarea':
 					return {
 						xtype : "",
-						fType		: fType,
+						//fType		: fType,
 						enableKeyEvents: true,
-						dataIndex	: fName,
+						dataIndex	: fKey,
 						sortable	: true,
 						hideable	: true,
+						hidden: fHide,
 						cellWrap: true,
 						locked		: fLock,
 						disabled	: fOff,
@@ -1273,7 +1302,7 @@ function DS(anchor) {
 								}
 							}  */
 						}, 
-						renderer 	: calcRender,
+						renderer 	: fCalc ? calcRender : null,
 						listeners	: fListen
 					};
 
@@ -1282,11 +1311,12 @@ function DS(anchor) {
 				case 'varchar':	// text			
 					return {
 						xtype:	"",
-						fType		: fType,
-						dataIndex	: fName,
+						//fType		: fType,
+						dataIndex	: fKey,
 						filter		: "string",
 						sortable	: true,
 						hideable	: true,
+						hidden: fHide,
 						locked		: fLock,
 						width		: 100,
 						text		: fLabel,
@@ -1304,7 +1334,7 @@ function DS(anchor) {
 							//width: 400,
 							//disabled: fOff
 						},
-						renderer	: fRender,
+						//renderer	: fieldRender,
 						listeners	: fListen
 					};		
 
@@ -1312,10 +1342,11 @@ function DS(anchor) {
 				case 'file':	// file
 					return {
 						xtype		: "actioncolumn",
-						fType		: fType,
-						dataIndex	: fName,
+						//fType		: fType,
+						dataIndex	: fKey,
 						sortable	: true,
 						hideable	: true,
+						hidden: fHide,
 						locked		: fLock,
 						disabled	: fOff,
 						width		: 30,
@@ -1339,7 +1370,7 @@ function DS(anchor) {
 								uploadField.fileInputEl.dom.click();
 							}
 						}],
-						renderer	: fRender,
+						//renderer	: fieldRender,
 						listeners	: fListen /*{
 							afterrender: tipRender function (me) {
 								Ext.create('Ext.tip.ToolTip', {
@@ -1359,7 +1390,7 @@ function DS(anchor) {
 				case 'combo': 	// queue pulldown
 
 					var 
-						comboDS = DSLIST[ fName ] || { Fields: [] },
+						comboDS = DSLIST[ fKey ] || { Fields: [] },
 						fParms = fType.split(":"),
 						f0 = comboDS.Fields[0] || {dataIndex:"Name"},
 						f1 = comboDS.Fields[1] || f0,
@@ -1369,11 +1400,12 @@ function DS(anchor) {
 					return comboDS 
 						? {	// DS exists
 							xtype: "",
-							fType		: fType,
-							dataIndex	: fName,
+							//fType		: fType,
+							dataIndex	: fKey,
 							filter		: "string",
 							sortable	: true,
 							hideable	: true,
+							hidden: fHide,
 							locked		: fLock,
 							disabled	: fOff,
 							width		: 100,
@@ -1399,7 +1431,7 @@ function DS(anchor) {
 								queryMode: 'local',	
 								//submitValue: true, 
 								width: 100,
-								renderer	: fRender,
+								//renderer	: fieldRender,
 								listeners	: {
 									// EXTJS BUG - combobox bound to out-of-band store (i.e. store not containing the
 									// target valueField) always sets newValue to null.  Must slap EXTJS upside its
@@ -1422,11 +1454,12 @@ function DS(anchor) {
 
 						: { // DS does not exists
 							xtype: "",
-							fType		: fType,
-							dataIndex	: fName,
+							//fType		: fType,
+							dataIndex	: fKey,
 							filter		: "string",
 							sortable	: true,
 							hideable	: true,
+							hidden: fHide,
 							locked		: fLock,
 							disabled	: fOff,
 							width		: 100,
@@ -1442,7 +1475,7 @@ function DS(anchor) {
 								allowBlank: true,
 								width: 400
 							},
-							renderer	: fRender,
+							//renderer	: fieldRender,
 							listeners	: fListen
 						};
 
@@ -1451,11 +1484,12 @@ function DS(anchor) {
 					return DATES[fType]
 						? {	// date
 							xtype		: "datecolumn", 				
-							fType		: fType,
-							dataIndex	: fName,
+							//fType		: fType,
+							dataIndex	: fKey,
 							filter		: "date",
 							sortable	: true,
 							hideable	: true,
+							hidden: fHide,
 							locked		: fLock,
 							disabled	: fOff,
 							width		: 100,
@@ -1474,17 +1508,18 @@ function DS(anchor) {
 								width: 100
 							},
 							formatter	: "date('Y-m-d')",
-							renderer	: fRender,
+							//renderer	: fieldRender,
 							listeners	: fListen
 						}
 
 						: {	// text
 							xtype: 	"",
-							fType		: fType,
-							dataIndex	: fName,
+							//fType		: fType,
+							dataIndex	: fKey,
 							filter			: "string",
 							sortable	: true,
 							hideable	: true,
+							hidden: fHide,
 							locked		: fLock,
 							disabled	: fOff,
 							width		: 100,
@@ -1500,7 +1535,7 @@ function DS(anchor) {
 								allowBlank: true,
 								width: 400
 							},
-							renderer 	: fRender,
+							//renderer 	: fieldRender,
 							listeners	: fListen
 						};		
 
@@ -1509,27 +1544,10 @@ function DS(anchor) {
 		}		
 		
 		var 
-			fOpts = tok.split("."),
-			fName = fOpts[0],
-			fParm = PARMS[ fName ] || {Type:calc ? "html" : "text",Label:fName,Special:""},
-			fType = fOpts[1] || fParm.Type || "text",
-			fLabel = fOpts[2] || fParm.Label || fName,
-			fAg = fOpts[3],
-			//fChange = HISTORY[path+"."+fName] || {Moderators:""},
-			fTip = 	[
-				fName.tag("a",{href:`/parms.view?parm=${fName}`}) ,
-		//		fChange.Moderators,
-				"moderate".tag("a", {href:"/moderate.view"}),
-				fOpts[4] || fParm.Special || "" 
-			].join(" || "),
-			fChar = fType.charAt(0),
-			fOff = fChar >= "A" && fChar <= "Z",
-			fCalc = calc,
-			fLock = false; //pivots ? true : sorts ? !(fName in sorts) : false;
-		
-		var fCol = gridColumn(fType,fName,fOff,fLock,fLabel,fTip,fCalc);
+			fCol = gridColumn(tok, calc), //fType,fKey,fLock,fLabel,fTip,calc);
+			fKey = fCol.dataIndex;
 
-		switch (fAg) {			// Add row aggregator if needed
+		switch (ag) {			// Add row aggregator if needed
 			case "min":
 			case "max":
 			case "count":
@@ -1545,7 +1563,7 @@ function DS(anchor) {
 						var rec = recs[n];
 						if (rec.get("SeqNum") == "Deliverables") {
 							cnts++;
-							if (rec.get(fName) == "XXXXXX") idles++;
+							if (rec.get(fKey) == "XXXXXX") idles++;
 						}
 					}
 					return 1 - idles/cnts;
@@ -1560,7 +1578,7 @@ function DS(anchor) {
 			case "any":
 				fCol.summaryType = function (recs) {
 					var N=recs.length, any=0;
-					for (var n=0; n<N && !any; n++) any = recs[n].get(fName) ? 1 : 0;
+					for (var n=0; n<N && !any; n++) any = recs[n].get(fKey) ? 1 : 0;
 					return any;
 				};
 				
@@ -1569,7 +1587,7 @@ function DS(anchor) {
 			case "all":
 				fCol.summaryType = function (recs) {
 					var N=recs.length, all=1;
-					for (var n=0; n<N && all; n++) all = recs[n].get(fName) ? 1 : 0;
+					for (var n=0; n<N && all; n++) all = recs[n].get(fKey) ? 1 : 0;
 					return all;
 				};
 				
@@ -1578,7 +1596,7 @@ function DS(anchor) {
 			case "prod":
 				fCol.summaryType = function (recs) {
 					var N=recs.length, prod=1;
-					for (var n=0; n<N; n++) prod *= recs[n].get(fName);
+					for (var n=0; n<N; n++) prod *= recs[n].get(fKey);
 					return prod;
 				};
 				
@@ -1587,14 +1605,14 @@ function DS(anchor) {
 			case "nills":
 				fCol.summaryType = function (recs) {
 					var N=recs.length, nills=0;
-					for (var n=0; n<N; n++) nills += recs[n].get(fName) ? 0 : 1;
+					for (var n=0; n<N; n++) nills += recs[n].get(fKey) ? 0 : 1;
 					return nills;
 				};
 				
 				break;
 		}
 		
-		switch (fName) {		// Handle reserved field names
+		switch (fKey) {		// Handle reserved field names
 			case "NodeCount":
 				fCol.persist = false;
 				break;
@@ -1602,7 +1620,7 @@ function DS(anchor) {
 			case "NodeID":   
 				fCol.xtype = "treecolumn"; 
 				fCol.persist = false;
-				key = fName; 
+				key = fKey; 
 				break;
 				
 			case "Pivot":
@@ -1631,7 +1649,7 @@ function DS(anchor) {
 			});*/
 			
 			// EXTJS BUG does not allow tree in locked column
-			if (fName == "Pivot" && args[0].xtype != "treecolumn") fCol.locked = true;
+			if (fKey == "Pivot" && args[0].xtype != "treecolumn") fCol.locked = true;
 			
 			return fCol;
 		}
@@ -1641,6 +1659,7 @@ function DS(anchor) {
 		return fCol;			// Return the column descriptor to the column grouper.
 	});
 
+	/*
 	if (create) {				// Process dataset make request
 		var fields = {}; 
 		Fields.Each( function(n,f) { 
@@ -1652,7 +1671,7 @@ function DS(anchor) {
 			params: fields,
 			method: "GET"
 		});					
-	}
+	}*/
 
 	// Flag tree grouping, inline data, and posting
 	
@@ -4231,7 +4250,7 @@ WIDGET.prototype.form = function () {
 			// sure that field ids are unique.  EXTJS failed to document this behavior.
 			
 			var fLabel = Col.text;
-			var fName = Col.dataIndex;
+			var fKey = Col.dataIndex;
 			var fOff = false; //Col.hidden; 
 			
 			if (FieldIDs[fLabel]) {
@@ -4279,7 +4298,7 @@ WIDGET.prototype.form = function () {
 				var UI = UIs[i] = Copy({	
 						id			: fID,
 						fieldLabel	: fLabel,
-						name		: fName,
+						name		: fKey,
 						xtype		: 1 //  correct EXTJS BUG -- all browsers
 							? (Col.editor.xtype == "numberfield" || Col.editor.xtype == "datefield") ? "textfield" : Col.editor.xtype
 							: Col.editor.xtype,

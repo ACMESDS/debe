@@ -2907,6 +2907,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 
 		function renderPlugin(fields) { // render using plugin skin
 			
+			/*
 			function acceptable(field) {
 				var types = {
 					"?": "t",
@@ -2927,21 +2928,21 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 				return 	(field.Field != "ID" && field.Type != "geometry") 
 					? field.Field + "." + ( types[ field.Type ] || "t" )
 					: null;	
-			}
+			} */
 
 			var
 				pluginPath = paths.render+"plugin.jade",
-				cols = [],
 				query = req.query,
 				sql = req.sql,
 				query = Copy({
 					mode: req.parts[1],
 					//search: req.search,
-					cols: cols,
+					cols: [],
 					page: query.page,
 					dims: query.dims || "100%,100%",
 					ds: req.table
 				},req.query),
+				cols = query.cols,
 				ctx = site.context.plugin;
 			
 			//Log([query, req.search]);
@@ -2949,14 +2950,21 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 			switch (fields.constructor) {
 				case Array:
 					fields.each(function (n,field) {
-						if ( col = acceptable(field) ) cols.push( col );
+						var key = field.Field, type = field.Type.split("(")[0];
+						if ( key != "ID" && type != "geometry")
+							if ( key.indexOf("Save") == 0 && type == "json") 
+								cols.push( key + ".Json" );
+							else
+								cols.push( key + "." + type );
+						//if ( col = acceptable(field) ) cols.push( col );
 					});
 					break;
 					
 				case String:
 					fields.split(",").each(function (n,field) {
-						if ( col = acceptable( { Field: field, Type: "?"} ) ) cols.push( col );
-					});					
+						if ( field != "ID") cols.push( field );
+						//if ( col = acceptable( { Field: field, Type: "?"} ) ) cols.push( col );
+					});	
 					break;
 					
 				case Object:
@@ -2964,7 +2972,8 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 					
 					try{
 						Each(fields, function (n,rec) {
-							if ( col = acceptable( { Field: n, Type: "?"} ) ) cols.push( n );
+							if (field != "ID") cols.push( field );
+							//if ( col = acceptable( { Field: n, Type: "?"} ) ) cols.push( n );
 						});	
 					}
 					catch (err) {
