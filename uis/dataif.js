@@ -1,5 +1,8 @@
 Array.prototype.each = function ( cb ) {
-	for (var n=0,N=this.length; n<N; n++) cb( n, this[n] );
+	//for (var n=0,N=this.length; n<N; n++) cb( n, this[n] );
+	this.forEach( function (val,idx) {
+		cb(idx,val);
+	});
 }
 
 /*
@@ -111,6 +114,10 @@ function source(opts, cb) {
 		//alert(JSON.stringify(recs));
 		
 		if ( recs)
+			if ( opts.raw )
+				cb( Array.from(recs) );
+		
+			else
 			if ( recs.constructor == Array)
 				recs.forEach( function (rec) {
 					for ( var key in rec ) 

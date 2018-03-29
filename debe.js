@@ -1683,16 +1683,17 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 							return "";
 						});
 
-				renderJAX( jaxList, msg, cb	); 
-				
-				tags.each( function (n,tag) {  // tag topics
-					sql.query("INSERT INTO app.tags SET `On`=now(),? ON DUPLICATE KEY UPDATE `On`=now(),Views=Views+1,?", [{
-							Tag: tag,
-							Message: msg,
-							To: client
-						}, {Message: msg}
-					]); 
-				});
+				renderJAX( jaxList, msg, function (msg) {
+					cb(msg);					
+					tags.each( function (n,tag) {  // tag topics
+						sql.query("INSERT INTO app.tags SET `On`=now(),? ON DUPLICATE KEY UPDATE `On`=now(),Views=Views+1,?", [{
+								Tag: tag,
+								Message: msg,
+								To: client
+							}, {Message: msg}
+						]); 
+					});
+				}); 
 				
 			}
 		
@@ -2907,29 +2908,6 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 
 		function renderPlugin(fields) { // render using plugin skin
 			
-			/*
-			function acceptable(field) {
-				var types = {
-					"?": "t",
-					"varchar(32)": "t",
-					"varchar(64)": "t",
-					"varchar(128)": "t",
-					"int(11)": "i",
-					float: "n",
-					json: "x",
-					mediumtext: "h",
-					longtext: "h",
-					json: "x",
-					date: "d", 
-					datetime: "d",
-					"tinyint(1)": "c"
-				};				
-				
-				return 	(field.Field != "ID" && field.Type != "geometry") 
-					? field.Field + "." + ( types[ field.Type ] || "t" )
-					: null;	
-			} */
-
 			var
 				pluginPath = paths.render+"plugin.jade",
 				query = req.query,
@@ -2956,14 +2934,12 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 								cols.push( key + ".Json" );
 							else
 								cols.push( key + "." + type );
-						//if ( col = acceptable(field) ) cols.push( col );
 					});
 					break;
 					
 				case String:
 					fields.split(",").each(function (n,field) {
 						if ( field != "ID") cols.push( field );
-						//if ( col = acceptable( { Field: field, Type: "?"} ) ) cols.push( col );
 					});	
 					break;
 					
@@ -2973,7 +2949,6 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 					try{
 						Each(fields, function (n,rec) {
 							if (field != "ID") cols.push( field );
-							//if ( col = acceptable( { Field: n, Type: "?"} ) ) cols.push( n );
 						});	
 					}
 					catch (err) {

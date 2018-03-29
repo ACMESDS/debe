@@ -27,6 +27,7 @@ append base_head
 			ds: "!{query.ds}" || "maps.db",
 			index: "#{query.index}" || "Name",
 			details: "#{query.details}" || "Info",
+			raw: true,
 			fill: "#{query.fill}" || "Code",
 			trace: "#{query.trace}" || false
 		};
@@ -36,11 +37,9 @@ append base_body
 	script.
 		//var map = new Datamap({element: document.getElementById('content')});
 
-		source(opts, function(opts) {
+		source(opts, function(data) {
 
-			var data = {};
-		
-			opts.data.each( function (n,rec) {
+			data.each( function (n,rec) {
 				data[ (rec[opts.index] || "") ] = {
 					fillKey: (rec[opts.fill] || "").toUpperCase(),
 					Info: (rec[opts.details] || "").toUpperCase()
