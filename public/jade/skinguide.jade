@@ -374,14 +374,14 @@ append site_body
 						pivots = "KEY,KEY,..." pivot shortcut
 
 					where
-					> KEY* matches "KEY0, KEY1, ..." in the **Parms** dataset  
-					> KEY*count returns "KEY0, KEY1, ... KEY[count-1]" in the **Parms** dataset  
+					> KEY* matches "KEY0, KEY1, ..." if found in the **Parms** dataset  
+					> KEY*N returns "KEY0, KEY1, ... KEY[N-1]"  
 					> type can be (capitialized hides field)  
 						>	int | bigint | tinyint | autonum | auto  
 						>	checkbox | boolean  
 						>	varchar | text  
 						>	html | longtext | mediumtext  
-						>	xtextarea  
+						>	textarea | xtextarea | json  
 						>	file | svg | zilch | combo | geometry  
 						>	number | float | double | percent | money  
 						>	date | datetime | mediumdate | defaultdate | iso8601long | iso8601short |shortdate | longdate | fulldatetime | monthday | shorttime | longtime | sortabledatetime | universalsortabledatetime | yearmonth  
@@ -389,8 +389,7 @@ append site_body
 
 					Grid Switches
 
-						shifts	allow grid cell shifting
-						calc	allow grid cell expressions
+						calc	allow grid cell expressions and cell shifting
 						crush	allow minimization
 						refresh	manual data store refresher
 						hide	render but dont show

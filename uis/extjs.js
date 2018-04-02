@@ -649,7 +649,7 @@ function DS(anchor) {
 		sorts = anchor.getAttribute("sorts"),
 		sorts = sorts ? hashify(sorts.split(",")) : null,
 	
-		shifts	= anchor.getAttribute("shifts") ? true : false,
+		//shifts	= anchor.getAttribute("shifts") ? true : false,
 		
 		page 	= parseInt(anchor.getAttribute("page")) || 0,
 		sync 	= anchor.getAttribute("sync"),
@@ -663,7 +663,7 @@ function DS(anchor) {
 		cols	= anchor.getAttribute("cols")	 || "",
 		index	= anchor.getAttribute("index") || "",  
 		ag	= anchor.getAttribute("summary"),
-		calc	= anchor.getAttribute("calc")  ? [] : null;
+		calc	= anchor.getAttribute("calc")  ? true : false ; //[] : null;
 		//create	= anchor.getAttribute("create") || "";
 
 	//alert(JSON.stringify([name,sorts]));
@@ -772,24 +772,30 @@ function DS(anchor) {
 					}
 				}
 
+				//console.log(cellVal);
 				if (cellVal == null)
 					return "";
 
+				/*
 				else  
 				if (cellVal.constructor == Object) 
 					for (var n in cellVal) 
-						return "".tag(n,cellVal[n]);
+						return "".tag(n,cellVal[n]);*/
 
 				else
-				if (cellVal.charAt(0) == "=") {
-					/*if (!fCalc.length) 
-						store.getRange().Each( function (n,rec) {
-							fCalc.push( rec.getData() );
-						});*/
+				if (calc)
+					if (cellVal.charAt(0) == "=") 
+						/*if (!fCalc.length) 
+							store.getRange().Each( function (n,rec) {
+								fCalc.push( rec.getData() );
+							});*/
 
-					return calc(cellVal.substr(1),cellMeta,Math, rec.getData()); //{r:rowIdx,c:colIdx},rec.getData(),fCalc);
-				}
-				else 
+						return calc(cellVal.substr(1),cellMeta,Math, rec.getData()); //{r:rowIdx,c:colIdx},rec.getData(),fCalc);
+					
+					else 
+						return cellVal;
+				
+				else
 					return cellVal;
 			}	
 
@@ -798,7 +804,7 @@ function DS(anchor) {
 				return value;
 			}*/
 
-			var 			
+			var 
 				fOpts = fSpec.split("."),
 				fKey = fOpts[0],
 				fParm = PARMS[ fKey ] || {Type: calc ? "mediumtext" : "text", Label:fKey, Special:""},
@@ -1122,7 +1128,7 @@ function DS(anchor) {
 						text		: fLabel,
 						cellWrap: true,
 						qtip		: fTip, 
-						qtitle	 	: fTipTitle
+						qtitle	 	: fTipTitle,
 						/*
 						editor	: {
 							xtype: "htmleditor",
@@ -1167,7 +1173,7 @@ function DS(anchor) {
 							else
 								return cellVal;
 						}*/
-						//renderer 	: fCalc ? calcRender : null,
+						renderer 	: fCalc ? calcRender : null
 						//listeners	: fListen   // EXTJS widget gets confused when embedded in grid
 					};			
 
@@ -1687,47 +1693,53 @@ function DS(anchor) {
 		_index: index		// field generators  
 	};
 
+	//alert(name+" "+calc);
 	var Menu = this.Menu = new Ext.menu.Menu({ 	// cell linking context menu
-			items: shifts
+			items: calc //shifts
 				? [{
 					text: "Shift Left",
 					handler: function () {	
 						var shifts=1, 
 							idxL = SELECT_CELL.idx, 
 							idxR = idxL+shifts, 
-							moves = Fields.length-shifts-idxL-1,
+							moves = Fields.length-shifts-idxL,
 							rec = This.Store.getById(SELECT_CELL.ID);
 						
-						alert(["L",shifts,idxR,idxL,moves,rec]);
+						//alert(["L",shifts,idxR,idxL,moves,Fields.length,SELECT_CELL.ID, rec?true:false]);
 
-						for (var n=0; n<moves; n++,idxL++,idxR++) {
-							//alert(Fields[idxL].dataIndex+'='+Fields[idxR].dataIndex);	
-							rec.set(Fields[idxL].dataIndex, rec.get(Fields[idxR].dataIndex));
+						if (rec) {
+							for (var n=0; n<moves; n++,idxL++,idxR++) {
+								//alert(Fields[idxL].dataIndex+'='+Fields[idxR].dataIndex);	
+								rec.set(Fields[idxL].dataIndex, rec.get(Fields[idxR].dataIndex));
+							}
+
+							for (var n=0; n<shifts; n++,idxL++) 
+								rec.set(Fields[idxL].dataIndex, ""); 
 						}
-						
-						for (var n=0; n<shifts; n++,idxL++) 
-							rec.set(Fields[idxL].dataIndex, ""); 
-							
+
 						//Widget.getView().refreshNode(SELECT_CELL.rowIdx);  // some say extjs needs a kick to refresh
 					}
 				}, {
 					text: "Shift Right",
 					handler: function () {	
-						var shifts = 1, 
-							idxR = Fields.length-2, // last field is always the key ID
+						var 
+							shifts = 1, 
+							idxR = Fields.length-1, // if ID placed into last field then -2
 							idxL = idxR-shifts, 
 							moves = idxL-SELECT_CELL.idx+1,		
 							rec = This.Store.getById(SELECT_CELL.ID);
 
-						alert(["R",shifts,idxR,idxL,moves,Fields.length]);
+						//alert(["R",shifts,idxR,idxL,moves,Fields.length,SELECT_CELL.ID,rec?true:false]);
 						
-						for (var n=0; n<moves; n++,idxL--,idxR--) {
-							//alert(Fields[idxR].dataIndex+'='+Fields[idxL].dataIndex);
-							rec.set(Fields[idxR].dataIndex, rec.get(Fields[idxL].dataIndex));
-						}
+						if (rec) {
+							for (var n=0; n<moves; n++,idxL--,idxR--) {
+								//alert(Fields[idxR].dataIndex+'='+Fields[idxL].dataIndex );
+								rec.set(Fields[idxR].dataIndex, rec.get(Fields[idxL].dataIndex));
+							}
 
-						for (var n=0; n<shifts; n++,idxR--) 
-							rec.set(Fields[idxR].dataIndex, ""); 
+							for (var n=0; n<shifts; n++,idxR--) 
+								rec.set(Fields[idxR].dataIndex, ""); 
+						}
 					}
 				}] 
 			: []

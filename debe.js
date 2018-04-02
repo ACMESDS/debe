@@ -511,9 +511,10 @@ Further information about this file is available ${paths.moreinfo}. `;
 											 
 	"reqTypes." : { //< endpoint types to convert dataset recs on specifed req-res thread
 		
+		/*
 		view: function (recs,req,res) {  //< dataset.view returns rendered skin
 			res( recs );
-		},
+		},*/
 		
 		exe: function (recs,req,res) {
 			res( recs );
@@ -1009,6 +1010,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		// skins
 		view: renderSkin,
+		calc: renderSkin,
 		run: renderSkin,
 		plugin: renderSkin,
 		site: renderSkin,

@@ -30,9 +30,6 @@ append site_parms
 		when "run"
 			- view = "Typical"
 			- options = { "more+":"", "more++":"", less:"" }
-		when "view"
-		when "pivot"
-		when "brief"
 		default
 			- view = "Nada"
 
@@ -213,6 +210,15 @@ append site_body
 					width=width,
 					height=height )
 
+		when "calc"
+			#grid(
+				class=dstitle,
+				path=dspath,
+				calc=1,
+				cols="W*10",
+				dims=dsdims,
+				page=dspage )
+				
 		default
 			#grid(
 				class=dstitle,
