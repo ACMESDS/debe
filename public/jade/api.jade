@@ -876,7 +876,7 @@ append site_body
 					[LWIP(lightweight imaging)](https://github.com/EyalAr/lwip),
 					[SQL(database connector)](https://www.npmjs.com/package/mysql), 
 					[JSON(encoder-decoder)](https://nodejs.org/docs/latest/api/json), 
-					[MAT(matlab emulator)](https://www.npmjs.com/package/mathjs),
+					[ME(matlab emulator)](https://www.npmjs.com/package/mathjs),
 					[DSP(digitial signal processing)](https://www.npmjs.com/package/dsp), 
 					[CRYPTO(crypto)](https://nodejs.org/docs/latest/api/crypto),
 					[BAYS(bayes network interference )](https://www.npmjs.com/package/jsbayes),
@@ -905,7 +905,7 @@ append site_body
 							GET.byStep( ctx, function (evs) {
 								LOG(evs);
 							});
-							MAT(ctx, "D=A*A'; E=D+D*3; disp(entry); ");
+							ME.exec(ctx, "D=A*A'; E=D+D*3; disp(entry); ");
 							LOG( "D=", ctx.D, "E=", ctx.E);
 						}
 
@@ -928,14 +928,14 @@ append site_body
 					will, on entry, prime its *A* and *B* context keys using its *entry* sql-queries: the "?" therein
 					references its context *query* hash (as overridden by url query parameters).  On
 					exit, its context *B* context variable is exported by its *exit* sql-query.    It computes a *tau* variable
-					that is simply discarded on exit (placing into CTX.Save to retain).  The MAT matlab emulator
-					computes context *D* and *E* values.  The default MAT emulator has been extended with *disp* etc 
+					that is simply discarded on exit (placing into CTX.Save to retain).  The ME.exec matlab emulator
+					computes context *D* and *E* values.  The default ME.exec emulator has been extended with *disp* etc 
 					functions.
 
 					This [stateless js-engine example](/jsdemo2.exe?name=test):
 
 						function jsdemo2(ctx,res) {
-							MAT(ctx, "a = inv(X' * X) * X' * y");
+							ME.exec(ctx, "a = inv(X' * X) * X' * y");
 							
 							LOG(ctx.a);
 
