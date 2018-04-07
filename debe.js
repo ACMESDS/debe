@@ -2970,14 +2970,9 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 					
 				case Object:
 				default:
-					
-					try{
-						Each(fields, function (n,rec) {
-							if (field != "ID") cols.push( field );
-						});	
-					}
-					catch (err) {
-					}
+					Each(fields, function (field) {
+						if (field != "ID") cols.push( field );
+					});	
 			}
 				
 			/*if ( query.mode == "gbrief" ) // better to add this to site.context.plugin
