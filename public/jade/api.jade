@@ -82,7 +82,7 @@ append site_body
 	#accordion.Files
 		#fit.Endpoints
 			:markdown
-				File access is provided on the following endpoints:
+				File access is provided at the following endpoints:
 
 					GET	/AREA/FILE.TYPE?QUERY	Return FILE from AREA using query parameters
 					GET	/ATTR/FILE.TYPE?QUERY	Return ATTRribute of a FILE
@@ -101,7 +101,7 @@ append site_body
 					chips	image chipping cache
 					tips	image tipping cache
 					shares 	spot to place skinning content
-
+					
 		#fit.Parameters
 			:markdown
 				File retrieval parameters include:
@@ -872,25 +872,28 @@ append site_body
 					
 			#fit.js
 				:markdown
-					js-engines are automatically supplied the following modules:
+					js-engines are automatically supplied the
 					[LWIP(lightweight imaging)](https://github.com/EyalAr/lwip),
-					[SQL(database connector)](https://www.npmjs.com/package/mysql), 
+					[SQL(jsdb-extended database connector)](https://www.npmjs.com/package/mysql), 
 					[JSON(encoder-decoder)](https://nodejs.org/docs/latest/api/json), 
-					[MAT(matlab emulator)](https://www.npmjs.com/package/mathjs),
-					[DSP(digitial signal processing)](https://www.npmjs.com/package/dsp), 
-					[CRYPTO(crypto)](https://nodejs.org/docs/latest/api/crypto),
-					[BAYS(bayes network interference )](https://www.npmjs.com/package/jsbayes),
-					[GAMMA(standard gamma function)](https://www.npmjs.com/package/gamma),
+					[ME(jslab-extended matlab emulator)](https://www.npmjs.com/package/mathjs),
+					[TASK(task sharding)](https://github.com/ACMESDS/jslab),
+					[GET(data getter)](https://github.com/ACMESDS/jslab)
 					[RAN(markov random process)](https://github.com/ACMESDS/randpr),
+					[CRYPTO(crypto)](https://nodejs.org/docs/latest/api/crypto), and
+					[MAIL(simple mail transfer)](https://www.npmjs.com/package/nodemailer)
+					modules.  The matlab emulator module ME is supported by the
+					[DSP(digitial signal processing)](https://www.npmjs.com/package/dsp), 
+					[BAYES(bayes network interference )](https://www.npmjs.com/package/jsbayes),
+					[GAMMA(standard gamma function)](https://www.npmjs.com/package/gamma),
 					[SVD(singular value decomposition)](https://www.npmjs.com/package/node-svd),
-					[VITERBI(hidden markov model solver)](https://www.npmjs.com/package/nodehmm),
+					[HMM(hidden markov model solver)](https://www.npmjs.com/package/nodehmm),
 					[MLE(maximum liklihood estimator)](https://www.npmjs.com/package/node-svd),
 					[MVN(normal multivariates](https://www.npmjs.com/package/multivariate-normal),
-					[MAIL(simple mail transfer)](https://www.npmjs.com/package/nodemailer),
 					[NRAP(newton-raphson root finder)](https://www.npmjs.com/package/newton-raphson),
-					[ZETA(riemann-zeta function](https://www.npmjs.com/package/math-riemann-zeta),
-					[TASK(tasking sharding)](https://github.com/ACMESDS/jslab), and
-					[GET(data getter)](https://github.com/ACMESDS/jslab)
+					[ZETA(riemann-zeta function](https://www.npmjs.com/package/math-riemann-zeta), and
+					[RNN(recurrent nural netroc](https://www.npmjs.com/package/recurrentjs)
+					modules.
 
 					This [stateless js-engine example](/jsdemo1.run):
 
@@ -905,7 +908,7 @@ append site_body
 							GET.byStep( ctx, function (evs) {
 								LOG(evs);
 							});
-							MAT(ctx, "D=A*A'; E=D+D*3; disp(entry); ");
+							ME.exec(ctx, "D=A*A'; E=D+D*3; disp(entry); ");
 							LOG( "D=", ctx.D, "E=", ctx.E);
 						}
 
@@ -928,14 +931,14 @@ append site_body
 					will, on entry, prime its *A* and *B* context keys using its *entry* sql-queries: the "?" therein
 					references its context *query* hash (as overridden by url query parameters).  On
 					exit, its context *B* context variable is exported by its *exit* sql-query.    It computes a *tau* variable
-					that is simply discarded on exit (placing into CTX.Save to retain).  The MAT matlab emulator
-					computes context *D* and *E* values.  The default MAT emulator has been extended with *disp* etc 
+					that is simply discarded on exit (placing into CTX.Save to retain).  The ME.exec matlab emulator
+					computes context *D* and *E* values.  The default ME.exec emulator has been extended with *disp* etc 
 					functions.
 
 					This [stateless js-engine example](/jsdemo2.exe?name=test):
 
 						function jsdemo2(ctx,res) {
-							MAT(ctx, "a = inv(X' * X) * X' * y");
+							ME.exec(ctx, "a = inv(X' * X) * X' * y");
 							
 							LOG(ctx.a);
 

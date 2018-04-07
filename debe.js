@@ -63,7 +63,7 @@ var 									// totem modules
 var										// shortcuts and globals
 	Copy = TOTEM.copy,
 	Each = TOTEM.each,
-	sqlThread = TOTEM.thread,
+	Thread = TOTEM.thread,
 	Log = console.log;
 	
 var
@@ -71,12 +71,88 @@ var
 	
 	plugins: JSLAB.libs,
 		
-	onIngest: {   //< Ingest watchers with callbacks cb(evs)
-		default: function (evs, cb) {
+	ingester: function ingester( opts, query ) {
+		try {
+			if (opts.url)
+				DEBE.fetcher( opts.url, query, opts.put||null, function (data) {
+					var evs = [];
+					if (data) 
+						if (recs = opts.get ? data[opts.get] : data) 
+							recs.forEach( function (rec, idx) {
+								if (ev = opts.ev) 
+									if ( ev.constructor == String ) {
+										var 
+											ctx = VM.createContext({rec: rec, query: query, evs: evs}),
+										 	eng = `evs.push( (${opts.ev})(rec) );` ;
+										
+										VM.runInContext( eng, ctx );
+									}
+									
+									else
+										evs.push( ev(rec) );
+								
+								else
+									evs.push( rec );
+							});
+
+					cb(evs);
+				});
+		}
+		
+		catch(err) {
+		}
+	},
+		
+	onIngest: {   //< Ingest watchers 
+		fino: {
+			url: "https://kaching/TBD",
+			put: {
+				terms: "pakistan",
+				cursors: "*",
+				perPage: 20,
+				page: 1,
+				facet: true
+			},
+			get: null,
+			ev: (rec) => rec
+		},
+
+		missiles: {
+			url: "https://opir/type=missile&TBD",
+			put: null,
+			get: "trks",
+			ev: (rec) => {
+				var pos = rec.latLonAlt;
+				return { 
+					x: pos.lat,
+					y: pos.lon,
+					z: pos.alt,
+					t: idx,
+					s: idx,
+					n: rec.trackNum
+				};	
+			}
+		},
+
+		artillery: {
+			url: "https://opir/type=artillery&TBD",
+			put: null,
+			get: "trks",
+			ev: (rec) => {
+				var pos = rec.latLonAlt;
+				return { 
+					x: pos.lat,
+					y: pos.lon,
+					z: pos.alt,
+					t: idx,
+					s: idx,
+					n: rec.trackNum
+				};	
+			}
 		}
 	},
 
-	onStartup: function () {
+	onStartup: function (sql) {
 		var
 			site = DEBE.site,
 			pocs = site.pocs,
@@ -143,7 +219,7 @@ var
 					//missile: "/ingest?src=missiles"
 				},
 				urls = DEBE.site.urls,
-				fetcher = DEBE.fetcher;
+				fetcher = DEBE.fetchData;
 			
 			JSDB.forEach("", gets.reingest, [], function (file, sql) {
 				Trace("INGEST "+file.Name);
@@ -153,7 +229,7 @@ var
 					to: file.startTime.addDays(file.durationDays),
 					ring: file.Ring,
 					durationDays: file.durationDays
-				}), null, function (msg) {
+				}), null, null, function (msg) {
 					Log("INGEST", msg);
 				});
 
@@ -324,7 +400,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 				},
 				diag = DEBE.diag;
 
-			sqlThread( function (sql) {
+			Thread( function (sql) {
 				sql.forEach(opts.trace, gets.engs, [], function (engs) {
 				sql.forEach(opts.trace, gets.jobs, [], function (jobs) {
 				sql.forEach(opts.trace, gets.pigs, [], function (pigs) {
@@ -983,8 +1059,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		alert: sysAlert,
 		ping: sysPing,
 		bit: sysBIT,
-		ingest: sysIngest,
-		atom: ATOM.exe
+		ingest: sysIngest
+		//atom: ATOM.exe
 		//kill: sysKill,
 		//start: sysStart,
 		//checkpt: sysCheckpt,
@@ -1098,7 +1174,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					break;
 					
 				case Function:
-					sqlThread( function (sql) {
+					Thread( function (sql) {
 						try {
 							sql.query( select(where), [req.group, recs, where], function (err,recs) {								
 								index( err ? [] : recs );
@@ -1431,14 +1507,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	// Prototypes
 	
 	String: [  // string prototypes
-		/*
-		function indentify(tag) {
-			if (tag) 
-				return tag + "\n\t" + this.split("\n").join("\n\t");
-			else
-				return "\t" + this.split("\n").join("\n\t");
-		},*/
-	
 		function renderJade(req,res) { 
 		/**
 		@private
@@ -1479,46 +1547,15 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		function hyper(ref) { 
 			return [this].linkify(ref);
 		}
-		
-		/*
-		function hyper(ref) {
-		/ **
-		@private
-		@member String
-		Return a hyperlink of given label string.
-		* /
-			if (ref)
-				if (ref.charAt(0) == ":")
-					return this.link( "/"+(ref.substr(1)||this.toLowerCase())+".view" );
-				else
-					return this.link(ref);
-			else
-				return this.link(ref || "/"+this.toLowerCase()+".view");
-		} */
 	],
 	
 	Array: [  // array prototypes
-		/*
-		function hyper(refs, arg) {
-		/ **
-		@private
-		@member Array
-		Returns list containing hyperlink list joined by an arg spearator.
-		@param {Function} cb callback(val) returns item for join
-		* /		
-			var rtns = [], ref = ref[0];
-			this.each( function (n,lab) {
-				rtns.push( lab.hyper(refs[n] || ref) );
-			});
-			return rtns.join(arg);
-		}, */
-
 		function clone() {
-			/*
-			@member Array
-			@method clone
-			Return a cloned copy of this records
-			*/
+		/*
+		@member Array
+		@method clone
+		Return a cloned copy of this records
+		*/
 			
 			var recs = this, copyRecs = [];
 			recs.forEach( function (rec) {  // clone ds recs
@@ -1528,13 +1565,13 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		},
 		
 		function blogify( sql, client, keys, ds, cb ) {
-			/*
-			@member Array
-			@method blogify
-			@param [List] keys list of keys to blogify
-			@param [String] ds Name of dataset being blogged
-			@param [Function] cb callback(recs) blogified version of records
-			*/
+		/*
+		@member Array
+		@method blogify
+		@param [List] keys list of keys to blogify
+		@param [String] ds Name of dataset being blogged
+		@param [Function] cb callback(recs) blogified version of records
+		*/
 			
 			function renderRecord(rtn, rec, ds, cb) {  // blog=key,... request flag
 				function renderJAX(jaxList,rtn,cb) {
@@ -1552,7 +1589,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						}, function (d) {
 							rtn = rtn.replace("!jax"+n+".", d.mml);
 
-							//Log(rendered, renders);
+							Log("jax", rendered, renders);
 							if ( ++rendered == renders ) cb(rtn);
 						});
 
@@ -1560,6 +1597,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 
 					if ( !renders ) cb(rtn);
 				}
+				
 				var 
 					jaxList = [], cache = {}, $ = {}, tags = [];
 				
@@ -1611,6 +1649,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 							}							
 						})
 						.replace(/\$\{(.*?)\}/g, function (str,key) {  // ${ key } markdown
+							//Log(key,cache);
 							if (  key in cache )
 								return cache[key];
 							
@@ -1720,16 +1759,16 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		},
 		
 		function stashify(watchKey, targetPrefix, ctx, stash, cb) {
-			/*
-			@member Array
-			@method stashify
-			@param [String] watchKey  this = [ { watchKey:"KEY", x:X, y: Y, ...}, ... }
-			@param [String] targetPrefix  stash = { targetPrefix: { x: [X,...], y: [Y,...], ... }, ... } 
-			@param [Object] ctx plugin context keys
-			@param [Object] stash refactored output suitable for a Save_KEY
-			@param [Function] cb callback(ev,stat) returns refactored result to put into stash
-			Used by plugins for refactoring process output into Save_KEY stashes
-			*/
+		/*
+		@member Array
+		@method stashify
+		@param [String] watchKey  this = [ { watchKey:"KEY", x:X, y: Y, ...}, ... }
+		@param [String] targetPrefix  stash = { targetPrefix: { x: [X,...], y: [Y,...], ... }, ... } 
+		@param [Object] ctx plugin context keys
+		@param [Object] stash refactored output suitable for a Save_KEY
+		@param [Function] cb callback(ev,stat) returns refactored result to put into stash
+		Used by plugins for refactoring process output into Save_KEY stashes
+		*/
 			
 			var rem = stash.remainder;
 			
@@ -1754,13 +1793,13 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		},
 		
 		function merge(Recs,idx) {
-			/**
-			@member Array
-			@method merge
-			@param [Array] Recs Source records to merge into this records
-			@param [String] idx Key name to use for detecting record changes
-			Merge changes when doing table deltas from their baseline versions.
-			**/
+		/**
+		@member Array
+		@method merge
+		@param [Array] Recs Source records to merge into this records
+		@param [String] idx Key name to use for detecting record changes
+		Merge changes when doing table deltas from their baseline versions.
+		**/
 			
 			function changed(rec,Rec) {
 				for (var n in rec)
@@ -1806,16 +1845,16 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		},
 		
 		function treeify(idx,kids,level,keys,wt) {
-			/**
-			@member Array
-			@method treeify
-			@param [Number] idx starting index (0 on first call)
-			@param [Number] kids number of leafs following starting index (this.length on first call)
-			@param [Number] level current depth (0 on first call)
-			@param [Array] keys pivot keys
-			@param [String] wt key name that contains leaf weight (defaults to "size")
-			Return a tree = {name,weight,children: tree} from records having been sorted on keys=[key,...]
-			*/
+		/**
+		@member Array
+		@method treeify
+		@param [Number] idx starting index (0 on first call)
+		@param [Number] kids number of leafs following starting index (this.length on first call)
+		@param [Number] level current depth (0 on first call)
+		@param [Array] keys pivot keys
+		@param [String] wt key name that contains leaf weight (defaults to "size")
+		Return a tree = {name,weight,children: tree} from records having been sorted on keys=[key,...]
+		*/
 			var	
 				recs = this,
 				key = keys[level],
@@ -1864,12 +1903,12 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		},
 		
 		function listify( cb ) {
-			/*
-			@member Array
-			@method listify
-			@param {Function} cb callback(rec) returns recordresults to append
-			Returns a sample of each record from this records using a callback to sample
-			*/
+		/*
+		@member Array
+		@method listify
+		@param {Function} cb callback(rec) returns recordresults to append
+		Returns a sample of each record from this records using a callback to sample
+		*/
 			var rtns = [];
 			this.forEach( function (rec) {
 				rtns.push( cb(rec) );
@@ -1878,12 +1917,12 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		},
 						 
 		function joinify(sep, cb) {
-			/* 
-			@member Array
-			@method joingify
-			@param [String] sep seperator
-			@param [Function] cb callback(rec) returns sample of supplied record
-			*/
+		/* 
+		@member Array
+		@method joingify
+		@param [String] sep seperator
+		@param [Function] cb callback(rec) returns sample of supplied record
+		*/
 			
 			if (cb) {
 				var recs = [];
@@ -1905,12 +1944,12 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		},
 		
 		function linkify(ref) {
-			/*
-			@member Array
-			@method linkify
-			@param {String} ref
-			Returns a ref-joined list of links
-			*/
+		/*
+		@member Array
+		@method linkify
+		@param {String} ref
+		Returns a ref-joined list of links
+		*/
 			
 			return this.joinify(",", function (label) {
 				
@@ -1987,30 +2026,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		delete: "",
 		post: "/service/algorithm/:proxy"		//< hydra endpoint
 	},  		//< reserved for soap interfaces
-		
-	/*
-	loader: function (url,fetcher,req,res) { // generic data loader
-	/ **
-	@member DEBE
-	@private
-	@method loader
-	@param {String} url path to source
-	@param {String} fetcher data fetcher
-	@param {Object} req http request
-	@param {Function} res Totom response callback
-	* /
-		fetcher( url.tag("?",req), null, res );
-	},
-
-	loaders: { // data loading services
-		catalog: function (req,res) { DEBE.loader( DEBE.paths.wfs.spoof, DEBE.fetcher, req, res ); },
-		image: function (req,res) { DEBE.loader( DEBE.paths.wms.spoof, DEBE.fetcher, req, res ); },
-		events: function (req,res) { DEBE.loader( DEBE.paths.sss.spoof, DEBE.fetcher, req, res ); },
-		stats: function (req,res) { DEBE.loader( DEBE.paths.sss.stats, DEBE.fetcher, req, res ); },
-		gaussmix: function (req,res) { DEBE.loader( DEBE.paths.sss.gaussmix, DEBE.fetcher, req, res ); },
-		save: {}
-	},
-	*/
 		
 	/*
 	autoRuns: function (sql, group, aoi, cb) {  // task and run ingestable plugins
@@ -2139,18 +2154,18 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	blindTesting : false		//< Enable for double-blind testing (eg make FLEX susceptible to sql injection attacks)
 });
 
-/**
- * @method SOAPsession
- * @private
- * Process an bySOAP session peer-to-peer request.  Currently customized for Hydra-peer and 
- * could/should be revised to support more generic peer-to-peer bySOAP interfaces.
- * 
- * @param {Object} req HTTP request
- * @param {Object} res HTTP response
- * @param {Function} proxy Name of APP proxy function to handle this session.
- * */
 /*
 function SOAPsession(req,res,peer,action) {
+/ **
+@method SOAPsession
+@private
+Process an bySOAP session peer-to-peer request.  Currently customized for Hydra-peer and 
+could/should be revised to support more generic peer-to-peer bySOAP interfaces.
+ 
+@param {Object} req HTTP request
+@param {Object} res HTTP response
+@param {Function} proxy Name of APP proxy function to handle this session.
+* /
 	Thread( function (sql) {
 		req.addListener("data", function (data) {
 			XML2JS.parseString(data.toString(), function (err,json) {  // hydra specific parse
@@ -2216,24 +2231,32 @@ function sysIngest(req,res) {
 		query = req.query,
 		body = req.body,
 		src = query.src,
-		fileID = query.fileID,
-		onIngest = DEBE.onIngest[src];
+		fileID = query.fileID;
 	
-	Log("INGEST", query, body);
-	res("submitted");
-	
-	if ( onIngest ) {
-		sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
-		onIngest( src, query, function (evs) {
-			HACK.ingestList( sql, evs, fileID, function (aoi) {
-				Log("INGEST aoi", aoi);
-			});
-		});
-	}
-	
-	else
-		Trace("INGEST bad src");
+	Log("INGEST", query, body, onIngest);
+	res("ingesting");
 
+	if (fileID) {
+		sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
+
+		if ( onIngest = DEBE.onIngest[src] )   // use builtin ingester
+			DEBE.ingester( onIngest, function (evs) {
+				HACK.ingestList( sql, evs, fileID, function (aoi) {
+					Log("INGEST aoi", aoi);
+				});
+			});
+
+		else  // use customer ingester
+			sql.query("SELECT Ingester FROM app.files WHERE ? AND Ingester", {ID: fileID})
+			.on("results", function (file) {
+				if ( onIngest = JSON.parse(file.Ingester) ) 
+					DEBE.ingester( onIngest, function (evs) {
+						HACK.ingestList( sql, evs, fileID, function (aoi) {
+							Log("INGEST aoi", aoi);
+						});
+					});
+			});
+	}
 }
 
 function sysConfig(req,res) {
@@ -2865,7 +2888,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		if (ctx) // render in extended context
 			Each(ctx,  function (siteKey, ds, isLast) {
 				if ( ds.charAt(0) == "/" ) 
-					DEBE.fetcher( (urls.master+ds).parseJS(query), null, function (data) {
+					DEBE.fetchData( urls.master+ds, query, null, function (data) {
 						switch ( (data||0).constructor ) {
 							case Array:
 								site[siteKey] = data.clone();
@@ -3298,18 +3321,26 @@ Initialize DEBE on startup.
 	 * Initialize the FLEX and ATOM interfaces
 	 */
 
-		//Trace(`INIT FLEX`);
-		
+		Trace("INIT SQLIF");
 		Each( CRUDE, function (n,routes) {  // redirect dataset crude calls
 			DEBE[n] = FLEX[n].ds;
 			DEBE.byActionTable[n] = FLEX[n];
 		});	
 
+		if (cb) cb();	
+	}
+	
+	initENV( function () {  // init the global environment
+	initSES( function () {	// init session handelling
+	initSQL( function () {	// init the sql interface
+
+		Trace("INIT MODULES");
+
 		FLEX.config({ 
-			thread: sqlThread,
+			thread: Thread,
 			emitter: DEBE.IO ? DEBE.IO.sockets.emit : null,
 			skinner: JADE,
-			fetcher: DEBE.fetcher,
+			fetcher: DEBE.fetchData,
 			indexer: DEBE.indexFile,
 			uploader: DEBE.uploadFile,
 
@@ -3359,22 +3390,20 @@ Initialize DEBE on startup.
 			
 		});
 
-		//Trace(`INIT ATOMS`);
-
 		HACK.config({
 			//source: "",
 			taskPlugin: null,
-			fetcher: DEBE.fetcher,
-			thread: sqlThread
+			//fetcher: DEBE.fetchData,
+			thread: DEBE.thread
 		});
 		
 		JSLAB.config({
-			thread: sqlThread,
-			fetcher: DEBE.fetcher
+			thread: DEBE.thread,
+			fetcher: DEBE.fetchData
 		});
 		
 		ATOM.config({
-			thread: sqlThread,
+			thread: DEBE.thread,
 			cores: DEBE.cores,
 			watchFile: DEBE.watchFile,
 			plugins: Copy({   // share selected FLEX and other modules with engines
@@ -3384,13 +3413,6 @@ Initialize DEBE on startup.
 			}, JSLAB.libs)
 		});
 		
-		if (cb) cb();	
-	}
-	
-	initENV( function () {  // init the global environment
-	initSES( function () {	// init session handelling
-	initSQL( function () {	// init the sql interface
-
 		JAX.config({
 			MathJax: {
 				tex2jax: {
@@ -3400,9 +3422,9 @@ Initialize DEBE on startup.
 		});
 		JAX.start();
 		
-		sqlThread( function (sql) {
+		Thread( function (sql) {
 			
-			if (onStartup = DEBE.onStartup) onStartup();
+			DEBE.onStartup(sql);
 			
 			var path = DEBE.paths.render;
 			

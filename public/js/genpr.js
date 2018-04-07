@@ -40,7 +40,6 @@ module.exports = {
 		}
 
 		var 
-			//RAN = LIBS.RAN,
 			exp = Math.exp, log = Math.log, sqrt = Math.sqrt, floor = Math.floor, rand = Math.random;
 
 		var
@@ -124,6 +123,27 @@ module.exports = {
 		// [{"mu":[0,0,0],"sigma":[[0.9,0.4,0],[0.4,0.7,0],[0,0,0.1]]}, {"mu":[0.3,0.5,0], "sigma":[[0.8,0.2,0],[0.2,0.8,0],[0,0,0.1]]}]
 
 		var ran = new RAN({ // configure the random process generator
+			
+			getPCs: function (model, min, M, cb) {
+				var vals = [], vecs = [];
+				SQL.query(
+					"SELECT * FROM app.ran WHERE coherence_intervals BETWEEN ? AND ? AND eigen_value > ? AND correlation_model = ? ORDER BY eigen_index", 
+					[M-0.5, M+0.5, min, model],
+					function (err, recs) {
+						recs.forEach( function (rec) {
+							vals.push( rec.eigen_value );
+							vecs.push( JSON.parse( rec.eigen_vector ) );
+						});
+
+						cb({
+							values: vals,
+							vectors: vecs
+						});
+				});
+				
+				SQL.release();
+			},
+			
 			N: ctx.Members,  // ensemble size
 			wiener: ctx.Wiener,  // wiener process steps
 			trP: ctx.TxPrs, // state transition probs 
