@@ -1,11 +1,8 @@
 ﻿// UNCLASSIFIED 
 /*
-TODO
-+ devin set meetup later 2pm?
-+ lutheran photos return
+To Do:
 + estpr call during file grading should insert/update into estpr usecases testname=filename
-+ make sure sw reqts are uptodate for stu. add swap ID and status to swStatus
-+ check if forms are working
++ check if forms are still working
 */
 
 /**

@@ -12,44 +12,39 @@ append site_body
 	#fit.Intro
 
 		:markdown
-			As documented in this API, *#{title}* provides ENDPOINTs:
+			DEBE provides [CRUD-compliant endpoints](/api.view):
 
-				(select) GET 	 /NODE ?? NODE ...
-				(update) PUT 	 /NODE ?? NODE ...
-				(insert) POST 	 /NODE ?? NODE ...
-				(delete) DELETE /NODE ?? NODE ...
+				POST		/NODE ?? NODE ...
+				GET			/NODE ?? NODE ...
+				PUT			/NODE ?? NODE ...
+				DELETE 	/NODE ?? NODE ...
 
-			 to access a NODE:
+			to access its datasets, engines, files and commands at a NODE:
 
 				DATASET.TYPE ? QUERY ? QUERY ...
 				ENGINE.TYPE ? QUERY ? QUERY ...
 				FILEPATH.TYPE ? QUERY ? QUERY ...
 				COMMAND.TYPE ? QUERY ? QUERY ...
-				
-			using an optional QUERY:
-			
-				KEY [OP] = VALUE & ...
-				KEY [OP] :  VALUE & ...
-			
-			where the TYPE will format data:
+
+			DEBE's default TYPEs format data:
 
 				db | xml | csv | txt | tab | tree | flat | kml | encap | html | json | geojson
 
-			render a [view/skin](/skinguide.view):
+			renders a [skin](/skinguide.view):
 
-				view | pivot | site | spivot | brief | gridbrief | pivbrief | run | plugin | runbrief | calc
+				view | pivot | site | spivot | brief | gridbrief | pivbrief | run | plugin | runbrief
 
-			execute, return usecase results, or list code of an engine:
+			executes an [engine](/api.view), returns ingested results, or code:
 
-				exe | USECASE | js | py | ma | ...
+				exe | USECASE | js | py | ...
 
-			return file attributes:
+			provides dataset attributes:
 
-				delta | nav | stat | ...
-				
-			or generate office files:
+				delta | nav | stat
 
-				xpdf | xjpg | xgif | xdoc | xppt | xxls | ...
+			or generates an office file:
+
+				pdf | xdoc | xppt | xxls ...
 
 	#accordion.Views
 
@@ -62,7 +57,7 @@ append site_body
 					GET	/SKIN.view	Render SKIN from enabled engines or internal jade files
 					GET	/DATASET.view	Dynamically generate a skin for this DATASET
 
-		#fit.Parameters
+		#fit.Queries
 			:markdown
 				Views parameters are SKIN dependent. For example, [plot.view?help](/plot.view?help) will 
 				generate help for the *plot.view*.
@@ -102,15 +97,21 @@ append site_body
 					tips	image tipping cache
 					shares 	spot to place skinning content
 					
-		#fit.Parameters
+		#fit.Queries
 			:markdown
-				File retrieval parameters include:
+				File retrieval:
+				> _has	find best file by string containment   
+				> _nlp	find best file by nlp context  
+				> _bin	find best file by binary expression  
+				> _qex	find best file by query expansion  
+				> _score	minimum score required
 
-					_has	find best file by string containment 
-					_nlp	find best file by nlp context 
-					_bin	find best file by binary expression 
-					_qex	find best file by query expansion 
-					_score	minimum score required
+				File upload body JSON parameters:
+				
+					key = val ; key = val ; ...  [cr newline]  
+					:  
+					:  
+					file data [cr newline]
 
 		#folder.Readers
 			#fit.Intro
@@ -284,68 +285,64 @@ append site_body
 					POST	/DATASET.TYPE	Insert body parameters into DATASET
 					DELETE	/DATASET.TYPE	Delete from DATASET 
 
-		#fit.Parameters
+		#fit.Queries
 			:markdown
-				The #{nick} recognizes the following parameters.
+				Relational:
+				> KEY = value  
+				> KEY <= value  
+				> KEY >= value  
+				> KEY != value  
+				> KEY <: value  
+				> KEY >: value  
+				
+				Indexing:
+				> ASKEY $= expression  
+				> ASKEY $= jsonKey$.key, ...  
+				> ASKEY $= jsonKey$[idx], ...  
+				> ASKEY $= jsonKey$.key$.key ... , ...  
+				> ASKEY $= jsonKey$[idx]$[idx] .... , ...  
 
-				# Query parameters
+				Searching:
+				> KEY %= like pattern  
+				> KEY /= nlp pattern  
+				> KEY |= query expansion pattern  
+				> KEY ^= binary expression pattern  
+				> KEY *= min,max
 
-					KEY = value 		// matching test
-					KEY = [ ] 				// null test
-					KEY = [ min , max ] // inclusive range (if unsafe queries enabled)
-					KEY = [ x, y, z, ... ] // bounding box (reserved)
-					A.KEY = B.KEY 	// Join datasets A and B on specified KEYs (experimental)
-					expression 			// e.g. KEY<value, KEY>value,... (if unsafe queries enabled)
+				Grouping and Sorting:
+				> _pivot = KEY,KEY,... pivot records on KEYs with NodeID = "ID,ID,..." groups  
+				> _browse = KEY,KEY,... browse records on KEYs with NodeID = "name/name/ ..."  
+				> _group = KEY,KEY,... group records on KEYs  
+				> _index = KEY,KEY,... return only specified KEYs  
+				> _sort	= KEY,KEY,... sort records ascending on KEYs  
+				> _sort	= [{property:KEY,sort:DIRECT}, ...] sort records asc|desc on KEYs   
 
-				# Body and File Upload parameters
+				Converting:
+				> _queue = KEY for queuing record state   
+				> _nav = open | tree | rename | size ,root/A/B/... folder navigation  
 
-				JSON formatted parameters, or a file upload script following this convention:
+				Blogging:
+				> _blog	= KEY,KEY,... markdown KEYs with blogging tags of the form ...  
+				> \[ VIEW ; WIDTH ; HEIGHT ]( DS ? PARM ; PARM ; ... )  
+				> \[ LINK ]( URL )   
+				> !$ inline TeX $  ||  $$ break TeX $$ || a$ AsciiMath $ || m$ MathML $  
+				> ${ KEY } || $${ TeX matrix KEY } || ${ KEY }( SHORTCUT ) || !${ EXPR }  
+				> \#tag
 
-					key = val ; key = val ; ...  [cr newline]
-					:
-					:
-					file data [cr newline]
+				Limiting:
+				> _lock	= enable record locking  
+				> _view = name of view to correlate with dataset  
+				> _limit = number of records to return  
+				> _start = record position to start returning records  
+				> _score = minimum search score required
 
-				# Searching parameters
-
-					_has	= search records by containment over fulltext keys
-					_nlp	= search records by nlp context over fulltext keys
-					_bin	= search records by binary expression over fulltext keys
-					_qex	= search records by query expansion over fulltext keys
-					_score	= minimum search score required
-					_save = name to save current url
-
-				# Indexing and Grouping parameters
-
-					_pivot	= KEY,KEY,... pivot records on KEYs with NodeID = "ID,ID,..." groups
-					_browse	= KEY,KEY,... browse records on KEYs with NodeID = "name/name/ ..." 
-					_group	= KEY,KEY,... group records on KEYs
-					_index	= KEY,KEY,... return only specified KEYs
-					_sort	= KEY,KEY,... sort records ascending on KEYs
-					_sort	= [{property:KEY,sort:DIRECT}, ...] sort records asc|desc on KEYs 
-					_geo = KEY,KEY,... add geojson geometry keys named gKEY to the records
-
-				# Conversion parameters
-
-					_queue	= KEY for queuing record state
-					_json	= KEY,KEY,... json parse selected KEYs and index with KEY=IDX.IDX...
-					_blog	= KEY,KEY,... markdown KEYs containing tags = [image | post | update | link | SKIN, W, H, DS?QUERY]( /url | PARM=ds.KEY expression; ...)
-					_nav	= open | tree | rename | size ,root/A/B/... folder navigation 
-
-				# Record parameters
-
-					_client	= name of client to broadcast to other clients
-					_lock	= enable record locking
-					_view 	= name of view to correlate with dataset
-					_src	= override dataset path 
-					_limit	= number of records to return
-					_start	= record position to start returning records
-
-				# Legacy parameter
-					_page	= page number (reserved)
-					_mark	= KEY,KEY,... markdown these KEYs 
-					_jade	= KEY,KEY,... jadeify these KEYs (experimental - use _kjade)
-					_kjade	= KEY,KEY,... jadeify these KEYs (to be retired)
+				Legacy:
+				> _geo = KEY,KEY,... add geojson geometry keys named gKEY to the records  
+				> _json	= KEY,KEY,... json parse selected KEYs and index with KEY=IDX.IDX...  
+				> _page	= page number (reserved)  
+				> _mark	= KEY,KEY,... markdown these KEYs   
+				> _jade	= KEY,KEY,... jadeify these KEYs (experimental - use _kjade)  
+				> _kjade = KEY,KEY,... jadeify these KEYs (to be retired)
 
 		#fit.Examples
 			:markdown
@@ -471,7 +468,7 @@ append site_body
 				> \[ LINK ]( URL )   
 				> !$ inline TeX $  ||  $$ break TeX $$ || a$ AsciiMath $ || m$ MathML $  
 				> ${ KEY } || $${ TeX matrix KEY } || ${ KEY }( SHORTCUT ) || !${ EXPR }  
-				> #tag
+				> \#tag
 				
 				to document usecases.  For example:
 
@@ -565,7 +562,7 @@ append site_body
 				thoroughly debugged in their native development environment before being [inserted](/engines.view) 
 				into **#{nick}**.  
 
-		#fit.Parameters
+		#fit.Queries
 			:markdown
 				An engine's inital context is held in its context JSON store:
 
@@ -883,11 +880,10 @@ append site_body
 					[CRYPTO(crypto)](https://nodejs.org/docs/latest/api/crypto), and
 					[MAIL(simple mail transfer)](https://www.npmjs.com/package/nodemailer)
 					modules.  The matlab emulator module ME is supported by the
-					[ME(matlab emulator)](https://www.npmjs.com/package/mathjs),
+					[ML(mainchine learning)](https://www.npmjs.com/package/mathjs),
 					[DSP(digitial signal processing)](https://www.npmjs.com/package/dsp), 
 					[BAYES(bayes network interference )](https://www.npmjs.com/package/jsbayes),
 					[GAMMA(standard gamma function)](https://www.npmjs.com/package/gamma),
-					[SVD(singular value decomposition)](https://www.npmjs.com/package/node-svd),
 					[HMM(hidden markov model solver)](https://www.npmjs.com/package/nodehmm),
 					[MLE(maximum liklihood estimator)](https://www.npmjs.com/package/node-svd),
 					[MVN(normal multivariates](https://www.npmjs.com/package/multivariate-normal),

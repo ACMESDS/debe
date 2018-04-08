@@ -7,94 +7,89 @@
 	
 # DEBE
 
-DEBE extends [TOTEM simple web service](https://github.com/acmesds/totem) with
-the [FLEX database extender](https://github.com/acmesds/flex), 
-[GEOHACK earth event segmenter](https://github.com/acmesds/geohack),
-and [ATOMIC cloud compute](https://github.com/acmesds/atomic) modules to provide a web service 
-that manages its content, interfaces, requirements, project metrics, geoint products and workflows.  
+DEBE provide a web service to manage content, interfaces, requirements, project metrics, 
+geoint data providers and workflows.  
 
-As documented in its api, DEBE provides ENDPOINTs:
+DEBE provides [CRUD-compliant endpoints](/api.view):
 
-	(select) GET 	 /NODE $$ NODE ...
-	(update) PUT 	 /NODE $$ NODE ...
-	(insert) POST 	 /NODE $$ NODE ...
-	(delete) DELETE /NODE $$ NODE ...
+	POST		/NODE ?? NODE ...
+	GET			/NODE ?? NODE ...
+	PUT			/NODE ?? NODE ...
+	DELETE 	/NODE ?? NODE ...
 
- to access a NODE:
+to access its datasets, engines, files and commands at a NODE:
 
 	DATASET.TYPE ? QUERY ? QUERY ...
 	ENGINE.TYPE ? QUERY ? QUERY ...
 	FILEPATH.TYPE ? QUERY ? QUERY ...
 	COMMAND.TYPE ? QUERY ? QUERY ...
 
-using an optional QUERY:
-
-	KEY=VALUE & EXPRESSION ...
-
-DEBE provides default TYPEs to format data:
+DEBE's default TYPEs format data:
 
 	db | xml | csv | txt | tab | tree | flat | kml | encap | html | json | geojson
 
-render a view/skin:
+renders a [skin](/skinguide.view):
 
 	view | pivot | site | spivot | brief | gridbrief | pivbrief | run | plugin | runbrief
 
-execute an engine, return the results from a usecase, or its code:
+executes an [engine](/api.view), returns ingested results, or code:
 
 	exe | USECASE | js | py | ...
 
-provide attributes:
+provides dataset attributes:
 
 	delta | nav | stat
 	
-or generate office files:
+or generates an office file:
 
 	pdf | xdoc | xppt | xxls ...
 
-By default, DEBE provides the following COMMAND endpoints:
+DEBE's default COMMAND endpoints include:
 
-	help | stop | alert | codes | ping | bit | config
+	help | stop | alert | codes | ping | bit | config | riddle
 
-If DEBE was configured for antibot protect, DEBE will also provide a *riddle* endpoint for clients to validate themselves.
+## Installing
 
-## Installation
+Clone from one of the repos into your PROJECT/debe, then:
 
-Clone from one of the repos.  You will typically want to redirect the following to your project
-
+	cd PROJECT/debe
 	ln -s PROJECT/totem/test.js test.js 			# unit testing
 	ln -s PROJECT/totem/maint.sh maint.sh 		# test startup and maint scripts
 	ln -s PROJECT/totem/certs certs					# truststore folder for name.pfx certs 
 	ln -s PROJECT/JPGS captcha 	 				# folder for captcha digits
 
-## Databases
+Dependencies:
 
+* [ENUM basic enumerators](https://github.com/acmesds/enum)
+* [TOTEM simple web service](https://github.com/acmesds/totem)
+* [FLEX database extender](https://github.com/acmesds/flex)
+* [GEOHACK earth event segmenter](https://github.com/acmesds/geohack)
+* [ATOMIC cloud compute](https://github.com/acmesds/atomic) 
+* [JSLAB plugin interface](https://github.com/acmesds/jslab)
 * openv.apps  Reads on start() to derive command line parms  
-* app.X Table X read for job parameters in a .exe route
+* app.X Reads for plugin usecase in a X.exe route
 
-## Use
+## Using
 
-Simply require, configure and start DEBE:
+To start DEBE, simply run the desired test.js configuration:
+	
+	. maint.sh [D1 | D2 | ...]
+	
+Each configuration follow the 
+[ENUM deep copy() conventions](https://github.com/acmesds/enum):
 
 	var DEBE = require("debe").config({
 		key: value, 						// set key
 		"key.key": value, 					// indexed set
-		"key.key.": value,					// indexed append
-		OBJECT: [ function (){}, ... ], 	// add OBJECT prototypes 
-		Function: function () {} 			// add chained initializer callback
-		:
-		:
+		"key.key.": value					// indexed append
 	}, function (err) {
 		console.log( err ? "something evil is lurking" : "look mom - Im running!");
 	});
 
-where its configuration keys follow [ENUM copy()](https://github.com/acmesds/enum) conventions 
-described in its [PRM](/shares/prm/debe/index.html).
+where its [key:value options](/shares/prm/debe/index.html) override the defaults
+primed from [nick:"NAME"](/apps.view).
 
-The following examples are from TOTEM's test.js unit tester.  You may also find 
-Totem's [DSVAR](https://github.com/acmesds/dsvar) useful, if you wish to learn more about its 
-database agnosticator.
-
-### D1 - Encypted with a database
+### D1 - With a database and file watcher
 
 	var DEBE = require("../debe").config({
 		name: ENV.SERVICE_NAME,
@@ -112,15 +107,19 @@ database agnosticator.
 		Trace( err || "Yowzers - An encrypted DEBE service with a database watching files in uploads area" );
 	});
 
-### D2 - D1 plus an endpoint
+### D2 - With a database, a custom endpoint and antibot protection
 
-	var DEBE = require("../debe").config({
+	var 
+		DEBE = require("../debe").config({
+
+		name: ENV.SERVICE_NAME,
+		riddles: 10,
 		mysql: {
 			host: ENV.MYSQL_HOST,
 			user: ENV.MYSQL_USER,
 			pass: ENV.MYSQL_PASS
 		},
-		"worker.": {
+		"byTable.": {
 			wfs: function (req,res) {
 				res("here i go again");
 
@@ -128,15 +127,18 @@ database agnosticator.
 					console.log(data);
 				});
 			}
-
 		}
 	}, function (err) {
 		Trace( "This bad boy in an encrypted service with a database and has an /wfs endpoint" );
 	});
 		
-		
 ## License
 
 [MIT](LICENSE)
+
+## Contributing
+
+See our [issues](/issues.view), [milestones](/milestones.view), [s/w requirements](/swreqts.view),
+and [h/w requirements](/hwreqts.view).
 
 */
