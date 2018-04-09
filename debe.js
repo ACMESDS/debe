@@ -1052,10 +1052,10 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 
 	"byTable.": {	//< routers for endpoints at /TABLE
 		help: sysHelp,
-		stop: sysStop,
+		//stop: sysStop,
 		alert: sysAlert,
 		ping: sysPing,
-		bit: sysBIT,
+		//bit: sysBIT,
 		ingest: sysIngest
 		//atom: ATOM.exe
 		//kill: sysKill,

@@ -46,7 +46,7 @@ or generates an office file:
 
 DEBE's default COMMAND endpoints include:
 
-	help | stop | alert | codes | ping | bit | config | riddle
+	help | alert | ping | ingest | config | riddle
 
 ## Installing
 
