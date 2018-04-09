@@ -17,13 +17,15 @@ module.exports = {
 			Steps = override File
 			Load = event query
 		*/
+		Log(">>>>>>>>>>>>>estpr");
+		
 		var 
 			ran = new RAN({ // configure the random process generator
-				getPCs: function (model, min, M, cb) {
+				getPCs: function (model, min, M, win, cb) {
 					var vals = [], vecs = [];
 					SQL.query(
 						"SELECT * FROM app.ran WHERE coherence_intervals BETWEEN ? AND ? AND eigen_value > ? AND correlation_model = ? ORDER BY eigen_index", 
-						[M-0.5, M+0.5, min, model],
+						[M-win, M+win, min, model],
 						function (err, recs) {
 							recs.forEach( function (rec) {
 								vals.push( rec.eigen_value );

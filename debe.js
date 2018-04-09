@@ -127,7 +127,7 @@ var
 					t: idx,
 					s: idx,
 					n: rec.trackNum
-				};	
+				};
 			}
 		},
 
@@ -144,7 +144,7 @@ var
 					t: idx,
 					s: idx,
 					n: rec.trackNum
-				};	
+				};
 			}
 		}
 	},
@@ -205,6 +205,7 @@ var
 		}, function (opts) {
 		}),
 		
+		/*
 		dogIngest: Copy({
 			cycle: 30,
 			trace: "DOG"
@@ -235,8 +236,8 @@ var
 					{ ID: file.ID }
 				);
 			});
-		}),
-						
+		}), */
+		
 		dogFiles: Copy({
 			//cycle: 300, // secs
 			trace: "DOG",
@@ -252,7 +253,10 @@ var
 			}
 			
 			var 
+				urls = DEBE.site.urls,
+				fetcher = DEBE.fetchData,
 				gets = {
+					reingest: "SELECT ID,Ring,startTime,endTime,advanceDays,durationDays,sampleTime,Name FROM app.files WHERE now()>startTime AND now()<endTime",
 					lowsnr: "SELECT events.ID AS ID FROM app.events LEFT JOIN app.voxels ON voxels.ID = events.voxelID WHERE ? < voxels.minSNR AND ?",
 					unpruned: "SELECT ID,Name,snr FROM app.files WHERE NOT Pruned AND Voxels AND fetch_time IS NULL",
 					ungraded: "SELECT ID,Name,Actors,States,Steps FROM app.files WHERE NOT Graded AND Voxels AND fetch_time IS NULL",
@@ -347,6 +351,25 @@ Further information about this file is available ${paths.moreinfo}. `;
 						]);
 				});
 			});
+			
+			JSDB.forEach("", gets.reingest, [], function (file, sql) {
+				Trace("INGEST "+file.Name);
+				fetcher( (urls.master+file.Name).tag("&",{
+					fileID: file.ID,
+					from: file.startTime,
+					to: file.startTime.addDays(file.durationDays),
+					ring: file.Ring,
+					durationDays: file.durationDays
+				}), null, null, function (msg) {
+					Log("INGEST", msg);
+				});
+
+				sql.query(
+					"UPDATE app.files SET startTime=date_add(startTime, interval advanceDays day), endTime=date_add(startTime, interval durationDays day), Revs=Revs+1 WHERE ?", 
+					{ ID: file.ID }
+				);
+			});
+			
 		}),
 		
 		dogJobs: Copy({
