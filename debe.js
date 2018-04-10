@@ -1783,11 +1783,17 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		@member Array
 		@method stashify
 		@param [String] watchKey  this = [ { watchKey:"KEY", x:X, y: Y, ...}, ... }
-		@param [String] targetPrefix  stash = { targetPrefix: { x: [X,...], y: [Y,...], ... }, ... } 
+		@param [String] targetPrefix  stash = { (targetPrefix + watchKey): { x: [X,...], y: [Y,...], ... }, ... } 
 		@param [Object] ctx plugin context keys
 		@param [Object] stash refactored output suitable for a Save_KEY
 		@param [Function] cb callback(ev,stat) returns refactored result to put into stash
-		Used by plugins for refactoring process output into Save_KEY stashes
+		Used by plugins for refactoring process output ctx into existing Save_KEY stashes, thus
+		
+				[{ at: "check", A: a1, B: b1, ... }, { at: "check", A: a1, B: b1, ... }, ... { at: "other", ...} ]
+				.stashify( "at", "save_", {save_check: {}, ...} , stash, cb )
+				
+		creates a stash.save_check = {A: [a1, a2,  ...], B: [b1, b2, ...], ...}.   No stash.other is
+		created because its does not exist in the supplied ctx.
 		*/
 			
 			var rem = stash.remainder;
@@ -2677,7 +2683,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		
 		function saveKey(sql, key, args) {
 			sql.query(`UPDATE ??.?? SET ${key}=? WHERE ?`, args, function (err) {
-				Log("SAVE", key, err?"failed":"");
+				Log("SAVE", key, err ? "failed" : "");
 			});
 		}
 
@@ -2686,6 +2692,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			filename = `${table}.${ctx.Name}`, // export/ingest file name
 			stash = { };  // ingestable keys stash
 			
+		//Log("save results", stats);
+		
 		if ( !stats )
 			return "empty";
 		
@@ -2713,7 +2721,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			if (rem.length) {  // there is a remainder to save
 				if ( "Save" in ctx ) {  // dump to Save key
 					sql.query("UPDATE ??.?? SET ? WHERE ?", [
-						group, table, {Save: JSON.stringify(rem)}, {ID: ctx.ID}
+						group, table, { Save: JSON.stringify(rem) || "null" }, {ID: ctx.ID}
 					]);
 					status += " Saved";
 				}
@@ -2759,7 +2767,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		status += " Saved"
 		for (var key in stash) 
 			saveKey(sql, key, [ 
-				group, table, JSON.stringify(stash[key]), {ID: ctx.ID}
+				group, table, JSON.stringify(stash[key]) || "null", {ID: ctx.ID}
 			]);
 
 		return ctx.Share ? stats : status.tag("a",{href: "/files.view"});
@@ -2788,6 +2796,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			else
 			if ( Pipe = ctx.Pipe )  { // Intercept job request to run engine via regulator
 				res("Regulating");
+				
 				var
 					profile = req.profile,
 					job = { // job descriptor for regulator
@@ -2810,7 +2819,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						].join(" || ")
 					};
 
-				HACK.chipEvents(req, Pipe, function ( specs ) {  // create job for these Pipe parameters
+				HACK.chipEvents(sql, Pipe, function ( specs ) {  // create job for these Pipe parameters
 
 					sql.insertJob( Copy(specs,job), function (sql, job) {  // put job into the job queue
 						req.query = Copy({  // engine request query gets copied to its context
@@ -3321,7 +3330,7 @@ Initialize DEBE on startup.
 			+ "\n- RUNNING " + (DEBE.nofaults?"PROTECTED":"UNPROTECTED")
 			+ "\n- WITH " + (site.urls.socketio||"NO")+" SOCKETS"
 			+ "\n- WITH " + (DEBE.SESSIONS||"UNLIMITED")+" CONNECTIONS"
-			+ "\n- WITH " + (DEBE.cores||"NO")+" WORKERS@ "+site.urls.worker+" MASTER@ "+site.urls.master
+			+ "\n- WITH " + (DEBE.cores ? DEBE.cores + " WORKERS AT "+site.urls.worker : "NO WORKERS")+" AND MASTER AT "+site.urls.master
 		);
 
 		if (cb) cb();

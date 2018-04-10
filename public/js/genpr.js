@@ -124,21 +124,24 @@ module.exports = {
 
 		var ran = new RAN({ // configure the random process generator
 			
-			getPCs: function (model, min, M, win, cb) {
-				var vals = [], vecs = [];
+			getPCs: function (model, min, M, ran, cb) {
+				
 				SQL.query(
 					"SELECT * FROM app.ran WHERE coherence_intervals BETWEEN ? AND ? AND eigen_value > ? AND correlation_model = ? ORDER BY eigen_index", 
-					[M-win, M+win, min, model],
-					function (err, recs) {
-						recs.forEach( function (rec) {
-							vals.push( rec.eigen_value );
-							vecs.push( JSON.parse( rec.eigen_vector ) );
-						});
+					[M-ran.Mstep/2, M+ran.Mstep/2, min, model],
+					function (err, pcs) {
+						
+					var vals = [], vecs = [];
 
-						cb({
-							values: vals,
-							vectors: vecs
-						});
+					pcs.forEach( function (pc) {
+						vals.push( pc.eigen_value );
+						vecs.push( JSON.parse( pc.eigen_vector ) );
+					});
+
+					cb(ran, {
+						values: vals,
+						vectors: vecs
+					});
 				});
 				
 				SQL.release();
@@ -207,6 +210,9 @@ module.exports = {
 
 						break;
 
+					case "_end":
+						LOG(ev);
+						
 					case "batch":
 					case "config":
 					case "end":
@@ -215,8 +221,7 @@ module.exports = {
 
 					default:
 						//str.push(ev);
-				}
-
+				}			
 			}  // event saver 
 		});  // create a randpr compute thread
 
