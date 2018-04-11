@@ -123,30 +123,6 @@ module.exports = {
 		// [{"mu":[0,0,0],"sigma":[[0.9,0.4,0],[0.4,0.7,0],[0,0,0.1]]}, {"mu":[0.3,0.5,0], "sigma":[[0.8,0.2,0],[0.2,0.8,0],[0,0,0.1]]}]
 
 		var ran = new RAN({ // configure the random process generator
-			
-			getPCs: function (model, min, M, ran, cb) {
-				
-				SQL.query(
-					"SELECT * FROM app.ran WHERE coherence_intervals BETWEEN ? AND ? AND eigen_value > ? AND correlation_model = ? ORDER BY eigen_index", 
-					[M-ran.Mstep/2, M+ran.Mstep/2, min, model],
-					function (err, pcs) {
-						
-					var vals = [], vecs = [];
-
-					pcs.forEach( function (pc) {
-						vals.push( pc.eigen_value );
-						vecs.push( JSON.parse( pc.eigen_vector ) );
-					});
-
-					cb(ran, {
-						values: vals,
-						vectors: vecs
-					});
-				});
-				
-				SQL.release();
-			},
-			
 			N: ctx.Members,  // ensemble size
 			wiener: ctx.Wiener,  // wiener process steps
 			trP: ctx.TxPrs, // state transition probs 

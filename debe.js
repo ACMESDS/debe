@@ -2719,6 +2719,10 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			});
 			
 			if (rem.length) {  // there is a remainder to save
+				
+				Log("rem", rem.length, rem[0].at);
+				//rem.forEach( (val) => { if (val.at != "jump") Log(val); } );
+				
 				if ( "Save" in ctx ) {  // dump to Save key
 					sql.query("UPDATE ??.?? SET ? WHERE ?", [
 						group, table, { Save: JSON.stringify(rem) || "null" }, {ID: ctx.ID}
