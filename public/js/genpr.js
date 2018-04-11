@@ -14,15 +14,14 @@ module.exports = {
 	engine: function genpr(ctx,res) {
 		/* 
 		Return random [ {x,y,...}, ...] for ctx parameters:
-			TxPrs = KxK transition probs [ [pr, ...], ... ] or {fr: {to: pr, ...}, ...} 
-			K = number of states or [ dim, ... ]
-			Mix = mixing params { mu: [...], sigma: [...] }
-			Symbols = [sym, ...] state symbols or null to generate
+			TxPrs = KxK transition probs [ [pr, ...], ... ] or {fr: {to: pr, ...}, ..., K: states} 
+			Mix = gaussian mixing params { dims: [N1, N2, ...], offs: [X1, X2, ...] } to generate observations
+			Symbols = [S1, S2, ...] state symbols or null to generate defaults
 			Members = number in process ensemble
 			Wiener = number of wiener processes; 0 disables
 			Nyquist = process over-sampling factor
 			Steps = number of process steps	
-			Solve = { ... } learning parameters
+			Batch = steps to next supervised learning
 		*/
 
 		function randint(a) {
@@ -130,7 +129,7 @@ module.exports = {
 			nyquist: ctx.Nyquist, // oversampling factor
 			steps: ctx.Steps, // process steps
 			obs: ctx.Mix,  	// mixing/emission/observation parms
-
+			batch: ctx.Batch || 0,   // supervised learning every batch steps
 			//sigma = mix.sigma || [ [ scalevec([0.4, 0.3, 0],dims), scalevec([0.3, 0.8, 0],dims), scalevec([0, 0, 1],dims)] ],
 
 			solve: ctx.Solve, // learning parameters

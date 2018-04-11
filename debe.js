@@ -2679,105 +2679,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 @param {Function} res Totem response callback
 */	
 	
-	function saveResults( stats, ctx ) {  // save stats to the Save/Save_KEY keys, an Export file, or the Ingest db
-		
-		function saveKey(sql, key, args) {
-			sql.query(`UPDATE ??.?? SET ${key}=? WHERE ?`, args, function (err) {
-				Log("SAVE", key, err ? "failed" : "");
-			});
-		}
-
-		var 
-			status = "", // returned status
-			filename = `${table}.${ctx.Name}`, // export/ingest file name
-			stash = { };  // ingestable keys stash
-			
-		//Log("save results", stats);
-		
-		if ( !stats )
-			return "empty";
-		
-		else
-		if ( stats.constructor == Error )
-			return stats+"";
-		
-		else
-		if ( stats.constructor == Array ) {  // keys in the plugin context are used to create save stashes
-			var rem = [], stash = { remainder: rem };  // stash for saveable keys 
-			
-			stats.stashify("at", "Save_", ctx, stash, function (ev, stat) {  // add {at:"KEY",...} stats to the Save_KEY stash
-				
-				if (ev)
-					for (var key in stat) ev[key].push( stat[key] );
-
-				else {
-					var ev = new Object();
-					for (var key in stat) ev[key] = [ ];
-					return ev;
-				}
-
-			});
-			
-			if (rem.length) {  // there is a remainder to save
-				
-				Log("rem", rem.length, rem[0].at);
-				//rem.forEach( (val) => { if (val.at != "jump") Log(val); } );
-				
-				if ( "Save" in ctx ) {  // dump to Save key
-					sql.query("UPDATE ??.?? SET ? WHERE ?", [
-						group, table, { Save: JSON.stringify(rem) || "null" }, {ID: ctx.ID}
-					]);
-					status += " Saved";
-				}
-
-				if ( ctx.Export ) {   // export to ./public/stores/FILENAME
-					var
-						evidx = 0,
-						evs = rem,  // point event source to remainder
-						srcStream = new STREAM.Readable({    // establish source stream for export pipe
-							objectMode: false,
-							read: function () {  // read event source
-								if ( ev = evs[evidx++] )  // still have an event
-									this.push( JSON.stringify(ev)+"\n" );
-								else 		// signal events exhausted
-									this.push( null );
-							}
-						});
-					
-					DEBE.uploadFile( "", srcStream, `stores/${filename}.${group}.${client}` );
-					status += " Exported";
-				}
-
-				if ( ctx.Ingest )  {
-					DEBE.getFile( client, `ingest/${filename}`, function (fileID) {
-						HACK.ingestList( sql, rem, fileID, function (aoi, evs) {
-							Log("INGESTED ",aoi);
-						});
-					});
-					status += " Ingested";
-				}
-			}
-			
-			delete stash.remainder;	
-		}
-		
-		else  { // keys in the plugin context are used to create the stash
-			var stash = {};
-			Each(stats, function (key, val) {  // remove splits from bulk save
-				if ( key in ctx ) stash[key] = val;
-			});
-		}
-
-		status += " Saved"
-		for (var key in stash) 
-			saveKey(sql, key, [ 
-				group, table, JSON.stringify(stash[key]) || "null", {ID: ctx.ID}
-			]);
-
-		return ctx.Share ? stats : status.tag("a",{href: "/files.view"});
-	}
-
 	var
+		saveResults = JSLAB.libs.SAVE,
 		dot = ".",
 		sql = req.sql,
 		client = req.client,
@@ -2799,7 +2702,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			
 			else
 			if ( Pipe = ctx.Pipe )  { // Intercept job request to run engine via regulator
-				res("Regulating");
+				res("Piped");
 				
 				var
 					profile = req.profile,
@@ -2839,12 +2742,12 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 						ATOM.select(req, function (ctx) {  // run plugin's engine
 							if (ctx) {
-								if ( "Save" in ctx )
-									saveResults( Array.from(ctx.Save || [] ), ctx );
+								//if ( "Save" in ctx )
+									//saveResults( ctx.Save, ctx );  //Array.from(ctx.Save || [] )
 							}
 
 							else
-								Log( `REG ${job.name} HALTED` );
+								Log( `HALTED ${job.name}` );
 						});
 					});
 				});
@@ -2852,7 +2755,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					
 			else
 			if ( "Save" in ctx )
-				res( saveResults( Array.from( ctx.Save || [] ), ctx ) );
+				res( saveResults( sql, ctx.Save, ctx ) );  //Array.from( ctx.Save || [] )
 
 			else
 				res( "ok" );

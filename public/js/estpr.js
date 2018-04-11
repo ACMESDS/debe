@@ -10,14 +10,20 @@ module.exports = {
 		/* 
 		Return MLEs for random event process [ {x,y,...}, ...] given ctx parameters:
 			Symbols = [sym, ...] state symbols or null to generate
-			Solve = { ... } learning parameters
-			File.Actors = ensembe size
-			File.States = number of states consumed by process
-			File.Steps = number of time steps
-			Steps = override File
-			Load = event query
+			Batch = steps to next supervised learning
+			Steps = override _File.Steps
+			Model = name of model used for pc estimates
+			MinEigen = smallest eigenvalue for pc estimates
+			lma = [init] initial estimate of coherence intervals for levenberg-marquardt alg
+			lfs = [init] "" for linear factor alg (use at your own risk)
+			bfs = [start,end,step] "" for brute force search
+			Use = "lma" || "lfs" || "bfs" alg results used retained for estimated intervals
+			_File.Actors = ensembe size
+			_File.States = number of states consumed by process
+			_File.Steps = number of time steps
+			_Events = query to get events
 		*/
-		LOG("estpr", ctx);
+		//LOG("estpr", ctx);
 		
 		var 
 			ran = new RAN({ // configure the random process generator
@@ -45,18 +51,17 @@ module.exports = {
 				},
 							
 				learn: function (cb) {  // event getter callsback cb(events) or cb(null) at end
-					GET.byStep(ctx, cb);
+					STEP(ctx, cb);
 				},  // event getter when in learning mode
 				
 				N: ctx._File.Actors,  // ensemble size
 				//wiener: 0,  // wiener process steps
 				sym: ctx.Symbols,  // state symbols
-				//store: [], 	// use sync pipe() since we are running a web service
 				steps: ctx.Steps || ctx._File.Steps, // process steps
+				batch: ctx.Batch || 0,  // steps to next supervised learning event 
 				K: ctx._File.States,	// number of states 
 				trP: {}, // trans probs
 				solve: {  // solver parms for unsupervised learning
-					batch: 0,  // steps to next supervised learning batch 
 					pc: {  // principle components options for intensity/rate estimates
 						model: ctx.Model,  // assumed correlation model for underlying CCGP
 						min: ctx.MinEigen	// min eigen value to use
@@ -70,7 +75,6 @@ module.exports = {
 					switch ( ev.at ) {
 						case "end":
 						case "batch":
-							LOG(ev);
 							str.push(ev);
 					}
 				}  // on-event callbacks

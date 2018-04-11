@@ -869,28 +869,33 @@ append site_body
 					
 			#fit.js
 				:markdown
-					js-engines are automatically supplied the
-					[LWIP(lightweight imaging)](https://github.com/EyalAr/lwip),
-					[SQL(jsdb-extended database connector)](https://www.npmjs.com/package/mysql), 
-					[JSON(encoder-decoder)](https://nodejs.org/docs/latest/api/json), 
-					[ME(jslab-extended matlab emulator)](https://www.npmjs.com/package/mathjs),
-					[TASK(task sharding)](https://github.com/ACMESDS/jslab),
-					[GET(data getter)](https://github.com/ACMESDS/jslab)
-					[RAN(markov random process)](https://github.com/ACMESDS/randpr),
-					[CRYPTO(crypto)](https://nodejs.org/docs/latest/api/crypto), and
-					[MAIL(simple mail transfer)](https://www.npmjs.com/package/nodemailer)
-					modules.  The matlab emulator module ME is supported by the
-					[ML(mainchine learning)](https://www.npmjs.com/package/mathjs),
-					[DSP(digitial signal processing)](https://www.npmjs.com/package/dsp), 
-					[BAYES(bayes network interference )](https://www.npmjs.com/package/jsbayes),
-					[GAMMA(standard gamma function)](https://www.npmjs.com/package/gamma),
-					[HMM(hidden markov model solver)](https://www.npmjs.com/package/nodehmm),
-					[MLE(maximum liklihood estimator)](https://www.npmjs.com/package/node-svd),
-					[MVN(normal multivariates](https://www.npmjs.com/package/multivariate-normal),
-					[NRAP(newton-raphson root finder)](https://www.npmjs.com/package/newton-raphson),
-					[ZETA(riemann-zeta function](https://www.npmjs.com/package/math-riemann-zeta), and
-					[RNN(recurrent nural netroc](https://www.npmjs.com/package/recurrentjs)
-					modules.
+					js-engines are automatically supplied base modules:  
+					* [LWIP(lightweight imaging)](https://github.com/EyalAr/lwip)  
+					* [SQL(jsdb-extended database connector)](https://www.npmjs.com/package/mysql)  
+					* [JSON(encoder-decoder)](https://nodejs.org/docs/latest/api/json)  
+					* [RAN(markov process generating and learning)](https://github.com/ACMESDS/randpr)  
+					* [CRYPTO(cryptography)](https://nodejs.org/docs/latest/api/crypto)  
+					* [MAIL(simple mail transfer)](https://www.npmjs.com/package/nodemailer)  
+					* [ME(extended matlab emulator)](https://www.npmjs.com/package/mathjs)  
+					* [TASK(task sharding)](https://github.com/ACMESDS/jslab)  
+					
+					as well as several dataset interface modules:  
+					* [STEP(ctx,cb) flush events by step time then save results to host plugin]()  
+					* [DEPTH(ctx,cb) flush events by stack depth then save results to host plugin]()  
+					* [BULK(ctx,cb) flush all events then save results to host plugin]()  
+					* [DROP(ctx,cb) drop events then save results to host plugin]()  
+					
+					The ME matlab emulator has been extended with the following modules:  
+					* [ML(mainchine learning)](https://www.npmjs.com/package/mathjs)  
+					* [DSP(digitial signal processing)](https://www.npmjs.com/package/dsp)  
+					* [BAYES(bayes network interference )](https://www.npmjs.com/package/jsbayes)  
+					* [GAMMA(standard gamma function)](https://www.npmjs.com/package/gamma)  
+					* [HMM(hidden markov model solver)](https://www.npmjs.com/package/nodehmm)  
+					* [MLE(maximum liklihood estimator)](https://www.npmjs.com/package/node-svd)  
+					* [MVN(normal multivariates](https://www.npmjs.com/package/multivariate-normal)  
+					* [NRAP(newton-raphson root finder)](https://www.npmjs.com/package/newton-raphson)  
+					* [ZETA(riemann-zeta function](https://www.npmjs.com/package/math-riemann-zeta)  
+					* [RNN(recurrent nural netroc](https://www.npmjs.com/package/recurrentjs)
 
 					This [stateless js-engine example](/jsdemo1.run):
 
@@ -902,9 +907,6 @@ append site_body
 							ctx.Save = [ {u: ctx.M}, {u:ctx.M+1}, {u:ctx.M+2} ];
 							res(ctx);
 
-							GET.byStep( ctx, function (evs) {
-								LOG(evs);
-							});
 							ME.exec(ctx, "D=A*A'; E=D+D*3; disp(entry); ");
 							LOG( "D=", ctx.D, "E=", ctx.E);
 						}
