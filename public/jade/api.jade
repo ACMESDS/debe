@@ -879,14 +879,18 @@ append site_body
 					* [ME(extended matlab emulator)](https://www.npmjs.com/package/mathjs)  
 					* [TASK(task sharding)](https://github.com/ACMESDS/jslab)  
 					
-					as well as several dataset interface modules:  
-					* [STEP(ctx,cb) flush events by step time then save results to host plugin]()  
-					* [DEPTH(ctx,cb) flush events by stack depth then save results to host plugin]()  
-					* [BULK(ctx,cb) flush all events then save results to host plugin]()  
-					* [DROP(ctx,cb) drop events then save results to host plugin]()  
+					as well as several interfaces between data streams and host plugins:  
+					* [STEP(ctx,cb) flush events by step time]()  
+					* [DEPTH(ctx,cb) flush events by stack depth]()  
+					* [BULK(ctx,cb) flush all events]()  
+					* [DROP(ctx,cb) drop all events]()  
 					
-					The ME matlab emulator has been extended with the following modules:  
-					* [ML(mainchine learning)](https://www.npmjs.com/package/mathjs)  
+					where callback cb(ievs, savecb) accepts inputs events and should call
+					savecb(oevs) with its output events when its ievs becomes null.
+					
+					The ME matlab emulator natively provides matrix arithmetics, symbolic calculations,
+					and sparce matricies, and has been enhanced by the following  modules:  
+					* [ML(machine learning)](https://www.npmjs.com/package/mathjs)  
 					* [DSP(digitial signal processing)](https://www.npmjs.com/package/dsp)  
 					* [BAYES(bayes network interference )](https://www.npmjs.com/package/jsbayes)  
 					* [GAMMA(standard gamma function)](https://www.npmjs.com/package/gamma)  
@@ -930,9 +934,10 @@ append site_body
 					will, on entry, prime its *A* and *B* context keys using its *entry* sql-queries: the "?" therein
 					references its context *query* hash (as overridden by url query parameters).  On
 					exit, its context *B* context variable is exported by its *exit* sql-query.    It computes a *tau* variable
-					that is simply discarded on exit (placing into CTX.Save to retain).  The ME.exec matlab emulator
-					computes context *D* and *E* values.  The default ME.exec emulator has been extended with *disp* etc 
-					functions.
+					that is simply discarded on exit (placing into CTX.Save to retain).  
+					
+					Whereas ME.exec(ctx,expr) converts context js-matrix keys to/from a ME-matrix, 
+					ME.eval(expr,ctx) provides no such conversions.
 
 					This [stateless js-engine example](/jsdemo2.exe?name=test):
 
