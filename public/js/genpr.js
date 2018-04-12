@@ -7,7 +7,6 @@ module.exports = {
 		Wiener: "int(11)",
 		Nyquist: "float",
 		Steps: "int(11)",
-		Solve: "json",
 		Description: "mediumtext"
 	},
 	

@@ -1,8 +1,15 @@
 module.exports = {
 	usecase: {
 		Symbols: "json",
-		Steps: "int(11)",
-		Solve: "json",
+		Steps: "int(11) default 0",
+		lma: "json",
+		lfa: "json",
+		bfs: "json",
+		Use: "varchar(8) default 'lma'",
+		Batch: "int(11) default 0",
+		Dim: "int(11) default 150",
+		MinEigen: "float default 1e-1",
+		Model: "varchar(16) default 'sinc'",		
 		Description: "mediumtext"
 	},
 	
@@ -27,15 +34,48 @@ module.exports = {
 		
 		var 
 			ran = new RAN({ // configure the random process generator
-				getpcs: function (model, min, M, win, ctx, cb) {
+				getpcs: function (model, Emin, M, Mwin, Mmax, ctx, cb) {
 				
-					SQL.query(
-						"SELECT * FROM app.ran WHERE coherence_intervals BETWEEN ? AND ? AND eigen_value > ? AND correlation_model = ? ORDER BY eigen_index", 
-						[M-win, M+win, min, model],
-						function (err, pcs) {
+					function genpcs(dim, steps, model, cb) {
+						LOG("gen pcs", dim, steps, model); 
+						var
+							init = new RAN({
+								models: [model],  // models to gen
+								Mmax: dim,  	// max coherence intervals
+								Mstep: steps 	// step intervals
+							});
+						
+						SQL.beginBulk();
+						
+						init.config( function (pc) {
+							var 
+								vals = pc.values,
+								vecs = pc.vectors,
+								N = vals.length, 
+								ref = vals[N-1];
+							
+							vals.forEach( (val, idx) => {
+								var
+									save = {
+										correlation_model: pc.model,
+										coherence_intervals: pc.intervals,
+										eigen_value: val,
+										eigen_index: idx,
+										ref_value: ref,
+										max_intervals: dim,
+										eigen_vector: JSON.stringify( vecs[idx] )
+									};
+								
+								SQL.query("INSERT INTO app.pcs SET ? ON DUPLICATE KEY UPDATE ?", [save,save] );
+							});
+						});
+						
+						SQL.endBulk();
+						cb();						
+					}
 
+					function sendpcs( pcs ) {
 						var vals = [], vecs = [];
-
 						pcs.forEach( function (pc) {
 							vals.push( pc.eigen_value );
 							vecs.push( JSON.parse( pc.eigen_vector ) );
@@ -45,9 +85,46 @@ module.exports = {
 							values: vals,
 							vectors: vecs
 						});
+						
+						SQL.release();
+					}
+						
+					function findpcs( cb ) {
+						var M0 = Math.min( M, Mmax-Mwin*2 );
+						
+						SQL.query(
+							"SELECT * FROM app.pcs WHERE coherence_intervals BETWEEN ? AND ? AND eigen_value > ? AND least(?,1) ORDER BY eigen_index", 
+							[M0-Mwin, M0+Mwin, Emin, {
+								max_intervals: Mmax, 
+								correlation_model: model
+							}],
+							function (err, pcs) {
+								if (!err) cb(pcs);
+						});
+					}
+					
+					findpcs( function (pcs) {
+						if (pcs.length) 
+							sendpcs( pcs );
+						
+						else
+						SQL.query(
+							"SELECT count(ID) as Count FROM app.pcs WHERE least(?,1)", {
+								max_intervals: Mmax, 
+								correlation_model: model
+							}, 
+							function (err, test) {  // see if pc model exists
+							
+							//LOG( "modtest", Mmax, model, M, Mwin, pcs);
+							if ( !test[0].Count )  // pc model does not exist so make it
+								genpcs( Mmax, Mwin*2, model, function () {
+									findpcs( sendpcs );
+								});
+								
+							else  // search was too restrictive so no need to remake model
+								sendpcs(pcs);
+						});							
 					});
-
-					SQL.release();
 				},
 							
 				learn: function (cb) {  // event getter callsback cb(events) or cb(null) at end
@@ -64,6 +141,7 @@ module.exports = {
 				solve: {  // solver parms for unsupervised learning
 					pc: {  // principle components options for intensity/rate estimates
 						model: ctx.Model,  // assumed correlation model for underlying CCGP
+						dim: ctx.Dim || 150,  // max coherence intervals / pc dim
 						min: ctx.MinEigen	// min eigen value to use
 					},
 					use: ctx.Use,

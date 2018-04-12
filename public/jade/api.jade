@@ -551,14 +551,13 @@ append site_body
 					POST /ENGINE.exe	Step ENGINE  in a stateful workflow
 					DELETE /ENGINE.exe	Free ENGINE from a stateful workflow
 
-				While the GET-endpoint provides a stateless interface to an engine and its context, the PUT-, POST-,
-				and DELETE-endpoints provide a stateful interface to engines which are useful in [workflows](/nodeflow.view).
-				Whereas stateless engines (being memoryless) are initialized at each step, stateful 
-				engines are initialized only when the workflow is initialized, and typically define i/o ports to
-				latch input/output events, thus maximizing data stationarity in a workflow.
+				Use the GET-endpoint to run stateless engines; use the PUT-, POST-, and DELETE-endpoints 
+				to access stateful engines.  Whereas stateless engines (being memoryless) are initialized on a GET,
+				stateful engines are: initialized when a [workflow](/nodeflow.view) issues a PUT, advanced when a
+				workflow issues a POST, and reset when a workflow issues a DELETE, thus maximizing data 
+				stationarity in a workflow.
 
-				Please know 
-				that **#{nick}** does not provide an interactive development environment; engines should be 
+				Please know that **#{nick}** does not provide an interactive development environment; engines should be 
 				thoroughly debugged in their native development environment before being [inserted](/engines.view) 
 				into **#{nick}**.  
 

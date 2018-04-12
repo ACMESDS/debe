@@ -1788,16 +1788,16 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		@param [Object] stash refactored output suitable for a Save_KEY
 		@param [Function] cb callback(ev,stat) returns refactored result to put into stash
 		Used by plugins for refactoring process output ctx into existing Save_KEY stashes, thus
-		
+
 				[{ at: "check", A: a1, B: b1, ... }, { at: "check", A: a1, B: b1, ... }, ... { at: "other", ...} ]
 				.stashify( "at", "save_", {save_check: {}, ...} , stash, cb )
-				
+
 		creates a stash.save_check = {A: [a1, a2,  ...], B: [b1, b2, ...], ...}.   No stash.other is
 		created because its does not exist in the supplied ctx.
 		*/
-			
+
 			var rem = stash.remainder;
-			
+
 			this.each( function (n,stat) {  // split-save all stashable keys
 				var 
 					key = targetPrefix + stat[watchKey],  // target ctx key 
@@ -1811,7 +1811,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					delete stat[watchKey];
 					cb(ev, stat);
 				}
-				
+
 				else  
 				if (rem)  // stash remainder 
 					rem.push( stat );
