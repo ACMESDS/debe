@@ -2730,7 +2730,6 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 					sql.insertJob( Copy(specs,job), function (sql, job) {  // put job into the job queue
 						req.query = Copy({  // engine request query gets copied to its context
-							_Host: req.table,
 							_File: job.File,
 							_Voxel: job.Voxel,
 							_Collects: job.Collects,
@@ -2742,8 +2741,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 						ATOM.select(req, function (ctx) {  // run plugin's engine
 							if (ctx) {
-								//if ( "Save" in ctx )
-									//saveResults( ctx.Save, ctx );  //Array.from(ctx.Save || [] )
+								//if ( "Save" in ctx )   // could allow piped plugin to set ctx and save, but dont see value yet
+									//saveResults( ctx.Save, ctx ); 
 							}
 
 							else
@@ -2755,7 +2754,34 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					
 			else
 			if ( "Save" in ctx )
-				res( saveResults( sql, ctx.Save, ctx ) );  //Array.from( ctx.Save || [] )
+				res( saveResults( sql, ctx.Save, ctx, function (evs) {
+					var
+						filename = `${ctx._Host}.${ctx.Name}`;
+					
+					if ( ctx.Export ) {   // export to ./public/stores/FILENAME
+						var
+							evidx = 0,
+							srcStream = new STREAM.Readable({    // establish source stream for export pipe
+								objectMode: false,
+								read: function () {  // read event source
+									if ( ev = evs[evidx++] )  // still have an event
+										this.push( JSON.stringify(ev)+"\n" );
+									else 		// signal events exhausted
+										this.push( null );
+								}
+							});
+
+						DEBE.uploadFile( "", srcStream, `stores/${filename}.${group}.${client}` );
+					}
+
+					if ( ctx.Ingest )  
+						DEBE.getFile( client, `ingest/${filename}`, function (fileID) {
+							HACK.ingestList( sql, evs, fileID, function (aoi, evs) {
+								Log("INGESTED ",aoi);
+							});
+						});
+
+				}) ); 
 
 			else
 				res( "ok" );
