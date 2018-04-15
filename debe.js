@@ -57,15 +57,16 @@ var 									// totem modules
 	JSDB = require("jsdb"),
 	HACK = require("geohack");
 
+const { Copy,Each,Log } = require("enum");
+
 var										// shortcuts and globals
-	Copy = TOTEM.copy,
-	Each = TOTEM.each,
-	Thread = TOTEM.thread,
-	Log = console.log;
+	Thread = TOTEM.thread;
 	
 var
-	DEBE = module.exports = TOTEM.extend({
+	DEBE = module.exports = Copy({
 	
+	init: Initialize,
+		
 	plugins: JSLAB.libs,
 		
 	ingester: function ingester( opts, query ) {
@@ -1522,7 +1523,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	*/
 	probono: false,  //< enable to run plugins unregulated
 		
-	Function: Initialize,  //< added to ENUM callback stack
+	//Function: Initialize,  //< added to ENUM callback stack
 
 	// Prototypes
 	
@@ -2178,7 +2179,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	Enable for double-blind testing 
 	*/
 	blindTesting : false		//< Enable for double-blind testing (eg make FLEX susceptible to sql injection attacks)
-});
+}, TOTEM, ".");
 
 /*
 function SOAPsession(req,res,peer,action) {
@@ -2680,7 +2681,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 */	
 	
 	var
-		saveResults = JSLAB.libs.SAVE,
+		saveEvents = JSLAB.libs.SAVE,
 		dot = ".",
 		sql = req.sql,
 		client = req.client,
@@ -2701,7 +2702,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				res( ctx );
 			
 			else
-			if ( Pipe = ctx.Pipe )  { // Intercept job request to run engine via regulator
+			if ( Pipe = ctx.Pipe )  { // intercept job request to regulate event chips
 				res("Piped");
 				
 				var
@@ -2742,7 +2743,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						ATOM.select(req, function (ctx) {  // run plugin's engine
 							if (ctx) {
 								//if ( "Save" in ctx )   // could allow piped plugin to set ctx and save, but dont see value yet
-									//saveResults( ctx.Save, ctx ); 
+									//saveEvents( ctx.Save, ctx ); 
 							}
 
 							else
@@ -2754,11 +2755,11 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					
 			else
 			if ( "Save" in ctx )
-				res( saveResults( sql, ctx.Save, ctx, function (evs) {
+				res( saveEvents( sql, ctx.Save, ctx, function (evs) {
 					var
 						filename = `${ctx._Host}.${ctx.Name}`;
 					
-					if ( ctx.Export ) {   // export to ./public/stores/FILENAME
+					if ( ctx.Export ) {   // export remaining events to filename
 						var
 							evidx = 0,
 							srcStream = new STREAM.Readable({    // establish source stream for export pipe
@@ -2774,7 +2775,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						DEBE.uploadFile( "", srcStream, `stores/${filename}.${group}.${client}` );
 					}
 
-					if ( ctx.Ingest )  
+					if ( ctx.Ingest )  // ingest remaining events
 						DEBE.getFile( client, `ingest/${filename}`, function (fileID) {
 							HACK.ingestList( sql, evs, fileID, function (aoi, evs) {
 								Log("INGESTED ",aoi);
@@ -3131,7 +3132,7 @@ Chapter 2
 		res(DEBE.errors.badOffice);
 }
 
-function Initialize () {
+function Initialize (cb) {
 /**
 @method Initialize
 @member DEBE
@@ -3293,6 +3294,8 @@ Initialize DEBE on startup.
 
 		Trace("INIT MODULES");
 
+		cb( null );
+		
 		FLEX.config({ 
 			thread: Thread,
 			emitter: DEBE.IO ? DEBE.IO.sockets.emit : null,
@@ -3415,8 +3418,8 @@ Initialize DEBE on startup.
 	}); }); }); 
 } 
 
-function Trace(msg,arg) {
-	TOTEM.trace("D>",msg,arg);
+function Trace(msg,sql) {
+	msg.trace("D>",sql);
 }
 
 function siteContext(req, cb) {
@@ -3446,5 +3449,9 @@ function siteContext(req, cb) {
 	}) );
 	
 }
+
+DEBE.String.extend(String);
+DEBE.Array.extend(Array);
+DEBE.Date.extend(Date);
 
 // UNCLASSIFIED

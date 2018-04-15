@@ -3,25 +3,26 @@ module.exports = {
 		Mix: "json",
 		TxPrs: "json",
 		Symbols: "json",
-		Members: "int(11)",
-		Wiener: "int(11)",
-		Nyquist: "float",
-		Steps: "int(11)",
+		Members: "int(11) default 100",
+		Wiener: "int(11) default 0",
+		Nyquist: "float default 1",
+		Steps: "int(11) default 0",
+		Batch: "int(11) default 0",
 		Description: "mediumtext"
 	},
 	
 	engine: function genpr(ctx,res) {
-		/* 
-		Return random [ {x,y,...}, ...] for ctx parameters:
-			TxPrs = KxK transition probs [ [pr, ...], ... ] or {fr: {to: pr, ...}, ..., K: states} 
-			Mix = gaussian mixing params { dims: [N1, N2, ...], offs: [X1, X2, ...] } to generate observations
-			Symbols = [S1, S2, ...] state symbols or null to generate defaults
-			Members = number in process ensemble
-			Wiener = number of wiener processes; 0 disables
-			Nyquist = process over-sampling factor
-			Steps = number of process steps	
-			Batch = steps to next supervised learning
-		*/
+	/* 
+	Return random [ {x,y,...}, ...] for ctx parameters:
+		TxPrs = KxK transition probs [ [pr, ...], ... ] or {fr: {to: pr, ...}, ..., K: states} 
+		Mix = gaussian mixing params { dims: [N1, N2, ...], offs: [X1, X2, ...] } to generate observations
+		Symbols = [S1, S2, ...] state symbols or null to generate defaults
+		Members = number in process ensemble
+		Wiener = number of wiener processes; 0 disables
+		Nyquist = process over-sampling factor
+		Steps = number of process steps	
+		Batch = steps to next supervised learning
+	*/
 
 		function randint(a) {
 			return floor((rand() - 0.5)*2*a);

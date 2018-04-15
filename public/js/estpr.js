@@ -14,32 +14,33 @@ module.exports = {
 	},
 	
 	engine: function estpr(ctx,res) {  // learn hidden parameters of Markov process
-		/* 
-		Return MLEs for random event process [ {x,y,...}, ...] given ctx parameters:
-			Symbols = [sym, ...] state symbols or null to generate
-			Batch = steps to next supervised learning
-			Steps = override _File.Steps
-			Model = name of model used for pc estimates
-			MinEigen = smallest eigenvalue for pc estimates
-			lma = [init] initial estimate of coherence intervals for levenberg-marquardt alg
-			lfs = [init] "" for linear factor alg (use at your own risk)
-			bfs = [start,end,step] "" for brute force search
-			Use = "lma" || "lfs" || "bfs" alg results used retained for estimated intervals
-			_File.Actors = ensembe size
-			_File.States = number of states consumed by process
-			_File.Steps = number of time steps
-			_Events = query to get events
-		*/
+	/* 
+	Return MLEs for random event process [ {x,y,...}, ...] given ctx parameters:
+		Symbols = [sym, ...] state symbols or null to generate
+		Batch = steps to next supervised learning
+		Steps = override _File.Steps
+		Model = name of model used for pc estimates
+		MinEigen = smallest eigenvalue for pc estimates
+		Dim = pc model dims (max coherence intervals)
+		lma = [init] initial estimate of coherence intervals for levenberg-marquardt alg
+		lfs = [init] "" for linear factor alg (use at your own risk)
+		bfs = [start,end,step] "" for brute force search
+		Use = "lma" || "lfs" || "bfs" alg results used retained for estimated intervals
+		_File.Actors = ensembe size
+		_File.States = number of states consumed by process
+		_File.Steps = number of time steps
+		_Events = query to get events
+	*/
 		//LOG("estpr", ctx);
 		
 		var 
 			ran = new RAN({ // configure the random process generator
-				getpcs: function (model, Emin, M, Mwin, Mmax, ctx, cb) {
+				/*getpcs: function (model, Emin, M, Mwin, Mmax, ctx, cb) {
 				
 					function genpcs(dim, steps, model, cb) {
 						LOG("gen pcs", dim, steps, model); 
 						var
-							init = new RAN({
+							pcgen = new RAN({
 								models: [model],  // models to gen
 								Mmax: dim,  	// max coherence intervals
 								Mstep: steps 	// step intervals
@@ -47,7 +48,7 @@ module.exports = {
 						
 						SQL.beginBulk();
 						
-						init.config( function (pc) {
+						pcgen.config( function (pc) {
 							var 
 								vals = pc.values,
 								vecs = pc.vectors,
@@ -125,7 +126,7 @@ module.exports = {
 								sendpcs(pcs);
 						});							
 					});
-				},
+				},*/
 							
 				learn: function (cb) {  // event getter callsback cb(events) or cb(null) at end
 					STEP(ctx, cb);
@@ -139,7 +140,7 @@ module.exports = {
 				K: ctx._File.States,	// number of states 
 				trP: {}, // trans probs
 				solve: {  // solver parms for unsupervised learning
-					pc: {  // principle components options for intensity/rate estimates
+					pc: {  // principle components options for intensity estimates
 						model: ctx.Model,  // assumed correlation model for underlying CCGP
 						dim: ctx.Dim || 150,  // max coherence intervals / pc dim
 						min: ctx.MinEigen	// min eigen value to use
