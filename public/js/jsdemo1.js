@@ -7,17 +7,17 @@ module.exports = {
 	},
 	
 	engine: function jsdemo1(ctx, res) {
-		LOG("jsdemo1 ctx", ctx);
-		//LOG("A="+ctx.A.length+" by "+ctx.A[0].length);
-		//LOG("B="+ctx.B.length+" by "+ctx.B[0].length);
+		Log("jsdemo1 ctx", ctx);
+		//Log("A="+ctx.A.length+" by "+ctx.A[0].length);
+		//Log("B="+ctx.B.length+" by "+ctx.B[0].length);
 
 		ctx.Save = [ {u: ctx.M}, {u:ctx.M+1}, {u:ctx.M+2} ];
 		res(ctx);
 
-		/*GET.byStep( ctx, function (evs) {
-			LOG(evs);
+		/*STEP( ctx, function (evs) {
+			Log(evs);
 		});*/
-		//MAT(ctx, "D=A*A'; E=D+D*3; disp(entry); ");
-		// LOG( "D=", ctx.D, "E=", ctx.E);
+		//ME.exec(ctx, "D=A*A'; E=D+D*3; disp(entry); ");
+		//Log( "D=", ctx.D, "E=", ctx.E);
 	}
 }

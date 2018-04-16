@@ -868,17 +868,18 @@ append site_body
 					
 			#fit.js
 				:markdown
-					js-engines are automatically supplied base modules:  
+					js-engines are supplied the modules:  
 					* [LWIP(lightweight imaging)](https://github.com/EyalAr/lwip)  
 					* [SQL(jsdb-extended database connector)](https://www.npmjs.com/package/mysql)  
 					* [JSON(encoder-decoder)](https://nodejs.org/docs/latest/api/json)  
 					* [RAN(markov process generating and learning)](https://github.com/ACMESDS/randpr)  
 					* [CRYPTO(cryptography)](https://nodejs.org/docs/latest/api/crypto)  
 					* [MAIL(simple mail transfer)](https://www.npmjs.com/package/nodemailer)  
-					* [ME(extended matlab emulator)](https://www.npmjs.com/package/mathjs)  
+					* [ME(matlab emulator)](https://www.npmjs.com/package/mathjs)  
 					* [TASK(task sharding)](https://github.com/ACMESDS/jslab)  
+					* [ENUM(basic enumerators)](https://github.com/ACMESDS/enum)  
 					
-					as well as several interfaces between data streams and host plugins:  
+					as well as interfaces between data streams and host plugins:  
 					* [STEP(ctx,cb) flush events by step time]()  
 					* [DEPTH(ctx,cb) flush events by stack depth]()  
 					* [BULK(ctx,cb) flush all events]()  
@@ -910,8 +911,9 @@ append site_body
 							ctx.Save = [ {u: ctx.M}, {u:ctx.M+1}, {u:ctx.M+2} ];
 							res(ctx);
 
-							ME.exec(ctx, "D=A*A'; E=D+D*3; disp(entry); ");
-							LOG( "D=", ctx.D, "E=", ctx.E);
+							ME.exec( "D=A*A'; E=D+D*3; disp(entry); ", ctx, (ctx) => {
+								LOG( "D=", ctx.D, "E=", ctx.E);
+							});
 						}
 
 					with initial context: 

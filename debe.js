@@ -1525,480 +1525,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 	//Function: Initialize,  //< added to ENUM callback stack
 
-	// Prototypes
-	
-	String: [  // string prototypes
-		function renderJade(req,res) { 
-		/**
-		@private
-		@method render
-		Render Jade string this to res( err || html ) in a new context created for this request. 
-		**/
-			var jade = this+"";
-			siteContext( req, function (ctx) {
-				try {
-					if ( generator = JADE.compile(jade, ctx) )
-						res( generator(ctx) );
-					else
-						res( DEBE.errors.badSkin );
-				}
-				catch (err) {
-					return res( err );
-				}
-			});
-		},
-		
-		function renderFile(req,res) { 
-		/**
-		@private
-		@method render
-		Render Jade file at path this to res( err || html ) in a new context created for this request.  
-		**/
-			var file = this+"";
-			siteContext( req, function (ctx) {
-				try {
-					res( JADE.renderFile( file, ctx ) );  // js gets confused so force string
-				}
-				catch (err) {
-					res(  err );
-				}
-			});
-		},
-		
-		function hyper(ref) { 
-			return [this].linkify(ref);
-		}
-	],
-	
-	Array: [  // array prototypes
-		function clone() {
-		/*
-		@member Array
-		@method clone
-		Return a cloned copy of this records
-		*/
-			
-			var recs = this, copyRecs = [];
-			recs.forEach( function (rec) {  // clone ds recs
-				copyRecs.push( new Object(rec) );
-			});
-			return recs;
-		},
-		
-		function blogify( sql, client, keys, ds, cb ) {
-		/*
-		@member Array
-		@method blogify
-		@param [List] keys list of keys to blogify
-		@param [String] ds Name of dataset being blogged
-		@param [Function] cb callback(recs) blogified version of records
-		*/
-			
-			function renderRecord(rtn, rec, ds, cb) {  // blog=key,... request flag
-				function renderJAX(jaxList,rtn,cb) {
-					var 
-						rendered = 0, renders = jaxList.length;
-
-					//Log("jax",renders);
-					jaxList.each( function (n,jax) {
-
-						JAX.typeset({
-							math: jax.jax,
-							format: jax.fmt, //"TeX",  // TeX, inline-TeX, AsciiMath, MathML
-							//html: true,
-							mml: true
-						}, function (d) {
-							rtn = rtn.replace("!jax"+n+".", d.mml);
-
-							Log("jax", rendered, renders);
-							if ( ++rendered == renders ) cb(rtn);
-						});
-
-					});
-
-					if ( !renders ) cb(rtn);
-				}
-				
-				var 
-					jaxList = [], cache = {}, $ = {}, tags = [];
-				
-				for (var key in rec) try { $[key] = JSON.parse( rec[key] ); } catch (err) {};
-							
-				var			
-					msg = rtn
-						.replace(/\$\$\{(.*?)\}/g, function (str,key) {  // $${ TeX matrix key } markdown
-							function texify(recs) {
-								var tex = [];
-								recs.forEach( function (rec) {
-									if (rec.forEach) {
-										rec.forEach( function (val,idx) {
-											rec[idx] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : JSON.stringify(val);
-										});
-										tex.push( rec.join(" & ") );
-									}
-									else
-										tex.push( rec.toFixed ? rec.toFixed(2) : rec.toUpperCase ? rec : JSON.stringify(rec) );
-								});	
-								return  "\\begin{matrix}" + tex.join("\\\\") + "\\end{matrix}";
-							}
-							
-							if (  key in cache )
-								return cache[key];
-							
-							else {
-								try {
-									var val = eval( `$.${key}` );
-								}
-								catch (err) {
-									var val =  rec[key];
-								}
-								return cache[key] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : texify(val);
-							}							
-						})
-						.replace(/\$\{(.*?)\}\((.*?)\)/g, function (str,key,short) {  // ${ key }( short ) markdown
-							if (  key in cache )
-								return cache[key];
-							
-							else {
-								try {
-									var val = eval( `$.${key}` );
-								}
-								catch (err) {
-									var val =  rec[key];
-								}
-								return cache[key] = cache[short] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : val+"";
-							}							
-						})
-						.replace(/\$\{(.*?)\}/g, function (str,key) {  // ${ key } markdown
-							//Log(key,cache);
-							if (  key in cache )
-								return cache[key];
-							
-							else {
-								try {
-									var val = eval( `$.${key}` );
-								}
-								catch (err) {
-									var val =  rec[key];
-								}
-								return cache[key] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : val+"";
-							}							
-						})
-						.replace(/\!{(.*?)\}/g, function (str,expr) { // !{ cexpression } markdown
-							function Eval(expr) {
-								try {
-									return eval(expr);
-								} 
-								catch (err) {
-									return err+"";
-								}
-							}
-							return Eval(expr);
-						})
-						.replace(/\$\$(.*?)\$\$/g, function (str,jax) {  //  $$ standalone TeX $$ markdown
-							jaxList.push({ jax: jax, fmt:"TeX"});
-							return "!jax"+(jaxList.length-1)+".";
-						})
-						.replace(/a\$(.*?)\$/g, function (str,jax) {  // a$ ascii math $ markdown
-							jaxList.push({ jax: jax, fmt:"asciiMatch"});
-							return "!jax"+(jaxList.length-1)+".";
-						})
-						.replace(/m\$(.*?)\$/g, function (str,jax) {  // m$ math ML $ markdown
-							jaxList.push({ jax: jax, fmt:"MathML"});
-							return "!jax"+(jaxList.length-1)+".";
-						})
-						.replace(/!\$(.*?)\$/g, function (str,jax) {  // !$ inline TeX $ markdown
-							jaxList.push({ jax: jax, fmt:"inline-TeX"});
-							return "!jax"+(jaxList.length-1)+".";
-						})				
-						.replace(/\[([^\[\]]*?)\]\((.*?)\)/g, function (str,link,src) {  // [link](src) or [view;w;h;...](src) markdown
-							var
-								links = link.split(";"),
-								view = links[0],
-								w = links[1] || 100,
-								h = links[2] || 100,
-								keys = {},
-								path = ds.parsePath(keys),
-								path = src.replace(/;/g,"&").parsePath(keys) || path,
-								opsrc =  `/${view}.view`.tag( "?", Copy({w:w,h:h,src:path}, keys) );
-							
-							//Log(view, keys, opsrc);
-							switch (view) {
-								case "image":
-								case "img":
-									return "".tag("img", { src:src, width:w, height:h });
-								case "post":
-								case "iframe":
-									return "".tag("iframe", { src:src, width:w, height:h });
-								default:
-									return (view == link)
-											? link.tag("a",{ href:src }) 
-											: "".tag("iframe",{ src: opsrc, width:w, height:h } ) ;
-							}
-						})
-						.replace(/href=(.*?)\>/g, function (str,ref) { // follow <a href=REF>A</a> links
-							var q = (ref.charAt(0) == "'") ? '"' : "'";
-							return `href=${q}javascript:navigator.follow(${ref},BASE.user.client,BASE.user.source)${q}>`;
-						})
-						.replace(/\#(.*?) /g, function (str,tag) {  // #topic tag
-							tags.push(tag);
-							return "";
-						});
-
-				renderJAX( jaxList, msg, function (msg) {
-					cb(msg);					
-					tags.each( function (n,tag) {  // tag topics
-						sql.query("INSERT INTO app.tags SET `On`=now(),? ON DUPLICATE KEY UPDATE `On`=now(),Views=Views+1,?", [{
-								Tag: tag,
-								Message: msg,
-								To: client
-							}, {Message: msg}
-						]); 
-					});
-				}); 
-				
-			}
-		
-			var recs = this, rendered = 0, renders = recs.length;
-
-			keys.each(function (n,key) {
-				recs.each( function (n, rec) {
-					if ( val = rec[key] )
-						if (val.constructor == String)
-							renderRecord( val, rec, "/"+ds+"?ID="+rec.ID, function (html) {
-								rec[key] = html;
-								//Log("rec",rendered, renders);
-								if ( ++rendered == renders ) cb(recs);
-							});
-				});
-			});
-			if ( !renders ) cb(recs);								
-		},
-		
-		function isEmpty() {
-			return this.length == 0;
-		},
-		
-		function stashify(watchKey, targetPrefix, ctx, stash, cb) {
-		/*
-		@member Array
-		@method stashify
-		@param [String] watchKey  this = [ { watchKey:"KEY", x:X, y: Y, ...}, ... }
-		@param [String] targetPrefix  stash = { (targetPrefix + watchKey): { x: [X,...], y: [Y,...], ... }, ... } 
-		@param [Object] ctx plugin context keys
-		@param [Object] stash refactored output suitable for a Save_KEY
-		@param [Function] cb callback(ev,stat) returns refactored result to put into stash
-		Used by plugins for refactoring process output ctx into existing Save_KEY stashes, thus
-
-				[{ at: "check", A: a1, B: b1, ... }, { at: "check", A: a1, B: b1, ... }, ... { at: "other", ...} ]
-				.stashify( "at", "save_", {save_check: {}, ...} , stash, cb )
-
-		creates a stash.save_check = {A: [a1, a2,  ...], B: [b1, b2, ...], ...}.   No stash.other is
-		created because its does not exist in the supplied ctx.
-		*/
-
-			var rem = stash.remainder;
-
-			this.each( function (n,stat) {  // split-save all stashable keys
-				var 
-					key = targetPrefix + stat[watchKey],  // target ctx key 
-					ev = ( key in stash )
-						? stash[key]  // stash was already primed
-						: (key in ctx)  // see if its in the ctx
-								? stash[key] = cb(null,stat, ctx[key]) // prime stash
-								: null;  // not in ctx so stash in remainder
-
-				if ( ev )  { // found a ctx target key to save results
-					delete stat[watchKey];
-					cb(ev, stat);
-				}
-
-				else  
-				if (rem)  // stash remainder 
-					rem.push( stat );
-			});
-		},
-		
-		function merge(Recs,idx) {
-		/**
-		@member Array
-		@method merge
-		@param [Array] Recs Source records to merge into this records
-		@param [String] idx Key name to use for detecting record changes
-		Merge changes when doing table deltas from their baseline versions.
-		**/
-			
-			function changed(rec,Rec) {
-				for (var n in rec)
-					if (rec[n] != Rec[n]) 
-						return true;
-				
-				return false;
-			}
-				
-			var recs = this;
-			// sort records on specified index
-			Recs = Recs.sort( function (a,b) {
-				return a[idx] > b[idx] ? 1 : -1;
-			});
-			recs = recs.sort( function (a,b) {
-				return a[idx] > b[idx] ? 1 : -1;
-			});
-
-			// merge records based on specified index.
-			var k=0,Rec = Recs[k],ID=10000;
-			
-			if (Rec)
-			recs.each( function (n, rec) {
-//Log([n,k,recs.length, Recs.length, idx, rec[idx], Rec[idx]]);
-
-				while (Rec && (rec[idx]  == Rec[idx])) {
-					if ( changed(rec,Rec) ) { // return only changed records
-						Rec.Baseline = 1;
-						Rec.ID = ID++;
-						recs.push( Rec );
-					}
-					Rec = Recs[++k];
-				}
-
-				rec.Baseline = 0;
-			});	
-			
-			recs = recs.sort( function (a,b) {
-				return a[idx] > b[idx] ? 1 : -1;
-			});
-			
-			return recs;
-		},
-		
-		function treeify(idx,kids,level,keys,wt) {
-		/**
-		@member Array
-		@method treeify
-		@param [Number] idx starting index (0 on first call)
-		@param [Number] kids number of leafs following starting index (this.length on first call)
-		@param [Number] level current depth (0 on first call)
-		@param [Array] keys pivot keys
-		@param [String] wt key name that contains leaf weight (defaults to "size")
-		Return a tree = {name,weight,children: tree} from records having been sorted on keys=[key,...]
-		*/
-			var	
-				recs = this,
-				key = keys[level],
-				len = 0,
-				pos = idx, end = idx+kids,
-				tar = [];
-			
-//Log([level,keys,ref,idx]);
-			
-			if (key)
-				for (var ref = recs[idx][key]; pos < end; ) {
-					var rec = recs[idx];
-					var stop = (idx==end) ? true : (rec[key] != ref);
-					
-					if ( stop ) {
-						//Log([pos,idx,end,key,ref,recs.length]);
-						
-						var node = {
-							name: key+" "+ref, 
-							weight: wt ? parseInt(rec[wt] || "0") : len,
-							children: recs.treeify(pos,len,level+1,keys,wt)
-						};
-
-						tar.push( node );
-						pos = idx;
-						len = 0;
-						ref = (idx==end) ? null : recs[idx][key];
-					}
-					else {
-						idx++;
-						len++;
-					}
-				}
-			
-			else
-				while (pos < end) {
-					var rec = recs[pos++];
-					tar.push({
-						name: "doc", 
-						weight: 0, 
-						doc: rec
-					});
-				}
-				
-			return tar;
-		},
-		
-		function listify( cb ) {
-		/*
-		@member Array
-		@method listify
-		@param {Function} cb callback(rec) returns recordresults to append
-		Returns a sample of each record from this records using a callback to sample
-		*/
-			var rtns = [];
-			this.forEach( function (rec) {
-				rtns.push( cb(rec) );
-			});
-			return rtns;
-		},
-						 
-		function joinify(sep, cb) {
-		/* 
-		@member Array
-		@method joingify
-		@param [String] sep seperator
-		@param [Function] cb callback(rec) returns sample of supplied record
-		*/
-			
-			if (cb) {
-				var recs = [];
-				if (cb.constructor == Function) 
-					this.each( function (n,rec) {
-						recs.push( cb(rec) );
-					});
-			
-				else 
-					this.each( function (n,rec) {
-						recs.push( rec[cb] );
-					});
-
-				return recs.join(sep);
-			}
-				
-			else
-				return this.join(sep);
-		},
-		
-		function linkify(ref) {
-		/*
-		@member Array
-		@method linkify
-		@param {String} ref
-		Returns a ref-joined list of links
-		*/
-			
-			return this.joinify(",", function (label) {
-				
-				if (ref)
-					if (ref.charAt(0) == ":")
-						return label.link( "/"+(ref.substr(1) || label.toLowerCase())+".view" );
-					else
-						return label.link(ref);
-				else
-					return label.link(ref || "/"+label.toLowerCase()+".view");
-				
-			});
-		}
-	],	
-	
-	Date: [  // date prototypes
-		function addDays(days) {
-			this.setDate( this.getDate() + days);
-			return this;
-		}		
-	],
-		
 	/**
 	@cfg {Boolean}
 	@member DEBE
@@ -3450,8 +2976,478 @@ function siteContext(req, cb) {
 	
 }
 
-DEBE.String.extend(String);
-DEBE.Array.extend(Array);
-DEBE.Date.extend(Date);
+// Prototypes
+	
+[  // string prototypes
+	function renderJade(req,res) { 
+	/**
+	@private
+	@method render
+	Render Jade string this to res( err || html ) in a new context created for this request. 
+	**/
+		var jade = this+"";
+		siteContext( req, function (ctx) {
+			try {
+				if ( generator = JADE.compile(jade, ctx) )
+					res( generator(ctx) );
+				else
+					res( DEBE.errors.badSkin );
+			}
+			catch (err) {
+				return res( err );
+			}
+		});
+	},
 
+	function renderFile(req,res) { 
+	/**
+	@private
+	@method render
+	Render Jade file at path this to res( err || html ) in a new context created for this request.  
+	**/
+		var file = this+"";
+		siteContext( req, function (ctx) {
+			try {
+				res( JADE.renderFile( file, ctx ) );  // js gets confused so force string
+			}
+			catch (err) {
+				res(  err );
+			}
+		});
+	},
+
+	function hyper(ref) { 
+		return [this].linkify(ref);
+	}
+].extend(String);
+	
+[  // array prototypes
+	function clone() {
+	/*
+	@member Array
+	@method clone
+	Return a cloned copy of this records
+	*/
+
+		var recs = this, copyRecs = [];
+		recs.forEach( function (rec) {  // clone ds recs
+			copyRecs.push( new Object(rec) );
+		});
+		return recs;
+	},
+
+	function blogify( sql, client, keys, ds, cb ) {
+	/*
+	@member Array
+	@method blogify
+	@param [List] keys list of keys to blogify
+	@param [String] ds Name of dataset being blogged
+	@param [Function] cb callback(recs) blogified version of records
+	*/
+
+		function renderRecord(rtn, rec, ds, cb) {  // blog=key,... request flag
+			function renderJAX(jaxList,rtn,cb) {
+				var 
+					rendered = 0, renders = jaxList.length;
+
+				//Log("jax",renders);
+				jaxList.each( function (n,jax) {
+
+					JAX.typeset({
+						math: jax.jax,
+						format: jax.fmt, //"TeX",  // TeX, inline-TeX, AsciiMath, MathML
+						//html: true,
+						mml: true
+					}, function (d) {
+						rtn = rtn.replace("!jax"+n+".", d.mml);
+
+						Log("jax", rendered, renders);
+						if ( ++rendered == renders ) cb(rtn);
+					});
+
+				});
+
+				if ( !renders ) cb(rtn);
+			}
+
+			var 
+				jaxList = [], cache = {}, $ = {}, tags = [];
+
+			for (var key in rec) try { $[key] = JSON.parse( rec[key] ); } catch (err) {};
+
+			var			
+				msg = rtn
+					.replace(/\$\$\{(.*?)\}/g, function (str,key) {  // $${ TeX matrix key } markdown
+						function texify(recs) {
+							var tex = [];
+							recs.forEach( function (rec) {
+								if (rec.forEach) {
+									rec.forEach( function (val,idx) {
+										rec[idx] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : JSON.stringify(val);
+									});
+									tex.push( rec.join(" & ") );
+								}
+								else
+									tex.push( rec.toFixed ? rec.toFixed(2) : rec.toUpperCase ? rec : JSON.stringify(rec) );
+							});	
+							return  "\\begin{matrix}" + tex.join("\\\\") + "\\end{matrix}";
+						}
+
+						if (  key in cache )
+							return cache[key];
+
+						else {
+							try {
+								var val = eval( `$.${key}` );
+							}
+							catch (err) {
+								var val =  rec[key];
+							}
+							return cache[key] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : texify(val);
+						}							
+					})
+					.replace(/\$\{(.*?)\}\((.*?)\)/g, function (str,key,short) {  // ${ key }( short ) markdown
+						if (  key in cache )
+							return cache[key];
+
+						else {
+							try {
+								var val = eval( `$.${key}` );
+							}
+							catch (err) {
+								var val =  rec[key];
+							}
+							return cache[key] = cache[short] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : val+"";
+						}							
+					})
+					.replace(/\$\{(.*?)\}/g, function (str,key) {  // ${ key } markdown
+						//Log(key,cache);
+						if (  key in cache )
+							return cache[key];
+
+						else {
+							try {
+								var val = eval( `$.${key}` );
+							}
+							catch (err) {
+								var val =  rec[key];
+							}
+							return cache[key] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : val+"";
+						}							
+					})
+					.replace(/\!{(.*?)\}/g, function (str,expr) { // !{ cexpression } markdown
+						function Eval(expr) {
+							try {
+								return eval(expr);
+							} 
+							catch (err) {
+								return err+"";
+							}
+						}
+						return Eval(expr);
+					})
+					.replace(/\$\$(.*?)\$\$/g, function (str,jax) {  //  $$ standalone TeX $$ markdown
+						jaxList.push({ jax: jax, fmt:"TeX"});
+						return "!jax"+(jaxList.length-1)+".";
+					})
+					.replace(/a\$(.*?)\$/g, function (str,jax) {  // a$ ascii math $ markdown
+						jaxList.push({ jax: jax, fmt:"asciiMatch"});
+						return "!jax"+(jaxList.length-1)+".";
+					})
+					.replace(/m\$(.*?)\$/g, function (str,jax) {  // m$ math ML $ markdown
+						jaxList.push({ jax: jax, fmt:"MathML"});
+						return "!jax"+(jaxList.length-1)+".";
+					})
+					.replace(/!\$(.*?)\$/g, function (str,jax) {  // !$ inline TeX $ markdown
+						jaxList.push({ jax: jax, fmt:"inline-TeX"});
+						return "!jax"+(jaxList.length-1)+".";
+					})				
+					.replace(/\[([^\[\]]*?)\]\((.*?)\)/g, function (str,link,src) {  // [link](src) or [view;w;h;...](src) markdown
+						var
+							links = link.split(";"),
+							view = links[0],
+							w = links[1] || 100,
+							h = links[2] || 100,
+							keys = {},
+							path = ds.parsePath(keys),
+							path = src.replace(/;/g,"&").parsePath(keys) || path,
+							opsrc =  `/${view}.view`.tag( "?", Copy({w:w,h:h,src:path}, keys) );
+
+						//Log(view, keys, opsrc);
+						switch (view) {
+							case "image":
+							case "img":
+								return "".tag("img", { src:src, width:w, height:h });
+							case "post":
+							case "iframe":
+								return "".tag("iframe", { src:src, width:w, height:h });
+							default:
+								return (view == link)
+										? link.tag("a",{ href:src }) 
+										: "".tag("iframe",{ src: opsrc, width:w, height:h } ) ;
+						}
+					})
+					.replace(/href=(.*?)\>/g, function (str,ref) { // follow <a href=REF>A</a> links
+						var q = (ref.charAt(0) == "'") ? '"' : "'";
+						return `href=${q}javascript:navigator.follow(${ref},BASE.user.client,BASE.user.source)${q}>`;
+					})
+					.replace(/\#(.*?) /g, function (str,tag) {  // #topic tag
+						tags.push(tag);
+						return "";
+					});
+
+			renderJAX( jaxList, msg, function (msg) {
+				cb(msg);					
+				tags.each( function (n,tag) {  // tag topics
+					sql.query("INSERT INTO app.tags SET `On`=now(),? ON DUPLICATE KEY UPDATE `On`=now(),Views=Views+1,?", [{
+							Tag: tag,
+							Message: msg,
+							To: client
+						}, {Message: msg}
+					]); 
+				});
+			}); 
+
+		}
+
+		var recs = this, rendered = 0, renders = recs.length;
+
+		keys.each(function (n,key) {
+			recs.each( function (n, rec) {
+				if ( val = rec[key] )
+					if (val.constructor == String)
+						renderRecord( val, rec, "/"+ds+"?ID="+rec.ID, function (html) {
+							rec[key] = html;
+							//Log("rec",rendered, renders);
+							if ( ++rendered == renders ) cb(recs);
+						});
+			});
+		});
+		if ( !renders ) cb(recs);								
+	},
+
+	function isEmpty() {
+		return this.length == 0;
+	},
+
+	function stashify(watchKey, targetPrefix, ctx, stash, cb) {
+	/*
+	@member Array
+	@method stashify
+	@param [String] watchKey  this = [ { watchKey:"KEY", x:X, y: Y, ...}, ... }
+	@param [String] targetPrefix  stash = { (targetPrefix + watchKey): { x: [X,...], y: [Y,...], ... }, ... } 
+	@param [Object] ctx plugin context keys
+	@param [Object] stash refactored output suitable for a Save_KEY
+	@param [Function] cb callback(ev,stat) returns refactored result to put into stash
+	Used by plugins for refactoring process output ctx into existing Save_KEY stashes, thus
+
+			[{ at: "check", A: a1, B: b1, ... }, { at: "check", A: a1, B: b1, ... }, ... { at: "other", ...} ]
+			.stashify( "at", "save_", {save_check: {}, ...} , stash, cb )
+
+	creates a stash.save_check = {A: [a1, a2,  ...], B: [b1, b2, ...], ...}.   No stash.other is
+	created because its does not exist in the supplied ctx.
+	*/
+
+		var rem = stash.remainder;
+
+		this.each( function (n,stat) {  // split-save all stashable keys
+			var 
+				key = targetPrefix + stat[watchKey],  // target ctx key 
+				ev = ( key in stash )
+					? stash[key]  // stash was already primed
+					: (key in ctx)  // see if its in the ctx
+							? stash[key] = cb(null,stat, ctx[key]) // prime stash
+							: null;  // not in ctx so stash in remainder
+
+			if ( ev )  { // found a ctx target key to save results
+				delete stat[watchKey];
+				cb(ev, stat);
+			}
+
+			else  
+			if (rem)  // stash remainder 
+				rem.push( stat );
+		});
+	},
+
+	function merge(Recs,idx) {
+	/**
+	@member Array
+	@method merge
+	@param [Array] Recs Source records to merge into this records
+	@param [String] idx Key name to use for detecting record changes
+	Merge changes when doing table deltas from their baseline versions.
+	**/
+
+		function changed(rec,Rec) {
+			for (var n in rec)
+				if (rec[n] != Rec[n]) 
+					return true;
+
+			return false;
+		}
+
+		var recs = this;
+		// sort records on specified index
+		Recs = Recs.sort( function (a,b) {
+			return a[idx] > b[idx] ? 1 : -1;
+		});
+		recs = recs.sort( function (a,b) {
+			return a[idx] > b[idx] ? 1 : -1;
+		});
+
+		// merge records based on specified index.
+		var k=0,Rec = Recs[k],ID=10000;
+
+		if (Rec)
+		recs.each( function (n, rec) {
+//Log([n,k,recs.length, Recs.length, idx, rec[idx], Rec[idx]]);
+
+			while (Rec && (rec[idx]  == Rec[idx])) {
+				if ( changed(rec,Rec) ) { // return only changed records
+					Rec.Baseline = 1;
+					Rec.ID = ID++;
+					recs.push( Rec );
+				}
+				Rec = Recs[++k];
+			}
+
+			rec.Baseline = 0;
+		});	
+
+		recs = recs.sort( function (a,b) {
+			return a[idx] > b[idx] ? 1 : -1;
+		});
+
+		return recs;
+	},
+
+	function treeify(idx,kids,level,keys,wt) {
+	/**
+	@member Array
+	@method treeify
+	@param [Number] idx starting index (0 on first call)
+	@param [Number] kids number of leafs following starting index (this.length on first call)
+	@param [Number] level current depth (0 on first call)
+	@param [Array] keys pivot keys
+	@param [String] wt key name that contains leaf weight (defaults to "size")
+	Return a tree = {name,weight,children: tree} from records having been sorted on keys=[key,...]
+	*/
+		var	
+			recs = this,
+			key = keys[level],
+			len = 0,
+			pos = idx, end = idx+kids,
+			tar = [];
+
+//Log([level,keys,ref,idx]);
+
+		if (key)
+			for (var ref = recs[idx][key]; pos < end; ) {
+				var rec = recs[idx];
+				var stop = (idx==end) ? true : (rec[key] != ref);
+
+				if ( stop ) {
+					//Log([pos,idx,end,key,ref,recs.length]);
+
+					var node = {
+						name: key+" "+ref, 
+						weight: wt ? parseInt(rec[wt] || "0") : len,
+						children: recs.treeify(pos,len,level+1,keys,wt)
+					};
+
+					tar.push( node );
+					pos = idx;
+					len = 0;
+					ref = (idx==end) ? null : recs[idx][key];
+				}
+				else {
+					idx++;
+					len++;
+				}
+			}
+
+		else
+			while (pos < end) {
+				var rec = recs[pos++];
+				tar.push({
+					name: "doc", 
+					weight: 0, 
+					doc: rec
+				});
+			}
+
+		return tar;
+	},
+
+	function listify( cb ) {
+	/*
+	@member Array
+	@method listify
+	@param {Function} cb callback(rec) returns recordresults to append
+	Returns a sample of each record from this records using a callback to sample
+	*/
+		var rtns = [];
+		this.forEach( function (rec) {
+			rtns.push( cb(rec) );
+		});
+		return rtns;
+	},
+
+	function joinify(sep, cb) {
+	/* 
+	@member Array
+	@method joingify
+	@param [String] sep seperator
+	@param [Function] cb callback(rec) returns sample of supplied record
+	*/
+
+		if (cb) {
+			var recs = [];
+			if (cb.constructor == Function) 
+				this.each( function (n,rec) {
+					recs.push( cb(rec) );
+				});
+
+			else 
+				this.each( function (n,rec) {
+					recs.push( rec[cb] );
+				});
+
+			return recs.join(sep);
+		}
+
+		else
+			return this.join(sep);
+	},
+
+	function linkify(ref) {
+	/*
+	@member Array
+	@method linkify
+	@param {String} ref
+	Returns a ref-joined list of links
+	*/
+
+		return this.joinify(",", function (label) {
+
+			if (ref)
+				if (ref.charAt(0) == ":")
+					return label.link( "/"+(ref.substr(1) || label.toLowerCase())+".view" );
+				else
+					return label.link(ref);
+			else
+				return label.link(ref || "/"+label.toLowerCase()+".view");
+
+		});
+	}
+].extend(Array);
+	
+[  // date prototypes
+	function addDays(days) {
+		this.setDate( this.getDate() + days);
+		return this;
+	}		
+].extend(Date);
+		
 // UNCLASSIFIED

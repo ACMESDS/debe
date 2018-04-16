@@ -104,10 +104,10 @@ module.exports = {
 			sampler = samplers[mode], // sampler
 			states = ctx.TxPrs.length;
 
-		LOG({mix:ctx.Mix,txprs:ctx.TxPrs,steps:ctx.Steps,solve:ctx.Solve, States:states}); 
+		Log({mix:ctx.Mix,txprs:ctx.TxPrs,steps:ctx.Steps,solve:ctx.Solve, States:states}); 
 			/*
 			mix.each( function (k,mix) {  // scale mix mu,sigma to voxel dimensions
-				//LOG([k, floor(k / 20), k % 20, mix, dims]);
+				//Log([k, floor(k / 20), k % 20, mix, dims]);
 
 				offsetvec( scalevec( mix.mu, dims), [
 					floor(k / 20) * dims[0] + Offsets[0],
@@ -166,7 +166,7 @@ module.exports = {
 							});
 
 							str.push(ev);
-							//LOG(ev);
+							//Log(ev);
 						}
 
 						else
@@ -186,7 +186,7 @@ module.exports = {
 						break;
 
 					case "_end":
-						LOG(ev);
+						Log(ev);
 						
 					case "batch":
 					case "config":
