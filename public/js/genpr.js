@@ -1,4 +1,4 @@
-module.exports = {
+module.exports = {  // generate a Markov process given its transition probability parameters
 	usecase: {
 		Mix: "json",
 		TxPrs: "json",
@@ -8,6 +8,10 @@ module.exports = {
 		Nyquist: "float default 1",
 		Steps: "int(11) default 0",
 		Batch: "int(11) default 0",
+		
+		Save_end: "json",
+		Save_batch: "json",
+		Save_config: "json",
 		Description: "mediumtext"
 	},
 	
@@ -133,7 +137,7 @@ module.exports = {
 			//sigma = mix.sigma || [ [ scalevec([0.4, 0.3, 0],dims), scalevec([0.3, 0.8, 0],dims), scalevec([0, 0, 1],dims)] ],
 
 			solve: ctx.Solve, // learning parameters
-			filter: function (str, ev) {  // append selected events to supplied store/stream
+			filter: function (str, ev) {  // filter output events
 				switch ( ev.at ) {
 					case "jump":
 						var 

@@ -2302,7 +2302,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					}
 
 					if ( ctx.Ingest )  // ingest remaining events
-						DEBE.getFile( client, `ingest/${filename}`, function (fileID) {
+						DEBE.getFile( client, `plugins/${filename}`, function (area, fileID) {
 							HACK.ingestList( sql, evs, fileID, function (aoi, evs) {
 								Log("INGESTED ",aoi);
 							});

@@ -733,10 +733,10 @@ append site_body
 								recs.push(rec);
 							})
 							.on("end", function () {
-								LOG("returning recs="+recs.length);
+								Log("returning recs="+recs.length);
 								cb(recs);
 							});
-							LOG("sql command="+q.sql);
+							Log("sql command="+q.sql);
 						}
 
 					with initial context:
@@ -879,18 +879,19 @@ append site_body
 					* [TASK(task sharding)](https://github.com/ACMESDS/jslab)  
 					* [ENUM(basic enumerators)](https://github.com/ACMESDS/enum)  
 					
-					as well as interfaces between data streams and host plugins:  
+					as well as several interfaces to event streams:  
 					* [STEP(ctx,cb) flush events by step time]()  
 					* [DEPTH(ctx,cb) flush events by stack depth]()  
 					* [BULK(ctx,cb) flush all events]()  
 					* [DROP(ctx,cb) drop all events]()  
 					
-					where callback cb(ievs, savecb) accepts inputs events and should call
-					savecb(oevs) with its output events when its ievs becomes null.
+					where the callback cb(ievs, sink) accepts ingested events ievs and calls the supplied 
+					sink(oevs) with its output events oevs *when* the ievs become null (that is, when 
+					ingested events have been exhausted).
 					
-					The ME matlab emulator natively provides matrix arithmetics, symbolic calculations,
-					and sparce matricies, and has been enhanced by the following  modules:  
-					* [ML(machine learning)](https://www.npmjs.com/package/mathjs)  
+					The ME matlab emulator (which natively provides matrix arithmetics, symbolic and
+					sparse matrix calculations) has been extended by the following  modules:  
+					* [LAS(solve linear algebraic systems)](npm machine learning-matrix lib)  
 					* [DSP(digitial signal processing)](https://www.npmjs.com/package/dsp)  
 					* [BAYES(bayes network interference )](https://www.npmjs.com/package/jsbayes)  
 					* [GAMMA(standard gamma function)](https://www.npmjs.com/package/gamma)  
@@ -904,17 +905,26 @@ append site_body
 					This [stateless js-engine example](/jsdemo1.run):
 
 						function jsdemo1(ctx, res) {
-							LOG("jsdemo1 ctx", ctx);
-							LOG("A="+ctx.A.length+" by "+ctx.A[0].length);
-							LOG("B="+ctx.B.length+" by "+ctx.B[0].length);
+							Log("jsdemo1 ctx", ctx);
+							var debug = false;
+
+							if (debug) {
+								Log("A="+ctx.A.length+" by "+ctx.A[0].length);
+								Log("B="+ctx.B.length+" by "+ctx.B[0].length);
+							}
 
 							ctx.Save = [ {u: ctx.M}, {u:ctx.M+1}, {u:ctx.M+2} ];
 							res(ctx);
 
-							ME.exec( "D=A*A'; E=D+D*3; disp(entry); ", ctx, (ctx) => {
-								LOG( "D=", ctx.D, "E=", ctx.E);
-							});
-						}
+							if (debug)
+								STEP( ctx, function (evs,sink) {
+									Log(evs);
+								});
+
+							if (debug)
+								ME.exec(ctx, "D=A*A'; E=D+D*3; disp(entry); ", (vmctx) => {
+									Log( "D=", vmctx.D, "E=", vmctx.E);
+								});
 
 					with initial context: 
 
@@ -937,22 +947,19 @@ append site_body
 					exit, its context *B* context variable is exported by its *exit* sql-query.    It computes a *tau* variable
 					that is simply discarded on exit (placing into CTX.Save to retain).  
 					
-					Whereas ME.exec(ctx,expr) converts context js-matrix keys to/from a ME-matrix, 
-					ME.eval(expr,ctx) provides no such conversions.
-
 					This [stateless js-engine example](/jsdemo2.exe?name=test):
 
 						function jsdemo2(ctx,res) {
-							ME.exec(ctx, "a = inv(X' * X) * X' * y");
-							
-							LOG(ctx.a);
+							ME.exec("a = inv(X' * X) * X' * y", ctx, (vmctx) => {
+								Log(vmctx);
 
-							ctx.N = X.length;
-							var b = {Name:Name,Tests:N,Computed:new Date()}, a=scope.a;
-							for (var n=0,N=a.length;n<N;n++) b[n] = a[n];
+								var 
+									a = vmctx.a,
+									N = ctx.N = a.length,
+									b = $(N, (n,B) => B[n] = a[n]);
 
-							LOG(b);
-							res({a:ctx.a,b:b});							
+								res(ctx);							
+							});
 						}
 
 					with initial context: 
