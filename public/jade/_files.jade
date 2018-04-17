@@ -1,0 +1,40 @@
+//- UNCLASSIFIED
+
+extends site
+append site.parms
+	- view = "Min"
+	- parms = {browse: "browse"}
+append site.body
+
+	case query.option || "browse"
+		when "browse"
+			#grid.Files(path="/FILES.db",
+				page="#{page}",dims="#{dims}",
+				cols="Classif,Ref,Link.h,Area,Name,Size,Tag.x,Client,Address,Relevance(Readability,Method,Stokes,Imaging,Spectral,Security,Readiness,Usecase,OS,Effort,Coherence,NGA)")
+
+				:markdown
+					Here is where you can manage uploaded snapshots and tags.
+					
+			#grid.Proofs(
+				path="/proofs.db",
+				page="#{page}",dims="#{dims}",
+				cols="enabled.c,dirty.c,label,name,made.d,Dims(top.n,left.n,width.n,height.n)")
+			
+			// ,Readability,NGA,Spectral,Coherence
+			#treefan.Pivot(
+				path="/files.db&pivots=L0,L1,L2,L3,L4,L5",				
+				dims="#{dims}",refresh="#{hold}")
+
+			#minielt.ELT(links="src.Files.Ref")
+
+				:markdown
+					You can paste a snapshot here; then tag, crop, brighten, invert,
+					grayscale, mark and upload it.  Screen snapshots can be captured and tagged 
+					in the Image editor, then saved.  Image tags can be revised in the Uploads grid.
+
+		default
+			#minielt.ELT(path="#{query.option}",dims="#{dims}")
+
+			#grid.Files(path="/FILES.db",
+				page="#{page}",dims="#{dims}",
+				cols="Classif,Ref,Link.h,Area,Name,Size,Tag.x,Client,Address,Relevance(Readability,Method,Stokes,Imaging,Spectral,Security,Readiness,Usecase,OS,Effort,Coherence,NGA)")

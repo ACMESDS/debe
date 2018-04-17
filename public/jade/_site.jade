@@ -1,0 +1,260 @@
+//- UNCLASSIFIED
+//- 
+	Extends the extjs framework to provide a standard site skinning framework.
+		- parms = {} // dropdown skinning options {option1: menu1, option2: menu2, ...} 
+		- dock = "top" // folder docking style left | right | top | bottom
+		- dims = "2048,1200" // width,height maximum widget dimensions 
+		- view = "" // site style Home | Kiss | Engr | Min | Basic | Nada, ..
+		- page = 50 // maximum grid rows
+		- pulse = 120 // system health refresh rate [seconds]
+
+extends layout
+append layout_parms
+	- banner = banner
+	- start = query.ver ? "SIM" : "content"
+	- capture = true
+
+extends base
+append base_parms
+	- tech = "extjs"
+
+	block site_parms
+		- parms = {} // dropdown skinning options {option1: menu1, option2: menu2, ...} 
+		- dock = "top" // folder docking style left | right | top | bottom
+		- dims = "2048,1200" // width,height maximum widget dimensions 
+		- view = "" // site style Home | Kiss | Engr | Min | Basic | Nada, ..
+		- page = 50 // maximum grid rows
+		- pulse = 120 // system health refresh rate [seconds]
+
+append base_head
+	style.
+		.AL {text-align:left;}
+		.AR {text-align:right;}
+		.AC {text-align:center;}
+		.LG {font-size:15px;}
+		.SM {font-size:10px;}
+		.IN {text-indent:50px;}
+		.BY {background-color:yellow;}
+	block site_head
+
+append base_body
+	#hold.Options(path=JSON.stringify(parms),cols="Name,option")
+	#hold.Users(path="/USERS.db",cols="Name")
+	#hold.Links(path="/LINKS.db?area="+area,cols="Name")
+	#hold.Health(path="/HEALTH.db",cols="Name")
+	#hold.Queues(path="/QUEUES.db",cols="Name")
+	#hold.Engines(path="/ENGINES.db",cols="Name")
+	#hold.Themes(path="/THEMES.db",cols="Name,Path")
+	#hold.Locales(path="/lookups.db?ref=locales",cols="Name,Path")
+	#hold.Datasets(path="/lookups.db",cols="Name,Path")
+	#hold.Agents(path="/lookups.db?ref=agents",cols="Name,Path")
+	#hold.Views(path="/VIEWS.db",cols="Name,class")
+	#hold.Uploads(path="/uploads.db",cols="Name")
+	#hold.Stores(path="/stores.db",cols="Name")
+	#hold.Parms(path="/parms.db",cols="Parm,Type,Label,Special",sync="Parm")
+	#hold.Summary(path="/SUMMARY.db",refresh=pulse,cols="Name")
+
+	//
+		#hold.AOIs(path="/aois.db",cols="path,label,row,rows,col,cols")
+		#hold.History(path="/history.db?pivot=all",cols="Moderators,Idx",sync="Idx")
+		#hold.Cliques(path="/CLIQUES.db",cols="Name")
+		#hold.Joins(path="/lookups.db",cols="Name,Path")
+		#hold.Positives(path="/positives.FILES.db",cols="Name")
+		#hold.Negatives(path="/negatives.FILES.db",cols="Name")
+
+	- titlebar = [table.hyper("/edit.view?name="+table), client.hyper("/home.view?option=chat"), ("QoS"+profile.QoS).hyper(":profile"), "Issues".hyper(), "Baseline".hyper("git.exe"), "Moderate".hyper(), (warning ? warning.fontcolor("red") : "ok".fontcolor("blue")).hyper("/ispstatus.view") ].join(" || ")
+	- goto = query.goto || ""
+	- browsers = {Ok: ["supported","Chrome","Firefox","Opera","Safari"],Bad: ["unsupported","IE","Netscape","Traveler","TheWorld","Maxthon"] }
+
+	case view
+		when "Min"
+			#border(
+				class=table,
+				head="Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
+				LikeUs="/likeus.db",
+				View="/files.view",
+				title=titlebar)
+
+				block site_help
+					:markdown
+						*	(#{classif.level}) #{title} #{classif.purpose}
+						*	Options for this view.
+						*	Links to other views.
+						*	Themes preferred.  
+						*	Likeus for better QoS.
+						*	Capture screen for administrator.
+						*	Edit this [view](skinguide.view).
+						*	Health of system.
+						*	Users connected.
+						*	Engines [Python,JS,R,Ex,Matlab,etc](/engine.view) status.
+						*	Queues status.
+						*	Uploads of files to NLP indexing engines.
+						*	Stores of files for [workflows](/workflow.view).
+
+				#fit(center)
+					block site_body
+						
+				#fit(south,crush)
+					:markdown
+						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
+
+		when "Basic"
+			#folder(center,dock=dock)
+				block site_body
+
+		when "Typical"
+			#border(
+				class=table,
+				head="Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
+				LikeUs="/likeus.db",
+				View="/files.view",
+				title=titlebar)
+
+				block site_help
+					:markdown
+						*	(#{classif.level}) #{title} #{classif.purpose}
+						*	Options for this view.
+						*	Links to other views.
+						*	Themes preferred.  
+						*	Likeus for better QoS.
+						*	Capture screen for administrator.
+						*	Edit this [view](skinguide.view).
+						*	Health of system.
+						*	Users connected.
+						*	Engines [Python,JS,R,Ex,Matlab,etc](/engine.view) status.
+						*	Queues status.
+						*	Uploads of files to NLP indexing engines.
+						*	Stores of files for [workflows](/workflow.view).
+
+				#folder(center,dock=dock)
+					block site_body
+						
+				#fit(south,crush)
+					:markdown
+						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
+
+		when "Home"
+			#border(
+				class=table,
+				title=titlebar,
+				head="Health,Users,Themes,Capture,Links,Options,Likeus,Help",
+				LikeUs="/likeus.db",
+				crush)
+				
+				block site_body
+					:markdown
+						*	(#{classif.level}) #{title} #{classif.purpose}
+						*	Options for this view.
+						*	Links to other views.
+						*	Themes preferred.  
+						*	Likeus for better QoS.
+						*	Capture screen for administrator.
+						*	Edit this [view](skinguide.view).
+						*	Health of system.
+						*	Users connected.
+						*	Engines [Python,JS,R,Ex,Matlab,etc](/engine.view) status.
+						*	Queues status.
+						*	Uploads of files to NLP indexing engines.
+						*	Stores of files for [workflows](/workflow.view).
+
+				#fit(center)
+					block site_body
+
+				#fit(south,crush)
+					:markdown
+						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
+
+		when "Nada"
+			block site_body
+
+		when "Monster"
+			#border(
+				class=table,
+				title=titlebar,
+				head="More(Health,Users,Links,Themes),Engines,Queues,Uploads,$uploads,Stores,$stores,Views,Options,LikeUs,Help",
+				LikeUs="/likeus.db")
+				
+				block site_body
+					:markdown
+						*	(#{classif.level}) #{title} #{classif.purpose}
+						*	Options for this view.
+						*	Links to other views.
+						*	Themes preferred.  
+						*	Likeus for better QoS.
+						*	Capture screen for administrator.
+						*	Edit this [view](skinguide.view).
+						*	Health of system.
+						*	Users connected.
+						*	Engines [Python,JS,R,Ex,Matlab,etc](/engine.view) status.
+						*	Queues status.
+						*	Uploads of files to NLP indexing engines.
+						*	Stores of files for [workflows](/workflow.view).
+
+				#pivot.Helpful.Links(
+					west,crush,dims="200,600",
+					path="/sidebars.db",
+					cols="Pivot(NodeID,Topic),Special")
+				
+				#fit(center)
+					block site_body
+					
+				#fit(south,crush)
+					ishtml
+						each brow in browsers.Ok
+							img(src=icons+"/browsers/"+brow+".ico",width=16,height=16)
+						each brow in browsers.Bad
+							img(src=icons+"/browsers/"+brow+".ico",width=16,height=16)
+
+		when "Kiss"
+			#fit
+				block site_body
+
+		when "Search"
+			#hold.Comfort(path="/lookups.db",cols="Name,Path")
+			#border(
+				class=table,
+				crush,
+				head="Comfort,Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),Options,Likeus,Help",
+				LikeUs="/likeus.db",
+				View="/files.view",
+				title=titlebar)
+
+				#grid.Search(
+					path="/catalog.db",center,crush,
+					head="Search,Execute,Print,Refresh",
+					page=100,
+					cols="Ref,Name,Link.h,Dated.d,Quality")
+
+				#fit(center)
+					block site_body
+		
+		default
+			#border(
+				class=table,
+				title=titlebar,
+				head="System(Health,Users,Links,Engines,Queues),Prefs(Locales,Themes),Files(View,Uploads,$uploads,Stores,$stores),Options,LikeUs,Capture,Help",
+				LikeUs="/likeus.db",
+				View="/files.view")
+				
+				block site_body
+					:markdown
+						*	(#{classif.level}) #{title} #{classif.purpose}
+						*	Options for this view.
+						*	Links to other views.
+						*	Themes preferred.  
+						*	Likeus for better QoS.
+						*	Capture screen for administrator.
+						*	Edit this [view](skinguide.view).
+						*	Health of system.
+						*	Users connected.
+						*	Engines [Python,JS,R,Ex,Matlab,etc](/engine.view) status.
+						*	Queues status.
+						*	Uploads of files to NLP indexing engines.
+						*	Stores of files for [workflows](/workflow.view).
+
+				#fit(center)
+					block site_body
+					
+				#fit(south,crush)
+					:markdown
+						Built on [#{nick}](/home_brief.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}

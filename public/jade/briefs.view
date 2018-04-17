@@ -1,0 +1,197 @@
+//- UNCLASSIFIED
+
+extends base
+append base_parms
+	- tech = "reveal"
+	- classif = "(U) Unclassified"
+append base_body
+
+	section
+
+		:markdown
+			this is a [test](/test.view) and only a test
+		p.lg #{title}
+		p.al https://totem.west.ile.nga.ic.gov
+		p.al brian.d.james@nga.mil
+		p.al Powers 
+			a(href="/swag.view") SWAG 
+			| || 
+			a(href="/swag.view") FATS 
+			| || etc			
+		
+	section
+
+		p.lg #{title}
+		p.lg No Software !
+
+	section
+		h3.hd Service
+			a Use Cases
+			| ||
+			a Content Mgt
+
+		section
+			h2.hd Use Cases
+
+			table
+				tr
+					th: p Doc
+					th: p Generic
+					th: p Specific
+				tr
+					td: a(href="/api.view") API
+					td: a(href="/engines.view") Engines
+					td: a(href="/swag.view") Dashboard
+				tr
+					td: a(href="/tutorial.view") Tutorial
+					td: a(href="/workflow.view") Workflows
+					td: a(href="/files.view") Positives 
+				tr
+					td: a(href="/skinguide.view") Skin Guide
+					td: a(href="/issues.view") Issues	
+					td: a(href="/files.view") Negatives
+				tr
+					td: a(href="/project.view?goto=ASP Reqts") Requirements
+					td: a(href="/home.view") Home
+					td: a(href="/project.view?goto=Roadmap") Roadmap
+
+		section#cm
+			h2.hd Content Management - Wiki on Steriods
+
+			table
+				tr
+					td: a(href="#cm.briefs") Briefings
+					td: a(href="#cm.blogs") Blogs
+				tr
+					td: a(href="#cm.finders") Finders
+					td: a(href="#cm.nav") Navigators
+				tr
+					td: a(href="#cm.engines") Engines
+					td: a(href="#cm.workflows") Workflows
+				tr
+					td: p.lg Pubs
+						a(href="#cm.inline") Inlined
+						a(href="#cm.papers") Sourced
+					td: a(href="#cm.dash") Dashboards
+					
+				tr
+					td: a(href="#cm.immersive") Immersive
+					td: a(href="#cm.analytics") Analytics
+			
+		section#cm.briefs
+			h2.hd Briefing Skins
+			pre
+				code.mysql.
+					extends brief
+					append briefparms
+						- Classif = "(U) Unclassified"
+					append briefarea
+
+						section#cm
+							h4.hd Content Mgt
+
+								section#cm.engines
+									h4.hd Engines: Interface or End Points
+									iframe(src="/exsite.view?option=engines&view=Kiss")
+
+							etc
+							etc
+
+		section#cm.inline
+			h2.hd Mathjax Skins
+			table
+				tr
+					pre
+						code.html.
+							p.al The Lorenz Equations
+							p.
+								\[
+								\begin{align}
+								\dot{x} & = \sigma(y-x) \\
+								\dot{y} & = \rho x - y - xz \\
+								\dot{z} & = -\beta z + xy
+								\end{align}
+								\]
+				tr
+					p.al The Lorenz Equations
+					p.
+						\[
+						\begin{align}
+						\dot{x} & = \sigma(y-x) \\
+						\dot{y} & = \rho x - y - xz \\
+						\dot{z} & = -\beta z + xy
+						\end{align}
+						\]
+					br
+					p.al Impressive 'eh
+					p.
+						\[
+						J_\alpha(x) = \sum\limits_{m=0}^\infty \frac{(-1)^m}{m! \, \Gamma(m + \alpha + 1)}{\left({\frac{x}{2}}\right)}^{2 m + \alpha}
+						\]
+
+		//
+			section#cm.nav
+				iframe(src="/exsite.view?option=navigators&view=Nada&holdoff=Navigation Skins")
+
+			section#cm.engines
+				iframe(src="/exsite.view?option=engines&view=Kiss&holdoff=Engine as Skin or End Point")
+
+			section#cm.workflows
+				iframe(src="/exsite.view?option=workflows&view=Kiss&holdoff=Engines in Stateless-Stateful Workflows")
+
+			section#cm.dash
+				iframe(src="/swag.view?holdoff=SWAG Dashboard")
+
+			section#cm.immersive
+				img(src="/shares.construction.jpg",width="20px",height="20px")
+				iframe(src="/exsite.view?option=immersion&view=Nada&holdoff=Gaming Skins")
+
+			section#cm.blogs
+				iframe(src="/exsite.view?option=blogs&view=Nada&holdoff=Skins are Printable")
+
+			section#cm.papers
+				iframe(src="/exsite.view?option=papers&view=Nada&holdoff=Tech Pub Skins")
+
+			section#cm.finders
+				iframe(src="/exsite.view?option=finders&view=Nada&holdoff=Data Finding Skins")
+
+			section#cm.analytics
+				iframe(src="/exsite.view?option=visuals&view=Nada&holdoff=Data Analytic Skins")
+
+		section#arch
+			h3.hd Architecture
+				a System
+				|  || 
+				a Supply
+				|  || 
+				a Cloud
+				|  || 
+				a Interface
+				|  || 
+				a States
+
+			section
+				h2.hd System
+				iframe(src="/layout.view?inline=/shares/arch1.jpg&w=800&h=400")
+
+			section
+				h2.hd Supply Chain
+				iframe(src="/layout.view?inline=/shares/arch2.jpg&w=800&h=400")
+
+			section
+				h2.hd Cloud Compute
+				iframe(src="/layout.view?inline=/shares/arch3.jpg&w=800&h=400")
+
+			section 
+				h2.hd Interface = Restful CRUD+E
+				iframe(src="/layout.view?inline=/shares/arch4.jpg&w=800&h=400")
+
+			section 
+				h2.hd Programmable State Machine
+				iframe(src="/layout.view?inline=/shares/arch5.jpg&w=800&h=400")
+
+			section 
+				h2.hd QoS Model = Google Business Model
+				iframe(src="/layout.view?inline=/shares/arch6.jpg&w=800&h=400")
+
+//- UNCLASSIFIED

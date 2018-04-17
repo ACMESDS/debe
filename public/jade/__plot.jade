@@ -1,0 +1,382 @@
+
+		function parse(x,def) {
+			try {
+				return x ? JSON.parse("[" + x + "]") : def;
+			}
+			catch (err) {
+				return x ? x.split(",") : def;
+			}
+		}
+
+		function click(d) {
+
+			if (details = d[2] ) {
+				var isView = details.constructor == String;
+
+				var doc = window.open(
+					isView ? d.details : "",
+					"_blank",
+					"left="+d.x+"px,"
+					+ "top="+d.y[yidx]+"px,"
+					+ "width=50,height=50,location=0,menubar=0,status=0,titlebar=0,toolbar=0");
+
+				if ( !isView )
+					doc.document.write(JSON.stringify( details ));
+			}
+		}
+
+		function plot (opts) {
+
+			//var pdata = opts.init.concat(data.concat(opts.extra));
+			var pdata = [];
+			alert(JSON.stringify(opts));
+
+			if (ys = opts.ys)
+				for (var x=opts.x, N=x.length, plots=ys[0].length, n=0; n<N; n++)
+					pdata.push( {x: x[n], y: ys[n] } );
+
+			else
+			if (y = opts.y)
+				for (var x=opts.x, N=x.length, plots=1, n=0; n<N; n++)
+					pdata.push( {x: x[n], y: [y[n]]  } );
+
+			var line = d3.svg.line();
+
+			for (var yidx=0; yidx<plots; y++) {
+				//alert(JSON.stringify([name,opts.initialize,xidx,yidx]));
+
+				if (opts.initialize) {  // setup axes on first source
+					opts.initialize = false;
+
+					if (opts.auto[0]) // assumes data is an array
+						x.domain(d3.extent(data, function(d) { return d.x; })).nice();
+					else
+						x.domain([opts.min[0] || 0, opts.max[0] || 1]);
+
+					if (opts.auto[1]) 
+						y.domain(d3.extent(data, function(d) { return d.y[yidx]; })).nice();
+					else
+						y.domain([opts.min[1] || 0, opts.max[1] || 1]);
+
+					axes(opts);
+				}
+
+				line
+					.x(function (d) { return x(d.x); })
+					.y(function (d) { return y(d.y[yidx]); })
+					.interpolate('linear');
+
+				if (opts.marker.length)  			// add markers
+					for (var m=0,n=0,M=opts.marker.length; m<M; m++,n+=2) 
+						var marks = svg
+						.selectAll(".marker")
+						.data(pdata)
+						.enter()
+						.append( "circle" )
+						.attr("class", "marker")
+						.attr("r", 3.5)
+						.attr("cx", function(d) { return x(d.x); })
+						.attr("cy", function(d) { return y(d.y[yidx]); })
+						.on("click", click) ;
+						//.style("fill", function(d) { return color(d[2]); });
+
+				if (opts.line.length) 				// add lines
+					for (var m=0,n=0,M=opts.line.length; m<M; m++,n+=2) 
+						svg
+						.append('path')
+						.attr('d', line(pdata))
+						.attr('stroke', opts.line[m])
+						.attr('stroke-width', 2)
+						.attr('fill', 'none');
+
+				if (opts.trace) 
+					var 
+						labs = 0,
+						trace = svg
+						.selectAll(".text")
+						.data(pdata)
+						.enter()
+						.append("text")
+						.text(function (d){ labs++; return (labs % opts.trace) ? "" : d.x.toFixed(2)+" , "+d.y[yidx].toFixed(2); } )
+						.attr("x",function (d){ return x(d.x); } )
+						.attr("y",function (d){ return y(d.y[yidx]); } )
+						.attr("dy", ".35em")
+						.attr("font-family", "sans-serif")
+						.attr("font-size", "11px")
+						.attr("fill", "red");
+
+			});			
+		}
+
+		function axes(opts) {
+
+			var line = d3.svg.line();
+
+			line
+				.x(function (d) { return x(d.x); })
+				.y(function (d) { return y(d.y[yidx]); })
+				.interpolate('linear');
+
+			var xaxis = svg
+				.append("g")
+				.attr("class", "x axis")
+				.attr("transform", "translate(0," + height + ")")
+				.call(xAxis)
+				.append("text")
+				.attr("class", "label")
+				.attr("x", width)
+				.attr("y", -45)
+				.attr("dy", "1em")
+				.style("text-anchor", "end")
+				.text(opts.label[0] || "x");
+
+			var yaxis = svg
+				.append("g")
+				.attr("class", "y axis")
+				.call(yAxis)
+				.append("text")
+				.attr("class", "label")
+				.attr("transform", "rotate(-90)")
+				.attr("y", 20)
+				.attr("dy", "1em")
+				.style("text-anchor", "end")
+				.text(opts.label[1] || "y");
+
+			svg
+				.append('path')
+				.attr('d', line([[opts.min[0],opts.min[1]],[opts.max[0],opts.min[1]]]))
+				.attr('stroke', "black")
+				.attr('stroke-width', 2)
+				.attr('fill', 'none');
+
+			svg
+				.append('path')
+				.attr('d', line([[opts.min[0],opts.min[0]],[opts.min[0],opts.max[1]]]))
+				.attr('stroke', "black")
+				.attr('stroke-width', 2)
+				.attr('fill', 'none');
+
+			if (opts.ref.length) 
+				svg
+				.append('path')
+				.attr('d', line(opts.ref))
+				.attr('stroke', "black")
+				.attr('stroke-width', 2)
+				.attr('fill', 'none');
+
+			//alert(JSON.stringify(opts));
+
+			if (opts.name) {   // add legend
+				var legend = svg
+				.selectAll(".legend")
+				.data(color.domain())
+				.enter()
+				.append("g")
+				.attr("class", "legend")
+				.attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+				for (var m=0,M=opts.name.length; m<M; m++) {
+					svg
+					.append("rect")
+					.attr("x", width - 18)
+					.attr("width", 25)
+					.attr("height", 25)
+					.style("fill", opts.line[m] || "black");
+
+					svg
+					.append("text")
+					.attr("x", width - 24)
+					.attr("y", 9)
+					.attr("dy", ".35em")
+					.style("text-anchor", "end")
+					.text(opts.name[m]);
+				}
+			}
+		}
+
+		function source(opts, cb) {
+
+			function jsonize(rec) {
+				for (var key in rec) 
+					try {
+						rec[key] = JSON.parse(rec[key]);
+					}
+					catch (err) {
+					}
+			}
+
+			function index(r, ctx) {
+				for (var key in ctx) {
+					alert( `ctx.${key} = ${ctx[key]}` );
+					eval( `ctx.${key} = ${ctx[key]}` );
+				}
+			}
+
+			ds.json( `/${opts.ds}?ID=${opts.ID}`, function (recs) {
+
+				if ( rec = recs[0] ) {
+					jsonize( rec );
+					index( rec, opts );
+					cb( opts );
+				}
+			});
+			/*
+			function getrecs(name, src, cb) {
+				d3.json(src, function(recs) {  
+					recs.each( function (recn,rec) {
+						if (opts.debug) alert("plot "+name+"."+recn + " id="+rec.ID);
+						cb(name+"."+recn, rec);
+					});
+				});
+			}*/			
+
+			/*
+			if (keys = opts.name) 
+				keys.each( function (n,key) {
+
+					if (key.charAt(0) == "/") 
+						d3.json( key, function (refs) {
+							if (refs)
+								refs.each( function (n,ref) {
+									if (ref.Pick)
+										getrecs( ref.Name, opts.src + "?Name=" + ref.Name, cb );
+								});
+							else
+								alert(key+" invalid path");
+						});	
+
+					else
+						getrecs( key, opts.src + "?Name=" + key +"&_json=" + opts.sample, cb );
+
+				});
+
+			else
+				getrecs( "", opts.src, cb );
+				*/
+		}
+
+		var 
+			margin = {top: 20, right: 20, bottom: 30, left: 40},
+			width = 800 - margin.left - margin.right,
+			height = 400 - margin.top - margin.bottom;
+
+			alert("init");
+		var				
+			vis = d3.select("#content");
+
+			 alert("cont");
+
+		var				
+			svg = vis.append("svg")
+				.attr("width", width + margin.left + margin.right)
+				.attr("height", height + margin.top + margin.bottom)
+				.append("g")
+				.attr("transform", "translate(" + margin.left + "," + margin.top + ")"),
+
+			x = d3.scale.linear()
+				.domain([0,1])
+				.range([0, width]),
+
+			y = d3.scale.linear()
+				.domain([0,1])
+				.range([height, 0]),
+
+			color = d3.scale.category10();
+
+			 alert("clr");
+		var				
+			xAxis = d3.svg.axis()
+				.scale(x)
+				.orient("bottom"),
+
+			yAxis = d3.svg.axis()
+				.scale(y)
+				.orient("left");
+
+		/*
+		var opts = {  // define plot options
+			src: "#{query.src}",
+			trace: "#{query.trace}",
+			debug: "#{query.debug}",
+
+			marker: parse("#{query.marker}", ["circle", "square", "triangle"]),
+			line: parse("#{query.line}", ["blue","green","red","black","orange","yellow"]),
+
+			label: parse("#{query.label}", []),
+			auto: parse("#{query.auto}", []),
+			sample: "#{query.sample}",
+			name: parse("#{query.name}", null),
+			xy: parse("#{query.xy}" , [0,1]),
+			x: 0,
+			y: 1,				
+			ys: [],
+			initialize: true,
+			ref: parse("#{query.ref}", []),
+			min: parse("#{query.min}", []),
+			max: parse("#{query.max}", []),
+			init:  parse("#{query.init}", []),
+			extra: parse("#{query.extra}", [])
+		};
+		*/
+
+		/*
+		opts.xy.each(function (n,xy) {
+			if (n == 0) {
+				//if ((opts.x = parseInt(xy)) != NaN) 
+				opts.x = xy;
+			}
+			else {
+				//if((opts.y = parseInt(xy)) != NaN) 
+				opts.y = xy;
+				opts.ys.push( opts.y );
+			}
+		});*/
+
+		/*if (opts.debug) 
+			alert(JSON.stringify(opts)); */
+
+		alert("test");
+		alert("here we go #{query.ds}");
+		for (var key in query) query[key] = unescape(query[key]);
+		alert( "#{JSON.stringify(query.ds)}" );
+
+		source( query, plot );
+
+			/*
+			switch (rec.constructor) {
+				case Object:
+					for (var n in rec) 
+						if ( rec[n] )
+							if (rec[n].constructor == Array)  
+								plot(name+"."+n, rec[n]);
+					break;
+
+				case Array:
+					plot(name, rec);
+					break;
+			} */
+
+	//
+		else
+		:markdown
+			 Provides d3 scatter plot given:
+
+				src = json path
+				line = color,color, ... line color
+				marker = style,style, ... line markers
+				name = name,name, ...  ||  /src,/src, ... data selector
+				label = X,Y labels
+				auto = X,Y auto scales
+				trace = data trace interval
+				debug = display derived options switch
+				min = X,Y axis minimums
+				max = X,Y axis maximums
+				xy = xindex,yindex,yindex,... index to data
+				ref = [x,y], ... reference path
+				init = [x,y], ... data to prefix
+				extra = [x,y], ... data to append+
+				sample = index,index, ... sample data with index=key.key...
+				w = drawing width
+				h = drawing height
+
+// UNCLASSIFIED
