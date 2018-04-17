@@ -8,8 +8,9 @@ module.exports = {  // learn hidden intensity parameters of a Markov process
 		Model: "varchar(16) default 'sinc'",
 		
 		Save_end: "json",
-		Save_done: "json",
 		Save_config: "json",
+		Save_batch: "json",
+		Pipe: "json",
 		Description: "mediumtext"
 	},
 	
@@ -196,9 +197,7 @@ module.exports = {  // learn hidden intensity parameters of a Markov process
 									model: ctx.Model,  // assumed correlation model for underlying CCGP
 									min: ctx.MinEigen	// min eigen value to use
 								}, function (stats) {
-									ran.record( Copy(stats||{error:"not enough events"}, {at: "done", t:ran.t, s: ran.s}) );
-									//Log("pcstats", stats);
-									sink( ran.store );
+									ran.end(stats, sink);
 								});	
 							});
 					});

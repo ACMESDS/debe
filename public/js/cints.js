@@ -9,8 +9,9 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 		Use: "varchar(8) default 'lma'",
 		
 		Save_end: "json",
-		Save_done: "json",
-		Save_config: "json",		
+		Save_config: "json",	
+		Save_batch: "json",
+		Pipe: "json",
 		Description: "mediumtext"
 	},
 	
@@ -398,26 +399,25 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 				});
 
 			if ( Kmax >= 2 ) {
-				var M = {};
+				var M = {}, fits = {};
 
 				if (solve.lma) {  // levenberg-marquadt algorithm for [M, ...]
-					M.fits = LMA( solve.lma, K, logfK, logNB);
+					fits = LMA( solve.lma, K, logfK, logNB);
 					M.lma = M.fits.parameterValues[0];
 				}
 
-				if (solve.lfa)  { // linear factor analysis for M using newton-raphson search over chi^2. UAYOR !  (compression off, interpolation on)
+				if (solve.lfa)   // linear factor analysis for M using newton-raphson search over chi^2. UAYOR !  (compression off, interpolation on)
 					M.lfa = LFA( solve.lfa, fK, logNB);
-				}
 
-				if (solve.bfs) { // brute force search for M
+				if (solve.bfs)  // brute force search for M
 					M.bfs = BFS( solve.bfs, fK, logNB);
-				}
 
 				var M0 = M[solve.use || "lma"];
 
 				cb({
 					events: Nevs,
-					fits: {solver: solve.use, solution: M},		
+					est: M,
+					fits: fits,
 					coherence_intervals: M0,
 					mean_count: Kbar,
 					est_rate: Kbar / T,
@@ -454,9 +454,7 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 									bfs: ctx.bfs, // [1,200,5],  // M range and step to search
 									lma: ctx.lma	// initial guess at M = # coherence intervals
 								}, function (stats) {
-									ran.record( Copy(stats||{error:"not enough events"}, {at: "done", t:ran.t, s: ran.s}) );
-									//Log("cistats", stats);
-									sink( ran.store );
+									ran.end(stats, sink);
 								});
 							});					
 					});

@@ -3046,6 +3046,27 @@ function siteContext(req, cb) {
 	*/
 
 		function renderRecord(rtn, rec, ds, cb) {  // blog=key,... request flag
+			function pretty(val) {
+				if (val)
+					switch (val.constructor.name) {
+						case "Number": return val.toFixed(2);
+						case "String": return val;										
+						case "Array": return "[" + val.joinify(", ", function (val) {
+							return val.toFixed ? val.toFixed(2) : val+"";
+						}) + "]";
+						case "Object": 
+							var rtns = [];
+							for (var key in val) 
+								rtns.push( "{" + pretty(val[key]) + "}_{" + key + "}" );
+							return rtns.join(" = ");
+						default: 
+							return JSON.stringify(val);
+					}
+
+				else
+					return (val == 0) ? "0" : "null";
+			}
+						
 			function renderJAX(jaxList,rtn,cb) {
 				var 
 					rendered = 0, renders = jaxList.length;
@@ -3077,7 +3098,7 @@ function siteContext(req, cb) {
 
 			var			
 				msg = rtn
-					.replace(/\$\$\{(.*?)\}/g, function (str,key) {  // $${ TeX matrix key } markdown
+					.replace(/\^\{(.*?)\}/g, function (str,key) {  // ^{ TeX matrix key } markdown
 						function texify(recs) {
 							var tex = [];
 							recs.forEach( function (rec) {
@@ -3106,7 +3127,7 @@ function siteContext(req, cb) {
 							return cache[key] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : texify(val);
 						}							
 					})
-					.replace(/\$\{(.*?)\}\((.*?)\)/g, function (str,key,short) {  // ${ key }( short ) markdown
+					.replace(/\#\{(.*?)\}\((.*?)\)/g, function (str,key,short) {  // #{ key }( short ) markdown
 						if (  key in cache )
 							return cache[key];
 
@@ -3117,10 +3138,10 @@ function siteContext(req, cb) {
 							catch (err) {
 								var val =  rec[key];
 							}
-							return cache[key] = cache[short] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : val+"";
+							return cache[key] = cache[short] = pretty(val);
 						}							
 					})
-					.replace(/\$\{(.*?)\}/g, function (str,key) {  // ${ key } markdown
+					.replace(/\#\{(.*?)\}/g, function (str,key) {  // #{ key } markdown
 						//Log(key,cache);
 						if (  key in cache )
 							return cache[key];
@@ -3132,10 +3153,10 @@ function siteContext(req, cb) {
 							catch (err) {
 								var val =  rec[key];
 							}
-							return cache[key] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : val+"";
+							return cache[key] = pretty(val);
 						}							
 					})
-					.replace(/\!{(.*?)\}/g, function (str,expr) { // !{ cexpression } markdown
+					.replace(/\!{(.*?)\}/g, function (str,expr) { // !{ js expression } markdown
 						function Eval(expr) {
 							try {
 								return eval(expr);
