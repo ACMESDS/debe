@@ -403,7 +403,7 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 
 				if (solve.lma) {  // levenberg-marquadt algorithm for [M, ...]
 					fits = LMA( solve.lma, K, logfK, logNB);
-					M.lma = M.fits.parameterValues[0];
+					M.lma = fits.parameterValues[0];
 				}
 
 				if (solve.lfa)   // linear factor analysis for M using newton-raphson search over chi^2. UAYOR !  (compression off, interpolation on)

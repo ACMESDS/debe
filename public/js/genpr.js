@@ -142,13 +142,12 @@ module.exports = {  // generate a Markov process given its transition probabilit
 					case "jump":
 						var 
 							idx = ev.idx,
-							state = ran.U[idx],
-							ys = ran.Y[idx];
+							ys = ev.obs || [];
 
 						str.push({
 							at: ev.at,  // step name
-							t: ran.t, // time sampled
-							u: state,   // state occupied
+							t: ev.t, // time sampled
+							u: ev.state,   // state occupied
 							n: idx, 	// unique identifier
 							x: ys[0],  	// lat
 							y: ys[1],  	// lon
