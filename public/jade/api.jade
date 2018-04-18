@@ -498,8 +498,16 @@ append site_body
 						usecase: {  // add sql keys of specified types, e.g. MyJsonParm: "json"
 							KEY: "sql type", ...
 						},
-						engine: function NAME() { ... } || "def NAME: ..." || ... ,  // engine code
-						smop: "path source" // path to m-engine for converting to python"
+						
+						engine:
+							function NAME() { ... } // generic js engine in js/NAME under js
+							||
+							"def NAME: ..."  // generic python engine
+
+						ranif:
+							function F( ran, ctx, cb(stats) )  // js engine to bind to a RAN process with standard ctx = {Symbols, Batch, Step, _File, ...}
+							
+						smop: "m-file path" // path to m-file to convert to a python engine
 					}
 			
 		#fit.Examples

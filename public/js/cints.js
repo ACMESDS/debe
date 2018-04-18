@@ -15,6 +15,14 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 		Description: "mediumtext"
 	},
 	
+	ranif: function calc(ran, ctx, cb) {  // ranif testing
+		Log("calc", ctx);
+		cb({
+			nothing: "here",
+			test: 123
+		});
+	},
+	
 	engine: function cints(ctx,res) {  
 	/* 
 	Return MLEs for random event process [ {x,y,...}, ...] given ctx parameters:
