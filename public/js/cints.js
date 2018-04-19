@@ -15,14 +15,6 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 		Description: "mediumtext"
 	},
 	
-	ranif: function calc(ran, ctx, cb) {  // ranif testing
-		Log("calc", ctx);
-		cb({
-			nothing: "here",
-			test: 123
-		});
-	},
-	
 	engine: function cints(ctx,res) {  
 	/* 
 	Return MLEs for random event process [ {x,y,...}, ...] given ctx parameters:
@@ -39,7 +31,6 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 		_Events = query to get events
 	*/
 		
-		//Log("estpr", ctx);
 		function coherenceIntervals(solve, cb) { // unsupervised learning of coherence intervals M, SNR, etc
 		/*
 			H[k] = observation freqs at count level k
@@ -442,54 +433,20 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 										
 		const { sqrt, floor, random, cos, sin, abs, PI, log, exp} = Math;
 		
-		var 
-			ran = new RAN({ // configure a random process generator
-				learn: function (cb) {  // event getter callsback cb(evs) or cb(null,onEnd) at end
-					var ran = this;
-					
-					STEP(ctx, function (evs, sink) {  // respond on res(recorded ran evs)
-						if (evs) 
-							cb(evs);
-
-						else 
-							cb(null, function () {
-								coherenceIntervals(  {
-									H: ran.F,
-									T: ran.t,
-									N: ran.N,
-									use: ctx.Use,  // solution to retain
-									lfa: ctx.lfa, // [50],  // initial guess at M = # coherence intervals
-									bfs: ctx.bfs, // [1,200,5],  // M range and step to search
-									lma: ctx.lma	// initial guess at M = # coherence intervals
-								}, function (stats) {
-									ran.end(stats, sink);
-								});
-							});					
-					});
-				},  // event getter when in learning mode
-				
-				N: ctx._File.Actors,  // ensemble size
-				//wiener: 0,  // wiener process steps
-				sym: ctx.Symbols,  // state symbols
-				steps: ctx.Steps || ctx._File.Steps, // process steps
-				batch: ctx.Batch || 0,  // steps to next supervised learning event 
-				K: ctx._File.States,	// number of states 
-				trP: {}, // trans probs
-				filter: function (str, ev) {  // filter output events
-					switch ( ev.at ) {
-						case "config":
-						case "end":
-						case "batch":
-						case "done":
-							str.push(ev);
-					}
-				}  // filter output events
-			});
-
-		ran.pipe( function (evs) { // sync pipe
-			ctx.Save = evs;
-			res( ctx );
-		}); 
+		var
+			file = ctx._File,
+			flow = ctx._Flow;
+		
+		//Log("cints ctx", ctx);
+		coherenceIntervals({  // define solver parms
+			H: flow.F,		// count frequencies
+			T: flow.T,  		// observation time
+			N: flow.N,		// ensemble size
+			use: ctx.Use,  // solution to retain
+			lfa: ctx.lfa, // [50],  // initial guess at M = # coherence intervals
+			bfs: ctx.bfs, // [1,200,5],  // M range and step to search
+			lma: ctx.lma	// initial guess at M = # coherence intervals
+		}, res );
 
 	}
 

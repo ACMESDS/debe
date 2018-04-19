@@ -28,8 +28,6 @@ module.exports = {  // learn hidden intensity parameters of a Markov process
 		_File.Steps = number of time steps
 		_Events = query to get events
 	*/
-		//LOG("estpr", ctx);
-		
 		function arrivalRates( solve, cb ) {
 			function getpcs(model, Emin, M, Mwin, Mmax, cb) {
 
@@ -136,7 +134,7 @@ module.exports = {  // learn hidden intensity parameters of a Markov process
 					var 
 						evals = pcs.values,
 						evecs = pcs.vectors,
-						T = ran.t,
+						T = solve.T,
 						N = evals.length,
 						mctx = {
 							T: T,
@@ -179,53 +177,20 @@ module.exports = {  // learn hidden intensity parameters of a Markov process
 			});
 		}
 
-		var 
-			ran = new RAN({ // configure a random process generator
-				learn: function (cb) {  // event getter callsback cb(evs) or cb(null,onEnd) at end
-					var ran = this;
-					
-					STEP(ctx, function (evs, sink) {  // respond on res(recorded ran evs)
-						if (evs) 
-							cb(evs);
-
-						else 
-							cb(null, function () {
-								arrivalRates({  // principle components options for intensity estimates
-									M: ctx._File.coherence_intervals, // coherence intervals
-									Mstep: 5,  // step intervals
-									Mmax: ctx.Dim || 150,  // max coherence intervals / pc dim
-									model: ctx.Model,  // assumed correlation model for underlying CCGP
-									min: ctx.MinEigen	// min eigen value to use
-								}, function (stats) {
-									ran.end(stats, sink);
-								});	
-							});
-					});
-				},  // event getter when in learning mode
-				
-				N: ctx._File.Actors,  // ensemble size
-				//wiener: 0,  // wiener process steps
-				sym: ctx.Symbols,  // state symbols
-				steps: ctx.Steps || ctx._File.Steps, // process steps
-				batch: ctx.Batch || 0,  // steps to next supervised learning event 
-				K: ctx._File.States,	// number of states 
-				trP: {}, // trans probs
-				filter: function (str, ev) {  // filter output events
-					switch ( ev.at ) {
-						case "config":
-						case "end":
-						case "batch":
-						case "done":
-							str.push(ev);
-					}
-				}  // filter output events
-			});
-
-		ran.pipe( function (evs) { // sync pipe
-			ctx.Save = evs;
-			res( ctx );
-		}); 
-
+		var
+			file = ctx._File,
+			flow = ctx._Flow;
+		
+		//Log("rats ctx", ctx);
+		arrivalRates({  // parms for principle components (intensity profile) solver
+			T: flow.T,  // observation time
+			M: file.coherence_intervals, // coherence intervals
+			Mstep: 5,  // step intervals
+			Mmax: ctx.Dim || 150,  // max coherence intervals / pc dim
+			model: ctx.Model,  // assumed correlation model for underlying CCGP
+			min: ctx.MinEigen	// min eigen value to use
+		}, res );	
+		
 	}
 
 }

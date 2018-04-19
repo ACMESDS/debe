@@ -135,8 +135,7 @@ module.exports = {  // generate a Markov process given its transition probabilit
 			obs: ctx.Mix,  	// mixing/emission/observation parms
 			batch: ctx.Batch || 0,   // supervised learning every batch steps
 			//sigma = mix.sigma || [ [ scalevec([0.4, 0.3, 0],dims), scalevec([0.3, 0.8, 0],dims), scalevec([0, 0, 1],dims)] ],
-
-			solve: ctx.Solve, // learning parameters
+			//solve: ctx.Solve, // learning parameters
 			filter: function (str, ev) {  // filter output events
 				switch ( ev.at ) {
 					case "jump":

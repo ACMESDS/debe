@@ -28,6 +28,7 @@ To Do:
 @requires atomic
 @requires geohack
 @requires jslab
+@requires randpr
 */
 
 var 									// globals
@@ -53,8 +54,9 @@ var 									// totem modules
 	ATOM = require("atomic"), 
 	FLEX = require("flex"),
 	TOTEM = require("totem"),
-	JSLAB = require("jslab"),
+	LAB = require("jslab"),
 	JSDB = require("jsdb"),
+	RAN = require("randpr"),
 	HACK = require("geohack");
 
 const { Copy,Each,Log } = require("enum");
@@ -67,7 +69,7 @@ var
 	
 	init: Initialize,
 		
-	plugins: JSLAB.libs,
+	plugins: LAB.libs,
 		
 	ingester: function ingester( opts, query ) {
 		try {
@@ -1551,7 +1553,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		Log("ingest stats ctx", ctx);
 		
-		if (estpr = JSLAB.plugins.estpr) 
+		if (estpr = LAB.plugins.estpr) 
 			estpr( ctx, function (ctx) {  // estimate/learn hidden process parameters
 				
 				if ( ctx ) {
@@ -2207,7 +2209,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 */	
 	
 	var
-		saveEvents = JSLAB.libs.SAVE,
+		saveEvents = LAB.libs.SAVE,
+		getEvents = LAB.libs.STEP,
 		dot = ".",
 		sql = req.sql,
 		client = req.client,
@@ -2228,11 +2231,35 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				res( ctx );
 			
 			else
-			if ( Pipe = ctx.Pipe )  { // intercept job request to regulate event chips
+			if ( Pipe = ctx.Pipe )  { // intercept workflow request to regulate event stream
 				res("Piped");
+				
+				class rocFlow {
+					constructor (opts, cb) {
+						if (opts) Copy(opts, this);
+					}
+					
+					end() {
+					}
+					
+					pipe() {
+					}
+				}
+				
+				class defaultFlow {
+					constructor (opts, cb) {
+						if (opts) Copy(opts, this);
+					}
+					
+					pipe(cb) {
+						//Log("genflow");
+						this.learn( null );
+					}					
+				}
 				
 				var
 					profile = req.profile,
+					workflow = ("Batch" in ctx) ? RAN :  defaultFlow,
 					job = { // job descriptor for regulator
 						qos: 1, //profile.QoS, 
 						priority: 0,
@@ -2256,34 +2283,91 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				HACK.chipEvents(sql, Pipe, function ( specs ) {  // create job for these Pipe parameters
 
 					sql.insertJob( Copy(specs,job), function (sql, job) {  // put job into the job queue
-						req.query = Copy({  // engine request query gets copied to its context
-							_File: job.File,
-							_Voxel: job.Voxel,
-							_Collects: job.Collects,
-							_Flux: job.Flux,
-							_Events: job.Events || "",
-							_Flush: job.Flush,
-							_Chip: job.Chip
-						}, ctx);
+						
+						//Log("flow ctx", ctx);
+						
+						var 
+							Query = req.query = Copy({  // engine request query to be copied to engine's context when selected
+								_File: job.File,
+								_Voxel: job.Voxel,
+								_Collects: job.Collects,
+								_Flux: job.Flux,
+								_Events: job.Events || "",
+								_Chip: job.Chip,
+								_Host: job.name
+							}, ctx),
+							File = job.File,
+							Flow = new workflow({ // configure the workflow
+								learn: function (learncb) {  // event getter callsback learncb(evs) or learncb(null,onEnd) at end
+									var flow = this;
 
-						ATOM.select(req, function (ctx) {  // run plugin's engine
-							if (ctx) {
-								//if ( "Save" in ctx )   // could allow piped plugin to set ctx and save, but dont see value yet
-									//saveEvents( ctx.Save, ctx ); 
-							}
+									//Log("learning ctx", ctx);
+									
+									if (learncb)  // in learning mode
+										getEvents(ctx, function (evs, stepcb) {  // respond on stepcb with output events when evs goes null
+											if (evs) 
+												learncb(evs);
 
-							else
-								Log( `HALTED ${job.name}` );
-						});
+											else 
+												learncb(null, function onEnd( flowctx ) {  // accept flow context
+													Query._Flow = flowctx;
+
+													//Log("flow ctx", ctx);
+													ATOM.select(req, function (ctx) {  // run plugin's engine
+														if (ctx) {
+															flow.end( ctx.Save || [], stepcb );
+															//saveEvents( ctx.Save, ctx );   // could allow piped plugin to set ctx and save, but dont see value yet
+														}
+
+														else
+															Log( `HALTED ${job.name}` );
+													});
+												});					
+										});
+									
+									else	// in generating mode
+										ATOM.select(req, function (ctx) {  // run plugin's engine
+											if (ctx) {
+												flow.end( ctx.Save || [], stepcb );
+												//saveEvents( ctx.Save, ctx );   // could allow piped plugin to set ctx and save, but dont see value yet
+											}
+
+											else
+												Log( `HALTED ${job.name}` );
+										});
+										
+								},  
+
+								N: File.Actors,  // ensemble size
+								sym: ctx.Symbols,  // state symbols
+								steps: ctx.Steps || File.Steps, // process steps
+								batch: ctx.Batch || 0,  // steps to next supervised learning event 
+								K: File.States,	// number of states 
+								trP: {}, // trans probs
+								filter: function (str, ev) {  // filter output events
+									switch ( ev.at ) {
+										case "config":
+										case "end":
+										case "batch":
+										case "done":
+											str.push(ev);
+									}
+								}  
+							});
+
+						Flow.pipe( function (evs) { // sync pipe
+							saveEvents( sql, evs, ctx );
+						}); 
 					});
 				});
 			}
 					
 			else
-			if ( "Save" in ctx )
+			if ( "Save" in ctx )  // engine does not participate in workflow
 				res( saveEvents( sql, ctx.Save, ctx, function (evs) {
 					var
-						filename = `${ctx._Host}.${ctx.Name}`;
+						host = ctx._Host = table,
+						filename = `${host}.${ctx.Name}`;
 					
 					if ( ctx.Export ) {   // export remaining events to filename
 						var
@@ -2883,7 +2967,7 @@ Initialize DEBE on startup.
 			thread: DEBE.thread
 		});
 		
-		JSLAB.config({
+		LAB.config({
 			thread: DEBE.thread,
 			fetcher: DEBE.fetchData
 		});
@@ -2896,7 +2980,7 @@ Initialize DEBE on startup.
 				MAIL: FLEX.sendMail,
 				RAN: require("randpr"),
 				TASK: DEBE.tasker
-			}, JSLAB.libs)
+			}, LAB.libs)
 		});
 		
 		JAX.config({

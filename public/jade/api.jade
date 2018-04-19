@@ -444,6 +444,11 @@ append site_body
 				> [Config+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) defines usecase context with a js-engine  
 				> [Save+](/#{ds}.add?Save=doc) [/-](/#{ds}.sub?Save) aggregates engine results not captured in the Save_KEYs  
 				> [Save_KEY](/#{ds}.run?options=more) aggregates engine results [{at:"KEY", ...}, ...]  
+				
+				To place an engine into #{nick}'s supervised Markov workflow, provide:  
+				> [Batch+](/#{ds}.add?Batch=0) [/-](/#{ds}.sub?Batch) workflow steps when event batch us supervised (0 disabled)  
+				> [Symbols+](/#{ds}.add?Symbols=[]) [/-](/#{ds}.sub?Symbols) override workflow default state symbols (null defaults)  
+				> [Steps+](/#{ds}.add?Steps=0) [/-](/#{ds}.sub?Steps) override workflow default process steps (0 defaults)
 					
 				When executed, an engine's context is automatically extended with the following keys:  
 				> _Host name of plugin  
@@ -452,7 +457,8 @@ append site_body
 				> _Collects sensor collects made under current voxel  
 				> _Chip  filepath for first jpeg collect under current voxel  
 				> _Flux solar flux at earth's surface under current voxel  
-				> _Load event query for current voxel  
+				> _Events event query for current voxel  
+				> _Flow Markov workflow context  
 
 				An engine's *Pipe* context key contains job regulation parameters:  
 				> file: "/FILTER?QUERY" || "PLUGIN.CASE" || "uploaded FILENAME" || "FILE.jpg" || "FILE.json"  
@@ -467,7 +473,7 @@ append site_body
 				> \[ VIEW ; WIDTH ; HEIGHT ]( DS ? PARM ; PARM ; ... )  
 				> \[ LINK ]( URL )   
 				> !$ inline TeX $  ||  $$ break TeX $$ || a$ AsciiMath $ || m$ MathML $  || ^{ TeX matrix KEY } || 
-				> #{ KEY } || #{ KEY }( SHORTCUT ) || !{ EXPR }  
+				> \#{ KEY } || \#{ KEY }( SHORTCUT ) || \!{ EXPR }  
 				> \#tag
 				
 				to document usecases.  For example:
@@ -887,19 +893,20 @@ append site_body
 					* [TASK(task sharding)](https://github.com/ACMESDS/jslab)  
 					* [ENUM(basic enumerators)](https://github.com/ACMESDS/enum)  
 					
-					as well as several interfaces to event streams:  
+					While js-engines (like all engines) can attach themselves to the default Markov workflow (see
+					Plugins), they are also provided the following methods:  
 					* [STEP(ctx,cb) flush events by step time]()  
 					* [DEPTH(ctx,cb) flush events by stack depth]()  
 					* [BULK(ctx,cb) flush all events]()  
 					* [DROP(ctx,cb) drop all events]()  
 					
-					where the callback cb(ievs, sink) accepts ingested events ievs and calls the supplied 
-					sink(oevs) with its output events oevs *when* the ievs become null (that is, when 
-					ingested events have been exhausted).
+					when a custom workflow ([see genpr example](/genpr.js)) is required.  Here, the callback cb(ievs, sink) 
+					accepts ingested events ievs and calls the supplied sink(oevs) with its output events oevs *when* the 
+					ievs goes null, that is, when ingested events are exhausted.
 					
 					The ME matlab emulator (which natively provides matrix arithmetics, symbolic and
-					sparse matrix calculations) has been extended by the following  modules:  
-					* [LAS(solve linear algebraic systems)](npm machine learning-matrix lib)  
+					sparse matrix calculations) has been extended by:  
+					* [LAS(linear algebraic systems)](https://github.com/mljs/matrix)  
 					* [DSP(digitial signal processing)](https://www.npmjs.com/package/dsp)  
 					* [BAYES(bayes network interference )](https://www.npmjs.com/package/jsbayes)  
 					* [GAMMA(standard gamma function)](https://www.npmjs.com/package/gamma)  
