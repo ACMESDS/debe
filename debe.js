@@ -3166,7 +3166,7 @@ function siteContext(req, cb) {
 					}, function (d) {
 						rtn = rtn.replace("!jax"+n+".", d.mml);
 
-						Log("jax", rendered, renders);
+						//Log("jax", rendered, renders);
 						if ( ++rendered == renders ) cb(rtn);
 					});
 

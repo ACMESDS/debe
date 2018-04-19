@@ -189,7 +189,10 @@ module.exports = {  // learn hidden intensity parameters of a Markov process
 			Mmax: ctx.Dim || 150,  // max coherence intervals / pc dim
 			model: ctx.Model,  // assumed correlation model for underlying CCGP
 			min: ctx.MinEigen	// min eigen value to use
-		}, res );	
+		}, function (stats) {
+			ctx.Save = stats;
+			res(ctx);
+		});
 		
 	}
 

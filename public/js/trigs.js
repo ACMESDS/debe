@@ -15,7 +15,7 @@ module.exports = {  // learn hidden trigger function of a Markov process
 		Description: "mediumtext"
 	},
 	
-	ranif: function triggerFunction(ran, ctx, cb) {  // ranif testing
+	engine: function triggerFunction(ctx, res) {  
 	/* 
 	Estimate hidden trigger function for Markov process:
 		Symbols = [sym, ...] state symbols or null to generate
@@ -31,7 +31,7 @@ module.exports = {  // learn hidden trigger function of a Markov process
 		_Events = query to get events
 	*/
 		Log("trigs", ctx);
-		cb({
+		res({
 			nothing: "here",
 			test: 123
 		});

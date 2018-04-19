@@ -446,7 +446,10 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 			lfa: ctx.lfa, // [50],  // initial guess at M = # coherence intervals
 			bfs: ctx.bfs, // [1,200,5],  // M range and step to search
 			lma: ctx.lma	// initial guess at M = # coherence intervals
-		}, res );
+		}, function (stats) {
+			ctx.Save = stats;
+			res(ctx);
+		});
 
 	}
 

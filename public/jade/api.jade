@@ -506,13 +506,10 @@ append site_body
 						},
 						
 						engine:
-							function NAME() { ... } // generic js engine in js/NAME under js
+							function NAME(ctx,res) { ctx.Save = [ ... ]; res(ctx); } // js engine
 							||
-							"def NAME: ..."  // generic python engine
+							"def NAME(ctx,res): res(ctx)"  // python engine
 
-						ranif:
-							function F( ran, ctx, cb(stats) )  // js engine to bind to a RAN process with standard ctx = {Symbols, Batch, Step, _File, ...}
-							
 						smop: "m-file path" // path to m-file to convert to a python engine
 					}
 			
