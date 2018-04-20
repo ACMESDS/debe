@@ -890,16 +890,25 @@ append site_body
 					* [TASK(task sharding)](https://github.com/ACMESDS/jslab)  
 					* [ENUM(basic enumerators)](https://github.com/ACMESDS/enum)  
 					
-					While js-engines (like all engines) can attach themselves to the default Markov workflow (see
-					Plugins), they are also provided the following methods:  
+					While engines are typically attached automatically to #{nick}'s RAN Markov workflow (see
+					Plugins), js-engines can ([see genpr example](/genpr.js)) interface directly with RAN
+					via several buffer methods:  
 					* [STEP(ctx,cb) flush events by step time]()  
 					* [DEPTH(ctx,cb) flush events by stack depth]()  
 					* [BULK(ctx,cb) flush all events]()  
 					* [DROP(ctx,cb) drop all events]()  
 					
-					when a custom workflow ([see genpr example](/genpr.js)) is required.  Here, the callback cb(ievs, sink) 
-					accepts ingested events ievs and calls the supplied sink(oevs) with its output events oevs *when* the 
-					ievs goes null, that is, when ingested events are exhausted.
+					where the callback cb(ievs, sink) accepts ingested events ievs and calls the supplied sink(oevs) with 
+					its output events oevs when ievs goes null, that is, when ingested events are exhausted:
+					
+						BUFFER(ctx, function cb(ievs, sink) {  // sink the plugin's ingested ievs
+							if (ievs) 
+								ievs.forEach( ev) { // process input event ev
+								});
+
+							else 
+								sink([ {...}, {...} ]);  // respond with oevs to be saved by the plugin  
+						});
 					
 					The ME matlab emulator (which natively provides matrix arithmetics, symbolic and
 					sparse matrix calculations) has been extended by:  
