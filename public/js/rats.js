@@ -1,11 +1,11 @@
 module.exports = {  // learn hidden intensity parameters of a Markov process
 	usecase: {
-		Symbols: "json",
-		Steps: "int(11) default 0",
-		Batch: "int(11) default 0",
-		Dim: "int(11) default 150",
-		MinEigen: "float default 1e-1",
-		Model: "varchar(16) default 'sinc'",
+		Symbols: "json comment '[sym, ...] state symbols or null to generate' ",
+		Steps: "int(11) default 0 comment 'steps to next supervised learning' ",
+		Batch: "int(11) default 0 comment 'override _File.Steps' ",
+		MinEigen: "float default 1e-1 comment 'smallest eigenvalue for pc estimates' ",
+		Dim: "int(11) default 150 comment 'pc model dimension (max coherence intervals)' ",
+		Model: "varchar(16) default 'sinc' comment 'name of complex correlation model for pc estimates' ",
 		
 		Save_end: "json",
 		Save_config: "json",
@@ -16,13 +16,7 @@ module.exports = {  // learn hidden intensity parameters of a Markov process
 	
 	engine: function rats(ctx,res) {  
 	/* 
-	Return MLEs for random event process [ {x,y,...}, ...] given ctx parameters:
-		Symbols = [sym, ...] state symbols or null to generate
-		Batch = steps to next supervised learning
-		Steps = override _File.Steps
-		Model = name of model used for pc estimates
-		MinEigen = smallest eigenvalue for pc estimates
-		Dim = pc model dims (max coherence intervals)
+	Return MLEs for random event process [ {x,y,...}, ...] given ctx parameters and
 		_File.Actors = ensembe size
 		_File.States = number of states consumed by process
 		_File.Steps = number of time steps

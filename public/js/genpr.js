@@ -1,13 +1,13 @@
 module.exports = {  // generate a Markov process given its transition probability parameters
 	usecase: {
-		Mix: "json",
-		TxPrs: "json",
-		Symbols: "json",
-		Members: "int(11) default 100",
-		Wiener: "int(11) default 0",
-		Nyquist: "float default 1",
-		Steps: "int(11) default 0",
-		Batch: "int(11) default 0",
+		Mix: "json comment 'gaussian mixing parameters { dims: [D1, D2, ...], weights: [W1, W2, ...] }' ",
+		TxPrs: "json comment 'KxK transition probs [ [pr, ...], ... ] or {fr: {to: pr, ...}, ..., K: states} ' ",
+		Symbols: "json comment '[S1, S2, ...] state symbols or null to generate defaults' ",
+		Members: "int(11) default 100 comment 'number in process ensemble' ",
+		Wiener: "int(11) default 0 comment 'number of wiener processes; 0 disables' ",
+		Nyquist: "float default 1 comment 'process over-sampling factor' ",
+		Steps: "int(11) default 0 comment 'number of process steps' ",
+		Batch: "int(11) default 0 comment 'steps to next supervised learning' ",
 		
 		Save_end: "json",
 		Save_batch: "json",
@@ -17,15 +17,7 @@ module.exports = {  // generate a Markov process given its transition probabilit
 	
 	engine: function genpr(ctx,res) {
 	/* 
-	Return random [ {x,y,...}, ...] for ctx parameters:
-		TxPrs = KxK transition probs [ [pr, ...], ... ] or {fr: {to: pr, ...}, ..., K: states} 
-		Mix = gaussian mixing params { dims: [N1, N2, ...], offs: [X1, X2, ...] } to generate observations
-		Symbols = [S1, S2, ...] state symbols or null to generate defaults
-		Members = number in process ensemble
-		Wiener = number of wiener processes; 0 disables
-		Nyquist = process over-sampling factor
-		Steps = number of process steps	
-		Batch = steps to next supervised learning
+	Return random [ {x,y,...}, ...] process for given ctx parameters.
 	*/
 
 		function randint(a) {

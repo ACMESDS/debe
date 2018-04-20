@@ -1,12 +1,12 @@
 module.exports = {  // learn hidden coherence parameters of a Markov process
 	usecase: {
-		Symbols: "json",
-		Steps: "int(11) default 0",
-		Batch: "int(11) default 0",
-		lma: "json",
-		lfa: "json",
-		bfs: "json",
-		Use: "varchar(8) default 'lma'",
+		Symbols: "json comment '[sym, ...] state symbols or null to generate' ",
+		Steps: "int(11) default 0 comment 'steps to next supervised learning' ",
+		Batch: "int(11) default 0 comment 'override _File.Steps' ",
+		lma: "json comment '[init] initial estimate of coherence intervals for levenberg-marquardt alg' ",
+		lfa: "json comment '[init] "" for linear factor alg (use at your own risk)' ",
+		bfs: "json comment '[start,end,step] "" for brute force search' ",
+		Use: "varchar(8) default 'lma' comment 'lma || lfs || bfs alg results used retained for estimated intervals' ",
 		
 		Save_end: "json",
 		Save_config: "json",	
@@ -18,13 +18,6 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 	engine: function cints(ctx,res) {  
 	/* 
 	Return MLEs for random event process [ {x,y,...}, ...] given ctx parameters:
-		Symbols = [sym, ...] state symbols or null to generate
-		Batch = steps to next supervised learning
-		Steps = override _File.Steps
-		Use = "lma" || "lfs" || "bfs" alg results used retained for estimated intervals		
-		lma = [init] initial estimate of coherence intervals for levenberg-marquardt alg
-		lfs = [init] "" for linear factor alg (use at your own risk)
-		bfs = [start,end,step] "" for brute force search
 		_File.Actors = ensembe size
 		_File.States = number of states consumed by process
 		_File.Steps = number of time steps
