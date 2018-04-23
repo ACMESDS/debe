@@ -2210,7 +2210,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 	
 	var
 		saveEvents = LAB.libs.SAVE,
-		getEvents = LAB.libs.STEP,
+		getEvents = LAB.libs.GET.forBatch,
 		dot = ".",
 		sql = req.sql,
 		client = req.client,
@@ -2280,6 +2280,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						].join(" || ")
 					};
 
+				//Log("isran?", "Batch" in ctx);
+				
 				HACK.chipEvents(sql, Pipe, function ( specs ) {  // create job for these Pipe parameters
 
 					sql.insertJob( Copy(specs,job), function (sql, job) {  // put job into the job queue

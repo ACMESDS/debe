@@ -22,21 +22,69 @@ module.exports = {  // learn hidden intensity parameters of a Markov process
 		_File.Steps = number of time steps
 		_Events = query to get events
 	*/
-		function arrivalRates( solve, cb ) {
-			function getpcs(model, Emin, M, Mwin, Mmax, cb) {
+		function arrivalRates( solve, cb ) { // estimate rates with callback cb(rates) 
+			
+			function getpcs(model, Emin, M, Mwin, Mmax, cb) {  // get or gen pcs with callback(pcs)
 
 				function genpcs(dim, steps, model, cb) {
-					LOG("gen pcs", dim, steps, model); 
+					Log("gen pcs", dim, steps, model); 
+					
+					function evd( models, dim, step, cb) {
+						models.forEach( function (model) {
+
+							Log("ran config", model, dim, step);
+
+							for (var M=1; M<dim; M+=step) {
+								var 
+									ctx = {
+										N: dim,
+										M: M,
+										T: 1
+										//A: 
+											//ME.matrix( [[1,0,0],[0,2,0], [0,0,3]]) 
+											//ME.matrix( model( dim, M ) )
+									},
+									script = `
+t = rng(-T/2, T/2, N);
+Tc = T/M;
+A = xmatrix( ${model}(t/Tc) ); 
+R = evd(A); 
+`; 
+
+								ME.exec( script,  ctx, function (ctx) {
+
+										var R = ctx.R;
+
+										if (false) {  // debugging
+											//Log("lambda", R.values._data);
+											ME.eval( "e=R.vectors'*R.vectors; x=R.vectors*diag(R.values); y = A*R.vectors; ", ctx);
+											Log("e", ctx.e._data);  
+											Log("x", ctx.x._data[dim-1]);  
+											Log("y", ctx.y._data[dim-1]);	 
+										}
+
+										cb({
+											model: model.name,
+											intervals: M,
+											values: R.values._data,
+											vectors: R.vectors._data
+										});
+								});
+							}
+						});
+					}
+
+					/*
 					var
 						pcgen = new RAN({
 							models: [model],  // models to gen
 							Mmax: dim,  	// max coherence intervals
 							Mstep: steps 	// step intervals
-						});
+						});  */
 
 					SQL.beginBulk();
 
-					pcgen.config( function (pc) {
+					evd( [model], Mmax, Mwin*2, function (pc) {
 						var 
 							vals = pc.values,
 							vecs = pc.vectors,
@@ -104,7 +152,7 @@ module.exports = {  // learn hidden intensity parameters of a Markov process
 						}, 
 						function (err, test) {  // see if pc model exists
 
-						//LOG( "modtest", Mmax, model, M, Mwin, pcs);
+						//Log( "modtest", Mmax, model, M, Mwin, pcs);
 						if ( !test[0].Count )  // pc model does not exist so make it
 							genpcs( Mmax, Mwin*2, model, function () {
 								findpcs( sendpcs );
@@ -130,7 +178,7 @@ module.exports = {  // learn hidden intensity parameters of a Markov process
 						evecs = pcs.vectors,
 						T = solve.T,
 						N = evals.length,
-						mctx = {
+						ctx = {
 							T: T,
 							N: N,
 							
@@ -145,15 +193,20 @@ module.exports = {  // learn hidden intensity parameters of a Markov process
 							}),
 
 							V: evecs 
-						};
+						},
+						script = `
+A=B*V; 
+lambda = abs(A); 
+Wbar=sum(E); 
+t = rng(-T/2, T/2, N); `;
 
 					if (N) {
-						ME.exec( "A=B*V; lambda = abs(A); Wbar=sum(E); t = (-T/2) : T/N: (T/2)" , mctx, (mctx) => {
-							//Log("mctx", mctx);
+						ME.exec( script , ctx, (ctx) => {
+							//Log("ctx", ctx);
 							cb({
-								intensity_profile: {t: mctx.t, i: mctx.lambda},
-								mean_count: mctx.Wbar,
-								mean_intensity: mctx.Wbar / T
+								intensity_profile: {t: ctx.t, i: ctx.lambda},
+								mean_count: ctx.Wbar,
+								mean_intensity: ctx.Wbar / T
 							});
 						});								
 					}

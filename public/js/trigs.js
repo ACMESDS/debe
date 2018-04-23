@@ -13,7 +13,7 @@ module.exports = {  // learn hidden trigger function of a Markov process
 		Description: "mediumtext"
 	},
 	
-	engine: function triggerFunction(ctx, res) {  
+	engine: function trigs(ctx, res) {  
 	/* 
 	Estimate hidden trigger function for Markov process given ctx and:
 		_File.Actors = ensembe size
@@ -27,41 +27,50 @@ module.exports = {  // learn hidden trigger function of a Markov process
 					evs: ME.matrix( solve.evs ),
 					N: solve.D,
 					lambda: solve.lambda,
-					T: solve.T
+					T: solve.T,
+					Tc: solve.Tc
 				};
-				
+
 			ME.exec(`
-nu = rng(-pi, pi, N); 
+fs = (N-1)/T;
+nu = rng(-fs/2, fs/2, N); 
 t = rng(-T/2, T/2, N); 
-fs = N/T; 
+CA = ${solve.model}(t/Tc);
+N0 = (N+1)/2;
 Gu = evpsd(evs, nu, T, "n", "t");  
-modH = sqrt(Gu ./ (lambda + dft(corA, fs)));  
+modH = sqrt(Gu ./ (lambda + wkpsd( CA[N0]^2 + abs(CA).^2, T)) );  
 H = pwt( modH, [] ); 
-h = dft(H,fs); 
+h = dft(H,T); 
 `, 
-					ctx, function (vmctx) {
+					ctx, function (ctx) {
+						//Log("vm", ctx);
 						cb({
-							t: vmctx.t._data,
-							trigger_profile: vmctx.h._data
+							t: ctx.t._data,
+							trigger_profile: ctx.h._data
 						});
 			});
+			
+			
 		}
 		
 		var
 			file = ctx._File,
 			flow = ctx._Flow;
 		
-		//Log("cints ctx", ctx);
-		triggerProfile({  // define solver parms
-			evs: flow.store,		// count frequencies
-			lambda: file.mean_intensity, // mean arrival rate
-			D: ctx.Dim, 		// profile sample times = max coherence intervals
-			model: ctx.Model,  	// name of model
-			T: flow.T,  		// observation time
-			N: flow.N		// ensemble size
-		}, function (stats) {
-			ctx.Save = stats;
-			res(ctx);
+		BULK(ctx, function (evs) {  // fetch all the events
+			Log("bulk evs=", evs.length);
+			triggerProfile({  // define solver parms
+				evs: evs,		// events
+				lambda: file.mean_intensity, // mean arrival rate
+				D: ctx.Dim, 		// profile sample times = max coherence intervals
+				model: ctx.Model,  	// complex correlation model
+				Tc: file.coherence_time,  // coherence time of arrival process
+				T: flow.T,  		// observation time
+				N: flow.N		// ensemble size
+			}, function (stats) {
+				ctx.Save = stats;
+				res(ctx);
+			});
 		});
 	}
 

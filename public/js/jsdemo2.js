@@ -4,7 +4,7 @@ module.exports = {
 		y: "json",
 		X: "json",
 		B: "json",
-		N: int(11)
+		N: "int(11)"
 	},
 	
 	engine: function jsdemo2(ctx,res) {
