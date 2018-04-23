@@ -31,21 +31,25 @@ module.exports = {  // learn hidden trigger function of a Markov process
 					Tc: solve.Tc
 				},
 				script = `
-fs = (N-1)/T;
+fs = N/T;
 nu = rng(-fs/2, fs/2, N); 
 t = rng(-T/2, T/2, N); 
 CA = ${solve.model}(t/Tc);
 Gh = evpsd(evs, nu, T, "n", "t");  
+disp( Gh );
+
 N0 = fix( (N-1)/2 );
 Gd = wkpsd( CA[N0+1]^2 + abs(CA).^2, T);
-modH = sqrt(Gh ./ (lambda + Gd) );  
-df = 2*fs/N;
-disp( [lambda, N0, T, CA[N0+1], sum(Gd)*df] );
 disp( Gd );
+
+modH = sqrt(Gh ./ (lambda + Gd) );  
+df = fs/N;
+disp( [lambda, N0, T, CA[N0+1], sum(Gd)*df] );
+
 H = pwt( modH, [] ); 
 h = dft(H,T); 
 `;
-
+// sum(Gd)*df = Pd = 2 when CA(tau=0) = 1 as we fft CA[0] + sinc(tau/Tc) = 2 at tau=0
 			ME.exec(script,  ctx, function (ctx) {
 				//Log("vmctx", ctx);
 				cb({
