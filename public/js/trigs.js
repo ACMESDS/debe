@@ -29,48 +29,52 @@ module.exports = {  // learn hidden trigger function of a Markov process
 					lambda: solve.lambda,
 					T: solve.T,
 					Tc: solve.Tc
-				};
-
-			ME.exec(`
+				},
+				script = `
 fs = (N-1)/T;
 nu = rng(-fs/2, fs/2, N); 
 t = rng(-T/2, T/2, N); 
 CA = ${solve.model}(t/Tc);
-N0 = (N+1)/2;
-Gu = evpsd(evs, nu, T, "n", "t");  
-modH = sqrt(Gu ./ (lambda + wkpsd( CA[N0]^2 + abs(CA).^2, T)) );  
+Gh = evpsd(evs, nu, T, "n", "t");  
+N0 = fix( (N-1)/2 );
+Gd = wkpsd( CA[N0+1]^2 + abs(CA).^2, T);
+modH = sqrt(Gh ./ (lambda + Gd) );  
+df = 2*fs/N;
+disp( [lambda, N0, T, CA[N0+1], sum(Gd)*df] );
+disp( Gd );
 H = pwt( modH, [] ); 
 h = dft(H,T); 
-`, 
-					ctx, function (ctx) {
-						//Log("vm", ctx);
-						cb({
-							t: ctx.t._data,
-							trigger_profile: ctx.h._data
-						});
+`;
+
+			ME.exec(script,  ctx, function (ctx) {
+				//Log("vmctx", ctx);
+				cb({
+					trigger_profile: {
+						t: ctx.t,
+						p: ctx.h
+					}
+				});
 			});
-			
-			
 		}
 		
 		var
 			file = ctx._File,
 			flow = ctx._Flow;
 		
-		BULK(ctx, function (evs) {  // fetch all the events
-			Log("bulk evs=", evs.length);
-			triggerProfile({  // define solver parms
-				evs: evs,		// events
-				lambda: file.mean_intensity, // mean arrival rate
-				D: ctx.Dim, 		// profile sample times = max coherence intervals
-				model: ctx.Model,  	// complex correlation model
-				Tc: file.coherence_time,  // coherence time of arrival process
-				T: flow.T,  		// observation time
-				N: flow.N		// ensemble size
-			}, function (stats) {
-				ctx.Save = stats;
-				res(ctx);
-			});
+		GET.forAll(ctx, function (evs) {  // fetch all the events
+			if (evs)
+				triggerProfile({  // define solver parms
+					evs: evs,		// events
+					lambda: file.mean_intensity, // mean arrival rate
+					D: ctx.Dim, 		// profile sample times = max coherence intervals
+					model: ctx.Model,  	// complex correlation model
+					Tc: file.coherence_time,  // coherence time of arrival process
+					T: flow.T,  		// observation time
+					N: flow.N		// ensemble size
+				}, function (stats) {
+					ctx.Save = stats;
+					res(ctx);
+				});
 		});
 	}
 

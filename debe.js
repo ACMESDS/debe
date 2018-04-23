@@ -2231,7 +2231,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				res( ctx );
 			
 			else
-			if ( Pipe = ctx.Pipe )  { // intercept workflow request to regulate event stream
+			if ( Pipe = ctx.Pipe )  { // intercept pipe workflow to regulate event stream
 				res("Piped");
 				
 				class rocFlow {
@@ -2365,7 +2365,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			}
 					
 			else
-			if ( "Save" in ctx )  // engine does not participate in workflow
+			if ( "Save" in ctx )  // an event generation engine does not participate in pipe workflow
 				res( saveEvents( sql, ctx.Save, ctx, function (evs) {
 					var
 						host = ctx._Host = table,
@@ -2388,7 +2388,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					}
 
 					if ( ctx.Ingest )  // ingest remaining events
-						DEBE.getFile( client, `plugins/${filename}`, function (area, fileID) {
+						DEBE.getFile( host, `${host}/${filename}`, function (area, fileID) {
 							HACK.ingestList( sql, evs, fileID, function (aoi, evs) {
 								Log("INGESTED ",aoi);
 							});
