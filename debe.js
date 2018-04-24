@@ -2979,9 +2979,11 @@ Initialize DEBE on startup.
 			cores: DEBE.cores,
 			watchFile: DEBE.watchFile,
 			plugins: Copy({   // share selected FLEX and other modules with engines
-				MAIL: FLEX.sendMail,
+				// MAIL: FLEX.sendMail,
 				RAN: require("randpr"),
-				TASK: DEBE.tasker
+				TASK: {
+					shard: DEBE.tasker
+				},
 			}, LAB.libs)
 		});
 		
@@ -3026,7 +3028,6 @@ Initialize DEBE on startup.
 			sql.release();
 		});
 		
-
 	}); }); }); 
 } 
 
