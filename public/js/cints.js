@@ -1,10 +1,10 @@
 module.exports = {  // learn hidden coherence parameters of a Markov process
 	usecase: {
-		Symbols: "json comment '[sym, ...] state symbols or null to generate' ",
+		Symbols: "json comment '[sym, sym, ...] state symbols or null to generate' ",
 		Steps: "int(11) default 0 comment 'steps to next supervised learning' ",
 		Batch: "int(11) default 0 comment 'override _File.Steps' ",
 		lma: "json comment '[init] initial estimate of coherence intervals for levenberg-marquardt alg' ",
-		lfa: "json comment '[init] initial estimate for linear factor alg (use at your own risk)' ",
+		lfa: "json comment '[init] initial estimate for linear factor alg [use at your own risk]' ",
 		bfs: "json comment '[start,end,step] initial estimate for brute force search' ",
 		Use: "varchar(8) default 'lma' comment 'lma || lfs || bfs alg results used retained for estimated intervals' ",
 		

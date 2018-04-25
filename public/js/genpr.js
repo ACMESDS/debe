@@ -1,8 +1,8 @@
 module.exports = {  // generate a Markov process given its transition probability parameters
 	usecase: {
-		Mix: "json comment 'gaussian mixing parameters { dims: [D1, D2, ...], weights: [W1, W2, ...] }' ",
-		TxPrs: "json comment 'KxK transition probs [ [pr, ...], ... ] or {fr: {to: pr, ...}, ..., K: states} ' ",
-		Symbols: "json comment '[S1, S2, ...] state symbols or null to generate defaults' ",
+		Mix: "json comment 'gaussian mixing parameters { dims: [D1, D2 , ...] weights: [W1, W2 , ...] }' ",
+		TxPrs: "json comment 'KxK transition probs [ [pr, pr, ...], ...] or {fr: {to: pr, ... }, ... K: states} ' ",
+		Symbols: "json comment '[S1, S2, ... ] state symbols or null to generate defaults' ",
 		Members: "int(11) default 100 comment 'number in process ensemble' ",
 		Wiener: "int(11) default 0 comment 'number of wiener processes; 0 disables' ",
 		Nyquist: "float default 1 comment 'process over-sampling factor' ",

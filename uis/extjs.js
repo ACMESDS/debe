@@ -806,18 +806,20 @@ function DS(anchor) {
 
 			var 
 				fOpts = fSpec.split("."),
-				fKey = fOpts[0],
+				fKey = fLabel = fOpts[0],
 				fParm = PARMS[ fKey ] || {Type: calc ? "mediumtext" : "text", Label:fKey, Special:""},
 				fType = fOpts[1] || fParm.Type || "text",
-				fLabel = fOpts[2] || fParm.Label || fKey,
+				fDoc = fOpts[2] || "please add comment to document this field",
+				//fLabel = fOpts[2] || fParm.Label || fKey,
 				//fChange = HISTORY[path+"."+fKey] || {Moderators:""},
-				fTips = [
+				fTip = [
 					fKey.tag("a",{href:`/parms.view?parm=${fKey}`}) ,
 			//		fChange.Moderators,
 					"moderate".tag("a", {href:"/moderate.view"}),
-					fParm.Special || "" 
-				],
-				fTip = fTips.join(" || "),
+					fDoc
+					//fParm.Special || "" 
+				].join(" || "),
+				//fTip = fTips.join(" || "),
 				fLock = false,  //pivots ? true : sorts ? !(fKey in sorts) : false,			
 				fListen = {
 					afterrender: function (me) {
@@ -846,7 +848,7 @@ function DS(anchor) {
 				fChar = fType.charAt(0),
 				fHide = fChar >= "A" && fChar <= "Z",
 				fOff = false,
-				fTipTitle = fTips[0] || fKey; //fTips.pop() || fKey;
+				fTipTitle = fKey; //fTips[0] || fKey; //fTips.pop() || fKey;
 
 			switch (fType.toLowerCase()) {
 				case '#': 	// actions		

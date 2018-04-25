@@ -2458,11 +2458,11 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		urls = site.urls,
 		ctx = site.context[req.table]; 
 		
-	function dsContext(sql, ctx, cb) { // callbacl cb() after loading datasets required for this skin
+	function dsContext(sql, ctx, cb) { // callback cb() after loading datasets required for this skin
 		
 		if (ctx) // render in extended context
 			Each(ctx,  function (siteKey, ds, isLast) {
-				if ( ds.charAt(0) == "/" ) 
+				if ( ds.charAt(0) == "/" ) // ds dataset is a url 
 					DEBE.fetchData( urls.master+ds, query, null, function (data) {
 						switch ( (data||0).constructor ) {
 							case Array:
@@ -2478,28 +2478,13 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 						if ( isLast ) cb();	
 					});
 
-				else
+				else // local ds dataset
 					sql.forAll("CTX-"+siteKey, "SELECT * FROM ??", [ds], function (recs) {
 						site[siteKey] = recs.clone();
 						if ( isLast ) cb();
 					});
 			});
-				
-			/*
-			sql.context(ctx, function (ctx) {  // establish a sql dsvar context
-
-				var isEmpty = Each(ctx, function (ds, x, isLast) {
-					x.args = {ds:ds}; 	// hold ds name for use after select
-					x.rec = function clone(recs,me) {  // select and clone the records 
-						site[me.args.ds] = recs; 		// save data into the context
-						if (isLast) cb();  // all ds loaded so can render with cb
-					};
-				});
-
-				if ( isEmpty ) cb();
-
-			}); */
-		
+					
 		else  // render in default site context
 			cb();
 	}
@@ -2530,10 +2515,12 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 					fields.each(function (n,field) {
 						var key = field.Field, type = field.Type.split("(")[0];
 						if ( key != "ID" && type != "geometry")
-							if ( key.indexOf("Save") == 0 && type == "json") 
+							cols.push( key + "." + type + "." + field.Comment.skinSafe() );
+							/*if ( key.indexOf("Save") == 0 && type == "json") 
 								cols.push( key + ".Json" );
 							else
 								cols.push( key + "." + type );
+							*/
 					});
 					break;
 					
@@ -2575,7 +2562,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		
 		function renderTable( ) {
 			sql.query(
-				"DESCRIBE ??.??", 
+				"SHOW FULL COLUMNS FROM ??.??", 
 				[ FLEX.dbRoutes[req.table] || req.group, req.table ] , 
 				function (err,fields) {
 
@@ -3105,7 +3092,12 @@ function siteContext(req, cb) {
 
 	function hyper(ref) { 
 		return [this].linkify(ref);
+	},
+	
+	function skinSafe() {
+		return this.replace(/\,/g,";").replace(/\(/g,"[").replace(/\)/g,"]").replace(/\./g, ":");
 	}
+	
 ].extend(String);
 	
 [  // array prototypes
