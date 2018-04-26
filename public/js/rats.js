@@ -74,14 +74,6 @@ R = evd(A);
 						});
 					}
 
-					/*
-					var
-						pcgen = new RAN({
-							models: [model],  // models to gen
-							Mmax: dim,  	// max coherence intervals
-							Mstep: steps 	// step intervals
-						});  */
-
 					SQL.beginBulk();
 
 					evd( [model], Mmax, Mwin*2, function (pc) {
@@ -174,7 +166,9 @@ R = evd(A);
 				
 				if (pcs) {
 					var 
-						evals = pcs.values,
+						epcs = pcs.values,
+						eref = pcs.ref_value,
+						evals = $(N, (n,e) => e[n] = epcs[n] * eref ),
 						evecs = pcs.vectors,
 						T = solve.T,
 						N = evals.length,
@@ -182,14 +176,14 @@ R = evd(A);
 							T: T,
 							N: N,
 							
-							E: evals,
+							E: $(N, (n,E) => E[n] = evals[n] ),
 							
 							B: $(N, (n,B) => {
 								var
 									b = sqrt( expdev( evals[n] ) ),
 									arg = random() * PI;
 
-								B[n] = n; //ME.complex( b * cos(arg), b * sin(arg) );
+								B[n] = ME.complex( b * cos(arg), b * sin(arg) );
 							}),
 
 							V: evecs 

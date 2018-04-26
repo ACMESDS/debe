@@ -2515,12 +2515,10 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 					fields.each(function (n,field) {
 						var key = field.Field, type = field.Type.split("(")[0];
 						if ( key != "ID" && type != "geometry")
-							cols.push( key + "." + type + "." + field.Comment.skinSafe() );
-							/*if ( key.indexOf("Save") == 0 && type == "json") 
-								cols.push( key + ".Json" );
+							if ( key.indexOf("Save") == 0 && type == "json")   // hide these by default
+								cols.push( key + ".Json" + field.Comment.skinSafe() );
 							else
-								cols.push( key + "." + type );
-							*/
+								cols.push( key + "." + type + field.Comment.skinSafe() );
 					});
 					break;
 					
@@ -3206,7 +3204,7 @@ function siteContext(req, cb) {
 							return cache[key] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : texify(val);
 						}							
 					})
-					.replace(/\#\{(.*?)\}\((.*?)\)/g, function (str,key,short) {  // #{ key }( short ) markdown
+					/*.replace(/\#\{(.*?)\}\((.*?)\)/g, function (str,key,short) {  // #{ key }( short ) markdown
 						if (  key in cache )
 							return cache[key];
 
@@ -3219,7 +3217,7 @@ function siteContext(req, cb) {
 							}
 							return cache[key] = cache[short] = pretty(val);
 						}							
-					})
+					})*/
 					.replace(/\#\{(.*?)\}/g, function (str,key) {  // #{ key } markdown
 						//Log(key,cache);
 						if (  key in cache )
