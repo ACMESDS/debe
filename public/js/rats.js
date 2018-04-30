@@ -32,7 +32,7 @@ module.exports = {  // learn hidden intensity parameters of a Markov process
 					function evd( models, dim, step, cb) {
 						models.forEach( function (model) {
 
-							Log("ran config", model, dim, step);
+							Log("pcs", model, dim, step);
 
 							for (var M=1; M<dim; M+=step) {
 								var 
@@ -40,35 +40,32 @@ module.exports = {  // learn hidden intensity parameters of a Markov process
 										N: dim,
 										M: M,
 										T: 1
-										//A: 
-											//ME.matrix( [[1,0,0],[0,2,0], [0,0,3]]) 
-											//ME.matrix( model( dim, M ) )
 									},
 									script = `
-t = rng(-T/2, T/2, N);
+t = rng(-T, T, 2*N+1);
 Tc = T/M;
-A = xmatrix( ${model}(t/Tc) ); 
-R = evd(A); 
+xccf = ${model}( t/Tc );
+Xccf = xmatrix( xccf ); 
+R = evd(Xccf); 
 `; 
 
 								ME.exec( script,  ctx, function (ctx) {
 
-										var R = ctx.R;
-
-										if (false) {  // debugging
-											//Log("lambda", R.values._data);
-											ME.eval( "e=R.vectors'*R.vectors; x=R.vectors*diag(R.values); y = A*R.vectors; ", ctx);
-											Log("e", ctx.e._data);  
-											Log("x", ctx.x._data[dim-1]);  
-											Log("y", ctx.y._data[dim-1]);	 
-										}
-
-										cb({
-											model: model.name,
-											intervals: M,
-											values: R.values._data,
-											vectors: R.vectors._data
-										});
+									if (solve.trace)  // debugging
+										ME.exec(`
+disp({
+basis: R.vectors' * R.vectors,
+eig: R.vectors*diag(R.values) - Xccf*R.vectors,
+det: det(Xccf)/prod(R.values),
+trace: trace(Xccf)/sum(R.values)
+})`.replace(/\n/g,""), ctx);
+										
+									cb({
+										model: model,
+										intervals: M,
+										values: ctx.R.values._data,
+										vectors: ctx.R.vectors._data
+									});
 								});
 							}
 						});
@@ -81,20 +78,22 @@ R = evd(A);
 							vals = pc.values,
 							vecs = pc.vectors,
 							N = vals.length, 
-							ref = vals[N-1];
+							ref = ME.max(vals);
 
 						vals.forEach( (val, idx) => {
 							var
 								save = {
 									correlation_model: pc.model,
 									coherence_intervals: pc.intervals,
-									eigen_value: val,
+									eigen_value: val / ref,
 									eigen_index: idx,
 									ref_value: ref,
 									max_intervals: dim,
 									eigen_vector: JSON.stringify( vecs[idx] )
 								};
 
+							//Log(save);
+							
 							SQL.query("INSERT INTO app.pcs SET ? ON DUPLICATE KEY UPDATE ?", [save,save] );
 						});
 					});
@@ -105,6 +104,8 @@ R = evd(A);
 
 				function sendpcs( pcs ) {
 					var vals = [], vecs = [];
+					
+					//Log("sendpcs", pcs);
 					pcs.forEach( function (pc) {
 						vals.push( pc.eigen_value );
 						vecs.push( JSON.parse( pc.eigen_vector ) );
@@ -112,7 +113,8 @@ R = evd(A);
 
 					cb({
 						values: vals,
-						vectors: vecs
+						vectors: vecs,
+						ref: pcs[0].ref_value
 					});
 
 					SQL.release();
@@ -122,7 +124,7 @@ R = evd(A);
 					var M0 = Math.min( M, Mmax-Mwin*2 );
 
 					SQL.query(
-						"SELECT * FROM app.pcs WHERE coherence_intervals BETWEEN ? AND ? AND eigen_value > ? AND least(?,1) ORDER BY eigen_index", 
+						"SELECT * FROM app.pcs WHERE coherence_intervals BETWEEN ? AND ? AND eigen_value / ref_value > ? AND least(?,1) ORDER BY eigen_index", 
 						[M0-Mwin, M0+Mwin, Emin, {
 							max_intervals: Mmax, 
 							correlation_model: model
@@ -144,7 +146,7 @@ R = evd(A);
 						}, 
 						function (err, test) {  // see if pc model exists
 
-						//Log( "modtest", Mmax, model, M, Mwin, pcs);
+						//Log("test", test);
 						if ( !test[0].Count )  // pc model does not exist so make it
 							genpcs( Mmax, Mwin*2, model, function () {
 								findpcs( sendpcs );
@@ -166,44 +168,49 @@ R = evd(A);
 				
 				if (pcs) {
 					var 
-						epcs = pcs.values,
-						eref = pcs.ref_value,
-						evals = $(N, (n,e) => e[n] = epcs[n] * eref ),
-						evecs = pcs.vectors,
+						pcref = pcs.ref,  // [unitless]
+						pcvals = pcs.values,  // [unitless]
+						N = pcvals.length,
 						T = solve.T,
-						N = evals.length,
+						dt = T / N,
+						evals = $(N, (n,e) => e[n] = solve.lambdaBar * dt * pcvals[n] * pcref ),  // [unitless]
+						evecs = pcs.vectors,   // [sqrt Hz]
 						ctx = {
 							T: T,
 							N: N,
 							
-							E: $(N, (n,E) => E[n] = evals[n] ),
+							E: ME.matrix( evals ),
 							
 							B: $(N, (n,B) => {
 								var
-									b = sqrt( expdev( evals[n] ) ),
+									b = sqrt( expdev( evals[n] ) ),  // [unitless]
 									arg = random() * PI;
 
-								B[n] = ME.complex( b * cos(arg), b * sin(arg) );
+								//Log(n,arg,b, evals[n], eref, T, N);
+								B[n] = ME.complex( b * cos(arg), b * sin(arg) );  // [unitless]
 							}),
 
-							V: evecs 
+							V: evecs   // [sqrt Hz]
 						},
 						script = `
 A=B*V; 
-lambda = abs(A); 
+lambda = abs(A).^2; 
 Wbar=sum(E); 
-t = rng(-T/2, T/2, N); `;
+lambdaBar = Wbar/T;
+t = rng(-T/2, T/2, N); 
+`;
 
-					if (N) {
+//Log(ctx);
+					
+					if (N) 
 						ME.exec( script , ctx, (ctx) => {
 							//Log("ctx", ctx);
 							cb({
 								intensity_profile: {t: ctx.t, i: ctx.lambda},
 								mean_count: ctx.Wbar,
-								mean_intensity: ctx.Wbar / T
+								mean_intensity: ctx.lambdaBar
 							});
-						});								
-					}
+						});	
 
 					else
 						cb({
@@ -224,9 +231,11 @@ t = rng(-T/2, T/2, N); `;
 		
 		//Log("rats ctx", ctx);
 		arrivalRates({  // parms for principle components (intensity profile) solver
-			T: flow.T,  // observation time
+			trace: false,   // eigen debug
+			T: flow.T,  // observation interval  [1/Hz]
 			M: file.coherence_intervals, // coherence intervals
-			Mstep: 5,  // step intervals
+			lambdaBar: file.mean_intensity, // [Hz]
+			Mstep: 1,  // step intervals
 			Mmax: ctx.Dim || 150,  // max coherence intervals / pc dim
 			model: ctx.Model,  // assumed correlation model for underlying CCGP
 			min: ctx.MinEigen	// min eigen value to use
