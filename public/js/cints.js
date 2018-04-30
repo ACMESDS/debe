@@ -404,7 +404,11 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 				if (solve.bfs)  // brute force search for M
 					M.bfs = BFS( solve.bfs, fK, logNB);
 
-				var M0 = M[solve.use || "lma"];
+				var 
+					M0 = M[solve.use || "lma"],
+					snr = sqrt( Kbar / ( 1 + Kbar/M0 ) ),
+					bias = sqrt( (Nevs-1)/2 ) * exp(GAMMA.log((Nevs-2)/2) - GAMMA.log((Nevs-1)/2)),		// bias of snr estimate
+					mu = (Nevs>=4) ? (Nevs-1) / (Nevs-3) - bias**2 : 2.5;		// rel error in snr estimate
 
 				cb({
 					events: Nevs,
@@ -414,7 +418,9 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 					mean_count: Kbar,
 					est_rate: Kbar / T,
 					degeneracy_param: Kbar / M0,
-					snr: sqrt( Kbar / ( 1 + Kbar/M0 ) ),
+					snr: snr,
+					stability: snr,
+					fertility: 1 - mu/2.5,
 					coherence_time: T / M0,
 					fit_stats: M
 				});

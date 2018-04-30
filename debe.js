@@ -310,11 +310,10 @@ Further information about this file is available ${paths.moreinfo}. `;
 
 				sql.forAll(opts.trace, gets.lowsnr, [ file.snr, {"events.fileID": file.ID} ], function (evs) {
 					//Log("dog rejected", evs.length);
-					sql.query("UPDATE app.files SET ? WHERE ?", [{
-							Pruned: true,
-							Rejects: evs.length
-						}, {ID: file.ID}
-					] );
+					sql.query(
+						"UPDATE app.files SET Pruned=true,Rejects=Rejects+?,Relevance=1-Rejects/Samples WHERE ?", 
+						[ evs.length, {ID: file.ID} ] 
+					);
 
 					evs.each( function (n,ev) {
 						sql.query("DELETE FROM app.events WHERE ?", {ID: ev.ID});

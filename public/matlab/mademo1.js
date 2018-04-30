@@ -4,9 +4,8 @@ module.exports = {
 	},
 
 	engine: `
-function mademo1(ctx,res)
-	ctx.Save = ctx.a + ctx.b;
-	res(ctx);
+function rtn = mademo1(ctx)
+	rtn = ctx.a + ctx.b;
 end
 `
 }
