@@ -226,8 +226,8 @@ t = rng(-T/2, T/2, N);
 		}
 
 		var
-			file = ctx._File,
-			flow = ctx._Flow;
+			file = ctx.File,
+			flow = ctx.Flow;
 		
 		//Log("rats ctx", ctx);
 		arrivalRates({  // parms for principle components (intensity profile) solver

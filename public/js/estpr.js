@@ -18,7 +18,7 @@ module.exports = {
 	Return MLEs for random event process [ {x,y,...}, ...] given ctx parameters:
 		Symbols = [sym, ...] state symbols or null to generate
 		Batch = steps to next supervised learning
-		Steps = override _File.Steps
+		Steps = override File.Steps
 		Model = name of model used for pc estimates
 		MinEigen = smallest eigenvalue for pc estimates
 		Dim = pc model dims (max coherence intervals)
@@ -26,9 +26,9 @@ module.exports = {
 		lfs = [init] "" for linear factor alg (use at your own risk)
 		bfs = [start,end,step] "" for brute force search
 		Use = "lma" || "lfs" || "bfs" alg results used retained for estimated intervals
-		_File.Actors = ensembe size
-		_File.States = number of states consumed by process
-		_File.Steps = number of time steps
+		File.Actors = ensembe size
+		File.States = number of states consumed by process
+		File.Steps = number of time steps
 		_Events = query to get events
 	*/
 		//LOG("estpr", ctx);
@@ -132,12 +132,12 @@ module.exports = {
 					STEP(ctx, cb);
 				},  // event getter when in learning mode
 				
-				N: ctx._File.Actors,  // ensemble size
+				N: ctx.File.Actors,  // ensemble size
 				//wiener: 0,  // wiener process steps
 				sym: ctx.Symbols,  // state symbols
-				steps: ctx.Steps || ctx._File.Steps, // process steps
+				steps: ctx.Steps || ctx.File.Steps, // process steps
 				batch: ctx.Batch || 0,  // steps to next supervised learning event 
-				K: ctx._File.States,	// number of states 
+				K: ctx.File.States,	// number of states 
 				trP: {}, // trans probs
 				solve: {  // solver parms for unsupervised learning
 					pc: {  // principle components options for intensity estimates

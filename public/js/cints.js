@@ -17,11 +17,7 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 	
 	engine: function cints(ctx,res) {  
 	/* 
-	Return MLEs for random event process [ {x,y,...}, ...] given ctx parameters:
-		_File.Actors = ensembe size
-		_File.States = number of states consumed by process
-		_File.Steps = number of time steps
-		_Events = query to get events
+	Return MLEs for random event process [ {x,y,...}, ...] given ctx parameters
 	*/
 		
 		function coherenceIntervals(solve, cb) { // unsupervised learning of coherence intervals M, SNR, etc
@@ -433,8 +429,7 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 		const { sqrt, floor, random, cos, sin, abs, PI, log, exp} = Math;
 		
 		var
-			file = ctx._File,
-			flow = ctx._Flow;
+			flow = ctx.Flow;
 		
 		//Log("cints ctx", ctx);
 		coherenceIntervals({  // define solver parms

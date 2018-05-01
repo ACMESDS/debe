@@ -79,14 +79,14 @@ append site_body
 					> [Save_KEY](/#{ds}.run?options=more) aggregates engine results [{at:"KEY", ...}, ...]  
 					
 					When executed, the **context** of your *#{ds}* engine is automatically extended with:  
-					> _Host name of plugin  
-					> _File current file during workflow  
-					> _Voxel current voxel being procesed  
-					> _Collects sensor collects made under current voxel  
-					> _Chip  filepath for first jpeg collect under current voxel  
-					> _Flux solar flux at earth's surface under current voxel  
-					> _Events event query for current voxel  
-					> _Flow Markov workflow context  
+					> Host name of plugin  
+					> File current file during workflow  
+					> Voxel current voxel being procesed  
+					> Collects sensor collects made under current voxel  
+					> Chip  filepath for first jpeg collect under current voxel  
+					> Flux solar flux at earth's surface under current voxel  
+					> Events event query for current voxel  
+					> Flow context of Markov/ROC supervisor
 					
 					To place your *#{ds}* engine into #{nick}'s supervised Markov workflow, simply provide:  
 					> [Batch+](/#{ds}.add?Batch=0) [/-](/#{ds}.sub?Batch) workflow steps when event batch us supervised (0 disabled)  

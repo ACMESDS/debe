@@ -1536,24 +1536,20 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	gradeIngest: function (sql, file, cb) {  //< callback cb(stats) or cb(null) if error
 		
 		var ctx = {
-			//Batch: 10, // batch size in steps
-			Solve: {
-				Batch: 50,
-				lma: [70]
-			},
-			_File: {
-				Actors: file.Actors,  // ensemble size
-				States: file.States, // number of states consumed by process
-				Steps: file.Steps, // number of time steps
-			},
-			_Events: sql.format(  // event query
+			Flow: {
+				F: "tbd",
+				N: file.Actors,  // ensemble size
+				T: file.Steps  // number of time steps
+			}, 
+			lma: [70],
+			Events: sql.format(  // event query
 				"SELECT * FROM app.events WHERE fileID=? ORDER BY t LIMIT 10000", [file.ID] )
 		};
 		
 		Log("ingest stats ctx", ctx);
 		
-		if (estpr = LAB.plugins.estpr) 
-			estpr( ctx, function (ctx) {  // estimate/learn hidden process parameters
+		if (cints = LAB.plugins.cints) 
+			cints( ctx, function (ctx) {  // estimate/learn hidden process parameters
 				
 				if ( ctx ) {
 					var stats = ctx.Save.pop() || {};  // retain last estimate at end
@@ -2289,13 +2285,13 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						
 						var 
 							Query = req.query = Copy({  // engine request query to be copied to engine's context when selected
-								_File: job.File,
-								_Voxel: job.Voxel,
-								_Collects: job.Collects,
-								_Flux: job.Flux,
-								_Events: job.Events || "",
-								_Chip: job.Chip,
-								_Host: job.name
+								File: job.File,
+								Voxel: job.Voxel,
+								Collects: job.Collects,
+								Flux: job.Flux,
+								Events: job.Events || "",
+								Chip: job.Chip,
+								Host: job.name
 							}, ctx),
 							File = job.File,
 							Flow = new workflow({ // configure the workflow
@@ -2367,7 +2363,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			if ( "Save" in ctx )  // an event generation engine does not participate in pipe workflow
 				res( saveEvents( sql, ctx.Save, ctx, function (evs) {
 					var
-						host = ctx._Host = table,
+						host = ctx.Host = table,
 						filename = `${host}.${ctx.Name}`;
 					
 					if ( ctx.Export ) {   // export remaining events to filename
