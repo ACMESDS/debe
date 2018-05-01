@@ -470,11 +470,11 @@ append site_body
 
 				and where the *Description* key may contain [blogging tags](/skinguide.view) of the form:
 
-					[ VIEW ; WIDTH ; HEIGHT ]( DS ? PARM ; PARM ; ... )
-					[ LINK ]( URL )
-					!$ inline TeX $  ||  $$ break TeX $$ || a$ AsciiMath $ || m$ MathML $
-					${ KEY } || $${ TeX matrix KEY } || ${ KEY }( SHORTCUT ) || !${ EXPR }
-					#tag
+				> \[ VIEW ; WIDTH ; HEIGHT ]( DS ? PARM ; PARM ; ... )  
+				> \[ LINK ]( URL )   
+				> !$ inline TeX $  ||  $$ break TeX $$ || a$ AsciiMath $ || m$ MathML $  
+				> \#{ KEY } || \#{ KEY }( SHORTCUT ) || \!{ EXPR }  || ^{ KEY as TeX matrix  }  
+				> \#tag
 				
 				to document usecases.  For example:
 
@@ -488,7 +488,9 @@ append site_body
 				to embed: (1) a plot of the requested x,y data using the [d3 plot](/plot.view), (2) the 
 				[home.view](/home.view), (3) a link to the url, (4) the [image](/shares.jpg), (5) a
 				force graph of the queues dataset pivoted by class using the [d3 force](/force.view) 
-				into a frame of specified W x H dimensions, and (6) a TeX equation.
+				into a frame of specified W x H dimensions, and (6) a TeX equation.  See [plot](/plot.view?help), 
+				[treefan](/treefan.view?help), [treemap](/treefan.view?help), [force](/force.view?help), 
+				[bounce](/bounce.view?help), [tipsheet](/tipsheet.view?help) for example VIEWs. 
 
 		#fit.Publishing
 			:markdown

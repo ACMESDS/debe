@@ -1,6 +1,8 @@
 module.exports = {
 	usecase: {
-		Save: "json"
+		Save: "json",
+		a: "float",
+		b: "float"
 	},
 
 	engine: `

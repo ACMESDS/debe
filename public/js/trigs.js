@@ -10,7 +10,8 @@ module.exports = {  // learn hidden trigger function of a Markov process
 		Save_config: "json",	
 		Save_batch: "json",
 		Pipe: "json",
-		Description: "mediumtext"
+		Description: "mediumtext",
+		Autorun: "boolean default 0"
 	},
 	
 	engine: function trigs(ctx, res) {  
