@@ -1,6 +1,6 @@
 module.exports = {
 	usecase: {
-		Save: "json",
+		Save: "mediumtext",
 		a: "float",
 		b: "float"
 	},
