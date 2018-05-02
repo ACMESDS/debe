@@ -2337,7 +2337,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 											else 
 												learncb(null, function onEnd( flowctx ) {  // accept flow context
-													Query._Flow = flowctx;
+													Query.Flow = flowctx;
 
 													//Log("flow ctx", ctx);
 													ATOM.select(req, function (ctx) {  // run plugin's engine
@@ -2888,16 +2888,6 @@ Initialize DEBE on startup.
 				}
 			})
 			.argv;
-
-		Trace(
-			"HOST " + site.title+" ON "+(CLUSTER.isMaster ? "MASTER" : "CORE"+CLUSTER.worker.id)
-			+ "\n- USING " + site.db 
-			+ "\n- FROM " + process.cwd()
-			+ "\n- RUNNING " + (DEBE.nofaults?"PROTECTED":"UNPROTECTED")
-			+ "\n- WITH " + (site.urls.socketio||"NO")+" SOCKETS"
-			+ "\n- WITH " + (DEBE.SESSIONS||"UNLIMITED")+" CONNECTIONS"
-			+ "\n- WITH " + (DEBE.cores ? DEBE.cores + " WORKERS AT "+site.urls.worker : "NO WORKERS")+" AND MASTER AT "+site.urls.master
-		);
 
 		if (cb) cb();
 
