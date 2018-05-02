@@ -1,1 +1,0 @@
-res=1;save('step.mat','res','-ascii'); disp(webread('http://totem.west.ile.nga.ic.gov:8080/matlab?queue=step));

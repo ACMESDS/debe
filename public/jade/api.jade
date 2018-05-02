@@ -443,6 +443,8 @@ append site_body
 				> [Config+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) defines usecase context with a js-engine  
 				> [Save+](/#{ds}.add?Save=doc) [/-](/#{ds}.sub?Save) aggregates engine results not captured in the Save_KEYs  
 				> [Save_KEY](/#{ds}.run?options=more) aggregates engine results [{at:"KEY", ...}, ...]  
+				> [Entry+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) prime context on entry using sql { KEY: "SELECT ....", ...}  
+				> [Exit+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) save context on exit using sql { KEY: "UPDATE ....", ...}  
 				
 				To place an engine into *#{title}*'s supervised Markov workflow, provide:  
 				> [Batch+](/#{ds}.add?Batch=0) [/-](/#{ds}.sub?Batch) workflow steps when event batch us supervised (0 disabled)  
@@ -499,20 +501,38 @@ append site_body
 				TYPE/NAME.js must follow this pattern:
 				
 					module.exports = {
-						clear: true || false,		// enable to drop then recreate the usecases 
-						modify: {  // change sql types of existing keys, e.g. MyFloatParm: "int(11)"
-							KEY: "sql type", ...
-						},
-						usecase: {  // add sql keys of specified types, e.g. MyJsonParm: "json"
+						clear: true || false,		// to delete then recreate all usecases 
+						
+						modify: {  // to change sql types of existing keys, e.g. MyFloatParm: "int(11)"
 							KEY: "sql type", ...
 						},
 						
-						engine:
-							function NAME(ctx,res) { ctx.Save = [ ... ]; res(ctx); } // js engine
-							||
-							"def NAME(ctx,res): res(ctx)"  // python engine
-
+						usecase: {  // to add sql keys of specified types, e.g. MyJsonParm: "json"
+							KEY: "sql type", ...
+						},
+						
 						smop: "m-file path" // path to m-file to convert to a python engine
+						
+						engine:  
+							function NAME(ctx,res) {   // js engine
+								ctx.Save = [ ... ]; 
+								res(ctx); 
+							}
+							
+							||
+							
+							`def NAME(ctx,res):   # python engine
+								ctx['Save'] = [ ... ];
+								res(ctx) `
+								
+							||
+							
+							`function Save = NAME(ctx,res)		% matlab engine
+								Save = [ ... ]; `
+							
+							||
+							
+							`Save = [ ... ]; `				// matlab-emulated engine
 					}
 			
 		#fit.Examples
@@ -521,8 +541,8 @@ append site_body
 				js ex2 [ui](/jsdemo2.run) [run usecase test1](/jsdemo2.exe?Name=test1) [get usecases](/jsdemo2)
 				py ex1 [ui](/pydemo1.run) [run usecase test1](/pydemo1.exe?Name=test1) [get usecases](/pydemo1)
 				py ex2 [ui](/pydemo2.run) [run usecase test1](/pydemo2.exe?Name=test1) [get usecases](/pydemo2)
-				ma ex1 [ui](/mademo1.run) [run usecase test1](/mademo1.exe?Name=test1) [get usecases](/mademo1)
-				ma ex2 [ui](/mademo2.run) [run usecase test1](/mademo2.exe?Name=test1) [get usecases](/mademo2)
+				m ex1 [ui](/mdemo1.run) [run usecase test1](/mdemo1.exe?Name=test1) [get usecases](/mdemo1)
+				m ex2 [ui](/mdemo2.run) [run usecase test1](/mdemo2.exe?Name=test1) [get usecases](/mdemo2)
 	
 	#accordion.Agents
 		#fit.Endpoints
@@ -580,8 +600,8 @@ append site_body
 
 					{
 						"query": { "KEY": value, ... },
-						"entry": { "KEY": "select ...", ... } || "select ...",
-						"exit": { "KEY": "update ...", ... } || "update ...",
+						"Entry": { "KEY": "select ...", ... } || "select ...",
+						"Exit": { "KEY": "update ...", ... } || "update ...",
 						"KEY": value, 
 						"KEY": value, ...						
 					}
@@ -592,7 +612,8 @@ append site_body
 				provided an OS, JSON, and an SQL module.
 
 		#folder.Examples(dock="left")
-			#fit.url
+			//
+				#fit.url
 				:markdown
 					URL engines (experimental) provide a simple method to re-route a request
 					based on URL parameters, ${req.PARM} and ${plugin.FN(req)} tags; such engines
@@ -601,7 +622,8 @@ append site_body
 						"http://URL?PARM=${req.PARM}&PARM=${plugin.FN(req)}"
 						
 					with initial context:
-							{ fn1: function (req) {...}, fn2: ... }
+
+						{ fn1: function (req) {...}, fn2: ... }
 
 					For example, a **testeng** engine:
 
@@ -633,68 +655,21 @@ append site_body
 					ny right-clicking its corresponding action button from within a view.  Virtual dataset
 					engines follow this pattern:
 
-						Code:
-							function (req, res) {   		// request-callback
-								var sql = req.sql, 			// sql connector hash
-									query = req.query;		// request query parameters
+						function (req, res) {   		// request-callback
+							var sql = req.sql, 			// sql connector hash
+								query = req.query;		// request query parameters
 
-								sql.query("...", 			// sql query with ?-tokens
-									query, 					// query parameters
-									function (err,data) {  	// query error and data
-										res(err || data);	// return error or data
-								});
-							}
-						Context: {
-							"KEY": value, ...
+							sql.query("...", 			// sql query with ?-tokens
+								query, 					// query parameters
+								function (err,data) {  	// query error and data
+									res(err || data);	// return error or data
+							});
 						}
 
 					The response callback **res** must be called, and must return either
 					an **Error** object, a **String** message, an **Array** list of
 					records, or an **Object** hash.
 			
-				#fit.em
-				:markdown
-					This [emulated matlab](/emdemo1.exe?name=test) example:
-
-						Code:
-							Z = [1,2;3,4];
-							X = A * A';
-							Y = B * B';
-
-						Context: {
-							"entry": {
-								"A": "SELECT a2,a3,a6 FROM app.MATtest WHERE least(?,1)",
-								"B": "SELECT a1,a6 FROM app.MATtest WHERE least(?,1)"
-							}
-						}
-
-					illustrates how its context variables *A* and *B* are imported with its sql-entry where
-					the sql ?-tokens are sourced from the supplied query parameters.
-					[For example](/demo1.db?name=test) places *X*, *Y*, and *Z* into its context after
-					importing its *A* and *B* context keys.  When an engine terminates,
-					it is free to store its context variables into its database with its sql-exit.
-
-					This [emulated matlab](/emdemo2.exe?name=test)
-
-						Code:
-							Z = [1,2;3,4];
-							X = A * A';
-							Y = B * B';
-							R = addIt(1,2);
-
-						Context: {
-							"entry": {
-								"A": "SELECT a2,a3,a6 FROM app.MATtest WHERE least(?,1)",
-								"B": "SELECT a1,a6 FROM app.MATtest WHERE least(?,1)"
-							},
-
-							"require": {
-							   "addIt" :  function (a,b) { return a+b; }
-							}
-						}
-						
-					shows how these engines are extended with the **require** hash.
-
 			#fit.sh
 				:markdown
 					The flexibility of Bash sh-engines comes with 
@@ -763,22 +738,64 @@ append site_body
 					simply added to *#{title}*; subsequent executions return the desired records to 
 					the client.
 
-			#fit.ma
+			#fit.m
 				:markdown
-					This [stateless matlab-engine](/mademo1.exe):
+					This [stateless matlab-engine](/mdemo1.run):
 
-						function mademo1(ctx,res)
-							ctx.Save = ctx.a + ctx.b;
-							res(ctx);
+						function Save = mdemo1(ctx)
+							Save = ctx.a + ctx.b;
 						end
+						
+					returns the sum of its context *a* and *b* keys into its *Save* context key.
 
-					with initial context: 
+			#fit.me
+				:markdown
+					This [stateless emulated matlab engine](/medemo1.run):
+					
+						Save = a * (b + a);
+						disp(Save);
+						
+					computes its *Save* context key given its *a* and *b* context keys.
+					
+					This [example](/engines.view):
 
-						{
+						Z = [1,2;3,4];
+						X = A * A';
+						Y = B * B';
+
+					with context:
+					
+						"Entry": {
+							"A": "SELECT a2,a3,a6 FROM app.MATtest WHERE least(?,1)",
+							"B": "SELECT a1,a6 FROM app.MATtest WHERE least(?,1)"
 						}
 
-					will return the sum of its context *a* and *b* keys.
-				
+					illustrates how its context variables *A* and *B* are imported with its sql-entry where
+					the sql ?-tokens are sourced from the supplied query parameters.
+					[For example](/demo1.db?name=test) places *X*, *Y*, and *Z* into its context after
+					importing its *A* and *B* context keys.  When an engine terminates,
+					it is free to store its context variables into its database with its sql-exit.
+
+					This [emulated matlab example](/engines.view)
+
+						Z = [1,2;3,4];
+						X = A * A';
+						Y = B * B';
+						R = addIt(1,2);
+
+					with context:
+					
+						"Entry": {
+							"A": "SELECT a2,a3,a6 FROM app.MATtest WHERE least(?,1)",
+							"B": "SELECT a1,a6 FROM app.MATtest WHERE least(?,1)"
+						}
+
+						"Require": {
+						   "addIt" :  function (a,b) { return a+b; }
+						}
+						
+					shows how these engines are extended with *Require*.
+
 			#fit.mo
 				:markdown
 					[Model engines](/engine.view) are used/defined by workflows when 
@@ -883,73 +900,9 @@ append site_body
 					
 			#fit.js
 				:markdown
-					*#{title}* provides js-engines the:   
-					* [LWIP(lightweight imaging)](https://github.com/EyalAr/lwip)  
-					* [SQL(jsdb-extended database connector)](https://www.npmjs.com/package/mysql)  
-					* [JSON(encoder-decoder)](https://nodejs.org/docs/latest/api/json)  
-					* [CRYPTO(cryptography)](https://nodejs.org/docs/latest/api/crypto)  
-					* [ME(matlab emulator)](https://www.npmjs.com/package/mathjs)  
-										
-					modules.  While *#{title}* transparently attaches all Pipe-enabled engines (see Plugins) 
-					to an event workflow -- its [supervised Markov process](https://github.com/ACMESDS/randpr) or 
-					its [supervised ROC generator]() -- js-engines (unlike other engines) can interface directly 
-					with a workflow via the:  
-					* GET.forBatch(ctx, (ievs,sink) => { ...} )  
-					* GET.forEach(ctx,(ievs,sink) => { ...} )  
-					* GET.forAll(ctx,(ievs,sink) => { ...} )   
-					* GET.forDrop(ctx,(ievs,sink) => { ...} )  
-
-					[event BUFFER](https://github.com/ACMESDS/jslab) methods used as follows:
-
-						BUFFER(ctx, (ievs, sink) => {  // sink the plugin's ingested ievs
-							if (ievs)   // there are ingested events
-								ievs.forEach( ev) { // process event ev
-								});
-
-							else // events exhausted so
-								sink([ {...}, {...} ]);  // respond with outputs oevs to be saved by the plugin  
-						});
+					# examples
 					
-					*#{title}*'s [matlab emulator](https://www.npmjs.com/package/mathjs) natively provides 
-					matrix arithmetics, symbolic calulations, sparse matricies and machine learning tools via:  
-
-						ME.exec( script, ctx, (ctx) => { ... } )
-					
-					as extended by the:  
-					* [LAS(linear algebraic systems)](https://github.com/mljs/matrix)  
-					* [DSP(digitial signal processing)](https://www.npmjs.com/package/fft-js)  
-					* [BAYES(bayes network interference)](https://www.npmjs.com/package/jsbayes)  
-					* [GAMMA(standard gamma function)](https://www.npmjs.com/package/gamma)  
-					* [HMM(hidden markov model solver)](https://www.npmjs.com/package/nodehmm)  
-					* [MLE(maximum liklihood estimator)](https://www.npmjs.com/package/node-svd)  
-					* [MVN(normal multivariates](https://www.npmjs.com/package/multivariate-normal)  
-					* [NRAP(newton-raphson root finder)](https://www.npmjs.com/package/newton-raphson)  
-					* [ZETA(riemann-zeta function](https://www.npmjs.com/package/math-riemann-zeta)  
-					* [RNN(recurrent nural netroc](https://www.npmjs.com/package/recurrentjs)
-
-					modules.  Engines may also distribute a task to cores within *#{title}*'s compute cluster
-					using its [task sharding](https://github.com/ACMESDS/totem) mechanisim:
-
-						TASK.shard({  		// example
-							keys: "i,j,k",  	// e.g. array indecies
-							i: [0,1,2,3],  		// domain of index i
-							j: [4,8],				// domain of index j
-							k: [0],					// domain of index k
-							qos: 0,				// regulation time in ms if not zero
-							local: false, 		// enable to run task local, i.e. w/o workers and nodes
-							workers: 4, 		// limit number of workers (aka cores) per node
-							nodes: 3 			// limit number of nodes (aka locales) in the cluster
-						}, 
-							// here, a simple task that returns a message 
-							($) => "my result is " + (i + j*k) + " from " + $.worker + " on "  + $.node,
-
-							// here, a simple callback that displays the task results
-							(msg) => console.log(msg) 
-						);
-
-					Sharded tasks have access to the same modules (ME, etc) as local tasks.
-					
-					This [stateless js-engine example](/jsdemo1.run):
+					This [stateless js-engine](/jsdemo1.run):
 
 						function jsdemo1(ctx, res) {
 							Log("jsdemo1 ctx", ctx);
@@ -975,11 +928,11 @@ append site_body
 							"query": {  // default sql-entry query parms if none supplied on url
 								"Name": "DefaultTestName"
 							},
-							"entry": {
+							"Entry": {
 								"A": "SELECT a2,a3,a6 FROM MATtest WHERE least(?,1)",
 								"B": "SELECT a1,a6 FROM MATtest WHERE least(?,1)"
 							},
-							"exit": {
+							"Exit": {
 								"A": "INSERT INTO ?? SET ?"
 							}
 						}
@@ -988,7 +941,7 @@ append site_body
 					references its context *query* hash (as overridden by url query parameters).  On
 					exit, its context *B* context variable is exported by its *exit* sql-query.   
 					
-					This [stateless js-engine example](/jsdemo2.exe?name=test):
+					This [stateless js-engine](/jsdemo2.exe?name=test):
 
 						function jsdemo2(ctx,res) {
 							ME.exec("a = inv(X' * X) * X' * y", ctx, (ctx) => {
@@ -1007,7 +960,7 @@ append site_body
 					
 						{						
 							"M": 3,
-							"entry": {
+							"Entry": {
 								"X": "SELECT p0,p1,p2 FROM Htest WHERE least(?,1)",
 								"y": "SELECT FPR from Htest WHERE least(?,1)"
 							}
@@ -1048,13 +1001,87 @@ append site_body
 					function with the current **tau** workflow events and the **parm** set to the 
 					corresponding "ports" hash.					
 
+					# common modules
+					
+					*#{title}* provides the
+					[LWIP(lightweight imaging)](https://github.com/EyalAr/lwip), 
+					[SQL(jsdb-extended database connector)](https://www.npmjs.com/package/mysql), 
+					[JSON(encoder-decoder)](https://nodejs.org/docs/latest/api/json), 
+					[CRYPTO(cryptography)](https://nodejs.org/docs/latest/api/crypto), and 
+					[ME(matlab emulator)](https://www.npmjs.com/package/mathjs) modules to all js-engines.
+					
+					# interfacing with supervisor
+					
+					While all Pipe-enabled engines are transparently attached 
+					to [#{title}'s Markov/ROC supervisor](https://github.com/ACMESDS/randpr) , js-engines 
+					(unlike other engines) can interface directly with its supervisor via the:
+					
+						GET.forBatch(ctx, (ievs,sink) => { ...} )  
+						GET.forEach(ctx, (ievs,sink) => { ...} )  
+						GET.forAll(ctx, (ievs,sink) => { ...} )   
+						GET.forDrop(ctx, (ievs,sink) => { ...} )  
+
+					[event BUFFER](https://github.com/ACMESDS/jslab) methods using the following pattern:
+
+						BUFFER(ctx, (ievs, sink) => {  // sink the plugin's ingested ievs
+							if (ievs)   // there are ingested events
+								ievs.forEach( ev) { // process event ev
+								});
+
+							else // events exhausted so
+								sink([ {...}, {...} ]);  // respond with outputs oevs to be saved by the plugin  
+						});
+					
+					# native matlab-emulation 
+					
+					*#{title}*'s [matlab emulator](https://www.npmjs.com/package/mathjs) natively provides 
+					matrix arithmetics, symbolic calulations, sparse matricies and machine learning tools via:  
+
+						ME.exec( script, ctx, (ctx) => { ... } )
+					
+					as extended by its:
+					[LAS(linear algebraic systems)](https://github.com/mljs/matrix), 
+					[DSP(digitial signal processing)](https://www.npmjs.com/package/fft-js), 
+					[BAYES(bayes network interference)](https://www.npmjs.com/package/jsbayes), 
+					[GAMMA(standard gamma function)](https://www.npmjs.com/package/gamma), 
+					[HMM(hidden markov model solver)](https://www.npmjs.com/package/nodehmm), 
+					[MLE(maximum liklihood estimator)](https://www.npmjs.com/package/node-svd), 
+					[MVN(normal multivariates](https://www.npmjs.com/package/multivariate-normal), 
+					[NRAP(newton-raphson root finder)](https://www.npmjs.com/package/newton-raphson), 
+					[ZETA(riemann-zeta function](https://www.npmjs.com/package/math-riemann-zeta), and
+					[RNN(recurrent nural netroc](https://www.npmjs.com/package/recurrentjs) modules.
+
+					# task sharding
+					
+					Engines distribute a task to cores within *#{title}*'s compute cluster
+					using its [task sharding](https://github.com/ACMESDS/totem) mechanisim:
+
+						TASK.shard({  		// example
+							keys: "i,j,k",  	// e.g. array indecies
+							i: [0,1,2,3],  		// domain of index i
+							j: [4,8],				// domain of index j
+							k: [0],					// domain of index k
+							qos: 0,				// regulation time in ms if not zero
+							local: false, 		// enable to run task local, i.e. w/o workers and nodes
+							workers: 4, 		// limit number of workers (aka cores) per node
+							nodes: 3 			// limit number of nodes (aka locales) in the cluster
+						}, 
+							// here, a simple task that returns a message 
+							($) => "my result is " + (i + j*k) + " from " + $.worker + " on "  + $.node,
+
+							// here, a simple callback that displays the task results
+							(msg) => console.log(msg) 
+						);
+
+					Sharded tasks have access to the same modules (ME, etc) as local tasks.
+					
 	#accordion.Machines
 		:markdown
-			Engines employ a MAC = opencv | python | ... machine implemented under
-			**engine/ifs/MAC/MAC.cpp**, these machines being bound to **#{title}** using the 
-			*node-gyp rebuild* provided by *maint.sh bind*.  
+			All engines rely on a machine MAC = opencv | python | ... as implemented under
+			**engine/ifs/MAC/MAC.cpp** and bound to **#{title}** using *node-gyp rebuild* as 
+			provided by *maint.sh bind*.  
 			
-			All opencv-machines, for example, implements the following pattern:
+			opencv-machines, for example, implement the following pattern:
 
 				class OPORT { 								 	// output port
 					OPORT(str Name, V8OBJECT Parm) { 		// Initiallize 

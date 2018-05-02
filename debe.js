@@ -1,10 +1,4 @@
 ﻿// UNCLASSIFIED 
-/*
-To Do:
-+ estpr call during file grading should insert/update into estpr usecases testname=filename
-+ check if forms are still working
-*/
-
 /**
 @class DEBE
 @requires child_process
@@ -28,6 +22,15 @@ To Do:
 @requires geohack
 @requires jslab
 @requires randpr
+
+Required env vars: none
+
+Required openv.datasets:
+	profiles, viewers, apps
+	
+Required app.datasets:
+	voxels, files, events, queues, engines, dblogs, quizes
+	
 */
 
 var 									// globals
@@ -1464,12 +1467,13 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		engine: "SELECT * FROM app.engines WHERE least(?,1) LIMIT 1",
 		render: "./public/jade/",
 		
+		/*
 		sss: { // some streaming services
 			spoof: ENV.DEBUG + "/sss.exe?Name=spoof1&",
 			stats: ENV.DEBUG + "/gaussmix.exe?",
 			gaussmix: ENV.DEBUG + "/gaussmix.exe?",
 			thresher: ENV.SSS_THRESHER
-		},
+		}, 
 
 		wfs: { // wfs services
 			spoof: ENV.DEBUG + "/wfs.exe?Name=spoof1&",
@@ -1486,6 +1490,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			omar: ENV.WMS_OMAR,
 			geosrv: ENV.WMS_GEOSRV
 		},
+		*/
 		
 		mime: {
 			tour: ".",		 			//< enable totem touring 

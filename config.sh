@@ -13,7 +13,7 @@ export PROOFS=$PUBLIC/cars/ver0/ 			# unmodulated/unrotated images for testing
 export DEFAULT=$HERE
 export SCRIPTS=$HERE/clients/extjs/packages/ext-locale/build/ext-locale-
 export THEMES=$HERE/clients/themes
-export DEBUG=http://localhost:8080
+#export DEBUG=http://localhost:8080
 
 # Python
 export PYTHONPATH=$PYTHONPATH:$HERE/public/py
