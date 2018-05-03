@@ -2551,7 +2551,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 						var key = field.Field, type = field.Type.split("(")[0];
 						if ( key != "ID" && type != "geometry")
 							if ( key.indexOf("Save") == 0 && type == "json")   // hide these by default
-								cols.push( key + ".Json" + "." + escape(field.Comment).replace(/\./g, "$dot") );
+								cols.push( key + "." + type + "." + escape(field.Comment).replace(/\./g, "$dot") + ".hide");
 							else
 								cols.push( key + "." + type + "." + escape(field.Comment).replace(/\./g, "$dot") );
 					});

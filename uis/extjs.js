@@ -810,6 +810,7 @@ function DS(anchor) {
 				fParm = PARMS[ fKey ] || {Type: calc ? "mediumtext" : "text", Label:fKey, Special:""},
 				fType = fOpts[1] || fParm.Type || "text",
 				fDoc = unescape(fOpts[2] || "please follow link to document this field").replace(/\$dot/g,"."),
+				fMode = fOpts[3] || "",
 				//fLabel = fOpts[2] || fParm.Label || fKey,
 				//fChange = HISTORY[path+"."+fKey] || {Moderators:""},
 				fTip = [
@@ -846,8 +847,8 @@ function DS(anchor) {
 				//fTips = fTip.split("||"),
 				//fTip = fTips.pop() || "",
 				fChar = fType.charAt(0),
-				fHide = fChar >= "A" && fChar <= "Z",
-				fOff = false,
+				fHide = (fMode == "hide"), //fChar >= "A" && fChar <= "Z",
+				fOff = (fMode == "off"), //false,
 				fTipTitle = fKey; //fTips[0] || fKey; //fTips.pop() || fKey;
 
 			switch (fType.toLowerCase()) {

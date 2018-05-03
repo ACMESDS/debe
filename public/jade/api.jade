@@ -435,21 +435,21 @@ append site_body
 					GET /PLUGIN.run		View, execute, edit engine and manage PLUGIN job queues
 
 				An engine's usecase *context* can be agumented by optional keys:  
-				> [Export+](/#{ds}.add?Export=false) [/-](/#{ds}.sub?Export) writes engine results into a file  
-				> [Ingest+](/#{ds}.add?Ingest=false) [/-](/#{ds}.sub?Ingest) ingests engine results into the database  
-				> [Share+](/#{ds}.add?Share=false) [/-](/#{ds}.sub?Share) saves engine results to the status area  
-				> [Pipe+](/#{ds}.add?Pipe=doc) [/-](/#{ds}.sub?Pipe) regulates chips and events to the engine  
-				> [Description+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description) documents a usecase  
-				> [Config+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) defines usecase context with a js-engine  
-				> [Save+](/#{ds}.add?Save=doc) [/-](/#{ds}.sub?Save) aggregates engine results not captured in the Save_KEYs  
-				> [Save_KEY](/#{ds}.run?options=more) aggregates engine results [{at:"KEY", ...}, ...]  
-				> [Entry+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) prime context on entry using sql { KEY: "SELECT ....", ...}  
-				> [Exit+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) save context on exit using sql { KEY: "UPDATE ....", ...}  
+				> [Export+](/#{ds}.add?Export=false) [/-](/#{ds}.sub?Export) switch writes engine results into a file  
+				> [Ingest+](/#{ds}.add?Ingest=false) [/-](/#{ds}.sub?Ingest) switch ingests engine results into the database  
+				> [Share+](/#{ds}.add?Share=false) [/-](/#{ds}.sub?Share) switch returns engine results to the status area  
+				> [Pipe+](/#{ds}.add?Pipe=doc) [/-](/#{ds}.sub?Pipe) json regulates chips and events to the engine  
+				> [Description+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description) blog markdown documents a usecase  
+				> [Config+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) js-script defines usecase context  
+				> [Save+](/#{ds}.add?Save=doc) [/-](/#{ds}.sub?Save) json aggregates engine results not captured in the Save_KEYs  
+				> [Save_KEY](/#{ds}.run?options=more) json aggregates selected engine results from [{at:"KEY", ...}, ...]  
+				> [Entry+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) json primes context on entry using { KEY: "SELECT ....", ...}  
+				> [Exit+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) json saves context on exit using { KEY: "UPDATE ....", ...}  
 				
 				To place an engine into *#{title}*'s supervised Markov workflow, provide:  
-				> [Batch+](/#{ds}.add?Batch=0) [/-](/#{ds}.sub?Batch) workflow steps when event batch us supervised (0 disabled)  
-				> [Symbols+](/#{ds}.add?Symbols=[]) [/-](/#{ds}.sub?Symbols) override workflow default state symbols (null defaults)  
-				> [Steps+](/#{ds}.add?Steps=0) [/-](/#{ds}.sub?Steps) override workflow default process steps (0 defaults)
+				> [Batch+](/#{ds}.add?Batch=0) [/-](/#{ds}.sub?Batch) value overrides supervisor's batch size (0 disabled)  
+				> [Symbols+](/#{ds}.add?Symbols=[]) [/-](/#{ds}.sub?Symbols) value overrides supervisor's state symbols (null defaults)  
+				> [Steps+](/#{ds}.add?Steps=0) [/-](/#{ds}.sub?Steps) value overrides supervisor's observation interval (0 defaults)
 					
 				When executed, an engine's context is automatically extended with the following keys:  
 				> Host name of plugin  
@@ -476,7 +476,7 @@ append site_body
 				> \[ LINK ]( URL )  
 				> \[ FONT ]( TEXT )  
 				> !$ inline TeX $  ||  $$ break TeX $$ || a$ AsciiMath $ || m$ MathML $  
-				> \#{ KEY } || \#{ KEY }( SHORTCUT ) || \!{ EXPR }  || ^{ KEY as TeX matrix  }  
+				> \# { KEY } || \# { KEY }( SHORTCUT ) || \! { EXPR }  || ^{ KEY as TeX matrix  }  
 				> \#tag
 				
 				to document usecases.  For example:
@@ -543,7 +543,10 @@ append site_body
 							
 							require("fs").readFileSync("...")		// read code from file
 					}
-			
+
+				PLEASE NOTE: smop does properly translate matlab [ [a,b,...]; [c,d, ...]; ...] matricies.  Until this bug is 
+				fixed, manually	convert "matlabarray(cat(...))" python code to "matlabarray([ [a,b,...], [c,d,...], ....])".				
+
 		#fit.Examples
 			:markdown
 				js ex1 [ui](/jsdemo1.run) [run usecase test1](/jsdemo1.exe?Name=test1) [get usecases](/jsdemo1)
@@ -617,8 +620,7 @@ append site_body
 
 				On entry, its context is primed using its *entry* sql-queries.  On exit, its context keys 
 				can be exported by its *exit* sql-queries.   The "?" in sql-queries references the 
-				context *query* (as overridden by url query parameters).  The engine's content is also
-				provided an OS, JSON, and an SQL module.
+				context *query* (as overridden by url query parameters).  
 
 		#folder.Examples(dock="left")
 			//
