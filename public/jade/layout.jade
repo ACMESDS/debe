@@ -44,7 +44,7 @@ html(lang="en")
 				a <script src="/socket.io/socket.io.js"> tag -- its io() method.  Note: have been unable to get socket.io 2.x working
 				so reverting to socket.io 1.5.0.
 
-			if sockets && onencrypted
+			if sockets
 				script(src=urls.socketio)
 			else
 				script.

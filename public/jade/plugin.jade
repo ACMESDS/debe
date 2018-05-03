@@ -68,17 +68,17 @@ append site_body
 					[plugin](#{ds}.plugin) view by selecting the desired usecase and clicking *Execute*.  You may also 
 					execute *#{ds}* [directly](/api.view) by [usecase Name](/#{ds}.exe?name=CASE) or by [usecase ID](#{ds}.exe?id=CASE).
 					
-					Your *#{ds}* plugin **context** can include the following optional (but reserved) keys:  
-					> [Export+](/#{ds}.add?Export=false) [/-](/#{ds}.sub?Export) writes engine results into a file  
-					> [Ingest+](/#{ds}.add?Ingest=false) [/-](/#{ds}.sub?Ingest) ingests engine results into the database  
-					> [Share+](/#{ds}.add?Share=false) [/-](/#{ds}.sub?Share) saves engine results to the status area  
-					> [Pipe+](/#{ds}.add?Pipe=doc) [/-](/#{ds}.sub?Pipe) regulates chips and events to the engine  
-					> [Description+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description) documents a usecase  
-					> [Config+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) defines usecase context with a js-engine  
-					> [Save+](/#{ds}.add?Save=doc) [/-](/#{ds}.sub?Save) aggregates engine results not captured in the Save_KEYs  
-					> [Save_KEY](/#{ds}.run?options=more) aggregates engine results [{at:"KEY", ...}, ...]  
-					> [Entry+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) prime context on entry using { KEY: "SELECT ....", ...}  
-					> [Exit+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) save context on exit using { KEY: "UPDATE ....", ...}  
+					Your *#{ds}* plugin **context** can include the following optional ( add + / remove -) keys:  
+					> [Export+](/#{ds}.add?Export=false) [/-](/#{ds}.sub?Export) switch writes engine results into a file  
+					> [Ingest+](/#{ds}.add?Ingest=false) [/-](/#{ds}.sub?Ingest) switch ingests engine results into the database  
+					> [Share+](/#{ds}.add?Share=false) [/-](/#{ds}.sub?Share) switch returns engine results to the status area  
+					> [Pipe+](/#{ds}.add?Pipe=doc) [/-](/#{ds}.sub?Pipe) json regulates chips and events to the engine  
+					> [Description+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description) blog markdown documents a usecase  
+					> [Config+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) js-script defines usecase context  
+					> [Save+](/#{ds}.add?Save=doc) [/-](/#{ds}.sub?Save) json aggregates engine results not captured in the Save_KEYs  
+					> [Save_KEY](/#{ds}.run?options=more) json aggregates selected engine results from [{at:"KEY", ...}, ...]  
+					> [Entry+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) json primes context on entry using { KEY: "SELECT ....", ...}  
+					> [Exit+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) json saves context on exit using { KEY: "UPDATE ....", ...}  
 					
 					When executed, the **context** of your *#{ds}* plugin is automatically extended with keys:  
 					> Flow context of Markov/ROC supervisor  
@@ -91,9 +91,9 @@ append site_body
 					> Events event query for current voxel  
 					
 					To place your *#{ds}* plugin into #{title}'s Markov/ROC supervisor, simply provide keys:  
-					> [Batch+](/#{ds}.add?Batch=0) [/-](/#{ds}.sub?Batch) workflow steps to next batch update (0 disabled)  
-					> [Symbols+](/#{ds}.add?Symbols=[]) [/-](/#{ds}.sub?Symbols) override default state symbols (null defaults)  
-					> [Steps+](/#{ds}.add?Steps=0) [/-](/#{ds}.sub?Steps) override default process steps (0 defaults)
+					> [Batch+](/#{ds}.add?Batch=0) [/-](/#{ds}.sub?Batch) value overrides supervisor's batch size (0 disabled)  
+					> [Symbols+](/#{ds}.add?Symbols=[]) [/-](/#{ds}.sub?Symbols) value overrides supervisor's state symbols (null defaults)  
+					> [Steps+](/#{ds}.add?Steps=0) [/-](/#{ds}.sub?Steps) value overrides supervisor's observation interval (0 defaults)
 					
 					You can control how events are regulated to your *#{ds}* engine using 
 					your [Pipe+](/#{ds}.add?Pipe=doc) [/-](/#{ds}.sub?Pipe) key:  
@@ -111,7 +111,7 @@ append site_body
 					> \[ LINK ]( URL )   
 					> \[ FONT ]( TEXT )  
 					> !$ inline TeX $  ||  $$ break TeX $$ || a$ AsciiMath $ || m$ MathML $  
-					> \#{ KEY } || \#{ KEY }( SHORTCUT ) || \!{ EXPR }  || ^{ KEY as TeX matrix  }  
+					> \# { KEY } || \# { KEY }( SHORTCUT ) || \! { EXPR }  || ^{ KEY as TeX matrix  }  
 					> \#tag
 				
 					See [plot](/plot.view?help), [treefan](/treefan.view?help), [treemap](/treefan.view?help), [force](/force.view?help), 

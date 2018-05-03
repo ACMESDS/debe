@@ -340,10 +340,10 @@ append site_body
 
 					The **hold** widget:
 
-						#hold.FIELD(path="/DATASET",cols="DISPLAY,VALUE,...")
+						#hold.FIELD(path="/DATASET",cols="DISPLAY,VALUE, ...")
 
-					holds data for comboboxes (with given DISPLAY VALUE cols) associated with the
-					FIELD.combo cols used in other terminals.
+					holds data for comboboxes (with given DISPLAY and VALUE cols) associated with the
+					FIELD.combo cols referenced in terminals.
 
 			#fit.Widget.Attributes
 
@@ -362,21 +362,22 @@ append site_body
 						region = north | south | east | west | center border region
 						page = number of records to display 
 						refresh = data store refresh rate in seconds
-						blogs = "KEY, ..." restrict bloggable fields
 						sorts = "KEY, ..." add sorters
 						plugins = "crbXCRF0" editor(cell/row), selector(boX/Column/Row), Filter(F), disable(0)
 
 					Field Attributes
 
-						cols = "KEY.type.tip, KEY*, KEY*count, ... " field list
-						cols = "group(KEY,group(KEY, ...), ...), ..." field groups
-						cols = "Pivot(NodeID,NodeCount,KEY,KEY, ...), ..." field pivots
-						pivots = "KEY,KEY,..." pivot shortcut
+						cols = "KEY.TYPE.TIP.QUAL, ..."
+						cols = "KEY*, ..."
+						cols = "KEY*count, ..."
+						cols = "group(KEY,group(KEY, ...), ...), ..."
+						cols = "Pivot(NodeID,NodeCount,KEY,KEY, ...), ..."
+						pivots = "KEY,KEY,..."
 
 					where
 					> KEY* matches "KEY0, KEY1, ..." if found in the **Parms** dataset  
 					> KEY*N returns "KEY0, KEY1, ... KEY[N-1]"  
-					> type can be (capitialized hides field)  
+					> TYPE can be  
 						>	int | bigint | tinyint | autonum | auto  
 						>	checkbox | boolean  
 						>	varchar | text  
@@ -385,9 +386,10 @@ append site_body
 						>	file | svg | zilch | combo | geometry  
 						>	number | float | double | percent | money  
 						>	date | datetime | mediumdate | defaultdate | iso8601long | iso8601short |shortdate | longdate | fulldatetime | monthday | shorttime | longtime | sortabledatetime | universalsortabledatetime | yearmonth  
-						>	##... action tokens from class img-Action-value0 | 1 | 2 ...
+						>	##... action tokens from class img-Action-value0 | 1 | 2 ...   
+					> QUAL can be hide | off
 
-					Grid Switches
+					Grid Attributes
 
 						calc	allow grid cell expressions and cell shifting
 						crush	allow minimization
