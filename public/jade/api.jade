@@ -473,7 +473,8 @@ append site_body
 				and where the *Description* key may contain [blogging tags](/skinguide.view) of the form:
 
 				> \[ VIEW ; WIDTH ; HEIGHT ]( DS ? PARM ; PARM ; ... )  
-				> \[ LINK ]( URL )   
+				> \[ LINK ]( URL )  
+				> \[ FONT ]( TEXT )  
 				> !$ inline TeX $  ||  $$ break TeX $$ || a$ AsciiMath $ || m$ MathML $  
 				> \#{ KEY } || \#{ KEY }( SHORTCUT ) || \!{ EXPR }  || ^{ KEY as TeX matrix  }  
 				> \#tag
@@ -503,17 +504,17 @@ append site_body
 					module.exports = {
 						clear: true || false,		// to delete then recreate all usecases 
 						
-						modify: {  // to change sql types of existing keys, e.g. MyFloatParm: "int(11)"
+						mods || modify: {  // to change sql types of existing keys, e.g. MyFloatParm: "int(11)"
 							KEY: "sql type", ...
 						},
 						
-						usecase: {  // to add sql keys of specified types, e.g. MyJsonParm: "json"
+						keys || adds || usecase: {  // to add sql keys of specified types, e.g. MyJsonParm: "json"
 							KEY: "sql type", ...
 						},
 						
-						smop: "m-file path" // path to m-file to convert to a python engine
+						smop: "NAME", // convert supplied engine matlab code to python
 						
-						engine:  
+						code || engine:  
 							function NAME(ctx,res) {   // js engine
 								ctx.Save = [ ... ]; 
 								res(ctx); 
@@ -533,6 +534,14 @@ append site_body
 							||
 							
 							`Save = [ ... ]; `				// matlab-emulated engine
+							
+							||
+							
+							`... #grid.NAME(...) ...  `						// jade skinning engine
+							
+							|| 
+							
+							require("fs").readFileSync("...")		// read code from file
 					}
 			
 		#fit.Examples

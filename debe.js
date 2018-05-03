@@ -2551,9 +2551,9 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 						var key = field.Field, type = field.Type.split("(")[0];
 						if ( key != "ID" && type != "geometry")
 							if ( key.indexOf("Save") == 0 && type == "json")   // hide these by default
-								cols.push( key + ".Json" + field.Comment.skinSafe() );
+								cols.push( key + ".Json" + "." + escape(field.Comment).replace(/\./g, "$dot") );
 							else
-								cols.push( key + "." + type + field.Comment.skinSafe() );
+								cols.push( key + "." + type + "." + escape(field.Comment).replace(/\./g, "$dot") );
 					});
 					break;
 					
@@ -3117,8 +3117,52 @@ function siteContext(req, cb) {
 		return [this].linkify(ref);
 	},
 	
+	/*
 	function skinSafe() {
 		return this.replace(/\,/g,";").replace(/\(/g,"[").replace(/\)/g,"]").replace(/\./g, ":");
+	}, */
+	
+	function renderBlog(rec, ds, cb) {
+
+		function renderJAX(jaxList,rtn,cb) {
+			var 
+				rendered = 0, renders = jaxList.length;
+
+			//Log("jax",renders);
+			jaxList.each( function (n,jax) {
+
+				JAX.typeset({
+					math: jax.jax,
+					format: jax.fmt, //"TeX",  // TeX, inline-TeX, AsciiMath, MathML
+					//html: true,
+					mml: true
+				}, function (d) {
+					rtn = rtn.replace("!jax"+n+".", d.mml);
+
+					//Log("jax", rendered, renders);
+					if ( ++rendered == renders ) cb(rtn);
+				});
+
+			});
+
+			if ( !renders ) cb(rtn);
+		}
+
+		var 
+			jaxList = [], cache = {}, $ = {}, tagList = [];
+
+		renderJAX( jaxList, this.markdown(jaxList,cache,$,tagList,rec), function (html) {
+			cb(html);					
+			tagList.forEach( function (tag,n) {  // tag topics
+				sql.query("INSERT INTO app.tags SET `On`=now(),? ON DUPLICATE KEY UPDATE `On`=now(),Views=Views+1,?", [{
+						Tag: tag,
+						Message: html,
+						To: client
+					}, {Message: html}
+				]); 
+			});
+		}); 
+
 	},
 	
 	function markdown(jaxList, cache, $, tagList, rec) {
@@ -3131,6 +3175,7 @@ function siteContext(req, cb) {
 					case "Array": return "[" + val.joinify(", ", function (val) {
 						return val.toFixed ? val.toFixed(2) : val+"";
 					}) + "]";
+					case "Date": return val+"";
 					case "Object": 
 						var rtns = [];
 						for (var key in val) 
@@ -3144,140 +3189,145 @@ function siteContext(req, cb) {
 				return (val == 0) ? "0" : "null";
 		}
 		
-		for (var key in rec) try { $[key] = JSON.parse( rec[key] ); } catch (err) {};
+		for (var key in rec) try { $[key] = JSON.parse( rec[key] ); } catch (err) {}
 	
 		return this
-		// value substitutions
-		.replace(/\^\{(.*?)\}/g, function (str,key) {  // ^{ TeX matrix key } markdown
-			function texify(recs) {
-				var tex = [];
-				recs.forEach( function (rec) {
-					if (rec.forEach) {
-						rec.forEach( function (val,idx) {
-							rec[idx] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : JSON.stringify(val);
-						});
-						tex.push( rec.join(" & ") );
+			// record substitutions
+			.replace(/\^\{(.*?)\}/g, function (str,key) {  // ^{ TeX matrix key } markdown
+				function texify(recs) {
+					var tex = [];
+					recs.forEach( function (rec) {
+						if (rec.forEach) {
+							rec.forEach( function (val,idx) {
+								rec[idx] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : JSON.stringify(val);
+							});
+							tex.push( rec.join(" & ") );
+						}
+						else
+							tex.push( rec.toFixed ? rec.toFixed(2) : rec.toUpperCase ? rec : JSON.stringify(rec) );
+					});	
+					return  "\\left[ \\begin{matrix} " + tex.join("\\\\") + " \\end{matrix} \\right]";
+				}
+
+				if (  key in cache )
+					return cache[key];
+
+				else {
+					try {
+						var val = eval( `$.${key}` );
 					}
-					else
-						tex.push( rec.toFixed ? rec.toFixed(2) : rec.toUpperCase ? rec : JSON.stringify(rec) );
-				});	
-				return  "\\left[ \\begin{matrix} " + tex.join("\\\\") + " \\end{matrix} \\right]";
-			}
+					catch (err) {
+						var val =  rec[key];
+					}
+					return cache[key] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : texify(val);
+				}							
+			})
+			/*.replace(/\#\{(.*?)\}\((.*?)\)/g, function (str,key,short) {  // #{ key }( short ) markdown
+				if (  key in cache )
+					return cache[key];
 
-			if (  key in cache )
-				return cache[key];
+				else {
+					try {
+						var val = eval( `$.${key}` );
+					}
+					catch (err) {
+						var val =  rec[key];
+					}
+					return cache[key] = cache[short] = pretty(val);
+				}							
+			})*/
+			.replace(/\#\{(.*?)\}/g, function (str,key) {  // #{ key } markdown
+				//Log(key,cache);
+				if (  key in cache )
+					return cache[key];
 
-			else {
-				try {
-					var val = eval( `$.${key}` );
+				else {
+					try { var val = eval( `$.${key}` ); } catch (err) { }
+					return cache[key] = pretty(val || rec[key]);
+				}							
+			})
+			.replace(/\!{(.*?)\}/g, function (str,expr) { // !{ js expression } markdown
+				function Eval(expr) {
+					try {
+						return eval(expr);
+					} 
+					catch (err) {
+						return err+"";
+					}
 				}
-				catch (err) {
-					var val =  rec[key];
-				}
-				return cache[key] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : texify(val);
-			}							
-		})
-		/*.replace(/\#\{(.*?)\}\((.*?)\)/g, function (str,key,short) {  // #{ key }( short ) markdown
-			if (  key in cache )
-				return cache[key];
+				return Eval(expr);
+			})
 
-			else {
-				try {
-					var val = eval( `$.${key}` );
-				}
-				catch (err) {
-					var val =  rec[key];
-				}
-				return cache[key] = cache[short] = pretty(val);
-			}							
-		})*/
-		.replace(/\#\{(.*?)\}/g, function (str,key) {  // #{ key } markdown
-			//Log(key,cache);
-			if (  key in cache )
-				return cache[key];
+			// inline code highlighting
+			.replace(/(.*?):<br><br>(.*?)<br><br>/g, function (str, intro, code) {
+				return intro + code.tag("code").tag("pre");
+			})
+			.replace(/(.*?):\n\n(.*?)\n\n/g, function (str, intro, code) {
+				return intro + code.tag("code").tag("pre");
+			})
 
-			else {
-				try {
-					var val = eval( `$.${key}` );
+			// mathjax equations
+			.replace(/\$\$(.*?)\$\$/g, function (str,jax) {  //  $$ standalone TeX $$ markdown
+				jaxList.push({ jax: jax, fmt:"TeX"});
+				return "!jax"+(jaxList.length-1)+".";
+			})
+			.replace(/a\$(.*?)\$/g, function (str,jax) {  // a$ ascii math $ markdown
+				jaxList.push({ jax: jax, fmt:"asciiMatch"});
+				return "!jax"+(jaxList.length-1)+".";
+			})
+			.replace(/m\$(.*?)\$/g, function (str,jax) {  // m$ math ML $ markdown
+				jaxList.push({ jax: jax, fmt:"MathML"});
+				return "!jax"+(jaxList.length-1)+".";
+			})
+			.replace(/!\$(.*?)\$/g, function (str,jax) {  // !$ inline TeX $ markdown
+				jaxList.push({ jax: jax, fmt:"inline-TeX"});
+				return "!jax"+(jaxList.length-1)+".";
+			})	
+
+			// links, views, and highlighting
+			.replace(/\[([^\[\]]*?)\]\((.*?)\)/g, function (str,link,src) {  // [link](src) or [view;w;h;...](src) or [font](text) markdown
+				var
+					links = link.split(";"),
+					view = links[0],
+					w = links[1] || 100,
+					h = links[2] || 100,
+					keys = {},
+					path = ds.parsePath(keys),
+					path = src.replace(/;/g,"&").parsePath(keys) || path,
+					opsrc =  `/${view}.view`.tag( "?", Copy({w:w,h:h,src:path}, keys) );
+
+				//Log(view, keys, opsrc);
+				switch (view) {
+					case "image":
+					case "img":
+						return "".tag("img", { src:src, width:w, height:h });
+					case "post":
+					case "iframe":
+						return "".tag("iframe", { src:src, width:w, height:h });
+					case "red":
+					case "blue":
+					case "green":
+					case "yellow":
+					case "orange":
+					case "black":
+						return src.tag("font",{color:view});
+					default:
+						//Log( "".tag("iframe",{ src: opsrc, width:w, height:h } ) );
+						return (view == link)
+								? link.tag("a",{ href:src }) 
+								: "".tag("iframe",{ src: opsrc, width:w, height:h } ) ;
 				}
-				catch (err) {
-					var val =  rec[key];
-				}
-				return cache[key] = pretty(val);
-			}							
-		})
-		.replace(/\!{(.*?)\}/g, function (str,expr) { // !{ js expression } markdown
-			function Eval(expr) {
-				try {
-					return eval(expr);
-				} 
-				catch (err) {
-					return err+"";
-				}
-			}
-			return Eval(expr);
-		})
+			})
+			.replace(/href=(.*?)\>/g, function (str,ref) { // follow <a href=REF>A</a> links
+				var q = (ref.charAt(0) == "'") ? '"' : "'";
+				return `href=${q}javascript:navigator.follow(${ref},BASE.user.client,BASE.user.source)${q}>`;
+			})
 
-		// inline code highlighting
-		.replace(/(.*?):<br><br>(.*?)<br><br>/g, function (str, intro, code) {
-			return intro + code.tag("code").tag("pre");
-		})
-		
-		// mathjax equations
-		.replace(/\$\$(.*?)\$\$/g, function (str,jax) {  //  $$ standalone TeX $$ markdown
-			jaxList.push({ jax: jax, fmt:"TeX"});
-			return "!jax"+(jaxList.length-1)+".";
-		})
-		.replace(/a\$(.*?)\$/g, function (str,jax) {  // a$ ascii math $ markdown
-			jaxList.push({ jax: jax, fmt:"asciiMatch"});
-			return "!jax"+(jaxList.length-1)+".";
-		})
-		.replace(/m\$(.*?)\$/g, function (str,jax) {  // m$ math ML $ markdown
-			jaxList.push({ jax: jax, fmt:"MathML"});
-			return "!jax"+(jaxList.length-1)+".";
-		})
-		.replace(/!\$(.*?)\$/g, function (str,jax) {  // !$ inline TeX $ markdown
-			jaxList.push({ jax: jax, fmt:"inline-TeX"});
-			return "!jax"+(jaxList.length-1)+".";
-		})	
-
-		// link references
-		.replace(/\[([^\[\]]*?)\]\((.*?)\)/g, function (str,link,src) {  // [link](src) or [view;w;h;...](src) markdown
-			var
-				links = link.split(";"),
-				view = links[0],
-				w = links[1] || 100,
-				h = links[2] || 100,
-				keys = {},
-				path = ds.parsePath(keys),
-				path = src.replace(/;/g,"&").parsePath(keys) || path,
-				opsrc =  `/${view}.view`.tag( "?", Copy({w:w,h:h,src:path}, keys) );
-
-			//Log(view, keys, opsrc);
-			switch (view) {
-				case "image":
-				case "img":
-					return "".tag("img", { src:src, width:w, height:h });
-				case "post":
-				case "iframe":
-					return "".tag("iframe", { src:src, width:w, height:h });
-				default:
-					//Log( "".tag("iframe",{ src: opsrc, width:w, height:h } ) );
-					return (view == link)
-							? link.tag("a",{ href:src }) 
-							: "".tag("iframe",{ src: opsrc, width:w, height:h } ) ;
-			}
-		})
-		.replace(/href=(.*?)\>/g, function (str,ref) { // follow <a href=REF>A</a> links
-			var q = (ref.charAt(0) == "'") ? '"' : "'";
-			return `href=${q}javascript:navigator.follow(${ref},BASE.user.client,BASE.user.source)${q}>`;
-		})
-
-		// smart tags
-		.replace(/\#(.*?) /g, function (str,tag) {  // #topic tag
-			tagList.push(tag);
-			return "";
-		});
+			// smart tags
+			.replace(/\#(.*?) /g, function (str,tag) {  // #topic tag
+				tagList.push(tag);
+				return "";
+			});
 	}		
 	
 ].extend(String);
@@ -3306,59 +3356,13 @@ function siteContext(req, cb) {
 	@param [Function] cb callback(recs) blogified version of records
 	*/
 
-		function renderRecord(rtn, rec, ds, cb) {  // blog=key,... request flag
-						
-			function renderJAX(jaxList,rtn,cb) {
-				var 
-					rendered = 0, renders = jaxList.length;
-
-				//Log("jax",renders);
-				jaxList.each( function (n,jax) {
-
-					JAX.typeset({
-						math: jax.jax,
-						format: jax.fmt, //"TeX",  // TeX, inline-TeX, AsciiMath, MathML
-						//html: true,
-						mml: true
-					}, function (d) {
-						rtn = rtn.replace("!jax"+n+".", d.mml);
-
-						//Log("jax", rendered, renders);
-						if ( ++rendered == renders ) cb(rtn);
-					});
-
-				});
-
-				if ( !renders ) cb(rtn);
-			}
-
-			var 
-				jaxList = [], cache = {}, $ = {}, tagList = [];
-
-			var			
-				msg = rtn.markdown(jaxList,cache,$,tagList,rec);
-
-			renderJAX( jaxList, msg, function (msg) {
-				cb(msg);					
-				tagList.forEach( function (tag,n) {  // tag topics
-					sql.query("INSERT INTO app.tags SET `On`=now(),? ON DUPLICATE KEY UPDATE `On`=now(),Views=Views+1,?", [{
-							Tag: tag,
-							Message: msg,
-							To: client
-						}, {Message: msg}
-					]); 
-				});
-			}); 
-
-		}
-
 		var recs = this, rendered = 0, renders = recs.length;
 
 		keys.each(function (n,key) {
 			recs.each( function (n, rec) {
 				if ( val = rec[key] )
 					if (val.constructor == String)
-						renderRecord( val, rec, "/"+ds+"?ID="+rec.ID, function (html) {
+						val.renderBlog( rec, "/"+ds+"?ID="+rec.ID, function (html) {
 							rec[key] = html;
 							//Log("rec",rendered, renders);
 							if ( ++rendered == renders ) cb(recs);

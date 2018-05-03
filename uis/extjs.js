@@ -809,7 +809,7 @@ function DS(anchor) {
 				fKey = fLabel = fOpts[0],
 				fParm = PARMS[ fKey ] || {Type: calc ? "mediumtext" : "text", Label:fKey, Special:""},
 				fType = fOpts[1] || fParm.Type || "text",
-				fDoc = fOpts[2] || "please add comment to document this field",
+				fDoc = unescape(fOpts[2] || "please follow link to document this field").replace(/\$dot/g,"."),
 				//fLabel = fOpts[2] || fParm.Label || fKey,
 				//fChange = HISTORY[path+"."+fKey] || {Moderators:""},
 				fTip = [
@@ -826,7 +826,7 @@ function DS(anchor) {
 						Ext.create('Ext.tip.ToolTip', {  // grid tooltip
 							target	: me.getEl(),                 
 							html	 	: me.qtip,
-							title	 	: me.qtitle,
+							//title	 	: me.qtitle,
 							autoHide : true, 
 							closable: true,
 							//resizable: true,
@@ -881,7 +881,7 @@ function DS(anchor) {
 						width		: fType.length*20,
 						text		: fLabel,
 						qtip		: fTip, 
-						qtitle	 	: fTipTitle,
+						//qtitle	 	: fTipTitle,
 						renderer 	: function(cellVal, cellMeta, rec, rowIdx, colIdx, store, view) { 
 							return "";
 						},
@@ -908,7 +908,7 @@ function DS(anchor) {
 						width		: 50,
 						text		: fLabel,
 						qtip		: fTip, 
-						qtitle	 	: fTipTitle,
+						//qtitle	 	: fTipTitle,
 						editor		: {
 							xtype: 'checkboxfield',
 							defaultValue: 0,
@@ -939,7 +939,7 @@ function DS(anchor) {
 						width		: 100,
 						text		: fLabel,
 						qtip		: fTip, 
-						qtitle	 	: fTipTitle,
+						//qtitle	 	: fTipTitle,
 						editor		: {	
 							xtype: 'datefield',
 							format: DATES.MediumDate,
@@ -971,7 +971,7 @@ function DS(anchor) {
 						width		: 50,
 						text		: fLabel,
 						qtip		: fTip, 
-						qtitle	 	: fTipTitle,
+						//qtitle	 	: fTipTitle,
 						editor		: {	
 							xtype: 'numberfield',
 							format: "0.0%",
@@ -1001,7 +1001,7 @@ function DS(anchor) {
 						width		: 50,
 						text		: fLabel,
 						qtip		: fTip, 
-						qtitle	 	: fTipTitle,
+						//qtitle	 	: fTipTitle,
 						editor		: {	
 							xtype: 'numberfield',
 							format: "0.0000",
@@ -1031,7 +1031,7 @@ function DS(anchor) {
 						width		: 50,
 						text		: fLabel,
 						qtip		: fTip, 
-						qtitle	 	: fTipTitle,
+						//qtitle	 	: fTipTitle,
 						editor		: {	
 							xtype: 'numberfield',
 							format: "0",
@@ -1064,7 +1064,7 @@ function DS(anchor) {
 						width		: 50,
 						text		: fLabel,
 						qtip		: fTip, 
-						qtitle	 	: fTipTitle,
+						//qtitle	 	: fTipTitle,
 						formatter	: "number('0')",
 						editor		: {	
 							xtype: 'numberfield',
@@ -1093,7 +1093,7 @@ function DS(anchor) {
 						width		: 75,
 						text		: fLabel,
 						qtip		: fTip, 
-						qtitle	 	: fTipTitle,
+						//qtitle	 	: fTipTitle,
 						formatter	: "number('$0.00')",
 						editor		: {
 							xtype: 'numberfield',
@@ -1130,7 +1130,7 @@ function DS(anchor) {
 						text		: fLabel,
 						cellWrap: true,
 						qtip		: fTip, 
-						qtitle	 	: fTipTitle,
+						//qtitle	 	: fTipTitle,
 						/*
 						editor	: {
 							xtype: "htmleditor",
@@ -1193,8 +1193,8 @@ function DS(anchor) {
 						locked		: true,
 						width		: 10,
 						text		: fLabel,
-						qtip		: fTip, 
-						qtitle	 	: fTipTitle
+						qtip		: fTip
+						//qtitle	 	: fTipTitle
 					};
 
 				case 'x':		// text area
@@ -1215,7 +1215,7 @@ function DS(anchor) {
 						width		: 400,
 						text		: fLabel,
 						qtip		: fTip, 
-						qtitle	 	: fTipTitle,
+						//qtitle	 	: fTipTitle,
 						editor		: {	
 							xtype: 'textareafield', 
 							format: "",
@@ -1329,7 +1329,7 @@ function DS(anchor) {
 						width		: 100,
 						text		: fLabel,
 						qtip		: fTip, 
-						qtitle	 	: fTipTitle,
+						//qtitle	 	: fTipTitle,
 						editor		: {	
 							xtype		: 'textfield',
 							disabled: fOff
@@ -1360,7 +1360,7 @@ function DS(anchor) {
 						width		: 30,
 						text		: fLabel,
 						qtip		: fTip, 
-						qtitle	 	: fTipTitle,
+						//qtitle	 	: fTipTitle,
 						editor		: {	
 							xtype: 'filefield',
 							format: "",
@@ -1419,7 +1419,7 @@ function DS(anchor) {
 							width		: 100,
 							text		: fLabel,
 							qtip		: fTip, 
-							qtitle	 	: fTipTitle,
+							//qtitle	 	: fTipTitle,
 							editor		: {
 								xtype: 'combobox',
 								disabled: fOff,
@@ -1473,7 +1473,7 @@ function DS(anchor) {
 							width		: 100,
 							text			: fLabel,
 							qtip			: fTip, 
-							qtitle	 	: fTipTitle,
+							//qtitle	 	: fTipTitle,
 							editor		: {	
 								xtype: 'textfield',
 								disabled: fOff,
@@ -1503,7 +1503,7 @@ function DS(anchor) {
 							width		: 100,
 							text			: fLabel,
 							qtip			: fTip, 
-							qtitle	 		: fTipTitle,
+							//qtitle	 		: fTipTitle,
 							editor		: {	
 								xtype: 'datefield',
 								format: DATES.MediumDate,
@@ -1533,7 +1533,7 @@ function DS(anchor) {
 							width		: 100,
 							text			: fLabel,
 							qtip			: fTip, 
-							qtitle	 		: fTipTitle,
+							//qtitle	 		: fTipTitle,
 							editor		: {	
 								xtype: 'textfield',
 								defaultValue: "",
@@ -4318,14 +4318,14 @@ WIDGET.prototype.form = function () {
 							: Col.editor.xtype,
 						value		: Col.editor.defaultValue,
 						qtip		: Col.qtip,
-						qtitle		: Col.qtitle,
+						//qtitle		: Col.qtitle,
 						disabled	: false,
 						listeners	: {
 							afterrender: function (me) {
 								Ext.create('Ext.tip.ToolTip', {  // field tooltip
 									target	: me.getEl(),
 									html	 : me.qtip,
-									title	 : me.qtitle,
+									//title	 : me.qtitle,
 									autoHide : true,
 									//closable : true,
 									//maxWidth : 300,
