@@ -35,8 +35,7 @@ Required app.datasets:
 
 var 									// globals
 	ENV = process.env,
-	WINDOWS = process.platform == 'win32',		//< Is Windows platform
-	CRUDE = {select:1,delete:1,insert:1,update:1,execute:1};
+	WINDOWS = process.platform == 'win32';		//< Is Windows platform
 
 var 									// NodeJS modules
 	CP = require("child_process"), 		//< Child process threads
@@ -73,7 +72,8 @@ var
 		
 	plugins: LAB.libs,
 		
-	autoruns: {},
+	autoruns: {  //< reserved for autorun plugins determined at startup
+	},
 		
 	ingester: function ingester( opts, query ) {
 		try {
@@ -170,17 +170,19 @@ var
 				body: "Just FYI"
 			});
 		
-		sql.getTables("app", function (tables) {
-			tables.forEach( function (table) {
-				if ( plugin = FLEX.execute[table] )
+		sql.getTables("app", function (tables) {  // scan through all tables looking for plugins participating w ingest
+			tables.forEach( function (dsn) {
+				if ( FLEX.execute[dsn] )
 					sql.forFirst(
 						"",
-						"SELECT ID FROM app.?? WHERE Name='ingest' AND Autorun=1 LIMIT 1", 
-						[table], function (rec) {
+						"SELECT * FROM app.?? WHERE Name='ingest' AND Autorun=1 LIMIT 1", 
+						[dsn], function (ctx) {
 						
-						if (rec) {
-							autoruns[table] = plugin;
-							Trace("AUTORUN "+table);
+						if (ctx) {
+							delete ctx.ID;
+							delete ctx.Name;
+							autoruns[dsn] = Copy(ctx, {});
+							Trace("AUTORUN "+dsn);
 						}
 					});
 			});
@@ -342,6 +344,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 				});
 			});
 			
+			/*
 			JSDB.forEach(opts.trace, gets.ungraded, [], function (file, sql) {
 				Trace("GRADE "+file.Name);
 
@@ -374,6 +377,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 						]);
 				});
 			});
+			*/
 			
 			JSDB.forEach("", gets.reingest, [], function (file, sql) {
 				Trace("INGEST "+file.Name);
@@ -543,6 +547,29 @@ Further information about this file is available ${paths.moreinfo}. `;
 			JSDB.forEach(opts.trace, gets.uncert, [opts.certage], function (client, sql) {
 			});		
 			
+		}),
+			
+		dogAutoruns: Copy({
+			//cycle: 600,
+			trace: ""
+		}, function (sql, opts) {
+
+			for (var dsn in DEBE.autoruns) {
+				sql.query("SELECT ID, ? AS _Plugin FROM app.? WHERE Autorun", [dsn, dsn])
+				.on("result", (run) => {
+					exePlugin({
+						sql: sql,
+						client: "watchdog",
+						group: "app",
+						table: run._Plugin,
+						query: {ID: run.ID}
+					}, function (msg) {
+						Log(dsn,msg);
+					});
+				});
+				
+				sql.query("UPDATE app.? SET Autorun=0", [dsn]);
+			}
 		}),
 			
 		dogEngines: Copy({
@@ -1140,7 +1167,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		pivbrief: renderSkin,
 		
 		// plugins
-		exe: exeEngine,
+		exe: exePlugin,
 		add: extendPlugin,
 		sub: retractPlugin
 	},
@@ -1556,6 +1583,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	*/
 	isSpawned: false, 			//< Enabled when this is child server spawned by a master server
 
+	/*
 	gradeIngest: function (sql, file, cb) {  //< callback cb(stats) or cb(null) if error
 		
 		var ctx = {
@@ -1585,7 +1613,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					cb(null);
 			}); 
 		
-	},
+	}, */
 		
 	/**
 	@cfg {Object}
@@ -1684,8 +1712,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		//Log("ingest file", filePath, fileName, fileID);
 		
-		var autoruns = DEBE.autoruns;
-		
 		HACK.ingestFile(sql, filePath, fileID, function (aoi) {
 			
 			Log("INGESTED", aoi);
@@ -1716,12 +1742,16 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 							});	
 				});
 			}); */
-			Each(autoruns, function (autorun) {
+			Each(DEBE.autoruns, function (dsn, ctx) {
+				sql.query(
+					"INSERT INTO app.?? SET ? ON DUPLICATE KEY UPDATE Autorun=1",
+					[dsn, Copy(ctx, {Name: fileName})]
+				);
+				/*
 				sql.query(
 					"UPDATE app.?? SET Autorun=1 WHERE Name = ?",
-					[autorun, fileName], 
-					(err) => Log("auto", err)
-				);
+					[name, fileName]
+				);  */
 			});
 		});
 	},
@@ -2224,10 +2254,10 @@ function retractPlugin(req,res) {
 	});
 }
 	
-function exeEngine(req,res) {
+function exePlugin(req,res) {
 /**
 @private
-@method exeEngine
+@method exePlugin
 Interface to execute a dataset-engine plugin with a specified usecase as defined in [api](/api.view).
 @param {Object} req http request
 @param {Function} res Totem response callback
@@ -2417,13 +2447,16 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						DEBE.getFile( host, `${host}/${fileName}`, function (area, fileID) {
 							HACK.ingestList( sql, evs, fileID, function (aoi) {
 								Log("INGESTED",aoi);
-								Log(autoruns);
-								Each(autoruns, function (autorun) {
+								Each(autoruns, function (dsn,ctx) {
+									sql.query(
+										"INSERT INTO app.?? SET ? ON DUPLICATE KEY UPDATE Autorun=1",
+										[dsn, Copy(ctx, {Name: fileName})]
+									);
+									/*
 									sql.query(
 										"UPDATE app.?? SET Autorun=1 WHERE Name = ?",
-										[autorun, fileName], 
-										(err) => Log("auto", err)
-									);
+										[name, fileName]
+									);*/
 								});
 								
 							});
@@ -2595,8 +2628,8 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		
 		function renderTable( ) {
 			sql.query(
-				"SHOW FULL COLUMNS FROM ??.??", 
-				[ FLEX.dbRoutes[req.table] || req.group, req.table ] , 
+				"SHOW FULL COLUMNS FROM ??", 
+				[ FLEX.reroute[req.table] || (req.group + "." + req.table) ] , 
 				function (err,fields) {
 
 					if (err) // might be a file
@@ -2764,7 +2797,39 @@ Chapter 2
 		res(DEBE.errors.badOffice);
 }
 
-function Initialize (cb) {
+function Trace(msg,sql) {
+	msg.trace("D>",sql);
+}
+
+function siteContext(req, cb) {
+	
+	cb( Copy(DEBE.site, {
+		table: req.table,
+		dataset: req.table,
+		type: req.type,
+		parts: req.parts,
+		action: req.action,
+		org: req.org,
+		client: req.client,
+		flags: req.flags,
+		query: req.query,
+		joined: req.joined,
+		profile: req.profile,
+		group: req.group,
+		//search: req.search,
+		session: req.session,
+		util: {
+			cpu: (req.log.Util*100).toFixed(0),
+			disk: ((req.profile.useDisk / req.profile.maxDisk)*100).toFixed(0)
+		},
+		started: DEBE.started,
+		filename: DEBE.paths.jaderef,
+		url: req.url
+	}) );
+	
+}
+
+function Initialize (sql) {
 /**
 @method Initialize
 @member DEBE
@@ -2901,11 +2966,11 @@ Initialize DEBE on startup.
 	 * Initialize the FLEX and ATOM interfaces
 	 */
 
-		Trace("INIT SQLIF");
-		Each( CRUDE, function (n,routes) {  // redirect dataset crude calls
-			DEBE[n] = FLEX[n].ds;
-			DEBE.byActionTable[n] = FLEX[n];
-		});	
+		Trace("INIT CRUDE");
+		for ( crude in {select:1,delete:1,insert:1,update:1,execute:1} ) {
+			DEBE[crude] = FLEX[crude].ds;
+			DEBE.byActionTable[crude] = FLEX[crude];
+		}
 
 		if (cb) cb();	
 	}
@@ -2916,8 +2981,6 @@ Initialize DEBE on startup.
 
 		Trace("INIT MODULES");
 
-		cb( null );
-		
 		FLEX.config({ 
 			thread: Thread,
 			emitter: DEBE.IO ? DEBE.IO.sockets.emit : null,
@@ -2928,48 +2991,25 @@ Initialize DEBE on startup.
 
 			createCert: DEBE.createCert,
 			
-			dbRoutes: {
-				roles: "openv",
-				aspreqts: "openv",
-				ispreqts: "openv",
-				swreqts: "openv",
-				hwreqts: "openv",
-				tta: "openv",
-				trades: "openv",
-				milestones: "openv",
-				journal: "openv",
-				hawks: "openv",
-				attrs: "openv",
-				issues: "openv"
+			reroute: {
+				roles: "openv.roles",
+				aspreqts: "openv.aspreqts",
+				ispreqts: "openv.ispreqts",
+				swreqts: "openv.swreqts",
+				hwreqts: "openv.hwreqts",
+				tta: "openv.tta",
+				trades: "openv.trades",
+				milestones: "openv.milestones",
+				journal: "openv.journal",
+				hawks: "openv.hawks",
+				attrs: "openv.attrs",
+				issues: "openv.issues"
 			},
 			
 			diag: DEBE.diag,
 			
 			site: DEBE.site						// Site parameters
 
-			/*
-			statefulViews : { 					// Jade views that require the stateful URL
-				'workflow': 1,
-				'workflows': 1
-			},*/	
-
-			/*NEWSREAD: { 					// Establish news byType
-				//JOB: APP.INGEST,
-				PROXY: {
-					hostname: 'http://omar.ilabs.ic.gov',
-					port: 80,
-					path: '/tbd',
-					method: 'GET'
-				}
-			},*/
-
-			/*
-			likeus : {
-				BILLING : 1,				// Billing cycle [days]
-				PING : 0.5	 				// Check period [days]
-			},
-			*/
-			
 		});
 
 		HACK.config({
@@ -3006,72 +3046,35 @@ Initialize DEBE on startup.
 		});
 		JAX.start();
 		
-		Thread( function (sql) {
-			
-			DEBE.onStartup(sql);
-			
-			var path = DEBE.paths.render;
-			
-			if (false)
-			DEBE.indexFile( path, function (files) {  // publish new engines
-				var ignore = {".": true, "_": true};
-				files.each( function (n,file) {
-					if ( !ignore[file.charAt(0)] )
-						try {
-							Trace("PUBLISHING "+file);
-	
-							sql.query( "REPLACE INTO app.engines SET ?", {
-								Name: file.replace(".jade",""),
-								Code: FS.readFileSync( path+file, "utf-8"),
-								Type: "jade",
-								Enabled: 0
-							});
-						}
-						catch (err) {
-							//Trace(err);
-						}
-				});
-				
-				sql.release();
+		DEBE.onStartup(sql);
+
+		var path = DEBE.paths.render;
+
+		if (false)
+		DEBE.indexFile( path, function (files) {  // publish new engines
+			var ignore = {".": true, "_": true};
+			files.each( function (n,file) {
+				if ( !ignore[file.charAt(0)] )
+					try {
+						Trace("PUBLISHING "+file);
+
+						sql.query( "REPLACE INTO app.engines SET ?", {
+							Name: file.replace(".jade",""),
+							Code: FS.readFileSync( path+file, "utf-8"),
+							Type: "jade",
+							Enabled: 0
+						});
+					}
+					catch (err) {
+						//Trace(err);
+					}
 			});
-			
+
 			sql.release();
 		});
 		
 	}); }); }); 
 } 
-
-function Trace(msg,sql) {
-	msg.trace("D>",sql);
-}
-
-function siteContext(req, cb) {
-	
-	cb( Copy(DEBE.site, {
-		table: req.table,
-		dataset: req.table,
-		type: req.type,
-		parts: req.parts,
-		action: req.action,
-		org: req.org,
-		client: req.client,
-		flags: req.flags,
-		query: req.query,
-		joined: req.joined,
-		profile: req.profile,
-		group: req.group,
-		//search: req.search,
-		session: req.session,
-		util: {
-			cpu: (req.log.Util*100).toFixed(0),
-			disk: ((req.profile.useDisk / req.profile.maxDisk)*100).toFixed(0)
-		},
-		started: DEBE.started,
-		filename: DEBE.paths.jaderef,
-		url: req.url
-	}) );
-	
-}
 
 // Prototypes
 	
@@ -3116,11 +3119,6 @@ function siteContext(req, cb) {
 	function hyper(ref) { 
 		return [this].linkify(ref);
 	},
-	
-	/*
-	function skinSafe() {
-		return this.replace(/\,/g,";").replace(/\(/g,"[").replace(/\)/g,"]").replace(/\./g, ":");
-	}, */
 	
 	function renderBlog(rec, ds, cb) {
 
