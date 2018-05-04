@@ -856,22 +856,19 @@ append site_body
 				:markdown
 					This [stateless py-engine](/pydemo1.run):
 
-						def pydemo1(ctx,res):
+						def pydemo1(ctx):
 							print "welcome to python you lazy bird"
-							#print OS
-							ctx['Save'] = [ {'x':1, 'y':2, 'z':0}, {'x':3, 'y':4, 'z':10}]
-							res(ctx)
 							SQL0 = OS['SQL0']
 							SQL0.execute("SELECT * from app.Htest", () )
 							#SQL0.execute("SELECT 1 as x, 2 as y", () )
 							for (Rec) in SQL0:
 								print Rec
 
+							return [ {'x':1, 'y':2, 'z':0}, {'x':3, 'y':4, 'z':10}]
+
 					with initial context:
 
-						{
-							"query": {"Name":"test"}
-						}
+						"query": {"Name":"test"}
 
 					will display *Htest* data at the service console, then returns *Save* data to its plugin context.
 					Python engines are also provided an *OS* dictionary containing a:  
@@ -897,10 +894,8 @@ append site_body
 
 					with initial context: 
 
-						{
-							"query": {"Name":"test"},
-							"ports": {
-							}
+						"query": {"Name":"test"},
+						"ports": {
 						}
 
 					by defining its i/o ports *f1* / *f2* to be called during the workflow 
@@ -934,18 +929,16 @@ append site_body
 
 					with initial context: 
 
-						{
-							"M": 3, 
-							"query": {  // default sql-entry query parms if none supplied on url
-								"Name": "DefaultTestName"
-							},
-							"Entry": {
-								"A": "SELECT a2,a3,a6 FROM MATtest WHERE least(?,1)",
-								"B": "SELECT a1,a6 FROM MATtest WHERE least(?,1)"
-							},
-							"Exit": {
-								"A": "INSERT INTO ?? SET ?"
-							}
+						"M": 3, 
+						"query": {  // default sql-entry query parms if none supplied on url
+							"Name": "DefaultTestName"
+						},
+						"Entry": {
+							"A": "SELECT a2,a3,a6 FROM MATtest WHERE least(?,1)",
+							"B": "SELECT a1,a6 FROM MATtest WHERE least(?,1)"
+						},
+						"Exit": {
+							"A": "INSERT INTO ?? SET ?"
 						}
 
 					will, on entry, prime its *A* and *B* context keys using its *entry* sql-queries: the "?" therein
@@ -969,12 +962,10 @@ append site_body
 
 					with initial context: 
 					
-						{						
-							"M": 3,
-							"Entry": {
-								"X": "SELECT p0,p1,p2 FROM Htest WHERE least(?,1)",
-								"y": "SELECT FPR from Htest WHERE least(?,1)"
-							}
+						"M": 3,
+						"Entry": {
+							"X": "SELECT p0,p1,p2 FROM Htest WHERE least(?,1)",
+							"y": "SELECT FPR from Htest WHERE least(?,1)"
 						}
 
 					uses the mathjs MATH module to do regression analysis via an emulated Matlab machine.  Here, 
