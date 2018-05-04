@@ -3120,7 +3120,7 @@ Initialize DEBE on startup.
 		return [this].linkify(ref);
 	},
 	
-	function renderBlog(rec, ds, sql, cb) {
+	function renderBlog(rec, ds, cb) {
 
 		function renderJAX(jaxList,rtn,cb) {
 			var 
@@ -3150,16 +3150,7 @@ Initialize DEBE on startup.
 			jaxList = [], cache = {}, $ = {}, tagList = [];
 
 		renderJAX( jaxList, this.markdown(jaxList,cache,$,tagList,rec), function (html) {
-			cb(html);
-			if (sql)
-				tagList.forEach( function (tag,n) {  // tag topics
-					sql.query("INSERT INTO app.tags SET `On`=now(),? ON DUPLICATE KEY UPDATE `On`=now(),Views=Views+1,?", [{
-							Tag: tag,
-							Message: html,
-							To: client
-						}, {Message: html}
-					]); 
-				});
+			cb(html, tagList);
 		}); 
 
 	},
@@ -3361,10 +3352,19 @@ Initialize DEBE on startup.
 			recs.each( function (n, rec) {
 				if ( val = rec[key] )
 					if (val.constructor == String)
-						val.renderBlog( rec, "/"+ds+"?ID="+rec.ID, sql, function (html) {
+						val.renderBlog( rec, "/"+ds+"?ID="+rec.ID, function (html, tags) {
 							rec[key] = html;
 							//Log("rec",rendered, renders);
 							if ( ++rendered == renders ) cb(recs);
+							
+							tags.forEach( function (tag,n) {  // tag topics
+								sql.query("INSERT INTO app.tags SET `On`=now(),? ON DUPLICATE KEY UPDATE `On`=now(),Views=Views+1,?", [{
+										Tag: tag,
+										Message: html,
+										To: client
+									}, {Message: html}
+								]); 
+							});
 						});
 			});
 		});
