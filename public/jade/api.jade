@@ -296,22 +296,27 @@ append site_body
 				> KEY <= value  
 				> KEY >= value  
 				> KEY != value  
-				> KEY <: value  
-				> KEY >: value  
+				> KEY < value  
+				> KEY > value  
+				> KEY *= [min,max]
+				> KEY %= like pattern  
 				
 				Indexing:
-				> ASKEY $= expression  
-				> ASKEY $= jsonKey$.key, ...  
-				> ASKEY $= jsonKey$[idx], ...  
-				> ASKEY $= jsonKey$.key$.key ... , ...  
-				> ASKEY $= jsonKey$[idx]$[idx] .... , ...  
+				> ASKEY : expression  
+				> ASKEY : jsonKey$.key, ...  
+				> ASKEY : jsonKey$[idx], ...  
+				> ASKEY : jsonKey$.key$.key ... , ...  
+				> ASKEY : jsonKey$[idx]$[idx] .... , ...  
 
+				Scoring:
+				> KEY /: nlp pattern  
+				> KEY |: query expansion pattern  
+				> KEY ^: binary expression pattern  
+				
 				Searching:
-				> KEY %= like pattern  
 				> KEY /= nlp pattern  
 				> KEY |= query expansion pattern  
 				> KEY ^= binary expression pattern  
-				> KEY *= min,max
 
 				Grouping and Sorting:
 				> _pivot = KEY,KEY,... pivot records on KEYs with NodeID = "ID,ID,..." groups  
@@ -445,6 +450,7 @@ append site_body
 				> [Save_KEY](/#{ds}.run?options=more) json aggregates selected engine results from [{at:"KEY", ...}, ...]  
 				> [Entry+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) json primes context on entry using { KEY: "SELECT ....", ...}  
 				> [Exit+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) json saves context on exit using { KEY: "UPDATE ....", ...}  
+				> [Autorun+](/#{ds}.add?Autorun=doc) [/-](/#{ds}.sub?Autorun) switch enables the autorun watchdog.
 				
 				To place an engine into *#{title}*'s supervised Markov workflow, provide:  
 				> [Batch+](/#{ds}.add?Batch=0) [/-](/#{ds}.sub?Batch) value overrides supervisor's batch size (0 disabled)  
@@ -461,25 +467,26 @@ append site_body
 				> Events event query for current voxel  
 				> Flow context of Markov/ROC supervisor
 
-				An engine's *Pipe* context key contains job regulation parameters:  
-				> file: "/FILTER?QUERY" || "PLUGIN.CASE" || "uploaded FILENAME" || "FILE.jpg" || "FILE.json"  
-				> group: "KEY,..." || ""  
-				> where: { KEY: VALUE, ...} || {}  
-				> order: "KEY,..." || "t"  
-				> limit: VALUE || 1000  
-				> task: "NAME" || ""  
-				> aoi: "NAME" || [ [lat,lon], ... ] || []
+				An engine's *Pipe* context key contains job regulation parameters:
+				
+					file: "/FILTER?QUERY" || "PLUGIN.CASE" || "uploaded FILENAME" || "FILE.jpg" || "FILE.json"  
+					group: "KEY,..." || ""  
+					where: { KEY: VALUE, ...} || {}  
+					order: "KEY,..." || "t"  
+					limit: VALUE || 1000  
+					task: "NAME" || ""  
+					aoi: "NAME" || [ [lat,lon], ... ] || []
 
 				and where the *Description* key may contain [blogging tags](/skinguide.view) of the form:
 
-				> \[ VIEW ; WIDTH ; HEIGHT ]( DS ? PARM ; PARM ; ... )  
-				> \[ LINK ]( URL )  
-				> \[ FONT ]( TEXT )  
-				> !$ inline TeX $  ||  $$ break TeX $$ || a$ AsciiMath $ || m$ MathML $  
-				> \# { KEY } || \# { KEY }( SHORTCUT ) || \! { EXPR }  || ^{ KEY as TeX matrix  }  
-				> \#tag
-				
-				to document usecases.  For example:
+					[ VIEW ; WIDTH ; HEIGHT ]( DS ? PARM ; PARM ; ... )  
+					[ LINK ]( URL )  
+					[ FONT ]( TEXT )  
+					!$ inline TeX $  ||  $$ break TeX $$ || a$ AsciiMath $ || m$ MathML $  
+					#{ KEY } || #{ KEY }( SHORTCUT ) || !{ EXPR }  || ^{ KEY as TeX matrix  }  
+					#tag
+
+				to document usecases.  The following will, for example:
 
 					[plot;100;200](x=Save$a;ys=Save$b$c)
 					[post;500;100](/home.view)
@@ -488,7 +495,7 @@ append site_body
 					[force;100;100](/queues?_pivots=class)
 					$$ \alpha = 1 + \beta $$ impressive 'eh
 
-				to embed: (1) a plot of the requested x,y data using the [d3 plot](/plot.view), (2) the 
+				embed: (1) a plot of the requested x,y data using the [d3 plot](/plot.view), (2) the 
 				[home.view](/home.view), (3) a link to the url, (4) the [image](/shares.jpg), (5) a
 				force graph of the queues dataset pivoted by class using the [d3 force](/force.view) 
 				into a frame of specified W x H dimensions, and (6) a TeX equation.  See [plot](/plot.view?help), 

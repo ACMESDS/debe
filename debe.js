@@ -72,7 +72,7 @@ var
 		
 	plugins: LAB.libs,
 		
-	autoruns: {  //< reserved for autorun plugins determined at startup
+	autoadd: {  //< reserved for autorun plugins determined at startup
 	},
 		
 	ingester: function ingester( opts, query ) {
@@ -161,7 +161,7 @@ var
 			site = DEBE.site,
 			pocs = site.pocs,
 			sendMail = FLEX.sendMail,
-			autoruns = DEBE.autoruns;
+			autoadd = DEBE.autoadd;
 		
 		if (pocs.admin)
 			sendMail({
@@ -175,14 +175,14 @@ var
 				if ( FLEX.execute[dsn] )
 					sql.forFirst(
 						"",
-						"SELECT * FROM app.?? WHERE Name='ingest' AND Autorun=1 LIMIT 1", 
+						"SELECT * FROM app.?? WHERE Name='ingest' LIMIT 1", 
 						[dsn], function (ctx) {
 						
 						if (ctx) {
 							delete ctx.ID;
 							delete ctx.Name;
-							autoruns[dsn] = Copy(ctx, {});
-							Trace("AUTORUN "+dsn);
+							autoadd[dsn] = Copy(ctx, {});
+							Trace("AUTOADD "+dsn);
 						}
 					});
 			});
@@ -554,7 +554,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 			trace: ""
 		}, function (sql, opts) {
 
-			for (var dsn in DEBE.autoruns) {
+			for (var dsn in DEBE.autoadd) {
 				sql.query("SELECT ID, ? AS _Plugin FROM app.? WHERE Autorun", [dsn, dsn])
 				.on("result", (run) => {
 					exePlugin({
@@ -1742,16 +1742,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 							});	
 				});
 			}); */
-			Each(DEBE.autoruns, function (dsn, ctx) {
+			Each(DEBE.autoadd, function (dsn, ctx) {
 				sql.query(
-					"INSERT INTO app.?? SET ? ON DUPLICATE KEY UPDATE Autorun=1",
+					"INSERT INTO app.?? SET ?",
 					[dsn, Copy(ctx, {Name: fileName})]
 				);
-				/*
-				sql.query(
-					"UPDATE app.?? SET Autorun=1 WHERE Name = ?",
-					[name, fileName]
-				);  */
 			});
 		});
 	},
@@ -2423,7 +2418,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			if ( "Save" in ctx )  // an event generation engine does not participate in pipe workflow
 				res( saveEvents( sql, ctx.Save, ctx, function (evs) {
 					var
-						autoruns = DEBE.autoruns,
+						autoadd = DEBE.autoadd,
 						host = ctx.Host = table,
 						fileName = `${host}.${ctx.Name}`;
 					
@@ -2447,16 +2442,11 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						DEBE.getFile( host, `${host}/${fileName}`, function (area, fileID) {
 							HACK.ingestList( sql, evs, fileID, function (aoi) {
 								Log("INGESTED",aoi);
-								Each(autoruns, function (dsn,ctx) {
+								Each(autoadd, function (dsn,ctx) {
 									sql.query(
-										"INSERT INTO app.?? SET ? ON DUPLICATE KEY UPDATE Autorun=1",
+										"INSERT INTO app.?? SET ?",
 										[dsn, Copy(ctx, {Name: fileName})]
 									);
-									/*
-									sql.query(
-										"UPDATE app.?? SET Autorun=1 WHERE Name = ?",
-										[name, fileName]
-									);*/
 								});
 								
 							});
@@ -3179,9 +3169,27 @@ Initialize DEBE on startup.
 				return (val == 0) ? "0" : "null";
 		}
 		
+		function inlines(html) {
+			inList.forEach( (inline, n) => {
+				html = html.replace("$in"+n, inline);
+				//Log(n, inline);
+			});
+			return html;
+		}
+		
 		for (var key in rec) try { $[key] = JSON.parse( rec[key] ); } catch (err) {}
 	
-		return this
+		var inList = [];
+		
+		return inlines( this
+			// inline code escapes
+			.replace(/<br>/g,"\n")
+			.replace(/(.*?):\n\n((.|\n)*?)\n\n/g, function (str, intro, code) {
+				//Log(str,intro,code);
+				inList.push( code.tag("code").tag("pre") );
+				return intro + ":$in" + (inList.length-1);
+			})
+
 			// record substitutions
 			.replace(/\^\{(.*?)\}/g, function (str,key) {  // ^{ TeX matrix key } markdown
 				function texify(recs) {
@@ -3248,14 +3256,6 @@ Initialize DEBE on startup.
 				return Eval(expr);
 			})
 
-			// inline code highlighting
-			.replace(/(.*?):<br><br>(.*?)<br><br>/g, function (str, intro, code) {
-				return intro + code.tag("code").tag("pre");
-			})
-			.replace(/(.*?):\n\n(.*?)\n\n/g, function (str, intro, code) {
-				return intro + code.tag("code").tag("pre");
-			})
-
 			// mathjax equations
 			.replace(/\$\$(.*?)\$\$/g, function (str,jax) {  //  $$ standalone TeX $$ markdown
 				jaxList.push({ jax: jax, fmt:"TeX"});
@@ -3317,8 +3317,17 @@ Initialize DEBE on startup.
 			.replace(/\#(.*?) /g, function (str,tag) {  // #topic tag
 				tagList.push(tag);
 				return "";
-			});
-	}		
+			}) 
+		);
+	},
+	
+	function toQuery(sql) {
+		var 
+			query = {},
+			name = this.parsePath(query);
+		
+		return sql.queryify( name ? Copy({Name: name}, query) : query );
+	}
 	
 ].extend(String);
 	
@@ -3592,7 +3601,7 @@ Initialize DEBE on startup.
 	function addDays(days) {
 		this.setDate( this.getDate() + days);
 		return this;
-	}		
+	}
 ].extend(Date);
 		
 // UNCLASSIFIED

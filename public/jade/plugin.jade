@@ -79,6 +79,7 @@ append site_body
 					> [Save_KEY](/#{ds}.run?options=more) json aggregates selected engine results from [{at:"KEY", ...}, ...]  
 					> [Entry+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) json primes context on entry using { KEY: "SELECT ....", ...}  
 					> [Exit+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) json saves context on exit using { KEY: "UPDATE ....", ...}  
+					> [Autorun+](/#{ds}.add?Autorun=doc) [/-](/#{ds}.sub?Autorun) switch enables the autorun watchdog.
 					
 					When executed, the **context** of your *#{ds}* plugin is automatically extended with keys:  
 					> Flow context of Markov/ROC supervisor  
@@ -95,27 +96,11 @@ append site_body
 					> [Symbols+](/#{ds}.add?Symbols=[]) [/-](/#{ds}.sub?Symbols) value overrides supervisor's state symbols (null defaults)  
 					> [Steps+](/#{ds}.add?Steps=0) [/-](/#{ds}.sub?Steps) value overrides supervisor's observation interval (0 defaults)
 					
-					You can control how events are regulated to your *#{ds}* engine using 
-					your [Pipe+](/#{ds}.add?Pipe=doc) [/-](/#{ds}.sub?Pipe) key:  
-					> file: "/NODE" || "PLUGIN.CASE" || "FILE.TYPE" || [ {x,y,z,t,u,n, ...}, ... ]
-					> group: "KEY,..." || ""  
-					> where: { KEY: VALUE, ...} || {}  
-					> order: "KEY,..." || "t"  
-					> limit: VALUE || 1000  
-					> task: "NAME" || ""  
-					> aoi: "NAME" || [ [lat,lon], ... ] || []
-
-					Use the [Description+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description) key to 
-					document your usecases:  
-					> \[ VIEW ; WIDTH ; HEIGHT ]( DS ? PARM ; PARM ; ... )  
-					> \[ LINK ]( URL )   
-					> \[ FONT ]( TEXT )  
-					> !$ inline TeX $  ||  $$ break TeX $$ || a$ AsciiMath $ || m$ MathML $  
-					> \# { KEY } || \# { KEY }( SHORTCUT ) || \! { EXPR }  || ^{ KEY as TeX matrix  }  
-					> \#tag
-				
 					See [plot](/plot.view?help), [treefan](/treefan.view?help), [treemap](/treefan.view?help), [force](/force.view?help), 
 					[bounce](/bounce.view?help), [tipsheet](/tipsheet.view?help) for example VIEWs.  
+					
+					Ingested files will be automatically appended to your usecases if a *Name* = ingest 
+					usecase exists providing default parameters. 
 					
 					Header colors reflect your plugin's [status](/projects.view): <font color="green">completed</font>, <font color="blue">policed</font>, <font color="orange">funded</font>, <font color="red">unfunded</font>.
 					

@@ -820,35 +820,33 @@ function DS(anchor) {
 					fDoc
 					//fParm.Special || "" 
 				].join(" || "),
-				//fTip = fTips.join(" || "),
-				fLock = false,  //pivots ? true : sorts ? !(fKey in sorts) : false,			
 				fListen = {
 					afterrender: function (me) {
 						Ext.create('Ext.tip.ToolTip', {  // grid tooltip
 							target	: me.getEl(),                 
 							html	 	: me.qtip,
 							//title	 	: me.qtitle,
-							autoHide : true, 
+							autoHide : false, 
 							closable: true,
-							//resizable: true,
-							//scrollable: true,
+							resizable: true,
+							scrollable: true,
 							//overlapHeader: true,
 							maxWidth : 800,
 							minWidth : 200,
 							maxHeight: 400,
+							showDelay: 1000,
 							//mouseOffset: [0,0],
 							//trackMouse: true,
 							//getTargetXY: function () { return [0,0]; },
 							collapisible: true
-							//dismissDelay: 0
+							//dismissDelay: 300
 						});
 					}
 				},
-				//fTips = fTip.split("||"),
-				//fTip = fTips.pop() || "",
 				fChar = fType.charAt(0),
 				fHide = (fQual == "hide"), //fChar >= "A" && fChar <= "Z",
 				fOff = (fQual == "off"), //false,
+				fLock = (fQual == "lock"),  //pivots ? true : sorts ? !(fKey in sorts) : false,			
 				fTipTitle = fKey; //fTips[0] || fKey; //fTips.pop() || fKey;
 
 			switch (fType.toLowerCase()) {
@@ -1117,20 +1115,20 @@ function DS(anchor) {
 				case 'mediumtext':	
 				case 'longtext':
 					Blogs.push( fKey );
-
 					return  {
 						xtype: 	"",
 						//fType		: fType,
+						//filter		: "string",
 						dataIndex	: fKey,
-						//sortable	: true,
+						sortable	: false,
 						//hideable	: true,
-						//locked		: fLock,
-						//disabled	: fOff,
 						hidden: fHide,
+						locked		: fLock,
+						disabled	: fOff,
 						width		: 400,
 						text		: fLabel,
 						cellWrap: true,
-						qtip		: fTip, 
+						qtip		: fTip,
 						//qtitle	 	: fTipTitle,
 						/*
 						editor	: {
@@ -1176,8 +1174,8 @@ function DS(anchor) {
 							else
 								return cellVal;
 						}*/
-						renderer 	: fCalc ? calcRender : null
-						//listeners	: fListen   // EXTJS widget gets confused when embedded in grid
+						//renderer 	: fCalc ? calcRender : null
+						listeners	: fListen   // EXTJS widget gets confused when embedded in grid
 					};			
 
 				case 'z': 		// ignore
@@ -1324,9 +1322,10 @@ function DS(anchor) {
 						dataIndex	: fKey,
 						filter		: "string",
 						sortable	: true,
-						hideable	: true,
+						//hideable	: true,
 						hidden: fHide,
 						locked		: fLock,
+						disabled	: fOff,
 						width		: 100,
 						text		: fLabel,
 						qtip		: fTip, 
@@ -2592,10 +2591,12 @@ WIDGET.prototype.menuTools = function () {
 											//minHeight: 100,
 											maxWidth: 1000,
 											maxHeight: 800,
-											//showDelay: 1000,
+											showDelay: 1000,
 											//hideDelay: 50,
 											//dismissDelay: 0,
 											collapisible: true,
+											resizable: true,
+											scrollable: true,
 											collapseFirst: true
 										});
 									}

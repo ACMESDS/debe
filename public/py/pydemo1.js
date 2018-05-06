@@ -1,10 +1,19 @@
 module.exports = {
 	keys: {
 		Save: "json",
+		Description: "mediumtext",
+		Pipe: "json",
+		Test: "text",
 		a: "float comment 'a param' "
 	},
 
 	docs: {
+		Test: `
+blog markdown documents a usecase:
+
+	Das all
+
+`,
 		Save: `
 here is some long winded comment
 with a fancy eqn !$ \\alpha = 123 $ and get this ...
