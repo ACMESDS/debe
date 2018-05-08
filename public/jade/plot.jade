@@ -68,7 +68,7 @@ append base_head
 			init:  parse("#{query.init}", []),
 			extra: parse("#{query.extra}", [])
 		};
-		opts.ds = opts.src.tag("?", {ID: opts.ID, "x$":opts.x, "y$":opts.y});
+		opts.ds = opts.src.tag("?", {ID: opts.ID, "x:"+opts.x:null, "y:"+opts.y:null});
 				 
 append base_body
 
