@@ -179,8 +179,6 @@ var
 						[dsn], function (ctx) {
 						
 						if (ctx) {
-							delete ctx.ID;
-							delete ctx.Name;
 							autoadd[dsn] = Copy(ctx, {});
 							Trace("AUTOADD "+dsn);
 						}
@@ -1744,8 +1742,12 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			}); */
 			Each(DEBE.autoadd, function (dsn, ctx) {
 				sql.query(
-					"INSERT INTO app.?? SET ?",
-					[dsn, Copy(ctx, {Name: fileName})]
+					"INSERT INTO app.?? SET ? ON DUPLICATE KEY UPDATE Autorun=1",
+					[dsn, Copy({
+						Pipe: `{ "file": ${fileName}, "limit": 150e3}`,
+						Autorun: 1,
+						Name: fileName
+					}, ctx)]
 				);
 			});
 		});
@@ -2444,8 +2446,12 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 								Log("INGESTED",aoi);
 								Each(autoadd, function (dsn,ctx) {
 									sql.query(
-										"INSERT INTO app.?? SET ?",
-										[dsn, Copy(ctx, {Name: fileName})]
+										"INSERT INTO app.?? SET ? ON DUPLICATE KEY UPDATE Autorun=1",
+										[dsn, Copy({
+											Pipe: `{ "file": ${fileName}, "limit": 150e3}`,
+											Autorun: 1,
+											Name: fileName
+										}, ctx)]
 									);
 								});
 								
@@ -2572,11 +2578,17 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 				case Array:
 					fields.each(function (n,field) {
 						var key = field.Field, type = field.Type.split("(")[0];
-						if ( key != "ID" && type != "geometry")
-							if ( key.indexOf("Save") == 0 && type == "json")   // hide these by default
-								cols.push( key + "." + type + "." + escape(field.Comment).replace(/\./g, "$dot") + ".hide");
+						if ( key != "ID" && type != "geometry") {
+							var
+								doc = escape(field.Comment).replace(/\./g, "$dot"),
+								qual = "";
+							
+							if ( key.indexOf("Save") == 0) qual = "hide" ;
 							else
-								cols.push( key + "." + type + "." + escape(field.Comment).replace(/\./g, "$dot") );
+							if ( key.indexOf("_") >=0 ) qual = "off";
+							
+							cols.push( key + "." + type + "." + doc + "." + qual );
+						}
 					});
 					break;
 					
@@ -3326,7 +3338,7 @@ Initialize DEBE on startup.
 			query = {},
 			name = this.parsePath(query);
 		
-		return sql.queryify( name ? Copy({Name: name}, query) : query );
+		return sql.toQuery( name ? Copy({Name: name}, query) : query );
 	}
 	
 ].extend(String);

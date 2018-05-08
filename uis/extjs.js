@@ -61,6 +61,11 @@ var
 		value: "hello there",
 		enableColors: true,
 		enableAlignments: true,
+		listeners: {
+			afterrender: function (h) {
+				h.toggleSourceEdit(true);
+			}
+		},
 		plugins: [
 			Ext.create('Ext.ux.form.plugin.HtmlEditor', {
 				enableAll:  true,
@@ -661,7 +666,6 @@ function DS(anchor) {
  * cols Data fields
  */
 		cols	= anchor.getAttribute("cols")	 || "",
-		index	= anchor.getAttribute("index") || "",  
 		ag	= anchor.getAttribute("summary"),
 		calc	= anchor.getAttribute("calc")  ? true : false ; //[] : null;
 		//create	= anchor.getAttribute("create") || "";
@@ -1691,8 +1695,7 @@ function DS(anchor) {
 	var flags = { // non-record fields attached to all ajax calls
 		_view: (anchor.id == "hold") ? "" : BASE.user.source, 		// view-dataset crossref
 		_pivot: pivots, 	// pivot fields
-		_limit: page || "", 
-		_index: index		// field generators  
+		_limit: page || ""
 	};
 
 	//alert(name+" "+calc);
