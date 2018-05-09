@@ -7,20 +7,18 @@ Tag url (el=?|&), list (el=;|,), or tag html using specified attributes.
 @return {String} tagged results
 */
 
-	if ( "?&;,".indexOf(el) >= 0 ) {  // tag a url or list
+	if ( el == "?" ) {  // tag a url or list
 		var rtn = this+el;
 
-		if (at) for (var n in at) {
-				rtn += n + "=";
-				switch ( (at[n] || 0).constructor ) {
+		for (var n in at) 
+			if ( val = at[n] )
+				switch ( val.constructor ) {
 					//case Array: rtn += at[n].join(",");	break;
 					case Array:
 					case Date:
 					case Object: rtn += JSON.stringify(at[n]); break;
-					default: rtn += at[n];
+					default: rtn += n + "=" + val + "&";
 				}
-				rtn += "&";
-			}
 
 		return rtn;				
 	}
@@ -28,7 +26,9 @@ Tag url (el=?|&), list (el=;|,), or tag html using specified attributes.
 	else {  // tag html
 		var rtn = "<"+el+" ";
 
-		if (at) for (var n in at) rtn += n + "='" + at[n] + "' ";
+		for (var n in at) 
+			if ( val = at[n] )
+				rtn += n + "='" + val + "' ";
 
 		switch (el) {
 			case "embed":

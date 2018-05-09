@@ -3151,13 +3151,13 @@ Initialize DEBE on startup.
 		var 
 			jaxList = [], cache = {}, $ = {}, tagList = [];
 
-		renderJAX( jaxList, this.markdown(jaxList,cache,$,tagList,rec), function (html) {
+		renderJAX( jaxList, this.markdown(ds, jaxList,cache,$,tagList,rec), function (html) {
 			cb(html, tagList);
 		}); 
 
 	},
 	
-	function markdown(jaxList, cache, $, tagList, rec) {
+	function markdown(ds, jaxList, cache, $, tagList, rec) {
 			
 		function pretty(val) {
 			if (val)
@@ -3289,35 +3289,31 @@ Initialize DEBE on startup.
 			// links, views, and highlighting
 			.replace(/\[([^\[\]]*?)\]\((.*?)\)/g, function (str,link,src) {  // [link](src) or [view;w;h;...](src) or [font](text) markdown
 				var
-					links = link.split(";"),
-					view = links[0],
-					w = links[1] || 100,
-					h = links[2] || 100,
 					keys = {},
-					path = ds.parsePath(keys),
-					path = src.replace(/;/g,"&").parsePath(keys) || path,
-					opsrc =  `/${view}.view`.tag( "?", Copy({w:w,h:h,src:path}, keys) );
+					dspath = ds.parsePath(keys),
+					path = src.parsePath(keys) || dspath,
+					w = keys.w || 100,
+					h = keys.h || 100,
+					opsrc =  "/" + path.tag( "?", Copy({src:dspath}, keys) );
 
-				//Log(view, keys, opsrc);
-				switch (view) {
+				//Log({link: link, keys: keys, opsrc: opsrc, src: src, ds: ds});
+				switch (link) {
 					case "image":
 					case "img":
-						return "".tag("img", { src:src, width:w, height:h });
+						return "".tag("img", { src:opsrc, width:w, height:h });
 					case "post":
 					case "iframe":
-						return "".tag("iframe", { src:src, width:w, height:h });
+						return "".tag("iframe", { src:opsrc, width:w, height:h });
 					case "red":
 					case "blue":
 					case "green":
 					case "yellow":
 					case "orange":
 					case "black":
-						return src.tag("font",{color:view});
+						return src.tag("font",{color:link});
 					default:
 						//Log( "".tag("iframe",{ src: opsrc, width:w, height:h } ) );
-						return (view == link)
-								? link.tag("a",{ href:src }) 
-								: "".tag("iframe",{ src: opsrc, width:w, height:h } ) ;
+						return link.tag("a", { href:opsrc });
 				}
 			})
 			.replace(/href=(.*?)\>/g, function (str,ref) { // follow <a href=REF>A</a> links
@@ -3373,7 +3369,7 @@ Initialize DEBE on startup.
 			recs.each( function (n, rec) {
 				if ( val = rec[key] )
 					if (val.constructor == String)
-						val.renderBlog( rec, "/"+ds+"?ID="+rec.ID, function (html, tags) {
+						val.renderBlog( rec, ds+"?ID="+rec.ID, function (html, tags) {
 							rec[key] = html;
 							//Log("rec",rendered, renders);
 							if ( ++rendered == renders ) cb(recs);

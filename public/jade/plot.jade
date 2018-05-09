@@ -8,10 +8,7 @@ append base_help
 	:markdown
 		 Produce d3 scatter plot:  
 
-			src = forms source dataset /src?ID=ID&x$=x&y$=y returning [ {x:[...], y:[[...] ,[...], ...}, ... ]
-			ID = src record ID
-			x = src json index expression 
-			y = src json index expression 
+			src = source dataset returning [ {x:[...], y:[[...] ,[...], ...}, ... ]
 			w = drawing width
 			h = drawing height
 			debug = dump derived options
@@ -46,8 +43,7 @@ append base_head
 	
 	script.
 		var opts = {  // define plot options
-			src: "!{query.src}",
-			ID: "!{query.ID}",
+			src: "/!{query.src}?ID=!{query.ID}&x:#{query.x}&y:#{query.y}",
 			w: parseInt("#{query.w}"),
 			h: parseInt("#{query.h}"),			
 			debug: "#{query.debug}",
@@ -58,9 +54,6 @@ append base_head
 			trace: "#{query.trace}",
 			label: parse("#{query.label}", []),
 			auto: parse("#{query.auto}", []),
-			xy: parse("#{query.xy}" , [0,1]),
-			x: "#{query.x}" || "null",
-			y: "#{query.y}" || "null",
 			initialize: true,
 			ref: parse("#{query.ref}", []),
 			min: parse("#{query.min}", []),
@@ -68,7 +61,7 @@ append base_head
 			init:  parse("#{query.init}", []),
 			extra: parse("#{query.extra}", [])
 		};
-		opts.ds = opts.src.tag("?", {ID: opts.ID, "x:"+opts.x:null, "y:"+opts.y:null});
+		alert(JSON.stringify(opts));
 				 
 append base_body
 
