@@ -3122,14 +3122,28 @@ Initialize DEBE on startup.
 		return [this].linkify(ref);
 	},
 	
-	function renderBlog(rec, ds, cb) {
+	function renderBlog(rec, ds, cb) { 
+	/*
+	Renders tags on this string of the form:
+			[ post ] ( SKIN.view ? w=WIDTH & h=HEIGHT & x=KEY$EXPR & y=KEY$EXPR & src=DS & id=VALUE )  
+			[ image ] ( PATH.jpg ? w=WIDTH & h=HEIGHT )  
+			[ TEXT ]( LINK )  
+			[ FONT ]( TEXT )  
+			!$ inline TeX $  ||  $$ break TeX $$ || a$ AsciiMath $ || m$ MathML $  
+			#{ KEY } || #{ KEY }( SHORTCUT ) || !{ EXPR }  || ^{ KEY as TeX matrix  }  
+			#TAG
+		
+	using suppplied record rec to resolve #{key} tags and a default ds = "PATH ? QUERY" for
+	[TEXT](ds) tags.   The rendered html results is provided to the callback cb(html).
+	*/	
+		function renderJAX(jaxList,rtn,cb) {  
+		// render !jaxN tokens in this string to .jax and .fmt on jaxList[N]
 
-		function renderJAX(jaxList,rtn,cb) {
 			var 
 				rendered = 0, renders = jaxList.length;
 
 			//Log("jax",renders);
-			jaxList.each( function (n,jax) {
+			jaxList.each( function (n,jax) {  // enumerate all !jaxN tokens
 
 				JAX.typeset({
 					math: jax.jax,
@@ -3151,14 +3165,27 @@ Initialize DEBE on startup.
 		var 
 			jaxList = [], cache = {}, $ = {}, tagList = [];
 
-		renderJAX( jaxList, this.markdown(ds, jaxList,cache,$,tagList,rec), function (html) {
+		renderJAX( jaxList, this.markdown(ds, jaxList, cache, $, tagList, rec), function (html) {
 			cb(html, tagList);
 		}); 
 
 	},
 	
 	function markdown(ds, jaxList, cache, $, tagList, rec) {
-			
+	/*
+	Replaces tags on this string of the form:
+		[ post ] ( SKIN.view ? w=WIDTH & h=HEIGHT & x=KEY$EXPR & y=KEY$EXPR & src=DS & id=VALUE )  
+		[ image ] ( PATH.jpg ? w=WIDTH & h=HEIGHT )  
+		[ TEXT ]( LINK )  
+		[ FONT ]( TEXT )  
+		!$ inline TeX $  ||  $$ break TeX $$ || a$ AsciiMath $ || m$ MathML $  
+		#{ KEY } || #{ KEY }( SHORTCUT ) || !{ EXPR }  || ^{ KEY as TeX matrix  }  
+		#TAG
+		
+	using the supplifed jaxList to store $JAX$ tags, cache and $ hashes to store #{KEY} values,
+	tagList to store #TAG tags, and the record hash to resolve #{key} tags.
+	*/
+		
 		function pretty(val) {
 			if (val)
 				switch (val.constructor.name) {
@@ -3232,20 +3259,15 @@ Initialize DEBE on startup.
 					return cache[key] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : texify(val);
 				}							
 			})
-			/*.replace(/\#\{(.*?)\}\((.*?)\)/g, function (str,key,short) {  // #{ key }( short ) markdown
+			.replace(/\#\{(.*?)\}\((.*?)\)/g, function (str,key,short) {  // #{ key }( short ) markdown
 				if (  key in cache )
 					return cache[key];
 
 				else {
-					try {
-						var val = eval( `$.${key}` );
-					}
-					catch (err) {
-						var val =  rec[key];
-					}
-					return cache[key] = cache[short] = pretty(val);
+					try { var val = eval( `$.${key}` ); } catch (err) { }
+					return cache[key] = cache[short] = pretty(val || rec[key]);
 				}							
-			})*/
+			})
 			.replace(/\#\{(.*?)\}/g, function (str,key) {  // #{ key } markdown
 				//Log(key,cache);
 				if (  key in cache )
@@ -3254,7 +3276,7 @@ Initialize DEBE on startup.
 				else {
 					try { var val = eval( `$.${key}` ); } catch (err) { }
 					return cache[key] = pretty(val || rec[key]);
-				}							
+				}
 			})
 			.replace(/\!{(.*?)\}/g, function (str,expr) { // !{ js expression } markdown
 				function Eval(expr) {
@@ -3287,7 +3309,7 @@ Initialize DEBE on startup.
 			})	
 
 			// links, views, and highlighting
-			.replace(/\[([^\[\]]*?)\]\((.*?)\)/g, function (str,link,src) {  // [link](src) or [view;w;h;...](src) or [font](text) markdown
+			.replace(/\[([^\[\]]*?)\]\((.*?)\)/g, function (str,link,src) {  // [link](src) markdown
 				var
 					keys = {},
 					dspath = ds.parsePath(keys),
@@ -3296,7 +3318,7 @@ Initialize DEBE on startup.
 					h = keys.h || 100,
 					opsrc =  "/" + path.tag( "?", Copy({src:dspath}, keys) );
 
-				//Log({link: link, keys: keys, opsrc: opsrc, src: src, ds: ds});
+				Log({link: link, keys: keys, opsrc: opsrc, src: src, ds: ds});
 				switch (link) {
 					case "image":
 					case "img":

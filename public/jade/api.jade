@@ -485,15 +485,15 @@ append site_body
 					[ FONT ]( TEXT )  
 					!$ inline TeX $  ||  $$ break TeX $$ || a$ AsciiMath $ || m$ MathML $  
 					#{ KEY } || #{ KEY }( SHORTCUT ) || !{ EXPR }  || ^{ KEY as TeX matrix  }  
-					#tag
+					#TAG
 
 				to document usecases.  The following will, for example:
 
-					[plot;100;200](x=Save$a;ys=Save$b$c)
-					[post;500;100](/home.view)
-					[go here grasshopper](https:/go.here)
-					[image](/shares/a1.jpg)
-					[force;100;100](/queues?_pivots=class)
+					[post](plot.view?w=100&h=200&x=Save$a&ys=Save$b$c)
+					[post](home.view?w=500&h=100)
+					[go here grasshopper](here/there.txt)
+					[image](shares/a1.jpg)
+					[force](force.view?w=100&h=100&src=/queues?_pivots=class)
 					$$ \alpha = 1 + \beta $$ impressive 'eh
 
 				embed: (1) a plot of the requested x,y data using the [d3 plot](/plot.view), (2) the 

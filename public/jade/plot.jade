@@ -43,7 +43,7 @@ append base_head
 	
 	script.
 		var opts = {  // define plot options
-			src: "/!{query.src}?ID=!{query.ID}&x:#{query.x}&y:#{query.y}",
+			ds: "/!{query.src}?ID=!{query.ID}&x:#{query.x}&y:#{query.y}",
 			w: parseInt("#{query.w}"),
 			h: parseInt("#{query.h}"),			
 			debug: "#{query.debug}",
@@ -61,7 +61,6 @@ append base_head
 			init:  parse("#{query.init}", []),
 			extra: parse("#{query.extra}", [])
 		};
-		alert(JSON.stringify(opts));
 				 
 append base_body
 
@@ -215,6 +214,7 @@ append base_body
 
 		source( opts, function plotter (rec) {
 			//var pdata = opts.init.concat(data.concat(opts.extra));
+			
 			var 
 				plots = 1,
 				pdata = [],
