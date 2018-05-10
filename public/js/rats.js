@@ -40,10 +40,10 @@ module.exports = {  // learn hidden intensity parameters of a Markov process
 									ctx = {
 										N: dim,
 										M: M,
-										T: 1
+										T: 50
 									},
 									script = `
-t = rng(-T, T, 2*N+1);
+t = rng(-T, T, 2*N-1);
 Tc = T/M;
 xccf = ${model}( t/Tc );
 Xccf = xmatrix( xccf ); 
@@ -55,12 +55,16 @@ R = evd(Xccf);
 									if (solve.trace)  // debugging
 										ME.exec(`
 disp({
+M: M,
+ccfsym: sum(Xccf-Xccf'),
+det: [det(Xccf), prod(R.values)],
+trace: [trace(Xccf), sum(R.values)]
+})`, ctx);
+
+/*
 basis: R.vectors' * R.vectors,
-eig: R.vectors*diag(R.values) - Xccf*R.vectors,
-det: det(Xccf)/prod(R.values),
-trace: trace(Xccf)/sum(R.values)
-})`.replace(/\n/g,""), ctx);
-										
+vecres: R.vectors*diag(R.values) - Xccf*R.vectors,
+*/
 									cb({
 										model: model,
 										intervals: M,
@@ -173,12 +177,13 @@ trace: trace(Xccf)/sum(R.values)
 						pcvals = pcs.values,  // [unitless]
 						N = pcvals.length,
 						T = solve.T,
-						dt = T / N,
+						dt = T / (N-1),
 						evals = $(N, (n,e) => e[n] = solve.lambdaBar * dt * pcvals[n] * pcref ),  // [unitless]
 						evecs = pcs.vectors,   // [sqrt Hz]
 						ctx = {
 							T: T,
 							N: N,
+							dt: dt,
 							
 							E: ME.matrix( evals ),
 							
@@ -187,7 +192,7 @@ trace: trace(Xccf)/sum(R.values)
 									b = sqrt( expdev( evals[n] ) ),  // [unitless]
 									arg = random() * PI;
 
-								//Log(n,arg,b, evals[n], eref, T, N);
+								Log(n,arg,b, evals[n], T, N, solve.lambdaBar , 31/50 );
 								B[n] = ME.complex( b * cos(arg), b * sin(arg) );  // [unitless]
 							}),
 
@@ -195,9 +200,9 @@ trace: trace(Xccf)/sum(R.values)
 						},
 						script = `
 A=B*V; 
-lambda = abs(A).^2; 
-Wbar=sum(E); 
-lambdaBar = Wbar/T;
+lambda = abs(A).^2 / dt; 
+Wbar = {evd: sum(E), prof: sum(lambda)*dt};
+lambdaBar = {evd: Wbar.evd/T, prof: Wbar.prof/T};
 t = rng(-T/2, T/2, N); 
 `;
 
@@ -210,6 +215,13 @@ t = rng(-T/2, T/2, N);
 								intensity_profile: {t: ctx.t, i: ctx.lambda},
 								mean_count: ctx.Wbar,
 								mean_intensity: ctx.lambdaBar
+							});
+							//Log("Vot", ctx.Vot, pcvals, pcref);
+							Log({
+								intensity_profile: {t: ctx.t, i: ctx.lambda},
+								mean_count: ctx.Wbar,
+								mean_intensity: ctx.lambdaBar,
+								ref: pcref
 							});
 						});	
 

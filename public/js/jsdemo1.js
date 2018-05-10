@@ -3,7 +3,8 @@ module.exports = {
 		Save: "json",
 		M: "int(11)",
 		Pipe: "json",
-		Share: "boolean"
+		Share: "boolean",
+		Description: "mediumtext"
 	},
 	
 	engine: function jsdemo1(ctx, res) {
