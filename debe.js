@@ -3130,7 +3130,7 @@ Initialize DEBE on startup.
 			[ TEXT ]( LINK )  
 			[ FONT ]( TEXT )  
 			!$ inline TeX $  ||  $$ break TeX $$ || a$ AsciiMath $ || m$ MathML $  
-			#{ KEY } || #{ KEY }( SHORTCUT ) || !{ EXPR }  || ^{ KEY as TeX matrix  }  
+			#{ KEY } || #{ KEY }( SHORTCUT ) || !{ EXPR }  || ${ KEY as TeX matrix  }  
 			#TAG
 		
 	using suppplied record rec to resolve #{key} tags and a default ds = "PATH ? QUERY" for
@@ -3230,19 +3230,22 @@ Initialize DEBE on startup.
 			})
 
 			// record substitutions
-			.replace(/\^\{(.*?)\}/g, function (str,key) {  // ^{ TeX matrix key } markdown
+			.replace(/\$\{(.*?)\}/g, function (str,key) {  // ${ TeX matrix key } markdown
 				function texify(recs) {
 					var tex = [];
-					recs.forEach( function (rec) {
-						if (rec.forEach) {
-							rec.forEach( function (val,idx) {
-								rec[idx] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : JSON.stringify(val);
-							});
-							tex.push( rec.join(" & ") );
-						}
-						else
-							tex.push( rec.toFixed ? rec.toFixed(2) : rec.toUpperCase ? rec : JSON.stringify(rec) );
-					});	
+					
+					if (recs && recs.constructor == Array) 
+						recs.forEach( function (rec) {
+							if (rec.forEach) {
+								rec.forEach( function (val,idx) {
+									rec[idx] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : JSON.stringify(val);
+								});
+								tex.push( rec.join(" & ") );
+							}
+							else
+								tex.push( rec.toFixed ? rec.toFixed(2) : rec.toUpperCase ? rec : JSON.stringify(rec) );
+						});	
+					
 					return  "\\left[ \\begin{matrix} " + tex.join("\\\\") + " \\end{matrix} \\right]";
 				}
 
@@ -3250,13 +3253,8 @@ Initialize DEBE on startup.
 					return cache[key];
 
 				else {
-					try {
-						var val = eval( `$.${key}` );
-					}
-					catch (err) {
-						var val =  rec[key];
-					}
-					return cache[key] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : texify(val);
+					try { var val = eval( `$.${key}` ); } catch (err) {	}
+					return cache[key] = texify( val || rec[key] );
 				}							
 			})
 			.replace(/\#\{(.*?)\}\((.*?)\)/g, function (str,key,short) {  // #{ key }( short ) markdown

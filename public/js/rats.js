@@ -203,7 +203,7 @@ A=B*V;
 lambda = abs(A).^2 / dt; 
 Wbar = {evd: sum(E), prof: sum(lambda)*dt};
 lambdaBar = {evd: Wbar.evd/T, prof: Wbar.prof/T};
-t = rng(-T/2, T/2, N); 
+x = rng(-1/2, 1/2, N); 
 `;
 
 //Log(ctx);
@@ -212,16 +212,16 @@ t = rng(-T/2, T/2, N);
 						ME.exec( script , ctx, (ctx) => {
 							//Log("ctx", ctx);
 							cb({
-								intensity_profile: {t: ctx.t, i: ctx.lambda},
+								intensity: {x: ctx.x, i: ctx.lambda},
 								mean_count: ctx.Wbar,
-								mean_intensity: ctx.lambdaBar
+								mean_intensity: ctx.lambdaBar,
+								eigen_ref: pcref
 							});
 							//Log("Vot", ctx.Vot, pcvals, pcref);
 							Log({
-								intensity_profile: {t: ctx.t, i: ctx.lambda},
 								mean_count: ctx.Wbar,
 								mean_intensity: ctx.lambdaBar,
-								ref: pcref
+								eigen_ref: pcref
 							});
 						});	
 

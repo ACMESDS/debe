@@ -22,49 +22,50 @@ module.exports = {  // learn hidden trigger function of a Markov process
 		_File.Steps = number of time steps
 		_Events = query to get events
 	*/
+		const { sqrt, floor, random, cos, sin, abs, PI, log, exp} = Math;
+		
 		function triggerProfile( solve, cb) {
 			var 
 				ctx = {
 					evs: ME.matrix( solve.evs ),
-					N: solve.D,
+					N: solve.N,
 					lambda0: solve.lambda,
 					T: solve.T,
 					Tc: solve.Tc
 				},
 				script = `
-N0 = fix( (N-1)/2 );
-fs = N/T;
+N0 = fix( (N+1)/2 );
+fs = (N-1)/T;
 df = fs/N;
 nu = rng(-fs/2, fs/2, N); 
 t = rng(-T/2, T/2, N); 
+V = evpsd(evs, nu, T, "n", "t");  
 
-uh = evpsd(evs, nu, T, "n", "t");  
-
-ud = {ccf: uh.meanRate^2 * ${solve.model}(t/Tc)};
-ud.psd =  wkpsd( ud.ccf[N0+1]^2 + abs(ud.ccf).^2, T);
+Accf = V.meanRate * ${solve.model}(t/Tc);
+Lccf = Accf[N0]^2 + abs(Accf).^2;
+Lpsd =  wkpsd( Lccf, T);
 disp({ 
-	refRate: lambda0, 
-	evRate: uh.meanRate, 
+	evRates: {ref: lambda0, ev: V.meanRate, L0: Lpsd[N0]}, L0ev: Lpsd[N0]/V.meanRate, 
 	idx0lag: N0, 
 	obsTime: T, 
-	refSqPower: ud.ccf[N0+1], 
-	evSqPower: sum(ud.psd)*df });
+	sqPower: {N0: N0, ccf: Lccf[N0], psd: sum(Lpsd)*df }
+});
 
-modH = sqrt(uh.psd ./ (lambda0 + ud.psd) );  
+Upsd = V.meanRate*1e2 + Lpsd;
+modH = sqrt(V.psd ./ Upsd );  
 
-H = pwt( modH, [] ); 
-h = dft(H,T); 
+argH = pwt( modH, [] ); 
+h = re(dft( modH .* exp(i*argH),T)); 
+x = t/T; 
 `;
-/*
-disp(uh.psd );
-disp( ud.psd );
-*/
 			ME.exec(script,  ctx, function (ctx) {
 				//Log("vmctx", ctx);
 				cb({
-					trigger_profile: {
-						t: ctx.t,
-						p: ctx.h
+					trigger: {
+						x: ctx.x,
+						h: ctx.h,
+						modH: ctx.modH,
+						argH: ctx.argH
 					}
 				});
 			});
@@ -79,11 +80,10 @@ disp( ud.psd );
 				triggerProfile({  // define solver parms
 					evs: evs,		// events
 					lambda: file.mean_intensity, // mean arrival rate (ref only for debugging)
-					D: ctx.Dim, 		// profile sample times = max coherence intervals
-					model: ctx.Model,  	// complex correlation model
+					N: ctx.Dim, 		// profile sample times = max coherence intervals
+					model: ctx.Model,  	// correlation model
 					Tc: file.coherence_time,  // coherence time of arrival process
-					T: flow.T,  		// observation time
-					N: flow.N		// ensemble size
+					T: flow.T  		// observation time
 				}, function (stats) {
 					ctx.Save = stats;
 					res(ctx);
