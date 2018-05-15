@@ -1,5 +1,5 @@
 module.exports = {  // learn hidden trigger function of a Markov process
-	usecase: {
+	keys: {
 		Symbols: "json comment '[sym, sym, ...] state symbols or null to generate' ",
 		Steps: "int(11) default 0 comment 'steps to next supervised learning' ",
 		Batch: "int(11) default 0 comment 'override _File.Steps' ",
@@ -29,7 +29,8 @@ module.exports = {  // learn hidden trigger function of a Markov process
 				ctx = {
 					evs: ME.matrix( solve.evs ),
 					N: solve.N,
-					lambda0: solve.lambda,
+					refLambda: solve.refLambda,
+					alpha: solve.alpha,
 					T: solve.T,
 					Tc: solve.Tc
 				},
@@ -41,17 +42,18 @@ nu = rng(-fs/2, fs/2, N);
 t = rng(-T/2, T/2, N); 
 V = evpsd(evs, nu, T, "n", "t");  
 
-Accf = V.meanRate * ${solve.model}(t/Tc);
+Lrate = V.rate / alpha;
+Accf = Lrate * ${solve.model}(t/Tc);
 Lccf = Accf[N0]^2 + abs(Accf).^2;
 Lpsd =  wkpsd( Lccf, T);
 disp({ 
-	evRates: {ref: lambda0, ev: V.meanRate, L0: Lpsd[N0]}, L0ev: Lpsd[N0]/V.meanRate, 
+	evRates: {ref: refLambda, ev: V.rate, L0: Lpsd[N0]}, 
 	idx0lag: N0, 
 	obsTime: T, 
 	sqPower: {N0: N0, ccf: Lccf[N0], psd: sum(Lpsd)*df }
 });
 
-Upsd = V.meanRate*1e2 + Lpsd;
+Upsd = Lrate + Lpsd;
 modH = sqrt(V.psd ./ Upsd );  
 
 argH = pwt( modH, [] ); 
@@ -79,7 +81,8 @@ x = t/T;
 			if (evs)
 				triggerProfile({  // define solver parms
 					evs: evs,		// events
-					lambda: file.mean_intensity, // mean arrival rate (ref only for debugging)
+					refLambda: file.mean_intensity, // ref mean arrival rate (for debugging)
+					alpha: file.gain, // assumed detector gain
 					N: ctx.Dim, 		// profile sample times = max coherence intervals
 					model: ctx.Model,  	// correlation model
 					Tc: file.coherence_time,  // coherence time of arrival process

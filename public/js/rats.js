@@ -1,5 +1,5 @@
 module.exports = {  // learn hidden intensity parameters of a Markov process
-	usecase: {
+	keys: {
 		Symbols: "json comment '[sym, sym, ...] state symbols or null to generate' ",
 		Steps: "int(11) default 0 comment 'steps to next supervised learning' ",
 		Batch: "int(11) default 0 comment 'override _File.Steps' ",
@@ -173,55 +173,54 @@ vecres: R.vectors*diag(R.values) - Xccf*R.vectors,
 				
 				if (pcs) {
 					var 
-						pcref = pcs.ref,  // [unitless]
-						pcvals = pcs.values,  // [unitless]
-						N = pcvals.length,
+						pcRef = pcs.ref,  // [unitless]
+						pcVals = pcs.values,  // [unitless]
+						N = pcVals.length,
 						T = solve.T,
 						dt = T / (N-1),
-						evals = $(N, (n,e) => e[n] = solve.lambdaBar * dt * pcvals[n] * pcref ),  // [unitless]
-						evecs = pcs.vectors,   // [sqrt Hz]
+						egVals = $(N, (n,e) => e[n] = solve.lambdaBar * dt * pcVals[n] * pcRef ),  // [unitless]
+						egVecs = pcs.vectors,   // [sqrt Hz]
 						ctx = {
 							T: T,
 							N: N,
 							dt: dt,
 							
-							E: ME.matrix( evals ),
+							E: ME.matrix( egVals ),
 							
 							B: $(N, (n,B) => {
 								var
-									b = sqrt( expdev( evals[n] ) ),  // [unitless]
+									b = sqrt( expdev( egVals[n] ) ),  // [unitless]
 									arg = random() * PI;
 
-								Log(n,arg,b, evals[n], T, N, solve.lambdaBar , 31/50 );
+								Log(n,arg,b, egVals[n], T, N, solve.lambdaBar );
 								B[n] = ME.complex( b * cos(arg), b * sin(arg) );  // [unitless]
 							}),
 
-							V: evecs   // [sqrt Hz]
+							V: egVecs   // [sqrt Hz]
 						},
 						script = `
 A=B*V; 
 lambda = abs(A).^2 / dt; 
 Wbar = {evd: sum(E), prof: sum(lambda)*dt};
-lambdaBar = {evd: Wbar.evd/T, prof: Wbar.prof/T};
+evRate = {evd: Wbar.evd/T, prof: Wbar.prof/T};
 x = rng(-1/2, 1/2, N); 
 `;
 
 //Log(ctx);
-					
+
 					if (N) 
 						ME.exec( script , ctx, (ctx) => {
 							//Log("ctx", ctx);
 							cb({
 								intensity: {x: ctx.x, i: ctx.lambda},
 								mean_count: ctx.Wbar,
-								mean_intensity: ctx.lambdaBar,
-								eigen_ref: pcref
+								mean_intensity: ctx.evRate,
+								eigen_ref: pcRef
 							});
-							//Log("Vot", ctx.Vot, pcvals, pcref);
 							Log({
 								mean_count: ctx.Wbar,
-								mean_intensity: ctx.lambdaBar,
-								eigen_ref: pcref
+								mean_intensity: ctx.evRate,
+								eigen_ref: pcRef
 							});
 						});	
 
@@ -247,9 +246,9 @@ x = rng(-1/2, 1/2, N);
 			trace: false,   // eigen debug
 			T: flow.T,  // observation interval  [1/Hz]
 			M: file.coherence_intervals, // coherence intervals
-			lambdaBar: file.mean_intensity, // [Hz]
-			Mstep: 1,  // step intervals
-			Mmax: ctx.Dim || 150,  // max coherence intervals / pc dim
+			lambdaBar: file.mean_intensity, // event arrival rate [Hz]
+			Mstep: 1,  // coherence step size when pc created
+			Mmax: ctx.Dim || 150,  // max coherence intervals when pc created
 			model: ctx.Model,  // assumed correlation model for underlying CCGP
 			min: ctx.MinEigen	// min eigen value to use
 		}, function (stats) {
