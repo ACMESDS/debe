@@ -72,7 +72,7 @@ var
 		
 	plugins: LAB.libs,
 		
-	autoadd: {  //< reserved for autorun plugins determined at startup
+	autoTask: {  //< reserved for autorun plugins determined at startup
 	},
 		
 	ingester: function ingester( opts, query ) {
@@ -161,7 +161,7 @@ var
 			site = DEBE.site,
 			pocs = site.pocs,
 			sendMail = FLEX.sendMail,
-			autoadd = DEBE.autoadd;
+			autoTask = DEBE.autoTask;
 		
 		if (pocs.admin)
 			sendMail({
@@ -179,12 +179,13 @@ var
 						[dsn], function (ctx) {
 						
 						if (ctx) {
-							autoadd[dsn] = Copy(ctx, {});
+							autoTask[dsn] = Copy(ctx, {});
 							Trace("AUTOADD "+dsn);
 						}
 					});
 			});
 		});
+		
 	},
 		
 	// watchdog configuration
@@ -552,7 +553,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 			trace: ""
 		}, function (sql, opts) {
 
-			for (var dsn in DEBE.autoadd) {
+			for (var dsn in DEBE.autoTask) {
 				sql.query("SELECT ID, ? AS _Plugin FROM app.? WHERE Autorun", [dsn, dsn])
 				.on("result", (run) => {
 					exePlugin({
@@ -1740,7 +1741,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 							});	
 				});
 			}); */
-			Each(DEBE.autoadd, function (dsn, ctx) {
+			Each(DEBE.autoTask, function (dsn, ctx) {
 				sql.query(
 					"INSERT INTO app.?? SET ? ON DUPLICATE KEY UPDATE Autorun=1",
 					[dsn, Copy({
@@ -2336,7 +2337,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				
 				HACK.chipEvents(sql, Pipe, function ( specs ) {  // create job for these Pipe parameters
 
-					sql.insertJob( Copy(specs,job), function (sql, job) {  // put job into the job queue
+					sql.insertJob( Copy(specs,job), function (sql, job) {  // put job voxel into the job queue
 						
 						//Log("flow ctx", ctx);
 						
@@ -2420,7 +2421,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			if ( "Save" in ctx )  // an event generation engine does not participate in pipe workflow
 				res( saveEvents( sql, ctx.Save, ctx, function (evs) {
 					var
-						autoadd = DEBE.autoadd,
+						autoTask = DEBE.autoTask,
 						host = ctx.Host = table,
 						fileName = `${host}.${ctx.Name}`;
 					
@@ -2444,7 +2445,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						DEBE.getFile( host, `${host}/${fileName}`, function (area, fileID) {
 							HACK.ingestList( sql, evs, fileID, function (aoi) {
 								Log("INGESTED",aoi);
-								Each(autoadd, function (dsn,ctx) {
+								Each(autoTask, function (dsn,ctx) {
 									sql.query(
 										"INSERT INTO app.?? SET ? ON DUPLICATE KEY UPDATE Autorun=1",
 										[dsn, Copy({
