@@ -74,24 +74,29 @@ x = t/T;
 		}
 		
 		var
+			stats = ctx.Stats,
 			file = ctx.File,
 			flow = ctx.Flow;
 		
-		GET.forAll(ctx, function (evs) {  // fetch all the events
-			if (evs)
-				triggerProfile({  // define solver parms
-					evs: evs,		// events
-					refLambda: file.mean_intensity, // ref mean arrival rate (for debugging)
-					alpha: file.gain, // assumed detector gain
-					N: ctx.Dim, 		// profile sample times = max coherence intervals
-					model: ctx.Model,  	// correlation model
-					Tc: file.coherence_time,  // coherence time of arrival process
-					T: flow.T  		// observation time
-				}, function (stats) {
-					ctx.Save = stats;
-					res(ctx);
-				});
-		});
+		if (stats)
+			GET.forAll(ctx, function (evs) {  // fetch all the events
+				if (evs)
+					triggerProfile({  // define solver parms
+						evs: evs,		// events
+						refLambda: stats.mean_intensity, // ref mean arrival rate (for debugging)
+						alpha: file.gain, // assumed detector gain
+						N: ctx.Dim, 		// profile sample times = max coherence intervals
+						model: ctx.Model,  	// correlation model
+						Tc: stats.coherence_time,  // coherence time of arrival process
+						T: flow.T  		// observation time
+					}, function (stats) {
+						ctx.Save = stats;
+						res(ctx);
+					});
+			});
+		
+		else
+			res(null);
 	}
 
 }

@@ -2348,6 +2348,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 								Collects: job.Collects,
 								Flux: job.Flux,
 								Events: job.Events || "",
+								Stats: job.Stats,
 								Chip: job.Chip,
 								Host: job.name
 							}, ctx),

@@ -238,23 +238,28 @@ x = rng(-1/2, 1/2, N);
 		}
 
 		var
-			file = ctx.File,
+			stats = ctx.Stats,
 			flow = ctx.Flow;
 		
-		//Log("rats ctx", ctx);
-		arrivalRates({  // parms for principle components (intensity profile) solver
-			trace: false,   // eigen debug
-			T: flow.T,  // observation interval  [1/Hz]
-			M: file.coherence_intervals, // coherence intervals
-			lambdaBar: file.mean_intensity, // event arrival rate [Hz]
-			Mstep: 1,  // coherence step size when pc created
-			Mmax: ctx.Dim || 150,  // max coherence intervals when pc created
-			model: ctx.Model,  // assumed correlation model for underlying CCGP
-			min: ctx.MinEigen	// min eigen value to use
-		}, function (stats) {
-			ctx.Save = stats;
-			res(ctx);
-		});
+		Log("rats ctx", stats);
+		if (stats)
+			arrivalRates({  // parms for principle components (intensity profile) solver
+				trace: false,   // eigen debug
+				T: flow.T,  // observation interval  [1/Hz]
+				M: stats.coherence_intervals, // coherence intervals
+				lambdaBar: stats.mean_intensity, // event arrival rate [Hz]
+				Mstep: 1,  // coherence step size when pc created
+				Mmax: ctx.Dim || 150,  // max coherence intervals when pc created
+				model: ctx.Model,  // assumed correlation model for underlying CCGP
+				min: ctx.MinEigen	// min eigen value to use
+			}, function (stats) {
+				ctx.Save = stats;
+				Log("save", stats);
+				res(ctx);
+			});
+		
+		else
+			res(null);
 		
 	}
 
