@@ -23,6 +23,9 @@
 @requires jslab
 @requires randpr
 
+@requires strdif
+@requires string-similarity
+
 Required env vars: none
 
 Required openv.datasets:
