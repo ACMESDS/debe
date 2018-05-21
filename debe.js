@@ -1857,7 +1857,7 @@ function sysIngest(req,res) {
 				});
 			});
 
-		else  // use customer ingester
+		else  // use custom ingester
 			sql.query("SELECT Ingester FROM app.files WHERE ? AND Ingester", {ID: fileID})
 			.on("results", function (file) {
 				if ( onIngest = JSON.parse(file.Ingester) ) 

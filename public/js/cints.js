@@ -416,8 +416,7 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 					est_rate: Kbar / T,
 					degeneracy_param: Kbar / M0,
 					snr: snr,
-					stability: snr,
-					fertility: 1 - mu/2.5,
+					complete: 1 - mu/2.5,
 					coherence_time: T / M0,
 					fit_stats: M
 				});
