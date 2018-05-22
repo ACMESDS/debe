@@ -24,8 +24,9 @@ append base_head
 
 	script.
 		var opts = {
-			ds: "!{query.ds}" || "maps.db",
+			ds: "/!{query.src}",
 			index: "#{query.index}" || "Name",
+			ctries: "/ctries",
 			details: "#{query.details}" || "Info",
 			raw: true,
 			fill: "#{query.fill}" || "Code",
@@ -37,47 +38,69 @@ append base_body
 	script.
 		//var map = new Datamap({element: document.getElementById('content')});
 
-		source(opts, function(data) {
-
-			data.each( function (n,rec) {
-				data[ (rec[opts.index] || "") ] = {
-					fillKey: (rec[opts.fill] || "").toUpperCase(),
-					Info: (rec[opts.details] || "").toUpperCase()
-				};
+		d3.json(opts.ctries, function (ctries) {
+			var cmap = {}, vmap = [];
+			ctries.forEach( function (ctry) {
+				cmap[ctry.Name.toUpperCase()] = {
+					fillKey: ctry.Code.toUpperCase(),
+					info: ctry.Info
+				}
 			});
-		
-			var map = new Datamap({
-				element: document.getElementById('content'),
 
-				geographyConfig: {
+			source(opts, function(recs) {
+				
+				recs.forEach( function (rec) {
+					vmap.push({
+						name: rec.Source,
+						radius: rec.Radius,
+						longitude: rec.Location.x,
+						latitude: rec.Location.y,
+						fillKey: "VOXEL"
+					});						
+				});
+				
+				var map = new Datamap({
+					//responsive: true,
+					
+					//bubbles: vmap,
+					
+					element: document.getElementById('content'),
+
+					geographyConfig: {
+						popupTemplate: function (geo,data) {
+							return [
+								geo ? geo.properties.name : "",
+								data ? data.info : "nada"
+							].join("<br>").tag("div",{class:"hoverinfo"});
+						}
+					},
+					
+					fills: {
+						HIGH: '#afafaf',
+						LOW: '#123456',
+						MEDIUM: 'blue',
+						VOXEL: 'red', //'rgb(1,0,0)',
+						defaultFill: 'green'
+					},
+
+					data: cmap
+				});
+
+				map.bubbles(vmap, {
 					popupTemplate: function (geo,data) {
 						return [
-							geo ? geo.properties.name : "",
-							data ? data.Info : "nada"
+							//geo ? geo.properties.name : "",
+							data ? JSON.stringify(data) : "nada"
 						].join("<br>").tag("div",{class:"hoverinfo"});
-					}
-				},
-				fills: {
-					HIGH: '#afafaf',
-					LOW: '#123456',
-					MEDIUM: 'blue',
-					UNKNOWN: 'red', //'rgb(1,0,0)',
-					defaultFill: 'green'
-				},
-				data: data || {
-					RUSSIA: {
-						fillKey: 'LOW',
-						Info: 2002
-					},
-					USA: {
-						fillKey: 'MEDIUM',
-						Info: 10381
-					} 
-				} 
+					}});
+				
+				map.legend();
+				
+				d3.select(window).on("resize", function () {
+					map.resize();
+				});
+				
 			});
-
-			//draw a legend for this map
-			map.legend();
-		});		
+		});	
 
 // UNCLASSIFIED

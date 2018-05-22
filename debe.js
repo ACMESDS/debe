@@ -21,6 +21,7 @@
 @requires atomic
 @requires geohack
 @requires jslab
+@requires jsdb
 @requires randpr
 
 @requires strdif
