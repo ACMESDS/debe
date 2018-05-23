@@ -329,7 +329,7 @@ Tag url (el=?|&), list (el=;|,), or tag html using specified attributes.
 @return {String} tagged results
 */
 
-	if ( el == "?" ) {  // tag a url or list
+	if (  el == "?" || el == "&" ) {  // tag a url or list
 		var rtn = this+el;
 
 		for (var n in at) 

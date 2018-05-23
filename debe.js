@@ -91,7 +91,7 @@ var
 									if ( ev.constructor == String ) {
 										var 
 											ctx = VM.createContext({rec: rec, query: query, evs: evs}),
-										 	reader = `evs.push( (${opts.ev})(rec) );` ;
+										 	reader = `evs.push( (${opts.ev})(rec,evs.length) );` ;
 										
 										VM.runInContext( reader, ctx );
 									}
@@ -111,54 +111,7 @@ var
 		}
 	},
 		
-	onIngest: {   //< Ingest watchers 
-		fino: {
-			url: "https://kaching/TBD",
-			put: {
-				terms: "pakistan",
-				cursors: "*",
-				perPage: 20,
-				page: 1,
-				facet: true
-			},
-			get: null,
-			ev: (rec) => rec
-		},
-
-		missiles: {
-			url: "https://opir/type=missile&TBD",
-			put: null,
-			get: "trks",
-			ev: (rec) => {
-				var pos = rec.latLonAlt;
-				return { 
-					x: pos.lat,
-					y: pos.lon,
-					z: pos.alt,
-					t: idx,
-					s: idx,
-					n: rec.trackNum
-				};
-			}
-		},
-
-		artillery: {
-			url: "https://opir/type=artillery&TBD",
-			put: null,
-			get: "trks",
-			ev: (rec) => {
-				var pos = rec.latLonAlt;
-				return { 
-					x: pos.lat,
-					y: pos.lon,
-					z: pos.alt,
-					t: idx,
-					s: idx,
-					n: rec.trackNum
-				};
-			}
-		}
-	},
+	onIngest: require("./ingesters"),
 
 	onStartup: function (sql) {
 		var
@@ -240,7 +193,7 @@ var
 		}, function (opts) {		
 			var 
 				gets = {
-					reingest: "SELECT ID,Ring,centroid(Ring) AS Center, sqrt(area(Ring)/2/pi()) AS Radius, startTime,endTime,advanceDays,durationDays,sampleTime,Name FROM app.files WHERE now()>startTime AND now()<endTime"
+					reingest: "SELECT ID,Ring,centroid(Ring) AS Center, sqrt(area(Ring)/2/pi()) AS Radius, startTime,endTime,advanceDays,durationDays,sampleTime,Name FROM app.files WHERE now()>startTime AND now()<endTime AND durationDays"
 					//artillery: "/ingest?src=artillery",
 					//missile: "/ingest?src=missiles"
 				},
@@ -249,18 +202,25 @@ var
 			
 			JSDB.forEach("", gets.reingest, [], function (file, sql) {
 				Trace("INGEST "+file.Name);
-				fetcher( (urls.master+file.Name).tag("&",{
+				var
+					from = new Date(file.startTime),
+					to = from.addDays(file.durationDays),
+					path = urls.master + file.Name;
+					
+				fetcher( path.tag("&", {
 					fileID: file.ID,
-					from: file.startTime,
-					center: file.Center,
+					from: from.toISOString().substr(0,10),
+					to: to.toISOString().substr(0,10),
+					lon: file.Center.x,
+					lat: file.Center.y,
 					radius: file.Radius,
-					to: file.startTime.addDays(file.durationDays),
 					ring: file.Ring,
 					durationDays: file.durationDays
 				}), null, null, function (msg) {
 					Log("INGEST", msg);
 				});
 
+				if (0)
 				sql.query(
 					"UPDATE app.files SET startTime=date_add(startTime, interval advanceDays day), Revs=Revs+1 WHERE ?", 
 					{ ID: file.ID }
