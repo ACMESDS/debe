@@ -91,9 +91,9 @@ var
 									if ( ev.constructor == String ) {
 										var 
 											ctx = VM.createContext({rec: rec, query: query, evs: evs}),
-										 	eng = `evs.push( (${opts.ev})(rec) );` ;
+										 	reader = `evs.push( (${opts.ev})(rec) );` ;
 										
-										VM.runInContext( eng, ctx );
+										VM.runInContext( reader, ctx );
 									}
 									
 									else
@@ -234,14 +234,13 @@ var
 		}, function (opts) {
 		}),
 		
-		/*
 		dogIngest: Copy({
 			cycle: 30,
 			trace: "DOG"
 		}, function (opts) {		
 			var 
 				gets = {
-					reingest: "SELECT ID,Ring,startTime,endTime,advanceDays,durationDays,sampleTime,Name FROM app.files WHERE now()>startTime AND now()<endTime"
+					reingest: "SELECT ID,Ring,centroid(Ring) AS Center, sqrt(area(Ring)/2/pi()) AS Radius, startTime,endTime,advanceDays,durationDays,sampleTime,Name FROM app.files WHERE now()>startTime AND now()<endTime"
 					//artillery: "/ingest?src=artillery",
 					//missile: "/ingest?src=missiles"
 				},
@@ -253,6 +252,8 @@ var
 				fetcher( (urls.master+file.Name).tag("&",{
 					fileID: file.ID,
 					from: file.startTime,
+					center: file.Center,
+					radius: file.Radius,
 					to: file.startTime.addDays(file.durationDays),
 					ring: file.Ring,
 					durationDays: file.durationDays
@@ -261,11 +262,11 @@ var
 				});
 
 				sql.query(
-					"UPDATE app.files SET startTime=date_add(startTime, interval advanceDays day), endTime=date_add(startTime, interval durationDays day), Revs=Revs+1 WHERE ?", 
+					"UPDATE app.files SET startTime=date_add(startTime, interval advanceDays day), Revs=Revs+1 WHERE ?", 
 					{ ID: file.ID }
 				);
 			});
-		}), */
+		}),
 		
 		dogFiles: Copy({
 			//cycle: 300, // secs
