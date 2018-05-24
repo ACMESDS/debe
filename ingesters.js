@@ -15,7 +15,7 @@ module.exports = {   //< data integsters
 	},
 
 	missiles: {
-		url: ENV.INGEST_MISSILES,
+		url: ENV.SRV_MISSILES,
 		put: null,
 		get: "events",
 		ev: (rec,idx) => {
@@ -31,7 +31,7 @@ module.exports = {   //< data integsters
 	},
 
 	artillery: {
-		url: ENV.INGEST_ARTILLERY,
+		url: ENV.SRV_ARTILLERY,
 		put: null,
 		get: "events",
 		ev: (rec,idx) => {

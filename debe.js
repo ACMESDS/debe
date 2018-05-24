@@ -79,35 +79,38 @@ var
 	autoTask: {  //< reserved for autorun plugins determined at startup
 	},
 		
-	ingester: function ingester( opts, query ) {
+	ingester: function ingester( opts, query, cb ) {
 		try {
 			if (opts.url)
 				DEBE.fetcher( opts.url, query, opts.put||null, function (data) {
 					var evs = [];
 					if (data) 
-						if (recs = opts.get ? data[opts.get] : data) 
+						if (recs = opts.get ? data[opts.get] : data) {
+							Log("ingest recs", recs.length);
 							recs.forEach( function (rec, idx) {
 								if (ev = opts.ev) 
 									if ( ev.constructor == String ) {
 										var 
 											ctx = VM.createContext({rec: rec, query: query, evs: evs}),
-										 	reader = `evs.push( (${opts.ev})(rec,evs.length) );` ;
+										 	reader = `evs.push( (${opts.ev})(rec, evs.length) );` ;
 										
 										VM.runInContext( reader, ctx );
 									}
 									
 									else
-										evs.push( ev(rec) );
+										evs.push( ev(rec, evs.length) );
 								
 								else
 									evs.push( rec );
 							});
+						}
 
 					cb(evs);
 				});
 		}
 		
 		catch(err) {
+			Log("INGESTER",err);
 		}
 	},
 		
@@ -187,6 +190,7 @@ var
 		}, function (opts) {
 		}),
 		
+		/*
 		dogIngest: Copy({
 			cycle: 30,
 			trace: "DOG"
@@ -209,8 +213,8 @@ var
 					
 				fetcher( path.tag("&", {
 					fileID: file.ID,
-					from: from.toISOString().substr(0,10),
-					to: to.toISOString().substr(0,10),
+					from: from.toLocaleDateString("en-US"),
+					to: to.toLocaleDateString("en-US"),
 					lon: file.Center.x,
 					lat: file.Center.y,
 					radius: file.Radius,
@@ -220,16 +224,16 @@ var
 					Log("INGEST", msg);
 				});
 
-				if (0)
+				if (1)
 				sql.query(
 					"UPDATE app.files SET startTime=date_add(startTime, interval advanceDays day), Revs=Revs+1 WHERE ?", 
 					{ ID: file.ID }
 				);
 			});
-		}),
+		}),  */
 		
 		dogFiles: Copy({
-			//cycle: 300, // secs
+			cycle: 30, // secs
 			trace: "DOG",
 			maxage: 90 // days
 		}, function (opts) {
@@ -246,7 +250,8 @@ var
 				urls = DEBE.site.urls,
 				fetcher = DEBE.fetchData,
 				gets = {
-					reingest: "SELECT ID,Ring,startTime,endTime,advanceDays,durationDays,sampleTime,Name FROM app.files WHERE now()>startTime AND now()<endTime",
+					//reingest: "SELECT ID,Ring,startTime,endTime,advanceDays,durationDays,sampleTime,Name FROM app.files WHERE now()>startTime AND now()<endTime",
+					reingest: "SELECT ID,Ring,centroid(Ring) AS Center, sqrt(area(Ring)/2/pi()) AS Radius, startTime,endTime,advanceDays,durationDays,sampleTime,Name FROM app.files WHERE now()>startTime AND now()<endTime AND durationDays",					
 					lowsnr: "SELECT events.ID AS ID FROM app.events LEFT JOIN app.voxels ON voxels.ID = events.voxelID WHERE ? < voxels.minSNR AND ?",
 					unpruned: "SELECT ID,Name,snr FROM app.files WHERE NOT Pruned AND Voxels AND fetch_time IS NULL",
 					ungraded: "SELECT ID,Name,Actors,States,Steps FROM app.files WHERE NOT Graded AND Voxels AND fetch_time IS NULL",
@@ -345,18 +350,27 @@ Further information about this file is available ${paths.moreinfo}. `;
 			
 			JSDB.forEach("", gets.reingest, [], function (file, sql) {
 				Trace("INGEST "+file.Name);
-				fetcher( (urls.master+file.Name).tag("&",{
+				var
+					from = new Date(file.startTime),
+					to = from.addDays(file.durationDays),
+					path = urls.master + file.Name;
+				
+				fetcher( path.tag("&", {
 					fileID: file.ID,
-					from: file.startTime,
-					to: file.startTime.addDays(file.durationDays),
+					from: from.toLocaleDateString("en-US"),
+					to: to.toLocaleDateString("en-US"),
+					lon: file.Center.x,
+					lat: file.Center.y,
+					radius: file.Radius,
 					ring: file.Ring,
 					durationDays: file.durationDays
 				}), null, null, function (msg) {
 					Log("INGEST", msg);
 				});
 
+				if (1)
 				sql.query(
-					"UPDATE app.files SET startTime=date_add(startTime, interval advanceDays day), endTime=date_add(startTime, interval durationDays day), Revs=Revs+1 WHERE ?", 
+					"UPDATE app.files SET startTime=date_add(startTime, interval advanceDays day), Revs=Revs+1 WHERE ?", 
 					{ ID: file.ID }
 				);
 			});
@@ -1806,14 +1820,14 @@ function sysIngest(req,res) {
 		src = query.src,
 		fileID = query.fileID;
 	
-	Log("INGEST", query, body, onIngest);
+	Log("INGEST", query, body);
 	res("ingesting");
 
 	if (fileID) {
 		sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
 
 		if ( onIngest = DEBE.onIngest[src] )   // use builtin ingester
-			DEBE.ingester( onIngest, function (evs) {
+			DEBE.ingester( onIngest, query, function (evs) {
 				HACK.ingestList( sql, evs, fileID, function (aoi) {
 					Log("INGEST aoi", aoi);
 				});
@@ -1823,7 +1837,7 @@ function sysIngest(req,res) {
 			sql.query("SELECT Ingester FROM app.files WHERE ? AND Ingester", {ID: fileID})
 			.on("results", function (file) {
 				if ( onIngest = JSON.parse(file.Ingester) ) 
-					DEBE.ingester( onIngest, function (evs) {
+					DEBE.ingester( onIngest, query, function (evs) {
 						HACK.ingestList( sql, evs, fileID, function (aoi) {
 							Log("INGEST aoi", aoi);
 						});
@@ -3594,8 +3608,9 @@ Initialize DEBE on startup.
 	
 [  // date prototypes
 	function addDays(days) {
-		this.setDate( this.getDate() + days);
-		return this;
+		var d = new Date(this);
+		d.setDate( d.getDate() + days);
+		return d;
 	}
 ].extend(Date);
 		
