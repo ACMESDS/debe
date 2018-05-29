@@ -1824,7 +1824,7 @@ function sysIngest(req,res) {
 	res("ingesting");
 
 	if (fileID) {
-		sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
+		//sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
 
 		if ( onIngest = DEBE.onIngest[src] )   // use builtin ingester
 			DEBE.ingester( onIngest, query, function (evs) {
