@@ -1825,7 +1825,7 @@ function sysIngest(req,res) {
 
 	if (fileID) {
 		//sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
-
+		
 		if ( onIngest = DEBE.onIngest[src] )   // use builtin ingester
 			DEBE.ingester( onIngest, query, function (evs) {
 				HACK.ingestList( sql, evs, fileID, function (aoi) {
@@ -2398,7 +2398,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			}
 					
 			else
-			if ( "Save" in ctx )  // an event generation engine does not participate in pipe workflow
+			if ( "Save" in ctx )  { // an event generation engine does not participate in piped workflow
+
 				res( saveEvents( sql, ctx.Save, ctx, function (evs) {
 					var
 						autoTask = DEBE.autoTask,
@@ -2423,6 +2424,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 					if ( ctx.Ingest )  // ingest remaining events
 						DEBE.getFile( host, `${host}/${fileName}`, function (area, fileID) {
+							sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
+							
 							HACK.ingestList( sql, evs, fileID, function (aoi) {
 								Log("INGESTED",aoi);
 								Each(autoTask, function (dsn,ctx) {
@@ -2435,12 +2438,12 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 										}, ctx)]
 									);
 								});
-								
 							});
 						});
 
 				}) ); 
-
+			}
+			
 			else
 				res( "ok" );
 			
