@@ -41,6 +41,7 @@ append layout_parms
 		// exjs
 		- carousel = false
 		- charting = false
+		- coding = true
 		- theme = "crisp"  // crisp | neptune | aria | gray | ...
 		// jquery
 		- grid = "DataTable" // DataTable | w2UI | jqgrid | ... 
@@ -256,6 +257,18 @@ append layout_head
 				script(src="/clients/extjs/build/ext-all.js")
 				// script(src="/clients/ckeditor/ckeditor.js")
 
+			if coding
+				link(rel="stylesheet", href="/clients/codemirror/lib/codemirror.css")
+				link(rel="stylesheet", href="/clients/codemirror/addon/fold/foldgutter.css")
+				script(src="/clients/codemirror/lib/codemirror.js")
+				script(src="/clients/codemirror/addon/fold/foldcode.js")
+				script(src="/clients/codemirror/addon/fold/foldgutter.js")
+				script(src="/clients/codemirror/addon/fold/brace-fold.js")
+				script(src="/clients/codemirror/addon/fold/xml-fold.js")
+				script(src="/clients/codemirror/addon/fold/indent-fold.js")
+				script(src="/clients/codemirror/addon/fold/markdown-fold.js")
+				script(src="/clients/codemirror/addon/fold/comment-fold.js")
+  
 			if charting
 				script(src="/clients/extjs/build/packages/sencha-charts/build/sencha-charts.js")
 

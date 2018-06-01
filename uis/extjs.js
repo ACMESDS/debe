@@ -90,7 +90,7 @@ var
 					var 
 						store = EDCTX.store,
 						rec = store.getAt(EDCTX.row);
-					
+
 					rec.set(EDCTX.key, EDITOR.getValue());
 					EDWIN.hide();
 				}
@@ -3636,16 +3636,42 @@ WIDGET.prototype.terminal = function (term,opts) {
 					key = head.dataIndex,
 					val = Rec.get(key);
 					
-				//console.log(td,cellIndex,tr,rowIndex);
-				//console.log("idx=", key,val);
+				//console.log(td,cellIndex,tr,rowIndex, key,val);
 				EDCTX = {
 					row: rowIndex,
 					store: grid.getStore(),
 					key: key
 				};
-				EDITOR.setValue(val);
-				EDWIN.setTitle( Name + "." + key);
-				EDWIN.show();
+				
+				//alert([document.body]);
+					
+				if (CodeMirror) {
+					var ed = CodeMirror(td, {
+						lineNumbers: true,
+						lineWrapping: true,
+						extraKeys: {"Ctrl-Q": function(cm){ cm.foldCode(cm.getCursor()); }},
+						foldGutter: true,
+						gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],	
+						//onGutterClick: foldFunc,
+						mode: "javascript",
+						value: `
+function someScript() { 
+var x = 1 + 2;
+return 123;
+} `
+					});
+					//var foldFunc = CodeMirror.newFoldFunction(CodeMirror.braceRangeFinder);
+					//foldFunc(ed, 9);
+  					//foldFunc(ed, 20);
+					//for (var n in ed) alert(n);
+					ed.foldCode(CodeMirror.Pos(13, 0));
+				}
+					
+				else {
+					EDITOR.setValue(val);
+					EDWIN.setTitle( Name + "." + key);
+					EDWIN.show();
+				}
 			}, 
 
 			// regen pivots and slaved posts if pivot column moved
