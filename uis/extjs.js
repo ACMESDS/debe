@@ -112,18 +112,17 @@ var
 				tabchange: function (tabpan, tabcard) {
 					EDCTX.code == (tabcard.id == "codeedit");
 		
-					//alert( EDDOC.true.getEl() );
-					if (EDCTX.code)
-					if (CodeMirror)
-						CodeMirror(EDDOC.true.getEl(), {
-							lineNumbers: true,
-							lineWrapping: true,
-							extraKeys: {"Ctrl-Q": function(cm){ cm.foldCode(cm.getCursor()); }},
-							foldGutter: true,
-							gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],	
-							mode: "javascript",
-							value: EDGET()
-						});
+					/*if (EDCTX.code)
+					CodeMirror.fromTextArea(EDDOC[true].getEl(), {
+						lineNumbers: true,
+						lineWrapping: true,
+						extraKeys: {"Ctrl-Q": function(cm){ cm.foldCode(cm.getCursor()); }},
+						foldGutter: true,
+						gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],	
+						mode: "javascript",
+						value: EDDOC[false].getValue()
+					}); */
+					
 				}
 			},
 			items		: [
@@ -147,17 +146,28 @@ var
 				}),
 				
 				Ext.create( "Ext.panel.Panel", {
-					layout: "fit",
+					layout: "hbox",
 					title: "code",
 					id: "codeedit",
-					//bodyPadding: 10,
+					listeners: {
+						afterrender: function () {
+							var doc = EDDOC.true.getEl();
+							
+							CodeMirror(doc, {
+								lineNumbers: true,
+								lineWrapping: true,
+								extraKeys: {"Ctrl-Q": function(cm){ cm.foldCode(cm.getCursor()); }},
+								foldGutter: true,
+								gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],	
+								mode: "javascript",
+								value: EDDOC[false].getValue()
+							});
+						}
+					},	
 					items: [{
 						xtype: "textarea",
-						id: "codedoc",
-						//hidden: true
-						width: 10
-						//height: 400,
-						//text: "hello there"
+						id: "codedoc"
+						//maxWidth: 100
 					} ]
 				})
 			]
@@ -3712,12 +3722,12 @@ WIDGET.prototype.terminal = function (term,opts) {
 					val = rec.get(key);
 					
 				//console.log(td,cellIndex,tr,rowIndex, key);
-				EDCTX = {
+				Copy({
 					row: rowIndex,
 					store: grid.getStore(),
 					key: key,
-					code: true
-				};
+					code: false
+				}, EDCTX);
 				
 				EDSET( val );
 				EDWIN.setTitle( Name + "." + key);

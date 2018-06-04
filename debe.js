@@ -82,7 +82,7 @@ var
 	ingester: function ingester( opts, query, cb ) {
 		try {
 			if (opts.url)
-				DEBE.fetcher( opts.url, query, opts.put||null, function (data) {
+				DEBE.fetchData( opts.url, query, opts.put||null, function (data) {
 					var evs = [];
 					if (data) 
 						if (recs = opts.get ? data[opts.get] : data) {
@@ -250,8 +250,7 @@ var
 				urls = DEBE.site.urls,
 				fetcher = DEBE.fetchData,
 				gets = {
-					//reingest: "SELECT ID,Ring,startTime,endTime,advanceDays,durationDays,sampleTime,Name FROM app.files WHERE now()>startTime AND now()<endTime",
-					reingest: "SELECT ID,Ring,centroid(Ring) AS Center, sqrt(area(Ring)/2/pi()) AS Radius, startTime,endTime,advanceDays,durationDays,sampleTime,Name FROM app.files WHERE now()>startTime AND now()<endTime AND durationDays",					
+					reingest: "SELECT ID,Ring,centroid(Ring) AS Center, sqrt(area(Ring)/2/pi()) AS Radius, ingestTime,advanceDays,durationDays,sampleTime,Name FROM app.files WHERE ingestTime>=startTime AND ingestTime<=endTime AND durationDays",					
 					lowsnr: "SELECT events.ID AS ID FROM app.events LEFT JOIN app.voxels ON voxels.ID = events.voxelID WHERE ? < voxels.minSNR AND ?",
 					unpruned: "SELECT ID,Name,snr FROM app.files WHERE NOT Pruned AND Voxels AND fetch_time IS NULL",
 					ungraded: "SELECT ID,Name,Actors,States,Steps FROM app.files WHERE NOT Graded AND Voxels AND fetch_time IS NULL",
@@ -348,10 +347,10 @@ Further information about this file is available ${paths.moreinfo}. `;
 			});
 			*/
 			
-			JSDB.forEach("", gets.reingest, [], function (file, sql) {
+			JSDB.forEach(opts.trace, gets.reingest, [], function (file, sql) {
 				Trace("INGEST "+file.Name);
 				var
-					from = new Date(file.startTime),
+					from = new Date(file.ingestTime),
 					to = from.addDays(file.durationDays),
 					path = urls.master + file.Name;
 				
@@ -370,7 +369,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 
 				if (1)
 				sql.query(
-					"UPDATE app.files SET startTime=date_add(startTime, interval advanceDays day), Revs=Revs+1 WHERE ?", 
+					"UPDATE app.files SET ingestTime=date_add(ingestTime, interval advanceDays day), Revs=Revs+1 WHERE ?", 
 					{ ID: file.ID }
 				);
 			});
