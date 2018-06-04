@@ -57,55 +57,130 @@ Ext.require([
 ]);
 
 var 
-	EDITOR = Ext.create( 'Ext.form.field.HtmlEditor', {				
-		value: "hello there",
-		enableColors: true,
-		enableAlignments: true,
-		listeners: {
-			afterrender: function (h) {
-				h.toggleSourceEdit(true);
-			}
-		},
-		plugins: [
-			Ext.create('Ext.ux.form.plugin.HtmlEditor', {
-				enableAll:  true,
-				enableMultipleToolbars: false //true
-			})
-		] 
-	}),
 	
 	EDCTX = {},
 		
 	EDWIN = Ext.create('Ext.window.Window', {
 		title: 'Editor',
 		closeAction: "hide",
-		height: 200,
-		width: 400,
+		height: 400,
+		width: 600,
 		layout: 'fit',
+		tools: [{
+			type: "save",
+			callback: function(me) {
+				var 
+					store = EDCTX.store,
+					key = EDCTX.key,
+					rec = store.getAt(EDCTX.row);
+
+				rec.set( key, EDGET() );
+
+				EDWIN.hide();
+			}
+		}],
+		/*
 		buttons: [{
 			text: 'Save',
 			listeners: {
 				click: function () {
-					//console.log(EDCTX);
 					var 
 						store = EDCTX.store,
+						key = EDCTX.key,
 						rec = store.getAt(EDCTX.row);
 
-					rec.set(EDCTX.key, EDITOR.getValue());
+					rec.set( key, EDGET() );
+					
 					EDWIN.hide();
 				}
 			}
 		},{
-			text: 'Cancel',
+			text: 'Discard',
 			listeners: {
 				click: function () {
 					EDWIN.hide();
 				}
 			}
-		}],
-		items: [ EDITOR ]
-	}),
+		}], */
+		items: [ Ext.create('Ext.tab.Panel', {
+			border		: true,
+			header		: false,
+			tabPosition: "right",
+			activeTab	: 0, 
+			layout		: "fit",
+			listeners: {
+				tabchange: function (tabpan, tabcard) {
+					EDCTX.code == (tabcard.id == "codeedit");
 		
+					//alert( EDDOC.true.getEl() );
+					if (EDCTX.code)
+					if (CodeMirror)
+						CodeMirror(EDDOC.true.getEl(), {
+							lineNumbers: true,
+							lineWrapping: true,
+							extraKeys: {"Ctrl-Q": function(cm){ cm.foldCode(cm.getCursor()); }},
+							foldGutter: true,
+							gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],	
+							mode: "javascript",
+							value: EDGET()
+						});
+				}
+			},
+			items		: [
+				Ext.create( "Ext.form.field.HtmlEditor", {	
+					title: "text",
+					id: "textedit",
+					value: "hello there",
+					enableColors: true,
+					enableAlignments: true,
+					listeners: {
+						afterrender: function (h) {
+							h.toggleSourceEdit(true);
+						}
+					},
+					plugins: [
+						Ext.create('Ext.ux.form.plugin.HtmlEditor', {
+							enableAll:  true,
+							enableMultipleToolbars: false //true
+						})
+					] 
+				}),
+				
+				Ext.create( "Ext.panel.Panel", {
+					layout: "fit",
+					title: "code",
+					id: "codeedit",
+					//bodyPadding: 10,
+					items: [{
+						xtype: "textarea",
+						id: "codedoc",
+						//hidden: true
+						width: 10
+						//height: 400,
+						//text: "hello there"
+					} ]
+				})
+			]
+		}) ] 
+	}),
+
+	EDDOC = {
+		true: Ext.getCmp("codedoc"),
+		false: Ext.getCmp("textedit")
+	},
+		
+	EDSET = function (val) {
+		EDDOC[true].setValue(val);
+		EDDOC[false].setValue(val);
+	},
+	
+	EDGET = function () {
+		return EDDOC[EDCTX.code].getValue();
+	},
+	
+	EDCM = null,
+	//EDCODE.foldCode(CodeMirror.Pos(13, 0));
+	
 	PROXY = {				// proxy parameters
 		ROOT: "data",		// contains array of data records
 		TOTAL: "count",		// contains max number of records
@@ -3627,51 +3702,26 @@ WIDGET.prototype.terminal = function (term,opts) {
 				SELECT_CELL.idx = cellIdx; //-1;
 			},
 			
-			celldblclick: function (ctx,td,cellIndex,Rec,tr,rowIndex) {
+			celldblclick: function (ctx,td,cellIndex,rec,tr,rowIndex) {
 				//console.log(ctx);
 				var 
 					grid = ctx.grid,
 					cols = grid.getColumnManager(),
 					head = cols.getHeaderAtIndex(cellIndex),
 					key = head.dataIndex,
-					val = Rec.get(key);
+					val = rec.get(key);
 					
-				//console.log(td,cellIndex,tr,rowIndex, key,val);
+				//console.log(td,cellIndex,tr,rowIndex, key);
 				EDCTX = {
 					row: rowIndex,
 					store: grid.getStore(),
-					key: key
+					key: key,
+					code: true
 				};
 				
-				//alert([document.body]);
-					
-				if (CodeMirror) {
-					var ed = CodeMirror(td, {
-						lineNumbers: true,
-						lineWrapping: true,
-						extraKeys: {"Ctrl-Q": function(cm){ cm.foldCode(cm.getCursor()); }},
-						foldGutter: true,
-						gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],	
-						//onGutterClick: foldFunc,
-						mode: "javascript",
-						value: `
-function someScript() { 
-var x = 1 + 2;
-return 123;
-} `
-					});
-					//var foldFunc = CodeMirror.newFoldFunction(CodeMirror.braceRangeFinder);
-					//foldFunc(ed, 9);
-  					//foldFunc(ed, 20);
-					//for (var n in ed) alert(n);
-					ed.foldCode(CodeMirror.Pos(13, 0));
-				}
-					
-				else {
-					EDITOR.setValue(val);
-					EDWIN.setTitle( Name + "." + key);
-					EDWIN.show();
-				}
+				EDSET( val );
+				EDWIN.setTitle( Name + "." + key);
+				EDWIN.show();
 			}, 
 
 			// regen pivots and slaved posts if pivot column moved
