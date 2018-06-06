@@ -190,48 +190,6 @@ var
 		}, function (opts) {
 		}),
 		
-		/*
-		dogIngest: Copy({
-			cycle: 30,
-			trace: "DOG"
-		}, function (opts) {		
-			var 
-				gets = {
-					reingest: "SELECT ID,Ring,centroid(Ring) AS Center, sqrt(area(Ring)/2/pi()) AS Radius, startTime,endTime,advanceDays,durationDays,sampleTime,Name FROM app.files WHERE now()>startTime AND now()<endTime AND durationDays"
-					//artillery: "/ingest?src=artillery",
-					//missile: "/ingest?src=missiles"
-				},
-				urls = DEBE.site.urls,
-				fetcher = DEBE.fetchData;
-			
-			JSDB.forEach("", gets.reingest, [], function (file, sql) {
-				Trace("INGEST "+file.Name);
-				var
-					from = new Date(file.startTime),
-					to = from.addDays(file.durationDays),
-					path = urls.master + file.Name;
-					
-				fetcher( path.tag("&", {
-					fileID: file.ID,
-					from: from.toLocaleDateString("en-US"),
-					to: to.toLocaleDateString("en-US"),
-					lon: file.Center.x,
-					lat: file.Center.y,
-					radius: file.Radius,
-					ring: file.Ring,
-					durationDays: file.durationDays
-				}), null, null, function (msg) {
-					Log("INGEST", msg);
-				});
-
-				if (1)
-				sql.query(
-					"UPDATE app.files SET startTime=date_add(startTime, interval advanceDays day), Revs=Revs+1 WHERE ?", 
-					{ ID: file.ID }
-				);
-			});
-		}),  */
-		
 		dogFiles: Copy({
 			cycle: 30, // secs
 			trace: "DOG",
@@ -250,7 +208,7 @@ var
 				urls = DEBE.site.urls,
 				fetcher = DEBE.fetchData,
 				gets = {
-					reingest: "SELECT ID,Ring,centroid(Ring) AS Center, sqrt(area(Ring)/2/pi()) AS Radius, ingestTime,advanceDays,durationDays,sampleTime,Name FROM app.files WHERE ingestTime>=startTime AND ingestTime<=endTime AND durationDays",					
+					reingest: "SELECT ID,Ring,centroid(Ring) AS Center, sqrt(area(Ring)/2/pi()) AS Radius, ingestTime,advanceDays,durationDays,sampleTime,Name FROM app.files WHERE ingestTime>=startTime AND ingestTime<=endTime AND enabled",
 					lowsnr: "SELECT events.ID AS ID FROM app.events LEFT JOIN app.voxels ON voxels.ID = events.voxelID WHERE ? < voxels.minSNR AND ?",
 					unpruned: "SELECT ID,Name,snr FROM app.files WHERE NOT Pruned AND Voxels AND fetch_time IS NULL",
 					ungraded: "SELECT ID,Name,Actors,States,Steps FROM app.files WHERE NOT Graded AND Voxels AND fetch_time IS NULL",
@@ -1512,11 +1470,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			uis: ".", 					//< path to debe ui drivers
 			//icons: ".",				//< path to icons
 			captcha: ".",				
-			index: { 					//< allowed file indexers
+			index: { 					//< paths for allowed file indexers ("" to use url path)
 				shares: "",
 				uploads: "",
 				stores: "",
-				tour: "",
+				public: "",
 				data: ""
 			},
 			extensions: {  // extend mime types as needed
