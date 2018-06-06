@@ -208,13 +208,13 @@ var
 				urls = DEBE.site.urls,
 				fetcher = DEBE.fetchData,
 				gets = {
-					reingest: "SELECT ID,Ring,centroid(Ring) AS Center, sqrt(area(Ring)/2/pi()) AS Radius, ingestTime,advanceDays,durationDays,sampleTime,Name FROM app.files WHERE ingestTime>=startTime AND ingestTime<=endTime AND enabled",
-					lowsnr: "SELECT events.ID AS ID FROM app.events LEFT JOIN app.voxels ON voxels.ID = events.voxelID WHERE ? < voxels.minSNR AND ?",
-					unpruned: "SELECT ID,Name,snr FROM app.files WHERE NOT Pruned AND Voxels AND fetch_time IS NULL",
-					ungraded: "SELECT ID,Name,Actors,States,Steps FROM app.files WHERE NOT Graded AND Voxels AND fetch_time IS NULL",
-					expired: "SELECT ID,Name FROM app.files WHERE Expires AND now() > Expires AND fetch_time IS NULL",
+					reingest: "SELECT ID,Ring, ingestTime,advanceDays,durationDays,sampleTime,Name FROM app.files WHERE ingestTime>=startTime AND ingestTime<=endTime AND Enabled",
+					lowsnr: "SELECT events.ID AS ID FROM app.events LEFT JOIN app.voxels ON voxels.ID = events.voxelID WHERE ? < voxels.minSNR AND ? AND Enabled",
+					unpruned: "SELECT ID,Name,snr FROM app.files WHERE NOT Pruned AND Voxels AND Enabled",
+					ungraded: "SELECT ID,Name,Actors,States,Steps FROM app.files WHERE NOT Graded AND Voxels AND Enabled",
+					expired: "SELECT ID,Name FROM app.files WHERE Expires AND now() > Expires AND Enabled",
 					retired: "SELECT files.ID,files.Name,files.Client,count(events.id) AS evCount FROM app.events LEFT JOIN app.files ON events.fileID = files.id "
-							+ " WHERE datediff( now(), files.added)>=? AND NOT files.Archived AND fetch_time IS NULL GROUP BY fileid"
+							+ " WHERE datediff( now(), files.added)>=? AND NOT files.Archived AND Enabled GROUP BY fileid"
 				};
 
 			JSDB.forEach( opts.trace, gets.expired, [], function (file, sql) { 
@@ -316,9 +316,9 @@ Further information about this file is available ${paths.moreinfo}. `;
 					fileID: file.ID,
 					from: from.toLocaleDateString("en-US"),
 					to: to.toLocaleDateString("en-US"),
-					lon: file.Center.x,
-					lat: file.Center.y,
-					radius: file.Radius,
+					lon: file.Anchor.x,
+					lat: file.Anchor.y,
+					radius: HACK.ringRadius(file.Ring),
 					ring: file.Ring,
 					durationDays: file.durationDays
 				}), null, null, function (msg) {
