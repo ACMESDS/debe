@@ -164,12 +164,15 @@ var
 		}),
 						   
 		dogVoxels: Copy({
-			//cycle: 120,
-			trace: "",
-			atmage: 2 // days to age before refresh atm data
+			cycle: 120,
+			trace: "DOG",
+			//atmage: 2 // days to age before refresh atm data
 		}, function (opts) {
 			var gets = {
-				unused: "SELECT voxels.ID AS ID,aois.id AS aoiID FROM app.voxels LEFT JOIN app.aois ON aois.name=voxels.aoi HAVING aoiID IS null",
+				lowsnr: "SELECT events.ID AS ID FROM app.events LEFT JOIN app.voxels ON voxels.ID = events.voxelID WHERE ? < voxels.minSNR AND ? AND Enabled",
+				unpruned: "SELECT ID,minSNR FROM app.voxels WHERE Graded AND minSNR AND Pruned IS null",
+				ungraded: "SELECT ID FROM app.voxels WHERE Graded IS null ",
+				unused: "SELECT voxels.ID AS ID,aois.ID AS aoiID FROM app.voxels LEFT JOIN app.aois ON aois.name=voxels.class HAVING aoiID IS null",
 				refresh: "SELECT ID FROM app.voxels WHERE MBRcontains(ring, GeomFromText(?)) AND datediff(now(), added) > ?"
 			};
 			
@@ -182,11 +185,63 @@ var
 				// update voxels with atm data
 			});
 			
+			JSDB.forEach(opts.trace, gets.unpruned, [], function (voxel, sql) {
+				Trace("PRUNE "+voxel.ID);
+
+				sql.forAll(opts.trace, gets.lowsnr, [ file.snr, {"events.fileID": file.ID} ], function (evs) {
+					//Log("dog rejected", evs.length);
+					sql.query(
+						"UPDATE app.files SET Rejects=Rejects+?,Relevance=1-Rejects/Samples WHERE ?", 
+						[ evs.length, {ID: file.ID} ] 
+					);
+
+					/*
+					evs.each( function (n,ev) {
+						sql.query("DELETE FROM app.events WHERE ?", {ID: ev.ID});
+					}); */
+					sql.query("DELETE FROM app.events WHERE least(?)", {fileID: file.ID, voxelID: voxel.ID});
+				});
+			});
+			
+			/*
+			JSDB.forEach(opts.trace, gets.ungraded, [], function (file, sql) {
+				Trace("GRADE "+file.Name);
+
+				DEBE.gradeIngest( sql, file, function (stats) {
+
+					Log("grade", stats);
+
+					if (stats) {
+						var unsup = stats.unsupervised;
+
+						sql.forAll(
+							opts.trace,
+							"UPDATE app.files SET Graded=true, ?, Notes=concat(Notes,?) WHERE ?", [{
+								tag: JSON.stringify(stats),
+								coherence_time: unsup.coherence_time,
+								coherence_intervals: unsup.coherence_intervals,
+								degeneracy_param: unsup.degeneracy_param,
+								//duration: stats.t,
+								snr: unsup.snr
+							},
+							"Initial SNR assessment: " + (unsup.snr||0).toFixed(4),
+							{ID: file.ID} 
+						]);
+					}
+
+					else
+						sql.query(
+							"UPDATE apps.file SET Graded=true, snr=0, Notes=? WHERE ?", [
+							"Grading failed", {ID: file.ID} 
+						]);
+				});
+			});
+			*/
 		}),
 						
 		dogCache: Copy({
 			//cycle: 120,
-			trace: ""
+			trace: "DOG"
 		}, function (opts) {
 		}),
 		
@@ -208,10 +263,8 @@ var
 				urls = DEBE.site.urls,
 				fetcher = DEBE.fetchData,
 				gets = {
-					reingest: "SELECT ID,Ring, ingestTime,advanceDays,durationDays,sampleTime,Name FROM app.files WHERE ingestTime>=startTime AND ingestTime<=endTime AND Enabled",
-					lowsnr: "SELECT events.ID AS ID FROM app.events LEFT JOIN app.voxels ON voxels.ID = events.voxelID WHERE ? < voxels.minSNR AND ? AND Enabled",
-					unpruned: "SELECT ID,Name,snr FROM app.files WHERE NOT Pruned AND Voxels AND Enabled",
-					ungraded: "SELECT ID,Name,Actors,States,Steps FROM app.files WHERE NOT Graded AND Voxels AND Enabled",
+					reingest: "SELECT ID,Ring, st_centroid(ring) as Anchor, ingestTime,advanceDays,durationDays,sampleTime,Name FROM app.files WHERE ingestTime AND NOT Ingested AND Enabled",
+					finished: "SELECT ID FROM app.files WHERE NOT Ingested AND ingestTime>endTime",
 					expired: "SELECT ID,Name FROM app.files WHERE Expires AND now() > Expires AND Enabled",
 					retired: "SELECT files.ID,files.Name,files.Client,count(events.id) AS evCount FROM app.events LEFT JOIN app.files ON events.fileID = files.id "
 							+ " WHERE datediff( now(), files.added)>=? AND NOT files.Archived AND Enabled GROUP BY fileid"
@@ -254,56 +307,10 @@ Further information about this file is available ${paths.moreinfo}. `;
 				}, sql);
 			});
 			
-			JSDB.forEach(opts.trace, gets.unpruned, [], function (file, sql) {
-				Trace("PRUNE "+file.Name);
-
-				sql.forAll(opts.trace, gets.lowsnr, [ file.snr, {"events.fileID": file.ID} ], function (evs) {
-					//Log("dog rejected", evs.length);
-					sql.query(
-						"UPDATE app.files SET Pruned=true,Rejects=Rejects+?,Relevance=1-Rejects/Samples WHERE ?", 
-						[ evs.length, {ID: file.ID} ] 
-					);
-
-					evs.each( function (n,ev) {
-						sql.query("DELETE FROM app.events WHERE ?", {ID: ev.ID});
-					});
-				});
+			JSDB.forEach(opts.trace, gets.finished, [], function (file, sql) {
+				Trace("FINISHED "+file.Name);
+				sql.query("UPDATE app.files SET Ingested=1 WHERE ?",{ID:file.ID});
 			});
-			
-			/*
-			JSDB.forEach(opts.trace, gets.ungraded, [], function (file, sql) {
-				Trace("GRADE "+file.Name);
-
-				DEBE.gradeIngest( sql, file, function (stats) {
-
-					Log("grade", stats);
-
-					if (stats) {
-						var unsup = stats.unsupervised;
-
-						sql.forAll(
-							opts.trace,
-							"UPDATE app.files SET Graded=true, ?, Notes=concat(Notes,?) WHERE ?", [{
-								tag: JSON.stringify(stats),
-								coherence_time: unsup.coherence_time,
-								coherence_intervals: unsup.coherence_intervals,
-								degeneracy_param: unsup.degeneracy_param,
-								//duration: stats.t,
-								snr: unsup.snr
-							},
-							"Initial SNR assessment: " + (unsup.snr||0).toFixed(4),
-							{ID: file.ID} 
-						]);
-					}
-
-					else
-						sql.query(
-							"UPDATE apps.file SET Graded=true, snr=0, Notes=? WHERE ?", [
-							"Grading failed", {ID: file.ID} 
-						]);
-				});
-			});
-			*/
 			
 			JSDB.forEach(opts.trace, gets.reingest, [], function (file, sql) {
 				Trace("INGEST "+file.Name);
