@@ -320,37 +320,33 @@ String.prototype.indent = function (tag,at) {
 }
 */
 
-String.prototype.tag = function tag(el,at) {
+String.prototype.tag = function tag(el,at,eq) {
 /**
 @method tag
-Tag url (el=?|&), list (el=;|,), or tag html using specified attributes.
+Tag url (el=?) or tag html (el=html tag) with specified attributes.
 @param {String} el tag element
 @param {String} at tag attributes
 @return {String} tagged results
 */
 
-	if (  el == "?" || el == "&" ) {  // tag a url or list
+	if ( el == "?" || el == "&" ) {  // tag a url
 		var rtn = this+el;
 
-		for (var n in at) 
-			if ( val = at[n] )
-				switch ( val.constructor ) {
-					//case Array: rtn += at[n].join(",");	break;
-					case Array:
-					case Date:
-					case Object: rtn += JSON.stringify(at[n]); break;
-					default: rtn += n + "=" + val + "&";
-				}
+		for (var n in at) {
+			var val = at[n];
+			rtn += n + (eq||"=") + ((typeof val == "string") ? val : JSON.stringify(val)) + "&"; 
+		}
 
-		return rtn;				
+		return rtn;	
 	}
 
 	else {  // tag html
 		var rtn = "<"+el+" ";
 
-		for (var n in at) 
-			if ( val = at[n] )
-				rtn += n + "='" + val + "' ";
+		for (var n in at) {
+			var val = at[n];
+			rtn += n + "='" + val + "' ";
+		}
 
 		switch (el) {
 			case "embed":

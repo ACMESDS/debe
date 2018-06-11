@@ -80,33 +80,49 @@ var
 	},
 		
 	ingester: function ingester( opts, query, cb ) {
-		try {
-			if (opts.url)
-				DEBE.fetchData( opts.url, query, opts.put||null, function (data) {
-					var evs = [];
-					if (data) 
-						if (recs = opts.get ? data[opts.get] : data) {
-							Log("ingest recs", recs.length);
-							recs.forEach( function (rec, idx) {
-								if (ev = opts.ev) 
-									if ( ev.constructor == String ) {
-										var 
-											ctx = VM.createContext({rec: rec, query: query, evs: evs}),
-										 	reader = `evs.push( (${opts.ev})(rec, evs.length) );` ;
-										
-										VM.runInContext( reader, ctx );
-									}
-									
-									else
-										evs.push( ev(rec, evs.length) );
-								
-								else
-									evs.push( rec );
-							});
+		function getEvents(data, cb){
+			var evs = [];
+			if (recs = opts.get ? data[opts.get] : data) {
+				Log("ingest recs", recs.length);
+				recs.forEach( function (rec, idx) {
+					if (ev = opts.ev) 
+						if ( ev.constructor == String ) {
+							var 
+								ctx = VM.createContext({rec: rec, query: query, evs: evs}),
+								reader = `evs.push( (${opts.ev})(rec, evs.length) );` ;
+
+							VM.runInContext( reader, ctx );
 						}
 
-					cb(evs);
+						else
+							evs.push( ev(rec, evs.length) );
+
+					else
+						evs.push( rec );
 				});
+			}
+			cb(evs);
+		}
+		
+		try {
+			if (url = opts.url)
+				switch (url.constructor) {
+					case String:
+						DEBE.fetchData( url, query, opts.put||null, function (data) {
+							if (data) 
+								getEvents(data, cb);
+						});
+						break;
+						
+					case Function:
+						url( function (data) {
+							getEvents(data, cb );
+						});
+						break;
+						
+					default:
+						getEvents(url, cb);
+				}
 		}
 		
 		catch(err) {
@@ -152,59 +168,110 @@ var
 		
 	dogs: {  //< watch dogs cycle time in secs (zero to disable)
 		dogCatalog: Copy({
-			//cycle: 1000,
-			trace: ""
-		}, function (opts) {
+			//cycle: 1000
+		}, function dogCatalog(dog) {
 		}),
 		
 		dogDetectors: Copy({
-			cycle: 0,
-			trace: ""
-		}, function (opts) {
+			//cycle: 400
+		}, function dogDetectors(dog) {
 		}),
 						   
 		dogVoxels: Copy({
+			get: {
+				unused: 
+					"SELECT voxels.ID AS ID,aois.ID AS aoiID FROM app.voxels "
+				+ " LEFT JOIN app.aois ON aois.name=voxels.class HAVING aoiID IS null"
+				//refresh: "SELECT ID FROM app.voxels WHERE MBRcontains(ring, GeomFromText(?)) AND datediff(now(), added) > ?"
+			},
 			cycle: 120,
-			trace: "DOG",
-			//atmage: 2 // days to age before refresh atm data
-		}, function (opts) {
-			var gets = {
-				lowsnr: "SELECT events.ID AS ID FROM app.events LEFT JOIN app.voxels ON voxels.ID = events.voxelID WHERE ? < voxels.minSNR AND ? AND Enabled",
-				unpruned: "SELECT ID,minSNR FROM app.voxels WHERE Graded AND minSNR AND Pruned IS null",
-				ungraded: "SELECT ID FROM app.voxels WHERE Graded IS null ",
-				unused: "SELECT voxels.ID AS ID,aois.ID AS aoiID FROM app.voxels LEFT JOIN app.aois ON aois.name=voxels.class HAVING aoiID IS null",
-				refresh: "SELECT ID FROM app.voxels WHERE MBRcontains(ring, GeomFromText(?)) AND datediff(now(), added) > ?"
-			};
+			atmage: 2 // days to age before refresh atm data
+		}, function dogVoxels(dog) {
 			
-			JSDB.forEach(opts.trace, gets.unused, [], function (voxel, sql) {
-				sql.update("DELETE FROM app.voxels WHERE ?", {ID: voxel.ID});
+			if (dog.get.unused)
+			JSDB.forEach(dog.name, dog.get.unused, [], function (voxel, sql) {
+				sql.query("DELETE FROM app.voxels WHERE ?", {ID: voxel.ID});
 			});
 			
-			if (opts.atmage)  // fetch new atm data from whatever service and loop over recs (grouped by Point(x y) grid location)
-			JSDB.forEach(opts.trace, gets.refresh, [atm.gridLocation, opts.atmage], function (voxel, sql) {
+			if (dog.get.refresh)  // fetch new atm data from whatever service and loop over recs (grouped by Point(x y) grid location)
+			JSDB.forEach(dog.name, dog.get.refresh, [atm.gridLocation, dog.atmage], function (voxel, sql) {
 				// update voxels with atm data
 			});
 			
-			JSDB.forEach(opts.trace, gets.unpruned, [], function (voxel, sql) {
-				Trace("PRUNE "+voxel.ID);
+		}),
+						
+		dogCache: Copy({
+			//cycle: 120
+		}, function dogCache(dog) {
+		}),
+		
+		dogStats: Copy({
+			get: {
+				lowsnr: 
+					"SELECT count(events.ID) AS Rejects, events.voxelID AS voxelID, events.fileID AS fileID FROM app.events"
+					+ " LEFT JOIN app.voxels ON voxels.ID = events.voxelID"
+					+ " LEFT JOIN app.files ON files.ID = events.fileID"
+					+ " WHERE files.snr < voxels.minsnr"
+					+ " GROUP BY events.voxelID, events.fileID"
+			}
+		}, function dogStats(dog) {
+			
+			if (dog.get.lowsnr)
+			JSDB.forEach(dog.name, dog.get.lowsnr, [], function (prune, sql) {
+				Trace("PRUNE "+[prune.fileID, prune.voxelID]);
 
-				sql.forAll(opts.trace, gets.lowsnr, [ file.snr, {"events.fileID": file.ID} ], function (evs) {
+				sql.query(
+					"UPDATE app.files SET Rejects=Rejects+?,Relevance=1-Rejects/Samples WHERE ?", 
+					[ prune.Rejects, {ID: prune.fileID} ] 
+				);
+
+				sql.query(
+					"DELETE FROM app.events WHERE least(?)", 
+					{fileID: prune.fileID, voxelID: prune.voxelID}
+				);
+
+				/*sql.forAll(dog.name, dog.get.lowsnr, [ file.snr, {"events.fileID": file.ID} ], function (evs) {
 					//Log("dog rejected", evs.length);
 					sql.query(
 						"UPDATE app.files SET Rejects=Rejects+?,Relevance=1-Rejects/Samples WHERE ?", 
 						[ evs.length, {ID: file.ID} ] 
 					);
 
-					/*
 					evs.each( function (n,ev) {
 						sql.query("DELETE FROM app.events WHERE ?", {ID: ev.ID});
-					}); */
-					sql.query("DELETE FROM app.events WHERE least(?)", {fileID: file.ID, voxelID: voxel.ID});
-				});
+					}); 
+				}); */
 			});
 			
+		}),
+					   
+		dogFiles: Copy({
+			get: {
+				ungraded: "SELECT ID,Name FROM app.files WHERE Graded IS null AND ingestTime>endTime AND Enabled",
+				unread: "SELECT ID,Ring, st_centroid(ring) as Anchor, ingestTime,advanceDays,durationDays,sampleTime,Name FROM app.files WHERE ingestTime>=startTime AND ingestTime<=endTime AND Enabled",
+				//finished: "SELECT ID,Name FROM app.files WHERE ingestTime>endTime",
+				expired: "SELECT ID,Name FROM app.files WHERE Expires AND now() > Expires AND Enabled"
+				//retired: "SELECT files.ID,files.Name,files.Client,count(events.id) AS evCount FROM app.events LEFT JOIN app.files ON events.fileID = files.id "
+						//+ " WHERE datediff( now(), files.added)>=? AND NOT files.Archived AND Enabled GROUP BY fileID"
+			},		
+			cycle: 30, // secs
+			maxage: 90 // days
+		}, function dogFiles(dog) {
+			
+			function pretty(stats,sigfig) {
+				var rtn = [];
+				Each(stats, function (key,stat) {
+					rtn.push( (stat||0).toFixed(sigfig) + " " + key );
+				});
+				return rtn.join(", ");
+			}
+			
+			var 
+				urls = DEBE.site.urls,
+				fetcher = DEBE.fetchData;
+
 			/*
-			JSDB.forEach(opts.trace, gets.ungraded, [], function (file, sql) {
+			JSDB.forEach(dog.name, dog.get.ungraded, [], function (file, sql) {
 				Trace("GRADE "+file.Name);
 
 				DEBE.gradeIngest( sql, file, function (stats) {
@@ -215,7 +282,7 @@ var
 						var unsup = stats.unsupervised;
 
 						sql.forAll(
-							opts.trace,
+							dog.trace,
 							"UPDATE app.files SET Graded=true, ?, Notes=concat(Notes,?) WHERE ?", [{
 								tag: JSON.stringify(stats),
 								coherence_time: unsup.coherence_time,
@@ -237,47 +304,16 @@ var
 				});
 			});
 			*/
-		}),
-						
-		dogCache: Copy({
-			//cycle: 120,
-			trace: "DOG"
-		}, function (opts) {
-		}),
-		
-		dogFiles: Copy({
-			cycle: 30, // secs
-			trace: "DOG",
-			maxage: 90 // days
-		}, function (opts) {
 			
-			function pretty(stats,sigfig) {
-				var rtn = [];
-				Each(stats, function (key,stat) {
-					rtn.push( (stat||0).toFixed(sigfig) + " " + key );
-				});
-				return rtn.join(", ");
-			}
-			
-			var 
-				urls = DEBE.site.urls,
-				fetcher = DEBE.fetchData,
-				gets = {
-					reingest: "SELECT ID,Ring, st_centroid(ring) as Anchor, ingestTime,advanceDays,durationDays,sampleTime,Name FROM app.files WHERE ingestTime AND NOT Ingested AND Enabled",
-					finished: "SELECT ID FROM app.files WHERE NOT Ingested AND ingestTime>endTime",
-					expired: "SELECT ID,Name FROM app.files WHERE Expires AND now() > Expires AND Enabled",
-					retired: "SELECT files.ID,files.Name,files.Client,count(events.id) AS evCount FROM app.events LEFT JOIN app.files ON events.fileID = files.id "
-							+ " WHERE datediff( now(), files.added)>=? AND NOT files.Archived AND Enabled GROUP BY fileid"
-				};
-
-			JSDB.forEach( opts.trace, gets.expired, [], function (file, sql) { 
+			if (dog.get.expired)
+			JSDB.forEach(dog.name, dog.get.expired, [], function (file, sql) { 
 				Trace("EXPIRE "+file.Name);
 				sql.query("DELETE FROM app.events WHERE ?", {fileID: file.ID});
 			});
 			
-			if (opts.maxage)
-			JSDB.forEach(opts.trace, gets.retired, opts.maxage, function (file, sql) {
-				TRACE("RETIRE "+file.Name);
+			if (dog.get.retired)
+			JSDB.forEach(dog.name, dog.get.retired, dog.maxage, function (file, sql) {
+				Trace("RETIRE "+file.Name);
 
 				var 
 					site = DEBE.site,
@@ -307,14 +343,19 @@ Further information about this file is available ${paths.moreinfo}. `;
 				}, sql);
 			});
 			
-			JSDB.forEach(opts.trace, gets.finished, [], function (file, sql) {
+			if (dog.get.finished)
+			JSDB.forEach(dog.name, dog.get.finished, [], function (file, sql) {
 				Trace("FINISHED "+file.Name);
-				sql.query("UPDATE app.files SET Ingested=1 WHERE ?",{ID:file.ID});
+				//sql.query("UPDATE app.files SET Ingested=1 WHERE ?",{ID:file.ID});
 			});
 			
-			JSDB.forEach(opts.trace, gets.reingest, [], function (file, sql) {
+			if (dog.get.unread)
+			JSDB.forEach(dog.name, dog.get.unread, [], function (file, sql) {
 				Trace("INGEST "+file.Name);
 				var
+					zero = {x:0, y:0},
+					ring = file.Ring || [[ zero, zero, zero, zero, zero]],
+					anchor = file.Anchor || zero,
 					from = new Date(file.ingestTime),
 					to = from.addDays(file.durationDays),
 					path = urls.master + file.Name;
@@ -323,10 +364,10 @@ Further information about this file is available ${paths.moreinfo}. `;
 					fileID: file.ID,
 					from: from.toLocaleDateString("en-US"),
 					to: to.toLocaleDateString("en-US"),
-					lon: file.Anchor.x,
-					lat: file.Anchor.y,
-					radius: HACK.ringRadius(file.Ring),
-					ring: file.Ring,
+					lon: anchor.x,
+					lat: anchor.y,
+					radius: HACK.ringRadius(ring),
+					ring: ring,
 					durationDays: file.durationDays
 				}), null, null, function (msg) {
 					Log("INGEST", msg);
@@ -342,16 +383,16 @@ Further information about this file is available ${paths.moreinfo}. `;
 		}),
 		
 		dogJobs: Copy({
-			//cycle: 300,
-			trace: ""
-		}, function (opts) {
+			get: {
+				stuck: "UPDATE app.queues SET Departed=now(), Notes=concat(Notes, ' is ', link('billed', '/profile.view')), Age=Age + (now()-Arrived)/3600e3, Finished=1 WHERE least(Departed IS NULL,Done=Work)", 
+			}
+			//cycle: 300
+		}, function dogJobs(dog) {
 			var
-				gets = {
-					stuck: "UPDATE app.queues SET Departed=now(), Notes=concat(Notes, ' is ', link('billed', '/profile.view')), Age=Age + (now()-Arrived)/3600e3, Finished=1 WHERE least(Departed IS NULL,Done=Work)", 
-				},
 				queues = FLEX.queues;
 
-			JSDB.forAll( opts.trace, gets.stuck, [], function (info, sql) {
+			if (dog.get.stuck)
+			JSDB.forAll( dog.name, dog.get.stuck, [], function (info, sql) {
 
 				Each(queues, function (rate, queue) {  // save collected queuing charges to profiles
 					Each(queue.client, function (client, charge) {
@@ -376,30 +417,30 @@ Further information about this file is available ${paths.moreinfo}. `;
 			
 		dogSystem: Copy({
 			//cycle: 100,
+			get: {
+				engs: "SELECT count(ID) AS Count FROM app.engines WHERE Enabled",
+				jobs: "SELECT count(ID) AS Count FROM app.queues WHERE Departed IS NULL",
+				pigs: "SELECT sum(DateDiff(Departed,Arrived)>1) AS Count from app.queues",
+				logs: "SELECT sum(Delay>20)+sum(Fault != '') AS Count FROM app.dblogs"
+			},
 			pigs : 2,
-			jobs : 5,
-			trace: ""
-		}, function (opts) {  // system diag watch dog
+			jobs : 5
+		}, function dogSystem(dog) {  // system diag watch dog
 			var 
-				gets = {
-					engs: "SELECT count(ID) AS Count FROM app.engines WHERE Enabled",
-					jobs: "SELECT count(ID) AS Count FROM app.queues WHERE Departed IS NULL",
-					pigs: "SELECT sum(DateDiff(Departed,Arrived)>1) AS Count from app.queues",
-					logs: "SELECT sum(Delay>20)+sum(Fault != '') AS Count FROM app.dblogs"
-				},
 				diag = DEBE.diag;
 
+			if (dog.get.engs)
 			Thread( function (sql) {
-				sql.forEach(opts.trace, gets.engs, [], function (engs) {
-				sql.forEach(opts.trace, gets.jobs, [], function (jobs) {
-				sql.forEach(opts.trace, gets.pigs, [], function (pigs) {
-				sql.forEach(opts.trace, gets.logs, [], function (isps) {
+				sql.forEach(dog.name, dog.get.engs, [], function (engs) {
+				sql.forEach(dog.name, dog.get.jobs, [], function (jobs) {
+				sql.forEach(dog.name, dog.get.pigs, [], function (pigs) {
+				sql.forEach(dog.name, dog.get.logs, [], function (isps) {
 					var rtn = diag.counts = {Engines:engs.Count,Jobs:jobs.Count,Pigs:pigs.Count,Faults:isps.Count,State:"ok"};
 
-					for (var n in opts) 
-						if ( rtn[n] > 5*opts[n] ) rtn.State = "critical";
+					for (var n in dog) 
+						if ( rtn[n] > 5*dog[n] ) rtn.State = "critical";
 						else
-						if ( rtn[n] > opts[n] ) rtn.State = "warning";
+						if ( rtn[n] > dog[n] ) rtn.State = "warning";
 
 					sql.release();
 				});
@@ -410,10 +451,13 @@ Further information about this file is available ${paths.moreinfo}. `;
 		}),
 			
 		dogHawks: Copy({
+			get: {
+				unbilled: "SELECT * FROM app.queues WHERE Finished AND NOT Billed",
+				unfunded: "SELECT * FROM app.queues WHERE NOT Funded AND now()-Arrived>?"
+			},
 			//cycle: 500,
-			maxage: 10,
-			trace: ""
-		}, function (opts) { // job hawking watch dog
+			maxage: 10
+		}, function dogHawks(dog) { // job hawking watch dog
 			/*
 			Legacy capability overridden by these dogs:
 			Hawk over jobs in the queues table given {Action,Condition,Period} rules 
@@ -428,13 +472,9 @@ Further information about this file is available ${paths.moreinfo}. `;
 			 		start=run to run jobs against dirty records
 			 		set expression to revise queuing history of matched jobs	 
 			*/
-			var
-				gets = {
-					unbilled: "SELECT * FROM app.queues WHERE Finished AND NOT Billed",
-					unfunded: "SELECT * FROM app.queues WHERE NOT Funded AND now()-Arrived>?"
-				};
 
-			JSDB.forEach(opts.trace, gets.unbilled, [], function (job, sql) {
+			if (dog.get.unbilled)
+			JSDB.forEach(dog.name, dog.get.unbilled, [], function (job, sql) {
 				//Trace(`BILLING ${job} FOR ${job.Client}`, sql);
 				sql.query( "UPDATE openv.profiles SET Charge=Charge+? WHERE ?", [ 
 					job.Done, {Client: job.Client} 
@@ -443,58 +483,56 @@ Further information about this file is available ${paths.moreinfo}. `;
 				sql.query( "UPDATE app.queues SET Billed=1 WHERE ?", {ID: job.ID})
 			});
 
-			if (opts.maxage)
-				JSDB.forEach(trace, gets.unfunded, [opts.maxage], function (job, sql) {
-					//Trace("KILLING ",job);
-					sql.query(
-						//"DELETE FROM app.queues WHERE ?", {ID:job.ID}
-					);
-				});
+			if (dog.get.unfunded)
+			JSDB.forEach(dog.name, dog.get.unfunded, [dog.maxage], function (job, sql) {
+				//Trace("KILLING ",job);
+				sql.query(
+					//"DELETE FROM app.queues WHERE ?", {ID:job.ID}
+				);
+			});
 
 		}),
 		
 		dogClients: Copy({
 			//cycle: 100000,
-			trace: "",
+			get: {
+				needy: "SELECT ID FROM openv.profiles WHERE useDisk>?",
+				dormant: "",
+				poor: "",
+				naughty: "SELECT ID FROM openv.profiles WHERE Banned",
+				uncert: "SELECT ID FROM openv.profiles LEFT JOIN app.quizes ON profiles.Client=quizes.Client WHERE datediff(now(), quizes.Credited)>?",
+			},
 			disk: 10,  //MB
 			qos: 2,  //0,1,2,...
 			unused: 4,  // days
 			certage: 360 // days
-		}, function (opts) {
-			var 
-				gets = {
-					needy: "SELECT ID FROM openv.profiles WHERE useDisk>?",
-					dormant: "",
-					poor: "",
-					naughty: "SELECT ID FROM openv.profiles WHERE Banned",
-					uncert: "SELECT ID FROM openv.profiles LEFT JOIN app.quizes ON profiles.Client=quizes.Client WHERE datediff(now(), quizes.Credited)>?",
-				};
+		}, function dogClients(dog) {
 
-			JSDB.forEach(opts.trace, gets.naughty, [], function (client, sql) {
+			if (dog.get.naughty)
+			JSDB.forEach(dog.name, dog.get.naughty, [], function (client, sql) {
 			});
 
-			if (opts.disk)
-			JSDB.forEach(opts.trace, gets.needy, [opts.disk], function (client, sql) {
+			if (dog.get.needy)
+			JSDB.forEach(dog.name, dog.get.needy, [dog.disk], function (client, sql) {
 			});		
 
-			if (opts.dormant)
-			JSDB.forEach(opts.trace, gets.dormant, [opts.unused], function (client, sql) {
+			if (dog.get.dormant)
+			JSDB.forEach(dog.name, dog.get.dormant, [dog.unused], function (client, sql) {
 			});		
 
-			if (opts.poor)
-			JSDB.forEach(opts.trace, gets.poor, [opts.qos], function (client, sql) {
+			if (dog.get.poor)
+			JSDB.forEach(dog.name, dog.dog.get.poor, [dog.qos], function (client, sql) {
 			});		
 
-			if (opts.certage)
-			JSDB.forEach(opts.trace, gets.uncert, [opts.certage], function (client, sql) {
+			if (dog.get.uncert)
+			JSDB.forEach(dog.name, dog.get.uncert, [dog.certage], function (client, sql) {
 			});		
 			
 		}),
 			
 		dogAutoruns: Copy({
-			//cycle: 600,
-			trace: ""
-		}, function (sql, opts) {
+			//cycle: 600
+		}, function dogAutoruns(sql, dog) {
 
 			for (var dsn in DEBE.autoTask) {
 				sql.query("SELECT ID, ? AS _Plugin FROM app.? WHERE Autorun", [dsn, dsn])
@@ -516,42 +554,37 @@ Further information about this file is available ${paths.moreinfo}. `;
 			
 		dogEngines: Copy({
 			//cycle: 600,
-			trace: "",
+			get: {
+				"undefined": "",
+				buggy: ""
+			},
 			"undefined": 123,
 			bugs: 10
-		}, function (sql, opts) {
-			var 
-				gets = {
-					"undefined": "",
-					buggy: ""
-				};
-
-			if (opts.undefined)
-			JSDB.forEach(opts.trace, gets.undefined, [opts.undefined], function (client, sql) {
+		}, function dogEngines(sql, dog) {
+			
+			if (dog.get.undefined)
+			JSDB.forEach(dog.name, dog.get.undefined, [dog.undefined], function (client, sql) {
 			});
 		}),
 			
 		dogUsers: Copy({
+			get: {
+				inactive: "",
+				buggy: ""
+			},			
 			//cycle: 1000,
-			trace: "",
 			inactive: 1,
 			bugs: 10
-		}, function (opts) {
-			var 
-				gets = {
-					inactive: "",
-					buggy: ""
-				};
-
-			if (opts.inactive)
-			JSDB.forEach(opts.trace, gets.inactive, [opts.inactive], function (client, sql) {
+		}, function dogUsers(dog) {
+			if (dog.get.inactive)
+			JSDB.forEach(dog.name, dog.get.inactive, [dog.inactive], function (client, sql) {
 			});		
 		})
 	},
 	
 	diag: {  //< reserved for self diag parms
 		status: "", 
-		counts: {State:""}
+		counts: {State: ""}
 	},
 
 	// request configuration
@@ -3058,7 +3091,7 @@ Initialize DEBE on startup.
 		var file = this+"";
 		siteContext( req, function (ctx) {
 			try {
-				res( JADE.renderFile( file, ctx ) );  // js gets confused so force string
+				res( JADE.renderFile( file, ctx ) );  // js get confused so force string
 			}
 			catch (err) {
 				res(  err );
