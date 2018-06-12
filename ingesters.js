@@ -41,9 +41,8 @@ module.exports = {   //< data integsters
 				x: rec.lat,
 				y: rec.lon,
 				z: 0,
-				t: idx,
-				s: idx,
-				n: rec.id
+				t: new Date(rec.starttime),
+				actorID: rec.id
 			};
 		}
 	},
@@ -57,9 +56,8 @@ module.exports = {   //< data integsters
 				x: rec.lat,
 				y: rec.lon,
 				z: 0,
-				t: idx,
-				s: idx,
-				n: rec.id
+				t: new Date(rec.starttime),
+				actorID: rec.id
 			};
 		}
 	}

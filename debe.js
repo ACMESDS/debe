@@ -364,8 +364,8 @@ Further information about this file is available ${paths.moreinfo}. `;
 					fileID: file.ID,
 					from: from.toLocaleDateString("en-US"),
 					to: to.toLocaleDateString("en-US"),
-					lon: anchor.x,
-					lat: anchor.y,
+					lat: anchor.x,
+					lon: anchor.y,
 					radius: HACK.ringRadius(ring),
 					ring: ring,
 					durationDays: file.durationDays
