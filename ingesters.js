@@ -38,10 +38,11 @@ module.exports = {   //< data integsters
 		get: "events",
 		ev: (rec,idx) => {
 			return { 
-				x: rec.lat,
-				y: rec.lon,
+				x: parseFloat(rec.lat),
+				y: parseFloat(rec.lon),
 				z: 0,
-				t: new Date(rec.starttime),
+				t: new Date(parseInt(rec.startTime)),
+				stateID: 0,
 				actorID: rec.id
 			};
 		}
@@ -53,13 +54,13 @@ module.exports = {   //< data integsters
 		get: "events",
 		ev: (rec,idx) => {
 			return { 
-				x: rec.lat,
-				y: rec.lon,
+				x: parseFloat(rec.lat),
+				y: parseFloat(rec.lon),
 				z: 0,
-				t: new Date(rec.starttime),
+				t: new Date(parseInt(rec.startTime)),
+				stateID: 0,
 				actorID: rec.id
 			};
 		}
 	}
 };
-
