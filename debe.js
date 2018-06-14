@@ -1099,12 +1099,12 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 
 	"byTable.": {	//< routers for endpoints at /TABLE
-		help: sysHelp,
-		//stop: sysStop,
+		//help: sysHelp,
 		alert: sysAlert,
-		ping: sysPing,
-		//bit: sysBIT,
+		//ping: sysPing,
 		ingest: sysIngest
+		//stop: sysStop,
+		//bit: sysBIT,
 		//atom: ATOM.exe
 		//kill: sysKill,
 		//start: sysStart,
@@ -1792,251 +1792,6 @@ could/should be revised to support more generic peer-to-peer bySOAP interfaces.
 
 function icoFavicon(req,res) {   // extjs trap
 	res("No icons here"); 
-}
-
-/**
-@class MAINT service maintenance endpoints
-*/
-
-/*
-function sysAgent(req,res) {
-	var 
-		query = req.query,
-		cb = ATOM.mw.cb[query.job];
-	
-	Log("AGENT", query);
-	cb(0);
-}
-*/
-
-function sysIngest(req,res) {
-	var 
-		sql = req.sql,
-		query = req.query,
-		body = req.body,
-		src = query.src,
-		fileID = query.fileID;
-	
-	Log("INGEST", query, body);
-	res("ingesting");
-
-	if (fileID) {
-		//sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
-		
-		if ( onIngest = DEBE.onIngest[src] )   // use builtin ingester
-			DEBE.ingester( onIngest, query, function (evs) {
-				HACK.ingestList( sql, evs, fileID, function (aoi) {
-					Log("INGEST aoi", aoi);
-				});
-			});
-
-		else  // use custom ingester
-			sql.query("SELECT Ingester FROM app.files WHERE ? AND Ingester", {ID: fileID})
-			.on("results", function (file) {
-				if ( onIngest = JSON.parse(file.Ingester) ) 
-					DEBE.ingester( onIngest, query, function (evs) {
-						HACK.ingestList( sql, evs, fileID, function (aoi) {
-							Log("INGEST aoi", aoi);
-						});
-					});
-			});
-	}
-}
-
-function sysConfig(req,res) {
-/**
-@method sysConfig
-@deprecated
-@param {Object} req Totem request
-@param {Function} res Totem response
-*/
-	function Guard(query, def) {
-		for (var n in query) return query;
-		return def;
-	}
-	
-	var query = Guard(req.query,false);
-	
-	if (query)
-		req.sql.query("UPDATE config SET ?", query, function (err) {
-			res( err || "parameter set" );
-		});
-}
-
-function sysCheckpt(req,res) {
-/*
-@method sysCheckpt
-@deprecated
-@param {Object} req Totem request
-@param {Function} res Totem response
-*/
-	CP.exec('source maint.sh checkpoint "checkpoint"');
-	res("Checkpointing database");
-}
-
-function sysStart(req, res) {
-/*
-@method sysStart
-@deprecated
-@param {Object} req Totem request
-@param {Function} res Totem response
-*/
-	req.sql.query("select * from openv.apps where least(?)",{Enabled:true,Name:req.query.name||"node0"})
-	.on("result",function (app) {
-		if (false)
-			CP.exec("node $EXAPP/sigma --start "+app.Name, function (err,stdout,stderr) {
-				if (err) console.warn(err);
-			});
-		else
-			process.exit();				
-	})
-	.on("end", function () {
-		res("restarting service");
-	});
-}
-
-function sysBIT(req, res) {
-/**
-@method sysBIT
-Totem(req,res) endpoint for builtin testing
-@param {Object} req Totem request
-@param {Function} res Totem response
-*/
-	var N = req.query.N || 20;
-	var lambda = req.query.lambda || 2;
-	
-	var
-		actions = ["insert","update","delete"],
-		tables = ["test1","test2","test3","test4","test5"],
-		users = ["simuser1","simuser2","simuser3","simuser4","simuser5"],
-		f1 = ["sim1","sim2","sim3","sim4","sim5","sim6","sim7","sim","sim9","sim10","sim11","sim12","sim13"],
-		f2 = ["a","b","c","d","e","f","g","h"],
-		f3 = [0,1,2,3,4,5,6,7,,9,10];
-
-	var t0 = 0;
-
-	// Notify startup
-	
-	//Trace(`BIT ${N} events at ${lambda} events/s with logstamp ${stamp}`);
-	
-	res("BIT running");
-
-	// Setup sync for server blocking and notify both sides
-	
-	FLEX.BIT = new SYNC(N,{},function () { 
-		FLEX.BIT = null; 
-		Trace("BIT completed");
-	});
-	
-	//DEBE.LOGSTAMP = Stamp;
-	
-	// Poisson load model.
-	
-	for (var n=0;n<N;n++) {
-		var t = - 1e3 * Math.log(Math.random()) / lambda;			// [ms] when lambda [1/s]
-		
-		t0 += t;
-
-		var taskID = setTimeout(function (args) {
-			req.body = clone(args.parms);
-			req.query = (args.action == "insert") ? {} : {f1: args.parms.f1};
-			req.ses.source = "testdb."+args.table;
-			req.ses.action = args.action;
-
-			FLEX.open(req,res);  		// need cb?			
-		}, t0, {	parms: {f1:f1.rand(),f2:f2.rand(),f3:f3.rand()}, 
-					table: tables.rand(), 
-					action: actions.rand(),
-					client: users.rand()
-				});
-	}
-}
-
-function sysPing(req,res) {
-/**
-@method sysPing
-Totem(req,res) endpoint to test client connection
-@param {Object} req Totem request
-@param {Function} res Totem response
-*/
-	res("hello "+req.client);			
-}
-
-function sysCodes(req,res) {
-/**
-@method sysCodes
-@deprecated
-Totem(req,res) endpoint to return html code for testing connection
-@param {Object} req Totem request
-@param {Function} res Totem response
-*/
-	res( HTTP.STATUS_CODES );
-}
-
-function sysAlert(req,res) {
-/**
-@method sysAlert
-Totem(req,res) endpoint to send notice to all clients
-@param {Object} req Totem request
-@param {Function} res Totem response
-*/
-	if (IO = DEBE.IO)
-		IO.sockets.emit("alert",{msg: req.query.msg || "system alert", to: "all", from: DEBE.site.title});
-			
-	res("Broadcasting alert");
-}
-
-function sysKill(req,res) {
-/*
-@method sysKill
-@deprecated
-@param {Object} req Totem request
-@param {Function} res Totem response
-*/
-	var killed = [];
-
-	res("Killing jobs");
-
-	req.sql.query("SELECT * FROM app.queues WHERE pid AND LEAST(?,1)", req.query)
-	.on("result", function (job) {
-		req.sql.query("UPDATE queues SET ? WHERE ?", [{
-			Notes: "Stopped",
-			pid: 0,
-			Departed: new Date()}, 
-			{ID: job.ID} ]);
-
-		CP.exec("kill "+job.pid);
-	});
-}
-
-function sysStop(req,res) {
-/**
-@method sysStop
-Totem(req,res) endpoint to send emergency message to all clients then halt totem
-@param {Object} req Totem request
-@param {Function} res Totem response
-*/
-	if (IO = DEBE.IO)
-		IO.sockets.emit("alert",{msg: req.query.msg || "system halted", to: "all", from: DEBE.site.title});
-	
-	res("Server stopped");
-	process.exit();
-}
-
-function sysHelp(req,res) {
-/**
-@method sysHelp
-Totem(req,res) endpoint to return all sys endpoints
-@param {Object} req Totem request
-@param {Function} res Totem response
-*/
-	res(
-		  "/ping.sys check client-server connectivity<br>"
-		+ "/bit.sys built-in test with &N client connections at rate &lambda=events/s<br>"
-		+ "/codes.sys returns http error codes<br>"
-		+ "/alert.sys broadcast alert &msg to all clients<br>"
-		+ "/stop.sys stops server with client alert &msg<br>"
-	);
 }
 
 /**
@@ -3058,6 +2813,71 @@ Initialize DEBE on startup.
 		
 	}); }); }); 
 } 
+
+/**
+@class MAINT service maintenance endpoints
+*/
+
+function sysIngest(req,res) {
+	var 
+		sql = req.sql,
+		query = req.query,
+		body = req.body,
+		src = query.src,
+		fileID = query.fileID;
+	
+	Log("INGEST", query, body);
+	res("ingesting");
+
+	if (fileID) {
+		//sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
+		
+		if ( onIngest = DEBE.onIngest[src] )   // use builtin ingester
+			DEBE.ingester( onIngest, query, function (evs) {
+				HACK.ingestList( sql, evs, fileID, function (aoi) {
+					Log("INGEST aoi", aoi);
+				});
+			});
+
+		else  // use custom ingester
+			sql.query("SELECT Ingester FROM app.files WHERE ? AND Ingester", {ID: fileID})
+			.on("results", function (file) {
+				if ( onIngest = JSON.parse(file.Ingester) ) 
+					DEBE.ingester( onIngest, query, function (evs) {
+						HACK.ingestList( sql, evs, fileID, function (aoi) {
+							Log("INGEST aoi", aoi);
+						});
+					});
+			});
+	}
+}
+
+function sysAlert(req,res) {
+/**
+@method sysAlert
+Totem(req,res) endpoint to send notice to all clients
+@param {Object} req Totem request
+@param {Function} res Totem response
+*/
+	if (IO = DEBE.IO)
+		IO.sockets.emit("alert",{msg: req.query.msg || "system alert", to: "all", from: DEBE.site.title});
+			
+	res("Broadcasting alert");
+}
+
+function sysStop(req,res) {
+/**
+@method sysStop
+Totem(req,res) endpoint to send emergency message to all clients then halt totem
+@param {Object} req Totem request
+@param {Function} res Totem response
+*/
+	if (IO = DEBE.IO)
+		IO.sockets.emit("alert",{msg: req.query.msg || "system halted", to: "all", from: DEBE.site.title});
+	
+	res("Server stopped");
+	process.exit();
+}
 
 // Prototypes
 	
