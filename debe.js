@@ -80,7 +80,7 @@ var
 	},
 		
 	ingester: function ingester( opts, query, cb ) {
-		function getEvents(data, cb){
+		function flowEvents(data, cb){
 			var evs = [];
 			if (recs = opts.get ? data[opts.get] : data) {
 				Log("ingest recs", recs.length);
@@ -110,18 +110,18 @@ var
 					case String:
 						DEBE.fetchData( url, query, opts.put||null, function (data) {
 							if (data) 
-								getEvents(data, cb);
+								flowEvents(data, cb);
 						});
 						break;
 						
 					case Function:
 						url( function (data) {
-							getEvents(data, cb );
+							flowEvents(data, cb );
 						});
 						break;
 						
 					default:
-						getEvents(url, cb);
+						flowEvents(url, cb);
 				}
 		}
 		
@@ -1994,7 +1994,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 	
 	var
 		saveEvents = LAB.libs.SAVE,
-		getEvents = LAB.libs.GET.forBatch,
+		flowEvents = LAB.libs.FLOW.batch,
 		dot = ".",
 		sql = req.sql,
 		client = req.client,
@@ -2038,7 +2038,11 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					pipe(cb) {
 						//Log("genflow");
 						this.learn( null );
-					}					
+					}
+					
+					end(evs,cb) {
+						cb(evs);
+					}
 				}
 				
 				var
@@ -2091,7 +2095,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 									//Log("learning ctx", ctx);
 									
 									if (learncb)  // in learning mode
-										getEvents(ctx, function (evs, stepcb) {  // respond on stepcb with output events when evs goes null
+										flowEvents(ctx, function (evs, sinkcb) {  // respond on stepcb with output events when evs goes null
 											if (evs) 
 												learncb(evs);
 
@@ -2101,10 +2105,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 													//Log("flow ctx", ctx);
 													ATOM.select(req, function (ctx) {  // run plugin's engine
-														if (ctx) {
-															flow.end( ctx.Save || [], stepcb );
-															//saveEvents( ctx.Save, ctx );   // could allow piped plugin to set ctx and save, but dont see value yet
-														}
+														if (ctx) 
+															flow.end( ctx.Save || [], sinkcb );
 
 														else
 															Log( `HALTED ${job.name}` );
@@ -2114,10 +2116,10 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 									
 									else	// in generating mode
 										ATOM.select(req, function (ctx) {  // run plugin's engine
-											if (ctx) {
-												flow.end( ctx.Save || [], stepcb );
-												//saveEvents( ctx.Save, ctx );   // could allow piped plugin to set ctx and save, but dont see value yet
-											}
+											if (ctx) 
+												flow.end( ctx.Save || [], function (evs) {  // save evs buffer to plugin's context
+													saveEvents( evs, ctx );
+												});
 
 											else
 												Log( `HALTED ${job.name}` );

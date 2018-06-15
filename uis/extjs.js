@@ -69,13 +69,7 @@ var
 		tools: [{
 			type: "save",
 			callback: function(me) {
-				var 
-					store = EDCTX.store,
-					key = EDCTX.key,
-					rec = store.getAt(EDCTX.row);
-
-				rec.set( key, EDGET() );
-
+				EDCTX.save( EDGET() );
 				EDWIN.hide();
 			}
 		}],
@@ -110,8 +104,9 @@ var
 			layout		: "fit",
 			listeners: {
 				tabchange: function (tabpan, tabcard) {
-					EDCTX.code == (tabcard.id == "codeedit");
-		
+					EDCTX.code = (tabcard.id == "codeedit");
+					//alert([tabcard.id, EDCTX.code]);
+					
 					/*if (EDCTX.code)
 					CodeMirror.fromTextArea(EDDOC[true].getEl(), {
 						lineNumbers: true,
@@ -122,7 +117,6 @@ var
 						mode: "javascript",
 						value: EDDOC[false].getValue()
 					}); */
-					
 				}
 			},
 			items		: [
@@ -179,12 +173,16 @@ var
 		false: Ext.getCmp("textedit")
 	},
 		
-	EDSET = function (val) {
-		EDDOC[true].setValue(val);
-		EDDOC[false].setValue(val);
+	EDSET = function ( val ) {
+		EDDOC[true].setValue( val );
+		EDDOC[false].setValue( val );
 	},
 	
 	EDGET = function () {
+		//alert("get ctx code="+EDCTX.code);
+		//alert( EDDOC[EDCTX.code].getValue() );
+		//alert( EDDOC.true.getValue() );
+		//alert( Ext.getCmp("codeedit").getValue() );
 		return EDDOC[EDCTX.code].getValue();
 	},
 	
@@ -3718,18 +3716,17 @@ WIDGET.prototype.terminal = function (term,opts) {
 					grid = ctx.grid,
 					cols = grid.getColumnManager(),
 					head = cols.getHeaderAtIndex(cellIndex),
-					key = head.dataIndex,
-					val = rec.get(key);
+					key = head.dataIndex;
 					
 				//console.log(td,cellIndex,tr,rowIndex, key);
 				Copy({
-					row: rowIndex,
-					store: grid.getStore(),
-					key: key,
+					save: function (val) {
+						rec.set(key,val);
+					},
 					code: false
 				}, EDCTX);
 				
-				EDSET( val );
+				EDSET( rec.get(key) );
 				EDWIN.setTitle( Name + "." + key);
 				EDWIN.show();
 			}, 
@@ -4331,8 +4328,9 @@ WIDGET.prototype.form = function () {
  */
 
 	var	
-		Widget = this;
-		Data = this.Data;
+		Widget = this,
+		Data = this.Data,
+		Store = Data.Store;
 		
 	this.menuTools();
 
@@ -4349,25 +4347,28 @@ WIDGET.prototype.form = function () {
 		var name = Widget.name;
 		var UIs = new Array(cols.length);
 
-		cols.Each(function (i,Col) {
+		cols.Each( function (i,Col) {
 			// EXTJS BUG.  Because most browsers require field labels to be unique -- the stupidity
 			// here seemingly motivated by a misplaced need for form cacheing -- we need to make 
 			// sure that field ids are unique.  EXTJS failed to document this behavior.
 			
-			var fLabel = Col.text;
-			var fKey = Col.dataIndex;
-			var fOff = false; //Col.hidden; 
+			var 
+				fLabel = Col.text,
+				fType = (Col.editor.xtype == "numberfield" || Col.editor.xtype == "datefield") ? "textfield" : Col.editor.xtype,
+				fKey = Col.dataIndex,
+				fOff = false; //Col.hidden; 
 			
 			if (FieldIDs[fLabel]) {
 				var fID = "Field." + fLabel + FieldIDs[fLabel];
 				FieldIDs[fLabel]++;
 			}
+			
 			else {
 				var fID = "Field." + fLabel;
 				FieldIDs[fLabel] = 1;
 			}
 
-			if (Col.columns) 	// have column grouping
+			if (Col.columns) 	// columns grouped
 				switch (0) {
 					case 0:		// preferred method
 						UIs[i] = {
@@ -4395,7 +4396,8 @@ WIDGET.prototype.form = function () {
 						};
 						break;
 				}
-			else { 				// single column
+			
+			else { 				// no groups
 				// Return the field item while mixing-in the editor to preserve combobox etc.
 				// NOTE: any listeners in the editor are lost in this process; this is the preferred 
 				// approach as editor listeners should/can be customized for grids and forms.
@@ -4404,17 +4406,40 @@ WIDGET.prototype.form = function () {
 						id			: fID,
 						fieldLabel	: fLabel,
 						name		: fKey,
-						xtype		: 1 //  correct EXTJS BUG -- all browsers
-							? (Col.editor.xtype == "numberfield" || Col.editor.xtype == "datefield") ? "textfield" : Col.editor.xtype
-							: Col.editor.xtype,
+						xtype		: fType,
 						value		: Col.editor.defaultValue,
 						qtip		: Col.qtip,
 						//qtitle		: Col.qtitle,
 						disabled	: false,
 						listeners	: {
 							afterrender: function (me) {
+								
+								var
+									el = me.getEl(),
+									config = me.getInitialConfig(),
+									key = config.name;
+								
+								if (config.xtype == "textareafield")
+									el.on("dblclick", function (me) {
+										var
+											form = (Widget.dataUI || Widget.UI).getForm(),
+											rec = form.getRecord();
+								
+										Copy({
+											save: function (val) {
+												rec.set( key, val );
+												form.loadRecord(rec);
+											},
+											code: false
+										}, EDCTX);
+
+										EDSET( rec.get(key) );
+										EDWIN.setTitle( name + "." + key);
+										EDWIN.show();
+									});
+								
 								Ext.create('Ext.tip.ToolTip', {  // field tooltip
-									target	: me.getEl(),
+									target	: el,
 									html	 : me.qtip,
 									//title	 : me.qtitle,
 									autoHide : true,
