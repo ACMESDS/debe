@@ -2036,7 +2036,6 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					}
 					
 					pipe(cb) {
-						//Log("genflow");
 						this.learn( null );
 					}
 					
@@ -2068,8 +2067,6 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						].join(" || ")
 					};
 
-				//Log("isran?", "Batch" in ctx);
-				
 				HACK.chipEvents(sql, Pipe, function ( specs ) {  // create job for these Pipe parameters
 
 					sql.insertJob( Copy(specs,job), function (sql, job) {  // put job voxel into the job queue
@@ -2145,19 +2142,18 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 							});
 
 						Flow.pipe( function (evs) { // sync pipe
-							saveEvents( sql, evs, ctx );
+							saveEvents( evs, ctx );
 						}); 
 					});
 				});
 			}
 					
 			else
-			if ( "Save" in ctx )  { // an event generation engine does not participate in piped workflow
-
-				res( saveEvents( sql, ctx.Save, ctx, function (evs) {
+			if ( "Save" in ctx )  // an event generation engine does not participate in piped workflow
+				res( saveEvents( ctx.Save, ctx, function (evs) {
 					var
 						autoTask = DEBE.autoTask,
-						host = ctx.Host = table,
+						client = ctx.Host = table,
 						fileName = `${host}.${ctx.Name}`;
 					
 					if ( ctx.Export ) {   // export remaining events to filename
@@ -2177,7 +2173,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					}
 
 					if ( ctx.Ingest )  // ingest remaining events
-						DEBE.getFile( host, `${host}/${fileName}`, function (area, fileID) {
+						DEBE.getFile( client, `plugins/${fileName}`, function (area, fileID) {
 							sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
 							
 							HACK.ingestList( sql, evs, fileID, function (aoi) {
@@ -2196,7 +2192,6 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						});
 
 				}) ); 
-			}
 			
 			else
 				res( "ok" );
