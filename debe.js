@@ -1099,6 +1099,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 
 	"byTable.": {	//< routers for endpoints at /TABLE
+		agent: sysAgent,
 		//help: sysHelp,
 		alert: sysAlert,
 		//ping: sysPing,
@@ -2847,6 +2848,80 @@ function sysIngest(req,res) {
 					});
 			});
 	}
+}
+
+function sysAgent(req,res) {
+	var
+		sql = req.sql,
+		query = req.query;
+	
+	if (push = query.push) 
+		CRYPTO.randomBytes(64, function (err, jobid) {
+
+			try {
+				var args = JSON.parse(query.args);
+			}
+			catch (parserr) {
+				err = parserr;
+			}
+			
+			if (err) 
+				res( "" );
+
+			else
+				res( jobid.toString("hex") );
+
+		});
+	
+	else
+	if (pull = query.pull) {
+		var jobid = query.jobid;
+		
+		if (jobid) 
+			res( {result: 123} );
+		
+		else
+			res( "Missing jobid" );
+	}
+
+	else
+	if ( flush = query.flush )
+		ATOM.matlab.flush(sql, flush);
+	
+	else
+	if ( thread = query.load ) {
+		var
+			parts = thread.split("_"),
+			id = parts.pop(),
+			plugin = "app." + parts.pop(),
+			results = ATOM.matlab.path.save + thread + ".out";
+		
+		Log("SAVE MATLAB",query.save,plugin,id,results);
+
+		FS.readFile(results, "utf8", function (err,json) {
+
+			sql.query("UPDATE ?? SET ? WHERE ?", [plugin, {Save: json}, {ID: id}], function (err) {
+				Log("save",err);
+			});
+
+		});	
+	}
+	
+	else
+	if ( thread = query.save ) {
+		sql.query("SELECT * FROM openv.agents WHERE ? LIMIT 1", {name: thread})
+		.on("result", function (agent) {
+			var 
+				Save = JSON.parse(agent.Script);
+			
+			DEBE.
+		});
+		
+	}
+	
+	else
+		res( "Missing push/pull" );
+	
 }
 
 function sysAlert(req,res) {
