@@ -1111,7 +1111,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		//start: sysStart,
 		//checkpt: sysCheckpt,
 		//codes: sysCodes,
-		//agent: sysAgent
 		//config: sysConfig
 	},
 	
@@ -1449,6 +1448,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				+ "issues".tag("a",{href: "/issues.view"})
 				+ " for further information";
 		},
+		badAgent: new Error("bad agent request"),
 		noIngest: new Error("invalid/missing ingest dataset"),
 		badSkin: new Error("skin contains invalid jade"),
 		badDataset: new Error("dataset does not exist"),
@@ -1994,7 +1994,6 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 */	
 	
 	var
-		saveEvents = LAB.libs.SAVE,
 		flowEvents = LAB.libs.FLOW.batch,
 		dot = ".",
 		sql = req.sql,
@@ -2031,7 +2030,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					}
 				}
 				
-				class defaultFlow {
+				class genFlow {
 					constructor (opts, cb) {
 						if (opts) Copy(opts, this);
 					}
@@ -2047,12 +2046,12 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				
 				var
 					profile = req.profile,
-					workflow = ("Batch" in ctx) ? RAN :  defaultFlow,
+					workflow = ("Batch" in ctx) ? RAN :  genFlow,
 					job = { // job descriptor for regulator
 						qos: 1, //profile.QoS, 
 						priority: 0,
 						client: req.client,
-						class: req.table,
+						class: "plugin",
 						credit: profile.Credit,
 						name: req.table,
 						task: Pipe.task || "",
@@ -2086,13 +2085,13 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 								Host: job.name
 							}, ctx),
 							File = job.File,
-							Flow = new workflow({ // configure the workflow
+							Flow = new workflow({ // create workflow supervisor
 								learn: function (learncb) {  // event getter callsback learncb(evs) or learncb(null,onEnd) at end
 									var flow = this;
 
 									//Log("learning ctx", ctx);
 									
-									if (learncb)  // in learning mode
+									if (learncb)  // event learning flow
 										flowEvents(ctx, function (evs, sinkcb) {  // respond on stepcb with output events when evs goes null
 											if (evs) 
 												learncb(evs);
@@ -2112,7 +2111,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 												});					
 										});
 									
-									else	// in generating mode
+									else	// event generating flow
 										ATOM.select(req, function (ctx) {  // run plugin's engine
 											if (ctx) 
 												flow.end( ctx.Save || [], function (evs) {  // save evs buffer to plugin's context
@@ -2143,7 +2142,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 							});
 
 						Flow.pipe( function (evs) { // sync pipe
-							saveEvents( evs, ctx );
+							Log(">>>>redudant save?");
+							//saveEvents( sql, evs, ctx );
 						}); 
 					});
 				});
@@ -2151,48 +2151,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					
 			else
 			if ( "Save" in ctx )  // an event generation engine does not participate in piped workflow
-				res( saveEvents( ctx.Save, ctx, function (evs) {
-					var
-						autoTask = DEBE.autoTask,
-						client = ctx.Host = table,
-						fileName = `${host}.${ctx.Name}`;
-					
-					if ( ctx.Export ) {   // export remaining events to filename
-						var
-							evidx = 0,
-							srcStream = new STREAM.Readable({    // establish source stream for export pipe
-								objectMode: false,
-								read: function () {  // read event source
-									if ( ev = evs[evidx++] )  // still have an event
-										this.push( JSON.stringify(ev)+"\n" );
-									else 		// signal events exhausted
-										this.push( null );
-								}
-							});
-
-						DEBE.uploadFile( "", srcStream, `stores/${fileName}.${group}.${client}` );
-					}
-
-					if ( ctx.Ingest )  // ingest remaining events
-						DEBE.getFile( client, `plugins/${fileName}`, function (area, fileID) {
-							sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
-							
-							HACK.ingestList( sql, evs, fileID, function (aoi) {
-								Log("INGESTED",aoi);
-								Each(autoTask, function (dsn,ctx) {
-									sql.query(
-										"INSERT INTO app.?? SET ? ON DUPLICATE KEY UPDATE Autorun=1",
-										[dsn, Copy({
-											Pipe: `{ "file": ${fileName}, "limit": 150e3}`,
-											Autorun: 1,
-											Name: fileName
-										}, ctx)]
-									);
-								});
-							});
-						});
-
-				}) ); 
+				res( saveEvents(sql, ctx.Save, ctx) );
 			
 			else
 				res( "ok" );
@@ -2206,6 +2165,52 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 	else
 		res(DEBE.errors.noUsecase);
 
+}
+
+function saveEvents(sql, evs, ctx) {
+	var
+		autoTask = DEBE.autoTask,
+		host = ctx.Host,
+		fileName = `${host}.${ctx.Name}`;
+	
+	return LAB.libs.SAVE ( evs, ctx, function (evs) {
+		
+		if ( ctx.Export ) {   // export remaining events to filename
+			var
+				evidx = 0,
+				srcStream = new STREAM.Readable({    // establish source stream for export pipe
+					objectMode: false,
+					read: function () {  // read event source
+						if ( ev = evs[evidx++] )  // still have an event
+							this.push( JSON.stringify(ev)+"\n" );
+						else 		// signal events exhausted
+							this.push( null );
+					}
+				});
+
+			DEBE.uploadFile( "", srcStream, `stores/${fileName}.${host}` );
+		}
+
+		if ( ctx.Ingest )  // ingest remaining events
+			DEBE.getFile( host, `plugins/${fileName}`, function (area, fileID) {
+				sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
+
+				HACK.ingestList( sql, evs, fileID, function (aoi) {
+					Log("INGESTED",aoi);
+					Each(autoTask, function (dsn,ctx) {
+						sql.query(
+							"INSERT INTO app.?? SET ? ON DUPLICATE KEY UPDATE Autorun=1",
+							[dsn, Copy({
+								Pipe: `{ "file": ${fileName}, "limit": 150e3}`,
+								Autorun: 1,
+								Name: fileName
+							}, ctx)]
+						);
+					});
+				});
+			});
+
+	}); 
 }
 
 function sendDoc(req, res) {
@@ -2318,8 +2323,8 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 								qual = "";
 							
 							if ( key.indexOf("Save") == 0) qual = "hide" ;
-							else
-							if ( key.indexOf("_") >=0 ) qual = "off";
+							//else
+							//if ( key.indexOf("_") >=0 ) qual = "off";
 							
 							cols.push( key + "." + type + "." + doc + "." + qual );
 						}
@@ -2909,18 +2914,37 @@ function sysAgent(req,res) {
 	
 	else
 	if ( thread = query.save ) {
-		sql.query("SELECT * FROM openv.agents WHERE ? LIMIT 1", {name: thread})
-		.on("result", function (agent) {
-			var 
-				Save = JSON.parse(agent.Script);
+		var 
+			Thread = thread.split("."),
+			Thread = {
+				case: Thread.pop(),
+				plugin: Thread.pop(),
+				client: Thread.pop()
+			};
+		
+		sql.forFirst("agent", "SELECT * FROM openv.agents WHERE ? LIMIT 1", {queue: thread}, function (agent) {
 			
-			DEBE.
+			if (agent) {
+				sql.query("DELETE FROM openv.agents WHERE ?", {ID: agent.ID});
+				
+				if ( evs = JSON.parse(agent.script) )
+					FLEX.getContext(sql, "app."+Thread.plugin, {ID: Thread.case}, function (ctx) {
+						res( saveEvents( sql, evs, ctx ) );
+					});
+				
+				else
+					res( DEBE.errors.badAgent );
+			}
+			
+			else
+				res( DEBE.errors.badAgent );
+				
 		});
 		
 	}
 	
 	else
-		res( "Missing push/pull" );
+		res( DEBE.errors.badAgent );
 	
 }
 
@@ -3307,7 +3331,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 
 		this.each( function (n,stat) {  // split-save all stashable keys
 			var 
-				key = targetPrefix + stat[watchKey],  // target ctx key 
+				key = targetPrefix + (stat[watchKey] || "rem"),  // target ctx key 
 				ev = ( key in stash )
 					? stash[key]  // stash was already primed
 					: (key in ctx)  // see if its in the ctx

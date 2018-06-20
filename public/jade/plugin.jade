@@ -84,12 +84,12 @@ append site_body
 					When executed, the **context** of your *#{ds}* plugin is automatically extended with keys:  
 					> Flow context of Markov/ROC supervisor  
 					> Host name of plugin  
-					> File being processed by the supervisor  
-					> Voxel current voxel being supervised    
-					> Collects sensor collects made under current voxel  
-					> Chip  filepath for first jpeg collect under current voxel  
-					> Flux solar flux at earth's surface under current voxel  
-					> Events event query for current voxel  
+					> File being supervised  
+					> Voxel being supervised    
+					> Collects made under supervised voxel  
+					> Chip at earth's surface under supervised voxel  
+					> Flux at earth's surface under supervised voxel  
+					> Events query for supervised voxel  
 					
 					To place your *#{ds}* plugin into #{title}'s Markov/ROC supervisor, simply provide keys:  
 					> [Batch+](/#{ds}.add?Batch=0) [/-](/#{ds}.sub?Batch) value overrides supervisor's batch size (0 disabled)  
