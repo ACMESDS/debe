@@ -75,7 +75,7 @@ append site_body
 					> [Pipe+](/#{ds}.add?Pipe=doc) [/-](/#{ds}.sub?Pipe) json regulates chips and events to the engine  
 					> [Description+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description) blog markdown documents a usecase  
 					> [Config+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) js-script defines usecase context  
-					> [Save+](/#{ds}.add?Save=doc) [/-](/#{ds}.sub?Save) json aggregates engine results not captured in the Save_KEYs  
+					> [Save+](/#{ds}.add?Save=doc) [/-](/#{ds}.sub?Save) json aggregates engine results not captured in Save_KEYs  
 					> [Save_KEY](/#{ds}.run?options=more) json aggregates selected engine results from [{at:"KEY", ...}, ...]  
 					> [Entry+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) json primes context on entry using { KEY: "SELECT ....", ...}  
 					> [Exit+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) json saves context on exit using { KEY: "UPDATE ....", ...}  
@@ -128,7 +128,7 @@ append site_body
 					modules.  
 					
 			#grid.Jobs(
-				path="/queues.db?Class=#{ds}",
+				path="/queues.db?Name=#{ds}",
 				cols="Arrived.d,Departed.d,Client,Notes.x,QoS.n,Age.n,Funded.c,Finished.c,Priority.n,Work.n,State.n,Task.t,Signoffs(Flagged.c,Sign0.c,Sign1.c,Sign2.c,Sign3.c)",
 				wrap,
 				head="Print,Refresh,Execute,Help",

@@ -2142,8 +2142,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 							});
 
 						Flow.pipe( function (evs) { // sync pipe
-							Log(">>>>redudant save?");
-							//saveEvents( sql, evs, ctx );
+							Log(">>>> redundant save????????????????????");
+							//saveEvents( evs, ctx );
 						}); 
 					});
 				});
@@ -2151,7 +2151,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					
 			else
 			if ( "Save" in ctx )  // an event generation engine does not participate in piped workflow
-				res( saveEvents(sql, ctx.Save, ctx) );
+				res( saveEvents( ctx.Save, ctx ) );
 			
 			else
 				res( "ok" );
@@ -2167,13 +2167,13 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 }
 
-function saveEvents(sql, evs, ctx) {
+function saveEvents(evs, ctx) {
 	var
 		autoTask = DEBE.autoTask,
 		host = ctx.Host,
 		fileName = `${host}.${ctx.Name}`;
 	
-	return LAB.libs.SAVE ( evs, ctx, function (evs) {
+	return LAB.libs.SAVE ( evs, ctx, function (evs,sql) {
 		
 		if ( ctx.Export ) {   // export remaining events to filename
 			var
@@ -2929,7 +2929,7 @@ function sysAgent(req,res) {
 				
 				if ( evs = JSON.parse(agent.script) )
 					FLEX.getContext(sql, "app."+Thread.plugin, {ID: Thread.case}, function (ctx) {
-						res( saveEvents( sql, evs, ctx ) );
+						res( saveEvents( evs, ctx ) );
 					});
 				
 				else
@@ -3318,13 +3318,16 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 	@param [Object] ctx plugin context keys
 	@param [Object] stash refactored output suitable for a Save_KEY
 	@param [Function] cb callback(ev,stat) returns refactored result to put into stash
-	Used by plugins for refactoring process output ctx into existing Save_KEY stashes, thus
+	Used by plugins for aggregating ctx keys into optional Save_KEY stashes such that:
 
-			[{ at: "check", A: a1, B: b1, ... }, { at: "check", A: a1, B: b1, ... }, ... { at: "other", ...} ]
-			.stashify( "at", "save_", {save_check: {}, ...} , stash, cb )
+			[	{ at: "check", A: a1, B: b1, ... }, { at: "check", A: a1, B: b1, ... }, ... 
+				{ at: "other", ...}, { x:x1, y:y1, ...}, { x:x2: y:y2, ... } 
+			].stashify( "at", "save_", {save_check: {}, ...} , stash, cb )
 
 	creates a stash.save_check = {A: [a1, a2,  ...], B: [b1, b2, ...], ...}.   No stash.other is
-	created because its does not exist in the supplied ctx.
+	created because its does not exist in the supplied ctx.  If no stash.rem is provided 
+	by the ctx, the {x, y, ...} are appended (w/o aggregation) to stash.remainder. Conversely, 
+	had	the ctx contain a stash.rem, the {x, y, ...} would be aggregated to stash.rem.
 	*/
 
 		var rem = stash.remainder;

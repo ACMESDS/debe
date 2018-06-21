@@ -1,6 +1,6 @@
 module.exports = {
 	usecase: {
-		Save_rem: "json",
+		Save: "json",
 		M: "int(11)",
 		Pipe: "json",
 		Share: "boolean",
