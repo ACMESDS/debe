@@ -179,10 +179,10 @@ var
 						   
 		dogVoxels: Copy({
 			get: {
-				unused: 
-					"SELECT voxels.ID AS ID,aois.ID AS aoiID FROM app.voxels "
-				+ " LEFT JOIN app.aois ON aois.name=voxels.class HAVING aoiID IS null"
-				//refresh: "SELECT ID FROM app.voxels WHERE MBRcontains(ring, GeomFromText(?)) AND datediff(now(), added) > ?"
+				//unused: 
+				//	"SELECT voxels.ID AS ID,aois.ID AS aoiID FROM app.voxels "
+				//+ " LEFT JOIN app.aois ON aois.name=voxels.class HAVING aoiID IS null"
+				//, refresh: "SELECT ID FROM app.voxels WHERE MBRcontains(ring, GeomFromText(?)) AND datediff(now(), added) > ?"
 			},
 			cycle: 120,
 			atmage: 2 // days to age before refresh atm data

@@ -38,8 +38,8 @@ module.exports = {  // generate a Markov process given its transition probabilit
 			exp = Math.exp, log = Math.log, sqrt = Math.sqrt, floor = Math.floor, rand = Math.random;
 
 		var
+			/*
 			mvd = [], 	// multivariate distribution parms
-
 			mix = ctx.Mix || {},
 			mixing = ctx.Mix ? true : false,
 
@@ -60,6 +60,7 @@ module.exports = {  // generate a Markov process given its transition probabilit
 			},  		// sampler constants
 			samplers = {  // customize the random walk
 				na: function (u) {  // ignore
+					return u;
 				},
 
 				wi: function (u) {  // wiener (need to vectorize)
@@ -98,9 +99,10 @@ module.exports = {  // generate a Markov process given its transition probabilit
 			},  // samplers
 			labels = ["x","y","z"], // vector sample labels
 			sampler = samplers[mode], // sampler
+			*/
 			states = ctx.TxPrs.length;
 
-		Log({mix:ctx.Mix,txprs:ctx.TxPrs,steps:ctx.Steps,solve:ctx.Solve, States:states}); 
+		Log({mix:ctx.Mix,txprs:ctx.TxPrs,steps:ctx.Steps,solve:ctx.Solve, States:states, mode:mode}); 
 			/*
 			mix.each( function (k,mix) {  // scale mix mu,sigma to voxel dimensions
 				//Log([k, floor(k / 20), k % 20, mix, dims]);
