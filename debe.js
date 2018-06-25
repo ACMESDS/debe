@@ -2015,9 +2015,10 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				res( ctx );
 			
 			else
-			if ( Pipe = ctx.Pipe )  { // intercept pipe workflow to regulate event stream
+			if ( Pipe = ctx.Pipe )  { // intercept piped for learning workflows and to regulate event stream
 				res("Piped");
 				
+				/*
 				class rocFlow {
 					constructor (opts, cb) {
 						if (opts) Copy(opts, this);
@@ -2043,10 +2044,10 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						cb(evs);
 					}
 				}
+				*/
 				
 				var
 					profile = req.profile,
-					workflow = ("Batch" in ctx) ? RAN :  genFlow,
 					job = { // job descriptor for regulator
 						qos: 1, //profile.QoS, 
 						priority: 0,
@@ -2069,9 +2070,9 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 				HACK.chipEvents(sql, Pipe, function ( specs ) {  // create job for these Pipe parameters
 
-					sql.insertJob( Copy(specs,job), function (sql, job) {  // put job voxel into the job queue
+					sql.insertJob( Copy(specs,job), function (sql, job) {  // put voxel into job regulation queue
 						
-						//Log("flow ctx", ctx);
+						//Log("leaning ctx", ctx);
 						
 						var 
 							Query = req.query = Copy({  // engine request query to be copied to engine's context when selected
@@ -2082,17 +2083,19 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 								Events: job.Events || "",
 								Stats: job.Stats,
 								Chip: job.Chip,
-								Host: job.name
+								Host: "app." + job.name
 							}, ctx),
 							File = job.File,
-							Flow = new workflow({ // create workflow supervisor
+							Super = new RAN({ 	// learning supervisor
 								learn: function (learncb) {  // event getter callsback learncb(evs) or learncb(null,onEnd) at end
 									var flow = this;
 
 									//Log("learning ctx", ctx);
-									
+
 									if (learncb)  // event learning flow
 										flowEvents(ctx, function (evs, sinkcb) {  // respond on stepcb with output events when evs goes null
+											Log("supervising ", evs ? evs.length : "done!" );
+											
 											if (evs) 
 												learncb(evs);
 
@@ -2100,7 +2103,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 												learncb(null, function onEnd( flowctx ) {  // accept flow context
 													Query.Flow = flowctx;
 
-													//Log("flow ctx", ctx);
+													//Log("end flow ctx", flowctx);
 													ATOM.select(req, function (ctx) {  // run plugin's engine
 														if (ctx) 
 															flow.end( ctx.Save || [], sinkcb );
@@ -2110,7 +2113,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 													});
 												});					
 										});
-									
+
 									else	// event generating flow
 										ATOM.select(req, function (ctx) {  // run plugin's engine
 											if (ctx) 
@@ -2121,7 +2124,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 											else
 												Log( `HALTED ${job.name}` );
 										});
-										
+
 								},  
 
 								N: File.Actors,  // ensemble size
@@ -2135,24 +2138,25 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 										case "config":
 										case "end":
 										case "batch":
-										case "done":
+											//Log("filter push", ev);
 											str.push(ev);
 									}
 								}  
 							});
-
-						Flow.pipe( function (evs) { // sync pipe
-							Log(">>>> redundant save????????????????????");
-							//saveEvents( evs, ctx );
+						
+						Super.pipe( function (evs) { // sync pipe
+							//Log(">>>> redundant save????????????????????");
+							//Log(evs);
+							saveEvents( evs, ctx );
 						}); 
 					});
 				});
 			}
 					
 			else
-			if ( "Save" in ctx )  // an event generation engine does not participate in piped workflow
+			if ( "Save" in ctx )  // event generation engine does not participate in piped workflow
 				res( saveEvents( ctx.Save, ctx ) );
-			
+				
 			else
 				res( "ok" );
 			

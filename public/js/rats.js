@@ -213,8 +213,8 @@ x = rng(-1/2, 1/2, N);
 							//Log("ctx", ctx);
 							cb({
 								intensity: {x: ctx.x, i: ctx.lambda},
-								mean_count: ctx.Wbar,
-								mean_intensity: ctx.evRate,
+								//mean_count: ctx.Wbar,
+								//mean_intensity: ctx.evRate,
 								eigen_ref: pcRef
 							});
 							Log({

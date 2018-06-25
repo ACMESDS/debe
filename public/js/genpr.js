@@ -102,7 +102,7 @@ module.exports = {  // generate a Markov process given its transition probabilit
 			*/
 			states = ctx.TxPrs.length;
 
-		Log({mix:ctx.Mix,txprs:ctx.TxPrs,steps:ctx.Steps,solve:ctx.Solve, States:states, mode:mode}); 
+		Log({mix:ctx.Mix,txprs:ctx.TxPrs,steps:ctx.Steps,solve:ctx.Solve, States:states}); 
 			/*
 			mix.each( function (k,mix) {  // scale mix mu,sigma to voxel dimensions
 				//Log([k, floor(k / 20), k % 20, mix, dims]);
@@ -119,7 +119,7 @@ module.exports = {  // generate a Markov process given its transition probabilit
 			*/
 		// [{"mu":[0,0,0],"sigma":[[0.9,0.4,0],[0.4,0.7,0],[0,0,0.1]]}, {"mu":[0.3,0.5,0], "sigma":[[0.8,0.2,0],[0.2,0.8,0],[0,0,0.1]]}]
 
-		var ran = new RAN({ // configure the random process generator
+		var Super = new RAN({ // generating supervisor
 			N: ctx.Members,  // ensemble size
 			wiener: ctx.Wiener,  // wiener process steps
 			trP: ctx.TxPrs, // state transition probs 
@@ -196,11 +196,11 @@ module.exports = {  // generate a Markov process given its transition probabilit
 			}  // event saver 
 		});  // create a randpr compute thread
 
-		ran.pipe( function (evs) {  // sync pipe
+		Super.pipe( function (evs) {  // sync pipe
 			ctx.Save = evs;
 			res( ctx );
 		});   // run process and capture results
-
+		
 	}
 
 }

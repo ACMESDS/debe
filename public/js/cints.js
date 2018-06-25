@@ -413,7 +413,7 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 					fits: fits,
 					coherence_intervals: M0,
 					mean_count: Kbar,
-					est_rate: Kbar / T,
+					mean_intensity: Kbar / T,
 					degeneracy_param: Kbar / M0,
 					snr: snr,
 					complete: 1 - mu/2.5,
@@ -431,8 +431,7 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 		var
 			flow = ctx.Flow;
 		
-		//Log("cints ctx", ctx);
-		//Log(flow);
+		//Log("cints flow", flow);
 		
 		coherenceIntervals({  // define solver parms
 			H: flow.F,		// count frequencies
@@ -444,6 +443,7 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 			lma: ctx.lma	// initial guess at M = # coherence intervals
 		}, function (stats) {
 			ctx.Save = stats;
+			Log("cints save stats", stats);
 			res(ctx);
 		});
 
