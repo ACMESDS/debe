@@ -2086,21 +2086,21 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 								Host: "app." + job.name
 							}, ctx),
 							File = job.File,
-							Super = new RAN({ 	// learning supervisor
-								learn: function (learncb) {  // event getter callsback learncb(evs) or learncb(null,onEnd) at end
+							Supervisor = new RAN({ 	// learning supervisor
+								learn: function (supercb) {  // event getter callsback supercb(evs) or learsupercbncb(null,onEnd) at end
 									var flow = this;
 
 									//Log("learning ctx", ctx);
 
-									if (learncb)  // event learning flow
-										flowEvents(ctx, function (evs, sinkcb) {  // respond on stepcb with output events when evs goes null
+									//if (supercb)  // supervised learning flow
+										flowEvents(ctx, function (evs, sinkcb) {  // callsback sinkcb(output events) when evs goes null
 											Log("supervising ", evs ? evs.length : "done!" );
 											
 											if (evs) 
-												learncb(evs);
+												supercb(evs);
 
-											else 
-												learncb(null, function onEnd( flowctx ) {  // accept flow context
+											else // terminate 
+												supercb(null, function onEnd( flowctx ) {  // accept flow context
 													Query.Flow = flowctx;
 
 													//Log("end flow ctx", flowctx);
@@ -2114,7 +2114,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 												});					
 										});
 
-									else	// event generating flow
+									/*
+									else	// unsupervised learning flow
 										ATOM.select(req, function (ctx) {  // run plugin's engine
 											if (ctx) 
 												flow.end( ctx.Save || [], function (evs) {  // save evs buffer to plugin's context
@@ -2124,7 +2125,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 											else
 												Log( `HALTED ${job.name}` );
 										});
-
+									*/
+									
 								},  
 
 								N: File.Actors,  // ensemble size
@@ -2144,9 +2146,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 								}  
 							});
 						
-						Super.pipe( function (evs) { // sync pipe
-							//Log(">>>> redundant save????????????????????");
-							//Log(evs);
+						Supervisor.pipe( function (evs) { // sync pipe
 							saveEvents( evs, ctx );
 						}); 
 					});
@@ -2154,7 +2154,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			}
 					
 			else
-			if ( "Save" in ctx )  // event generation engine does not participate in piped workflow
+			if ( "Save" in ctx )  // event generation engines do not participate in supervised workflow
 				res( saveEvents( ctx.Save, ctx ) );
 				
 			else

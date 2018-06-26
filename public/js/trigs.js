@@ -79,7 +79,7 @@ x = t/T;
 			flow = ctx.Flow;
 		
 		if (stats.coherence_time)
-			GET.forAll(ctx, function (evs) {  // fetch all the events
+			FLOW.all(ctx, function (evs) {  // fetch all the events
 				if (evs)
 					triggerProfile({  // define solver parms
 						evs: evs,		// events
