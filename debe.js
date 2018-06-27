@@ -2133,8 +2133,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 								sym: ctx.Symbols,  // state symbols
 								steps: ctx.Steps || File.Steps, // process steps
 								batch: ctx.Batch || 0,  // steps to next supervised learning event 
-								K: File.States,	// number of states 
-								trP: {}, // trans probs
+								trP: {K: File.States}, // trans probs
 								filter: function (str, ev) {  // filter output events
 									switch ( ev.at ) {
 										case "config":
@@ -3087,7 +3086,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 	tagList to store #TAG tags, and the record hash to resolve #{key} tags.
 	*/
 		
-		function pretty(val) {
+		function pretty(val, cb) {
 			if (val)
 				switch (val.constructor.name) {
 					case "Number": return val.toFixed(2);
@@ -3097,10 +3096,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 					}) + "]";
 					case "Date": return val+"";
 					case "Object": 
-						var rtns = [];
-						for (var key in val) 
-							rtns.push( "{" + pretty(val[key]) + "}_{" + key + "}" );
-						return rtns.join(" = ");
+						return cb ? cb(val) : JSON.stringify(val);
 					default: 
 						return JSON.stringify(val);
 				}
@@ -3174,7 +3170,22 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 
 				else {
 					try { var val = eval( `$.${key}` ); } catch (err) { }
-					return cache[key] = pretty(val || rec[key]);
+					return cache[key] = pretty( val || rec[key] );
+				}
+			})
+			.replace(/\=\{(.*?)\}/g, function (str,key) {  // ={ key } markdown
+				//Log(key,cache);
+				if (  key in cache )
+					return cache[key];
+
+				else {
+					try { var val = eval( `$.${key}` ); } catch (err) { }
+					return cache[key] = pretty(val || rec[key], (val) => {
+						var rtns = [];
+						for (var key in val) 
+							rtns.push( "{" + pretty(val[key]) + "}_{" + key + "}" );
+						return rtns.join(" = ");						
+					});
 				}
 			})
 			.replace(/\!{(.*?)\}/g, function (str,expr) { // !{ js expression } markdown
@@ -3537,4 +3548,147 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 	}
 ].extend(Date);
 		
+switch (process.argv[2]) { //< unit tests
+	case "D1": 
+		var DEBE = require("../debe").config({
+			name: ENV.SERVICE_NAME,
+
+			mysql: {
+				host: ENV.MYSQL_HOST,
+				user: ENV.MYSQL_USER,
+				pass: ENV.MYSQL_PASS
+			},
+
+			//guard: true,
+
+			onFile: {
+				"./public/uploads/": function (sql, name, path) {  // watch changes to a file				
+
+					sql.getFirst(  // get client for registered file
+						"UPLOAD",
+						"SELECT ID,Client,Added FROM app.files WHERE least(?) LIMIT 1", 
+						{Name: name, Area:"uploads"}, function (file) {
+
+						if (file) {  // ingest only registered file
+							var 
+								now = new Date(),
+								exit = new Date(),
+								client = file.Client,
+								added = file.Added,
+								site = DEBE.site,
+								port = name.tag("a",{href:"/files.view"}),
+								url = site.urls.worker,
+								metrics = "metrics".tag("a", {href:url+"/airspace.view"}),
+									/* [
+										"quality".tag("a",{href:url+"/airspace.view?options=quality"}),
+										"clumping".tag("a",{href:url+"/airspace.view?options=clumping"}),
+										"loitering".tag("a",{href:url+"/airspace.view?options=loitering"}),
+										"corridors".tag("a",{href:url+"/airspace.view?options=corridors"}),
+										"patterns".tag("a",{href:url+"/airspace.view?options=patterns"})
+									].join(", "), */
+								poc = site.distro.d;
+
+							sql.getFirst(  // credit client for upload
+								"UPLOAD",
+								"SELECT `Group` FROM openv.profiles WHERE ? LIMIT 1", 
+								{Client:client}, 
+								function (prof) {
+
+								exit.offsetDays( 30 );
+
+								if ( prof ) {
+									var 					
+										group = prof.Group,
+										revised = "revised".tag("a", {href:`/files.view?ID=${file.ID}`} ),
+										notes = `
+Thank you ${client} for your sample deposit to ${port} on ${now}.  If your 
+sample passes initial quality assessments, additional ${metrics} will become available.  Unless
+${revised}, these samples will expire on ${exit}.  Should you wish to remove these quality 
+assessments from our worldwide reporting system, please contact ${poc} for consideration.
+`;
+									sql.query("UPDATE app.files SET ? WHERE ?", [{
+											Notes: notes,
+											Added: now,
+											Expires: exit
+										}, {ID: file.ID}
+									], function (err) {
+										DEBE.ingestFile(sql, path, name, file.ID, function (aoi) {
+											//Trace( `CREDIT ${client}` );
+
+											sql.query("UPDATE app.profiles SET Credit=Credit+? WHERE Client=?", [aoi.snr, client]);
+
+											if (false)  // put upload into LTS - move this to file watchDog
+												CP.exec(`zip ${path}.zip ${path}; rm ${path}; touch ${path}`, function (err) {
+													Trace(`PURGED ${name}`);
+												});
+										});
+									});
+
+								}
+
+								sql.release();
+							});
+						}
+					});
+				},
+
+				"./public/js/": function (sql,name,ev) {
+					// run FLEX.publish on the engine
+					sql.release();
+				},
+
+				"./public/py/": function (sql,name,ev) {
+					// run FLEX.publish on the engine
+					sql.release();
+				}
+
+			}
+
+		}, function (err) {
+		Trace( err || 
+`Yowzers - this does everything but eat!  An encrypted service, a database, a jade UI for clients,
+usecase-engine plugins, file-upload watchers, and watch dogs that monitor system resources (jobs, files, 
+clients, users, system health, etc).` 
+		);
+	});
+		break;
+		
+	case "D2":
+		var DEBE = require("../debe").config({
+			name: ENV.SERVICE_NAME,
+			riddles: 10,
+			mysql: {
+				host: ENV.MYSQL_HOST,
+				user: ENV.MYSQL_USER,
+				pass: ENV.MYSQL_PASS
+			},
+			"byTable.": {
+				wfs: function (req,res) {
+					res("here i go again");
+
+					TOTEM.fetchers.http(ENV.WFS_TEST, function (data) {
+						console.log(data);
+					});
+				}
+			}
+		}, function (err) {
+			Trace( "This bad boy in an encrypted service with a database and has an /wfs endpoint" );
+		});
+		break;
+		
+	case "D3":
+		var DEBE = require("../debe").config({
+			name: ENV.SERVICE_NAME,
+
+			mysql: {
+				host: ENV.MYSQL_HOST,
+				user: ENV.MYSQL_USER,
+				pass: ENV.MYSQL_PASS
+			}
+		}, function (err) {
+			Trace( err || "Stateful network flow manger started" );
+		});
+		break;
+}
+
 // UNCLASSIFIED
