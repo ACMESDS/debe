@@ -8,7 +8,7 @@ module.exports = {
 	},
 	
 	engine: function jsdemo1(ctx, res) {
-		Log("jsdemo1 ctx", ctx);
+		Log("jsdemo1 ctx", ctx.Pipe);
 		var debug = false;
 		
 		if (debug) {

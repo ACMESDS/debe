@@ -1,6 +1,6 @@
 module.exports = {  // learn hidden coherence parameters of a Markov process
 	keys: {
-		Symbols: "json comment '[sym, sym, ...] state symbols or null to generate' ",
+		//Symbols: "json comment '[sym, sym, ...] state symbols or null to generate' ",
 		Steps: "int(11) default 0 comment 'steps to next supervised learning' ",
 		Batch: "int(11) default 0 comment 'override _File.Steps' ",
 		lma: "json comment '[init] initial estimate of coherence intervals for levenberg-marquardt alg' ",

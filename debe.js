@@ -2129,8 +2129,10 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 									
 								},  
 
-								N: File.Actors,  // ensemble size
-								sym: ctx.Symbols,  // state symbols
+								N: ctx.Actors || File.Actors,  // ensemble size
+								//sym: ctx.Symbols,  // state symbols
+								keys: ctx.Keys || File.stateKeys,
+								symbols: ctx.Symbols || File.stateSymbols,
 								steps: ctx.Steps || File.Steps, // process steps
 								batch: ctx.Batch || 0,  // steps to next supervised learning event 
 								trP: {K: File.States}, // trans probs

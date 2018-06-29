@@ -1,5 +1,5 @@
 module.exports = {  // generate a Markov process given its transition probability parameters
-	usecase: {
+	keys: {
 		Mix: "json comment 'gaussian mixing parameters { dims: [D1, D2 , ...] weights: [W1, W2 , ...] }' ",
 		TxPrs: "json comment 'KxK transition probs [ [pr, pr, ...], ...] or {fr: {to: pr, ... }, ... K: states} ' ",
 		Symbols: "json comment '[S1, S2, ... ] state symbols or null to generate defaults' ",
