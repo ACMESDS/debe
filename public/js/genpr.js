@@ -102,7 +102,8 @@ module.exports = {  // generate a Markov process given its transition probabilit
 			*/
 			states = ctx.TxPrs.length;
 
-		Log({mix:ctx.Mix,txprs:ctx.TxPrs,steps:ctx.Steps,solve:ctx.Solve, States:states}); 
+		//Log(ctx);
+		Log({mix:ctx.Mix,txprs:ctx.TxPrs,steps:ctx.Steps, States:states}); 
 			/*
 			mix.each( function (k,mix) {  // scale mix mu,sigma to voxel dimensions
 				//Log([k, floor(k / 20), k % 20, mix, dims]);
@@ -126,7 +127,7 @@ module.exports = {  // generate a Markov process given its transition probabilit
 			symbols: ctx.Symbols,  // state symbols
 			nyquist: ctx.Nyquist, // oversampling factor
 			steps: ctx.Steps, // process steps
-			obs: ctx.Mix,  	// mixing/emission/observation parms
+			emP: ctx.Mix,  	// mixing/emission/observation parms
 			batch: ctx.Batch || 0,   // supervised learning every batch steps
 			//sigma = mix.sigma || [ [ scalevec([0.4, 0.3, 0],dims), scalevec([0.3, 0.8, 0],dims), scalevec([0, 0, 1],dims)] ],
 			//solve: ctx.Solve, // learning parameters
@@ -134,14 +135,14 @@ module.exports = {  // generate a Markov process given its transition probabilit
 				switch ( ev.at ) {
 					case "jump":
 						var 
-							idx = ev.idx,
 							ys = ev.obs || [];
 
 						str.push({
 							at: ev.at,  // step name
 							t: ev.t, // time sampled
-							u: ev.state,   // state occupied
-							n: idx, 	// unique identifier
+							state: ev.state,   // state occupied
+							class: 0,							
+							index: ev.index, 	// unique identifier
 							x: ys[0],  	// lat
 							y: ys[1],  	// lon
 							z: ys[2] 	// alt
@@ -153,8 +154,9 @@ module.exports = {  // generate a Markov process given its transition probabilit
 							var ev = { 
 									at: ev.at,
 									t: ran.t,
-									u: 0,
-									n: 0
+									state: 0,
+									class: 0,
+									index: 0
 								};
 
 							ran.WU.each(function (id, state) {
@@ -166,13 +168,14 @@ module.exports = {  // generate a Markov process given its transition probabilit
 						}
 
 						else
-							ran.U.each( function (idx, state) {
-								var ys = ran.Y[idx];
+							ran.U.each( function (index, state) {
+								var ys = ran.Y[index];
 								str.push({ 
 									at: ev.at,  // step name
 									t: ran.t, // time sampled
-									u: state,   // state occupied
-									n: idx, 	// unique identifier
+									class: 0,
+									state: state,   // state occupied
+									index: index, 	// unique identifier
 									x: ys[0],  	// lat
 									y: ys[1],  	// lon
 									z: ys[2] 	// alt

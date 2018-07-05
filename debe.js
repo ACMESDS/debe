@@ -1995,14 +1995,13 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 	
 	var
 		flowEvents = LAB.libs.FLOW.batch,
-		dot = ".",
 		sql = req.sql,
 		client = req.client,
 		group = req.group,
 		table = req.table,
 		query = req.query;
 
-	if ("ID" in query || "Name" in query)  
+	if ("ID" in query || "Name" in query)  // engine requested
 		FLEX.runPlugin(req, function (ctx) {  // run engine using requested usecase via the job regulator 
 
 			//Log("run ctx", ctx);
@@ -2017,34 +2016,6 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			else
 			if ( Pipe = ctx.Pipe )  { // intercept piped for learning workflows and to regulate event stream
 				res("Piped");
-				
-				/*
-				class rocFlow {
-					constructor (opts, cb) {
-						if (opts) Copy(opts, this);
-					}
-					
-					end() {
-					}
-					
-					pipe() {
-					}
-				}
-				
-				class genFlow {
-					constructor (opts, cb) {
-						if (opts) Copy(opts, this);
-					}
-					
-					pipe(cb) {
-						this.learn( null );
-					}
-					
-					end(evs,cb) {
-						cb(evs);
-					}
-				}
-				*/
 				
 				var
 					profile = req.profile,
@@ -2072,18 +2043,16 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 					sql.insertJob( Copy(specs,job), function (sql, job) {  // put voxel into job regulation queue
 						
-						//Log("leaning ctx", ctx);
-						
 						var 
-							Query = req.query = Copy({  // engine request query to be copied to engine's context when selected
-								File: job.File,
-								Voxel: job.Voxel,
-								Collects: job.Collects,
-								Flux: job.Flux,
-								Events: job.Events || "",
-								Stats: job.Stats,
-								Chip: job.Chip,
-								Host: "app." + job.name
+							Query = req.query = Copy({  // engine query when selected
+								File: job.File,  // file linked to this voxel
+								Voxel: job.Voxel,	// voxel being processed
+								Collects: job.Collects,	// sensor collects available for this voxel
+								Flux: job.Flux,		// surface solar flux under this voxel
+								Events: job.Events || "",	// sql to get events for this voxel
+								Stats: job.Stats,		// plugin stats available for this voxel
+								Chip: job.Chip,		// surface chip selector under this voxel
+								Host: "app." + job.name		// ds.plugin name hosting this voxel
 							}, ctx),
 							File = job.File,
 							Supervisor = new RAN({ 	// learning supervisor
@@ -2092,62 +2061,47 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 									//Log("learning ctx", ctx);
 
-									//if (supercb)  // supervised learning flow
-										flowEvents(ctx, function (evs, sinkcb) {  // callsback sinkcb(output events) when evs goes null
-											Log("supervising ", evs ? evs.length : "done!" );
-											
-											if (evs) 
-												supercb(evs);
+									flowEvents(ctx, function (evs, sinkcb) {  // callsback sinkcb(output events) when evs goes null
+										Log("supervising ", evs ? evs.length : "done!" );
 
-											else // terminate 
-												supercb(null, function onEnd( flowctx ) {  // accept flow context
-													Query.Flow = flowctx;
+										if (evs) 
+											supercb(evs);
 
-													//Log("end flow ctx", flowctx);
-													ATOM.select(req, function (ctx) {  // run plugin's engine
-														if (ctx) 
-															flow.end( ctx.Save || [], sinkcb );
+										else // terminate 
+											supercb(null, function onEnd( flowctx ) {  // accept flow context
+												Query.Flow = flowctx;
 
-														else
-															Log( `HALTED ${job.name}` );
-													});
-												});					
-										});
+												//Log("end flow ctx", flowctx);
+												ATOM.select(req, function (ctx) {  // run plugin's engine
+													if (ctx) 
+														flow.end( ctx.Save || [], sinkcb );
 
-									/*
-									else	// unsupervised learning flow
-										ATOM.select(req, function (ctx) {  // run plugin's engine
-											if (ctx) 
-												flow.end( ctx.Save || [], function (evs) {  // save evs buffer to plugin's context
-													saveEvents( evs, ctx );
+													else
+														Log( `HALTED ${job.name}` );
 												});
-
-											else
-												Log( `HALTED ${job.name}` );
-										});
-									*/
-									
+											});					
+									});
 								},  
 
 								N: ctx.Actors || File.Actors,  // ensemble size
-								//sym: ctx.Symbols,  // state symbols
 								keys: ctx.Keys || File.stateKeys,
-								symbols: ctx.Symbols || File.stateSymbols,
+								symbols: ctx.Symbols || File.stateSymbols || File.States,
 								steps: ctx.Steps || File.Steps, // process steps
 								batch: ctx.Batch || 0,  // steps to next supervised learning event 
-								trP: {K: File.States}, // trans probs
+								//trP: {states: File.States}, // trans probs
+								trP: {},
 								filter: function (str, ev) {  // filter output events
 									switch ( ev.at ) {
+										case "batch":
+											Log("filter", ev);
 										case "config":
 										case "end":
-										case "batch":
-											//Log("filter push", ev);
 											str.push(ev);
 									}
 								}  
 							});
 						
-						Supervisor.pipe( function (evs) { // sync pipe
+						Supervisor.pipe( function (evs) { // pipe supervisor to this callback
 							saveEvents( evs, ctx );
 						}); 
 					});
@@ -2164,7 +2118,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		});
 		
 	else  
-	if (DEBE.probono)  // run engine using its query usecase w/o submitting a job
+	if (DEBE.probono)  // run unregulated engine using its query usecase
 		ATOM.select(req, res);
 	
 	else
@@ -2176,6 +2130,7 @@ function saveEvents(evs, ctx) {
 	var
 		autoTask = DEBE.autoTask,
 		host = ctx.Host,
+		client = "guest",
 		fileName = `${host}.${ctx.Name}`;
 	
 	return LAB.libs.SAVE ( evs, ctx, function (evs,sql) {
@@ -2197,7 +2152,7 @@ function saveEvents(evs, ctx) {
 		}
 
 		if ( ctx.Ingest )  // ingest remaining events
-			DEBE.getFile( host, `plugins/${fileName}`, function (area, fileID) {
+			DEBE.getFile( client, `plugins/${fileName}`, function (area, fileID) {
 				sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
 
 				HACK.ingestList( sql, evs, fileID, function (aoi) {
@@ -3263,9 +3218,8 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		);
 	},
 	
-	function toQuery(sql) {
+	function toQuery(sql, query) {
 		var 
-			query = {},
 			name = this.parsePath(query);
 		
 		return sql.toQuery( name ? Copy({Name: name}, query) : query );
