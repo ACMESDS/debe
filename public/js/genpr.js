@@ -1,7 +1,7 @@
 module.exports = {  // generate a Markov process given its transition probability parameters
 	keys: {
-		Mix: "json comment 'gaussian mixing parameters { dims: [D1, D2 , ...] weights: [W1, W2 , ...] }' ",
-		TxPrs: "json comment 'KxK transition probs [ [pr, pr, ...], ...] or {fr: {to: pr, ... }, ... K: states} ' ",
+		emProbs: "json comment 'gaussian mixing parameters { dims: [D1, D2 , ...] weights: [W1, W2 , ...] }' ",
+		trProbs: "json comment 'KxK transition probs [ [pr, pr, ...], ...] or {fr: {to: pr, ... }, ... K: states} ' ",
 		Symbols: "json comment '[S1, S2, ... ] state symbols or null to generate defaults' ",
 		Members: "int(11) default 100 comment 'number in process ensemble' ",
 		Wiener: "int(11) default 0 comment 'number of wiener processes; 0 disables' ",
@@ -40,8 +40,8 @@ module.exports = {  // generate a Markov process given its transition probabilit
 		var
 			/*
 			mvd = [], 	// multivariate distribution parms
-			mix = ctx.Mix || {},
-			mixing = ctx.Mix ? true : false,
+			mix = ctx.emProbs || {},
+			mixing = ctx.emProbs ? true : false,
 
 			walking = ctx.Wiener ? true : false, // random walking		
 			mode = mixing ? parseFloat(mix.theta) ? "oo" : mix.theta || "gm" : "na",  // Process mode
@@ -100,10 +100,10 @@ module.exports = {  // generate a Markov process given its transition probabilit
 			labels = ["x","y","z"], // vector sample labels
 			sampler = samplers[mode], // sampler
 			*/
-			states = ctx.TxPrs.length;
+			states = ctx.trProbs.length;
 
 		//Log(ctx);
-		Log({mix:ctx.Mix,txprs:ctx.TxPrs,steps:ctx.Steps, States:states}); 
+		Log({emP:ctx.emProbs,trP:ctx.trProbs,steps:ctx.Steps, States:states}); 
 			/*
 			mix.each( function (k,mix) {  // scale mix mu,sigma to voxel dimensions
 				//Log([k, floor(k / 20), k % 20, mix, dims]);
@@ -123,11 +123,11 @@ module.exports = {  // generate a Markov process given its transition probabilit
 		var Super = new RAN({ // generating supervisor
 			N: ctx.Members,  // ensemble size
 			wiener: ctx.Wiener,  // wiener process steps
-			trP: ctx.TxPrs, // state transition probs 
+			trP: ctx.trProbs, // state transition probs 
 			symbols: ctx.Symbols,  // state symbols
 			nyquist: ctx.Nyquist, // oversampling factor
 			steps: ctx.Steps, // process steps
-			emP: ctx.Mix,  	// mixing/emission/observation parms
+			emP: ctx.emProbs,  	// mixing/emission/observation parms
 			batch: ctx.Batch || 0,   // supervised learning every batch steps
 			//sigma = mix.sigma || [ [ scalevec([0.4, 0.3, 0],dims), scalevec([0.3, 0.8, 0],dims), scalevec([0, 0, 1],dims)] ],
 			//solve: ctx.Solve, // learning parameters
