@@ -39,6 +39,7 @@ Required app.datasets:
 
 var 									// globals
 	ENV = process.env,
+	TRACE = "D>",
 	WINDOWS = process.platform == 'win32';		//< Is Windows platform
 
 var 									// NodeJS modules
@@ -189,12 +190,12 @@ var
 		}, function dogVoxels(dog) {
 			
 			if (dog.get.unused)
-			JSDB.forEach(dog.name, dog.get.unused, [], function (voxel, sql) {
+			JSDB.forEach(dog.trace, dog.get.unused, [], function (voxel, sql) {
 				sql.query("DELETE FROM app.voxels WHERE ?", {ID: voxel.ID});
 			});
 			
 			if (dog.get.refresh)  // fetch new atm data from whatever service and loop over recs (grouped by Point(x y) grid location)
-			JSDB.forEach(dog.name, dog.get.refresh, [atm.gridLocation, dog.atmage], function (voxel, sql) {
+			JSDB.forEach(dog.trace, dog.get.refresh, [atm.gridLocation, dog.atmage], function (voxel, sql) {
 				// update voxels with atm data
 			});
 			
@@ -217,7 +218,7 @@ var
 		}, function dogStats(dog) {
 			
 			if (dog.get.lowsnr)
-			JSDB.forEach(dog.name, dog.get.lowsnr, [], function (prune, sql) {
+			JSDB.forEach(dog.trace, dog.get.lowsnr, [], function (prune, sql) {
 				Trace("PRUNE "+[prune.fileID, prune.voxelID]);
 
 				sql.query(
@@ -230,7 +231,7 @@ var
 					{fileID: prune.fileID, voxelID: prune.voxelID}
 				);
 
-				/*sql.forAll(dog.name, dog.get.lowsnr, [ file.snr, {"events.fileID": file.ID} ], function (evs) {
+				/*sql.forAll(dog.trace, dog.get.lowsnr, [ file.snr, {"events.fileID": file.ID} ], function (evs) {
 					//Log("dog rejected", evs.length);
 					sql.query(
 						"UPDATE app.files SET Rejects=Rejects+?,Relevance=1-Rejects/Samples WHERE ?", 
@@ -271,7 +272,7 @@ var
 				fetcher = DEBE.fetchData;
 
 			/*
-			JSDB.forEach(dog.name, dog.get.ungraded, [], function (file, sql) {
+			JSDB.forEach(dog.trace, dog.get.ungraded, [], function (file, sql) {
 				Trace("GRADE "+file.Name);
 
 				DEBE.gradeIngest( sql, file, function (stats) {
@@ -306,13 +307,13 @@ var
 			*/
 			
 			if (dog.get.expired)
-			JSDB.forEach(dog.name, dog.get.expired, [], function (file, sql) { 
+			JSDB.forEach(dog.trace, dog.get.expired, [], function (file, sql) { 
 				Trace("EXPIRE "+file.Name);
 				sql.query("DELETE FROM app.events WHERE ?", {fileID: file.ID});
 			});
 			
 			if (dog.get.retired)
-			JSDB.forEach(dog.name, dog.get.retired, dog.maxage, function (file, sql) {
+			JSDB.forEach(dog.trace, dog.get.retired, dog.maxage, function (file, sql) {
 				Trace("RETIRE "+file.Name);
 
 				var 
@@ -344,13 +345,13 @@ Further information about this file is available ${paths.moreinfo}. `;
 			});
 			
 			if (dog.get.finished)
-			JSDB.forEach(dog.name, dog.get.finished, [], function (file, sql) {
+			JSDB.forEach(dog.trace, dog.get.finished, [], function (file, sql) {
 				Trace("FINISHED "+file.Name);
 				//sql.query("UPDATE app.files SET Ingested=1 WHERE ?",{ID:file.ID});
 			});
 			
 			if (dog.get.unread)
-			JSDB.forEach(dog.name, dog.get.unread, [], function (file, sql) {
+			JSDB.forEach(dog.trace, dog.get.unread, [], function (file, sql) {
 				Trace("INGEST "+file.Name);
 				var
 					zero = {x:0, y:0},
@@ -392,7 +393,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 				queues = FLEX.queues;
 
 			if (dog.get.stuck)
-			JSDB.forAll( dog.name, dog.get.stuck, [], function (info, sql) {
+			JSDB.forAll( dog.trace, dog.get.stuck, [], function (info, sql) {
 
 				Each(queues, function (rate, queue) {  // save collected queuing charges to profiles
 					Each(queue.client, function (client, charge) {
@@ -431,10 +432,10 @@ Further information about this file is available ${paths.moreinfo}. `;
 
 			if (dog.get.engs)
 			Thread( function (sql) {
-				sql.forEach(dog.name, dog.get.engs, [], function (engs) {
-				sql.forEach(dog.name, dog.get.jobs, [], function (jobs) {
-				sql.forEach(dog.name, dog.get.pigs, [], function (pigs) {
-				sql.forEach(dog.name, dog.get.logs, [], function (isps) {
+				sql.forEach(dog.trace, dog.get.engs, [], function (engs) {
+				sql.forEach(dog.trace, dog.get.jobs, [], function (jobs) {
+				sql.forEach(dog.trace, dog.get.pigs, [], function (pigs) {
+				sql.forEach(dog.trace, dog.get.logs, [], function (isps) {
 					var rtn = diag.counts = {Engines:engs.Count,Jobs:jobs.Count,Pigs:pigs.Count,Faults:isps.Count,State:"ok"};
 
 					for (var n in dog) 
@@ -474,7 +475,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 			*/
 
 			if (dog.get.unbilled)
-			JSDB.forEach(dog.name, dog.get.unbilled, [], function (job, sql) {
+			JSDB.forEach(dog.trace, dog.get.unbilled, [], function (job, sql) {
 				//Trace(`BILLING ${job} FOR ${job.Client}`, sql);
 				sql.query( "UPDATE openv.profiles SET Charge=Charge+? WHERE ?", [ 
 					job.Done, {Client: job.Client} 
@@ -484,7 +485,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 			});
 
 			if (dog.get.unfunded)
-			JSDB.forEach(dog.name, dog.get.unfunded, [dog.maxage], function (job, sql) {
+			JSDB.forEach(dog.trace, dog.get.unfunded, [dog.maxage], function (job, sql) {
 				//Trace("KILLING ",job);
 				sql.query(
 					//"DELETE FROM app.queues WHERE ?", {ID:job.ID}
@@ -509,23 +510,23 @@ Further information about this file is available ${paths.moreinfo}. `;
 		}, function dogClients(dog) {
 
 			if (dog.get.naughty)
-			JSDB.forEach(dog.name, dog.get.naughty, [], function (client, sql) {
+			JSDB.forEach(dog.trace, dog.get.naughty, [], function (client, sql) {
 			});
 
 			if (dog.get.needy)
-			JSDB.forEach(dog.name, dog.get.needy, [dog.disk], function (client, sql) {
+			JSDB.forEach(dog.trace, dog.get.needy, [dog.disk], function (client, sql) {
 			});		
 
 			if (dog.get.dormant)
-			JSDB.forEach(dog.name, dog.get.dormant, [dog.unused], function (client, sql) {
+			JSDB.forEach(dog.trace, dog.get.dormant, [dog.unused], function (client, sql) {
 			});		
 
 			if (dog.get.poor)
-			JSDB.forEach(dog.name, dog.dog.get.poor, [dog.qos], function (client, sql) {
+			JSDB.forEach(dog.trace, dog.dog.get.poor, [dog.qos], function (client, sql) {
 			});		
 
 			if (dog.get.uncert)
-			JSDB.forEach(dog.name, dog.get.uncert, [dog.certage], function (client, sql) {
+			JSDB.forEach(dog.trace, dog.get.uncert, [dog.certage], function (client, sql) {
 			});		
 			
 		}),
@@ -563,7 +564,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 		}, function dogEngines(sql, dog) {
 			
 			if (dog.get.undefined)
-			JSDB.forEach(dog.name, dog.get.undefined, [dog.undefined], function (client, sql) {
+			JSDB.forEach(dog.trace, dog.get.undefined, [dog.undefined], function (client, sql) {
 			});
 		}),
 			
@@ -577,7 +578,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 			bugs: 10
 		}, function dogUsers(dog) {
 			if (dog.get.inactive)
-			JSDB.forEach(dog.name, dog.get.inactive, [dog.inactive], function (client, sql) {
+			JSDB.forEach(dog.trace, dog.get.inactive, [dog.inactive], function (client, sql) {
 			});		
 		})
 	},
@@ -2499,7 +2500,7 @@ Chapter 2
 }
 
 function Trace(msg,sql) {
-	msg.trace("D>",sql);
+	TRACE.trace(msg,sql);
 }
 
 function siteContext(req, cb) {
