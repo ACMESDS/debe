@@ -2226,7 +2226,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		
 		if (ctx) // render in extended context
 			Each(ctx,  function (siteKey, ds, isLast) {
-				if ( ds.charAt(0) == "/" ) // ds dataset is a url 
+				if ( ds.charAt(0) == "/" ) // url dataset
 					DEBE.fetchData( urls.master+ds, query, null, function (data) {
 						switch ( (data||0).constructor ) {
 							case Array:
@@ -2242,7 +2242,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 						if ( isLast ) cb();	
 					});
 
-				else // local ds dataset
+				else // local dataset
 					sql.forAll("CTX-"+siteKey, "SELECT * FROM ??", [ds], function (recs) {
 						site[siteKey] = recs.clone();
 						if ( isLast ) cb();
@@ -2277,7 +2277,11 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 			switch (fields.constructor) {
 				case Array:
 					fields.each(function (n,field) {
-						var key = field.Field, type = field.Type.split("(")[0];
+						var 
+							key = field.Field, 
+							type = field.Type.split("(")[0],
+							group = key.split("_");
+						
 						if ( key != "ID" && type != "geometry") {
 							var
 								doc = escape(field.Comment).replace(/\./g, "$dot"),
@@ -2287,7 +2291,10 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 							//else
 							//if ( key.indexOf("_") >=0 ) qual = "off";
 							
-							cols.push( key + "." + type + "." + doc + "." + qual );
+							key.groupify(cols, function (key, stash) {
+								return  key + "." + type + "." + doc + "." + qual;
+							});
+							//cols.push( key + "." + type + "." + doc + "." + qual );
 						}
 					});
 					break;
@@ -3646,6 +3653,9 @@ clients, users, system health, etc).`
 			Trace( err || "Stateful network flow manger started" );
 		});
 		break;
+		
+	default:
+		Trace("D[1-3] unit test supported");
 }
 
 // UNCLASSIFIED
