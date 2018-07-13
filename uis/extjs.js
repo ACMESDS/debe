@@ -893,7 +893,7 @@ function DS(anchor) {
 
 			var 
 				fOpts = fSpec.split("."),
-				fKey = fLabel = fOpts[0],
+				fKey = fOpts[0],
 				fParm = PARMS[ fKey ] || {Type: calc ? "mediumtext" : "text", Label:fKey, Special:""},
 				fType = fOpts[1] || fParm.Type || "text",
 				fDoc = unescape(fOpts[2] || "please follow link to document this field").replace(/\$dot/g,"."),
@@ -931,9 +931,10 @@ function DS(anchor) {
 					}
 				},
 				fChar = fType.charAt(0),
-				fHide = (fQual == "hide"), //fChar >= "A" && fChar <= "Z",
-				fOff = (fQual == "off"), //false,
-				fLock = (fQual == "lock"),  //pivots ? true : sorts ? !(fKey in sorts) : false,			
+				fLabel = (fQual.indexOf("short")>=0) ? fKey.split("_").pop() : fKey,
+				fHide = (fQual.indexOf("hide")>=0), //fChar >= "A" && fChar <= "Z",
+				fOff = (fQual.indexOf("off")>=0) ? true : false, //false,
+				fLock = (fQual.indexOf("lock")>=0) ? true : false,  //pivots ? true : sorts ? !(fKey in sorts) : false,
 				fTipTitle = fKey; //fTips[0] || fKey; //fTips.pop() || fKey;
 
 			switch (fType.toLowerCase()) {

@@ -55,7 +55,7 @@ append site_body
 		when "run"
 			#grid.Usecases(
 				path=dspath,
-				cols=dscols.join(),
+				cols=dscols.columnify(),
 				menu="Agents",
 				wrap,
 				blogs="Description",
@@ -161,7 +161,7 @@ append site_body
 				class=dstitle,
 				path=dspath,
 				pivots=pcol,
-				cols=dscols.join(),
+				cols=dscols.columnify(),
 				page=dspage )
 
 		when "brief"
@@ -207,7 +207,7 @@ append site_body
 			#grid(
 				class=dstitle,
 				path=dspath,
-				cols=dscols.join(),
+				cols=dscols.columnify(),
 				dims=dsdims,
 				page=dspage )
 

@@ -69,7 +69,7 @@ append base_body
 		#hold.Positives(path="/positives.FILES.db",cols="Name")
 		#hold.Negatives(path="/negatives.FILES.db",cols="Name")
 
-	- titlebar = [nick.hyper("/requirements.view"), dataset.hyper("/edit.view?name="+dataset), client.hyper("/home.view?option=chat"), (profile.Credit*1e-3).toFixed(0)+"$ "+profile.QoS+"qos "+util.cpu + "%cpu " + util.disk+"%disk", "Issues".hyper(), "Baseline".hyper("baseline.exe"), "Moderate".hyper(), warning, "login".hyper("/login?pass=totem")].join(" || ")
+	- titlebar = [nick, dataset, client, (profile.Credit*1e-3).toFixed(0)+"$ "+profile.QoS+"qos "+util.cpu + "%cpu " + util.disk+"%disk", "Issues", "Baseline", "Moderate", warning, "Login"].linkify(["/requirements.view", "/edit.view?name="+dataset, "/home.view?option=chat", "/home.view", "", "baseline.exe", "", "", "/login?pass=totem"])
 	- goto = query.goto || ""
 	- browsers = {Ok: ["supported","Chrome","Firefox","Opera","Safari"],Bad: ["unsupported","IE","Netscape","Traveler","TheWorld","Maxthon"] }
 

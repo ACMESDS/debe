@@ -2285,18 +2285,18 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 						if ( key != "ID" && type != "geometry") {
 							var
 								doc = escape(field.Comment).replace(/\./g, "$dot"),
-								qual = "";
+								qual = "short";
 							
-							if ( key.indexOf("Save") == 0) qual = "hide" ;
+							if ( key.indexOf("Save") == 0) qual += "hide" ;
+							
 							//else
 							//if ( key.indexOf("_") >=0 ) qual = "off";
 							
-							key.groupify(cols, function (key, stash) {
-								return  key + "." + type + "." + doc + "." + qual;
-							});
-							//cols.push( key + "." + type + "." + doc + "." + qual );
+							cols.push( key + "." + type + "." + doc + "." + qual );
 						}
 					});
+					
+					//Log("plugin cols", cols, cols.columnify() );
 					break;
 					
 				case String:
@@ -2983,9 +2983,9 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		});
 	},
 
-	function hyper(ref) { 
+	/*function hyper(ref) { 
 		return [this].linkify(ref);
-	},
+	},  */
 	
 	function renderBlog(rec, ds, cb) { 
 	/*
@@ -3236,6 +3236,10 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 ].extend(String);
 	
 [  // array prototypes
+	function columnify() {
+		return this.splitify("_").joinify();
+	},
+	
 	function clone() {
 	/*
 	@member Array
@@ -3441,10 +3445,10 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		return tar;
 	},
 
-	function listify( cb ) {
+	function sample( cb ) {
 	/*
 	@member Array
-	@method listify
+	@method sample
 	@param {Function} cb callback(rec) returns recordresults to append
 	Returns a sample of each record from this records using a callback to sample
 	*/
@@ -3455,13 +3459,13 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		return rtns;
 	},
 
-	function joinify(sep, cb) {
-	/* 
+	/*function joinify(sep, cb) {
+	/ * 
 	@member Array
 	@method joingify
 	@param [String] sep seperator
 	@param [Function] cb callback(rec) returns sample of supplied record
-	*/
+	* /
 
 		if (cb) {
 			var recs = [];
@@ -3480,9 +3484,9 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 
 		else
 			return this.join(sep);
-	},
+	}, */
 
-	function linkify(ref) {
+	function linkify(refs) {
 	/*
 	@member Array
 	@method linkify
@@ -3490,7 +3494,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 	Returns a ref-joined list of links
 	*/
 
-		return this.joinify(",", function (label) {
+		/*return this.joinify(",", function (label) {
 
 			if (ref)
 				if (ref.charAt(0) == ":")
@@ -3500,7 +3504,24 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 			else
 				return label.link(ref || "/"+label.toLowerCase()+".view");
 
+		});  */
+		
+		return this.joinify( (index, label) => {
+
+			if (index)
+				if (ref = refs[index])
+					if (ref.charAt(0) == ":")
+						return label.link( "/"+(ref.substr(1) || label.toLowerCase())+".view" );
+					else
+						return label.link(ref);
+				else
+					return label.link( "/"+label.toLowerCase()+".view" );
+			
+			else
+				return label.join(" || ");
+
 		});
+		
 	}
 ].extend(Array);
 	
@@ -3654,8 +3675,8 @@ clients, users, system health, etc).`
 		});
 		break;
 		
-	default:
-		Trace("D[1-3] unit test supported");
+	case "?":
+		Trace("unit test D1-D3 available");
 }
 
 // UNCLASSIFIED
