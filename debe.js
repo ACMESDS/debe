@@ -3506,22 +3506,28 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 
 		});  */
 		
-		return this.joinify( (index, label) => {
+		if (typeof refs == "string") refs = refs.split(",");
 
-			if (index)
-				if (ref = refs[index])
-					if (ref.charAt(0) == ":")
-						return label.link( "/"+(ref.substr(1) || label.toLowerCase())+".view" );
-					else
-						return label.link(ref);
-				else
-					return label.link( "/"+label.toLowerCase()+".view" );
-			
-			else
-				return label.join(" || ");
-
-		});
+		var rtn = [];
 		
+		this.forEach( ( label, index ) => {
+			
+			var link = refs[index] || label.toLowerCase();
+			
+			switch (link) {
+				case "*":
+					rtn.push( label );
+					break;
+				default:
+					if ( link.charAt(0) != "/" ) {
+						link = "/" + link;
+						if ( link.indexOf(".") < 0 ) link += ".view";
+					}
+					rtn.push( label.link( link ) );
+			}
+		});
+			
+		return rtn.join(" || ");
 	}
 ].extend(Array);
 	
