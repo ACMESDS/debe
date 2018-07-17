@@ -84,7 +84,7 @@ x = t/T;
 					triggerProfile({  // define solver parms
 						evs: evs,		// events
 						refLambda: stats.mean_intensity, // ref mean arrival rate (for debugging)
-						alpha: file.gain, // assumed detector gain
+						alpha: file.Stats_Gain, // assumed detector gain
 						N: ctx.Dim, 		// profile sample times = max coherence intervals
 						model: ctx.Model,  	// correlation model
 						Tc: stats.coherence_time,  // coherence time of arrival process

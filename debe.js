@@ -248,10 +248,10 @@ var
 					   
 		dogFiles: Copy({
 			get: {
-				ungraded: "SELECT ID,Name FROM app.files WHERE Graded IS null AND ingestTime>endTime AND Enabled",
-				unread: "SELECT ID,Ring, st_centroid(ring) as Anchor, ingestTime,advanceDays,durationDays,sampleTime,Name FROM app.files WHERE ingestTime>=startTime AND ingestTime<=endTime AND Enabled",
-				//finished: "SELECT ID,Name FROM app.files WHERE ingestTime>endTime",
-				expired: "SELECT ID,Name FROM app.files WHERE Expires AND now() > Expires AND Enabled"
+				ungraded: "SELECT ID,Name FROM app.files WHERE State_graded IS null AND Ingest_Time>Ingest_End AND Enabled",
+				unread: "SELECT ID,Ring, st_centroid(ring) as Anchor, Ingest_Time,advanceDays,PoP_durationDays,sampleTime,Name FROM app.files WHERE Ingest_Time>=Ingest_Start AND Ingest_Time<=Ingest_End AND Enabled",
+				//finished: "SELECT ID,Name FROM app.files WHERE Ingest_Time>Ingest_End",
+				expired: "SELECT ID,Name FROM app.files WHERE PoP_Expires AND now() > PoP_Expires AND Enabled"
 				//retired: "SELECT files.ID,files.Name,files.Client,count(events.id) AS evCount FROM app.events LEFT JOIN app.files ON events.fileID = files.id "
 						//+ " WHERE datediff( now(), files.added)>=? AND NOT files.Archived AND Enabled GROUP BY fileID"
 			},		
@@ -284,7 +284,7 @@ var
 
 						sql.forAll(
 							dog.trace,
-							"UPDATE app.files SET Graded=true, ?, Notes=concat(Notes,?) WHERE ?", [{
+							"UPDATE app.files SET State_graded=true, ?, State_Notes=concat(State_Notes,?) WHERE ?", [{
 								tag: JSON.stringify(stats),
 								coherence_time: unsup.coherence_time,
 								coherence_intervals: unsup.coherence_intervals,
@@ -299,7 +299,7 @@ var
 
 					else
 						sql.query(
-							"UPDATE apps.file SET Graded=true, snr=0, Notes=? WHERE ?", [
+							"UPDATE apps.file SET State_graded=true, snr=0, State_Notes=? WHERE ?", [
 							"Grading failed", {ID: file.ID} 
 						]);
 				});
@@ -329,7 +329,7 @@ contains ${file.eventCount} events.  Your archived sample will be auto-ingested 
 request this sample.  You may also consult ${paths.admin} to request additional resources.  
 Further information about this file is available ${paths.moreinfo}. `;
 
-				sql.query( "UPDATE app.files SET ?, Notes=concat(Notes,?)", [{
+				sql.query( "UPDATE app.files SET ?, State_Notes=concat(State_Notes,?)", [{
 					Archived: true}, notice]);
 
 				/*
@@ -347,7 +347,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 			if (dog.get.finished)
 			JSDB.forEach(dog.trace, dog.get.finished, [], function (file, sql) {
 				Trace("FINISHED "+file.Name);
-				//sql.query("UPDATE app.files SET Ingested=1 WHERE ?",{ID:file.ID});
+				//sql.query("UPDATE app.files SET State_ingested=1 WHERE ?",{ID:file.ID});
 			});
 			
 			if (dog.get.unread)
@@ -357,8 +357,8 @@ Further information about this file is available ${paths.moreinfo}. `;
 					zero = {x:0, y:0},
 					ring = file.Ring || [[ zero, zero, zero, zero, zero]],
 					anchor = file.Anchor || zero,
-					from = new Date(file.ingestTime),
-					to = from.addDays(file.durationDays),
+					from = new Date(file.Ingest_Time),
+					to = from.addDays(file.PoP_durationDays),
 					path = urls.master + file.Name;
 				
 				fetcher( path.tag("&", {
@@ -369,14 +369,14 @@ Further information about this file is available ${paths.moreinfo}. `;
 					lon: anchor.y,
 					radius: HACK.ringRadius(ring),
 					ring: ring,
-					durationDays: file.durationDays
+					durationDays: file.PoP_durationDays
 				}), null, null, function (msg) {
 					Log("INGEST", msg);
 				});
 
 				if (1)
 				sql.query(
-					"UPDATE app.files SET ingestTime=date_add(ingestTime, interval advanceDays day), Revs=Revs+1 WHERE ?", 
+					"UPDATE app.files SET Ingest_Time=date_add(Ingest_Time, interval advanceDays day), Revs=Revs+1 WHERE ?", 
 					{ ID: file.ID }
 				);
 			});
@@ -1566,7 +1566,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		var ctx = {
 			Flow: {
 				F: "tbd",
-				N: file.Actors,  // ensemble size
+				N: file.Ingest_Actors,  // ensemble size
 				T: file.Steps  // number of time steps
 			}, 
 			lma: [70],
@@ -2084,12 +2084,12 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 									});
 								},  
 
-								N: ctx.Actors || File.Actors,  // ensemble size
-								keys: ctx.Keys || File.stateKeys,
-								symbols: ctx.Symbols || File.stateSymbols || File.States,
-								steps: ctx.Steps || File.Steps, // process steps
+								N: ctx.Actors || File.Ingest_Actors,  // ensemble size
+								keys: ctx.Keys || File.Stats_stateKeys,
+								symbols: ctx.Symbols || File.Stats_stateSymbols || File.Ingest_States,
+								steps: ctx.Steps || File.Ingest_Steps, // process steps
 								batch: ctx.Batch || 0,  // steps to next supervised learning event 
-								//trP: {states: File.States}, // trans probs
+								//trP: {states: File.Ingest_States}, // trans probs
 								trP: {},
 								filter: function (str, ev) {  // filter output events
 									switch ( ev.at ) {
@@ -2811,9 +2811,9 @@ function sysIngest(req,res) {
 			});
 
 		else  // use custom ingester
-			sql.query("SELECT Ingester FROM app.files WHERE ? AND Ingester", {ID: fileID})
+			sql.query("SELECT Ingest_Script FROM app.files WHERE ? AND Ingest_Script", {ID: fileID})
 			.on("results", function (file) {
-				if ( onIngest = JSON.parse(file.Ingester) ) 
+				if ( onIngest = JSON.parse(file.Ingest_Script) ) 
 					DEBE.ingester( onIngest, query, function (evs) {
 						HACK.ingestList( sql, evs, fileID, function (aoi) {
 							Log("INGEST aoi", aoi);
@@ -3598,9 +3598,9 @@ ${revised}, these samples will expire on ${exit}.  Should you wish to remove the
 assessments from our worldwide reporting system, please contact ${poc} for consideration.
 `;
 									sql.query("UPDATE app.files SET ? WHERE ?", [{
-											Notes: notes,
+											State_Notes: notes,
 											Added: now,
-											Expires: exit
+											PoP_Expires: exit
 										}, {ID: file.ID}
 									], function (err) {
 										DEBE.ingestFile(sql, path, name, file.ID, function (aoi) {

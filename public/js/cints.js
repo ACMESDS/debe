@@ -414,7 +414,7 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 					coherence_intervals: M0,
 					mean_count: Kbar,
 					mean_intensity: Kbar / T,
-					degeneracy_param: Kbar / M0,
+					degeneracyParam: Kbar / M0,
 					snr: snr,
 					complete: 1 - mu/2.5,
 					coherence_time: T / M0,
