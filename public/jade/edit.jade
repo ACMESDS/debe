@@ -13,28 +13,29 @@ append site_parms
 append site_body
 
 	#form.Edit(
-		path="/engines.db?Name=#{query.name}&Engine=jade",
-		dims=dims,
-		cols="Code(Code.x),Name,Engine,Enabled.c")
+		path="/engines.db?Name=#{query.name}",
+		cols="Code.x,Name,Type,Enabled.c")
 
-		:markdown
-			**Select** to retrieve and lock your [jade](www.jade-lang.com) skin for editing.  **Execute** then
-			**Select** to recover the default (as shipped) skin.  **Insert** to create a new skinning engine.
-			**Update** to update the existing skin. **Delete** to force usage of the default skin.
+		//
+			:markdown
+				**Select** to retrieve and lock your [jade](www.jade-lang.com) skin for editing.  **Execute** then
+				**Select** to recover the default (as shipped) skin.  **Insert** to create a new skinning engine.
+				**Update** to update the existing skin. **Delete** to force usage of the default skin.
 
-	#grid.Roles(
-		path="/roles.db",
-		page=page,check,
-		cols="Table,Special,Roles(INSERT,UPDATE,DELETE,SELECT,PROXY)")
+	//
+		#grid.Roles(
+			path="/roles.db",
+			page=page,check,
+			cols="Table,Special,Roles(INSERT,UPDATE,DELETE,SELECT,PROXY)")
 
-	#grid.ParmS(
-		path="/parms.db",
-		page=page,
-		cols="Parm.t.Name,Label.t,Type,Tables.x,Special,Verified(V*),Type(At Input.c,At Output.c,At System.c),Stakeholder(Org*)")
+		#grid.ParmS(
+			path="/parms.db",
+			page=page,
+			cols="Parm.t.Name,Label.t,Type,Tables.x,Special,Verified(V*),Type(At Input.c,At Output.c,At System.c),Stakeholder(Org*)")
 
-	#grid.States(
-		path="/states.db",
-		page=page,
-		cols="Class,State.n,Name,Special,Supporting")
+		#grid.States(
+			path="/states.db",
+			page=page,
+			cols="Class,State.n,Name,Special,Supporting")
 
 // UNCLASSIFIED

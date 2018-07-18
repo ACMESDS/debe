@@ -2002,6 +2002,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		table = req.table,
 		query = req.query;
 
+	//Log("exe", query );
 	if ("ID" in query || "Name" in query)  // engine requested
 		FLEX.runPlugin(req, function (ctx) {  // run engine using requested usecase via the job regulator 
 
@@ -2119,6 +2120,10 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		});
 		
 	else  
+	if ( plugin = FLEX.execute[table] )
+		plugin(req,res);
+	
+	else
 	if (DEBE.probono)  // run unregulated engine using its query usecase
 		ATOM.select(req, res);
 	
