@@ -1,4 +1,4 @@
-/****
+/**
 @class DEBE
 	[SourceForge](https://sourceforge.net) 
 	[github](https://github.com/acmesds/debe.git) 

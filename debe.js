@@ -1,4 +1,4 @@
-﻿// UNCLASSIFIED this is a test
+﻿// UNCLASSIFIED 
 /**
 @class DEBE
 @requires child_process
@@ -149,17 +149,16 @@ var
 		
 		sql.getTables("app", function (tables) {  // scan through all tables looking for plugins participating w ingest
 			tables.forEach( function (dsn) {
-				if ( FLEX.execute[dsn] )
-					sql.forFirst(
-						"",
-						"SELECT * FROM app.?? WHERE Name='ingest' LIMIT 1", 
-						[dsn], function (ctx) {
-						
-						if (ctx) {
-							autoTask[dsn] = Copy(ctx, {});
-							Trace("AUTOADD "+dsn);
-						}
-					});
+				sql.forFirst(
+					"",
+					"SELECT * FROM app.?? WHERE Name='ingest' LIMIT 1", 
+					[dsn], function (ctx) {
+
+					if (ctx) {
+						autoTask[dsn] = Copy(ctx, {});
+						Trace("AUTOADD "+dsn);
+					}
+				});
 			});
 		});
 		
@@ -2003,7 +2002,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		query = req.query;
 
 	//Log("exe", query );
-	if ("ID" in query || "Name" in query)  // engine requested
+	if ("ID" in query || "Name" in query)  // execute plugin
 		FLEX.runPlugin(req, function (ctx) {  // run engine using requested usecase via the job regulator 
 
 			//Log("run ctx", ctx);
@@ -2120,11 +2119,11 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		});
 		
 	else  
-	if ( plugin = FLEX.execute[table] )
-		plugin(req,res);
+	if ( engine = FLEX.execute[table] )	// execute flex engine
+		engine(req,res);
 	
 	else
-	if (DEBE.probono)  // run unregulated engine using its query usecase
+	if (DEBE.probono)  // execute unregulated engine using query as usecase
 		ATOM.select(req, res);
 	
 	else
