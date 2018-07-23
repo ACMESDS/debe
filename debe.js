@@ -189,14 +189,14 @@ var
 		}, function dogVoxels(dog) {
 			
 			if (dog.get.unused)
-			JSDB.forEach(dog.trace, dog.get.unused, [], function (voxel, sql) {
-				sql.query("DELETE FROM app.voxels WHERE ?", {ID: voxel.ID});
-			});
+				JSDB.forEach(dog.trace, dog.get.unused, [], function (voxel, sql) {
+					sql.query("DELETE FROM app.voxels WHERE ?", {ID: voxel.ID});
+				});
 			
 			if (dog.get.refresh)  // fetch new atm data from whatever service and loop over recs (grouped by Point(x y) grid location)
-			JSDB.forEach(dog.trace, dog.get.refresh, [atm.gridLocation, dog.atmage], function (voxel, sql) {
-				// update voxels with atm data
-			});
+				JSDB.forEach(dog.trace, dog.get.refresh, [atm.gridLocation, dog.atmage], function (voxel, sql) {
+					// update voxels with atm data
+				});
 			
 		}),
 						
@@ -306,113 +306,148 @@ var
 			*/
 			
 			if (dog.get.expired)
-			JSDB.forEach(dog.trace, dog.get.expired, [], function (file, sql) { 
-				Trace("EXPIRE "+file.Name);
-				sql.query("DELETE FROM app.events WHERE ?", {fileID: file.ID});
-			});
+				JSDB.forEach(dog.trace, dog.get.expired, [], function (file, sql) { 
+					Trace("EXPIRE "+file.Name);
+					sql.query("DELETE FROM app.events WHERE ?", {fileID: file.ID});
+				});
 			
 			if (dog.get.retired)
-			JSDB.forEach(dog.trace, dog.get.retired, dog.maxage, function (file, sql) {
-				Trace("RETIRE "+file.Name);
+				JSDB.forEach(dog.trace, dog.get.retired, dog.maxage, function (file, sql) {
+					Trace("RETIRE "+file.Name);
 
-				var 
-					site = DEBE.site,
-					url = site.urls.worker,
-					paths = {
-						moreinfo: "here".tag("a", {href: url + "/files.view"}),
-						admin: "totem resource manages".tag("a", {href: url + "/request.view"})
-					},
-					notice = `
-Please note that ${site.nick} has moved your sample ${file.Name} to long term storage.  This sample 
-contains ${file.eventCount} events.  Your archived sample will be auto-ingested should a ${site.nick} plugin
-request this sample.  You may also consult ${paths.admin} to request additional resources.  
-Further information about this file is available ${paths.moreinfo}. `;
+					var 
+						site = DEBE.site,
+						url = site.urls.worker,
+						paths = {
+							moreinfo: "here".tag("a", {href: url + "/files.view"}),
+							admin: "totem resource manages".tag("a", {href: url + "/request.view"})
+						},
+						notice = `
+	Please note that ${site.nick} has moved your sample ${file.Name} to long term storage.  This sample 
+	contains ${file.eventCount} events.  Your archived sample will be auto-ingested should a ${site.nick} plugin
+	request this sample.  You may also consult ${paths.admin} to request additional resources.  
+	Further information about this file is available ${paths.moreinfo}. `;
 
-				sql.query( "UPDATE app.files SET ?, State_Notes=concat(State_Notes,?)", [{
-					Archived: true}, notice]);
+					sql.query( "UPDATE app.files SET ?, State_Notes=concat(State_Notes,?)", [{
+						Archived: true}, notice]);
 
-				/*
-				need to export events to output file, then archive this output file
-				CP.exec(`git commit -am "archive ${path}"; git push github master; rm ${zip}`, function (err) {
-				});*/
+					/*
+					need to export events to output file, then archive this output file
+					CP.exec(`git commit -am "archive ${path}"; git push github master; rm ${zip}`, function (err) {
+					});*/
 
-				if ( sendMail = FLEX.sendMail ) sendMail({
-					to: file.client,
-					subject: `TOTEM archived ${file.Name}`,
-					body: notice
-				}, sql);
-			});
+					if ( sendMail = FLEX.sendMail ) sendMail({
+						to: file.client,
+						subject: `TOTEM archived ${file.Name}`,
+						body: notice
+					}, sql);
+				});
 			
 			if (dog.get.finished)
-			JSDB.forEach(dog.trace, dog.get.finished, [], function (file, sql) {
-				Trace("FINISHED "+file.Name);
-				//sql.query("UPDATE app.files SET State_ingested=1 WHERE ?",{ID:file.ID});
-			});
+				JSDB.forEach(dog.trace, dog.get.finished, [], function (file, sql) {
+					Trace("FINISHED "+file.Name);
+					//sql.query("UPDATE app.files SET State_ingested=1 WHERE ?",{ID:file.ID});
+				});
 			
 			if (dog.get.unread)
-			JSDB.forEach(dog.trace, dog.get.unread, [], function (file, sql) {
-				Trace("INGEST "+file.Name);
-				var
-					zero = {x:0, y:0},
-					ring = file.Ring || [[ zero, zero, zero, zero, zero]],
-					anchor = file.Anchor || zero,
-					from = new Date(file.Ingest_Time),
-					to = from.addDays(file.PoP_durationDays),
-					path = urls.master + file.Name;
-				
-				fetcher( path.tag("&", {
-					fileID: file.ID,
-					from: from.toLocaleDateString("en-US"),
-					to: to.toLocaleDateString("en-US"),
-					lat: anchor.x,
-					lon: anchor.y,
-					radius: HACK.ringRadius(ring),
-					ring: ring,
-					durationDays: file.PoP_durationDays
-				}), null, null, function (msg) {
-					Log("INGEST", msg);
-				});
+				JSDB.forEach(dog.trace, dog.get.unread, [], function (file, sql) {
+					Trace("INGEST "+file.Name);
+					var
+						zero = {x:0, y:0},
+						ring = file.Ring || [[ zero, zero, zero, zero, zero]],
+						anchor = file.Anchor || zero,
+						from = new Date(file.Ingest_Time),
+						to = from.addDays(file.PoP_durationDays),
+						path = urls.master + file.Name;
 
-				if (1)
-				sql.query(
-					"UPDATE app.files SET Ingest_Time=date_add(Ingest_Time, interval advanceDays day), Revs=Revs+1 WHERE ?", 
-					{ ID: file.ID }
-				);
-			});
+					fetcher( path.tag("&", {
+						fileID: file.ID,
+						from: from.toLocaleDateString("en-US"),
+						to: to.toLocaleDateString("en-US"),
+						lat: anchor.x,
+						lon: anchor.y,
+						radius: HACK.ringRadius(ring),
+						ring: ring,
+						durationDays: file.PoP_durationDays
+					}), null, null, function (msg) {
+						Log("INGEST", msg);
+					});
+
+					if (1)
+					sql.query(
+						"UPDATE app.files SET Ingest_Time=date_add(Ingest_Time, interval advanceDays day), Revs=Revs+1 WHERE ?", 
+						{ ID: file.ID }
+					);
+				});
 			
 		}),
 		
 		dogJobs: Copy({
 			get: {
+				unbilled: "SELECT * FROM app.queues WHERE Finished AND NOT Billed",
+				unfunded: "SELECT * FROM app.queues WHERE NOT Funded AND now()-Arrived>?",				
 				stuck: "UPDATE app.queues SET Departed=now(), Notes=concat(Notes, ' is ', link('billed', '/profile.view')), Age=Age + (now()-Arrived)/3600e3, Finished=1 WHERE least(Departed IS NULL,Done=Work)", 
-			}
-			//cycle: 300
+				polled: "SELECT * FROM app.queues WHERE Class='polled' AND Now() > Departed"
+			},
+			maxage: 10,
+			cycle: 300
 		}, function dogJobs(dog) {
 			var
-				queues = FLEX.queues;
+				queues = FLEX.queues,
+				fetcher = DEBE.fetchData;
 
-			if (dog.get.stuck)
-			JSDB.forAll( dog.trace, dog.get.stuck, [], function (info, sql) {
+			if (dog.get.unbilled)
+				JSDB.forEach(dog.trace, dog.get.unbilled, [], function (job, sql) {
+					//Trace(`BILLING ${job} FOR ${job.Client}`, sql);
+					sql.query( "UPDATE openv.profiles SET Charge=Charge+? WHERE ?", [ 
+						job.Done, {Client: job.Client} 
+					]);
 
-				Each(queues, function (rate, queue) {  // save collected queuing charges to profiles
-					Each(queue.client, function (client, charge) {
-
-						if ( charge.bill ) {
-							if ( trace ) Trace(`${trace} ${client} ${charge.bill} CREDITS`, sql);
-
-							sql.query(
-								"UPDATE openv.profiles SET Charge=Charge+?,Credit=greatest(0,Credit-?) WHERE ?" , 
-								 [ charge.bill, charge.bill, {Client:client} ], 
-								function (err) {
-									Log({charging:err});
-							});
-							charge.bill = 0;
-						}
-
-					});
+					sql.query( "UPDATE app.queues SET Billed=1 WHERE ?", {ID: job.ID})
 				});
 
-			});	
+			if (dog.get.unfunded)
+				JSDB.forEach(dog.trace, dog.get.unfunded, [dog.maxage], function (job, sql) {
+					//Trace("KILLING ",job);
+					sql.query(
+						//"DELETE FROM app.queues WHERE ?", {ID:job.ID}
+					);
+				});
+			
+			if (dog.get.stuck)
+				JSDB.forAll( dog.trace, dog.get.stuck, [], function (info, sql) {
+
+					Each(queues, function (rate, queue) {  // save collected queuing charges to profiles
+						Each(queue.client, function (client, charge) {
+
+							if ( charge.bill ) {
+								if ( trace ) Trace(`${trace} ${client} ${charge.bill} CREDITS`, sql);
+
+								sql.query(
+									"UPDATE openv.profiles SET Charge=Charge+?,Credit=greatest(0,Credit-?) WHERE ?" , 
+									 [ charge.bill, charge.bill, {Client:client} ], 
+									function (err) {
+										Log({charging:err});
+								});
+								charge.bill = 0;
+							}
+
+						});
+					});
+
+				});	
+			
+			if (dog.get.polled)
+				JSDB.forEach( dog.trace, dog.get.polled, [], function (job, sql) {
+					sql.query(
+						"UPDATE app.queues SET ?,Age=Age+Work,Departed=Date_Add(Departed,interval Work day) WHERE ?", [
+						{ID:job.ID}
+					] );
+					
+					fetcher( job.Notes, null, null, function (rtn) {
+						Trace("dogjobrun "+msg);
+					});
+				});
 		}),
 			
 		dogSystem: Copy({
@@ -450,49 +485,6 @@ Further information about this file is available ${paths.moreinfo}. `;
 			});
 		}),
 			
-		dogHawks: Copy({
-			get: {
-				unbilled: "SELECT * FROM app.queues WHERE Finished AND NOT Billed",
-				unfunded: "SELECT * FROM app.queues WHERE NOT Funded AND now()-Arrived>?"
-			},
-			//cycle: 500,
-			maxage: 10
-		}, function dogHawks(dog) { // job hawking watch dog
-			/*
-			Legacy capability overridden by these dogs:
-			Hawk over jobs in the queues table given {Action,Condition,Period} rules 
-			defined in the hawks table.  The rule is run on the interval specfied 
-			by Period (minutes).  Condition in any valid sql where clause. Actions 
-			supported:
-			 		stop=halt=kill to kill matched jobs and update its queuing history
-			 		remove=destroy=delete to kill matched jobs and obliterate its queuing history
-			 		log=notify=flag=tip to email client a status of matched jobs
-			 		improve=promote to increase priority of matched jobs
-			 		reduce=demote to reduce priority of matached jobs
-			 		start=run to run jobs against dirty records
-			 		set expression to revise queuing history of matched jobs	 
-			*/
-
-			if (dog.get.unbilled)
-			JSDB.forEach(dog.trace, dog.get.unbilled, [], function (job, sql) {
-				//Trace(`BILLING ${job} FOR ${job.Client}`, sql);
-				sql.query( "UPDATE openv.profiles SET Charge=Charge+? WHERE ?", [ 
-					job.Done, {Client: job.Client} 
-				]);
-
-				sql.query( "UPDATE app.queues SET Billed=1 WHERE ?", {ID: job.ID})
-			});
-
-			if (dog.get.unfunded)
-			JSDB.forEach(dog.trace, dog.get.unfunded, [dog.maxage], function (job, sql) {
-				//Trace("KILLING ",job);
-				sql.query(
-					//"DELETE FROM app.queues WHERE ?", {ID:job.ID}
-				);
-			});
-
-		}),
-		
 		dogClients: Copy({
 			//cycle: 100000,
 			get: {
@@ -1995,6 +1987,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 	
 	var
 		flowEvents = LAB.libs.FLOW.batch,
+		now = new Date(),
 		sql = req.sql,
 		client = req.client,
 		group = req.group,
@@ -2002,6 +1995,22 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		query = req.query;
 
 	//Log("exe", query );
+	if ( days = parseInt(query.days||"0") +parseInt(query.hours||"0")/24 ) {
+		res("task placed into job queue");
+		sql.query("INSERT INTO app.queues SET ?",  {
+			Client: client,
+			Class: "polled",
+			QoS: 0,
+			Task: table,
+			Work: days,
+			Notes: req.url,
+			Age: 0,
+			Arrived: now,
+			Departed: now.addDays(days)
+		});
+	}
+			
+	else
 	if ("ID" in query || "Name" in query)  // execute plugin
 		FLEX.runPlugin(req, function (ctx) {  // run engine using requested usecase via the job regulator 
 
