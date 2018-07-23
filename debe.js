@@ -700,7 +700,7 @@ Usage: ${uses.join(",")}  `);
 		},
 		
 		html: function (recs,req,res) { //< dataset.html converts to html
-			res( DEBE.site.gridify( recs ).tag("table") );
+			res( DEBE.site.gridify( recs ).tag("table", {border: "1"}) );
 		},
 		
 		// events from engine usecase or engine code
@@ -1331,13 +1331,13 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					
 						var rtn = "", head = !noheader, heads = {};
 						
-						recs.each( function (n,rec) {
+						recs.forEach( function (rec) {
 							Each(rec, function (key,val) {
 								heads[key] = key;
 							});
 						});
 						
-						recs.each( function (n,rec) {
+						recs.forEach( function (rec) {
 							
 							if (head) {
 								var row = "";
@@ -1355,7 +1355,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 										? table(val)
 										: (val+"").tag("td", intro ? {class:"intro"} : {});
 								else
-									row += "".tag("td");
+									row += (val+"").tag("td");
 								
 								intro = false;
 							});
