@@ -465,24 +465,24 @@ var
 				diag = DEBE.diag;
 
 			if (dog.get.engs)
-			Thread( function (sql) {
-				sql.forEach(dog.trace, dog.get.engs, [], function (engs) {
-				sql.forEach(dog.trace, dog.get.jobs, [], function (jobs) {
-				sql.forEach(dog.trace, dog.get.pigs, [], function (pigs) {
-				sql.forEach(dog.trace, dog.get.logs, [], function (isps) {
-					var rtn = diag.counts = {Engines:engs.Count,Jobs:jobs.Count,Pigs:pigs.Count,Faults:isps.Count,State:"ok"};
+				Thread( function (sql) {
+					sql.forEach(dog.trace, dog.get.engs, [], function (engs) {
+					sql.forEach(dog.trace, dog.get.jobs, [], function (jobs) {
+					sql.forEach(dog.trace, dog.get.pigs, [], function (pigs) {
+					sql.forEach(dog.trace, dog.get.logs, [], function (isps) {
+						var rtn = diag.counts = {Engines:engs.Count,Jobs:jobs.Count,Pigs:pigs.Count,Faults:isps.Count,State:"ok"};
 
-					for (var n in dog) 
-						if ( rtn[n] > 5*dog[n] ) rtn.State = "critical";
-						else
-						if ( rtn[n] > dog[n] ) rtn.State = "warning";
+						for (var n in dog) 
+							if ( rtn[n] > 5*dog[n] ) rtn.State = "critical";
+							else
+							if ( rtn[n] > dog[n] ) rtn.State = "warning";
 
-					sql.release();
+						sql.release();
+					});
+					});
+					});
+					});
 				});
-				});
-				});
-				});
-			});
 		}),
 			
 		dogClients: Copy({
@@ -501,24 +501,24 @@ var
 		}, function dogClients(dog) {
 
 			if (dog.get.naughty)
-			JSDB.forEach(dog.trace, dog.get.naughty, [], function (client, sql) {
-			});
+				JSDB.forEach(dog.trace, dog.get.naughty, [], function (client, sql) {
+				});
 
 			if (dog.get.needy)
-			JSDB.forEach(dog.trace, dog.get.needy, [dog.disk], function (client, sql) {
-			});		
+				JSDB.forEach(dog.trace, dog.get.needy, [dog.disk], function (client, sql) {
+				});		
 
 			if (dog.get.dormant)
-			JSDB.forEach(dog.trace, dog.get.dormant, [dog.unused], function (client, sql) {
-			});		
+				JSDB.forEach(dog.trace, dog.get.dormant, [dog.unused], function (client, sql) {
+				});		
 
 			if (dog.get.poor)
-			JSDB.forEach(dog.trace, dog.dog.get.poor, [dog.qos], function (client, sql) {
-			});		
+				JSDB.forEach(dog.trace, dog.dog.get.poor, [dog.qos], function (client, sql) {
+				});		
 
 			if (dog.get.uncert)
-			JSDB.forEach(dog.trace, dog.get.uncert, [dog.certage], function (client, sql) {
-			});		
+				JSDB.forEach(dog.trace, dog.get.uncert, [dog.certage], function (client, sql) {
+				});		
 			
 		}),
 			
@@ -555,8 +555,8 @@ var
 		}, function dogEngines(sql, dog) {
 			
 			if (dog.get.undefined)
-			JSDB.forEach(dog.trace, dog.get.undefined, [dog.undefined], function (client, sql) {
-			});
+				JSDB.forEach(dog.trace, dog.get.undefined, [dog.undefined], function (client, sql) {
+				});
 		}),
 			
 		dogUsers: Copy({
@@ -569,8 +569,8 @@ var
 			bugs: 10
 		}, function dogUsers(dog) {
 			if (dog.get.inactive)
-			JSDB.forEach(dog.trace, dog.get.inactive, [dog.inactive], function (client, sql) {
-			});		
+				JSDB.forEach(dog.trace, dog.get.inactive, [dog.inactive], function (client, sql) {
+				});		
 		})
 	},
 	
@@ -1996,18 +1996,20 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 	//Log("exe", query );
 	if ( days = parseInt(query.days||"0") +parseInt(query.hours||"0")/24 ) {
-		res("task placed into job queue");
+		res("queueing polled job");
+		delete query.days;
+		delete query.hours;
 		sql.query("INSERT INTO app.queues SET ?",  {
 			Client: client,
 			Class: "polled",
 			QoS: 0,
 			Task: table,
 			Work: days,
-			Notes: req.url,
+			Notes: "/"+table.tag("?", query),
 			Age: 0,
 			Arrived: now,
 			Departed: now.addDays(days)
-		});
+		});	
 	}
 			
 	else
