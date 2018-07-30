@@ -16,15 +16,37 @@ module.exports = {  // learn hidden trigger function of a Markov process
 	
 	engine: function trigs(ctx, res) {  
 	/* 
-	Estimate hidden trigger function for Markov process given ctx and:
-		_File.Actors = ensembe size
-		_File.States = number of states consumed by process
-		_File.Steps = number of time steps
-		_Events = query to get events
+	Estimate hidden trigger function for Markov process given the context ctx:
+	
+		File.Stats_Gain = assumed detector gain = area under trigger function
+		Stats.coherence_time = coherence time underlying the process
+		Dim = samples in profile = max coherence intervals
+		Flow.T = observation time
+		Events = query to get events
 	*/
 		const { sqrt, floor, random, cos, sin, abs, PI, log, exp} = Math;
 		
 		function triggerProfile( solve, cb) {
+		/**
+		Use the Paley-Wiener Theorem to return the trigger function stats:
+
+			x = normalized time interval of recovered trigger
+			h = recovered trigger function at normalized times x
+			modH = Fourier modulous of recovered trigger at frequencies f
+			argH = Fourier argument of recovered trigger at frequencies f
+			f = spectral frequencies
+
+		via the callback cb(stats) given a solve request:
+
+			evs = events list
+			refLambda = ref mean arrival rate (for debugging)
+			alpha = assumed detector gain
+			N = profile sample times = max coherence intervals
+			model = correlation model name
+			Tc = coherence time of arrival process
+			T = observation time
+		*/
+			
 			var 
 				ctx = {
 					evs: ME.matrix( solve.evs ),
@@ -67,7 +89,8 @@ x = t/T;
 						x: ctx.x,
 						h: ctx.h,
 						modH: ctx.modH,
-						argH: ctx.argH
+						argH: ctx.argH,
+						f: nu
 					}
 				});
 			});
@@ -85,8 +108,8 @@ x = t/T;
 						evs: evs,		// events
 						refLambda: stats.mean_intensity, // ref mean arrival rate (for debugging)
 						alpha: file.Stats_Gain, // assumed detector gain
-						N: ctx.Dim, 		// profile sample times = max coherence intervals
-						model: ctx.Model,  	// correlation model
+						N: ctx.Dim, 		// samples in profile = max coherence intervals
+						model: ctx.Model,  	// name correlation model
 						Tc: stats.coherence_time,  // coherence time of arrival process
 						T: flow.T  		// observation time
 					}, function (stats) {
