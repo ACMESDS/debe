@@ -2751,7 +2751,7 @@ Initialize DEBE on startup.
 		ATOM.config({
 			thread: DEBE.thread,
 			cores: DEBE.cores,
-			watchFile: DEBE.watchFile,
+			//watchFile: DEBE.watchFile,
 			plugins: Copy({   // share selected FLEX and other modules with engines
 				// MAIL: FLEX.sendMail,
 				RAN: require("randpr"),
@@ -3636,8 +3636,9 @@ assessments from our worldwide reporting system, please contact ${poc} for consi
 							});
 						}
 					});
-				},
-
+				}
+				
+				/*
 				"./public/js/": function (sql,name,ev) {
 					// run FLEX.publish on the engine
 					sql.release();
@@ -3646,7 +3647,7 @@ assessments from our worldwide reporting system, please contact ${poc} for consi
 				"./public/py/": function (sql,name,ev) {
 					// run FLEX.publish on the engine
 					sql.release();
-				}
+				} */
 
 			}
 
