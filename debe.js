@@ -326,10 +326,10 @@ var
 							admin: "totem resource manages".tag("a", {href: url + "/request.view"})
 						},
 						notice = `
-	Please note that ${site.nick} has moved your sample ${file.Name} to long term storage.  This sample 
-	contains ${file.eventCount} events.  Your archived sample will be auto-ingested should a ${site.nick} plugin
-	request this sample.  You may also consult ${paths.admin} to request additional resources.  
-	Further information about this file is available ${paths.moreinfo}. `;
+Please note that ${site.nick} has moved your sample ${file.Name} to long term storage.  This sample 
+contains ${file.eventCount} events.  Your archived sample will be auto-ingested should a ${site.nick} plugin
+request this sample.  You may also consult ${paths.admin} to request additional resources.  
+Further information about this file is available ${paths.moreinfo}. `;
 
 					sql.query( "UPDATE app.files SET ?, State_Notes=concat(State_Notes,?)", [{
 						Archived: true}, notice]);
