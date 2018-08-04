@@ -712,7 +712,7 @@ Usage: ${uses.join(",")}  `);
 				filename = req.table + "." + req.type,
 				group = req.group,
 				type = req.type,
-				secret = req.table+"."+req.type,
+				product = req.table+"."+req.type,
 				sql = req.sql;
 
 			sql.forFirst( type, "SELECT ID FROM ??.files WHERE ?", [group, {Name: filename}], function (file) {
@@ -729,7 +729,7 @@ Usage: ${uses.join(",")}  `);
 							sql.query(
 								"SELECT * FROM app.publish WHERE least(?,1) ORDER BY Published DESC LIMIT 1", {
 									By: req.client,
-									Product: req.table
+									Product: product
 							}, (err, pubs) => {
 
 								function addTerms(code, pub, cb) {
@@ -754,31 +754,23 @@ FOR GOVERNMENT USE ONLY UNDER PENALITY OF EMPLOYMENT TERMINATION
 									addTerms( eng.Code, pub, res );
 						
 								else
-									FLEX.getLicense( eng.Code, req.type, secret, (minCode, license) => {
-										
-										if (license) {
-											var pub = {
-												License: license,
-												By: req.client,
-												Published: new Date(),
-												Master: minCode,
-												Product: req.table,
-												Copies: 1,
-												Path: req.url
-											};
+								if ( FLEX.mustLicense )
+									FLEX.licenseCode( sql, eng.Code, product, {
+										By: req.client,
+										Published: new Date(),
+										Product: product,
+										Path: req.url
+									}, (pub) => {
 
+										if (pub) 
 											addTerms( eng.Code, pub, res );
 
-											sql.query(
-												"INSERT INTO app.publish SET ? ON DUPLICATE KEY UPDATE Copies=Copies+1", 
-												pub, (err) => {
-													Log("publish", err||"ok");
-											});
-										}
-										
 										else
 											res( null );
 									});
+								
+								else
+									res( eng.Code );
 						});
 
 						else
