@@ -6,6 +6,7 @@
 @requires child-process
 @requires fs
 @requires stream
+@requires crypto
 
 @requires i18n-abide
 @requires socket.io
@@ -37,26 +38,28 @@ Required app.datasets:
 	
 */
 
-var 									// globals
+var 									
+	// globals
 	ENV = process.env,
 	TRACE = "D>",
-	WINDOWS = process.platform == 'win32';		//< Is Windows platform
+	WINDOWS = process.platform == 'win32',		//< Is Windows platform
 
-var 									// NodeJS modules
+	// NodeJS modules
 	CP = require("child_process"), 		//< Child process threads
 	CLUSTER = require("cluster"), 		//< Support for multiple cores
 	STREAM = require("stream"), 		//< pipe streaming
-	FS = require("fs"); 				//< NodeJS filesystem and uploads
+	CRYPTO = require("crypto"), 		//< crypto package
+	FS = require("fs"), 				//< NodeJS filesystem and uploads
 	
-var										// 3rd party modules
+	// 3rd party modules
 	ODOC = require("officegen"), 	//< office doc generator
 	LANG = require('i18n-abide'), 		//< I18 language translator
 	ARGP = require('optimist'),			//< Command line argument processor
 	TOKML = require("tokml"), 			//< geojson to kml convertor
 	JAX = require("mathjax-node"),   //< servde side mathjax parser
-	JADE = require('jade');				//< using jade as the skinner
+	JADE = require('jade'),				//< using jade as the skinner
 	
-var 									// totem modules		
+	// totem modules		
 	ATOM = require("atomic"), 
 	FLEX = require("flex"),
 	TOTEM = require("totem"),
@@ -703,12 +706,13 @@ Usage: ${uses.join(",")}  `);
 			res( DEBE.site.gridify( recs ).tag("table", {border: "1"}) );
 		},
 		
-		// events from engine usecase or engine code
+		// return events from engine usecase or send published engine code
 		default: function (recs,req,res) {
 			var 
 				filename = req.table + "." + req.type,
 				group = req.group,
 				type = req.type,
+				secret = req.table+"."+req.type,
 				sql = req.sql;
 
 			sql.forFirst( type, "SELECT ID FROM ??.files WHERE ?", [group, {Name: filename}], function (file) {
@@ -717,17 +721,69 @@ Usage: ${uses.join(",")}  `);
 					sql.forAll( type, "SELECT * FROM ??.events WHERE ?", [group, {fileID: file.ID}], res );
 							  
 				else
-				sql.forFirst( type, "SELECT Code FROM ??.engines WHERE least(?)", [group, {
-					Name: req.table,
-					Type: req.type
-				}], function (eng) {
-					
-					if (eng) 
-						res( eng.Code);
-					
-					else
-						res( null );
-				});
+					sql.forFirst( type, "SELECT Code FROM ??.engines WHERE least(?)", [group, {
+						Name: req.table,
+						Type: req.type
+					}], function (eng) {
+						if (eng) 
+							sql.query(
+								"SELECT * FROM app.publish WHERE least(?,1) ORDER BY Published DESC LIMIT 1", {
+									By: req.client,
+									Product: req.table
+							}, (err, pubs) => {
+
+								function addTerms(code, pub, cb) {
+									var 
+										prefix = {
+											js: "// ",
+											py: "# ",
+											matlab: "% ",
+											jade: "// "
+										},
+										pre = "\n"+(prefix[req.type] || ">>");
+
+									FS.readFile("./public/terms.txt", "utf8", (err, terms) => {
+										cb( (err ? "" : pre + (`
+${req.table}.${req.type} RELEASED TO ${req.client} ON ${pub.Published} UNDER LICENSE ${pub.License}
+FOR GOVERNMENT USE ONLY UNDER PENALITY OF EMPLOYMENT TERMINATION
+` + terms).replace(/\n/g,pre) ) + "\n" + code);
+									});
+								}
+								
+								if ( pub = pubs[0] )
+									addTerms( eng.Code, pub, res );
+						
+								else
+									FLEX.getLicense( eng.Code, req.type, secret, (minCode, license) => {
+										
+										if (license) {
+											var pub = {
+												License: license,
+												By: req.client,
+												Published: new Date(),
+												Master: minCode,
+												Product: req.table,
+												Copies: 1,
+												Path: req.url
+											};
+
+											addTerms( eng.Code, pub, res );
+
+											sql.query(
+												"INSERT INTO app.publish SET ? ON DUPLICATE KEY UPDATE Copies=Copies+1", 
+												pub, (err) => {
+													Log("publish", err||"ok");
+											});
+										}
+										
+										else
+											res( null );
+									});
+						});
+
+						else
+							res( null );
+					});
 				
 			});
 		},
@@ -1791,15 +1847,18 @@ function icoFavicon(req,res) {   // extjs trap
 @class ATTRIB get and send dataset attributes
 */
 
+/*
 function sendCode(req,res) { // return file contents tagged as code
-/**
+/ **
 @method sendCode
 Totem(req,res) endpoint to send engine code requested by (.name, .type) 
 @param {Object} req Totem request
 @param {Function} res Totem response
-*/
+* /
 
 	var paths = DEBE.paths;
+	
+	Log("send", req.name);
 	
 	FS.readFile(
 		(paths.code[req.type] || paths.code.default ) + req.name,
@@ -1808,15 +1867,18 @@ Totem(req,res) endpoint to send engine code requested by (.name, .type)
 			
 		if (err) 
 			res( DEBE.errors.noCode );
-		else
+		else {
 			res( code.tag("code",{class:req.type}).tag("pre") );
+		}
 			
 	});
 }
+*/
 
 function sendCert(req,res) { // create/return public-private certs
 			
-	var owner = req.table,
+	var 
+		owner = req.table,
 		pass = req.type;
 		
 	DEBE.prime(owner, pass, {}, function () {
