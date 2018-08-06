@@ -3344,17 +3344,29 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 							if ( ++rendered == renders ) cb(recs);
 							
 							tags.forEach( function (tag,n) {  // tag topics
-								sql.query("INSERT INTO app.tags SET `On`=now(),? ON DUPLICATE KEY UPDATE `On`=now(),Views=Views+1,?", [{
-										Tag: tag,
-										Message: html,
-										To: client
-									}, {Message: html}
-								]); 
+								var 
+									secret = "",
+									product = tag+"."+html;
+								
+								FLEX.licenseCode( sql, html, secret, {
+									By: client,
+									Published: new Date(),
+									Product: product,
+									Path: "/tag/"+product
+								}, (pub) => {
+									/*
+									sql.query("INSERT INTO app.tags SET `On`=now(),? ON DUPLICATE KEY UPDATE `On`=now(),Views=Views+1,?", [{
+											Tag: tag,
+											Message: html,
+											To: client
+										}, {Message: html}
+									]); */
+								});
 							});
 						});
 			});
 		});
-		if ( !renders ) cb(recs);								
+		if ( !renders ) cb(recs);
 	},
 
 	function isEmpty() {

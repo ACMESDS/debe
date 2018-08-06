@@ -47,17 +47,20 @@ append base_head
 append base_body
 
 	#hold.Options(path=JSON.stringify(options||parms),cols="Name,Path")
-	#hold.Users(path="/users.db",cols="Name")
-	#hold.Health(path="/health.db",cols="Name")
-	#hold.Themes(path="/lookups.db?ref=themes",cols="Name,Path")
-	#hold.Locales(path="/lookups.db?ref=locales",cols="Name,Path")
-	#hold.Datasets(path="/lookups.db",cols="Name,Path")
-	#hold.Agents(path="/lookups.db?ref=agents",cols="Name,Path")
-	#hold.Views(path="/views.db",cols="Name")
-	#hold.Uploads(path="/uploads.db",cols="Name")
-	#hold.Stores(path="/stores.db",cols="Name")
-	#hold.Parms(path="/parms.db",cols="Parm,Type,Label,Special",sync="Parm")
-	#hold.Summary(path="/summary.db",refresh=300,cols="Name")
+	#hold.Lookups(path="/lookups.db",cols="ID,Name,Ref,Path")
+	//
+		#hold.Options(path=JSON.stringify(options||parms),cols="Name,Path")
+		#hold.Users(path="/users.db",cols="Name")
+		#hold.Health(path="/health.db",cols="Name")
+		#hold.Themes(path="/lookups.db?ref=themes",cols="Name,Path")
+		#hold.Locales(path="/lookups.db?ref=locales",cols="Name,Path")
+		#hold.Datasets(path="/lookups.db",cols="Name,Path")
+		#hold.Agents(path="/lookups.db?ref=agents",cols="Name,Path")
+		#hold.Views(path="/views.db",cols="Name")
+		#hold.Uploads(path="/uploads.db",cols="Name")
+		#hold.Stores(path="/stores.db",cols="Name")
+		#hold.Parms(path="/parms.db",cols="Parm,Type,Label,Special",sync="Parm")
+		#hold.Summary(path="/summary.db",refresh=300,cols="Name")
 
 	//
 		#hold.Queues(path="/QUEUES.db",cols="Name")
@@ -108,9 +111,10 @@ append base_body
 					block site_body
 
 		when "Typical"
-			#hold.Tasks(path="/tasks.db",cols="Name")
-			#hold.Plugins(path="/plugins.db",cols="Name")
-			#hold.Links(path="/links.db",cols="Name")
+			//
+				#hold.Tasks(path="/tasks.db",cols="Name")
+				#hold.Plugins(path="/plugins.db",cols="Name")
+				#hold.Links(path="/links.db",cols="Name")
 
 			#border(
 				class=dataset,
@@ -131,7 +135,8 @@ append base_body
 						Built on [#{nick}](/briefs.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
 
 		when "Home"
-			#hold.Links(path="/links.db",cols="Name")
+			//
+				#hold.Links(path="/links.db",cols="Name")
 
 			#border(
 				class=dataset,
@@ -154,7 +159,8 @@ append base_body
 			block site_body
 
 		when "Monster"
-			#hold.Links(path="/links.db",cols="Name")
+			//
+				#hold.Links(path="/links.db",cols="Name")
 
 			#border(
 				class=dataset,
@@ -187,7 +193,9 @@ append base_body
 				block site_body
 
 		when "Search"
-			#hold.Comfort(path="/lookups.db",cols="Name,Path")
+			//
+				#hold.Comfort(path="/lookups.db",cols="Name,Path")
+
 			#border(
 				class=dataset,
 				crush,
@@ -206,9 +214,10 @@ append base_body
 					block site_body
 
 		default
-			#hold.Links(path="/links.db",cols="Name")
-			#hold.Tasks(path="/tasks.db",cols="Name")
-			#hold.Plugins(path="/plugins.db",cols="Name")
+			//
+				#hold.Links(path="/links.db",cols="Name")
+				#hold.Tasks(path="/tasks.db",cols="Name")
+				#hold.Plugins(path="/plugins.db",cols="Name")
 
 			#border(
 				class=dataset,

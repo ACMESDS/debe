@@ -338,13 +338,6 @@ append site_body
 					+ \\#{...} references site context KEYs and methods F()
 					+ ${...} uses xs('DS') to set **x** to the active record, and ds('DS') to set **d** to the properties of dataset DS
 
-					The **hold** widget:
-
-						#hold.FIELD(path="/DATASET",cols="DISPLAY,VALUE, ...")
-
-					holds data for comboboxes (with given DISPLAY and VALUE cols) associated with the
-					FIELD.combo cols referenced in terminals.
-
 			#fit.Widget.Attributes
 
 				:markdown
@@ -388,6 +381,9 @@ append site_body
 						>	date | datetime | mediumdate | defaultdate | iso8601long | iso8601short |shortdate | longdate | fulldatetime | monthday | shorttime | longtime | sortabledatetime | universalsortabledatetime | yearmonth  
 						>	##... action tokens from class img-Action-value0 | 1 | 2 ...   
 					> QUAL can contain hide | off | lock | short
+
+					The `combo` TYPE requires a `#hold.Lookups(path="/lookups.ds",cols="Name,Ref,Path")`
+					WIDGET to provide a display-value (`Name`-`Path`) combobox for the `Ref` KEY.
 
 					Grid Attributes
 

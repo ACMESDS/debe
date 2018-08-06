@@ -790,7 +790,7 @@ function DS(anchor) {
 
 	cols = this.cols = cols.parse( PARMS, function cb(tok,args) {
 
-		function gridColumn(fSpec, fCalc) { //fType, fKey, fLock, fLabel, fTip, fCalc) {
+		function gridColumn(fSpec, fCalc) { 
 		/**
 		 * @method gridColumn
 		 * @private
@@ -1484,16 +1484,17 @@ function DS(anchor) {
 					};		
 
 				case 'combo': 	// queue pulldown
+				case "o":
 
 					var 
-						comboDS = DSLIST[ fKey ] || { Fields: [] },
-						fParms = fType.split(":"),
-						f0 = comboDS.Fields[0] || {dataIndex:"Name"},
-						f1 = comboDS.Fields[1] || f0,
-						fDisp = fParms[1] || f0.dataIndex,
-						fValue = fParms[2] || f1.dataIndex;
+						lookupDS = DSLIST.Lookups; //DSLIST[ fKey ] || { Fields: [] },
+						//fParms = fType.split(":"),
+						//f0 = lookupDS.Fields[0] || {dataIndex:"Name"},
+						//f1 = lookupDS.Fields[1] || f0,
+						//fDisp = "Name", //fParms[1] || f0.dataIndex,
+						//fValue = "Path"; //fParms[2] || f1.dataIndex;
 
-					return comboDS 
+					return lookupDS 
 						? {	// DS exists
 							xtype: "",
 							//fType		: fType,
@@ -1520,9 +1521,9 @@ function DS(anchor) {
 								typeAhead: true,
 								triggerAction: 'all',
 								//multiSelect: false, 
-								store : comboDS.Store,
-								displayField : fDisp,
-								valueField : fValue,
+								store : lookupDS.Store,
+								displayField : "Name",
+								valueField : "Path",
 								selectOnTab: true,
 								queryMode: 'local',	
 								//submitValue: true, 
@@ -1532,15 +1533,24 @@ function DS(anchor) {
 									// EXTJS BUG - combobox bound to out-of-band store (i.e. store not containing the
 									// target valueField) always sets newValue to null.  Must slap EXTJS upside its
 									// head by resetting value to selected value.
-
+									expand: function (me,eOpts) { 
+										//if (ds.path == "/lookups.db") 
+										//console.log("combo grid filter by", fKey);
+										//console.log(me.store.getById(1).getData());
+										me.store.filter("Ref", fKey);
+										// (anchor.id == "grid" ) ? name : label );
+										//combo.setValue(null); // EXTJS BUG set globally
+									}, 
+									
 									change: function ( scope, newValue, oldValue, eOpts ) {
 										var rawValue = scope.getRawValue();
 
-										if (isArray(oldValue)) 
+										//console.log("chg", oldValue, rawValue, newValue);
+										if ( typeof oldValue == "object" ) //isArray(oldValue)) 
 											scope.setRawValue(rawValue.split(","));
 										else
 										if (newValue === null) 
-											scope.setValue(rawValue);
+											scope.setValue(newValue);
 
 										return true;
 									}
@@ -2352,19 +2362,21 @@ WIDGET.prototype.menuTools = function () {
 			//matchFieldWidth: false,
 			editable: false,
 			listeners: {
-				afterRender: function (combo,eOpts) { 
-					if (ds.path == "/lookups.db") 
-						combo.store.filter("Ref", name);
+				expand: function (me,eOpts) { 
+					//if (ds.path == "/lookups.db") 
+					//console.log("combo filter by", label);
+					me.store.filter("Ref", label);
 					// (anchor.id == "grid" ) ? name : label );
 					//combo.setValue(null); // EXTJS BUG set globally
 				}, 
 				change: function (field,newValue,oldValue,eOpts) {
+					//console.log("rtn", newVale);
 					if (cb) cb(newValue);
 				}	
 			},
 			width: DEFAULT.DROP_WIDTH,
-			displayField: ds.Fields[0].dataIndex,
-			valueField: ds.Fields[ ds.Fields[1]?1:0 ].dataIndex,
+			displayField: "Name", //ds.Fields[0].dataIndex,
+			valueField: "Path", //ds.Fields[ ds.Fields[1]?1:0 ].dataIndex,
 			value: label,
 			//itemTpl: "{"+ds.Fields[0].dataIndex+"}" ,
 			listConfig: {
@@ -2561,7 +2573,7 @@ WIDGET.prototype.menuTools = function () {
 		this.Menu = menu.parse( null, function (tok,args) { 
 			var 
 				Action = anchor.getAttribute(tok),
-				pullDS = DSLIST[tok],
+				lookupDS = DSLIST.Lookups, //DSLIST[tok],
 				key = tok.toLowerCase();
 			
 			if (args)  			// wrap sub menu items in another pulldown menu
@@ -3213,8 +3225,8 @@ WIDGET.prototype.menuTools = function () {
 										  
 					case "summary":
 
-						if (pullDS) 
-							return combo( tok, pullDS , function (val) {
+						if (lookupDS) 
+							return combo( tok, lookupDS , function (val) {
 							});
 						
 						else
@@ -3246,8 +3258,8 @@ WIDGET.prototype.menuTools = function () {
 						var parms = Ext.Object.fromQueryString(location.search);
 
 						if (Action)  		// pulldown via attribute to this widget
-							if (pullDS) 
-								return combo( tok, pullDS, function (val) {
+							if (lookupDS) 
+								return combo( tok, lookupDS, function (val) {
 								});
 							
 							/*
@@ -3280,8 +3292,8 @@ WIDGET.prototype.menuTools = function () {
 								});
 						
 						else
-						if (pullDS) 		// pulldown via dataset of another widget
-							return combo( tok, pullDS, function (val) {
+						if (lookupDS) 		// pulldown via dataset of another widget
+							return combo( tok, lookupDS, function (val) {
 //alert(JSON.stringify([val,parms]));
 								if (val.charAt(0) == "/") 
 									window.open(val);
