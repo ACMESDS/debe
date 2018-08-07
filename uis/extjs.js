@@ -347,29 +347,6 @@ String.prototype.parseJSON = function (def) {
 	}
 }
 
-function extendRecs(hash,idxkey,valkey,recs) {
-/**
-* @method extendRecs
-* @public
-* Build data records from a hash.
-* @param {String} idxkey index key name
-* @param {String} valkey value key name
-* @param {hash} input input key-value hash
-* @return {Array} output records
-*/
-	var n = recs.length;
-	
-	for (var idx in hash) {
-		rec = {ID:n++};
-		rec[idxkey] = idx;
-		rec[valkey] = hash[idx] || idx;
-		recs.push( rec );
-	}
-			
-	//alert("recs="+JSON.stringify(recs));
-	return recs;
-}
-
 function defineProxy(path,links,key) {  
 /**
  * @method defineProxy
@@ -418,6 +395,31 @@ function DS(anchor) {
  */
 	
 	function initialize() {  // Defines This.proxy, .Store, .load(), and .setProxy() then starts loading data
+		
+		/*
+		function extendRecs(hash,idxkey,valkey,recs) {
+		/ **
+		* @method extendRecs
+		* @public
+		* Build data records from a hash.
+		* @param {String} idxkey index key name
+		* @param {String} valkey value key name
+		* @param {hash} input input key-value hash
+		* @return {Array} output records
+		* /
+			var n = recs.length;
+
+			for (var idx in hash) {
+				rec = new Object({ID:n++});
+				rec[idxkey] = idx;
+				rec[valkey] = hash[idx] || idx;
+				recs.push( rec );
+			}
+
+			//alert("recs="+JSON.stringify(recs));
+			return recs;
+		}*/
+		
 		/**
 		 * @property {Object}
 		 * Store for this dataset
@@ -447,31 +449,30 @@ function DS(anchor) {
 		
 		switch (type) { 		// dynamic data
 			case "inline":  	// static inline data
-				try {
-					var Store = This.Store = Ext.create('Ext.data.Store', {
-						model 	: name,
-						data	: path.parseJSON([])
-					});
-					Store.setproxy = Store.load = function () {};
-				}
-				catch (err) {
-					alert("Bad inline "+path);
-				}
+				var Store = This.Store = Ext.create('Ext.data.Store', {
+					model 	: name,
+					data	: path.parseJSON([])
+				});
+				Store.setproxy = Store.load = function () {};
 				break;
 		
 			case "options":  // static options data
-				try {
-					var 
-						cols = This.cols,
-						Store = This.Store = Ext.create('Ext.data.Store', {
-						model	: name,
-						data	: extendRecs( path.parseJSON([]), cols[0].dataIndex, cols[ cols[1]?1:0 ].dataIndex, []  )
-					});
-					Store.setproxy = Store.load = function () {};
-				}
-				catch (err) {
-					alert("Bad options "+path);
-				}
+				var 
+					cols = This.cols,
+					recs = new Array(),
+					opts = path.parseJSON([]);
+
+				for (var key in opts) 
+					recs.push( new Object({ID:recs.length+1, Name: key, Ref: name, Path: opts[key]}) );
+
+				//console.log(name, JSON.stringify(recs));
+				Store = This.Store = Ext.create('Ext.data.Store', {
+					model	: name,
+					data	: recs
+						// extendRecs( cols[0].dataIndex, cols[ cols[1]?1:0 ].dataIndex, []  )
+				});
+
+				Store.setproxy = Store.load = function () {};
 				break;
 				
 			case "pivot": 				// tree store
@@ -1533,12 +1534,8 @@ function DS(anchor) {
 									// EXTJS BUG - combobox bound to out-of-band store (i.e. store not containing the
 									// target valueField) always sets newValue to null.  Must slap EXTJS upside its
 									// head by resetting value to selected value.
-									expand: function (me,eOpts) { 
-										//if (ds.path == "/lookups.db") 
-										//console.log("combo grid filter by", fKey);
-										//console.log(me.store.getById(1).getData());
+									afterRender: function (me,eOpts) { 
 										me.store.filter("Ref", fKey);
-										// (anchor.id == "grid" ) ? name : label );
 										//combo.setValue(null); // EXTJS BUG set globally
 									}, 
 									
@@ -2362,11 +2359,12 @@ WIDGET.prototype.menuTools = function () {
 			//matchFieldWidth: false,
 			editable: false,
 			listeners: {
-				expand: function (me,eOpts) { 
-					//if (ds.path == "/lookups.db") 
-					//console.log("combo filter by", label);
+				afterRender: function (me,eOpts) { 
+					/*var recs = me.store.getRange();					
+					/console.log("recs", recs.length);
+					recs.forEach( (rec) => console.log( rec.getData() ) ); */
+					
 					me.store.filter("Ref", label);
-					// (anchor.id == "grid" ) ? name : label );
 					//combo.setValue(null); // EXTJS BUG set globally
 				}, 
 				change: function (field,newValue,oldValue,eOpts) {
@@ -2573,7 +2571,7 @@ WIDGET.prototype.menuTools = function () {
 		this.Menu = menu.parse( null, function (tok,args) { 
 			var 
 				Action = anchor.getAttribute(tok),
-				lookupDS = DSLIST.Lookups, //DSLIST[tok],
+				lookupDS = DSLIST[tok] || DSLIST.Lookups,
 				key = tok.toLowerCase();
 			
 			if (args)  			// wrap sub menu items in another pulldown menu

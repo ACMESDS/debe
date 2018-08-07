@@ -3586,7 +3586,7 @@ function sharePlugin(req,res) {
 					addTerms( eng.Code, pub, res );
 
 				else
-				if ( FLEX.mustLicense )
+				if ( FLEX.licenseOnDownload )
 					if ( endService )
 						FLEX.licenseCode( sql, eng.Code, {
 							EndUser: endUser,
