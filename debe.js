@@ -705,81 +705,7 @@ Usage: ${uses.join(",")}  `);
 		html: function (recs,req,res) { //< dataset.html converts to html
 			res( DEBE.site.gridify( recs ).tag("table", {border: "1"}) );
 		},
-		
-		// return events from engine usecase or send published engine code
-		default: function (recs,req,res) {
-			var 
-				filename = req.table + "." + req.type,
-				group = req.group,
-				type = req.type,
-				product = req.table+"."+req.type,
-				sql = req.sql;
 
-			sql.forFirst( type, "SELECT ID FROM ??.files WHERE ?", [group, {Name: filename}], function (file) {
-				
-				if (file)
-					sql.forAll( type, "SELECT * FROM ??.events WHERE ?", [group, {fileID: file.ID}], res );
-							  
-				else
-					sql.forFirst( type, "SELECT Code FROM ??.engines WHERE least(?)", [group, {
-						Name: req.table,
-						Type: req.type
-					}], function (eng) {
-						if (eng) 
-							sql.query(
-								"SELECT * FROM app.publish WHERE least(?,1) ORDER BY Published DESC LIMIT 1", {
-									By: req.client,
-									Product: product
-							}, (err, pubs) => {
-
-								function addTerms(code, pub, cb) {
-									var 
-										prefix = {
-											js: "// ",
-											py: "# ",
-											matlab: "% ",
-											jade: "// "
-										},
-										pre = "\n"+(prefix[req.type] || ">>");
-
-									FS.readFile("./public/terms.txt", "utf8", (err, terms) => {
-										cb( (err ? "" : pre + (`
-${req.table}.${req.type} RELEASED TO ${req.client} ON ${pub.Published} UNDER LICENSE ${pub.License}
-FOR GOVERNMENT USE ONLY UNDER PENALITY OF EMPLOYMENT TERMINATION
-` + terms).replace(/\n/g,pre) ) + "\n" + code);
-									});
-								}
-								
-								if ( pub = pubs[0] )
-									addTerms( eng.Code, pub, res );
-						
-								else
-								if ( FLEX.mustLicense )
-									FLEX.licenseCode( sql, eng.Code, product, {
-										By: req.client,
-										Published: new Date(),
-										Product: product,
-										Path: req.url
-									}, (pub) => {
-
-										if (pub) 
-											addTerms( eng.Code, pub, res );
-
-										else
-											res( null );
-									});
-								
-								else
-									res( eng.Code );
-						});
-
-						else
-							res( null );
-					});
-				
-			});
-		},
-		
 		// MS office doc reqTypes
 		xdoc: genDoc,
 		xxls: genDoc,
@@ -1156,8 +1082,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	
 	"byType.": { //< routers for endpoint types at /DATASET.TYPE
 		// file attributes
-		//code: sendCode,
-		//jade: sendCode,		
+		//code: sharePlugin,
+		//jade: sharePlugin,		
 		classif: sendAttr,
 		readability: sendAttr,
 		client: sendAttr,
@@ -1184,7 +1110,14 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		// plugins
 		exe: exePlugin,
 		add: extendPlugin,
-		sub: retractPlugin
+		sub: retractPlugin,
+		js: sharePlugin,
+		py: sharePlugin,
+		m: sharePlugin,
+		me: sharePlugin,
+		jade: sharePlugin,
+		get: probePlugin
+		
 	},
 
 	"byActionTable.": {  //< routers for CRUD endpoints at /DATASET 
@@ -1837,34 +1770,6 @@ function icoFavicon(req,res) {   // extjs trap
 
 /**
 @class ATTRIB get and send dataset attributes
-*/
-
-/*
-function sendCode(req,res) { // return file contents tagged as code
-/ **
-@method sendCode
-Totem(req,res) endpoint to send engine code requested by (.name, .type) 
-@param {Object} req Totem request
-@param {Function} res Totem response
-* /
-
-	var paths = DEBE.paths;
-	
-	Log("send", req.name);
-	
-	FS.readFile(
-		(paths.code[req.type] || paths.code.default ) + req.name,
-		"utf-8",
-		function (err,code) {
-			
-		if (err) 
-			res( DEBE.errors.noCode );
-		else {
-			res( code.tag("code",{class:req.type}).tag("pre") );
-		}
-			
-	});
-}
 */
 
 function sendCert(req,res) { // create/return public-private certs
@@ -3348,8 +3253,9 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 									secret = "",
 									product = tag+"."+html;
 								
-								FLEX.licenseCode( sql, html, secret, {
-									By: client,
+								FLEX.licenseCode( sql, html, {
+									EndUser: client,
+									EndService: "",
 									Published: new Date(),
 									Product: product,
 									Path: "/tag/"+product
@@ -3631,7 +3537,104 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		return d;
 	}
 ].extend(Date);
+
+function sharePlugin(req,res) {
+	var 
+		filename = req.table + "." + req.type,
+		group = req.group,
+		type = req.type,
+		product = req.table+"."+req.type,
+		query = req.query,
+		endService = query.endservice,
+		endUser = req.client,
+		sql = req.sql;
+
+	sql.forFirst( type, "SELECT Code FROM ??.engines WHERE least(?)", [group, {
+		Name: req.table,
+		Type: req.type
+	}], function (eng) {
+		if (eng) 
+			sql.query(
+				"SELECT * FROM app.releases WHERE least(?,1) ORDER BY Published DESC LIMIT 1", {
+					EndUser: endUser,
+					EndServiceID: FLEX.serviceID( endService ),
+					Product: product
+			}, (err, pubs) => {
+
+				function addTerms(code, pub, cb) {
+					var 
+						prefix = {
+							js: "// ",
+							py: "# ",
+							matlab: "% ",
+							jade: "// "
+						},
+						pre = "\n"+(prefix[req.type] || ">>");
+
+					FS.readFile("./public/terms.txt", "utf8", (err, terms) => {
+						cb( (err ? "" : pre + terms.parseJS({
+							product: pub.Product,
+							service: pub.EndService,
+							published: pub.Published,
+							license: pub.License,
+							client: pub.EndUser
+						}).replace(/\n/g,pre) ) + "\n" + code);
+					});
+				}
+
+				if ( pub = pubs[0] )
+					addTerms( eng.Code, pub, res );
+
+				else
+				if ( FLEX.mustLicense )
+					if ( endService )
+						FLEX.licenseCode( sql, eng.Code, {
+							EndUser: endUser,
+							EndService: endService,
+							Published: new Date(),
+							Product: product,
+							Path: req.url
+						}, (pub) => {
+							if (pub) 
+								addTerms( eng.Code, pub, res );
+
+							else
+								res( new Error(`${product} cannot be licensed to ${endService}`) );
+						});
+
+					else
+						res( new Error("endservice not specified") );
+
+				else
+					res( eng.Code );
+		});
+
+		else
+			res( new Error("plugin/product does not exist") );
+	});
+
+}
+
+function probePlugin(req,res) {
 		
+	var 
+		filename = req.table + "." + req.type,
+		group = req.group,
+		type = req.type,
+		sql = req.sql;
+
+	sql.forFirst( type, "SELECT ID FROM ??.files WHERE ?", [group, {Name: filename}], function (file) {
+
+		if (file)
+			sql.forAll( type, "SELECT * FROM ??.events WHERE ?", [group, {fileID: file.ID}], res );
+
+		else
+			res( new Error("plugin does not exist") );
+
+	});
+	
+}
+
 switch (process.argv[2]) { //< unit tests
 	case "D1": 
 		var DEBE = require("../debe").config({
