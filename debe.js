@@ -3603,14 +3603,14 @@ function sharePlugin(req,res) {
 						});
 
 					else
-						res( new Error("endservice not specified") );
+						res( new Error(`specify endservice=URL to establish the service that will integrate ${product}`) );
 
 				else
 					res( eng.Code );
 		});
 
 		else
-			res( new Error("plugin/product does not exist") );
+			res( new Error(`plugin ${product} does not exist`) );
 	});
 
 }

@@ -370,7 +370,7 @@ function defineProxy(path,links,key) {
 			writeAllFields: false			// false to only send revised fields on updates (implied true in TreeStore)
 		},
 		appendId: false,					// no sense in appending as server has this info in its req
-		idParam	: key || PROXY.KEY,			// record ID (yet again)
+		idParam	: key || PROXY.KEY,			// yep - record ID yet again - stupid EXTJS
 		filterParam: PROXY.FILTER,
 		sortParam:	PROXY.SORT,				
 		startParam: PROXY.START,
@@ -434,7 +434,7 @@ function DS(anchor) {
 			extend		: 'Ext.data.Model',
 			fields		: Fields,
 			proxy		: proxy,
-			idProperty	: key
+			idProperty	: key || PROXY.KEY  // rep - again stupid EXTJS
 		});
 
 		if (path.charAt(0) == "[") 
