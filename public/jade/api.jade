@@ -510,17 +510,24 @@ append site_body
 				TYPE/NAME.js must follow this pattern:
 				
 					module.exports = {
-						clear: true || false,		// to delete then recreate all usecases 
+						clear: true || false,		// delete then recreate all usecases 
 						
-						mods || modify: {  // to change sql types of existing keys, e.g. MyFloatParm: "int(11)"
+						mods || modify: {  		// change sql types of existing keys, e.g. MyFloatParm: "int(11)"
 							KEY: "sql type", ...
 						},
 						
-						keys || adds || usecase: {  // to add sql keys of specified types, e.g. MyJsonParm: "json"
+						keys || adds || usecase: {  // add usecase keys of specified type, e.g. MyJsonParm: "json"
 							KEY: "sql type", ...
 						},
 						
-						smop: "NAME", // convert supplied engine matlab code to python
+						inits || initial || initialize : [  // add initial usecases
+							{ KEY: VALUE, .... }
+							....
+						],
+						
+						topy || smop: "NAME", // convert supplied engine code to python
+						
+						tojs || giphy: "NAME", // convert supplied engine code to javascript
 						
 						code || engine:  
 							function NAME(ctx,res) {   // js engine

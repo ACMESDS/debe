@@ -2357,7 +2357,7 @@ WIDGET.prototype.menuTools = function () {
 					/console.log("recs", recs.length);
 					recs.forEach( (rec) => console.log( rec.getData() ) ); */
 					
-					me.store.filter("Ref", label);
+					me.store.filter("Ref", (label=="Datasets") ? name+"_"+label : label);
 					//combo.setValue(null); // EXTJS BUG set globally
 				}, 
 				change: function (field,newValue,oldValue,eOpts) {
