@@ -1487,16 +1487,8 @@ function DS(anchor) {
 				case 'combo': 	// queue pulldown
 				case "o":
 
-					var 
-						lookupDS = DSLIST.Lookups; //DSLIST[ fKey ] || { Fields: [] },
-						//fParms = fType.split(":"),
-						//f0 = lookupDS.Fields[0] || {dataIndex:"Name"},
-						//f1 = lookupDS.Fields[1] || f0,
-						//fDisp = "Name", //fParms[1] || f0.dataIndex,
-						//fValue = "Path"; //fParms[2] || f1.dataIndex;
-
-					return lookupDS 
-						? {	// DS exists
+					if ( Lookups = DSLIST.Lookups )
+						return {	// Lookups were defined
 							xtype: "",
 							//fType		: fType,
 							dataIndex	: fKey,
@@ -1522,7 +1514,7 @@ function DS(anchor) {
 								typeAhead: true,
 								triggerAction: 'all',
 								//multiSelect: false, 
-								store : lookupDS.Store,
+								store : Lookups.Store,
 								displayField : "Name",
 								valueField : "Path",
 								selectOnTab: true,
@@ -1553,9 +1545,10 @@ function DS(anchor) {
 									}
 								} 
 							}
-						}
-
-						: { // DS does not exists
+						};
+					
+					else 
+						return { // Lookups never defined
 							xtype: "",
 							//fType		: fType,
 							dataIndex	: fKey,
@@ -2570,8 +2563,7 @@ WIDGET.prototype.menuTools = function () {
 	if (menu)  
 		this.Menu = menu.parse( null, function (tok,args) { 
 			var 
-				Action = anchor.getAttribute(tok),
-				lookupDS = DSLIST[tok] || DSLIST.Lookups,
+				Lookups = DSLIST[tok] || DSLIST.Lookups,
 				key = tok.toLowerCase();
 			
 			if (args)  			// wrap sub menu items in another pulldown menu
@@ -3223,8 +3215,8 @@ WIDGET.prototype.menuTools = function () {
 										  
 					case "summary":
 
-						if (lookupDS) 
-							return combo( tok, lookupDS , function (val) {
+						if (Lookups) 
+							return combo( tok, Lookups , function (val) {
 							});
 						
 						else
@@ -3232,8 +3224,8 @@ WIDGET.prototype.menuTools = function () {
 
 					case "datasets":
 						
-						if (ds = DSLIST[tok]) 
-							return combo( tok, ds, function (path) {
+						if (Lookups) 
+							return combo( tok, Lookups, function (path) {
 								Widget.Data.relink( function (proxy, flags) {
 									proxy.url = path;
 								});
@@ -3244,8 +3236,8 @@ WIDGET.prototype.menuTools = function () {
 					
 					case "agents":
 						
-						if (ds = DSLIST[tok]) 
-							return combo( tok, ds, function (path) {
+						if (Lookups) 
+							return combo( tok, Lookups, function (path) {
 								agent = path || "";
 							});
 
@@ -3253,70 +3245,58 @@ WIDGET.prototype.menuTools = function () {
 							return button(tok);
 					
 					default:
-						var parms = Ext.Object.fromQueryString(location.search);
+						var 
+							Action = anchor.getAttribute(tok),			
+							parms = Ext.Object.fromQueryString(location.search);
 
 						if (Action)  		// pulldown via attribute to this widget
-							if (lookupDS) 
-								return combo( tok, lookupDS, function (val) {
-								});
-							
-							/*
-							else
-							if ( isLink(Action) ) {
-								return {
-									xtype: "box",
-									html: tok.tag("a",{href:Action})
-								}
-							}
-							*/
-							else
-								return button( tok, {
-									onAction: function (Data,Status) {
-										if (Action.indexOf(".db") >= 0)
-											Ext.Ajax.request({
-												url : Action,
-												method: "GET",
-												success: function (res) {
-													Status(res.responseText);
-												},
-												failure: function (res) {
-													Status(STATUS.FAULT);
-												}
-											});
+							return button( tok, {
+								onAction: function (Data,Status) {
+									if (Action.indexOf(".db") >= 0)
+										Ext.Ajax.request({
+											url : Action,
+											method: "GET",
+											success: function (res) {
+												Status(res.responseText);
+											},
+											failure: function (res) {
+												Status(STATUS.FAULT);
+											}
+										});
 
-										else
-											window.open(Action);
-									}
-								});
+									else
+										window.open(Action);
+								}
+							});
 						
 						else
-						if (lookupDS) 		// pulldown via dataset of another widget
-							return combo( tok, lookupDS, function (val) {
-//alert(JSON.stringify([val,parms]));
-								if (val.charAt(0) == "/") 
-									window.open(val);
+						if (Lookups) 		// pulldown via dataset of another widget
+							return combo( tok, Lookups, function (val) {
+								switch (key) {
+									case "options":
+										var 
+											mores = val.split("+"),
+											lesses = val.split("-"),
+											more = mores.length-1,
+											less = lesses.length-1;
 
-								else 
-								if (key == "options") {
-									var 
-										mores = val.split("+"),
-										lesses = val.split("-"),
-										more = mores.length-1,
-										less = lesses.length-1;
+										if (more) parms.more = more; else delete parms.more;
+										if (less) parms.less = less; else delete parms.less;
 
-									if (more) parms.more = more; else delete parms.more;
-									if (less) parms.less = less; else delete parms.less;
-
-									parms[key] = more ? mores[0] : lesses[0];
-									location.search = Ext.Object.toQueryString( parms );
-									//alert(JSON.stringify(parms));
+										parms[key] = more ? mores[0] : lesses[0];
+										location.search = Ext.Object.toQueryString( parms );
+										//alert(JSON.stringify(parms));
+										break;
+										
+									default:
+										if (val.charAt(0) == "/") 
+											window.open(val);
+										
+										else {
+											parms[key] = val;
+											location.search = Ext.Object.toQueryString( parms );
+										}
 								}
-
-								else {
-									parms[key] = val;
-									location.search = Ext.Object.toQueryString( parms );
-								}
-
 							});
 						
 						else

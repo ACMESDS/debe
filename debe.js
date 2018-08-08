@@ -1278,7 +1278,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		@method hover
 		Title ti fileName fn
 		*/
-			if (fn.charAt(0) != "/") fn = "/shares/"+fn;
+			if (fn.charAt(0) != "/") fn = "/shares/hover/"+fn;
 			return ti.tag("p",{class:"sm"}) 
 				+ (
 					   "".tag("img",{src:fn+".jpg"})
@@ -1415,7 +1415,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	
 	"errors.": {  //< error messages
 		pretty: function (err) {
-			return "".tag("img",{src:"/shares/reject.jpg",width:40,height:60})
+			return "".tag("img",{src:"/stash/reject.jpg",width:40,height:60})
 				+ (err+"").replace(/\n/g,"<br>").replace(process.cwd(),"").replace("Error:","")
 				+ "; see "
 				+ "issues".tag("a",{href: "/issues.view"})
@@ -1471,13 +1471,14 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		mime: {
 			tour: ".",		 			//< enable totem touring 
 			//jobs: "./public/jobs",		//< path to tau simulator job files
+			stash: ".", 		//< totem static reserve
 			stores: "./public", 		//< persistant scrape area
 			uploads: "./public", 		//< one-time scrape area
 			chips: "./public/images",	//< chipped files
 			tips: "./public/images",	//< tipped files
 			data: "./public",  //< debug data
 			jade: "./public",
-			shares: ".", 				//< cached file area
+			shares: "./public", 				//< cached file area
 			docs: ".", 					//< html documents
 			socketio: ".",				//< path to socket.io
 			clients: ".",				//< path to 3rd party ui clients
@@ -1794,8 +1795,8 @@ function sendCert(req,res) { // create/return public-private certs
 					paths = DEBE.paths,
 					site = DEBE.site,
 					master = site.urls.master,
-					FF = "Firefox".tag("a",{href:master+"/shares.firefox.zip"}),
-					Putty = "Putty".tag("a",{href:master+"/shares.putty.zip"}),
+					FF = "Firefox".tag("a",{href:master+"/stash/firefox.zip"}),
+					Putty = "Putty".tag("a",{href:master+"/stash/putty.zip"}),
 					Cert = "Cert".tag("a",{href:`${master}/cert/${owner}`});
 					
 				res( function () {
@@ -2155,7 +2156,7 @@ function sendDoc(req, res) {
 		query = req.query,
 		type = req.type.substr(1),
 		name = req.table,
-		docf = `./shares/${req.table}.${type}`;	
+		docf = `./temps/docs/${req.table}.${type}`;	
 
 	res( "Claim file "+"here".link(docf) );
 
@@ -2380,7 +2381,7 @@ Convert recods to requested req.type office file.
 			xpps: "ppsx"
 		},
 		type = types[req.type],
-		docf = `./shares/${req.table}.${type}`;
+		docf = `./temps/docs/${req.table}.${type}`;
 	
 	if (type) {	
 		res( "Claim file "+"here".link(docf) );
