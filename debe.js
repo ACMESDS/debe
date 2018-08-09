@@ -112,7 +112,7 @@ var
 			if (url = opts.url)
 				switch (url.constructor) {
 					case String:
-						DEBE.fetchData( url, query, opts.put||null, function (data) {
+						DEBE.fetch.fetcher( url, query, opts.put||null, function (data) {
 							if (data) 
 								flowEvents(data, cb);
 						});
@@ -271,7 +271,7 @@ var
 			
 			var 
 				urls = DEBE.site.urls,
-				fetcher = DEBE.fetchData;
+				fetcher = DEBE.fetch.fetcher;
 
 			/*
 			JSDB.forEach(dog.trace, dog.get.ungraded, [], function (file, sql) {
@@ -397,7 +397,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 		}, function dogJobs(dog) {
 			var
 				queues = FLEX.queues,
-				fetcher = DEBE.fetchData;
+				fetcher = DEBE.fetch.fetcher;
 
 			if (dog.get.unbilled)
 				JSDB.forEach(dog.trace, dog.get.unbilled, [], function (job, sql) {
@@ -2195,6 +2195,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		paths = DEBE.paths,
 		site = DEBE.site,  
 		urls = site.urls,
+		fetcher = DEBE.fetch.fetcher,
 		ctx = site.context[req.table]; 
 		
 	function dsContext(sql, ctx, cb) { // callback cb() after loading datasets required for this skin
@@ -2202,7 +2203,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		if (ctx) // render in extended context
 			Each(ctx,  function (siteKey, ds, isLast) {
 				if ( ds.charAt(0) == "/" ) // url dataset
-					DEBE.fetchData( urls.master+ds, query, null, function (data) {
+					fetcher( urls.master+ds, query, null, function (data) {
 						switch ( (data||0).constructor ) {
 							case Array:
 								site[siteKey] = data.clone();
@@ -2669,7 +2670,7 @@ Initialize DEBE on startup.
 			thread: Thread,
 			emitter: DEBE.IO ? DEBE.IO.sockets.emit : null,
 			skinner: JADE,
-			fetcher: DEBE.fetchData,
+			fetcher: DEBE.fetch.fetcher,
 			indexer: DEBE.indexFile,
 			uploader: DEBE.uploadFile,
 
@@ -2699,13 +2700,13 @@ Initialize DEBE on startup.
 		HACK.config({
 			//source: "",
 			taskPlugin: null,
-			//fetcher: DEBE.fetchData,
+			//fetcher: DEBE.fetch.fetcher,
 			thread: DEBE.thread
 		});
 		
 		LAB.config({
 			thread: DEBE.thread,
-			fetcher: DEBE.fetchData
+			fetcher: DEBE.fetch.fetcher
 		});
 		
 		ATOM.config({
