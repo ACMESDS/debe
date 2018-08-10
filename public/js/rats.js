@@ -1,5 +1,5 @@
 module.exports = {  // learn hidden intensity parameters of a Markov process
-	mods: {
+	keys: {
 		//Symbols: "json comment '[sym, sym, ...] state symbols or null to generate' ",
 		Steps: "int(11) default 0 comment 'steps to next supervised learning' ",
 		Batch: "int(11) default 0 comment 'override File.Steps' ",
