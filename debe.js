@@ -250,9 +250,9 @@ var
 					   
 		dogFiles: Copy({
 			get: {
-				ungraded: "SELECT ID,Name FROM app.files WHERE State_graded IS null AND Ingest_Time>Ingest_End AND Enabled",
-				unread: "SELECT ID,Ring, st_centroid(ring) as Anchor, Ingest_Time,advanceDays,PoP_durationDays,sampleTime,Name FROM app.files WHERE Ingest_Time>=Ingest_Start AND Ingest_Time<=Ingest_End AND Enabled",
-				//finished: "SELECT ID,Name FROM app.files WHERE Ingest_Time>Ingest_End",
+				ungraded: "SELECT ID,Name FROM app.files WHERE _State_graded IS null AND _Ingest_Time>_Ingest_End AND Enabled",
+				unread: "SELECT ID,Ring, st_centroid(ring) as Anchor, _Ingest_Time,advanceDays,PoP_durationDays,sampleTime,Name FROM app.files WHERE _Ingest_Time>=_Ingest_Start AND _Ingest_Time<=_Ingest_End AND Enabled",
+				//finished: "SELECT ID,Name FROM app.files WHERE _Ingest_Time>_Ingest_End",
 				expired: "SELECT ID,Name FROM app.files WHERE PoP_Expires AND now() > PoP_Expires AND Enabled"
 				//retired: "SELECT files.ID,files.Name,files.Client,count(events.id) AS evCount FROM app.events LEFT JOIN app.files ON events.fileID = files.id "
 						//+ " WHERE datediff( now(), files.added)>=? AND NOT files.Archived AND Enabled GROUP BY fileID"
@@ -286,7 +286,7 @@ var
 
 						sql.forAll(
 							dog.trace,
-							"UPDATE app.files SET State_graded=true, ?, State_Notes=concat(State_Notes,?) WHERE ?", [{
+							"UPDATE app.files SET _State_graded=true, ?, _State_Notes=concat(_State_Notes,?) WHERE ?", [{
 								tag: JSON.stringify(stats),
 								coherence_time: unsup.coherence_time,
 								coherence_intervals: unsup.coherence_intervals,
@@ -301,7 +301,7 @@ var
 
 					else
 						sql.query(
-							"UPDATE apps.file SET State_graded=true, snr=0, State_Notes=? WHERE ?", [
+							"UPDATE apps.file SET _State_graded=true, snr=0, _State_Notes=? WHERE ?", [
 							"Grading failed", {ID: file.ID} 
 						]);
 				});
@@ -331,7 +331,7 @@ contains ${file.eventCount} events.  Your archived sample will be auto-ingested 
 request this sample.  You may also consult ${paths.admin} to request additional resources.  
 Further information about this file is available ${paths.moreinfo}. `;
 
-					sql.query( "UPDATE app.files SET ?, State_Notes=concat(State_Notes,?)", [{
+					sql.query( "UPDATE app.files SET ?, _State_Notes=concat(_State_Notes,?)", [{
 						Archived: true}, notice]);
 
 					/*
@@ -349,7 +349,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 			if (dog.get.finished)
 				JSDB.forEach(dog.trace, dog.get.finished, [], function (file, sql) {
 					Trace("FINISHED "+file.Name);
-					//sql.query("UPDATE app.files SET State_ingested=1 WHERE ?",{ID:file.ID});
+					//sql.query("UPDATE app.files SET _State_ingested=1 WHERE ?",{ID:file.ID});
 				});
 			
 			if (dog.get.unread)
@@ -359,7 +359,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 						zero = {x:0, y:0},
 						ring = file.Ring || [[ zero, zero, zero, zero, zero]],
 						anchor = file.Anchor || zero,
-						from = new Date(file.Ingest_Time),
+						from = new Date(file._Ingest_Time),
 						to = from.addDays(file.PoP_durationDays),
 						path = urls.master + file.Name;
 
@@ -378,7 +378,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 
 					if (1)
 					sql.query(
-						"UPDATE app.files SET Ingest_Time=date_add(Ingest_Time, interval advanceDays day), Revs=Revs+1 WHERE ?", 
+						"UPDATE app.files SET _Ingest_Time=date_add(_Ingest_Time, interval advanceDays day), Revs=Revs+1 WHERE ?", 
 						{ ID: file.ID }
 					);
 				});
@@ -1539,7 +1539,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		var ctx = {
 			Flow: {
 				F: "tbd",
-				N: file.Ingest_Actors,  // ensemble size
+				N: file._Ingest_Actors,  // ensemble size
 				T: file.Steps  // number of time steps
 			}, 
 			lma: [70],
@@ -2055,12 +2055,12 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 									});
 								},  
 
-								N: ctx.Actors || File.Ingest_Actors,  // ensemble size
+								N: ctx.Actors || File._Ingest_Actors,  // ensemble size
 								keys: ctx.Keys || File.Stats_stateKeys,
-								symbols: ctx.Symbols || File.Stats_stateSymbols || File.Ingest_States,
-								steps: ctx.Steps || File.Ingest_Steps, // process steps
+								symbols: ctx.Symbols || File.Stats_stateSymbols || File._Ingest_States,
+								steps: ctx.Steps || File._Ingest_Steps, // process steps
 								batch: ctx.Batch || 0,  // steps to next supervised learning event 
-								//trP: {states: File.Ingest_States}, // trans probs
+								//trP: {states: File._Ingest_States}, // trans probs
 								trP: {},
 								filter: function (str, ev) {  // filter output events
 									switch ( ev.at ) {
@@ -2240,39 +2240,40 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 				query = Copy({
 					mode: req.parts[1],
 					//search: req.search,
-					cols: [],
+					//cols: [],
 					page: query.page,
 					dims: query.dims || "100%,100%",
 					ds: req.table
-				},req.query),
-				cols = query.cols,
+				}, req.query),
+				cols = [],
 				ctx = site.context.plugin;
 			
 			//Log([query, req.search]);
 			
 			switch (fields.constructor) {
 				case Array:
-					fields.each(function (n,field) {
+					fields.forEach( function (field,n) {
 						var 
 							key = field.Field, 
-							type = field.Type.split("(")[0],
-							group = key.split("_");
+							type = field.Type.split("(")[0];
+							//group = key.split("_");
 						
 						if ( key != "ID" && type != "geometry") {
 							var
 								doc = escape(field.Comment).replace(/\./g, "$dot"),
 								qual = "short";
 							
-							if ( key.indexOf("Save") == 0) qual += "hide" ;
+							if ( key.indexOf("Save_") == 0) qual += "hideoff" ;
 							
-							//else
-							//if ( key.indexOf("_") >=0 ) qual = "off";
+							else
+							if ( key.charAt(0) == "_" ) qual += "off";
 							
+							//Log(key,qual);
 							cols.push( key + "." + type + "." + doc + "." + qual );
 						}
 					});
-					
-					//Log("plugin cols", cols, cols.columnify() );
+					//Log("plugin cols", cols, cols.groupify() );
+					Log(cols);
 					break;
 					
 				case String:
@@ -2288,6 +2289,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 					});	
 			}
 				
+			query.cols = cols.groupify();
 			/*if ( query.mode == "gbrief" ) // better to add this to site.context.plugin
 				sql.query("SELECT * FROM ??.??", [req.group, query.ds], function (err,recs) {
 					if (err)
@@ -2787,9 +2789,9 @@ function sysIngest(req,res) {
 			});
 
 		else  // use custom ingester
-			sql.query("SELECT Ingest_Script FROM app.files WHERE ? AND Ingest_Script", {ID: fileID})
+			sql.query("SELECT _Ingest_Script FROM app.files WHERE ? AND _Ingest_Script", {ID: fileID})
 			.on("results", function (file) {
-				if ( onIngest = JSON.parse(file.Ingest_Script) ) 
+				if ( onIngest = JSON.parse(file._Ingest_Script) ) 
 					DEBE.ingester( onIngest, query, function (evs) {
 						HACK.ingestList( sql, evs, fileID, function (aoi) {
 							Log("INGEST aoi", aoi);
@@ -3212,7 +3214,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 ].extend(String);
 	
 [  // array prototypes
-	function columnify() {
+	function groupify() {
 		return this.splitify("_").joinify();
 	},
 	
@@ -3475,6 +3477,61 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 			return this.join(sep);
 	}, */
 
+	function joinify(cb) {
+	/*
+	Joins a list 
+		[	a: null,
+			g1: [ b: null, c: null, g2: [ x: null ] ],
+			g3: [ y: null ] ].joinify()
+	
+	into a string
+		"a,g1(b,c,g2(x)),g3(y)"
+			
+	A callback cb(head,list) can be provided to join the current list with the current head.
+	*/
+
+		var 
+			src = this,
+			rtn = [];
+		
+		Each(src, (key, list) => {
+			if ( typeof list == "string" ) 
+				rtn.push( list );
+			
+			else
+				try {
+					rtn.push( cb 
+						? cb( key, list ) 
+						: key + "(" + list.joinify() + ")" 
+					);
+				}
+				catch (err) {
+					rtn.push(list);
+				}
+		});
+		
+		return cb ? cb(null,rtn) : rtn.join(",");
+	},
+
+	function splitify(dot) {
+	/*
+	Splits a list 
+		["a", "g1.b", "g1.c", "g1.g2.x", "g3.y"].splitify( "." )
+		
+	into a list
+		 [	a: null,
+			g1: [ b: null, c: null, g2: [ x: null ] ],
+			g3: [ y: null ] ]
+	
+	*/
+		var src = {};
+		this.forEach( (key) => {
+			src[key] = key;
+		}); 
+		
+		return Copy(src,[],dot || ".");
+	},
+	
 	function linkify(refs) {
 	/*
 	@member Array
@@ -3696,7 +3753,7 @@ ${revised}, these samples will expire on ${exit}.  Should you wish to remove the
 assessments from our worldwide reporting system, please contact ${poc} for consideration.
 `;
 									sql.query("UPDATE app.files SET ? WHERE ?", [{
-											State_Notes: notes,
+											_State_Notes: notes,
 											Added: now,
 											PoP_Expires: exit
 										}, {ID: file.ID}

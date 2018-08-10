@@ -37,7 +37,8 @@ append site_body
 
 	- mode = query.mode
 	- ds = query.ds || "myplugin"
-	- dscols = query.cols || []
+	- pivcol = "tbd"
+	- dscols = query.cols || ""
 	- dspage = query.page || 20
 	// - dsquery = query.search || ""
 	- dsrefresh = query.refresh || ""
@@ -55,7 +56,7 @@ append site_body
 		when "run"
 			#grid.Usecases(
 				path=dspath,
-				cols=dscols.columnify(),
+				cols=dscols,
 				menu="Agents",
 				wrap,
 				blogs="Description",
@@ -156,12 +157,11 @@ append site_body
 				#post.Flow( path="/#{ds}_flow.view", dims="800,600",wrap )
 
 		when "pivot"
-			- pcol = dscols.pop()
 			#pivot(
 				class=dstitle,
 				path=dspath,
-				pivots=pcol,
-				cols=dscols.columnify(),
+				pivots=pivcol,
+				cols=dscols,
 				page=dspage )
 
 		when "brief"
@@ -207,7 +207,7 @@ append site_body
 			#grid(
 				class=dstitle,
 				path=dspath,
-				cols=dscols.columnify(),
+				cols=dscols,
 				dims=dsdims,
 				page=dspage )
 
