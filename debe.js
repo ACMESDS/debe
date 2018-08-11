@@ -1125,12 +1125,9 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	
 	// private parameters
 		
-	admitRule: null, 	//< admitRule all clients by default 	
-		/*{ 
-			"u.s. government": "required",
-			"us": "optional"
-		}*/
-
+	admitRule: { 	//< admitRule all clients by default 	
+	},
+		
 	"site.": { 		//< initial site context
 
 		classif: {
@@ -2273,7 +2270,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 						}
 					});
 					//Log("plugin cols", cols, cols.groupify() );
-					Log(cols);
+					//Log(cols);
 					break;
 					
 				case String:
@@ -2687,6 +2684,7 @@ Initialize DEBE on startup.
 				tta: "openv.tta",
 				trades: "openv.trades",
 				milestones: "openv.milestones",
+				sessions: "openv.sessions",
 				journal: "openv.journal",
 				hawks: "openv.hawks",
 				attrs: "openv.attrs",
@@ -3697,16 +3695,6 @@ function probePlugin(req,res) {
 switch (process.argv[2]) { //< unit tests
 	case "D1": 
 		var DEBE = require("../debe").config({
-			name: ENV.SERVICE_NAME,
-
-			mysql: {
-				host: ENV.MYSQL_HOST,
-				user: ENV.MYSQL_USER,
-				pass: ENV.MYSQL_PASS
-			},
-
-			//guard: true,
-
 			onFile: {
 				"./public/uploads/": function (sql, name, path) {  // watch changes to a file				
 
@@ -3790,7 +3778,6 @@ assessments from our worldwide reporting system, please contact ${poc} for consi
 				} */
 
 			}
-
 		}, function (err) {
 		Trace( err || 
 `Yowzers - this does everything but eat!  An encrypted service, a database, a jade UI for clients,
@@ -3802,13 +3789,7 @@ clients, users, system health, etc).`
 		
 	case "D2":
 		var DEBE = require("../debe").config({
-			name: ENV.SERVICE_NAME,
 			riddles: 10,
-			mysql: {
-				host: ENV.MYSQL_HOST,
-				user: ENV.MYSQL_USER,
-				pass: ENV.MYSQL_PASS
-			},
 			"byTable.": {
 				wfs: function (req,res) {
 					res("here i go again");
@@ -3825,13 +3806,6 @@ clients, users, system health, etc).`
 		
 	case "D3":
 		var DEBE = require("../debe").config({
-			name: ENV.SERVICE_NAME,
-
-			mysql: {
-				host: ENV.MYSQL_HOST,
-				user: ENV.MYSQL_USER,
-				pass: ENV.MYSQL_PASS
-			}
 		}, function (err) {
 			Trace( err || "Stateful network flow manger started" );
 		});

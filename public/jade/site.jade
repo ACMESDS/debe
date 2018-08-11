@@ -88,9 +88,8 @@ append base_body
 
 				block site_help
 
-				#fit(west,crush,head="Prefs(Locales,Themes)")
-					:markdown
-						hello there
+				#grid(west,path="/session.db",cols="Client,Posted.d,Message")
+				
 				#fit(center)
 					block site_body
 
