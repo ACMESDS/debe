@@ -50,6 +50,7 @@ var
 	STREAM = require("stream"), 		//< pipe streaming
 	CRYPTO = require("crypto"), 		//< crypto package
 	FS = require("fs"), 				//< NodeJS filesystem and uploads
+	URL = require("url"),
 	
 	// 3rd party modules
 	ODOC = require("officegen"), 	//< office doc generator
@@ -1096,6 +1097,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		xgif: sendDoc,
 		
 		// skins
+		//down: renderMarkdown,
 		view: renderSkin,
 		calc: renderSkin,
 		run: renderSkin,
@@ -1438,7 +1440,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		jaderef: "./public/jade/ref.jade",	// jade reference path for includes, exports, appends
 		
 		engine: "SELECT * FROM app.engines WHERE least(?,1) LIMIT 1",
-		render: "./public/jade/",
+		jades: "./public/jade/",
 		
 		/*
 		sss: { // some streaming services
@@ -1503,15 +1505,16 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			org1: "./public/jade/Org1",
 			org2: "./public/jade/Org2",
 			mood1: "./public/jade/Mood1"
-		},
+		}
 		
+		/*
 		code: {
 			py: "./public/py",
 			js: "./public/js",
 			mat: "./public/mat",
 			jade: "./public/jade",
 			html: "./public/htmls"
-		}
+		} */
 	},
 	
 	/**
@@ -2191,8 +2194,12 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		query = req.query,
 		paths = DEBE.paths,
 		site = DEBE.site,  
+		error = DEBE.errors,
 		urls = site.urls,
+		query = req.query,
 		fetcher = DEBE.fetch.fetcher,
+		dsname = FLEX.reroute[req.table] || (req.group + "." + req.table),
+		jadepath = paths.jades+req.table+".jade",
 		ctx = site.context[req.table]; 
 		
 	function dsContext(sql, ctx, cb) { // callback cb() after loading datasets required for this skin
@@ -2228,10 +2235,27 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 	
 	dsContext(sql, ctx, function () {  
 
+		function renderFile(file) { 
+		/**
+		@private
+		@method render
+		Render Jade file at path this to res( err || html ) in a new context created for this request.  
+		**/
+			//var file = this+"";  // js get confused so force string
+			siteContext( req, function (ctx) {
+				try {
+					res( JADE.renderFile( file, ctx ) );  
+				}
+				catch (err) {
+					res(  err );
+				}
+			});
+		}
+
 		function renderPlugin(fields) { // render using plugin skin
 			
 			var
-				pluginPath = paths.render+"plugin.jade",
+				pluginPath = paths.jades+"plugin.jade",
 				query = req.query,
 				sql = req.sql,
 				query = Copy({
@@ -2305,58 +2329,78 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 			else	*/
 			
 			dsContext(sql, ctx, function () {  // render plugin in its plugin context
-				pluginPath.renderFile(req, res);
+				renderFile(pluginPath);
 			});
 			
 		}		
 		
-		function renderTable( ) {
-			sql.query(
-				"SHOW FULL COLUMNS FROM ??", 
-				[ FLEX.reroute[req.table] || (req.group + "." + req.table) ] , 
-				function (err,fields) {
+		function renderStage( dsname, jadepath ) {
+			sql.query( "SHOW FULL COLUMNS FROM ??", dsname, function (err,fields) {
+				if (err) // render jade file
+					renderFile( jadepath );
 
-					if (err) // might be a file
-						( paths.render+req.table+".jade" ).renderFile(req, res);
-
-					else 
-						renderPlugin( fields );
+				else // render plugin
+					renderPlugin( fields );
 			});	
 		}
 		
+		function renderJade(jade) { 
+		/**
+		@private
+		@method render
+		Render Jade string this to res( err || html ) in a new context created for this request. 
+		**/
+			//var  jade = this+"";
+
+			siteContext( req, function (ctx) {
+				try {
+					if ( generator = JADE.compile(jade, ctx) )
+						res( generator(ctx) );
+					else
+						res( errors.badSkin );
+				}
+				catch (err) {
+					return res( err );
+				}
+			});
+		}
+
 		sql.forFirst("", paths.engine, { // Try a jade engine
 			Name: req.table,
 			Type: "jade",
 			Enabled: 1
 		}, function (eng) {
-			
+
 			if (eng)  // render view with this jade engine
 				dsContext(sql, ctx, function () {
-					eng.Code.renderJade( req, res );
+					renderJade( eng.Code || "", res );
 				});
 
 			else 	// try to get engine from sql table or from disk
+			/*
 			if ( route = DEBE.byActionTable.select[req.table] ) // try virtual table
 				route(req, function (recs) {
-					renderPlugin( recs[0] || {} );
+					if ( recs )
+						renderPlugin( recs[0] || {} );
+					else
+						res( errors.badSkin );
 				});
 
-			else
-			if ( route = DEBE.byAction.select ) // may have an engine interface
+			else  */
+			if ( route = DEBE.byActionTable.select[req.table] || DEBE.byAction.select ) // may have an engine interface
 				route(req, function (recs) { 
 					//Log({eng:recs, ds:req.table});
 					if (recs)
 						renderPlugin( recs[0] || {} );
 
 					else
-						renderTable( );
+						renderStage( dsname, jadepath );
 				});	
 
-			else  // try sql table
-				renderTable( );		
-						
-		});
+			else  // try sql table or file
+				renderStage( dsname, jadepath );		
 
+		});
 	});
 }
 
@@ -2733,7 +2777,7 @@ Initialize DEBE on startup.
 		
 		DEBE.onStartup(sql);
 
-		var path = DEBE.paths.render;
+		var path = DEBE.paths.jades;
 
 		if (false)
 		DEBE.indexFile( path, function (files) {  // publish new engines
@@ -2922,43 +2966,6 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 // Prototypes
 	
 [  // string prototypes
-	function renderJade(req,res) { 
-	/**
-	@private
-	@method render
-	Render Jade string this to res( err || html ) in a new context created for this request. 
-	**/
-		var jade = this+"";
-		siteContext( req, function (ctx) {
-			try {
-				if ( generator = JADE.compile(jade, ctx) )
-					res( generator(ctx) );
-				else
-					res( DEBE.errors.badSkin );
-			}
-			catch (err) {
-				return res( err );
-			}
-		});
-	},
-
-	function renderFile(req,res) { 
-	/**
-	@private
-	@method render
-	Render Jade file at path this to res( err || html ) in a new context created for this request.  
-	**/
-		var file = this+"";
-		siteContext( req, function (ctx) {
-			try {
-				res( JADE.renderFile( file, ctx ) );  // js get confused so force string
-			}
-			catch (err) {
-				res(  err );
-			}
-		});
-	},
-
 	/*function hyper(ref) { 
 		return [this].linkify(ref);
 	},  */
@@ -3596,6 +3603,63 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 ].extend(Date);
 
 function sharePlugin(req,res) {
+	
+	function spoof( product, via, cb ) {
+
+		var 
+			via = URL.parse(via),
+			paths = DEBE.paths,
+			errors = DEBE.errors,
+			mdpath = `./public/md/${product}.md`,
+			spoofs = {
+				endservice: `
+	<script>
+		function spoof() {
+			var 
+				input = document.getElementById("spoof.input").value;
+				goto = "/${product}?endservice=" + input;
+
+			alert(input,goto);
+			if (input) window.open( goto );
+		}
+	</script>
+	<form onsubmit="spoof()">
+		<input id="spoof.input" type="text" value="https://myserivce.ic.gov:/endpoint">
+		<button id="spoof.submit" type="submit" value="submit">Go</button>
+	</form>
+	`
+			};
+
+		//Log(product, query, mdpath, via, FLEX.paths.publish);
+		FS.readFile( mdpath, "utf8" , function (err,md) {
+			if (err) 
+				cb( errors.badSkin );
+
+			else
+			siteContext(req, (ctx) => {
+
+				var jade = `extends base
+append base_body
+	img(src="/shares/images/${via.host}.jpg", width="100%", height="5%")
+	:markdown
+\t\t`
+					+ md.replace(/\n/g,"\n\t\t");
+
+				Log(jade);
+
+				cb( (generator = JADE.compile(jade, ctx) )
+					? generator(ctx)
+							.replace(/<!---spoof=(.*)?--->/g, function (str, spoof) {
+								Log("spoof>>>>>>>>>>>>>>", spoofs[spoof]);
+								return spoofs[spoof] || "????";
+							})
+
+					: errors.badSkin 
+				);	
+			});
+		});
+	}
+	
 	var 
 		filename = req.table + "." + req.type,
 		group = req.group,
@@ -3659,6 +3723,10 @@ function sharePlugin(req,res) {
 								res( new Error(`${product} cannot be licensed to ${endService}`) );
 						});
 
+					else
+					if ( query.via )
+						spoof( product, query.via, res );
+				
 					else
 						res( new Error(`specify endservice=URL to establish the service that will integrate ${product}`) );
 
