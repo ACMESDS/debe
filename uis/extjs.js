@@ -700,8 +700,8 @@ function DS(anchor) {
 * @property {String}
 * name supplied for this DS
 */
-		hover = this.hover = anchor.getAttribute("hover"),  
-		name 	= this.name = anchor.getAttribute("class"),  
+		hover = this.hover = anchor.getAttribute("hover") || "",  
+		name 	= this.name = anchor.getAttribute("class") || "",  
 /**
  * @property {String}
  * path serving JSON 
@@ -744,7 +744,8 @@ function DS(anchor) {
 		sync 	= anchor.getAttribute("sync"),
 		refresh = this.refresh = parseInt(anchor.getAttribute("refresh") || "0"),
 		dims = this.dims = (anchor.getAttribute("dims") || "200,200").split(","),
-		
+		readonly =  (name.charAt(0) == "_"),
+
 /**
  * @property {Array}
  * cols Data fields
@@ -934,7 +935,7 @@ function DS(anchor) {
 				fChar = fType.charAt(0),
 				fLabel = (fQual.indexOf("short")>=0) ? fKey.split("_").pop() : fKey,
 				fHide = (fQual.indexOf("hide")>=0), //fChar >= "A" && fChar <= "Z",
-				fOff = (fQual.indexOf("off")>=0) ? true : false, //false,
+				fOff = readonly || ((fQual.indexOf("off")>=0) ? true : false), //false,
 				fLock = (fQual.indexOf("lock")>=0) ? true : false,  //pivots ? true : sorts ? !(fKey in sorts) : false,
 				fTipTitle = fKey; //fTips[0] || fKey; //fTips.pop() || fKey;
 
