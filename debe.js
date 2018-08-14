@@ -1098,6 +1098,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		// skins
 		//down: renderMarkdown,
+		md: renderMD,
 		view: renderSkin,
 		calc: renderSkin,
 		run: renderSkin,
@@ -2180,6 +2181,24 @@ function sendDoc(req, res) {
 	}
 }
 
+function renderMD(req,res) {
+
+	var 
+		sql = req.sql,
+		query = req.query,
+		mdpath = `./public/md/${req.table}.x${req.type}`,
+		errors = DEBE.errors;
+
+	//Log(mdpath);
+	FS.readFile( mdpath, "utf8" , function (err,xmd) {
+		if (err) 
+			res( errors.badSkin );
+
+		else
+			xmd.Xfetch( res );
+	});
+}
+
 function renderSkin(req,res) {
 /**
 @method renderSkin
@@ -2284,7 +2303,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 								doc = escape(field.Comment).replace(/\./g, "$dot"),
 								qual = "short";
 							
-							if ( key.indexOf("Save_") == 0) qual += "hideoff" ;
+							if ( key.indexOf("Save") == 0) qual += "hideoff" ;
 							
 							else
 							if ( key.charAt(0) == "_" ) qual += "off";
@@ -3214,8 +3233,103 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 			name = this.parsePath(query);
 		
 		return sql.toQuery( name ? Copy({Name: name}, query) : query );
-	}
+	},
 	
+	function Xparms(product, cb) {		
+		cb( this.replace(/<!---parms ([^>]*)?--->/g, (str, parms) => {
+					
+			var 
+				inputs = [],
+				keys = [];
+
+			parms.split("&").forEach( (parm) => {
+				parm.replace(/(.*)?=(.*)?/, (str, key, val) => {
+					inputs.push( `${key}: <input id="parms.${key}" type="text" value="${val}" autofocus >` );
+					keys.push( '"' + key + '"' );
+					return "";
+				});
+				return "";
+			});
+
+			return `
+<script>
+	String.prototype.tag = ${"".tag}
+	function submitForm() {
+		var parms = {};
+		[${keys}].forEach( (key) => parms[key] = document.getElementById("parms."+key).value );
+
+		window.open( "/${product}".tag("?", parms) );
+	}
+</script>
+<form onsubmit="submitForm()">
+	${inputs.join("")}
+	<button id="parms.submit" type="submit" value="submit">submit</button>
+</form>
+` ;
+		}) );
+	},
+	
+	function Xfetch( cb ) {
+		var 
+			fetcher = DEBE.fetch.fetcher,
+			fetches = [],
+			fetched = 0,
+			results = this.replace(/<!---fetch ([^>]*)?--->/g, (str, url) => {
+				//Log("fetch scan", fetched);
+
+				fetcher( url, null, null, ( fetch ) => {
+					fetches.push( fetch );
+
+					//Log("fetch", fetches.length, fetched);
+
+					if ( fetches.length == fetched ) {
+						fetches.forEach( (sub, idx) => {
+							results = results.replace("@fetch"+idx, sub);
+						});
+						cb( results );
+					}
+				});
+				return "@fetch"+(fetched++);
+			});
+		
+		//Log("#fetched found=", fetched, results);
+		if (!fetched) cb(results);
+	},
+	
+	function Xjade( req, mdpath, product, cb ) {
+
+		var 
+			url = this+"",
+			via = URL.parse(url),
+			errors = DEBE.errors;
+
+		//Log(product, mdpath, via);
+		FS.readFile( mdpath, "utf8" , function (err,md) {
+			if (err) 
+				cb( errors.badSkin );
+
+			else
+			siteContext(req, (ctx) => {
+
+				var 
+					jade = `extends base
+append base_parms
+	- opens = false
+append base_body
+	img(src="/shares/images/${via.host}.jpg", width="100%", height="15%")
+	:markdown
+\t\t`
+					+ md.replace(/\n/g,"\n\t\t");
+				
+				if ( generator = JADE.compile(jade, ctx) )
+					generator(ctx).Xparms(product, cb )
+
+				else
+					cb( errors.badSkin );
+			});
+		});
+	}
+											
 ].extend(String);
 	
 [  // array prototypes
@@ -3604,80 +3718,22 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 
 function sharePlugin(req,res) {
 	
-	function spoof( product, via, cb ) {
-
-		var 
-			via = URL.parse(via),
-			paths = DEBE.paths,
-			errors = DEBE.errors,
-			mdpath = `./public/md/${product}.md`,
-			spoofs = {
-				endservice: `
-	<script>
-		function spoof() {
-			var 
-				input = document.getElementById("spoof.input").value;
-				goto = "/${product}?endservice=" + input;
-
-			alert(input,goto);
-			if (input) window.open( goto );
-		}
-	</script>
-	<form onsubmit="spoof()">
-		<input id="spoof.input" type="text" value="https://myserivce.ic.gov:/endpoint">
-		<button id="spoof.submit" type="submit" value="submit">Go</button>
-	</form>
-	`
-			};
-
-		//Log(product, query, mdpath, via, FLEX.paths.publish);
-		FS.readFile( mdpath, "utf8" , function (err,md) {
-			if (err) 
-				cb( errors.badSkin );
-
-			else
-			siteContext(req, (ctx) => {
-
-				var jade = `extends base
-append base_body
-	img(src="/shares/images/${via.host}.jpg", width="100%", height="5%")
-	:markdown
-\t\t`
-					+ md.replace(/\n/g,"\n\t\t");
-
-				Log(jade);
-
-				cb( (generator = JADE.compile(jade, ctx) )
-					? generator(ctx)
-							.replace(/<!---spoof=(.*)?--->/g, function (str, spoof) {
-								Log("spoof>>>>>>>>>>>>>>", spoofs[spoof]);
-								return spoofs[spoof] || "????";
-							})
-
-					: errors.badSkin 
-				);	
-			});
-		});
-	}
-	
 	var 
-		filename = req.table + "." + req.type,
-		group = req.group,
-		type = req.type,
-		product = req.table+"."+req.type,
+		product = req.table + "." + req.type,
 		query = req.query,
+		paths = FLEX.paths.publish,
+		mdpath = paths[req.type] + "/" + req.table + ".md",		
 		endService = query.endservice,
-		endUser = req.client,
 		sql = req.sql;
 
-	sql.forFirst( type, "SELECT Code FROM ??.engines WHERE least(?)", [group, {
+	sql.forFirst( req.type, "SELECT Code FROM ??.engines WHERE least(?)", [ req.group, {
 		Name: req.table,
 		Type: req.type
 	}], function (eng) {
 		if (eng) 
 			sql.query(
 				"SELECT * FROM app.releases WHERE least(?,1) ORDER BY Published DESC LIMIT 1", {
-					EndUser: endUser,
+					EndUser: req.client,
 					EndServiceID: FLEX.serviceID( endService ),
 					Product: product
 			}, (err, pubs) => {
@@ -3710,7 +3766,7 @@ append base_body
 				if ( FLEX.licenseOnDownload )
 					if ( endService )
 						FLEX.licenseCode( sql, eng.Code, {
-							EndUser: endUser,
+							EndUser: req.client,
 							EndService: endService,
 							Published: new Date(),
 							Product: product,
@@ -3724,8 +3780,11 @@ append base_body
 						});
 
 					else
-					if ( query.via )
-						spoof( product, query.via, res );
+					if ( via = query.via )
+						via.Xjade( req, mdpath, product, (html) => {
+							req.type = "html";
+							res(html);
+						});
 				
 					else
 						res( new Error(`specify endservice=URL to establish the service that will integrate ${product}`) );
