@@ -527,13 +527,23 @@ append site_body
 						
 						to : "py" || "js" || "m", // convert supplied engine code to another language
 						
-						wrap: function (ctx, res, step) { // engine context wrapper
-							step(ctx, function (ctx) {
-								res(ctx);
-							});
-						},
+						wrap: 
+							function (ctx, res, step) { // engine context wrapper
+								step(ctx, function (ctx) {
+									res(ctx);
+								});
+							} 
+							
+							|| 
+							
+							function get( read, shell ) { return str; },
  
-						tou || readme: " ... ", 	 // markdown with <!---opt args---> extensions
+						tou || readme: 		// markdown with <!---opt args---> extensions						
+							" ... " 
+							
+							||
+							
+							function get( read, shell ) { return str; },
 						
 						state || context || ctx : {   // initial engine context
 							key: value, ....
@@ -566,7 +576,7 @@ append site_body
 							
 							|| 
 							
-							require("fs").readFileSync("...")		// read code from file
+							function get( read, shell ) { return str; }
 					}
 
 				PLEASE NOTE: smop does properly translate matlab [ [a,b,...]; [c,d, ...]; ...] matricies.  Until this bug is 

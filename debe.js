@@ -1096,8 +1096,17 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		xjpg: sendDoc,
 		xgif: sendDoc,
 		
+		// plugin attributes
+		tou: sharePlugin,
+		state: sharePlugin,
+		js: sharePlugin,
+		py: sharePlugin,
+		m: sharePlugin,
+		me: sharePlugin,
+		jade: sharePlugin,
+		get: sharePlugin,
+		
 		// skins
-		md: renderMD,
 		view: renderSkin,
 		calc: renderSkin,
 		run: renderSkin,
@@ -1112,13 +1121,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		// plugins
 		exe: exePlugin,
 		add: extendPlugin,
-		sub: retractPlugin,
-		js: sharePlugin,
-		py: sharePlugin,
-		m: sharePlugin,
-		me: sharePlugin,
-		jade: sharePlugin,
-		get: probePlugin
+		sub: retractPlugin
+		//get: probePlugin
 		
 	},
 
@@ -2180,24 +2184,27 @@ function sendDoc(req, res) {
 	}
 }
 
-function renderMD(req,res) {
-
+/*
+function renderAttr(req,res) {
 	var 
 		sql = req.sql,
 		query = req.query,
-		paths = FLEX.paths.publish,
-		mdpath = paths[req.type] + req.name + ".xmd",
+		//paths = FLEX.paths.publish,
+		//mdpath = paths[req.type] + req.name + ".xmd",
 		errors = DEBE.errors;
 
 	//Log(mdpath);
+	sql.query("SELECT * FROM app.engines WHERE least(?,1) LIMIT 1",  { name: req.table }, (err, engs) => {
+	});
+			
 	FS.readFile( mdpath, "utf8" , function (err,xmd) {
 		if (err) 
 			res( errors.badSkin );
 
 		else
 			xmd.Xfetch( res );
-	});
-}
+	}); 
+}  */
 
 function renderSkin(req,res) {
 /**
@@ -3296,37 +3303,30 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		if (!fetched) cb(results);
 	},
 	
-	function Xjade( req, mdpath, product, cb ) {
+	function Xjade( req, proxy, product, cb ) {
 
 		var 
-			url = this+"",
-			via = URL.parse(url),
+			md = this+"",
+			via = URL.parse(proxy),
 			errors = DEBE.errors;
 
-		//Log(product, mdpath, via);
-		FS.readFile( mdpath, "utf8" , function (err,md) {
-			if (err) 
-				cb( errors.badSkin );
+		Log(product, via);
+		siteContext(req, (ctx) => {
 
-			else
-			siteContext(req, (ctx) => {
-
-				var 
-					jade = `extends base
+			var 
+				jade = `extends base
 append base_parms
 	- opens = false
 append base_body
 	img(src="/shares/images/${via.host}.jpg", width="100%", height="15%")
 	:markdown
-\t\t`
-					+ md.replace(/\n/g,"\n\t\t");
-				
-				if ( generator = JADE.compile(jade, ctx) )
-					generator(ctx).Xparms(product, cb )
+		`  + md.replace(/\n/g,"\n\t\t");
 
-				else
-					cb( errors.badSkin );
-			});
+			if ( generator = JADE.compile(jade, ctx) )
+				generator(ctx).Xparms(product, cb )
+
+			else
+				cb( errors.badSkin );
 		});
 	}
 											
@@ -3721,84 +3721,100 @@ function sharePlugin(req,res) {
 	var 
 		product = req.table + "." + req.type,
 		query = req.query,
-		paths = FLEX.paths.publish,
-		mdpath = paths[req.type] + req.table + ".md",		
+		//paths = FLEX.paths.publish,
+		//mdpath = paths[req.type] + req.table + ".md",		
 		endService = query.endservice,
 		sql = req.sql;
 
-	sql.forFirst( req.type, "SELECT Code FROM ??.engines WHERE least(?)", [ req.group, {
-		Name: req.table,
-		Type: req.type
-	}], function (eng) {
-		if (eng) 
-			sql.query(
-				"SELECT * FROM app.releases WHERE least(?,1) ORDER BY Published DESC LIMIT 1", {
-					EndUser: req.client,
-					EndServiceID: FLEX.serviceID( endService ),
-					Product: product
-			}, (err, pubs) => {
-
-				function addTerms(code, pub, cb) {
-					var 
-						prefix = {
-							js: "// ",
-							py: "# ",
-							matlab: "% ",
-							jade: "// "
-						},
-						pre = "\n"+(prefix[req.type] || ">>");
-
-					FS.readFile("./public/terms.txt", "utf8", (err, terms) => {
-						cb( (err ? "" : pre + terms.parseJS({
-							product: pub.Product,
-							service: pub.EndService,
-							published: pub.Published,
-							license: pub.License,
-							client: pub.EndUser
-						}).replace(/\n/g,pre) ) + "\n" + code);
-					});
-				}
-
-				if ( pub = pubs[0] )
-					addTerms( eng.Code, pub, res );
-
-				else
-				if ( FLEX.licenseOnDownload )
-					if ( endService )
-						FLEX.licenseCode( sql, eng.Code, {
+	sql.query( "SELECT * FROM ??.engines WHERE least(?,1) LIMIT 1", [ req.group, { Name: req.table } ], (err, engs) => {
+		if ( eng = engs[0] ) 
+			switch ( req.type ) {
+				case "tou":
+					eng.ToU.Xfetch( res );
+					break;
+		
+				case "js":
+				case "py":
+				case "me":
+				case "m":
+					sql.query(
+						"SELECT * FROM app.releases WHERE least(?,1) ORDER BY Published DESC LIMIT 1", {
 							EndUser: req.client,
-							EndService: endService,
-							Published: new Date(),
-							Product: product,
-							Path: req.url
-						}, (pub) => {
-							if (pub) 
-								addTerms( eng.Code, pub, res );
+							EndServiceID: FLEX.serviceID( endService ),
+							Product: product
+					}, (err, pubs) => {
+
+						function addTerms(code, pub, cb) {
+							var 
+								prefix = {
+									js: "// ",
+									py: "# ",
+									matlab: "% ",
+									jade: "// "
+								},
+								pre = "\n"+(prefix[req.type] || ">>");
+
+							FS.readFile("./public/terms.txt", "utf8", (err, terms) => {
+								cb( (err ? "" : pre + terms.parseJS({
+									product: pub.Product,
+									service: pub.EndService,
+									published: pub.Published,
+									license: pub.License,
+									client: pub.EndUser
+								}).replace(/\n/g,pre) ) + "\n" + code);
+							});
+						}
+
+						if ( pub = pubs[0] )
+							addTerms( eng.Code, pub, res );
+
+						else
+						if ( FLEX.licenseOnDownload )
+							if ( endService )
+								FLEX.licenseCode( sql, eng.Code, {
+									EndUser: req.client,
+									EndService: endService,
+									Published: new Date(),
+									Product: product,
+									Path: req.url
+								}, (pub) => {
+									if (pub) 
+										addTerms( eng.Code, pub, res );
+
+									else
+										res( new Error(`${product} cannot be licensed to ${endService}`) );
+								});
 
 							else
-								res( new Error(`${product} cannot be licensed to ${endService}`) );
-						});
+							if ( proxy = query.proxy )
+								end.ToU.Xjade( req, proxy, product, (html) => {
+									req.type = "html";
+									res(html);
+								});
 
-					else
-					if ( via = query.via )
-						via.Xjade( req, mdpath, product, (html) => {
-							req.type = "html";
-							res(html);
-						});
-				
-					else
-						res( new Error(`specify endservice=URL to establish the service that will integrate ${product}`) );
+							else
+								res( new Error(`specify endservice=URL to establish the service that will integrate ${product}`) );
 
-				else
-					res( eng.Code );
-		});
+						else
+							res( eng.Code );
+					});
+					break;
+					
+				case "jade":
+					res( (eng.Type == "jade") ? eng.Code : new Error("invalid engine attribute") );
+					break;
 
+				default:
+					res( eng[req.type] || new Error( "undefined engine attribute" ) );
+			}
+		
 		else
-			res( new Error(`plugin ${product} does not exist`) );
+			res( new Error( "no such engine" ) );
 	});
 
 }
 
+/*
 function probePlugin(req,res) {
 		
 	var 
@@ -3817,7 +3833,7 @@ function probePlugin(req,res) {
 
 	});
 	
-}
+} */
 
 switch (process.argv[2]) { //< unit tests
 	case "D1": 
