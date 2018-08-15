@@ -3730,7 +3730,11 @@ function sharePlugin(req,res) {
 		if ( eng = engs[0] ) 
 			switch ( req.type ) {
 				case "tou":
-					eng.ToU.Xfetch( res );
+					if ( eng.ToU )
+						eng.ToU.Xfetch( res );
+					else
+						res( "ToU undefined" );
+					
 					break;
 		
 				case "js":
