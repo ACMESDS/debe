@@ -550,8 +550,17 @@ append site_body
 							
 							function get( read, shell ) { return str; },
 						
-						tousubs: { 		// key-value substitutions for the you
-							key: value, ...
+						subs: { 		// key-mardown substitutions for the supplied tou
+							NAME: ""
+							by: "",
+							poc: function(req) { return ""; },
+							compreqts: "",
+							summary: "",
+							name: "",
+							type: "",
+							product: "",
+							ver: "",
+							now: ""
 						},
 						
 						state || context || ctx : {   // initial engine context
