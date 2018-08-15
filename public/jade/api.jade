@@ -527,6 +527,18 @@ append site_body
 						
 						to : "py" || "js" || "m", // convert supplied engine code to another language
 						
+						wrap: function (ctx, res, step) { // engine context wrapper
+							step(ctx, function (ctx) {
+								res(ctx);
+							});
+						},
+ 
+						tou || readme: " ... ", 	 // markdown with <!---opt args---> extensions
+						
+						state || context || ctx : {   // initial engine context
+							key: value, ....
+						},
+						
 						code || engine:  
 							function NAME(ctx,res) {   // js engine
 								ctx.Save = [ ... ]; 

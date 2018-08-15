@@ -1097,7 +1097,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		xgif: sendDoc,
 		
 		// skins
-		//down: renderMarkdown,
 		md: renderMD,
 		view: renderSkin,
 		calc: renderSkin,
@@ -2186,7 +2185,8 @@ function renderMD(req,res) {
 	var 
 		sql = req.sql,
 		query = req.query,
-		mdpath = `./public/md/${req.table}.x${req.type}`,
+		paths = FLEX.paths.publish,
+		mdpath = paths[req.type] + req.name + ".xmd",
 		errors = DEBE.errors;
 
 	//Log(mdpath);
@@ -3722,7 +3722,7 @@ function sharePlugin(req,res) {
 		product = req.table + "." + req.type,
 		query = req.query,
 		paths = FLEX.paths.publish,
-		mdpath = paths[req.type] + "/" + req.table + ".md",		
+		mdpath = paths[req.type] + req.table + ".md",		
 		endService = query.endservice,
 		sql = req.sql;
 
