@@ -1,11 +1,21 @@
 module.exports = {
-	usecase: {
+	keys: {
 		Save: "json",
 		M: "int(11)",
 		Pipe: "json",
 		Share: "boolean",
 		Description: "mediumtext"
 	},
+	
+	tou: `
+# Agreement
+
+Go to <!---fetch http://localhost:8080/pubsites.txt?product=seppfm.py&via=https://sc.appdev.proj.coe.ic.gov:/analyticmodelling/sepp-fm---><!---parms endservice=https://myserivce.ic.gov/endpoint&xyz=123--->
+and that completes the [deal](gotohere).
+
+# Install and Usage
+
+Blah blah`,
 	
 	engine: function jsdemo1(ctx, res) {
 		Log("jsdemo1 ctx", ctx.Pipe);

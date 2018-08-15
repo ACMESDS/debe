@@ -527,8 +527,8 @@ append site_body
 						
 						to : "py" || "js" || "m", // convert supplied engine code to another language
 						
-						wrap: 
-							function (ctx, res, step) { // engine context wrapper
+						wrap: 					// engine context wrapper
+							function (ctx, res, step) { 
 								step(ctx, function (ctx) {
 									res(ctx);
 								});
@@ -538,12 +538,21 @@ append site_body
 							
 							function get( read, shell ) { return str; },
  
-						tou || readme: 		// markdown with <!---opt args---> extensions						
+						tou || readme: 		
+								// standard markdown with following tag extensions:
+								//		<!---fetch url--->
+								//  	<!---parms key=def&key=def&... ---> 
+								// 		${key}
+								
 							" ... " 
 							
 							||
 							
 							function get( read, shell ) { return str; },
+						
+						tousubs: { 		// key-value substitutions for the you
+							key: value, ...
+						},
 						
 						state || context || ctx : {   // initial engine context
 							key: value, ....

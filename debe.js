@@ -3310,7 +3310,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 			via = URL.parse(proxy),
 			errors = DEBE.errors;
 
-		Log(product, via);
+		//Log(product, via);
 		siteContext(req, (ctx) => {
 
 			var 
@@ -3758,7 +3758,7 @@ function sharePlugin(req,res) {
 								},
 								pre = "\n"+(prefix[req.type] || ">>");
 
-							FS.readFile("./public/terms.txt", "utf8", (err, terms) => {
+							FS.readFile("./public/tou.txt", "utf8", (err, terms) => {
 								cb( (err ? "" : pre + terms.parseJS({
 									product: pub.Product,
 									service: pub.EndService,
@@ -3791,7 +3791,7 @@ function sharePlugin(req,res) {
 
 							else
 							if ( proxy = query.proxy )
-								end.ToU.Xjade( req, proxy, product, (html) => {
+								(eng.ToU||"").Xjade( req, proxy, product, (html) => {
 									req.type = "html";
 									res(html);
 								});
