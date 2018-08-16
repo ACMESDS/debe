@@ -51,9 +51,6 @@ module.exports = {
 		PoP_advanceDays: "float"
 	},
 	
-	_mods: {
-	},
-	
 	docs: {
 		Enabled: "Scanned by file watch-dogs when enabled.",
 		Name: "Name of data file used by plugin pipes.",

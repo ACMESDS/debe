@@ -109,12 +109,14 @@ var
 			cb(evs);
 		}
 		
+		var fetcher = DEBE.fetch.fetcher;
+		
 		try {
 			if (url = opts.url)
 				switch (url.constructor) {
 					case String:
-						DEBE.fetch.fetcher( url, query, opts.put||null, function (data) {
-							if (data) 
+						fetcher( url, query, opts.put||null, function (data) {
+							if ( data = data.parseJSON() ) 
 								flowEvents(data, cb);
 						});
 						break;
@@ -3279,6 +3281,17 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 	function Xfetch( cb ) {
 		var 
 			fetcher = DEBE.fetch.fetcher,
+			fetch = function ( url, cb ) {
+				fetcher( url, null, null, cb );
+			};
+		
+		this.serialize( fetch, /<!---fetch ([^>]*)?--->/g, "@fetch", (rtn,fails) => cb(rtn) );
+	},
+
+	/*
+	function Xfetch( cb ) {
+		var 
+			fetcher = DEBE.fetch.fetcher,
 			fetches = [],
 			fetched = 0,
 			results = this.replace(/<!---fetch ([^>]*)?--->/g, (str, url) => {
@@ -3301,7 +3314,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		
 		//Log("#fetched found=", fetched, results);
 		if (!fetched) cb(results);
-	},
+	},*/
 	
 	function Xjade( req, proxy, product, cb ) {
 
