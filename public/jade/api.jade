@@ -19,36 +19,48 @@ append site_body
 				PUT			/NODE ?? NODE ...
 				DELETE 	/NODE ?? NODE ...
 
-			to access datasets, engines, files and command NODEs:
+			to access dataset, engine, file and command NODEs:
 
 				DATASET.TYPE ? QUERY ? QUERY ...
 				ENGINE.TYPE ? QUERY ? QUERY ...
 				FILEPATH.TYPE ? QUERY ? QUERY ...
 				COMMAND.TYPE ? QUERY ? QUERY ...
 
-			By default, *#{title}* provides TYPEs to format data:
+			where the TYPE either formats data:
 
 				db | xml | csv | txt | tab | tree | flat | kml | encap | html | json | geojson
 
-			to render a [skin](/skinguide.view):
+			renders a [skin](/skinguide.view):
 
 				view | pivot | site | spivot | brief | gridbrief | pivbrief | run | plugin | runbrief
 
-			to execute an [engine](/api.view), return its ingested events, or its engine code:
+			executes, extend, or retract a [plugin's engine](/api.view):
 
-				exe | USECASE | js | py | ...
+				exe | add | sub
 
-			to retrieve dataset attributes:
+			returns all events ingested by a plugin:
+
+				USECASE | js | py | ...
+
+			retrieve an engine attribute:
+
+				tou | TOU | js | py | m | me | jade | ...
+
+			retrieve dataset attributes:
 
 				delta | nav | stat
 
-			or to generate an office file:
+			or generate an office file:
 
 				pdf | xdoc | xppt | xxls ...
 
-			By default, *#{title}* provides several COMMAND endpoints:
+			Default COMMAND endpoints include:
 
 				help | alert | ping | ingest | config | riddle | task
+				
+			to provide a brief synopsis of the *#{title}* interface, send a message to all *#{title}* users,
+			test your *#{title}* connection, ..., return *#{title}*'s current configuration, initiate and resolve
+			a *#{title}* connection riddle, or start a task shard with *#{title}*.
 
 	#accordion.Views
 

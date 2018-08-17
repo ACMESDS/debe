@@ -589,7 +589,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 
 	"reqFlags." : {  //< endpoint request flags
 		
-		traps: {  // TRAP=name flags can modify the request flags
+		"traps.": {  // TRAP=name flags can modify the request flags
 			save: function (req) {  //< _save=name retains query in named engine
 				var 
 					sql = req.sql,
@@ -623,7 +623,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 		},
 		
 		blog: function (recs,req,res) {  //< renders dataset records
-			recs.blogify( req.sql, req.client, req.flags.blog.split(","), req.table, res );
+			recs.blogify( req, req.flags.blog.split(","), req.table, res );
 		}
 		
 	},
@@ -1100,6 +1100,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		// plugin attributes
 		tou: sharePlugin,
+		TOU: sharePlugin,
 		state: sharePlugin,
 		js: sharePlugin,
 		py: sharePlugin,
@@ -1124,7 +1125,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		exe: exePlugin,
 		add: extendPlugin,
 		sub: retractPlugin
-		//get: probePlugin
 		
 	},
 
@@ -2269,7 +2269,6 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		@method render
 		Render Jade file at path this to res( err || html ) in a new context created for this request.  
 		**/
-			//var file = this+"";  // js get confused so force string
 			siteContext( req, function (ctx) {
 				try {
 					res( JADE.renderFile( file, ctx ) );  
@@ -2288,8 +2287,6 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 				sql = req.sql,
 				query = Copy({
 					mode: req.parts[1],
-					//search: req.search,
-					//cols: [],
 					page: query.page,
 					dims: query.dims || "100%,100%",
 					ds: req.table
@@ -2321,8 +2318,6 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 							cols.push( key + "." + type + "." + doc + "." + qual );
 						}
 					});
-					//Log("plugin cols", cols, cols.groupify() );
-					//Log(cols);
 					break;
 					
 				case String:
@@ -2378,14 +2373,9 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		@method render
 		Render Jade string this to res( err || html ) in a new context created for this request. 
 		**/
-			//var  jade = this+"";
-
 			siteContext( req, function (ctx) {
 				try {
-					if ( generator = JADE.compile(jade, ctx) )
-						res( generator(ctx) );
-					else
-						res( errors.badSkin );
+					res( JADE.compile(jade, ctx) (ctx) );
 				}
 				catch (err) {
 					return res( err );
@@ -2404,18 +2394,8 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 					renderJade( eng.Code || "", res );
 				});
 
-			else 	// try to get engine from sql table or from disk
-			/*
-			if ( route = DEBE.byActionTable.select[req.table] ) // try virtual table
-				route(req, function (recs) {
-					if ( recs )
-						renderPlugin( recs[0] || {} );
-					else
-						res( errors.badSkin );
-				});
-
-			else  */
-			if ( route = DEBE.byActionTable.select[req.table] || DEBE.byAction.select ) // may have an engine interface
+			else 	// try to get engine from sql table 
+			if ( route = DEBE.byActionTable.select[req.table] || DEBE.byAction.select )
 				route(req, function (recs) { 
 					//Log({eng:recs, ds:req.table});
 					if (recs)
@@ -2994,72 +2974,28 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 // Prototypes
 	
 [  // string prototypes
-	/*function hyper(ref) { 
-		return [this].linkify(ref);
-	},  */
-	
-	function renderBlog(rec, ds, cb) { 
-	/*
-	Renders tags on this string of the form:
-			[ post ] ( SKIN.view ? w=WIDTH & h=HEIGHT & x=KEY$EXPR & y=KEY$EXPR & src=DS & id=VALUE )  
-			[ image ] ( PATH.jpg ? w=WIDTH & h=HEIGHT )  
-			[ TEXT ]( LINK )  
-			[ FONT ]( TEXT )  
-			!$ inline TeX $  ||  $$ break TeX $$ || a$ AsciiMath $ || m$ MathML $  
-			#{ KEY } || #{ KEY }( SHORTCUT ) || !{ EXPR }  || ${ KEY as TeX matrix  }  
-			#TAG
-		
-	using suppplied record rec to resolve #{key} tags and a default ds = "PATH ? QUERY" for
-	[TEXT](ds) tags.   The rendered html results is provided to the callback cb(html).
-	*/	
-		function renderJAX(jaxList,rtn,cb) {  
-		// render !jaxN tokens in this string to .jax and .fmt on jaxList[N]
-
-			var 
-				rendered = 0, renders = jaxList.length;
-
-			//Log("jax",renders);
-			jaxList.each( function (n,jax) {  // enumerate all !jaxN tokens
-
-				JAX.typeset({
-					math: jax.jax,
-					format: jax.fmt, //"TeX",  // TeX, inline-TeX, AsciiMath, MathML
-					//html: true,
-					mml: true
-				}, function (d) {
-					rtn = rtn.replace("!jax"+n+".", d.mml);
-
-					//Log("jax", rendered, renders);
-					if ( ++rendered == renders ) cb(rtn);
-				});
-
-			});
-
-			if ( !renders ) cb(rtn);
-		}
-
+	function toQuery(sql, query) {
 		var 
-			jaxList = [], cache = {}, $ = {}, tagList = [];
-
-		renderJAX( jaxList, this.markdown(ds, jaxList, cache, $, tagList, rec), function (html) {
-			cb(html, tagList);
-		}); 
-
+			name = this.parsePath(query);
+		
+		return sql.toQuery( name ? Copy({Name: name}, query) : query );
 	},
 	
-	function markdown(ds, jaxList, cache, $, tagList, rec) {
+	// string serializers callback cb(html) with tokens replaced
+	
+	function Xblog(req, ds, cache, $, rec, cb) {
 	/*
 	Replaces tags on this string of the form:
+		
 		[ post ] ( SKIN.view ? w=WIDTH & h=HEIGHT & x=KEY$EXPR & y=KEY$EXPR & src=DS & id=VALUE )  
 		[ image ] ( PATH.jpg ? w=WIDTH & h=HEIGHT )  
 		[ TEXT ]( LINK )  
 		[ FONT ]( TEXT )  
-		!$ inline TeX $  ||  $$ break TeX $$ || a$ AsciiMath $ || m$ MathML $  
+		$$ inline TeX $$  ||  $ break TeX $ || a$ AsciiMath $a || m$ MathML $m  
 		#{ KEY } || #{ KEY }( SHORTCUT ) || !{ EXPR }  || ^{ KEY as TeX matrix  }  
-		#TAG
+		!!TAG
 		
-	using the supplifed jaxList to store $JAX$ tags, cache and $ hashes to store #{KEY} values,
-	tagList to store #TAG tags, and the record hash to resolve #{key} tags.
+	using the supplifed cache and $ hashes to store #{KEY} values and to resolve #{key} tags.
 	*/
 		
 		function pretty(val, cb) {
@@ -3081,32 +3017,24 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 				return (val == 0) ? "0" : "null";
 		}
 		
-		function inlines(html) {
-			inList.forEach( (inline, n) => {
-				html = html.replace("$in"+n, inline);
-				//Log(n, inline);
-			});
-			return html;
-		}
-		
 		for (var key in rec) try { $[key] = JSON.parse( rec[key] ); } catch (err) {}
 	
-		var inList = [];
-		
-		return inlines( this
+		this.Xsolicit( (html) => html.Xtex( (html) => html.Xtag( req, (html) =>
+			html
 			// inline code escapes
 			.replace(/<br>/g,"\n")
-			.replace(/(.*?):\n\n((.|\n)*?)\n\n/g, function (str, intro, code) {
+			.replace(/(.*?):\n\n((.|\n)*?)\n\n/g, function (str, intro, code) {  // code embeds
 				//Log(str,intro,code);
-				inList.push( code.tag("code").tag("pre") );
-				return intro + ":$in" + (inList.length-1);
+				//inList.push( code.tag("code").tag("pre") );
+				//return intro + ":$in" + (inList.length-1);
+				return "";
 			})
 
 			// record substitutions
-			.replace(/\$\{(.*?)\}/g, function (str,key) {  // ${ TeX matrix key } markdown
+			.replace(/\$\{(.*?)\}/g, function (str,key) {  // ${ TeX matrix key } 
 				function texify(recs) {
 					var tex = [];
-					
+
 					if (recs && recs.constructor == Array) 
 						recs.forEach( function (rec) {
 							if (rec.forEach) {
@@ -3118,7 +3046,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 							else
 								tex.push( rec.toFixed ? rec.toFixed(2) : rec.toUpperCase ? rec : JSON.stringify(rec) );
 						});	
-					
+
 					return  "\\left[ \\begin{matrix} " + tex.join("\\\\") + " \\end{matrix} \\right]";
 				}
 
@@ -3130,7 +3058,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 					return cache[key] = texify( val || rec[key] );
 				}							
 			})
-			.replace(/\#\{(.*?)\}\((.*?)\)/g, function (str,key,short) {  // #{ key }( short ) markdown
+			.replace(/\#\{(.*?)\}\((.*?)\)/g, function (str,key,short) {  // #{ KEY }( SHORTCUT ) 
 				if (  key in cache )
 					return cache[key];
 
@@ -3139,7 +3067,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 					return cache[key] = cache[short] = pretty(val || rec[key]);
 				}							
 			})
-			.replace(/\#\{(.*?)\}/g, function (str,key) {  // #{ key } markdown
+			.replace(/\#\{(.*?)\}/g, function (str,key) {  // #{ KEY } 
 				//Log(key,cache);
 				if (  key in cache )
 					return cache[key];
@@ -3149,7 +3077,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 					return cache[key] = pretty( val || rec[key] );
 				}
 			})
-			.replace(/\=\{(.*?)\}/g, function (str,key) {  // ={ key } markdown
+			.replace(/\=\{(.*?)\}/g, function (str,key) {  // ={ KEY } 
 				//Log(key,cache);
 				if (  key in cache )
 					return cache[key];
@@ -3164,7 +3092,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 					});
 				}
 			})
-			.replace(/\!{(.*?)\}/g, function (str,expr) { // !{ js expression } markdown
+			.replace(/\!{(.*?)\}/g, function (str,expr) { // !{ JS } 
 				function Eval(expr) {
 					try {
 						return eval(expr);
@@ -3176,26 +3104,8 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 				return Eval(expr);
 			})
 
-			// mathjax equations
-			.replace(/\$\$(.*?)\$\$/g, function (str,jax) {  //  $$ standalone TeX $$ markdown
-				jaxList.push({ jax: jax, fmt:"TeX"});
-				return "!jax"+(jaxList.length-1)+".";
-			})
-			.replace(/a\$(.*?)\$/g, function (str,jax) {  // a$ ascii math $ markdown
-				jaxList.push({ jax: jax, fmt:"asciiMatch"});
-				return "!jax"+(jaxList.length-1)+".";
-			})
-			.replace(/m\$(.*?)\$/g, function (str,jax) {  // m$ math ML $ markdown
-				jaxList.push({ jax: jax, fmt:"MathML"});
-				return "!jax"+(jaxList.length-1)+".";
-			})
-			.replace(/!\$(.*?)\$/g, function (str,jax) {  // !$ inline TeX $ markdown
-				jaxList.push({ jax: jax, fmt:"inline-TeX"});
-				return "!jax"+(jaxList.length-1)+".";
-			})	
-
 			// links, views, and highlighting
-			.replace(/\[([^\[\]]*?)\]\((.*?)\)/g, function (str,link,src) {  // [link](src) markdown
+			.replace(/\[([^\[\]]*?)\]\((.*?)\)/g, function (str,link,src) {  // [LINK](SRC) 
 				var
 					keys = {},
 					dspath = ds.parsePath(keys),
@@ -3204,7 +3114,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 					h = keys.h || 100,
 					opsrc =  "/" + path.tag( "?", Copy({src:dspath}, keys) );
 
-				Log({link: link, keys: keys, opsrc: opsrc, src: src, ds: ds});
+				//Log({link: link, keys: keys, opsrc: opsrc, src: src, ds: ds});
 				switch (link) {
 					case "image":
 					case "img":
@@ -3228,23 +3138,105 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 				var q = (ref.charAt(0) == "'") ? '"' : "'";
 				return `href=${q}javascript:navigator.follow(${ref},BASE.user.client,BASE.user.source)${q}>`;
 			})
-
-			// smart tags
-			.replace(/\#(.*?) /g, function (str,tag) {  // #topic tag
-				tagList.push(tag);
-				return "";
-			}) 
-		);
+			
+			.Xdummy(cb)
+			//.Xtex( cb )
+			//.Xtag( req, cb )
+			//.Xsolicit( cb )
+			//.Xtex( (html) => html.Xtag( req, cb ) )
+		)));
 	},
 	
-	function toQuery(sql, query) {
+	function Xsolicit( cb ) {  // #[URL] solicits response from site URL
 		var 
-			name = this.parsePath(query);
+			key = "@solicit",
+			html = this,
+			fetcher = DEBE.fetch.fetcher,
+			fetchSite = function ( rec, cb ) {
+				Log("sol", rec);
+				fetcher( rec.url, null, null, cb );
+			};
 		
-		return sql.toQuery( name ? Copy({Name: name}, query) : query );
+		html.serialize( fetchSite, /\#\[(.[^\]]*?)\]/g, key, (html, fails) => {  
+			cb(html);
+		}); 		
 	},
 	
-	function Xparms(product, cb) {		
+	function Xdummy(cb) {  // for debugging
+		cb(this);
+	},
+	
+	function Xtag( req, cb ) {  // !!TOPIC smart tags
+		var 
+			key = "@tag",
+			html = this,
+			fetchTag = function ( rec, cb ) {
+				var 
+					secret = "",
+					topic = rec.url,
+					product = topic+".html";
+
+				//Log("tag",rec, product, html.length);
+				
+				FLEX.licenseCode( req.sql, html, {
+					EndUser: req.client,
+					EndService: "",  // leave empty so lincersor wont validate by connecting
+					Published: new Date(),
+					Product: product,
+					Path: "/tag/"+product
+				}, (pub) => {
+					//Log("pub", pub);
+					cb( pub ? "@"+req.client+" " : "@none" );
+				});				
+			};
+		
+		html.serialize( fetchTag, /!!(.*?) /g, key, (html, fails) => { 
+			cb(html);
+		}); 		
+	},
+	
+	function Xtex( cb) {  // $$ MATH $$ and X$ MATH $X replacements
+		var 
+			key = "@tex",
+			html = this,
+			fetchInlineTeX = function ( rec, cb ) {
+				//Log("text",rec);
+				JAX.typeset({
+					math: rec.url,
+					format: "inline-TeX",  // TeX, inline-TeX, AsciiMath, MathML
+					//html: true,
+					mml: true
+				}, (d) => cb( d.mml || "" ) );
+			},
+			fetchTeX = function ( rec, cb ) {
+				//Log("text",rec);
+				JAX.typeset({
+					math: rec.url,
+					format: "TeX",  // TeX, inline-TeX, AsciiMath, MathML
+					//html: true,
+					mml: true
+				}, (d) => cb( d.mml || "" ) );
+			},
+			fetchAsciiTeX = function ( rec, cb ) {
+				//Log("text",rec);
+				JAX.typeset({
+					math: rec.url,
+					format: "AsciiMath",  // TeX, inline-TeX, AsciiMath, MathML
+					//html: true,
+					mml: true
+				}, (d) => cb( d.mml || "" ) );
+			};			
+		
+		html.serialize( fetchInlineTeX, /\$\$([^\$]*?)\$\$/g, key, (html,fails) => {  // $$ inline Tex $$
+		html.serialize( fetchAsciiTeX, /a\$([\$!]*?)\$a/g, key, (html,fails) => 	{ // a$ ascii math $a
+		html.serialize( fetchTeX, /o\$([^\$]*?)\$o/g, key,  (html,fails) =>  { // o$ new line TeX $o
+			cb(html);
+		});
+		});
+		}); 
+	},
+	
+	function Xparms(product, cb) {		// replaces <!---parms KEY=VAL&...---> with script to input KEYs for product
 		cb( this.replace(/<!---parms ([^>]*)?--->/g, (str, parms) => {
 					
 			var 
@@ -3278,37 +3270,24 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		}) );
 	},
 	
-	function Xtex( cb) {
-		var 
-			key = "@tex",
-			fetcher = function ( rec, cb ) {
-				//fet( url, cb );
-			};
-		
-		this.serialize( fetch, /x/g, key, 
-			(rtn,fails) => rtn.serialize( fetch, /x/g, key, 
-				(rtn,fails) => rtn.serialize( fetch, /x/g, key, 
-					(rtn,fails) => cb(rtn)
-				)
-			)
-		);
-	},
-	
-	function Xfetch( cb ) {
+	function Xfetch( cb ) {  // replaces <!---fetch URL---> with site URL results
 		var 
 			fetcher = DEBE.fetch.fetcher,
-			fetch = function ( rec, cb ) {
+			fetchSite = function ( rec, cb ) {
 				fetcher( rec.url, null, null, cb );
 			};
 		
-		this.serialize( fetch, /<!---fetch ([^>]*)?--->/g, "@fetch", (rtn,fails) => cb(rtn) );
+		this.serialize( fetchSite, /<!---fetch ([^>]*)?--->/g, "@fetch", (rtn,fails) => cb(rtn) );
 	},
 
-	function Xjade( req, proxy, product, cb ) {
+	function Xjade( req, proxy, product, cb ) { // returns product's ToU via a proxy site
 
 		var 
 			md = this+"",
-			via = URL.parse(proxy),
+			via = proxy ? URL.parse(proxy) : null,
+			header = via 
+				? `img(src="/shares/images/${via.host}.jpg", width="100%", height="15%")`
+				: "p",
 			errors = DEBE.errors;
 
 		//Log(product, via);
@@ -3319,15 +3298,16 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 append base_parms
 	- opens = false
 append base_body
-	img(src="/shares/images/${via.host}.jpg", width="100%", height="15%")
+	${header}
 	:markdown
 		`  + md.replace(/\n/g,"\n\t\t");
 
-			if ( generator = JADE.compile(jade, ctx) )
-				generator(ctx).Xparms(product, cb )
-
-			else
-				cb( errors.badSkin );
+			try {
+				JADE.compile(jade, ctx) (ctx).Xparms(product, cb );
+			}
+			catch (err) {
+				cb( err );
+			}
 		});
 	}
 											
@@ -3352,7 +3332,7 @@ append base_body
 		return recs;
 	},
 
-	function blogify( sql, client, keys, ds, cb ) {
+	function blogify( req, keys, ds, cb ) {
 	/*
 	@member Array
 	@method blogify
@@ -3360,45 +3340,29 @@ append base_body
 	@param [String] ds Name of dataset being blogged
 	@param [Function] cb callback(recs) blogified version of records
 	*/
+		var 
+			sql = req.sql,
+			recs = this;
 
-		var recs = this, rendered = 0, renders = recs.length;
-
-		keys.each(function (n,key) {
-			recs.each( function (n, rec) {
-				if ( val = rec[key] )
-					if (val.constructor == String)
-						val.renderBlog( rec, ds+"?ID="+rec.ID, function (html, tags) {
-							rec[key] = html;
-							//Log("rec",rendered, renders);
-							if ( ++rendered == renders ) cb(recs);
-							
-							tags.forEach( function (tag,n) {  // tag topics
-								var 
-									secret = "",
-									product = tag+"."+html;
-								
-								FLEX.licenseCode( sql, html, {
-									EndUser: client,
-									EndService: "",
-									Published: new Date(),
-									Product: product,
-									Path: "/tag/"+product
-								}, (pub) => {
-									/*
-									sql.query("INSERT INTO app.tags SET `On`=now(),? ON DUPLICATE KEY UPDATE `On`=now(),Views=Views+1,?", [{
-											Tag: tag,
-											Message: html,
-											To: client
-										}, {Message: html}
-									]); */
-								});
-							});
-						});
+		keys.forEach( (key) => {
+			var
+				fetchBlog = function( rec, cb ) {
+					//Log("blog", key, rec);
+					if ( text = rec[key] + "" )
+						text.Xblog(req, ds+"?ID="+rec.ID, {}, {}, rec, cb);
+				};
+			
+			recs.serialize( fetchBlog, function fb(rec, blog)  {
+				if (rec) 
+					rec[key] = blog;
+				
+				else 
+					cb( recs );
 			});
 		});
-		if ( !renders ) cb(recs);
+		
 	},
-
+		
 	function isEmpty() {
 		return this.length == 0;
 	},
@@ -3561,7 +3525,13 @@ append base_body
 	@member Array
 	@method sample
 	@param {Function} cb callback(rec) returns recordresults to append
-	Returns a sample of each record from this records using a callback to sample
+	Samples a record list:
+		[ {x:"a"}, {x:"b"} ].sample( (rec) => rec.x=="a" )
+	
+	returning a record list:	
+		[ {x:"a"} ]
+		
+	using the callback cb(rec) which returns true/false to retain/drop an item.
 	*/
 		var rtns = [];
 		this.forEach( function (rec) {
@@ -3570,44 +3540,20 @@ append base_body
 		return rtns;
 	},
 
-	/*function joinify(sep, cb) {
-	/ * 
-	@member Array
-	@method joingify
-	@param [String] sep seperator
-	@param [Function] cb callback(rec) returns sample of supplied record
-	* /
-
-		if (cb) {
-			var recs = [];
-			if (cb.constructor == Function) 
-				this.each( function (n,rec) {
-					recs.push( cb(rec) );
-				});
-
-			else 
-				this.each( function (n,rec) {
-					recs.push( rec[cb] );
-				});
-
-			return recs.join(sep);
-		}
-
-		else
-			return this.join(sep);
-	}, */
-
 	function joinify(cb) {
 	/*
+	@member Array
+	@method joinify
+	@param {Function} cb
 	Joins a list 
 		[	a: null,
 			g1: [ b: null, c: null, g2: [ x: null ] ],
 			g3: [ y: null ] ].joinify()
 	
-	into a string
+	returning a string
 		"a,g1(b,c,g2(x)),g3(y)"
 			
-	A callback cb(head,list) can be provided to join the current list with the current head.
+	where an optional callback cb(head,list) joins the current list with the current head.
 	*/
 
 		var 
@@ -3635,10 +3581,13 @@ append base_body
 
 	function splitify(dot) {
 	/*
+	@member Array
+	@method splitify
+	@param {String} dot
 	Splits a list 
 		["a", "g1.b", "g1.c", "g1.g2.x", "g3.y"].splitify( "." )
 		
-	into a list
+	returning a list
 		 [	a: null,
 			g1: [ b: null, c: null, g2: [ x: null ] ],
 			g3: [ y: null ] ]
@@ -3659,19 +3608,6 @@ append base_body
 	@param {String} ref
 	Returns a ref-joined list of links
 	*/
-
-		/*return this.joinify(",", function (label) {
-
-			if (ref)
-				if (ref.charAt(0) == ":")
-					return label.link( "/"+(ref.substr(1) || label.toLowerCase())+".view" );
-				else
-					return label.link(ref);
-			else
-				return label.link(ref || "/"+label.toLowerCase()+".view");
-
-		});  */
-		
 		if (typeof refs == "string") refs = refs.split(",");
 
 		var rtn = [];
@@ -3684,6 +3620,7 @@ append base_body
 				case "*":
 					rtn.push( label );
 					break;
+				
 				default:
 					if ( link.charAt(0) != "/" ) {
 						link = "/" + link;
@@ -3722,8 +3659,6 @@ function sharePlugin(req,res) {
 	var 
 		product = req.table + "." + req.type,
 		query = req.query,
-		//paths = FLEX.paths.publish,
-		//mdpath = paths[req.type] + req.table + ".md",		
 		endService = query.endservice,
 		sql = req.sql;
 
@@ -3738,6 +3673,13 @@ function sharePlugin(req,res) {
 					
 					break;
 		
+				case "TOU":
+					(eng.ToU||"").Xfetch( (html) => html.Xjade( req, null, product, (html) => {
+						req.type = "html";
+						res(html);
+					}));
+					break;
+					
 				case "js":
 				case "py":
 				case "me":
@@ -3792,13 +3734,15 @@ function sharePlugin(req,res) {
 
 							else
 							if ( proxy = query.proxy )
-								(eng.ToU||"").Xjade( req, proxy, product, (html) => {
+								(eng.ToU||"").Xfetch( (html) => html.Xjade( req, proxy, product, (html) => {
 									req.type = "html";
 									res(html);
-								});
+								}));
 
 							else
-								res( new Error(`specify endservice=URL to establish the service that will integrate ${product}`) );
+								res( new Error(
+									`specify endservice=URL integrating ${product} or see its ` 
+									+ "ToU".tag("a", {href: `/${req.table}.TOU`}) ));
 
 						else
 							res( eng.Code );
@@ -3818,27 +3762,6 @@ function sharePlugin(req,res) {
 	});
 
 }
-
-/*
-function probePlugin(req,res) {
-		
-	var 
-		filename = req.table + "." + req.type,
-		group = req.group,
-		type = req.type,
-		sql = req.sql;
-
-	sql.forFirst( type, "SELECT ID FROM ??.files WHERE ?", [group, {Name: filename}], function (file) {
-
-		if (file)
-			sql.forAll( type, "SELECT * FROM ??.events WHERE ?", [group, {fileID: file.ID}], res );
-
-		else
-			res( new Error("plugin does not exist") );
-
-	});
-	
-} */
 
 switch (process.argv[2]) { //< unit tests
 	case "D1": 
