@@ -3278,44 +3278,32 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		}) );
 	},
 	
+	function Xtex( cb) {
+		var 
+			key = "@tex",
+			fetcher = function ( rec, cb ) {
+				//fet( url, cb );
+			};
+		
+		this.serialize( fetch, /x/g, key, 
+			(rtn,fails) => rtn.serialize( fetch, /x/g, key, 
+				(rtn,fails) => rtn.serialize( fetch, /x/g, key, 
+					(rtn,fails) => cb(rtn)
+				)
+			)
+		);
+	},
+	
 	function Xfetch( cb ) {
 		var 
 			fetcher = DEBE.fetch.fetcher,
-			fetch = function ( url, cb ) {
-				fetcher( url, null, null, cb );
+			fetch = function ( rec, cb ) {
+				fetcher( rec.url, null, null, cb );
 			};
 		
 		this.serialize( fetch, /<!---fetch ([^>]*)?--->/g, "@fetch", (rtn,fails) => cb(rtn) );
 	},
 
-	/*
-	function Xfetch( cb ) {
-		var 
-			fetcher = DEBE.fetch.fetcher,
-			fetches = [],
-			fetched = 0,
-			results = this.replace(/<!---fetch ([^>]*)?--->/g, (str, url) => {
-				//Log("fetch scan", fetched);
-
-				fetcher( url, null, null, ( fetch ) => {
-					fetches.push( fetch );
-
-					//Log("fetch", fetches.length, fetched);
-
-					if ( fetches.length == fetched ) {
-						fetches.forEach( (sub, idx) => {
-							results = results.replace("@fetch"+idx, sub);
-						});
-						cb( results );
-					}
-				});
-				return "@fetch"+(fetched++);
-			});
-		
-		//Log("#fetched found=", fetched, results);
-		if (!fetched) cb(results);
-	},*/
-	
 	function Xjade( req, proxy, product, cb ) {
 
 		var 
