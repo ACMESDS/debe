@@ -343,14 +343,14 @@ append site_body
 				:markdown
 					Source Attributes
 
-						path = url path to dataset
-						class = unique widget name
-						key = name of unique record key (defaults to "ID")
+						path = "/DS.db?QUERY" record source 
+						class = "NAME" of widget
+						key = "ID" name of record key (defaults to "ID")
 
 					Display Attributes
 
 						dims = "WIDTH,HEIGHT" widget dimensions
-						title = header title
+						title = "TITLE" header for grid 
 						hover = css class that renders hover-overs
 						region = north | south | east | west | center border region
 						page = number of records to display 
@@ -383,7 +383,9 @@ append site_body
 					> QUAL can contain hide | off | lock | short
 
 					The `combo` TYPE requires a `#hold.Lookups(path="/lookups.ds",cols="Name,Ref,Path")`
-					WIDGET to provide a display-value (`Name`-`Path`) combobox for the `Ref` KEY.
+					WIDGET to provide a display-value combobox for a `Ref` KEY.  #{title} will group KEYs
+					named G1_G2_...N under field groups G1, G2, ... using a QUAL = short, and will use
+					a QUAL = off.short for KEYs named _N.
 
 					Grid Attributes
 
@@ -391,7 +393,7 @@ append site_body
 						crush	allow minimization
 						refresh	manual data store refresher
 						hide	render but dont show
-						disable disable data entry
+						disable disable data entry (auto enabled for _N
 						notes	include data notepad within help 
 						joins	include data joins within help 
 						save	save view state (experimental)
@@ -454,8 +456,8 @@ append site_body
 							using the [workflow editor](/workflow.jade).  A workflow skin will thus look like:
 
 								#system.label(inputs="link,link,...",outputs="link,link,...")  
-									#system.label(inputs="link,link,...",outputs="link,link,...")  
-									#system.label(inputs="link,link,...",outputs="link,link,...")  
+								#system.label(inputs="link,link,...",outputs="link,link,...")  
+								#system.label(inputs="link,link,...",outputs="link,link,...")  
 
 							where i/o ports can accept/produce either simple or N-fold threads:
 
@@ -529,9 +531,7 @@ append site_body
 					value).  There are request-context keys:
 					
 					+	table	= request dataset, view, or engine (#{table})  
-					+ 	search	= request search parameters (#{search})  
 					+ 	url = full url requested (#{url})
-					+ 	path	= request file path (#{path})  
 					+	parts = file parts (#{json(parts)})
 					+	action	= request action (#{action})  
 					+	query	= request query (#{json(query)})
@@ -542,8 +542,6 @@ append site_body
 					+	client	= client's name (#{client})  
 					+	profile	= client's qos profile (#{json(profile)})  
 					+ 	group = client's assigned group (#{group})
-					+ 	org = client organization (#{org})
-					+	email	= client email address (#{email})  
 					+	util = cpu and disk utilization (#{json(util)})
 					
 					site-context keys:
@@ -562,7 +560,7 @@ append site_body
 					+	cores = number of worker threads (#{cores})  
 					+	lock	= session lock (#{json(options)})
 					
-					and several data manipulator methods:
+					and various data manipulator methods:
 					
 					+	get( list, {key:query,...} )
 					+	get( list, {key:query,...}, {key:rename,...} )

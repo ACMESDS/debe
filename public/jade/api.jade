@@ -491,13 +491,14 @@ append site_body
 
 				and where the *Description* key may contain [blogging tags](/skinguide.view) of the form:
 
+					#[ URL ]  
 					[ post ] ( SKIN.view ? w=WIDTH & h=HEIGHT & x=KEY$EXPR & y=KEY$EXPR & src=DS & id=VALUE )  
 					[ image ] ( PATH.jpg ? w=WIDTH & h=HEIGHT )  
 					[ TEXT ]( LINK )  
 					[ FONT ]( TEXT )  
-					!$ inline TeX $  ||  $$ break TeX $$ || a$ AsciiMath $ || m$ MathML $  
+					$$ inline TeX $$  ||  o$ break TeX $o || a$ AsciiMath $a || m$ MathML $m  
 					#{ KEY } || #{ KEY }( SHORTCUT ) || ={ KEY } || !{ EXPR }  || \${ KEY as TeX matrix  }  
-					#TAG
+					!!TAG
 
 				to document usecases.  The following will, for example:
 
@@ -507,11 +508,15 @@ append site_body
 					[image](shares/a1.jpg)
 					[force](force.view?w=100&h=100&src=/queues?_pivots=class)
 					$$ \alpha = 1 + \beta $$ impressive 'eh
+					#[http://localhost:8080]
+					!!test
 
 				embed: (1) a plot of the requested x,y data using the [d3 plot](/plot.view), (2) the 
 				[home.view](/home.view), (3) a link to the url, (4) the [image](/shares.jpg), (5) a
 				force graph of the queues dataset pivoted by class using the [d3 force](/force.view) 
-				into a frame of specified W x H dimensions, and (6) a TeX equation.  See [plot](/plot.view?help), 
+				into a frame of specified W x H dimensions, (6) an inline TeX equation, (7) contents
+				of the localhost site, and (8) a smart tag, licensing the html content to the 
+				viewer as retained in the releases table.  See [plot](/plot.view?help), 
 				[treefan](/treefan.view?help), [treemap](/treefan.view?help), [force](/force.view?help), 
 				[bounce](/bounce.view?help), [tipsheet](/tipsheet.view?help) for example VIEWs. 
 

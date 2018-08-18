@@ -2987,11 +2987,12 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 	/*
 	Replaces tags on this string of the form:
 		
+		#[ URL ]
 		[ post ] ( SKIN.view ? w=WIDTH & h=HEIGHT & x=KEY$EXPR & y=KEY$EXPR & src=DS & id=VALUE )  
 		[ image ] ( PATH.jpg ? w=WIDTH & h=HEIGHT )  
 		[ TEXT ]( LINK )  
 		[ FONT ]( TEXT )  
-		$$ inline TeX $$  ||  $ break TeX $ || a$ AsciiMath $a || m$ MathML $m  
+		$$ inline TeX $$  ||  o$ break TeX $o || a$ AsciiMath $a || m$ MathML $m  
 		#{ KEY } || #{ KEY }( SHORTCUT ) || !{ EXPR }  || ^{ KEY as TeX matrix  }  
 		!!TAG
 		
