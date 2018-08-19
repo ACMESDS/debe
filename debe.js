@@ -1441,61 +1441,36 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 	
 	"paths.": {  //< paths to things
-		default: "home.view",
+		//default: "home.view",
 		
 		jaderef: "./public/jade/ref.jade",	// jade reference path for includes, exports, appends
 		
 		engine: "SELECT * FROM app.engines WHERE least(?,1) LIMIT 1",
-		jades: "./public/jade/",
-		
-		/*
-		sss: { // some streaming services
-			spoof: ENV.DEBUG + "/sss.exe?Name=spoof1&",
-			stats: ENV.DEBUG + "/gaussmix.exe?",
-			gaussmix: ENV.DEBUG + "/gaussmix.exe?",
-			thresher: ENV.SSS_THRESHER
-		}, 
-
-		wfs: { // wfs services
-			spoof: ENV.DEBUG + "/wfs.exe?Name=spoof1&",
-			ess: ENV.WFS_ESS,
-			dglobe: ENV.WFS_DGLOBE,
-			omar: ENV.WFS_OMAR,
-			geosrv: ENV.WFS_GEOSRV
-		},
-
-		wms: { // wms services
-			spoof: ENV.DEBUG + "/wms.exe?Name=spoof1&",
-			ess: ENV.WMS_ESS,
-			dglobe: ENV.WMS_DGLOBE,
-			omar: ENV.WMS_OMAR,
-			geosrv: ENV.WMS_GEOSRV
-		},
-		*/
+		jades: "./public/jade/",		// path to default view skins
 		
 		mime: {
-			tour: ".",		 			//< enable totem touring 
+			//tour: ".",		 			//< enable totem touring 
 			//jobs: "./public/jobs",		//< path to tau simulator job files
-			stash: ".", 		//< totem static reserve
-			stores: "./public", 		//< persistant scrape area
-			uploads: "./public", 		//< one-time scrape area
-			chips: "./public/images",	//< chipped files
-			tips: "./public/images",	//< tipped files
+			stash: ".", 		//< totem static file area
+			stores: "./public", 		//< persistant file store area
+			uploads: "./public", 		//< one-time file store area
+			chips: "./public/images",	//< chipped jpg files
+			tips: "./public/images",	//< tipped/compressed jpg files
 			data: "./public",  //< debug data
-			jade: "./public",
-			shares: "./public", 				//< cached file area
+			jade: "./public",		//< path to initial views
+			shares: "./public", 				//< shared public files
 			docs: ".", 					//< html documents
-			socketio: ".",				//< path to socket.io
+			socketio: ".",				//< path to socket.io to interconnect clients
 			clients: ".",				//< path to 3rd party ui clients
 			uis: ".", 					//< path to debe ui drivers
 			//icons: ".",				//< path to icons
-			captcha: ".",				
+			captcha: ".",		//< path to captcha jpgs for antibot protection		
 			index: { 					//< paths for allowed file indexers ("" to use url path)
 				shares: "",
 				uploads: "",
-				stores: "",
-				public: "",
-				data: ""
+				stores: ""
+				//public: "",
+				//data: ""
 			},
 			extensions: {  // extend mime types as needed
 				rdp: "application/mstsc",
@@ -1512,15 +1487,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			org2: "./public/jade/Org2",
 			mood1: "./public/jade/Mood1"
 		}
-		
-		/*
-		code: {
-			py: "./public/py",
-			js: "./public/js",
-			mat: "./public/mat",
-			jade: "./public/jade",
-			html: "./public/htmls"
-		} */
 	},
 	
 	/**
