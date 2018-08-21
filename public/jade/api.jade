@@ -527,13 +527,13 @@ append site_body
 				TYPE/NAME.js must follow this pattern:
 				
 					module.exports = {
-						clear: true || false,		// delete then recreate all usecases 
+						clear || reset : true || false,		// delete then recreate all usecases 
 						
-						mods || modify: {  		// change sql types of existing keys, e.g. MyFloatParm: "int(11)"
+						mods || modkeys : {  		// change existing keys, e.g. MyFloatParm: "int(11)"
 							KEY: "sql type", ...
 						},
 						
-						keys || adds || usecase: {  // add usecase keys of specified type, e.g. MyJsonParm: "json"
+						adds || addkeys || keys : {  // add usecase keys of specified type, e.g. MyJsonParm: "json"
 							KEY: "sql type", ...
 						},
 						
@@ -555,7 +555,11 @@ append site_body
 							
 							function get( read, shell ) { return str; },
  
-						tou || readme: 		
+						docs || dockeys : {  // key documentation
+							key: doc, .....
+						},
+						
+						tou || readme : 		
 								// standard markdown with following tag extensions:
 								//		<!---fetch url--->
 								//  	<!---parms key=def&key=def&... ---> 
@@ -567,7 +571,7 @@ append site_body
 							
 							( read, shell ) => read(FILE),
 						
-						subs: { 		// key-markdown or key-function replacements for supplied tou
+						subs || subkeys : { 		// key-markdown or key-function replacements for supplied tou
 							NAME: "...",
 							totem: "...",
 							by: "...",

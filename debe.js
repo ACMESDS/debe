@@ -182,7 +182,20 @@ var
 			//cycle: 400
 		}, function dogDetectors(dog) {
 		}),
-						   
+					
+		dogReleases: Copy({ 
+			cycle: 400,
+			get: {
+				unworthy: "SELECT ID,Product,EndServiceID FROM app.releases WHERE Fails > ? GROUP BY Product,EndServiceID"
+			},
+			maxFails: 10
+		}, function dogReleases(dog) {
+			
+			JSDB.forEach(dog.trace, dog.get.unworthy, [dog.maxFails], (rel, sql) => {
+				sql.query("UPDATE app.licenses SET Revoked=1 WHERE least(?,1)", {EndServiceID: rel.EndServiceID, product: rel.Product} );
+			});
+		}),  
+						  
 		dogVoxels: Copy({
 			get: {
 				//unused: 
@@ -1274,7 +1287,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		@member SKINS
 		@method tag
 		*/
-			return tags ? src.tag(el,tags) : src.tag("a",{href:el});;
+			return tags ? src.tag(el,tags) : src.tag("a",{href:el});
 		},
 		
 		hover: function (ti,fn) {
@@ -1292,100 +1305,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		},
 		
 		gridify: function (recs,noheader) {	//< dump dataset as html table
-		/**
-		@member SKINS
-		@method gridify
-		*/
-			function join(recs,sep) { 
-				switch (recs.constructor) {
-					case Array: 
-						return this.join(sep);
-					
-					case Object:
-						var rtn = [];
-						for (var n in this) rtn.push(this[n]);
-						return rtn.join(sep);
-						
-					default:
-						return this;
-				}
-			}
-			
-			function table(recs) {  // generate an html table from given data or object
-				switch (recs.constructor) {
-					case Array:  // [ {head1:val}, head2:val}, ...]  create table from headers and values
-					
-						var rtn = "", head = !noheader, heads = {};
-						
-						recs.forEach( function (rec) {
-							Each(rec, function (key,val) {
-								heads[key] = key;
-							});
-						});
-						
-						recs.forEach( function (rec) {
-							
-							if (head) {
-								var row = "";
-								Each(heads, function (key,val) {
-									row += key.tag("th");
-								});
-								rtn += row.tag("tr");
-								head = false;
-							}
-							
-							var row = "", intro = "";
-							Each(heads, function (key,val) {
-								if (val = rec[key])
-									row += (val.constructor == Array)
-										? table(val)
-										: (val+"").tag("td", intro ? {class:"intro"} : {});
-								else
-									row += (val+"").tag("td");
-								
-								intro = false;
-							});
-							rtn += row.tag("tr");
-						});
-						
-						return rtn; //.tag("table",{}); //.tag("div",{style:"overflow-x:auto"});
-						
-					case Object: // { key:val, ... } create table dump of object hash
-					
-						var rtn = "";
-						Each(recs, function (key,val) {
-							if (val)
-								rtn += (val.constructor == Array)
-									? table(val)
-									: (key.tag("td") + JSON.stringify(val).tag("td")).tag("tr");
-						});
-						
-						return rtn.tag("table");
-						
-					default:
-						return recs+"";
-				}
-			}
-			
-			function dump(x) {
-				rtn = "";
-				for (var n in x)  {
-					switch ( x[n].constructor ) {
-						case Object:
-							rtn += dump( x[n] ); break;
-						case Array:
-							rtn += n+"[]"; break;
-						case Function:
-							rtn += n+"()"; break;
-						default:
-							rtn += n;
-					}
-					rtn += "; ";
-				}
-				return rtn;
-			}
-			
-			return  table( recs );
+			return recs.gridify(noheader);
 		},
 		
 		/**
@@ -2949,6 +2869,22 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 	
 	// string serializers callback cb(html) with tokens replaced
 	
+	function Xblock( cb ) {
+		var 
+			key = "@block",
+			html = this,
+			blocks = [],
+			fetchBlock = function ( rec, cb ) {
+				Log("block", rec);
+				blocks.push( rec.url.tag("code").tag("pre") );
+				cb("@ex"+(blocks.length-1));
+			};
+		
+		html.serialize( fetchBlock, /([^:]*):\n\n((.|\n)*?)\n\n/g, key, (html,fails) => {
+			cb(html);
+		});
+	},
+	
 	function Xblog(req, ds, cache, $, rec, cb) {
 	/*
 	Replaces tags on this string of the form:
@@ -2990,12 +2926,12 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 			html
 			// inline code escapes
 			.replace(/<br>/g,"\n")
-			.replace(/(.*?):\n\n((.|\n)*?)\n\n/g, function (str, intro, code) {  // code embeds
-				//Log(str,intro,code);
-				//inList.push( code.tag("code").tag("pre") );
-				//return intro + ":$in" + (inList.length-1);
+			/*.replace(/(.*?):\n\n((.|\n)*?)\n\n/g, function (str, intro, code) {  // code embeds
+				Log(str,intro,code);
+				inList.push( code.tag("code").tag("pre") );
+				return intro + ":$in" + (inList.length-1);
 				return "";
-			})
+			})  */
 
 			// record substitutions
 			.replace(/\$\{(.*?)\}/g, function (str,key) {  // ${ TeX matrix key } 
@@ -3120,7 +3056,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 			html = this,
 			fetcher = DEBE.fetch.fetcher,
 			fetchSite = function ( rec, cb ) {
-				Log("sol", rec);
+				Log("solicit", rec);
 				fetcher( rec.url, null, null, cb );
 			};
 		
@@ -3598,7 +3534,105 @@ append base_body
 		});
 			
 		return rtn.join(" || ");
+	},
+	
+	function gridify(noheader) {	//< dump dataset as html table
+		/**
+		@member SKINS
+		@method gridify
+		*/
+		function join(recs,sep) { 
+			switch (recs.constructor) {
+				case Array: 
+					return this.join(sep);
+
+				case Object:
+					var rtn = [];
+					for (var n in this) rtn.push(this[n]);
+					return rtn.join(sep);
+
+				default:
+					return this;
+			}
+		}
+
+		function table(recs) {  // generate an html table from given data or object
+			switch (recs.constructor) {
+				case Array:  // [ {head1:val}, head2:val}, ...]  create table from headers and values
+
+					var rtn = "", head = !noheader, heads = {};
+
+					recs.forEach( function (rec) {
+						Each(rec, function (key,val) {
+							heads[key] = key;
+						});
+					});
+
+					recs.forEach( function (rec) {
+
+						if (head) {
+							var row = "";
+							Each(heads, function (key,val) {
+								row += key.tag("th");
+							});
+							rtn += row.tag("tr");
+							head = false;
+						}
+
+						var row = "", intro = "";
+						Each(heads, function (key,val) {
+							if (val = rec[key])
+								row += (val.constructor == Array)
+									? table(val)
+									: (val+"").tag("td", intro ? {class:"intro"} : {});
+							else
+								row += (val+"").tag("td");
+
+							intro = false;
+						});
+						rtn += row.tag("tr");
+					});
+
+					return rtn.tag("table",{}); //.tag("div",{style:"overflow-x:auto"});
+
+				case Object: // { key:val, ... } create table dump of object hash
+
+					var rtn = "";
+					Each(recs, function (key,val) {
+						if (val)
+							rtn += (val.constructor == Array)
+								? table(val)
+								: (key.tag("td") + JSON.stringify(val).tag("td")).tag("tr");
+					});
+
+					return rtn.tag("table");
+
+				default:
+					return recs+"";
+			}
+		}
+
+		function dump(x) {
+			rtn = "";
+			for (var n in x)  {
+				switch ( x[n].constructor ) {
+					case Object:
+						rtn += dump( x[n] ); break;
+					case Array:
+						rtn += n+"[]"; break;
+					case Function:
+						rtn += n+"()"; break;
+					default:
+						rtn += n;
+				}
+				rtn += "; ";
+			}
+			return rtn;
+		}
+
+		return  table( this );
 	}
+	
 ].extend(Array);
 	
 [  // date prototypes

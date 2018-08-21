@@ -9,6 +9,10 @@ module.exports = {
 	
 	tou: (read) => read("./public/js/jsdemo1.md", "utf8"),
 	
+	docs: {
+		M: "some parameter to feed me"
+	},
+	
 	engine: function jsdemo1(ctx, res) {
 		Log("jsdemo1 ctx", ctx.Pipe);
 		var debug = false;
