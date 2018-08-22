@@ -3147,7 +3147,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 				keys = [];
 
 			parms.split("&").forEach( (parm) => {
-				parm.replace(/(.*)?=(.*)?/, (str, key, val) => {
+				parm.replace(/([^=]*)?=(.*)?/, (str, key, val) => {
 					inputs.push( `${key}: <input id="parms.${key}" type="text" value="${val}" autofocus >` );
 					keys.push( '"' + key + '"' );
 					return "";
