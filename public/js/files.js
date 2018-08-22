@@ -1,5 +1,5 @@
 module.exports = {
-	keys: {
+	_keys: {
 		Enabled: "booelan",
 		Name: "varchar(128)",
 		Client: "varchar(64)",
