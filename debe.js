@@ -192,7 +192,7 @@ var
 		}, function dogReleases(dog) {
 			
 			JSDB.forEach(dog.trace, dog.get.unworthy, [dog.maxFails], (rel, sql) => {
-				sql.query("UPDATE app.licenses SET Revoked=1 WHERE least(?,1)", {EndServiceID: rel.EndServiceID, product: rel.Product} );
+				sql.query("UPDATE app.masters SET Revoked=1 WHERE least(?)", {EndServiceID: rel.EndServiceID, License: rel.License} );
 			});
 		}),  
 						  
