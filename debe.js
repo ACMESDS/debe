@@ -3694,8 +3694,22 @@ function sharePlugin(req,res) {
 			var
 				name = eng.Name,
 				type = eng.Type,
-				product = name + "." + type;
-			
+				product = name + "." + type,
+				paths: {
+					totem: site.urls.master,
+					product: site.urls.master + "/" + name
+				},
+				urls = {
+					status: paths.product + ".status",
+					md: paths.product + ".md",
+					suitors: paths.product + ".suitors",
+					totem: paths.totem,
+					run: paths.product + ".run",
+					tou: paths.product + ".tou",
+					advrepo: "https://sc.appdev.proj.coe.ic.gov/analyticmodelling/" + name,
+					relinfo: paths.totem + "/releases.html?product=" + product
+				};
+
 			switch ( req.type ) {
 				case "md":
 				case "toumd":
@@ -3830,7 +3844,7 @@ function sharePlugin(req,res) {
 							Product: product
 					}, (err, pubs) => {
 
-						function addTerms(code, pub, cb) {
+						function addTerms(code, type, pub, cb) {
 							var 
 								prefix = {
 									js: "// ",
@@ -3838,7 +3852,7 @@ function sharePlugin(req,res) {
 									matlab: "% ",
 									jade: "// "
 								},
-								pre = "\n"+(prefix[req.type] || ">>");
+								pre = "\n"+(prefix[type] || ">>");
 
 							FS.readFile("./public/tou.txt", "utf8", (err, terms) => {
 								cb( (err ? "" : pre + terms.parseJS({
@@ -3846,13 +3860,14 @@ function sharePlugin(req,res) {
 									service: pub.EndService,
 									published: pub.Published,
 									license: pub.License,
-									client: pub.EndUser
+									client: pub.EndUser,
+									urls: urls
 								}).replace(/\n/g,pre) ) + "\n" + code);
 							});
 						}
 
 						if ( pub = pubs[0] )
-							addTerms( eng.Code, pub, res );
+							addTerms( eng.Code, type, pub, res );
 
 						else
 						if ( FLEX.licenseOnDownload )
