@@ -3829,7 +3829,7 @@ function sharePlugin(req,res) {
 					
 				case "tou":
 					req.type = "html";
-					(eng.ToU||"").Xfetch( (html) => html.Xjade( req, query.proxy, product, (html) => res(html) ));
+					(eng.ToU||"").replace(/\*\*Owner\*\*/g,`**Owner** (${req.client})`).Xfetch( (html) => html.Xjade( req, query.proxy, product, (html) => res(html) ));
 					break;
 
 				case "js":
