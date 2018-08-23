@@ -7,7 +7,7 @@ module.exports = {
 		Description: "mediumtext"
 	},
 	
-	tou: (read) => read("./public/js/jsdemo1.md", "utf8"),
+	tou: (read) => read("./public/js/jsdemo1.md", "utf8") + read("./public/js/jsdemo1.apdx", "utf8"),
 	
 	docs: {
 		M: "some parameter to feed me"

@@ -1112,8 +1112,10 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		xgif: sendDoc,
 		
 		// plugin attributes
+		md: sharePlugin,
 		tou: sharePlugin,
-		TOU: sharePlugin,
+		pub: sharePlugin,
+		publist: sharePlugin,
 		state: sharePlugin,
 		js: sharePlugin,
 		py: sharePlugin,
@@ -3593,7 +3595,7 @@ append base_body
 						rtn += row.tag("tr");
 					});
 
-					return rtn.tag("table",{}); //.tag("div",{style:"overflow-x:auto"});
+					return rtn.tag("table",{border:1}); //.tag("div",{style:"overflow-x:auto"});
 
 				case Object: // { key:val, ... } create table dump of object hash
 
@@ -3631,6 +3633,27 @@ append base_body
 		}
 
 		return  table( this );
+	},
+	
+	function mailify( tags, def ) {
+		var users = [];
+		this.forEach( (user) => {
+			if (user.indexOf("@")>=0) 
+				users.push(user);
+		});
+	
+		tags = tags || {};
+		tags.subject = tags.subject || "request for information";
+		
+		if (def)
+			return users.length 
+				? "mailto:"+users.join(";").tag("?", tags)
+				: def ;
+		
+		else
+			return users.length 
+				? (users.length+"").tag("a", {href:"mailto:"+users.join(";").tag("?", tags)})
+				: "none" ;
 	}
 	
 ].extend(Array);
@@ -3658,33 +3681,144 @@ append base_body
 function sharePlugin(req,res) {
 	
 	var 
-		product = req.table + "." + req.type,
 		query = req.query,
+		site = FLEX.site,
+		totem = site.urls.worker+"/",
 		endService = query.endservice,
 		sql = req.sql;
 
 	sql.query( "SELECT * FROM ??.engines WHERE least(?,1) LIMIT 1", [ req.group, { Name: req.table } ], (err, engs) => {
-		if ( eng = engs[0] ) 
+		if ( eng = engs[0] ) {
+			var
+				name = eng.Name,
+				type = eng.Type,
+				product = name + "." + type;
+			
 			switch ( req.type ) {
-				case "tou":
+				case "md":
+				case "toumd":
+					req.type = "txt";
 					if ( eng.ToU )
 						eng.ToU.Xfetch( res );
-					else
+					else 
 						res( "ToU undefined" );
 					
 					break;
 		
-				case "TOU":
-					(eng.ToU||"").Xfetch( (html) => html.Xjade( req, null, product, (html) => {
-						req.type = "html";
-						res(html);
-					}));
+				case "pub":
+					var 
+						fetcher = FLEX.fetcher,
+						fetchClients = function (rec, cb) {
+							fetcher(rec.EndService, null, null, (info) => cb( info.parseJSON() ) );
+						},
+						fetchMods = function (rec, cb) {
+							sql.query(
+								"SELECT group_concat(DISTINCT EndUser) AS Mods FROM app.releases WHERE ? LIMIT 1",
+								{ Product: rec.Name+".html" },
+								(err, mods) => { 
+									if ( mod = mods[0] || { Mods: "" } )
+										cb( mod.Mods || "" );
+								});
+						};
+
+					req.type = "html";
+					//Log(product, eng);
+					sql.query(
+						"SELECT Product, EndService, EndServiceID, 'none' AS EndClients, "
+						+ " 'fail' AS Status, Fails, "
+						+ "group_concat(DISTINCT EndUser) AS EndUsers, sum(Copies) AS Copies "
+						+ "FROM app.releases WHERE ? GROUP BY EndServiceID, Product",
+
+						[ {Product: product}], (err,recs) => {
+
+							//Log(err, recs);
+							recs.serialize( fetchClients, (rec,clients) => {  // retain user stats
+								if (rec) {
+									if ( clients )
+										rec.EndClients = clients.mailify();
+									else 
+										sql.query("UPDATE app.releases SET ? WHERE ?", [ {Fails: ++rec.Fails}, {ID: rec.ID}] );
+
+									//delete rec.endService;
+									rec.Name = rec.Product.split(".")[0];
+									rec.EndServiceID = rec.EndServiceID.tag("a",{href:totem+`masters.html?EndServiceID=${rec.EndServiceID}`});
+									rec.Product = rec.Product.tag("a", {href:totem+rec.Name+".run"});
+									rec.Status = "pass";
+									rec.EndService = "test".tag("a",{href:rec.EndService});
+									rec.EndUsers = rec.EndUsers.split(",").mailify();
+								}
+
+								else
+									recs.serialize( fetchMods, (rec,mods) => {  // retain moderator stats
+										if (rec) {
+											rec.Mods = mods.split(",").mailify();
+										}
+
+										else 
+											res( recs.gridify() );
+									});
+							});
+					});
+					
 					break;
 					
+				case "publist":
+					req.type = "txt";
+					var 
+						proxy = query.proxy || "",
+						urls = {
+							loopback:  `${totem}${product}?endservice=${totem}getclients`,
+							license: `${totem}${product}?endservice=`,
+							proxy: `${totem}${name}.tou?proxy=${proxy}`
+						},
+						sites = {},
+						rtns = [];
+
+					sql.query(
+						"SELECT Name,Path FROM app.lookups WHERE ?",
+						{Ref: product}, (err,recs) => {
+
+						recs.forEach( (rec) => {
+							rtns.push( `<a href="${urls.license}${rec.Path}">${rec.Name}</a>` );
+							sites[rec.Path] = rec.Name;
+						});
+
+						sql.query(
+							"SELECT endService FROM app.releases GROUP BY endServiceID", 
+							[],  (err,recs) => {
+
+							recs.forEach( (rec) => {
+								if ( !sites[rec.endService] ) {
+									var 
+										url = URL.parse(rec.endService),
+										name = (url.host||"none").split(".")[0];
+
+									rtns.push( `<a href="${urls.license}${rec.endService}">${name}</a>` );
+								}
+							});
+
+							rtns.push( `<a href="${urls.loopback}">loopback test</a>` );
+								
+							if (proxy)
+								rtns.push( `<a href="${urls.proxy}">other</a>` );
+
+							//rtns.push( `<a href="${site.urls.worker}/lookups.view?Ref=${product}">add</a>` );
+
+							res( rtns.join(", ") );
+						});
+					});					
+					break;
+					
+				case "tou":
+					req.type = "html";
+					(eng.ToU||"").Xfetch( (html) => html.Xjade( req, query.proxy, product, (html) => res(html) ));
+					break;
+
 				case "js":
 				case "py":
 				case "me":
 				case "m":
+					req.type = "txt";
 					sql.query(
 						"SELECT * FROM app.releases WHERE least(?,1) ORDER BY Published DESC LIMIT 1", {
 							EndUser: req.client,
@@ -3734,16 +3868,9 @@ function sharePlugin(req,res) {
 								});
 
 							else
-							if ( proxy = query.proxy )
-								(eng.ToU||"").Xfetch( (html) => html.Xjade( req, proxy, product, (html) => {
-									req.type = "html";
-									res(html);
-								}));
-
-							else
 								res( new Error(
 									`specify endservice=URL integrating ${product} or see its ` 
-									+ "ToU".tag("a", {href: `/${req.table}.TOU`}) ));
+									+ "ToU".tag("a", {href: `/${req.table}.tou`}) ));
 
 						else
 							res( eng.Code );
@@ -3751,12 +3878,14 @@ function sharePlugin(req,res) {
 					break;
 					
 				case "jade":
+					req.type = "txt";
 					res( (eng.Type == "jade") ? eng.Code : new Error("invalid engine attribute") );
 					break;
 
 				default:
 					res( eng[req.type] || new Error( "undefined engine attribute" ) );
 			}
+		}
 		
 		else
 			res( new Error( "no such engine" ) );
