@@ -3,7 +3,7 @@
 extends site
 append site_help
 	:markdown
-		See also the companion [skinning guide](/skinguide.jade) and the [programmers ref manual](/shares/doc/**#{title}**/index.html).
+		See also the companion [skinning guide](/skinguide.jade) and the [programmers ref manual](/shares/doc/**#{nick}**/index.html).
 append site_parms
 	- view = "Typical"
 	- dock = "top"
@@ -12,7 +12,7 @@ append site_body
 	#fit.Intro
 
 		:markdown
-			*#{title}* provides [CRUD-compliant endpoints](/api.view):
+			*#{nick}* provides [CRUD-compliant endpoints](/api.view):
 
 				POST		/NODE ?? NODE ...
 				GET			/NODE ?? NODE ...
@@ -57,18 +57,18 @@ append site_body
 			Default COMMAND endpoints include:
 
 				help | alert | ping | ingest | config | riddle | task
-				
-			to provide a brief synopsis of the *#{title}* interface, send a message to all *#{title}* users,
-			test your *#{title}* connection, ..., return *#{title}*'s current configuration, initiate and resolve
-			a *#{title}* connection riddle, or start a task shard with *#{title}*.
+
+			to provide a brief synopsis of the *#{nick}* interface, send a message to all *#{nick}* users,
+			test your *#{nick}* connection, ..., return *#{nick}*'s current configuration, initiate and resolve
+			a *#{nick}* connection riddle, or start a task shard with *#{nick}*.
 
 	#accordion.Views
 
 		#fit.Endpoints
 
 			:markdown
-				Views are [editable](/edit.view) [Jade skinning engines](/skinguide.view) that defines 
-				a client's view, and are accessed at the following routes:
+				Views are customizable [Jade skinning engines](/skinguide.view) that define a client's view, 
+				and are accessed at the following routes:
 
 					GET	/SKIN.view	Render SKIN from enabled engines or internal jade files
 					GET	/DATASET.view	Dynamically generate a skin for this DATASET
@@ -99,7 +99,7 @@ append site_body
 					GET	/ATTR/FILE.TYPE?QUERY	Return ATTRribute of a FILE
 					GET	/AREA/	Return list of files in this AREA
 
-				where AREA references a *#{title}* internal file store or a one of its virtual stores:
+				where AREA references a *#{nick}* internal file store or a one of its virtual stores:
 
 					code	file pulled from the [engines db](/engine.view)
 					jade	file pulled from the [engines db](/engine.view) or (failing that) the jade file area
@@ -134,7 +134,7 @@ append site_body
 				:markdown
 					Readers are builtin [engines](/engine.view) that automatically index a variety of 
 					document, graphics, presentation, and spreadsheet files when uploaded into
-					*#{title}*.  Ingested text is checked for readibility, indexed to the best
+					*#{nick}*.  Ingested text is checked for readibility, indexed to the best
 					using [NLP training rules](/admins.view), then reflected into the [file stores](/files.view).
 
 			#fit.Special
@@ -312,7 +312,7 @@ append site_body
 				> KEY %= like pattern  
 				> KEY < value  
 				> KEY > value  
-				
+
 				Indexing:
 				> ASKEY : expression  
 				> ASKEY : jsonKey$.key, ...  
@@ -324,7 +324,7 @@ append site_body
 				> KEY /$= nlp pattern  
 				> KEY |$= query expansion pattern  
 				> KEY ^$= binary expression pattern  
-				
+
 				Searching:
 				> KEY /= nlp pattern  
 				> KEY |= query expansion pattern  
@@ -381,7 +381,7 @@ append site_body
 
 				:markdown
 					The [parameter list](/parms.db) dataset defines how dataset fields are exposed to end 
-					clients in grids, forms, folders, etc used in *#{title}* skins.  To each field corresponds a label name, verification 
+					clients in grids, forms, folders, etc used in *#{nick}* skins.  To each field corresponds a label name, verification 
 					methods, and access priviledges.
 
 			#grid.Roles(
@@ -399,7 +399,7 @@ append site_body
 				cols="Name.h")
 
 				:markdown
-					The [TABLES](/TABLES.db) provides a list of *#{title}* datasets.
+					The [TABLES](/TABLES.db) provides a list of *#{nick}* datasets.
 
 			#grid.Admin(
 				path="/ADMIN.db",crush,
@@ -407,7 +407,7 @@ append site_body
 				cols="TABLE_NAME,TABLE_TYPE,ENGINE,VERSION,ROW_FORMAT,TABLE_ROWS,AVG_ROW_LENGTH,DATA_LENGTH,MAX_DATA_LENGTH,CREATE_TIME,UPDATE_TIME,TABLE_COMMENT")
 
 				:markdown
-					The [ADMIN](/ADMIN.db) provides detailed storage and technical information on all *#{title}* datasets.
+					The [ADMIN](/ADMIN.db) provides detailed storage and technical information on all *#{nick}* datasets.
 
 			#grid.Sys.Config(
 				path="/CONFIG.db",crush,
@@ -418,7 +418,7 @@ append site_body
 					System configuration information is available at [CONFIG](/CONFIG.db).
 
 			:markdown
-				The *#{title}* supports *Virtual Datasets* through its CRUDE (*create*, *read*, *update*, *delete*, 
+				The *#{nick}* supports *Virtual Datasets* through its CRUDE (*create*, *read*, *update*, *delete*, 
 				and *execute*) interface.  This CRUDE interface governs both *Database Datasets* and *Virtual Datasets*.
 				For example, an *execute* on dataset X will typically import/export the data to/from dataset 
 				X as controlled by its associated query parameters, a list of which might be returned by supplying a 
@@ -439,7 +439,7 @@ append site_body
 				+	[reflect git change logs](/issues.execute) to [tracked issues](/issues.db)  
 				+	[broadcast messages](/sockets.execute) to [connected users](/sockets.db)  
 				+	[import milestones](/milestone.execute) from internal spreadsheet
-
+				
 	#accordion.Plugins
 		#fit.Endpoints
 			:markdown
@@ -464,7 +464,7 @@ append site_body
 				> [Exit+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) json saves context on exit using { KEY: "UPDATE ....", ...}  
 				> [Autorun+](/#{ds}.add?Autorun=doc) [/-](/#{ds}.sub?Autorun) switch enables the autorun watchdog.
 				
-				To place an engine into *#{title}*'s supervised Markov workflow, provide:  
+				To place an engine into *#{nick}*'s supervised Markov workflow, provide:  
 				> [Batch+](/#{ds}.add?Batch=0) [/-](/#{ds}.sub?Batch) value overrides supervisor's batch size (0 disabled)  
 				> [Symbols+](/#{ds}.add?Symbols=[]) [/-](/#{ds}.sub?Symbols) value overrides supervisor's state symbols (null defaults)  
 				> [Steps+](/#{ds}.add?Steps=0) [/-](/#{ds}.sub?Steps) value overrides supervisor's observation interval (0 defaults)
@@ -491,13 +491,13 @@ append site_body
 
 				and where the *Description* key may contain [blogging tags](/skinguide.view) of the form:
 
-					#[ URL ]  
+					\#[ URL ]  
 					[ post ] ( SKIN.view ? w=WIDTH & h=HEIGHT & x=KEY$EXPR & y=KEY$EXPR & src=DS & id=VALUE )  
 					[ image ] ( PATH.jpg ? w=WIDTH & h=HEIGHT )  
 					[ TEXT ]( LINK )  
 					[ FONT ]( TEXT )  
 					$$ inline TeX $$  ||  o$ break TeX $o || a$ AsciiMath $a || m$ MathML $m  
-					#{ KEY } || #{ KEY }( SHORTCUT ) || ={ KEY } || !{ EXPR }  || \${ KEY as TeX matrix  }  
+					\#{ KEY } || \#{ KEY }( SHORTCUT ) || ={ KEY } || \!{ EXPR }  || \${ KEY as TeX matrix  }  
 					!!TAG
 
 				to document usecases.  The following will, for example:
@@ -508,7 +508,7 @@ append site_body
 					[image](shares/a1.jpg)
 					[force](force.view?w=100&h=100&src=/queues?_pivots=class)
 					$$ \alpha = 1 + \beta $$ impressive 'eh
-					#[http://localhost:8080]
+					\#[http://localhost:8080]
 					!!test
 
 				embed: (1) a plot of the requested x,y data using the [d3 plot](/plot.view), (2) the 
@@ -522,8 +522,8 @@ append site_body
 
 		#fit.Publishing
 			:markdown
-				Engines placed into *#{title}*'s [content folders](map drive #{info.content})/TYPE/PLUGIN.js
-				are published to [*#{title}*'s engines](/engines.view) when *#{title}* starts.  Each discoverd
+				Engines placed into *#{nick}*'s [content folders](map drive #{info.content})/TYPE/PLUGIN.js
+				are published to [*#{nick}*'s engines](/engines.view) when *#{nick}* starts.  Each discoverd
 				TYPE/NAME.js must follow this pattern:
 				
 					module.exports = {
@@ -645,19 +645,19 @@ append site_body
 				Conversely, a poll-less request will start a job, then reply on the AGENT to claim the job.  In
 				either case, QUERY defines the ENGINE args.
 
-				**#{title}** reciprocates by providing its own AGENT at its **/agent** endpoint.
+				**#{nick}** reciprocates by providing its own AGENT at its **/agent** endpoint.
 
 				Agents provide a means to outsource an engine, while retaining a thread
-				on each agent request.  A valid agent must provide **#{title}** the
+				on each agent request.  A valid agent must provide **#{nick}** the
 				following push/pull endpoints:
 
-					GET http://AGENT?push=**#{title}**.CLIENT.ENGINE.ID&args=JSON
+					GET http://AGENT?push=**#{nick}**.CLIENT.ENGINE.ID&args=JSON
 					GET http://AGENT?pull=JOBID
 
 				where the push endpoint defines the job being sent to the AGENT (with the CLIENT 
 				requesting the agent, the ENGINE being outsourced, the ID of the test case,
 				and the JSON args to the ENGINE).  The AGENT eventually responds at 
-				the pull endpoint with a JOBID, or a "" if no job could be created.  **#{title}** will periodically 
+				the pull endpoint with a JOBID, or a "" if no job could be created.  **#{nick}** will periodically 
 				poll the agent for the results of JOBID.
 
 		#fit.Examples
@@ -679,9 +679,9 @@ append site_body
 				workflow issues a POST, and reset when a workflow issues a DELETE, thus maximizing data 
 				stationarity in a workflow.
 
-				Please know that *#{title}* does not provide an interactive development environment; engines should be 
+				Please know that *#{nick}* does not provide an interactive development environment; engines should be 
 				thoroughly debugged in their native development environment before being [inserted](/engines.view) 
-				into *#{title}*.  
+				into *#{nick}*.  
 
 		#fit.Queries
 			:markdown
@@ -734,7 +734,7 @@ append site_body
 				#fit.Proxy
 				:markdown
 					Proxy engines are [engines](/engine.view) that run periodically given a
-					run interval Period parameter.  A 0-period proxy is run once at *#{title}* startup.
+					run interval Period parameter.  A 0-period proxy is run once at *#{nick}* startup.
 					The [job hawkers](/admin.view) are proxy engines.
 			
 				#fit.Virtual
@@ -769,14 +769,14 @@ append site_body
 					20K chips/footprint.  When, however, workflows can be focused to a small area-of-interest, Bash 
 					overhead can be tolerated.
 
-					Bash engines are supported in both the HYDRA and *#{title}* framework.  In
+					Bash engines are supported in both the HYDRA and *#{nick}* framework.  In
 					the HYDRA framework, the engine's script is wrapped in a HYDRA proprietary 
 					soapUI (nonrestful XML) interface serviced by HYDRA's web service.  In
-					*#{title}* framework, the engine's script is wrapped in a JSON (restful) interface
-					serviced by *#{title}*'s web service.  *#{title}*'s service supports workflow engines (to 
+					*#{nick}* framework, the engine's script is wrapped in a JSON (restful) interface
+					serviced by *#{nick}*'s web service.  *#{nick}*'s service supports workflow engines (to 
 					bypass the intrinsic overhead in calling sh-engines), as well as a mechanisms 
 					to directly interface with clients and other workflow engines. And whereas 
-					*#{title}* is PKI driven, HYDRA is login driven.
+					*#{nick}* is PKI driven, HYDRA is login driven.
 
 					This [sh-shell engine](/demo.db) example (test [here](/demo.db)):
 
@@ -823,7 +823,7 @@ append site_body
 					dataset whose **TRL** is at 2, and adds a **Cat** field to each record.  Note 
 					again that all i/o (here console.log) is sent to the **service** console.  Note 
 					too that when this engine is executed (read/GET) for the first time, the engine is 
-					simply added to *#{title}*; subsequent executions return the desired records to 
+					simply added to *#{nick}*; subsequent executions return the desired records to 
 					the client.
 
 			#fit.m
@@ -1082,7 +1082,7 @@ append site_body
 
 					# common modules
 					
-					*#{title}* provides the
+					*#{nick}* provides the
 					[LWIP(lightweight imaging)](https://github.com/EyalAr/lwip), 
 					[SQL(jsdb-extended database connector)](https://www.npmjs.com/package/mysql), 
 					[JSON(encoder-decoder)](https://nodejs.org/docs/latest/api/json), 
@@ -1092,7 +1092,7 @@ append site_body
 					# interfacing with supervisor
 					
 					While all Pipe-enabled engines are transparently attached 
-					to [#{title}'s Markov/ROC supervisor](https://github.com/ACMESDS/randpr) , js-engines 
+					to [#{nick}'s Markov/ROC supervisor](https://github.com/ACMESDS/randpr) , js-engines 
 					(unlike other engines) can interface directly with its supervisor via the:
 					
 						GET.forBatch(ctx, (ievs,sink) => { ...} )  
@@ -1113,7 +1113,7 @@ append site_body
 					
 					# native matlab-emulation 
 					
-					*#{title}*'s [matlab emulator](https://www.npmjs.com/package/mathjs) natively provides 
+					*#{nick}*'s [matlab emulator](https://www.npmjs.com/package/mathjs) natively provides 
 					matrix arithmetics, symbolic calulations, sparse matricies and machine learning tools via:  
 
 						ME.exec( script, ctx, (ctx) => { ... } )
@@ -1132,7 +1132,7 @@ append site_body
 
 					# task sharding
 					
-					Engines distribute a task to cores within *#{title}*'s compute cluster
+					Engines distribute a task to cores within *#{nick}*'s compute cluster
 					using its [task sharding](https://github.com/ACMESDS/totem) mechanisim:
 
 						TASK.shard({  		// example
@@ -1157,7 +1157,7 @@ append site_body
 	#accordion.Machines
 		:markdown
 			All engines rely on a machine MAC = opencv | python | ... as implemented under
-			**engine/ifs/MAC/MAC.cpp** and bound to **#{title}** using *node-gyp rebuild* as 
+			**engine/ifs/MAC/MAC.cpp** and bound to **#{nick}** using *node-gyp rebuild* as 
 			provided by *maint.sh bind*.  
 			
 			opencv-machines, for example, implement the following pattern:
@@ -1191,7 +1191,7 @@ append site_body
 					// Members follow
 				}
 
-			When bound to **#{title}** (using *node-gyp rebuild* provided by *maint.sh bind*), a **pool** of 
+			When bound to **#{nick}** (using *node-gyp rebuild* provided by *maint.sh bind*), a **pool** of 
 			(typically 256) MAC machines is reserved to run multiple (context independent) compute 
 			threads at
 
@@ -1211,7 +1211,7 @@ append site_body
 
 	#accordion.Commands
 		:markdown
-			The following commands maintain **#{title}**:
+			The following commands maintain **#{nick}**:
 
 				GET /ping 		# check client-server connectivity
 				GET /alert 		# broadcast alert &msg to all clients

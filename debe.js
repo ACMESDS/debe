@@ -1384,7 +1384,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			jade: "./public",		//< path to initial views
 			shares: "./public", 				//< shared public files
 			docs: ".", 					//< html documents
-			socketio: ".",				//< path to socket.io to interconnect clients
+			"socket.io": ".",				//< path to socket.io to interconnect clients
 			clients: ".",				//< path to 3rd party ui clients
 			uis: ".", 					//< path to debe ui drivers
 			//icons: ".",				//< path to icons
@@ -3192,8 +3192,8 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		var 
 			url = URL.parse(proxy || ""),
 			host = proxy ? url.host.split(".")[0] : null,
-			md = proxy ? this : this.replace(/\*\*Owner\*\*/g,`**Owner** (${req.client})`),
-			header = via 
+			md = this, //proxy ? this : this.replace(/\*\*Owner\*\*/g,`**Owner** (${req.client})`),
+			header = proxy 
 				? `img(src="/shares/images/${host}.jpg", width="100%", height="15%")`
 				: "p",
 			errors = DEBE.errors;
@@ -3202,10 +3202,11 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		siteContext(req, (ctx) => {
 
 			var 
-				jade = `extends base
-append base_parms
-	- opens = false
-append base_body
+				jade = `extends layout
+append layout_parms
+	- check = false
+	- highlight = ""
+append layout_body
 	${header}
 	:markdown
 		`  + md.replace(/\n/g,"\n\t\t");
@@ -3686,7 +3687,6 @@ function sharePlugin(req,res) {
 	var 
 		query = req.query,
 		site = FLEX.site,
-		totem = site.urls.worker+"/",
 		endService = query.endservice,
 		sql = req.sql;
 
@@ -3696,22 +3696,15 @@ function sharePlugin(req,res) {
 				name = eng.Name,
 				type = eng.Type,
 				product = name + "." + type,
-				paths: {
-					totem: site.urls.master,
-					product: site.urls.master + "/" + name
-				},
-				urls = {
-					status: paths.product + ".status",
-					md: paths.product + ".md",
-					suitors: paths.product + ".suitors",
-					totem: paths.totem,
-					run: paths.product + ".run",
-					tou: paths.product + ".tou",
-					advrepo: "https://sc.appdev.proj.coe.ic.gov/analyticmodelling/" + name,
-					relinfo: paths.totem + "/releases.html?product=" + product
-				};
-
+				proxy = query.proxy,
+				urls = FLEX.pluginPaths(product, proxy);
+			
 			switch ( req.type ) {
+				case "users":
+					req.type = "json";
+					res( JSON.stringify( [req.client] ) );
+					break;
+					
 				case "md":
 				case "toumd":
 					req.type = "txt";
@@ -3763,8 +3756,8 @@ function sharePlugin(req,res) {
 										url = URL.parse(rec.EndService),
 										host = url.host.split(".")[0];
 
-									rec.License = rec.License.tag("a",{href:totem+`masters.html?EndServiceID=${rec.EndServiceID}`});
-									rec.Product = rec.Product.tag("a", {href:totem+rec.Name+".run"});
+									rec.License = rec.License.tag("a",{href:urls.totem+`/masters.html?EndServiceID=${rec.EndServiceID}`});
+									rec.Product = rec.Product.tag("a", {href:urls.run});
 									rec.Status = "pass";
 									rec.EndService = host.tag("a",{href:rec.EndService});
 									rec.Users = rec.Users.split(",").mailify();
@@ -3789,12 +3782,6 @@ function sharePlugin(req,res) {
 				case "publist":
 					req.type = "txt";
 					var 
-						proxy = query.proxy || "",
-						urls = {
-							loopback:  `${totem}${product}?endservice=${totem}getclients`,
-							license: `${totem}${product}?endservice=`,
-							proxy: `${totem}${name}.tou?proxy=${proxy}`
-						},
 						sites = {},
 						rtns = [];
 

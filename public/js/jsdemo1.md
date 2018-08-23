@@ -1,6 +1,6 @@
 # Agreement
 
-Go to  ${fetch("suitors", {proxy: advrepo}, register)}  
+Go to  ${fetch("suitors", {proxy: urls.advrepo}, register)}  
 {input({endservice:"https://myserivce.ic.gov/getclients?product=${product}", xyz:123})}
 and that completes the [deal](gotohere).
 

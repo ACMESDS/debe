@@ -2,11 +2,11 @@
 
 block layout_parms
 	- banner = "" // site banner
-	- start = "content" // div name to start content
-	- highlight = "zenburn"	// code styling theme zenburn | ...
+	- start = "" // div name to start content or "" to disable
+	- highlight = ""	// code styling theme zenburn | ... or "" to disable
 	- capture = false // to add screen capture button
-	- math = true // enable mathjax plugin
-	- check = true
+	- math = false // enable mathjax plugin
+	- check = false
 
 html(lang="en")
 	head
@@ -18,14 +18,12 @@ html(lang="en")
 		//- Make the application on mobile take up the full browser screen and disable user scaling.
 		meta(name="viewport", content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no")
 
-		title #{nick}-#{table}
-
 		//-	Check browser compatibility. Requires javascript and JSON. Invalid browsers will crash or ignore startup scripts.
-
-		noscript
-			p Please enable Javascript and Cookies to access #{title}.
-
 		if check
+			title #{nick}-#{table}
+			noscript
+				p Please enable Javascript and Cookies to access #{title}.
+
 			if ! JSON.parse
 				script(src="/clients/json/json2.js")
 
@@ -46,6 +44,7 @@ html(lang="en")
 
 			script.
 				var io = null;
+
 			if sockets
 				script(src=urls.socketio)
 
@@ -128,14 +127,15 @@ body
 				var 
 					html2canvas = null;
 
-		#content.layout(
-			icons=icons,
-			start=start,
-			client=client,
-			source=table,
-			query=JSON.stringify(query),
-			title=banner)
+		if (start)
+			#content.layout(
+				icons=icons,
+				start=start,
+				client=client,
+				source=table,
+				query=JSON.stringify(query),
+				title=banner)
 
-			block layout_body
+				block layout_body
 
 //- UNCLASSIFIED
