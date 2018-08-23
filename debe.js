@@ -1114,8 +1114,10 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		// plugin attributes
 		md: sharePlugin,
 		tou: sharePlugin,
-		pub: sharePlugin,
-		publist: sharePlugin,
+		status: sharePlugin,
+		suitors: sharePlugin,
+		mods: sharePlugin,
+		owners: sharePlugin,
 		state: sharePlugin,
 		js: sharePlugin,
 		py: sharePlugin,
@@ -3706,9 +3708,10 @@ function sharePlugin(req,res) {
 					break;
 		
 				case "pub":
+				case "status":
 					var 
 						fetcher = FLEX.fetcher,
-						fetchClients = function (rec, cb) {
+						fetchOwners = function (rec, cb) {
 							fetcher(rec.EndService, null, null, (info) => cb( info.parseJSON() ) );
 						},
 						fetchMods = function (rec, cb) {
@@ -3724,18 +3727,18 @@ function sharePlugin(req,res) {
 					req.type = "html";
 					//Log(product, eng);
 					sql.query(
-						"SELECT Product, EndService, EndServiceID, 'none' AS EndClients, "
+						"SELECT Ver, Comment, Product, EndService, EndServiceID, 'none' AS Owners, "
 						+ " 'fail' AS Status, Fails, "
-						+ "group_concat(DISTINCT EndUser) AS EndUsers, sum(Copies) AS Copies "
+						+ "group_concat(DISTINCT EndUser) AS Users, sum(Copies) AS Copies "
 						+ "FROM app.releases WHERE ? GROUP BY EndServiceID, Product",
 
 						[ {Product: product}], (err,recs) => {
 
 							//Log(err, recs);
-							recs.serialize( fetchClients, (rec,clients) => {  // retain user stats
+							recs.serialize( fetchOwners, (rec,owners) => {  // retain user stats
 								if (rec) {
-									if ( clients )
-										rec.EndClients = clients.mailify();
+									if ( owners )
+										rec.Owners = owners.mailify();
 									else 
 										sql.query("UPDATE app.releases SET ? WHERE ?", [ {Fails: ++rec.Fails}, {ID: rec.ID}] );
 
@@ -3745,7 +3748,7 @@ function sharePlugin(req,res) {
 									rec.Product = rec.Product.tag("a", {href:totem+rec.Name+".run"});
 									rec.Status = "pass";
 									rec.EndService = "test".tag("a",{href:rec.EndService});
-									rec.EndUsers = rec.EndUsers.split(",").mailify();
+									rec.Users = rec.Users.split(",").mailify();
 								}
 
 								else
@@ -3762,6 +3765,7 @@ function sharePlugin(req,res) {
 					
 					break;
 					
+				case "suitors":
 				case "publist":
 					req.type = "txt";
 					var 
@@ -3864,13 +3868,13 @@ function sharePlugin(req,res) {
 										addTerms( eng.Code, pub, res );
 
 									else
-										res( new Error(`${product} cannot be licensed to ${endService}`) );
+										res( new Error(`${endService} must contain ${req.client}`) );
 								});
 
 							else
 								res( new Error(
 									`specify endservice=URL integrating ${product} or see its ` 
-									+ "ToU".tag("a", {href: `/${req.table}.tou`}) ));
+									+ "Terms of Use".tag("a", {href: `/${name}.tou`}) ));
 
 						else
 							res( eng.Code );
