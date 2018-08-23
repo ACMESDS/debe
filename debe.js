@@ -3190,10 +3190,11 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 	function Xjade( req, proxy, product, cb ) { // returns product's ToU via a proxy site
 
 		var 
-			md = this+"",
-			via = proxy ? URL.parse(proxy) : null,
+			url = URL.parse(proxy || ""),
+			host = proxy ? url.host.split(".")[0] : null,
+			md = proxy ? this : this.replace(/\*\*Owner\*\*/g,`**Owner** (${req.client})`),
 			header = via 
-				? `img(src="/shares/images/${via.host}.jpg", width="100%", height="15%")`
+				? `img(src="/shares/images/${host}.jpg", width="100%", height="15%")`
 				: "p",
 			errors = DEBE.errors;
 
@@ -3741,7 +3742,7 @@ function sharePlugin(req,res) {
 					req.type = "html";
 					//Log(product, eng);
 					sql.query(
-						"SELECT Ver, Comment, Product, EndService, EndServiceID, 'none' AS Owners, "
+						"SELECT Ver, Comment, Product, License, EndService, EndServiceID, 'none' AS Owners, "
 						+ " 'fail' AS Status, Fails, "
 						+ "group_concat(DISTINCT EndUser) AS Users, sum(Copies) AS Copies "
 						+ "FROM app.releases WHERE ? GROUP BY EndServiceID, Product",
@@ -3757,12 +3758,17 @@ function sharePlugin(req,res) {
 										sql.query("UPDATE app.releases SET ? WHERE ?", [ {Fails: ++rec.Fails}, {ID: rec.ID}] );
 
 									//delete rec.endService;
-									rec.Name = rec.Product.split(".")[0];
-									rec.EndServiceID = rec.EndServiceID.tag("a",{href:totem+`masters.html?EndServiceID=${rec.EndServiceID}`});
+									//rec.Name = rec.Product.split(".")[0];
+									var 
+										url = URL.parse(rec.EndService),
+										host = url.host.split(".")[0];
+
+									rec.License = rec.License.tag("a",{href:totem+`masters.html?EndServiceID=${rec.EndServiceID}`});
 									rec.Product = rec.Product.tag("a", {href:totem+rec.Name+".run"});
 									rec.Status = "pass";
-									rec.EndService = "test".tag("a",{href:rec.EndService});
+									rec.EndService = host.tag("a",{href:rec.EndService});
 									rec.Users = rec.Users.split(",").mailify();
+									delete rec.EndServiceID;
 								}
 
 								else
@@ -3829,7 +3835,7 @@ function sharePlugin(req,res) {
 					
 				case "tou":
 					req.type = "html";
-					(eng.ToU||"").replace(/\*\*Owner\*\*/g,`**Owner** (${req.client})`).Xfetch( (html) => html.Xjade( req, query.proxy, product, (html) => res(html) ));
+					(eng.ToU||"").Xfetch( (html) => html.Xjade( req, query.proxy, product, (html) => res(html) ));
 					break;
 
 				case "js":
