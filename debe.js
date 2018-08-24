@@ -1116,8 +1116,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		tou: sharePlugin,
 		status: sharePlugin,
 		suitors: sharePlugin,
-		mods: sharePlugin,
-		owners: sharePlugin,
+		pub: sharePlugin,
+		users: sharePlugin,
 		state: sharePlugin,
 		js: sharePlugin,
 		py: sharePlugin,
@@ -1350,6 +1350,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				+ "issues".tag("a",{href: "/issues.view"})
 				+ " for further information";
 		},
+		noAttribute: new Error( "undefined engine attribute" ),
+		noEngine: new Error( "no such engine" ),
 		badAgent: new Error("bad agent request"),
 		noIngest: new Error("invalid/missing ingest dataset"),
 		badSkin: new Error("skin contains invalid jade"),
@@ -1367,7 +1369,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	"paths.": {  //< paths to things
 		//default: "home.view",
 		
-		jaderef: "./public/jade/ref.jade",	// jade reference path for includes, exports, appends
+		jadePath: "./public/jade/ref.jade",	// jade reference path for includes, exports, appends
 		
 		engine: "SELECT * FROM app.engines WHERE least(?,1) LIMIT 1",
 		jades: "./public/jade/",		// path to default view skins
@@ -2449,7 +2451,7 @@ function siteContext(req, cb) {
 			disk: ((req.profile.useDisk / req.profile.maxDisk)*100).toFixed(0)
 		},
 		started: DEBE.started,
-		filename: DEBE.paths.jaderef,
+		filename: DEBE.paths.jadePath,
 		url: req.url
 	}) );
 	
@@ -3187,7 +3189,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		this.serialize( fetchSite, /<!---fetch ([^>]*)?--->/g, "@fetch", (rtn,fails) => cb(rtn) );
 	},
 
-	function Xjade( req, proxy, product, cb ) { // returns product's ToU via a proxy site
+	function Xjade( ctx, proxy, product, cb ) { // returns product's ToU via a proxy site
 
 		var 
 			url = URL.parse(proxy || ""),
@@ -3196,28 +3198,25 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 			header = proxy 
 				? `img(src="/shares/images/${host}.jpg", width="100%", height="15%")`
 				: "p",
-			errors = DEBE.errors;
-
-		//Log(product, via);
-		siteContext(req, (ctx) => {
-
-			var 
-				jade = `extends layout
+			jade = `:markdown
+	` + md.replace(/\n/g,"\n\t");
+			/*jade = `extends layout
 append layout_parms
-	- check = false
-	- highlight = ""
+	- math = false
 append layout_body
 	${header}
 	:markdown
-		`  + md.replace(/\n/g,"\n\t\t");
+		`  + md.replace(/\n/g,"\n\t\t");*/
 
-			try {
-				JADE.compile(jade, ctx) (ctx).Xparms(product, cb );
-			}
-			catch (err) {
-				cb( err );
-			}
-		});
+		//Log(jade);
+		ctx.filename = DEBE.paths.jadePath;
+		
+		try {
+			JADE.compile(jade, ctx) (ctx).Xparms(product, cb );
+		}
+		catch (err) {
+			cb( err+"" );
+		}
 	}
 											
 ].extend(String);
@@ -3682,225 +3681,81 @@ append layout_body
 	}
 ].extend(Date);
 
-function sharePlugin(req,res) {
+function sharePlugin(req,res) {  //< share plugin attribute
 	
 	var 
+		errors = DEBE.errors,
+		sql = req.sql,
 		query = req.query,
-		site = FLEX.site,
+		attr = req.type,
+		owner = req.client,
 		endService = query.endservice,
-		sql = req.sql;
+		proxy = query.proxy,		
+		types = {
+			pub: "txt",
+			users: "json",
+			md: "txt",
+			toumd: "txt",
+			status: "html",
+			suitors: "txt",
+			publist: "txt",
+			tou: "html",
+			js: "txt",
+			py: "txt",
+			me: "txt",
+			m: "txt",
+			jade: "txt"
+		};
 
 	sql.query( "SELECT * FROM ??.engines WHERE least(?,1) LIMIT 1", [ req.group, { Name: req.table } ], (err, engs) => {
-		if ( eng = engs[0] ) {
-			var
-				name = eng.Name,
-				type = eng.Type,
-				product = name + "." + type,
-				proxy = query.proxy,
-				urls = FLEX.pluginPaths(product, proxy);
-			
-			switch ( req.type ) {
-				case "users":
-					req.type = "json";
-					res( JSON.stringify( [req.client] ) );
-					break;
-					
-				case "md":
-				case "toumd":
-					req.type = "txt";
-					if ( eng.ToU )
-						eng.ToU.Xfetch( res );
-					else 
-						res( "ToU undefined" );
-					
-					break;
-		
-				case "pub":
-				case "status":
-					var 
-						fetcher = FLEX.fetcher,
-						fetchOwners = function (rec, cb) {
-							fetcher(rec.EndService, null, null, (info) => cb( info.parseJSON() ) );
-						},
-						fetchMods = function (rec, cb) {
-							sql.query(
-								"SELECT group_concat(DISTINCT EndUser) AS Mods FROM app.releases WHERE ? LIMIT 1",
-								{ Product: rec.Name+".html" },
-								(err, mods) => { 
-									if ( mod = mods[0] || { Mods: "" } )
-										cb( mod.Mods || "" );
-								});
-						};
+		if ( eng = engs[0] ) 
+			FLEX.pluginAttribute( sql, attr, owner, endService, proxy, eng, (attrib) => {
+				req.type = types[req.type] || "txt";
+				if (attrib) 
+					res(attrib);
 
-					req.type = "html";
-					//Log(product, eng);
-					sql.query(
-						"SELECT Ver, Comment, Product, License, EndService, EndServiceID, 'none' AS Owners, "
-						+ " 'fail' AS Status, Fails, "
-						+ "group_concat(DISTINCT EndUser) AS Users, sum(Copies) AS Copies "
-						+ "FROM app.releases WHERE ? GROUP BY EndServiceID, Product",
+				else
+					switch (attr) {
+						case "js":
+						case "py":
+						case "me":
+						case "m":
+							res( new Error( endService 
+								? `${endService} must contain ${owner}`
+								: `specify endservice=URL integrating ${eng.Name} or see its ` 
+									+ "Terms of Use".tag("a", {href: `/${eng.Name}.tou`})
+							));
+							break;
+							
+						case "pub":
+							sql.query( 
+								"SELECT * FROM app.releases WHERE ? ORDER BY Published DESC LIMIT 1", 
+								{Product: eng.Name+"."+eng.Type}, (err,pubs) => {
 
-						[ {Product: product}], (err,recs) => {
+								if ( pub = pubs[0] ) {
+									res( `Publishing ${eng.Name}` );
 
-							//Log(err, recs);
-							recs.serialize( fetchOwners, (rec,owners) => {  // retain user stats
-								if (rec) {
-									if ( owners )
-										rec.Owners = owners.mailify();
-									else 
-										sql.query("UPDATE app.releases SET ? WHERE ?", [ {Fails: ++rec.Fails}, {ID: rec.ID}] );
-
-									//delete rec.endService;
-									//rec.Name = rec.Product.split(".")[0];
+									/*
 									var 
-										url = URL.parse(rec.EndService),
-										host = url.host.split(".")[0];
+										parts = pub.Ver.split("."),
+										ver = pub.Ver = parts.concat(parseInt(parts.pop()) + 1).join(".");
+									*/
 
-									rec.License = rec.License.tag("a",{href:urls.totem+`/masters.html?EndServiceID=${rec.EndServiceID}`});
-									rec.Product = rec.Product.tag("a", {href:urls.run});
-									rec.Status = "pass";
-									rec.EndService = host.tag("a",{href:rec.EndService});
-									rec.Users = rec.Users.split(",").mailify();
-									delete rec.EndServiceID;
+									FLEX.publishPlugin( req, eng.Name, eng.Type, true );
 								}
 
 								else
-									recs.serialize( fetchMods, (rec,mods) => {  // retain moderator stats
-										if (rec) {
-											rec.Mods = mods.split(",").mailify();
-										}
-
-										else 
-											res( recs.gridify() );
-									});
+									res( new Error(`no ${eng.Name} product`) );
 							});
-					});
-					
-					break;
-					
-				case "suitors":
-				case "publist":
-					req.type = "txt";
-					var 
-						sites = {},
-						rtns = [];
-
-					sql.query(
-						"SELECT Name,Path FROM app.lookups WHERE ?",
-						{Ref: product}, (err,recs) => {
-
-						recs.forEach( (rec) => {
-							rtns.push( `<a href="${urls.license}${rec.Path}">${rec.Name}</a>` );
-							sites[rec.Path] = rec.Name;
-						});
-
-						sql.query(
-							"SELECT endService FROM app.releases GROUP BY endServiceID", 
-							[],  (err,recs) => {
-
-							recs.forEach( (rec) => {
-								if ( !sites[rec.endService] ) {
-									var 
-										url = URL.parse(rec.endService),
-										name = (url.host||"none").split(".")[0];
-
-									rtns.push( `<a href="${urls.license}${rec.endService}">${name}</a>` );
-								}
-							});
-
-							rtns.push( `<a href="${urls.loopback}">loopback test</a>` );
-								
-							if (proxy)
-								rtns.push( `<a href="${urls.proxy}">other</a>` );
-
-							//rtns.push( `<a href="${site.urls.worker}/lookups.view?Ref=${product}">add</a>` );
-
-							res( rtns.join(", ") );
-						});
-					});					
-					break;
-					
-				case "tou":
-					req.type = "html";
-					(eng.ToU||"").Xfetch( (html) => html.Xjade( req, query.proxy, product, (html) => res(html) ));
-					break;
-
-				case "js":
-				case "py":
-				case "me":
-				case "m":
-					req.type = "txt";
-					sql.query(
-						"SELECT * FROM app.releases WHERE least(?,1) ORDER BY Published DESC LIMIT 1", {
-							EndUser: req.client,
-							EndServiceID: FLEX.serviceID( endService ),
-							Product: product
-					}, (err, pubs) => {
-
-						function addTerms(code, type, pub, cb) {
-							var 
-								prefix = {
-									js: "// ",
-									py: "# ",
-									matlab: "% ",
-									jade: "// "
-								},
-								pre = "\n"+(prefix[type] || ">>");
-
-							FS.readFile("./public/tou.txt", "utf8", (err, terms) => {
-								cb( (err ? "" : pre + terms.parseJS({
-									product: pub.Product,
-									service: pub.EndService,
-									published: pub.Published,
-									license: pub.License,
-									client: pub.EndUser,
-									urls: urls
-								}).replace(/\n/g,pre) ) + "\n" + code);
-							});
-						}
-
-						if ( pub = pubs[0] )
-							addTerms( eng.Code, type, pub, res );
-
-						else
-						if ( FLEX.licenseOnDownload )
-							if ( endService )
-								FLEX.licenseCode( sql, eng.Code, {
-									EndUser: req.client,
-									EndService: endService,
-									Published: new Date(),
-									Product: product,
-									Path: req.url
-								}, (pub) => {
-									if (pub) 
-										addTerms( eng.Code, pub, res );
-
-									else
-										res( new Error(`${endService} must contain ${req.client}`) );
-								});
-
-							else
-								res( new Error(
-									`specify endservice=URL integrating ${product} or see its ` 
-									+ "Terms of Use".tag("a", {href: `/${name}.tou`}) ));
-
-						else
-							res( eng.Code );
-					});
-					break;
-					
-				case "jade":
-					req.type = "txt";
-					res( (eng.Type == "jade") ? eng.Code : new Error("invalid engine attribute") );
-					break;
-
-				default:
-					res( eng[req.type] || new Error( "undefined engine attribute" ) );
-			}
-		}
-		
+							break;
+							
+						default:
+							res( eng[req.type] || errors.noAttribute );
+					}
+			});
+				
 		else
-			res( new Error( "no such engine" ) );
+			res( errors.noEngine );
 	});
 
 }

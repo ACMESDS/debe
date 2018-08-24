@@ -2,11 +2,11 @@
 
 block layout_parms
 	- banner = "" // site banner
-	- start = "" // div name to start content or "" to disable
+	- start = "content" // div name to start content or "" to disable
 	- highlight = ""	// code styling theme zenburn | ... or "" to disable
 	- capture = false // to add screen capture button
 	- math = false // enable mathjax plugin
-	- check = false
+	- check = false // enable brower checking
 
 html(lang="en")
 	head
@@ -48,16 +48,16 @@ html(lang="en")
 			if sockets
 				script(src=urls.socketio)
 
-			//- Load mathjax preprocessor if needed
-			if math 
-				script(src="/clients/mathjax/MathJax.js?config=default")
-				script.
-					MathJax.Hub.Queue(["Typeset",MathJax.Hub]);
-					MathJax.Hub.Config({
-						extensions: ["tex2jax.js"],
-						jax: ["input/TeX","output/HTML-CSS"],
-						tex2jax: {inlineMath: [["$","$"],["\\(","\\)"]]}
-					});
+		//- Load mathjax preprocessor if needed
+		if math 
+			script(src="/clients/mathjax/MathJax.js?config=default")
+			script.
+				MathJax.Hub.Queue(["Typeset",MathJax.Hub]);
+				MathJax.Hub.Config({
+					extensions: ["tex2jax.js"],
+					jax: ["input/TeX","output/HTML-CSS"],
+					tex2jax: {inlineMath: [["$","$"],["\\(","\\)"]]}
+				});
 
 		//- Code formatting
 		if highlight
