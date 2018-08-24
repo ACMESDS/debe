@@ -3048,7 +3048,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 				return `href=${q}javascript:navigator.follow(${ref},BASE.user.client,BASE.user.source)${q}>`;
 			})
 			
-			.Xdummy(cb)
+			.Xdummy( (html) => html+"" )
 			//.Xtex( cb )
 			//.Xtag( req, cb )
 			//.Xsolicit( cb )
