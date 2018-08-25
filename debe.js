@@ -22,7 +22,6 @@
 @requires atomic
 @requires geohack
 @requires jslab
-@requires jsdb
 @requires randpr
 
 @requires strdif
@@ -65,7 +64,6 @@ var
 	FLEX = require("flex"),
 	TOTEM = require("totem"),
 	LAB = require("jslab"),
-	JSDB = require("jsdb"),
 	RAN = require("randpr"),
 	HACK = require("geohack");
 
@@ -77,6 +75,23 @@ var										// shortcuts and globals
 var
 	DEBE = module.exports = Copy({
 	
+	reroute: {
+		//engines: "secure.engines",
+		roles: "openv.roles",
+		aspreqts: "openv.aspreqts",
+		ispreqts: "openv.ispreqts",
+		swreqts: "openv.swreqts",
+		hwreqts: "openv.hwreqts",
+		tta: "openv.tta",
+		trades: "openv.trades",
+		milestones: "openv.milestones",
+		sessions: "openv.sessions",
+		journal: "openv.journal",
+		hawks: "openv.hawks",
+		attrs: "openv.attrs",
+		issues: "openv.issues"
+	},
+					
 	init: Initialize,
 		
 	plugins: LAB.libs,
@@ -191,7 +206,7 @@ var
 			maxFails: 10
 		}, function dogReleases(dog) {
 			
-			JSDB.forEach(dog.trace, dog.get.unworthy, [dog.maxFails], (rel, sql) => {
+			dog.forEach(dog.trace, dog.get.unworthy, [dog.maxFails], (rel, sql) => {
 				sql.query("UPDATE app.masters SET Revoked=1 WHERE least(?)", {EndServiceID: rel.EndServiceID, License: rel.License} );
 			});
 		}),  
@@ -208,12 +223,12 @@ var
 		}, function dogVoxels(dog) {
 			
 			if (dog.get.unused)
-				JSDB.forEach(dog.trace, dog.get.unused, [], function (voxel, sql) {
+				dog.forEach(dog.trace, dog.get.unused, [], function (voxel, sql) {
 					sql.query("DELETE FROM app.voxels WHERE ?", {ID: voxel.ID});
 				});
 			
 			if (dog.get.refresh)  // fetch new atm data from whatever service and loop over recs (grouped by Point(x y) grid location)
-				JSDB.forEach(dog.trace, dog.get.refresh, [atm.gridLocation, dog.atmage], function (voxel, sql) {
+				dog.forEach(dog.trace, dog.get.refresh, [atm.gridLocation, dog.atmage], function (voxel, sql) {
 					// update voxels with atm data
 				});
 			
@@ -236,7 +251,7 @@ var
 		}, function dogStats(dog) {
 			
 			if (dog.get.lowsnr)
-			JSDB.forEach(dog.trace, dog.get.lowsnr, [], function (prune, sql) {
+			dog.forEach(dog.trace, dog.get.lowsnr, [], function (prune, sql) {
 				Trace("PRUNE "+[prune.fileID, prune.voxelID]);
 
 				sql.query(
@@ -290,7 +305,7 @@ var
 				fetcher = DEBE.fetch.fetcher;
 
 			/*
-			JSDB.forEach(dog.trace, dog.get.ungraded, [], function (file, sql) {
+			dog.forEach(dog.trace, dog.get.ungraded, [], function (file, sql) {
 				Trace("GRADE "+file.Name);
 
 				DEBE.gradeIngest( sql, file, function (stats) {
@@ -325,13 +340,13 @@ var
 			*/
 			
 			if (dog.get.expired)
-				JSDB.forEach(dog.trace, dog.get.expired, [], function (file, sql) { 
+				dog.forEach(dog.trace, dog.get.expired, [], function (file, sql) { 
 					Trace("EXPIRE "+file.Name);
 					sql.query("DELETE FROM app.events WHERE ?", {fileID: file.ID});
 				});
 			
 			if (dog.get.retired)
-				JSDB.forEach(dog.trace, dog.get.retired, dog.maxage, function (file, sql) {
+				dog.forEach(dog.trace, dog.get.retired, dog.maxage, function (file, sql) {
 					Trace("RETIRE "+file.Name);
 
 					var 
@@ -363,13 +378,13 @@ Further information about this file is available ${paths.moreinfo}. `;
 				});
 			
 			if (dog.get.finished)
-				JSDB.forEach(dog.trace, dog.get.finished, [], function (file, sql) {
+				dog.forEach(dog.trace, dog.get.finished, [], function (file, sql) {
 					Trace("FINISHED "+file.Name);
 					//sql.query("UPDATE app.files SET _State_ingested=1 WHERE ?",{ID:file.ID});
 				});
 			
 			if (dog.get.unread)
-				JSDB.forEach(dog.trace, dog.get.unread, [], function (file, sql) {
+				dog.forEach(dog.trace, dog.get.unread, [], function (file, sql) {
 					Trace("INGEST "+file.Name);
 					var
 						zero = {x:0, y:0},
@@ -416,7 +431,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 				fetcher = DEBE.fetch.fetcher;
 
 			if (dog.get.unbilled)
-				JSDB.forEach(dog.trace, dog.get.unbilled, [], function (job, sql) {
+				dog.forEach(dog.trace, dog.get.unbilled, [], function (job, sql) {
 					//Trace(`BILLING ${job} FOR ${job.Client}`, sql);
 					sql.query( "UPDATE openv.profiles SET Charge=Charge+? WHERE ?", [ 
 						job.Done, {Client: job.Client} 
@@ -426,7 +441,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 				});
 
 			if (dog.get.unfunded)
-				JSDB.forEach(dog.trace, dog.get.unfunded, [dog.maxage], function (job, sql) {
+				dog.forEach(dog.trace, dog.get.unfunded, [dog.maxage], function (job, sql) {
 					//Trace("KILLING ",job);
 					sql.query(
 						//"DELETE FROM app.queues WHERE ?", {ID:job.ID}
@@ -434,7 +449,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 				});
 			
 			if (dog.get.stuck)
-				JSDB.forAll( dog.trace, dog.get.stuck, [], function (info, sql) {
+				dog.forAll( dog.trace, dog.get.stuck, [], function (info, sql) {
 
 					Each(queues, function (rate, queue) {  // save collected queuing charges to profiles
 						Each(queue.client, function (client, charge) {
@@ -457,7 +472,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 				});	
 			
 			if (dog.get.polled)
-				JSDB.forEach( dog.trace, dog.get.polled, [], function (job, sql) {
+				dog.forEach( dog.trace, dog.get.polled, [], function (job, sql) {
 					sql.query(
 						"UPDATE app.queues SET ?,Age=Age+Work,Departed=Date_Add(Departed,interval Work day) WHERE ?", [
 						{ID:job.ID}
@@ -520,23 +535,23 @@ Further information about this file is available ${paths.moreinfo}. `;
 		}, function dogClients(dog) {
 
 			if (dog.get.naughty)
-				JSDB.forEach(dog.trace, dog.get.naughty, [], function (client, sql) {
+				dog.forEach(dog.trace, dog.get.naughty, [], function (client, sql) {
 				});
 
 			if (dog.get.needy)
-				JSDB.forEach(dog.trace, dog.get.needy, [dog.disk], function (client, sql) {
+				dog.forEach(dog.trace, dog.get.needy, [dog.disk], function (client, sql) {
 				});		
 
 			if (dog.get.dormant)
-				JSDB.forEach(dog.trace, dog.get.dormant, [dog.unused], function (client, sql) {
+				dog.forEach(dog.trace, dog.get.dormant, [dog.unused], function (client, sql) {
 				});		
 
 			if (dog.get.poor)
-				JSDB.forEach(dog.trace, dog.dog.get.poor, [dog.qos], function (client, sql) {
+				dog.forEach(dog.trace, dog.dog.get.poor, [dog.qos], function (client, sql) {
 				});		
 
 			if (dog.get.uncert)
-				JSDB.forEach(dog.trace, dog.get.uncert, [dog.certage], function (client, sql) {
+				dog.forEach(dog.trace, dog.get.uncert, [dog.certage], function (client, sql) {
 				});		
 			
 		}),
@@ -574,7 +589,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 		}, function dogEngines(sql, dog) {
 			
 			if (dog.get.undefined)
-				JSDB.forEach(dog.trace, dog.get.undefined, [dog.undefined], function (client, sql) {
+				dog.forEach(dog.trace, dog.get.undefined, [dog.undefined], function (client, sql) {
 				});
 		}),
 			
@@ -588,7 +603,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 			bugs: 10
 		}, function dogUsers(dog) {
 			if (dog.get.inactive)
-				JSDB.forEach(dog.trace, dog.get.inactive, [dog.inactive], function (client, sql) {
+				dog.forEach(dog.trace, dog.get.inactive, [dog.inactive], function (client, sql) {
 				});		
 		})
 	},
@@ -1153,6 +1168,35 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	admitRule: { 	//< admitRule all clients by default 	
 	},
 		
+	/**
+	@private
+	@cfg {Object}
+	@member context
+	Defines site context keys to load skinning context before a skin is rendered.
+	Each skin has its own {key: "SQL DB.TABLE" || "/URL?QUERY", ... } spec.
+	*/
+	context: { //< site context extenders
+		/*swag: {  // context keys for swag.view
+			projs: "openv.milestones"
+		},
+		airspace: {
+			projs: "openv.milestones"
+		},
+		plugin: {
+			projs: "openv.milestones"
+		},
+		briefs: {
+			projs: "openv.milestones"
+		},
+		rtpsqd: {
+			apps:"openv.apps",
+			users: "openv.profiles",
+			projs: "openv.milestones",
+			QAs: "app.QAs"
+			//stats:{table:"openv.profiles",group:"client",index:"client,event"}
+		} */
+	},
+		
 	"site.": { 		//< initial site context
 
 		classif: {
@@ -1310,36 +1354,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		gridify: function (recs,noheader) {	//< dump dataset as html table
 			return recs.gridify(noheader);
-		},
-		
-		/**
-		@private
-		@cfg {Object}
-		@member context
-		Defines site context keys to load skinning context before a skin is rendered.
-		Each skin has its own {key: "SQL DB.TABLE" || "/URL?QUERY", ... } spec.
-		*/
-		context: { 
-			swag: {  // context keys for swag.view
-				projs: "openv.milestones"
-			},
-			airspace: {
-				projs: "openv.milestones"
-			},
-			plugin: {
-				projs: "openv.milestones"
-			},
-			briefs: {
-				projs: "openv.milestones"
-			},
-			rtpsqd: {
-				apps:"openv.apps",
-				users: "openv.profiles",
-				projs: "openv.milestones",
-				QAs: "app.QAs"
-				//stats:{table:"openv.profiles",group:"client",index:"client,event"}
-			} 
-		}
+		}		
 	},
 	
 	"errors.": {  //< error messages
@@ -2108,7 +2123,6 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 @param {Object} req Totem request
 @param {Function} res Totem response
 */
-			
 	var 
 		sql = req.sql,
 		query = req.query,
@@ -2117,14 +2131,39 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		error = DEBE.errors,
 		urls = site.urls,
 		query = req.query,
-		fetcher = DEBE.fetch.fetcher,
-		dsname = FLEX.reroute[req.table] || (req.group + "." + req.table),
-		jadepath = paths.jades+req.table+".jade",
-		ctx = site.context[req.table]; 
+		routers = DEBE.byActionTable.select,
+		//fetcher = DEBE.fetch.fetcher,
+		dsname = req.table , //FLEX.reroute[req.table] || (req.group + "." + req.table),
+		ctx = Copy(site, {  //< default site context to render skin
+			table: req.table,
+			dataset: req.table,
+			type: req.type,
+			//parts: req.parts,
+			action: req.action,
+			//org: req.org,
+			client: req.client,
+			flags: req.flags,
+			query: req.query,
+			joined: req.joined,
+			profile: req.profile,
+			group: req.group,
+			//search: req.search,
+			session: req.session,
+			util: {
+				cpu: (req.log.Util*100).toFixed(0),
+				disk: ((req.profile.useDisk / req.profile.maxDisk)*100).toFixed(0)
+			},
+			started: DEBE.started,
+			filename: DEBE.paths.jadePath,  // jade compile requires
+			url: req.url
+		});
+		//ctx = site.context[req.table]; 
 		
-	function dsContext(sql, ctx, cb) { // callback cb() after loading datasets required for this skin
+	function dsContext(ds, cb) { // callback cb(ctx) with skinning context ctx
 		
-		if (ctx) // render in extended context
+		if ( ctxEx = DEBE.context[ds] ) // render in extended context
+			sql.serialize( ctxEx, ctx, cb );
+			/*
 			Each(ctx,  function (siteKey, ds, isLast) {
 				if ( ds.charAt(0) == "/" ) // url dataset
 					fetcher( urls.master+ds, query, null, function (data) {
@@ -2148,45 +2187,41 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 						if ( isLast ) cb();
 					});
 			});
+			*/
 					
 		else  // render in default site context
-			cb();
+			cb( ctx );
 	}
 	
-	dsContext(sql, ctx, function () {  
+	dsContext(dsname, function (ctx) {  // get skinning context for this skin
 
-		function renderFile(file) { 
+		function renderFile( file, ctx ) { 
 		/**
 		@private
 		@method render
 		Render Jade file at path this to res( err || html ) in a new context created for this request.  
 		**/
-			siteContext( req, function (ctx) {
-				try {
-					res( JADE.renderFile( file, ctx ) );  
-				}
-				catch (err) {
-					res(  err );
-				}
-			});
+			try {
+				res( JADE.renderFile( file, ctx ) );  
+			}
+			catch (err) {
+				res(  err );
+			}
 		}
 
-		function renderPlugin(fields) { // render using plugin skin
+		function renderPlugin( fields, ctx ) { // render using plugin skin
 			
-			var
-				pluginPath = paths.jades+"plugin.jade",
-				query = req.query,
-				sql = req.sql,
-				query = Copy({
-					mode: req.parts[1],
-					page: query.page,
-					dims: query.dims || "100%,100%",
-					ds: req.table
-				}, req.query),
-				cols = [],
-				ctx = site.context.plugin;
+			Copy({
+				mode: req.type,
+				page: query.page,
+				dims: query.dims || "100%,100%",
+				ds: dsname
+			}, query);
 			
 			//Log([query, req.search]);
+			
+			var
+				cols = [];
 			
 			switch (fields.constructor) {
 				case Array:
@@ -2243,36 +2278,39 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 
 			else	*/
 			
-			dsContext(sql, ctx, function () {  // render plugin in its plugin context
-				renderFile(pluginPath);
-			});
+			//dsContext("plugin", function (ctx) {  // render plugin in its plugin context
+				renderFile( paths.jades+"plugin.jade", ctx );
+			//});
 			
 		}		
 		
-		function renderStage( dsname, jadepath ) {
-			sql.query( "SHOW FULL COLUMNS FROM ??", dsname, function (err,fields) {
+		function renderTable( ds, ctx ) {
+			
+			sql.query( 
+				"SHOW FULL COLUMNS FROM ??", 
+				DEBE.reroute[ds] || "app."+ds, 
+				function (err,fields) {
+				
 				if (err) // render jade file
-					renderFile( jadepath );
+					renderFile( paths.jades+ds+".jade", ctx );
 
 				else // render plugin
-					renderPlugin( fields );
+					renderPlugin( fields, ctx );
 			});	
 		}
 		
-		function renderJade(jade) { 
+		function renderJade( jade, ctx ) { 
 		/**
 		@private
 		@method render
 		Render Jade string this to res( err || html ) in a new context created for this request. 
 		**/
-			siteContext( req, function (ctx) {
-				try {
-					res( JADE.compile(jade, ctx) (ctx) );
-				}
-				catch (err) {
-					return res( err );
-				}
-			});
+			try {
+				res( JADE.compile(jade, ctx) (ctx) );
+			}
+			catch (err) {
+				return res( err );
+			}
 		}
 
 		sql.forFirst("", paths.engine, { // Try a jade engine
@@ -2282,23 +2320,21 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		}, function (eng) {
 
 			if (eng)  // render view with this jade engine
-				dsContext(sql, ctx, function () {
-					renderJade( eng.Code || "", res );
-				});
+				renderJade( eng.Code || "", ctx );
 
-			else 	// try to get engine from sql table 
-			if ( route = DEBE.byActionTable.select[req.table] || DEBE.byAction.select )
+			else
+			if ( route = routers[dsname] )   // render ds returned by an engine 
 				route(req, function (recs) { 
 					//Log({eng:recs, ds:req.table});
 					if (recs)
-						renderPlugin( recs[0] || {} );
+						renderPlugin( recs[0] || {}, ctx );
 
 					else
-						renderStage( dsname, jadepath );
+						renderTable( dsname , ctx );
 				});	
 
-			else  // try sql table or file
-				renderStage( dsname, jadepath );		
+			else  // render a table
+				renderTable( dsname , ctx );
 
 		});
 	});
@@ -2423,38 +2459,6 @@ Chapter 2
 	
 	else
 		res(DEBE.errors.badOffice);
-}
-
-function Trace(msg,sql) {
-	TRACE.trace(msg,sql);
-}
-
-function siteContext(req, cb) {
-	
-	cb( Copy(DEBE.site, {
-		table: req.table,
-		dataset: req.table,
-		type: req.type,
-		parts: req.parts,
-		action: req.action,
-		org: req.org,
-		client: req.client,
-		flags: req.flags,
-		query: req.query,
-		joined: req.joined,
-		profile: req.profile,
-		group: req.group,
-		//search: req.search,
-		session: req.session,
-		util: {
-			cpu: (req.log.Util*100).toFixed(0),
-			disk: ((req.profile.useDisk / req.profile.maxDisk)*100).toFixed(0)
-		},
-		started: DEBE.started,
-		filename: DEBE.paths.jadePath,
-		url: req.url
-	}) );
-	
 }
 
 function Initialize (sql) {
@@ -2618,22 +2622,6 @@ Initialize DEBE on startup.
 			uploader: DEBE.uploadFile,
 
 			createCert: DEBE.createCert,
-			
-			reroute: {
-				roles: "openv.roles",
-				aspreqts: "openv.aspreqts",
-				ispreqts: "openv.ispreqts",
-				swreqts: "openv.swreqts",
-				hwreqts: "openv.hwreqts",
-				tta: "openv.tta",
-				trades: "openv.trades",
-				milestones: "openv.milestones",
-				sessions: "openv.sessions",
-				journal: "openv.journal",
-				hawks: "openv.hawks",
-				attrs: "openv.attrs",
-				issues: "openv.issues"
-			},
 			
 			diag: DEBE.diag,
 			
@@ -2863,7 +2851,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 	process.exit();
 }
 
-// Prototypes
+//====================== extend objects
 	
 [  // string prototypes
 	function toQuery(sql, query) {
@@ -3760,7 +3748,15 @@ function sharePlugin(req,res) {  //< share plugin attribute
 
 }
 
-switch (process.argv[2]) { //< unit tests
+//======================= execution tracing
+
+function Trace(msg,sql) {
+	TRACE.trace(msg,sql);
+}
+
+//======================= unit tests
+
+switch ( process.argv[2] ) { //< unit tests
 	case "D1": 
 		var DEBE = require("../debe").config({
 			onFile: {
