@@ -1157,7 +1157,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		exe: exePlugin,
 		add: extendPlugin,
 		sub: retractPlugin
-		
 	},
 
 	"byActionTable.": {  //< routers for CRUD endpoints at /DATASET 
@@ -2900,9 +2899,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 				switch (val.constructor.name) {
 					case "Number": return val.toFixed(2);
 					case "String": return val;										
-					case "Array": return "[" + val.joinify(", ", function (val) {
-						return val.toFixed ? val.toFixed(2) : val+"";
-					}) + "]";
+					case "Array": return "[" + val.joinify( (val) => val ? val.toFixed ? val.toFixed(2) : val+"" : val+"" ) + "]";
 					case "Date": return val+"";
 					case "Object": 
 						return cb ? cb(val) : JSON.stringify(val);
@@ -2916,17 +2913,15 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		
 		for (var key in rec) try { $[key] = JSON.parse( rec[key] ); } catch (err) {}
 	
-		this.Xsolicit( (html) => html.Xtex( (html) => html.Xtag( req, (html) =>
-			html
+		this.Xescape( [], (blocks,html) => html.Xsolicit( (html) => html.Xtex( (html) => html.Xtag( req, (html) => cb( html
 			// inline code escapes
-			.replace(/<br>/g,"\n")
+			//.replace(/<br>/g,"\n")
 			/*.replace(/(.*?):\n\n((.|\n)*?)\n\n/g, function (str, intro, code) {  // code embeds
 				Log(str,intro,code);
 				inList.push( code.tag("code").tag("pre") );
 				return intro + ":$in" + (inList.length-1);
 				return "";
 			})  */
-
 			// record substitutions
 			.replace(/\$\{(.*?)\}/g, function (str,key) {  // ${ TeX matrix key } 
 				function texify(recs) {
@@ -3035,26 +3030,49 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 				var q = (ref.charAt(0) == "'") ? '"' : "'";
 				return `href=${q}javascript:navigator.follow(${ref},BASE.user.client,BASE.user.source)${q}>`;
 			})
-			
-			.Xdummy( (html) => html+"" )
-			//.Xtex( cb )
-			//.Xtag( req, cb )
-			//.Xsolicit( cb )
-			//.Xtex( (html) => html.Xtag( req, cb ) )
-		)));
+																													  
+			// block backsub
+			.replace(/@block(.*)?;/g, function (str,idx) {
+				Log(`unblock[${idx}]`);
+				return blocks[ parseInt(idx) ];
+			})
+		)))));
+	},
+	
+	function Xescape( blocks, cb ) { // code block escaper
+		var 
+			key = "@esc",
+			html = this,
+			fetchBlock = function ( rec, cb ) {
+				Log(`block[${blocks.length}] `, rec.url);
+				blocks.push( rec.opt );
+				cb( rec.url + ":" + "@block" + (blocks.length-1) + ";");
+			};
+		
+		html.serialize( fetchBlock, /(.*)?\:\n\n((.|\n)*?)\n\n/g, key, (html, fails) => {  
+			cb( blocks, html);
+		}); 		
+		
+		/*.replace(/(.*?):\n\n((.|\n)*?)\n\n/g, function (str, intro, code) {  // code embeds
+			Log(str,intro,code);
+			inList.push( code.tag("code").tag("pre") );
+			return intro + ":$in" + (inList.length-1);
+			return "";
+		})  */
 	},
 	
 	function Xsolicit( cb ) {  // #[URL] solicits response from site URL
+	/* Using is a browser typically causes a hang as the content is not received into an iframe */
 		var 
 			key = "@solicit",
 			html = this,
 			fetcher = DEBE.fetch.fetcher,
 			fetchSite = function ( rec, cb ) {
-				Log("solicit", rec);
+				//Log("solicit", rec);
 				fetcher( rec.url, null, null, cb );
 			};
 		
-		html.serialize( fetchSite, /\#\[(.[^\]]*?)\]/g, key, (html, fails) => {  
+		html.serialize( fetchSite, /\#\[(.[^\]]*?)\]/g, key, (html, fails) => {
 			cb(html);
 		}); 		
 	},
@@ -3082,7 +3100,6 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 					Product: product,
 					Path: "/tag/"+product
 				}, (pub) => {
-					//Log("pub", pub);
 					cb( pub ? "@"+req.client+" " : "@none" );
 				});				
 			};
@@ -3092,7 +3109,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		}); 		
 	},
 	
-	function Xtex( cb) {  // $$ MATH $$ and X$ MATH $X replacements
+	function Xtex( cb) {  // X$ MATH $X replacements
 		var 
 			key = "@tex",
 			html = this,
@@ -3125,8 +3142,8 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 			};			
 		
 		html.serialize( fetchInlineTeX, /\$\$([^\$]*?)\$\$/g, key, (html,fails) => {  // $$ inline Tex $$
-		html.serialize( fetchAsciiTeX, /a\$([\$!]*?)\$a/g, key, (html,fails) => 	{ // a$ ascii math $a
-		html.serialize( fetchTeX, /o\$([^\$]*?)\$o/g, key,  (html,fails) =>  { // o$ new line TeX $o
+		html.serialize( fetchAsciiTeX, /a\$([\$!]*?)\$a/g, key, (html,fails) => { // a$ ascii math $a
+		html.serialize( fetchTeX, /o\$([^\$]*?)\$o/g, key,  (html,fails) => { // o$ new line TeX $o
 			cb(html);
 		});
 		});
@@ -3240,22 +3257,33 @@ append layout_body
 			sql = req.sql,
 			recs = this;
 
-		keys.forEach( (key) => {
+		if ( key = keys[0] ) {
 			var
 				fetchBlog = function( rec, cb ) {
 					//Log("blog", key, rec);
 					if ( text = rec[key] + "" )
-						text.Xblog(req, ds+"?ID="+rec.ID, {}, {}, rec, cb);
+						text.Xblog(req, ds+"?ID="+rec.ID, {}, {}, rec, (html) => {
+							Log("xblog>>>>", html);
+							cb(html);
+						});
+					
+					else
+						cb(text);
 				};
 			
 			recs.serialize( fetchBlog, function fb(rec, blog)  {
 				if (rec) 
 					rec[key] = blog;
 				
-				else 
+				else {
+					Log("blog done");
 					cb( recs );
+				}
 			});
-		});
+		}
+		
+		else
+			cb(recs);
 		
 	},
 		

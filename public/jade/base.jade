@@ -36,9 +36,10 @@ append layout_help
 
 append layout_parms
 	- banner = query.holdoff ? "" : banner
-	- start = "content"
-	- check = true
-	- highlight = "zenburn"
+	- start = "content" // skin rendering starts here
+	- check = true // browser checks
+	- math = false // enable for mathjax
+	- highlight = "zenburn" // for code block highlighting in markdown
 	
 	block base_parms
 		// exjs
