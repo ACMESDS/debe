@@ -2878,7 +2878,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		});
 	},
 	
-	function Xblog(req, ds, cache, $, rec, cb) {
+	function Xblog(req, ds, cache, $, rec, viaBrowser, cb) {
 	/*
 	Replaces tags on this string of the form:
 		
@@ -2913,7 +2913,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		
 		for (var key in rec) try { $[key] = JSON.parse( rec[key] ); } catch (err) {}
 	
-		this.Xescape( [], (blocks,html) => html.Xsolicit( (html) => html.Xtex( (html) => html.Xtag( req, (html) => cb( html
+		this.Xescape( [], (blocks,html) => html.Xsolicit( viaBrowser, (html) => html.Xtex( (html) => html.Xtag( req, (html) => cb( html
 			// inline code escapes
 			//.replace(/<br>/g,"\n")
 			/*.replace(/(.*?):\n\n((.|\n)*?)\n\n/g, function (str, intro, code) {  // code embeds
@@ -3061,15 +3061,19 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		})  */
 	},
 	
-	function Xsolicit( cb ) {  // #[URL] solicits response from site URL
-	/* Using is a browser typically causes a hang as the content is not received into an iframe */
+	function Xsolicit( viaBrowser, cb ) {  // #[URL] solicits response from site URL
+	/* Using in a browser typically causes a hang as the content is not received into an iframe */
 		var 
 			key = "@solicit",
 			html = this,
 			fetcher = DEBE.fetch.fetcher,
 			fetchSite = function ( rec, cb ) {
 				//Log("solicit", rec);
-				fetcher( rec.url, null, null, cb );
+				if (viaBrowser) 
+					cb( "".tag("iframe", {src:rec.url}) );
+				
+				else
+					fetcher( rec.url, null, null, (html) => cb );
 			};
 		
 		html.serialize( fetchSite, /\#\[(.[^\]]*?)\]/g, key, (html, fails) => {
@@ -3261,24 +3265,19 @@ append layout_body
 			var
 				fetchBlog = function( rec, cb ) {
 					//Log("blog", key, rec);
-					if ( text = rec[key] + "" )
-						text.Xblog(req, ds+"?ID="+rec.ID, {}, {}, rec, (html) => {
-							Log("xblog>>>>", html);
-							cb(html);
-						});
+					if ( md = rec[key] + "" )
+						md.Xblog(req, ds+"?ID="+rec.ID, {}, {}, rec, true, (html) => cb(html) );
 					
 					else
-						cb(text);
+						cb(md);
 				};
 			
 			recs.serialize( fetchBlog, function fb(rec, blog)  {
 				if (rec) 
 					rec[key] = blog;
 				
-				else {
-					Log("blog done");
+				else 
 					cb( recs );
-				}
 			});
 		}
 		
