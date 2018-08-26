@@ -75,8 +75,18 @@ var										// shortcuts and globals
 var
 	DEBE = module.exports = Copy({
 	
-	reroute: {
-		//engines: "secure.engines",
+	reroute: {  //< sql.acces routes to provide secure access to db
+		engines: function (ctx) {
+			//Log("<<<", ctx);
+			ctx.index["Nrel:"] = "count(releases.license)";
+			ctx.index[ctx.from+".*:"] = "";
+			ctx.join = `LEFT JOIN ${ctx.db}.releases ON (releases.product = concat(engines.name,'.',engines.type)) AND releases.enduser='${ctx.client}'`;
+			ctx.where["releases.id:"] = "";
+			//Log(">>>", ctx);
+			return ctx.db+"."+ctx.from;
+		},
+		
+		masters: "block.masters",
 		roles: "openv.roles",
 		aspreqts: "openv.aspreqts",
 		ispreqts: "openv.ispreqts",
@@ -2284,10 +2294,9 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		}		
 		
 		function renderTable( ds, ctx ) {
-			
 			sql.query( 
 				"SHOW FULL COLUMNS FROM ??", 
-				DEBE.reroute[ds] || "app."+ds, 
+				sql.access( ds ), 
 				function (err,fields) {
 				
 				if (err) // render jade file

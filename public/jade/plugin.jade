@@ -40,9 +40,8 @@ append site_body
 	- pivcol = "tbd"
 	- dscols = query.cols || ""
 	- dspage = query.page || 20
-	// - dsquery = query.search || ""
 	- dsrefresh = query.refresh || ""
-	- dspath = `/${ds}.db`
+	- dsdb = `/${ds}.db`
 	- dstitle = ds + " view"
 	- dsdims = query.dims
 	- dims = dsdims.split(",")
@@ -55,7 +54,7 @@ append site_body
 		when "plugin"
 		when "run"
 			#grid.Usecases(
-				path=dspath,
+				path=dsdb,
 				cols=dscols,
 				menu="Agents",
 				wrap,
@@ -146,6 +145,8 @@ append site_body
 					if available, is attached as "RTP", "PMR" etc links.  Earning job credits is easy: simply 
 					upload your data using the Files | Uploads.
 
+			#post.ToU(path="/#{ds}.tou",dims="800,600",wrap)
+
 			if more>0
 				#grid.ContextKeys(
 					path="/keyedit.db?ds=#{ds}",
@@ -159,7 +160,7 @@ append site_body
 		when "pivot"
 			#pivot(
 				class=dstitle,
-				path=dspath,
+				path=dsdb,
 				pivots=pivcol,
 				cols=dscols,
 				page=dspage )
@@ -197,7 +198,7 @@ append site_body
 		when "calc"
 			#grid(
 				class=dstitle,
-				path=dspath,
+				path=dsdb,
 				calc=1,
 				cols="W*10",
 				dims=dsdims,
@@ -206,7 +207,7 @@ append site_body
 		default
 			#grid(
 				class=dstitle,
-				path=dspath,
+				path=dsdb,
 				cols=dscols,
 				dims=dsdims,
 				page=dspage )
