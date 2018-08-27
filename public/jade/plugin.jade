@@ -147,6 +147,10 @@ append site_body
 
 			#post.ToU(path="/#{ds}.tou",dims="800,600",wrap)
 
+			#grid.Files(
+				path="/file.db?client=#{client}",
+				Cols="Name,Path,Ingest" )
+
 			if more>0
 				#grid.ContextKeys(
 					path="/keyedit.db?ds=#{ds}",

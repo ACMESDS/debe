@@ -80,7 +80,7 @@ var
 			//Log("<<<", ctx);
 			ctx.index["Nrel:"] = "count(releases.license)";
 			ctx.index[ctx.from+".*:"] = "";
-			ctx.join = `LEFT JOIN ${ctx.db}.releases ON (releases.product = concat(engines.name,'.',engines.type)) AND releases.enduser='${ctx.client}'`;
+			ctx.join = `LEFT JOIN ${ctx.db}.releases ON (releases._Product = concat(engines.name,'.',engines.type)) AND releases._EndUser='${ctx.client}'`;
 			ctx.where["releases.id:"] = "";
 			//Log(">>>", ctx);
 			return ctx.db+"."+ctx.from;
@@ -211,13 +211,13 @@ var
 		dogReleases: Copy({ 
 			cycle: 400,
 			get: {
-				unworthy: "SELECT ID,Product,EndServiceID FROM app.releases WHERE Fails > ? GROUP BY Product,EndServiceID"
+				unworthy: "SELECT ID,_Product,_EndServiceID FROM app.releases WHERE _Fails > ? GROUP BY _Product,_EndServiceID"
 			},
 			maxFails: 10
 		}, function dogReleases(dog) {
 			
 			dog.forEach(dog.trace, dog.get.unworthy, [dog.maxFails], (rel, sql) => {
-				sql.query("UPDATE app.masters SET Revoked=1 WHERE least(?)", {EndServiceID: rel.EndServiceID, License: rel.License} );
+				sql.query("UPDATE app.masters SET _Revoked=1 WHERE least(?)", {EndServiceID: rel.EndServiceID, License: rel.License} );
 			});
 		}),  
 						  
@@ -1370,9 +1370,10 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		pretty: function (err) {
 			return "".tag("img",{src:"/stash/reject.jpg",width:40,height:60})
 				+ (err+"").replace(/\n/g,"<br>").replace(process.cwd(),"").replace("Error:","")
-				+ "; see "
-				+ "issues".tag("a",{href: "/issues.view"})
-				+ " for further information";
+				+ ". "
+				+ "Issues".tag("a",{href: "/issues.view"}) + " || "
+				+ "Home".tag("a",{href:"/home.view"}) + " || "
+				+ "API".tag("a",{href:"/api.view"});
 		},
 		noAttribute: new Error( "undefined engine attribute" ),
 		noEngine: new Error( "no such engine" ),
@@ -3753,8 +3754,8 @@ function sharePlugin(req,res) {  //< share plugin attribute
 							
 						case "pub":
 							sql.query( 
-								"SELECT * FROM app.releases WHERE ? ORDER BY Published DESC LIMIT 1", 
-								{Product: eng.Name+"."+eng.Type}, (err,pubs) => {
+								"SELECT * FROM app.releases WHERE ? ORDER BY _Published DESC LIMIT 1", 
+								{_Product: eng.Name+"."+eng.Type}, (err,pubs) => {
 
 								if ( pub = pubs[0] ) {
 									res( `Publishing ${eng.Name}` );
