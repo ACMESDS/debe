@@ -145,7 +145,7 @@ append site_body
 					if available, is attached as "RTP", "PMR" etc links.  Earning job credits is easy: simply 
 					upload your data using the Files | Uploads.
 
-			#post.ToU(path="/#{ds}.tou",dims="800,600",wrap)
+			#post.ToU(path="/#{ds}.tou",dims="1800,600",wrap)
 
 			#grid.Files(
 				path="/file.db?client=#{client}",
@@ -159,7 +159,7 @@ append site_body
 					page=dspage)
 					
 			if more>1
-				#post.Flow( path="/#{ds}_flow.view", dims="800,600",wrap )
+				#post.Flow( path="/#{ds}_flow.view", dims="1800,600",wrap )
 
 		when "pivot"
 			#pivot(

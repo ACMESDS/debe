@@ -78,7 +78,7 @@ var
 	reroute: {  //< sql.acces routes to provide secure access to db
 		engines: function (ctx) {
 			//Log("<<<", ctx);
-			ctx.index["Nrel:"] = "count(releases.license)";
+			ctx.index["Nrel:"] = "count(releases._License)";
 			ctx.index[ctx.from+".*:"] = "";
 			ctx.join = `LEFT JOIN ${ctx.db}.releases ON (releases._Product = concat(engines.name,'.',engines.type)) AND releases._EndUser='${ctx.client}'`;
 			ctx.where["releases.id:"] = "";
@@ -2872,22 +2872,6 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 	
 	// string serializers callback cb(html) with tokens replaced
 	
-	function Xblock( cb ) {
-		var 
-			key = "@block",
-			html = this,
-			blocks = [],
-			fetchBlock = function ( rec, cb ) {
-				Log("block", rec);
-				blocks.push( rec.url.tag("code").tag("pre") );
-				cb("@ex"+(blocks.length-1));
-			};
-		
-		html.serialize( fetchBlock, /([^:]*):\n\n((.|\n)*?)\n\n/g, key, (html,fails) => {
-			cb(html);
-		});
-	},
-	
 	function Xblog(req, ds, cache, $, rec, viaBrowser, cb) {
 	/*
 	Replaces tags on this string of the form:
@@ -2898,7 +2882,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		[ TEXT ]( LINK )  
 		[ FONT ]( TEXT )  
 		$$ inline TeX $$  ||  o$ break TeX $o || a$ AsciiMath $a || m$ MathML $m  
-		#{ KEY } || #{ KEY }( SHORTCUT ) || !{ EXPR }  || ^{ KEY as TeX matrix  }  
+		${ KEY } || #{ KEY }( SHORTCUT ) || !{ EXPR }  || ^{ KEY as TeX matrix  }  
 		!!TAG
 		
 	using the supplifed cache and $ hashes to store #{KEY} values and to resolve #{key} tags.
@@ -2923,17 +2907,13 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		
 		for (var key in rec) try { $[key] = JSON.parse( rec[key] ); } catch (err) {}
 	
+		var blockidx = 0;
+		
 		this.Xescape( [], (blocks,html) => html.Xsolicit( viaBrowser, (html) => html.Xtex( (html) => html.Xtag( req, (html) => cb( html
-			// inline code escapes
-			//.replace(/<br>/g,"\n")
-			/*.replace(/(.*?):\n\n((.|\n)*?)\n\n/g, function (str, intro, code) {  // code embeds
-				Log(str,intro,code);
-				inList.push( code.tag("code").tag("pre") );
-				return intro + ":$in" + (inList.length-1);
-				return "";
-			})  */
+			
 			// record substitutions
-			.replace(/\$\{(.*?)\}/g, function (str,key) {  // ${ TeX matrix key } 
+			.parseJS(rec)
+			.replace(/\#\{(.*?)\}/g, function (str,key) {  // ${ TeX matrix key } 
 				function texify(recs) {
 					var tex = [];
 
@@ -2958,8 +2938,9 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 				else {
 					try { var val = eval( `$.${key}` ); } catch (err) {	}
 					return cache[key] = texify( val || rec[key] );
-				}							
+				}
 			})
+			/*
 			.replace(/\#\{(.*?)\}\((.*?)\)/g, function (str,key,short) {  // #{ KEY }( SHORTCUT ) 
 				if (  key in cache )
 					return cache[key];
@@ -2969,6 +2950,8 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 					return cache[key] = cache[short] = pretty(val || rec[key]);
 				}							
 			})
+			*/
+			/*
 			.replace(/\#\{(.*?)\}/g, function (str,key) {  // #{ KEY } 
 				//Log(key,cache);
 				if (  key in cache )
@@ -2978,7 +2961,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 					try { var val = eval( `$.${key}` ); } catch (err) { }
 					return cache[key] = pretty( val || rec[key] );
 				}
-			})
+			}) */
 			.replace(/\=\{(.*?)\}/g, function (str,key) {  // ={ KEY } 
 				//Log(key,cache);
 				if (  key in cache )
@@ -3042,9 +3025,9 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 			})
 																													  
 			// block backsub
-			.replace(/@block(.*)?;/g, function (str,idx) {
-				Log(`unblock[${idx}]`);
-				return blocks[ parseInt(idx) ];
+			.replace(/@block/g, function (str) {
+				Log(`unblock[${blockidx}]`);
+				return "\n\n" + blocks[ blockidx++ ] + "\n";
 			})
 		)))));
 	},
@@ -3056,7 +3039,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 			fetchBlock = function ( rec, cb ) {
 				Log(`block[${blocks.length}] `, rec.url);
 				blocks.push( rec.opt );
-				cb( rec.url + ":" + "@block" + (blocks.length-1) + ";");
+				cb( rec.url + ":" + "@block");
 			};
 		
 		html.serialize( fetchBlock, /(.*)?\:\n\n((.|\n)*?)\n\n/g, key, (html, fails) => {  
