@@ -431,7 +431,8 @@ Further information about this file is available ${paths.moreinfo}. `;
 				unbilled: "SELECT * FROM app.queues WHERE Finished AND NOT Billed",
 				unfunded: "SELECT * FROM app.queues WHERE NOT Funded AND now()-Arrived>?",				
 				stuck: "UPDATE app.queues SET Departed=now(), Notes=concat(Notes, ' is ', link('billed', '/profile.view')), Age=Age + (now()-Arrived)/3600e3, Finished=1 WHERE least(Departed IS NULL,Done=Work)", 
-				polled: "SELECT * FROM app.queues WHERE Class='polled' AND Now() > Departed"
+				polled: "SELECT * FROM app.queues WHERE Class='polled' AND Now() > Departed",
+				unmailed: "SELECT * FROM app.queues WHERE NOT Finished AND Class='email' "
 			},
 			maxage: 10,
 			cycle: 300
@@ -440,6 +441,16 @@ Further information about this file is available ${paths.moreinfo}. `;
 				queues = FLEX.queues,
 				fetcher = DEBE.fetch.fetcher;
 
+			if (dog.get.unmailed) 
+				dog.forEach(dog.trace, dog.get.unmailed, [], function (job, sql) {
+					sql.query("UPDATE app.queues SET Finished=1 WHERE ?", {ID: job.ID});
+					sendMail({
+						to: job.Client,
+						subject: "Totem update",
+						body: job.Notes
+					});
+				});
+			
 			if (dog.get.unbilled)
 				dog.forEach(dog.trace, dog.get.unbilled, [], function (job, sql) {
 					//Trace(`BILLING ${job} FOR ${job.Client}`, sql);
@@ -2872,81 +2883,82 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 	
 	// string serializers callback cb(html) with tokens replaced
 	
-	function Xblog(req, ds, cache, $, rec, viaBrowser, cb) {
+	function Xblog(req, ds, cache, ctx, rec, viaBrowser, cb) {
 	/*
 	Replaces tags on this string of the form:
 		
-		TEXT:\n\nCODE\n
+		TEXT:\n\nCODE\n  
 		[ post ] ( SKIN.view ? w=WIDTH & h=HEIGHT & x=KEY$EXPR & y=KEY$EXPR & src=DS & id=VALUE )  
 		[ image ] ( PATH.jpg ? w=WIDTH & h=HEIGHT )  
-		[ LINK ]( URL )  ||  [ FONT ]( TEXT )  ||  [ ]( URL )  ||  [TOPIC]( )
-		$$ inline TeX $$  ||  $ break TeX $ || a$ AsciiMath $a || m$ MathML $m  
+		[ LINK ]( URL )  ||  [ FONT ]( TEXT )  ||  [ ]( URL )  ||  [TOPIC]( )  
+		$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$
 		${ KEY } || ${tex( KEY )} || ${doc( KEY )} || ${JS EXPRESSION}  
 		
 	using the supplifed cache and $ hashes to store #{KEY} values and to resolve #{key} tags.
 	*/
 		
-		for (var key in rec) try { $[key] = JSON.parse( rec[key] ); } catch (err) {}
+		for (var key in rec) try { ctx[key] = JSON.parse( rec[key] ); } catch (err) { ctx[key] = rec[key]; }
 	
 		var 
-			blockidx = 0,
-			ctx = Copy(rec, {
-				doc: (val) => {
-					function pretty(val, cb) {
-						if (val)
-							switch (val.constructor.name) {
-								case "Number": return val.toFixed(2);
-								case "String": return val;										
-								case "Array": return "[" + val.joinify( (val) => val ? val.toFixed ? val.toFixed(2) : val+"" : val+"" ) + "]";
-								case "Date": return val+"";
-								case "Object": 
-									return cb ? cb(val) : JSON.stringify(val);
-								default: 
-									return JSON.stringify(val);
-							}
-
-						else
-							return (val == 0) ? "0" : "null";
-					}
+			blockidx = 0;
 		
-					val = val+"";
-					return pretty(val, (val) => {
-						var rtns = [];
-						for (var key in val) 
-							rtns.push( "{" + pretty(val[key]) + "}_{" + key + "}" );
-						return rtns.join(" = ");						
-					});					
-				},
-				tex: (val) => {
-					function texify(recs) {
-						var tex = [];
+		Copy({
+			doc: (val) => {
+				function readify(val, cb) {
+					if (val)
+						switch (val.constructor.name) {
+							case "Number": return val.toFixed(2);
+							case "String": return val;										
+							case "Array": return "[" + val.joinify( (val) => val ? val.toFixed ? val.toFixed(2) : val+"" : val+"" ) + "]";
+							case "Date": return val+"";
+							case "Object": 
+								return cb ? cb(val) : JSON.stringify(val);
+							default: 
+								return JSON.stringify(val);
+						}
 
-						if (recs && recs.constructor == Array) 
-							recs.forEach( function (rec) {
-								if (rec.forEach) {
-									rec.forEach( function (val,idx) {
-										rec[idx] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : JSON.stringify(val);
-									});
-									tex.push( rec.join(" & ") );
-								}
-								else
-									tex.push( rec.toFixed ? rec.toFixed(2) : rec.toUpperCase ? rec : JSON.stringify(rec) );
-							});	
-
-						return  "\\left[ \\begin{matrix} " + tex.join("\\\\") + " \\end{matrix} \\right]";
-					}
-						val = val+"";
-						return texify( val.parseJSON() || val );
-					/*
-					if (  key in cache )
-						return cache[key];
-
-					else {
-						try { var val = eval( `$.${key}` ); } catch (err) {	}
-						return cache[key] = texify( val || rec[key] );
-					} */
+					else
+						return (val == 0) ? "0" : "null";
 				}
-			});
+
+				val = val+"";
+				return readify(val, (val) => {
+					var rtns = [];
+					for (var key in val) 
+						rtns.push( "{" + pretty(val[key]) + "}_{" + key + "}" );
+					return rtns.join(" = ");						
+				});					
+			},
+			tex: (val) => {
+				function texify(recs) {
+					var tex = [];
+
+					if (recs && recs.constructor == Array) 
+						recs.forEach( function (rec) {
+							if (rec.forEach) {
+								rec.forEach( function (val,idx) {
+									rec[idx] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : JSON.stringify(val);
+								});
+								tex.push( rec.join(" & ") );
+							}
+							else
+								tex.push( rec.toFixed ? rec.toFixed(2) : rec.toUpperCase ? rec : JSON.stringify(rec) );
+						});	
+
+					return  "\\left[ \\begin{matrix} " + tex.join("\\\\") + " \\end{matrix} \\right]";
+				}
+					val = val+"";
+					return texify( val );
+				/*
+				if (  key in cache )
+					return cache[key];
+
+				else {
+					try { var val = eval( `$.${key}` ); } catch (err) {	}
+					return cache[key] = texify( val || rec[key] );
+				} */
+			}
+		}, ctx);
 		
 		// Xsolicit( viaBrowser, (html) => 
 		this.Xescape( [], (blocks,html) => html.parseJS(ctx).Xtex( (html) => html.Xtag( req, viaBrowser, (html) => cb( html
@@ -3241,9 +3253,9 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 				}, (d) => cb( d.mml || "" ) );
 			};			
 		
+		html.serialize( fetchAsciiTeX, /a\$\$([\$!]*?)\$\$/g, key, (html,fails) => { // a$$ ascii math $$
+		html.serialize( fetchTeX, /n\$\$([^\$]*?)\$\$/g, key,  (html,fails) => { // n$$ new line TeX $$
 		html.serialize( fetchInlineTeX, /\$\$([^\$]*?)\$\$/g, key, (html,fails) => {  // $$ inline Tex $$
-		html.serialize( fetchAsciiTeX, /a\$([\$!]*?)\$a/g, key, (html,fails) => { // a$ ascii math $a
-		html.serialize( fetchTeX, /\$([^\$]*?)\$/g, key,  (html,fails) => { // $ new line TeX $
 			cb(html);
 		});
 		});
