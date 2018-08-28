@@ -2961,7 +2961,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		}, ctx);
 		
 		// Xsolicit( viaBrowser, (html) => 
-		this.Xescape( [], (blocks,html) => html.parseJS(ctx).Xtex( (html) => html.Xtag( req, viaBrowser, (html) => cb( html
+		this.Xescape( [], (blocks,html) => html.parseJS(ctx).Xtex( (html) => html.Xtag( req, ds, viaBrowser, (html) => cb( html
 			
 			// record substitutions
 			//.parseJS(ctx)
@@ -3046,20 +3046,20 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 			/*.replace(/\[([^\[\]]*?)\]\(([^\)]*?)\)/g, function (str,link,src) {  // [LINK](SRC) 
 				var
 					keys = {},
-					dspath = ds.parsePath(keys),
-					path = src.parsePath(keys) || dspath,
+					dsPath = ds.parsePath(keys),
+					path = src.parsePath(keys) || dsPath,
 					w = keys.w || 100,
 					h = keys.h || 100,
-					opsrc =  "/" + path.tag( "?", Copy({src:dspath}, keys) );
+					srcPath =  "/" + path.tag( "?", Copy({src:dsPath}, keys) );
 
-				//Log({link: link, keys: keys, opsrc: opsrc, src: src, ds: ds});
+				//Log({link: link, keys: keys, srcPath: srcPath, src: src, ds: ds});
 				switch (link) {
 					case "image":
 					case "img":
-						return "".tag("img", { src:opsrc, width:w, height:h });
+						return "".tag("img", { src:srcPath, width:w, height:h });
 					case "post":
 					case "iframe":
-						return "".tag("iframe", { src:opsrc, width:w, height:h });
+						return "".tag("iframe", { src:srcPath, width:w, height:h });
 					case "red":
 					case "blue":
 					case "green":
@@ -3068,8 +3068,8 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 					case "black":
 						return src.tag("font",{color:link});
 					default:
-						//Log( "".tag("iframe",{ src: opsrc, width:w, height:h } ) );
-						return link.tag("a", { href:opsrc });
+						//Log( "".tag("iframe",{ src: srcPath, width:w, height:h } ) );
+						return link.tag("a", { href:srcPath });
 				}
 			}) */
 			.replace(/href=(.*?)\>/g, function (str,ref) { // follow <a href=REF>A</a> links
@@ -3131,7 +3131,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		cb(this);
 	},
 	
-	function Xtag( req, viaBrowser, cb ) {  // !!TOPIC smart tags
+	function Xtag( req, ds, viaBrowser, cb ) {  // !!TOPIC smart tags
 		var 
 			key = "@tag",
 			html = this,
@@ -3173,23 +3173,23 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 					keys = {},
 					opt = rec.url,
 					url = rec.opt,
-					dspath = "tbd".parsePath(keys),
-					path = url.parsePath(keys) || dspath,
+					dsPath = ds.parsePath(keys),
+					srcPath = url.parsePath(keys) || dsPath,
 					w = keys.w || 100,
 					h = keys.h || 100,
-					opsrc =  path.tag( "?", Copy({src:dspath}, keys) );				
+					srcPath =  srcPath.tag( "?", Copy({src:dsPath}, keys) );				
 
-				//Log("tag",rec, dspath, keys, opsrc);
+				//Log("tag",rec, dsPath, keys, srcPath);
 
 				switch (opt) {
 					case "image":  //[image](url)
 					case "img":
-						cb( "".tag("img", { src:opsrc, width:w, height:h }) );
+						cb( "".tag("img", { src:srcPath, width:w, height:h }) );
 						break;
 						
 					case "post":  // [post](url)
 					case "iframe":
-						cb( "".tag("iframe", { src:opsrc, width:w, height:h }) );
+						cb( "".tag("iframe", { src:srcPath, width:w, height:h }) );
 						break;
 						
 					case "R":  // [FONT](X)
