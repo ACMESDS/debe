@@ -2877,14 +2877,11 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 	Replaces tags on this string of the form:
 		
 		TEXT:\n\nCODE\n
-		#[ URL ]
 		[ post ] ( SKIN.view ? w=WIDTH & h=HEIGHT & x=KEY$EXPR & y=KEY$EXPR & src=DS & id=VALUE )  
 		[ image ] ( PATH.jpg ? w=WIDTH & h=HEIGHT )  
-		[ TEXT ]( LINK )  
-		[ FONT ]( TEXT )  
-		$$ inline TeX $$  ||  o$ break TeX $o || a$ AsciiMath $a || m$ MathML $m  
+		[ LINK ]( URL )  ||  [ FONT ]( TEXT )  ||  [ ]( URL )  ||  [TOPIC]( )
+		$$ inline TeX $$  ||  $ break TeX $ || a$ AsciiMath $a || m$ MathML $m  
 		${ KEY } || ${tex( KEY )} || ${doc( KEY )} || ${JS EXPRESSION}  
-		!!TAG
 		
 	using the supplifed cache and $ hashes to store #{KEY} values and to resolve #{key} tags.
 	*/
@@ -2951,8 +2948,8 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 				}
 			});
 		
-		
-		this.Xescape( [], (blocks,html) => html.parseJS(ctx).Xsolicit( viaBrowser, (html) => html.Xtex( (html) => html.Xtag( req, (html) => cb( html
+		// Xsolicit( viaBrowser, (html) => 
+		this.Xescape( [], (blocks,html) => html.parseJS(ctx).Xtex( (html) => html.Xtag( req, viaBrowser, (html) => cb( html
 			
 			// record substitutions
 			//.parseJS(ctx)
@@ -3034,7 +3031,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 			})*/
 
 			// links, views, and highlighting
-			.replace(/\[([^\[\]]*?)\]\((.*?)\)/g, function (str,link,src) {  // [LINK](SRC) 
+			/*.replace(/\[([^\[\]]*?)\]\(([^\)]*?)\)/g, function (str,link,src) {  // [LINK](SRC) 
 				var
 					keys = {},
 					dspath = ds.parsePath(keys),
@@ -3062,7 +3059,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 						//Log( "".tag("iframe",{ src: opsrc, width:w, height:h } ) );
 						return link.tag("a", { href:opsrc });
 				}
-			})
+			}) */
 			.replace(/href=(.*?)\>/g, function (str,ref) { // follow <a href=REF>A</a> links
 				var q = (ref.charAt(0) == "'") ? '"' : "'";
 				return `href=${q}javascript:navigator.follow(${ref},BASE.user.client,BASE.user.source)${q}>`;
@@ -3073,7 +3070,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 				Log(`unblock[${blockidx}]`);
 				return "\n\n" + blocks[ blockidx++ ] + "\n";
 			})
-		)))));
+		))));
 	},
 	
 	function Xescape( blocks, cb ) { // code block escaper
@@ -3122,30 +3119,92 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		cb(this);
 	},
 	
-	function Xtag( req, cb ) {  // !!TOPIC smart tags
+	function Xtag( req, viaBrowser, cb ) {  // !!TOPIC smart tags
 		var 
 			key = "@tag",
 			html = this,
-			fetchTag = function ( rec, cb ) {
-				var 
-					secret = "",
-					topic = rec.url,
-					product = topic+".html";
+			fetcher = DEBE.fetch.fetcher,
+			fetchTopic = function ( rec, cb) {
+				if ( rec.opt ) {  // [LINK](URL)
+					cb( rec.url.tag("a",{href:rec.opt}) );
+				}
 
-				//Log("tag",rec, product, html.length);
+				else {		// [TOPIC]() 
+					var 
+						secret = "",
+						topic = rec.url,
+						product = topic+".html";
+
+					FLEX.licenseCode( req.sql, html, {
+						_EndUser: req.client,
+						_EndService: "",  // leave empty so lincersor wont validate by connecting
+						_Published: new Date(),
+						_Product: product,
+						Path: "/tag/"+product
+					}, (pub) => {
+						cb( pub ? "@"+req.client+" " : "@none" );
+					});
+				}
+			},
+			
+			fetchSite = function ( rec, cb ) {
+				//Log("solicit", rec, viaBrowser);
+				if (viaBrowser) 
+					cb( "".tag("iframe", {src:rec.opt}) );
 				
-				FLEX.licenseCode( req.sql, html, {
-					_EndUser: req.client,
-					_EndService: "",  // leave empty so lincersor wont validate by connecting
-					_Published: new Date(),
-					_Product: product,
-					Path: "/tag/"+product
-				}, (pub) => {
-					cb( pub ? "@"+req.client+" " : "@none" );
-				});				
+				else
+					fetcher( rec.opt, null, null, (html) => cb );
+			},
+			
+			fetchTag = function ( rec, cb ) {
+				var
+					keys = {},
+					opt = rec.url,
+					url = rec.opt,
+					dspath = "tbd".parsePath(keys),
+					path = url.parsePath(keys) || dspath,
+					w = keys.w || 100,
+					h = keys.h || 100,
+					opsrc =  path.tag( "?", Copy({src:dspath}, keys) );				
+
+				//Log("tag",rec, dspath, keys, opsrc);
+
+				switch (opt) {
+					case "image":  //[image](url)
+					case "img":
+						cb( "".tag("img", { src:opsrc, width:w, height:h }) );
+						break;
+						
+					case "post":  // [post](url)
+					case "iframe":
+						cb( "".tag("iframe", { src:opsrc, width:w, height:h }) );
+						break;
+						
+					case "R":  // [FONT](X)
+					case "B":
+					case "G":
+					case "Y":
+					case "O":
+					case "K":
+					case "red":
+					case "blue":
+					case "green":
+					case "yellow":
+					case "orange":
+					case "black":
+						cb( url.tag("font",{color:opt}) );
+						break;
+						
+					case "":  // []( URL ) 
+						fetchSite(rec, cb);
+						break;
+						
+					default:		// [X](URL)
+						fetchTopic(rec, cb);
+				}
 			};
 		
-		html.serialize( fetchTag, /\#\#(.*?) /g, key, (html, fails) => { 
+		html.replace(/\&amp;/g, (key) => "&").serialize( fetchTag, /\[([^\[\]]*?)\]\(([^\)]*?)\)/g , key, (html, fails) => {     // /\#(.[^\(]?)(.*?) /g
 			cb(html);
 		}); 
 	},
@@ -3184,7 +3243,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		
 		html.serialize( fetchInlineTeX, /\$\$([^\$]*?)\$\$/g, key, (html,fails) => {  // $$ inline Tex $$
 		html.serialize( fetchAsciiTeX, /a\$([\$!]*?)\$a/g, key, (html,fails) => { // a$ ascii math $a
-		html.serialize( fetchTeX, /o\$([^\$]*?)\$o/g, key,  (html,fails) => { // o$ new line TeX $o
+		html.serialize( fetchTeX, /\$([^\$]*?)\$/g, key,  (html,fails) => { // $ new line TeX $
 			cb(html);
 		});
 		});
