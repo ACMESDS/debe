@@ -491,13 +491,14 @@ append site_body
 
 				and where the *Description* key may contain [blogging tags](/skinguide.view) of the form:
 
-					\#[ URL ]  
+					TEXT:\n\nCODE\n
+					\#[ URL ]
 					[ post ] ( SKIN.view ? w=WIDTH & h=HEIGHT & x=KEY$EXPR & y=KEY$EXPR & src=DS & id=VALUE )  
 					[ image ] ( PATH.jpg ? w=WIDTH & h=HEIGHT )  
 					[ TEXT ]( LINK )  
 					[ FONT ]( TEXT )  
 					$$ inline TeX $$  ||  o$ break TeX $o || a$ AsciiMath $a || m$ MathML $m  
-					\#{ KEY } || \#{ KEY }( SHORTCUT ) || ={ KEY } || \!{ EXPR }  || \${ KEY as TeX matrix  }  
+					${ KEY } || ${tex( KEY )} || ${doc( KEY )} || ${JS EXPRESSION}  
 					!!TAG
 
 				to document usecases.  The following will, for example:
@@ -1136,14 +1137,15 @@ append site_body
 					using its [task sharding](https://github.com/ACMESDS/totem) mechanisim:
 
 						TASK.shard({  		// example
-							keys: "i,j,k",  	// e.g. array indecies
+							keys: "i,j,k, ...",  	// e.g. array indecies
 							i: [0,1,2,3],  		// domain of index i
 							j: [4,8],				// domain of index j
 							k: [0],					// domain of index k
+							...						// other indecies
 							qos: 0,				// regulation time in ms if not zero
 							local: false, 		// enable to run task local, i.e. w/o workers and nodes
-							workers: 4, 		// limit number of workers (aka cores) per node
-							nodes: 3 			// limit number of nodes (aka locales) in the cluster
+							workers: 4, 		// limit number of workers/cores per node
+							nodes: 3 			// limit number of nodes/locales in the cluster
 						}, 
 							// here, a simple task that returns a message 
 							($) => "my result is " + (i + j*k) + " from " + $.worker + " on "  + $.node,
@@ -1152,7 +1154,34 @@ append site_body
 							(msg) => console.log(msg) 
 						);
 
-					Sharded tasks have access to the same modules (ME, etc) as local tasks.
+					ME and TASK sharding can be mixed of course; for example:
+					
+						function jsdemo3(ctx,res) {
+							ME.import({  // define a mytestfn to be sharded from the ME
+								mytestfn: ($) => "my result is " + (i + j*k) + " from " + $.worker + " on "  + $.node,
+								
+								sharder: (iList, jList, fn) => {  // simple task sharding example
+									TASK.shard({  		// distribute t/o TOTEM cloud
+										keys: "i,j",  	// e.g. array indecies
+										i: iList,
+										j:jList,
+										k: [10,20],
+										qos: 0,				// regulation time in ms if not zero
+										local: false, 		// enable to run task local, i.e. w/o workers and nodes
+										workers: 4, 		// limit number of workers/cores per node
+										nodes: 3 			// limit number of nodes/locales in the cluster
+									}, 
+										// here, a simple task that returns a message 
+										fn,
+
+										// here, a simple callback that displays the task results
+										(msg) => console.log(msg) 
+									);
+								}
+							});
+							
+							ME.exec("sharder( [1:100], [50:200], mytestfn )");
+						}
 					
 	#accordion.Machines
 		:markdown

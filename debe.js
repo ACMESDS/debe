@@ -2876,43 +2876,87 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 	/*
 	Replaces tags on this string of the form:
 		
+		TEXT:\n\nCODE\n
 		#[ URL ]
 		[ post ] ( SKIN.view ? w=WIDTH & h=HEIGHT & x=KEY$EXPR & y=KEY$EXPR & src=DS & id=VALUE )  
 		[ image ] ( PATH.jpg ? w=WIDTH & h=HEIGHT )  
 		[ TEXT ]( LINK )  
 		[ FONT ]( TEXT )  
 		$$ inline TeX $$  ||  o$ break TeX $o || a$ AsciiMath $a || m$ MathML $m  
-		${ KEY } || #{ KEY }( SHORTCUT ) || !{ EXPR }  || ^{ KEY as TeX matrix  }  
+		${ KEY } || ${tex( KEY )} || ${doc( KEY )} || ${JS EXPRESSION}  
 		!!TAG
 		
 	using the supplifed cache and $ hashes to store #{KEY} values and to resolve #{key} tags.
 	*/
 		
-		function pretty(val, cb) {
-			if (val)
-				switch (val.constructor.name) {
-					case "Number": return val.toFixed(2);
-					case "String": return val;										
-					case "Array": return "[" + val.joinify( (val) => val ? val.toFixed ? val.toFixed(2) : val+"" : val+"" ) + "]";
-					case "Date": return val+"";
-					case "Object": 
-						return cb ? cb(val) : JSON.stringify(val);
-					default: 
-						return JSON.stringify(val);
-				}
-
-			else
-				return (val == 0) ? "0" : "null";
-		}
-		
 		for (var key in rec) try { $[key] = JSON.parse( rec[key] ); } catch (err) {}
 	
-		var blockidx = 0;
+		var 
+			blockidx = 0,
+			ctx = Copy(rec, {
+				doc: (val) => {
+					function pretty(val, cb) {
+						if (val)
+							switch (val.constructor.name) {
+								case "Number": return val.toFixed(2);
+								case "String": return val;										
+								case "Array": return "[" + val.joinify( (val) => val ? val.toFixed ? val.toFixed(2) : val+"" : val+"" ) + "]";
+								case "Date": return val+"";
+								case "Object": 
+									return cb ? cb(val) : JSON.stringify(val);
+								default: 
+									return JSON.stringify(val);
+							}
+
+						else
+							return (val == 0) ? "0" : "null";
+					}
 		
-		this.Xescape( [], (blocks,html) => html.Xsolicit( viaBrowser, (html) => html.Xtex( (html) => html.Xtag( req, (html) => cb( html
+					val = val+"";
+					return pretty(val, (val) => {
+						var rtns = [];
+						for (var key in val) 
+							rtns.push( "{" + pretty(val[key]) + "}_{" + key + "}" );
+						return rtns.join(" = ");						
+					});					
+				},
+				tex: (val) => {
+					function texify(recs) {
+						var tex = [];
+
+						if (recs && recs.constructor == Array) 
+							recs.forEach( function (rec) {
+								if (rec.forEach) {
+									rec.forEach( function (val,idx) {
+										rec[idx] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : JSON.stringify(val);
+									});
+									tex.push( rec.join(" & ") );
+								}
+								else
+									tex.push( rec.toFixed ? rec.toFixed(2) : rec.toUpperCase ? rec : JSON.stringify(rec) );
+							});	
+
+						return  "\\left[ \\begin{matrix} " + tex.join("\\\\") + " \\end{matrix} \\right]";
+					}
+						val = val+"";
+						return texify( val.parseJSON() || val );
+					/*
+					if (  key in cache )
+						return cache[key];
+
+					else {
+						try { var val = eval( `$.${key}` ); } catch (err) {	}
+						return cache[key] = texify( val || rec[key] );
+					} */
+				}
+			});
+		
+		
+		this.Xescape( [], (blocks,html) => html.parseJS(ctx).Xsolicit( viaBrowser, (html) => html.Xtex( (html) => html.Xtag( req, (html) => cb( html
 			
 			// record substitutions
-			.parseJS(rec)
+			//.parseJS(ctx)
+			/*
 			.replace(/\#\{(.*?)\}/g, function (str,key) {  // ${ TeX matrix key } 
 				function texify(recs) {
 					var tex = [];
@@ -2939,7 +2983,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 					try { var val = eval( `$.${key}` ); } catch (err) {	}
 					return cache[key] = texify( val || rec[key] );
 				}
-			})
+			})*/
 			/*
 			.replace(/\#\{(.*?)\}\((.*?)\)/g, function (str,key,short) {  // #{ KEY }( SHORTCUT ) 
 				if (  key in cache )
@@ -2962,7 +3006,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 					return cache[key] = pretty( val || rec[key] );
 				}
 			}) */
-			.replace(/\=\{(.*?)\}/g, function (str,key) {  // ={ KEY } 
+			/*.replace(/\=\{(.*?)\}/g, function (str,key) {  // ={ KEY } 
 				//Log(key,cache);
 				if (  key in cache )
 					return cache[key];
@@ -2976,8 +3020,8 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 						return rtns.join(" = ");						
 					});
 				}
-			})
-			.replace(/\!{(.*?)\}/g, function (str,expr) { // !{ JS } 
+			})*/
+			/*.replace(/\!{(.*?)\}/g, function (str,expr) { // !{ JS } 
 				function Eval(expr) {
 					try {
 						return eval(expr);
@@ -2987,7 +3031,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 					}
 				}
 				return Eval(expr);
-			})
+			})*/
 
 			// links, views, and highlighting
 			.replace(/\[([^\[\]]*?)\]\((.*?)\)/g, function (str,link,src) {  // [LINK](SRC) 
@@ -3091,19 +3135,19 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 				//Log("tag",rec, product, html.length);
 				
 				FLEX.licenseCode( req.sql, html, {
-					EndUser: req.client,
-					EndService: "",  // leave empty so lincersor wont validate by connecting
-					Published: new Date(),
-					Product: product,
+					_EndUser: req.client,
+					_EndService: "",  // leave empty so lincersor wont validate by connecting
+					_Published: new Date(),
+					_Product: product,
 					Path: "/tag/"+product
 				}, (pub) => {
 					cb( pub ? "@"+req.client+" " : "@none" );
 				});				
 			};
 		
-		html.serialize( fetchTag, /!!(.*?) /g, key, (html, fails) => { 
+		html.serialize( fetchTag, /\#\#(.*?) /g, key, (html, fails) => { 
 			cb(html);
-		}); 		
+		}); 
 	},
 	
 	function Xtex( cb) {  // X$ MATH $X replacements
