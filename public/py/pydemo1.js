@@ -22,14 +22,13 @@ the end. `
 	},
 
 	engine: `
-def pydemo1(ctx):
+def pydemo1(ctx, os):
 	print "welcome to python you lazy bird"
-	#print OS
-	SQL0 = OS['SQL0']
+	SQL0 = os['SQL0']
 	SQL0.execute("SELECT * from app.Htest", () )
 	#SQL0.execute("SELECT 1 as x, 2 as y", () )
-	for (Rec) in SQL0:
-		print Rec
+	for (rec) in SQL0:
+		print rec
 
 	return [ {'x':1, 'y':2, 'z':0}, {'x':3, 'y':4, 'z':10}]
 `
