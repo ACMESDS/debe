@@ -2885,7 +2885,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 	
 	function Xblog(req, ds, cache, ctx, rec, viaBrowser, cb) {
 	/*
-	Replaces tags on this string of the form:
+	Replaces tags in this string of the form:
 		
 		TEXT:\n\nCODE\n  
 		[ post ] ( SKIN.view ? w=WIDTH & h=HEIGHT & x=KEY$EXPR & y=KEY$EXPR & src=DS & id=VALUE )  
@@ -2921,7 +2921,6 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 						return (val == 0) ? "0" : "null";
 				}
 
-				val = val+"";
 				return readify(val, (val) => {
 					var rtns = [];
 					for (var key in val) 
@@ -2929,26 +2928,32 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 					return rtns.join(" = ");						
 				});					
 			},
-			tex: (val) => {
+			tex: (val,N) => {
 				function texify(recs) {
-					var tex = [];
+					var tex = [], dig = N || 2;
 
-					if (recs && recs.constructor == Array) 
-						recs.forEach( function (rec) {
-							if (rec.forEach) {
-								rec.forEach( function (val,idx) {
-									rec[idx] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : JSON.stringify(val);
-								});
-								tex.push( rec.join(" & ") );
-							}
-							else
-								tex.push( rec.toFixed ? rec.toFixed(2) : rec.toUpperCase ? rec : JSON.stringify(rec) );
-						});	
+					if (recs)
+						if (recs.forEach) {
+							recs.forEach( function (rec) {
+								if (rec.forEach) {
+									rec.forEach( function (val,idx) {
+										rec[idx] = val.toFixed ? val.toFixed(dig) : val.toUpperCase ? val : JSON.stringify(val);
+									});
+									tex.push( rec.join(" & ") );
+								}
+								else
+									tex.push( rec.toFixed ? rec.toFixed(dig) : rec.toUpperCase ? rec : JSON.stringify(rec) );
+							});	
+							return  "\\left[ \\begin{matrix} " + tex.join("\\\\") + " \\end{matrix} \\right]";
+						}
+					
+						else
+							return recs.toFixed ? recs.toFixed(dig) : recs.toUpperCase ? recs : JSON.stringify(recs);
 
-					return  "\\left[ \\begin{matrix} " + tex.join("\\\\") + " \\end{matrix} \\right]";
+					else
+						return "0";
 				}
-					val = val+"";
-					return texify( val );
+				return texify( val );
 				/*
 				if (  key in cache )
 					return cache[key];
@@ -3107,7 +3112,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		})  */
 	},
 	
-	function Xsolicit( viaBrowser, cb ) {  // #[URL] solicits response from site URL
+	function Xsolicit( viaBrowser, cb ) {  // legacy #[URL] solicits response from site URL
 	/* Using in a browser typically causes a hang as the content is not received into an iframe */
 		var 
 			key = "@solicit",
@@ -3131,7 +3136,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		cb(this);
 	},
 	
-	function Xtag( req, ds, viaBrowser, cb ) {  // !!TOPIC smart tags
+	function Xtag( req, ds, viaBrowser, cb ) {  // [LINK](URL) smart tags, fetcher, and links
 		var 
 			key = "@tag",
 			html = this,
@@ -3221,7 +3226,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		}); 
 	},
 	
-	function Xtex( cb) {  // X$ MATH $X replacements
+	function Xtex( cb) {  // x$$ MATH $$ replacements
 		var 
 			key = "@tex",
 			html = this,
