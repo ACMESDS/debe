@@ -459,7 +459,7 @@ append site_body
 				> [Description+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description) blog markdown documents a usecase  
 				> [Config+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) js-script defines usecase context  
 				> [Save+](/#{ds}.add?Save=doc) [/-](/#{ds}.sub?Save) json aggregates engine results not captured in Save_KEYs  
-				> [Save_KEY](/#{ds}.run?options=more) json aggregates selected engine results from [{at:"KEY", ...}, ...]  
+				> [Save_STATE](/#{ds}.run?options=more) json aggregates selected engine results from [{at:"STATE", ...}, ...]  
 				> [Entry+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) json primes context on entry using { KEY: "SELECT ....", ...}  
 				> [Exit+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) json saves context on exit using { KEY: "UPDATE ....", ...}  
 				> [Autorun+](/#{ds}.add?Autorun=doc) [/-](/#{ds}.sub?Autorun) switch enables the autorun watchdog.
@@ -471,13 +471,14 @@ append site_body
 					
 				When executed, an engine's context is automatically extended with the following keys:  
 				> Host name of plugin  
-				> File current file during workflow  
-				> Voxel current voxel being procesed  
-				> Collects sensor collects made under current voxel  
-				> Chip  filepath for first jpeg collect under current voxel  
-				> Flux solar flux at earth's surface under current voxel  
-				> Events event query for current voxel  
-				> Flow context of Markov/ROC supervisor
+				> File [context](/files.view) during workflow  
+				> Voxel [context](/voxels.view) being procesed  
+				> Collects sensor collect context for current voxel  
+				> Chip  filepath for first jpeg collect for current voxel  
+				> Flux solar flux at earth's surface for current voxel  
+				> Events event query or list for current voxel  
+				> Flow context of event supervisor  
+				> Stats shared information computed by plugins
 
 				An engine's *Pipe* context key contains job regulation parameters:
 				
@@ -509,20 +510,34 @@ append site_body
 					[](http://localhost:8080)
 					[jsdemo1]()
 
-				embed: (1) a plot of the requested x,y data using the [d3 plot](/plot.view), (2) the 
-				[home.view](/home.view), (3) a link to the url, (4) the [image](/shares.jpg), (5) a
-				force graph of the queues dataset pivoted by class using the [d3 force](/force.view) 
-				into a frame of specified W x H dimensions, (6) an inline TeX equation, (7) contents
-				of the localhost site, and (8) a smart tag, licensing the html content to the 
-				viewer as retained in the releases table.  See [plot](/plot.view?help), 
-				[treefan](/treefan.view?help), [treemap](/treefan.view?help), [force](/force.view?help), 
+				embed: (1) a plot of the requested x,y data using the [d3 plot](/plot.view), (2) the [home.view](/home.view), 
+				(3) a link to the url, (4) the [image](/shares.jpg), (5) a force graph of the queues dataset pivoted by class using 
+				the [d3 force](/force.view) into a frame of specified W x H dimensions, (6) an inline TeX equation, (7) contents
+				of the localhost site, and (8) a smart tag, licensing the html content to the viewer as retained in the releases table.
+				See [plot](/plot.view?help), [treefan](/treefan.view?help), [treemap](/treefan.view?help), [force](/force.view?help), 
 				[bounce](/bounce.view?help), [tipsheet](/tipsheet.view?help) for example VIEWs. 
+
+				See [/files.view](/files.view) and [/voxels.view] for `File` and `Voxel` context, respectively.  The `Flow` context	
+				contains the supervisors' current:
+
+						F		// count frequencies
+						T  		// observation time
+						J		// ensemble jump counts
+						N		// ensemble size				
+						trP		// estimated transition probs
+						store	 // event store
+						getMODE(ctx, cb)  // calback cb(events, null) with ingested events or cb(null, savecb) when done
+						
+				A plugin reads ingested events using getMODE = getAll || getBatch || getEach || getDrop, and *may*, when ingest
+				events are exhausted (when null), write its state events (to the ctx.Save and ctx.Save_STATE) or its stats contribution (to
+				the `Stats` context shared with all plugins) via the provided savecb( events || stats).  See [cints](/cints.run), 
+				[rats](/rats.run), [trigs](/trigs.run), [genpr](/genpr.run), and [seppfm](/seppfm.run) for examples.
 
 		#fit.Publishing
 			:markdown
-				Engines placed into *#{nick}*'s [content folders](map drive #{info.content})/TYPE/PLUGIN.js
-				are published to [*#{nick}*'s engines](/engines.view) when *#{nick}* starts.  Each discoverd
-				TYPE/NAME.js must follow this pattern:
+				A PLUGIN  is published to *#{nick}* using [PLUGIN publishing modules](map drive #{info.content})/TYPE/PLUGIN.js)
+				and are automaticallly published whenever *#{nick}* starts, and when [requested](/PLUGIN.pub).  PLUGIN publishing
+				modules follow the following pattern:
 				
 					module.exports = {
 						clear || reset : true || false,		// delete then recreate all usecases 
@@ -619,8 +634,14 @@ append site_body
 							( os ) => os.read || os.exec (`${os.path}.js`, ... )
 					}
 
-				PLEASE NOTE: smop does properly translate matlab [ [a,b,...]; [c,d, ...]; ...] matricies.  Until this bug is 
-				fixed, manually	convert "matlabarray(cat(...))" python code to "matlabarray([ [a,b,...], [c,d,...], ....])".				
+				See [cints](/js/cints.js), [rats](/js/rats.js), [trigs](/js/trigs.js), [genpr](/js/genpr.js), and [seppfm](/py/seppfm.js) for
+				sample modules that publish the [cints](/cints.run), [rats](/rats.run), [trigs](/trigs.run), [genpr](/genpr.run), 
+				and [seppfm](/seppfm.run) plugins; their corresponding TermsOfUser [cints](/cints.tou), [rats](/rats.tou), 
+				[trigs](/trigs.tou), [genpr](/genpr.tou), and [seppfm](/seppfm.tou); and their corresponding publishing endpoints
+				[cints](/cints.pub), [rats](/rats.pub), [trigs](/trigs.pub), [genpr](/genpr.pub), and [seppfm](/seppfm.pub).
+				
+				NOTE: smop imperfectly translates matlab [ [a,b,...]; [c,d, ...]; ...] matricies to python matricies.  Until this bug is 
+				fixed, manually	convert "matlabarray(cat(...))" python code to "matlabarray([ [a,b,...], [c,d,...], ....])".
 
 		#fit.Examples
 			:markdown
@@ -931,27 +952,26 @@ append site_body
 				:markdown
 					This [stateless py-engine](/pydemo1.run):
 
-						def pydemo1(ctx, os):
-							print "welcome to python you lazy bird"
-							SQL0 = os['SQL0']
-							SQL0.execute("SELECT * from app.Htest", () )
-							for (rec) in SQL0:
-								print rec
+						import testlib as TLIB   # looks for imports under PYTHONPATH
 
-							return [ {'x':1, 'y':2, 'z':0}, {'x':3, 'y':4, 'z':10}]
+						print "welcome to python you lazy bird"
+						print "test",TLIB.testf(123)
+
+						SQL0.execute("SELECT * from app.Htest", () )
+						for (rec) in SQL0:
+							print rec
+
+						CTX['Save'] = [ {'x':1, 'y':2, 'z':0}, {'x':3, 'y':4, 'z':10}]
 
 					with initial context:
 
 						"query": {"Name":"test"}
 
-					will display *Htest* data at the service console, then returns *Save* data to its plugin context.
-					Python engines are also provided an *OS* dictionary containing a:  
-					* SQL0 read cursor  
-					* SQL1 write cursor  
-					* LWIP light-weight-image-processing PIL  
-					* JSON encoder/decoder  
-					* GET_\[forBatch | forEach | forAll | forDrop](ctx,cb) event getters
-
+					will display *Htest* data at the service console, then returns *Save* data to its plugin context.  The
+					plugin could store data in any CTX key, but the *Save* and *Save_STATE* keys can be used to 
+					interface with the master workflow (see Plugins).  Every python engine also has access to the 
+					SYS, JSON, LWIP and CAFFE (if on GPU VMs) libs, as well as the SQL0 (read) and SQL1 (write) cursors.
+					
 					This [stateful python engine](/pydemo2.exe) can be used in a workflow to 
 					maximize data stationarity:
 
@@ -963,8 +983,7 @@ append site_body
 							print "in port f2"
 							return 0
 
-						def pydemo2(ctx):
-							print "executing on port " + PORT
+						print "executing on port " + PORT
 
 					with initial context: 
 

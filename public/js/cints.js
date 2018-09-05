@@ -431,7 +431,7 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 		var
 			flow = ctx.Flow;
 		
-		//Log("cints flow", flow);
+		//Log(">>>>>>cints flow", flow);
 		
 		coherenceIntervals({  // define solver parms
 			H: flow.F,		// count frequencies

@@ -6,7 +6,8 @@ module.exports = {  // learn hidden intensity parameters of a Markov process
 		MinEigen: "float default 1e-1 comment 'smallest eigenvalue for pc estimates' ",
 		Dim: "int(11) default 150 comment 'pc model dimension [max coherence intervals]' ",
 		Model: "varchar(16) default 'sinc' comment 'name of complex correlation model for pc estimates' ",
-		
+		Shortcut: "boolean default 0 comment 'reserved bypass eigenvalue computation with erfc model' ",
+
 		Save_end: "json",
 		Save_config: "json",
 		Save_batch: "json",
@@ -25,7 +26,7 @@ module.exports = {  // learn hidden intensity parameters of a Markov process
 	*/
 		function arrivalRates( solve, cb ) { // estimate rates with callback cb(rates) 
 			
-			function getpcs(model, Emin, M, Mwin, Mmax, cb) {  // get or gen pcs with callback(pcs)
+			function getpcs(model, Emin, M, Mwin, Mmax, cb) {  // get or gen Principle Components with callback(pcs)
 
 				function genpcs(dim, steps, model, cb) {
 					Log("gen pcs", dim, steps, model); 
@@ -163,6 +164,8 @@ vecres: R.vectors*diag(R.values) - Xccf*R.vectors,
 				});
 			}
 	
+			// Should add a ctx.Shortcut parms to bypass pcs and use an erfc model for the eigenvalues.
+			
 			getpcs( solve.model||"sinc", solve.min||0, solve.M, solve.Mstep/2, solve.Mmax, function (pcs) {
 				
 				const { sqrt, random, log, exp, cos, sin, PI } = Math;
@@ -243,7 +246,7 @@ x = rng(-1/2, 1/2, N);
 		
 		Log("rats ctx", stats);
 		if (stats)
-			arrivalRates({  // parms for principle components (intensity profile) solver
+			arrivalRates({  // parms for Karhunen Loeve (intensity profile) solver
 				trace: false,   // eigen debug
 				T: flow.T,  // observation interval  [1/Hz]
 				M: stats.coherence_intervals, // coherence intervals

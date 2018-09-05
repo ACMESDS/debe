@@ -1880,7 +1880,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 */	
 	
 	var
-		flowEvents = LAB.libs.FLOW.batch,
+		flowEvents = LAB.libs.FLOW.getBatch,
 		now = new Date(),
 		sql = req.sql,
 		client = req.client,
@@ -1946,16 +1946,17 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 					};
 
 				HACK.chipEvents(sql, Pipe, function ( specs ) {  // create job for these Pipe parameters
-
 					sql.insertJob( Copy(specs,job), function (sql, job) {  // put voxel into job regulation queue
 						
+						//Log("run job>>>>>>>>", job);
+						
 						var 
-							Query = req.query = Copy({  // engine query when selected
+							Query = req.query = Copy({  // engine query (plugin context) when selected
 								File: job.File,  // file linked to this voxel
 								Voxel: job.Voxel,	// voxel being processed
 								Collects: job.Collects,	// sensor collects available for this voxel
 								Flux: job.Flux,		// surface solar flux under this voxel
-								Events: job.Events || "",	// sql to get events for this voxel
+								Events: job.Events || "",	// sql to get events (or an event list) for this voxel
 								Stats: job.Stats,		// plugin stats available for this voxel
 								Chip: job.Chip,		// surface chip selector under this voxel
 								Host: "app." + job.name		// ds.plugin name hosting this voxel
@@ -1968,7 +1969,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 									//Log("learning ctx", ctx);
 
 									flowEvents(ctx, function (evs, sinkcb) {  // callsback sinkcb(output events) when evs goes null
-										Log("supervising ", evs ? evs.length : "done!" );
+										Log( evs ? `supervising ${evs.length} events` : "done!" );
 
 										if (evs) 
 											supercb(evs);
