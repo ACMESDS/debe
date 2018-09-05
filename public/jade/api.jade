@@ -471,16 +471,16 @@ append site_body
 					
 				The supervisor automatically extends an engine's context with the following keys:  
 				> Host name of plugin  
-				> File [context](/files.view) during workflow  
-				> Voxel [context](/voxels.view) being procesed  
-				> Collects sensor collect context for current voxel  
+				> File [context](/files.view) during a piped-workflow  
+				> Voxel [context](/voxels.view) during a piped-workflow  
+				> Collects sensor context for current voxel  
 				> Chip  filepath for first jpeg collect for current voxel  
 				> Flux solar flux at earth's surface for current voxel  
 				> Events event query or list for current voxel  
-				> Flow context of event supervisor  
-				> Stats shared information computed by plugins
+				> Flow context of workflow supervisor  
+				> Stats context shared with all plugins
 
-				and uses the *Pipe* context key:
+				and uses its *Pipe* context key:
 				
 					file: "/FILTER?QUERY" || "PLUGIN.CASE" || "uploaded FILENAME" || "FILE.jpg" || "FILE.json"  
 					group: "KEY,..." || ""  
@@ -490,8 +490,23 @@ append site_body
 					task: "NAME" || ""  
 					aoi: "NAME" || [ [lat,lon], ... ] || []
 
-				regulates data to the engine and establishes the [*File*](/files.view) and [*Voxel*] context keys.  The *Description* 
-				context key can contain [blogging tags](/skinguide.view):
+				to regulate data to the plugin.  The *Flow* context	contains the supervisors':
+
+						F		// count frequencies
+						T  		// observation time
+						J		// ensemble jump counts
+						N		// ensemble size				
+						trP		// estimated transition probs
+						store	 // event store
+						getMODE(ctx, cb)  // calback cb(events, null) with ingested events or cb(null, savecb) when done
+						
+				A plugin ingests events using getMODE = getAll || getBatch || getEach || getDrop until *events* goes null (that is, 
+				until the events have been exhausted), after which it may use the provided savecb( event list || stats object ) to write its
+				event list or write its computed stats object (the supervisor directs savecb data to the plugin's *Save_STATE* or 
+				its *Stats* context keys).  See [cints](/cints.run), [rats](/rats.run), [trigs](/trigs.run), [genpr](/genpr.run), 
+				and [seppfm](/seppfm.run) for examples.
+				
+				The *Description* context key can contain [blogging tags](/skinguide.view):
 
 					TEXT:\n\nCODE\n  
 					[ post ] ( SKIN.view ? w=WIDTH & h=HEIGHT & x=KEY$EXPR & y=KEY$EXPR & src=DS & id=VALUE )  
@@ -500,7 +515,7 @@ append site_body
 					$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$  
 					${ KEY } || ${tex( KEY )} || ${doc( KEY )} || ${JS EXPRESSION}  
 
-				to document usecases, for example:
+				to document plugin usecases, for example:
 
 					[post](plot.view?w=100&h=200&x=Save$a&ys=Save$b$c)
 					[post](home.view?w=500&h=100)
@@ -516,23 +531,7 @@ append site_body
 				the [d3 force](/force.view) into a frame of specified W x H dimensions, (6) an inline TeX equation, (7) contents
 				of the localhost site, and (8) a smart tag, licensing the html content to the viewer as retained in the releases table.
 				See [plot](/plot.view?help), [treefan](/treefan.view?help), [treemap](/treefan.view?help), [force](/force.view?help), 
-				[bounce](/bounce.view?help), [tipsheet](/tipsheet.view?help) for example VIEWs. 
-
-				The *Flow* context	contains the supervisors':
-
-						F		// count frequencies
-						T  		// observation time
-						J		// ensemble jump counts
-						N		// ensemble size				
-						trP		// estimated transition probs
-						store	 // event store
-						getMODE(ctx, cb)  // calback cb(events, null) with ingested events or cb(null, savecb) when done
-						
-				A plugin ingests events using getMODE = getAll || getBatch || getEach || getDrop until *events* goes null (that is, 
-				until the events have been exhausted), after which it may use the provided savecb( event list || stats object ) to write its
-				event list or write its computed stats object (the supervisor directs savecb data to the plugin's *Save_STATE* or 
-				its *Stats* context keys).  See [cints](/cints.run), [rats](/rats.run), [trigs](/trigs.run), [genpr](/genpr.run), 
-				and [seppfm](/seppfm.run) for examples.
+				[bounce](/bounce.view?help), [tipsheet](/tipsheet.view?help) for example VIEWs. 				
 
 		#fit.Publishing
 			:markdown
