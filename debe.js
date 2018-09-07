@@ -2243,7 +2243,8 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 			//Log([query, req.search]);
 			
 			var
-				cols = [];
+				cols = [],
+				drops = { id:1, odbcstamp: 1};
 			
 			switch (fields.constructor) {
 				case Array:
@@ -2253,7 +2254,12 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 							type = field.Type.split("(")[0];
 							//group = key.split("_");
 						
-						if ( key != "ID" && type != "geometry") {
+						if ( key.toLowercase() in drops ) {		// drop
+						}
+						else
+						if ( type == "geometry") {		// drop
+						}
+						else {		// take
 							var
 								doc = escape(field.Comment).replace(/\./g, "$dot"),
 								qual = "short";
