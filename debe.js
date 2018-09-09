@@ -1949,6 +1949,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		now = new Date(),
 		sql = req.sql,
 		client = req.client,
+		profile = req.profile,
 		group = req.group,
 		table = req.table,
 		query = req.query;
@@ -1961,7 +1962,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		sql.query("INSERT INTO app.queues SET ?",  {
 			Client: client,
 			Class: "polled",
-			QoS: 0,
+			QoS: profile.QoS,  // [secs] job polling
 			Task: table,
 			Work: days,
 			Notes: "/"+table.tag("?", query),
@@ -1991,7 +1992,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				var
 					profile = req.profile,
 					job = { // job descriptor for regulator
-						qos: 1, //profile.QoS, 
+						qos: profile.QoS, 
 						priority: 0,
 						client: req.client,
 						class: "plugin",
@@ -1999,7 +2000,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						name: req.table,
 						task: Pipe.task || "",
 						notes: [
-								req.table.tag("?",req.query).tag("a", {href:"/" + req.table + ".run"}), 
+								req.table.tag("?",{ID:query.ID}).tag("a", {href:"/" + req.table + ".run"}), 
 								((profile.Credit>0) ? "funded" : "unfunded").tag("a",{href:req.url}),
 								"RTP".tag("a", {
 									href:`/rtpsqd.view?task=${Pipe.task}`
