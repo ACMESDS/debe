@@ -6,7 +6,7 @@
 @requires child-process
 @requires fs
 @requires stream
-@requires crypto
+@requires os
 
 @requires i18n-abide
 @requires socket.io
@@ -47,9 +47,9 @@ var
 	CP = require("child_process"), 		//< Child process threads
 	CLUSTER = require("cluster"), 		//< Support for multiple cores
 	STREAM = require("stream"), 		//< pipe streaming
-	CRYPTO = require("crypto"), 		//< crypto package
-	FS = require("fs"), 				//< NodeJS filesystem and uploads
-	URL = require("url"),
+	FS = require("fs"), 				//< filesystem and uploads
+	OS = require("os"), 		//< system utilizations for watch dogs
+	URL = require("url"),		//< data fetcher url parser
 	
 	// 3rd party modules
 	ODOC = require("officegen"), 	//< office doc generator
@@ -180,12 +180,11 @@ var
 		
 		sql.getTables("app", function (tables) {  // scan through all tables looking for plugins participating w ingest
 			tables.forEach( function (dsn) {
-				sql.forFirst(
-					"",
+				sql.query(
 					"SELECT * FROM app.?? WHERE Name='ingest' LIMIT 1", 
-					[dsn], function (ctx) {
+					[dsn], function (err, recs) {
 
-					if (ctx) {
+					if (ctx = err ? null : recs[0]) {
 						autoTask[dsn] = Copy(ctx, {});
 						Trace("AUTOADD "+dsn);
 					}
@@ -249,7 +248,66 @@ var
 		}, function dogCache(dog) {
 		}),
 		
+		dogSystem: Copy({
+			cycle: 10,
+			max: {
+				util: 0.8,
+				GB: 50
+			},
+			get: {
+				cpu: function () {				// compute average cpu utilization
+					var avgUtil = 0;
+					var cpus = OS.cpus();
+
+					cpus.each(function (n,cpu) {
+						idle = cpu.times.idle;
+						busy = cpu.times.nice + cpu.times.sys + cpu.times.irq + cpu.times.user;
+						avgUtil += busy / (busy + idle);
+					});
+					return avgUtil / cpus.length;
+				},
+				
+				disk: function (sql, maxGB, cb) {
+					sql.query(
+						"SELECT table_schema AS DB, "
+					 + "SUM(data_length + index_length) / 1024 / 1024 / 1024 AS GB FROM information_schema.TABLES "
+					 + "GROUP BY table_schema", {}, (err, stats) => {
+						
+						var GB = 0;
+						stats.forEach( (stat) => {
+							GB += stat.GB;
+						});
+						cb( GB / maxGB );
+					});
+				}
+			}
+		}, function dogSystem(dog) {
+			
+			if (cpu = dog.get.cpu)
+				if ( cpu() > dog.max.util )
+					FLEX.sendMail({
+						subject: `${dog.site.nick} resource warning`,
+						to: dog.site.pocs.admin,
+						body: `Please add more VMs to ${dog.site.nick} or ` + "shed load".tag("a",{href:dog.site.urls.worker+"/queues.view"})
+					});
+
+			if (disk = dog.get.disk)
+				dog.thread( function (sql) {
+					disk(sql, dog.max.GB, (util) => {
+						if ( util > dog.max.util ) 
+							FLEX.sendMail({
+								subject: `${dog.site.nick} resource warning`,
+								to: dog.site.pocs.admin,
+								body: `Please add more disk space to ${dog.site.nick} or ` + "shed load".tag("a",{href:dog.site.urls.worker+"/queues.view"})
+							});
+					});
+					sql.release();
+				});
+
+		}),
+				
 		dogStats: Copy({
+			//cycle: 1000,
 			get: {
 				lowsnr: 
 					"SELECT count(events.ID) AS Rejects, events.voxelID AS voxelID, events.fileID AS fileID FROM app.events"
@@ -291,9 +349,9 @@ var
 					   
 		dogFiles: Copy({
 			get: {
-				ungraded: "SELECT ID,Name FROM app.files WHERE _State_graded IS null AND _Ingest_Time>_Ingest_End AND Enabled",
-				unread: "SELECT ID,Ring, st_centroid(ring) as Anchor, _Ingest_Time,advanceDays,PoP_durationDays,sampleTime,Name FROM app.files WHERE _Ingest_Time>=_Ingest_Start AND _Ingest_Time<=_Ingest_End AND Enabled",
-				//finished: "SELECT ID,Name FROM app.files WHERE _Ingest_Time>_Ingest_End",
+				ungraded: "SELECT ID,Name FROM app.files WHERE _State_graded IS null AND _Ingest_Time>PoP_End AND Enabled",
+				unread: "SELECT ID,Ring, st_centroid(ring) as Anchor, _Ingest_Time,PoP_advanceDays,PoP_durationDays,_Ingest_sampleTime,Name FROM app.files WHERE _Ingest_Time>=PoP_Start AND _Ingest_Time<=PoP_End AND Enabled",
+				//finished: "SELECT ID,Name FROM app.files WHERE _Ingest_Time>PoP_End",
 				expired: "SELECT ID,Name FROM app.files WHERE PoP_Expires AND now() > PoP_Expires AND Enabled"
 				//retired: "SELECT files.ID,files.Name,files.Client,count(events.id) AS evCount FROM app.events LEFT JOIN app.files ON events.fileID = files.id "
 						//+ " WHERE datediff( now(), files.added)>=? AND NOT files.Archived AND Enabled GROUP BY fileID"
@@ -419,7 +477,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 
 					if (1)
 					sql.query(
-						"UPDATE app.files SET _Ingest_Time=date_add(_Ingest_Time, interval advanceDays day), Revs=Revs+1 WHERE ?", 
+						"UPDATE app.files SET _Ingest_Time=date_add(_Ingest_Time, interval PoP_advanceDays day), Revs=Revs+1 WHERE ?", 
 						{ ID: file.ID }
 					);
 				});
@@ -428,21 +486,29 @@ Further information about this file is available ${paths.moreinfo}. `;
 		
 		dogJobs: Copy({
 			get: {
+				//pigs: "SELECT sum(DateDiff(Departed,Arrived)>1) AS Count from app.queues",			
 				unbilled: "SELECT * FROM app.queues WHERE Finished AND NOT Billed",
 				unfunded: "SELECT * FROM app.queues WHERE NOT Funded AND now()-Arrived>?",				
 				stuck: "UPDATE app.queues SET Departed=now(), Notes=concat(Notes, ' is ', link('billed', '/profile.view')), Age=Age + (now()-Arrived)/3600e3, Finished=1 WHERE least(Departed IS NULL,Done=Work)", 
-				polled: "SELECT * FROM app.queues WHERE Class='polled' AND Now() > Departed",
+				outsourced: "SELECT * FROM app.queues WHERE Class='polled' AND Now() > Departed",
 				unmailed: "SELECT * FROM app.queues WHERE NOT Finished AND Class='email' "
 			},
-			maxage: 10,
-			cycle: 300
+			max: {
+				pigs : 2,
+				age: 10
+			},
+			cycle: 30
 		}, function dogJobs(dog) {
 			var
-				queues = FLEX.queues,
+				queues = DEBE.queues,
 				fetcher = DEBE.fetch.fetcher;
-
-			if (dog.get.unmailed) 
-				dog.forEach(dog.trace, dog.get.unmailed, [], function (job, sql) {
+			
+			if ( pigs = dog.get.pigs )
+				dog.forEach(dog.trace, pigs, [], function (pigs) {
+				});
+			
+			if ( unmailed = dog.get.unmailed ) 
+				dog.forEach(dog.trace, unmailed, [], function (job, sql) {
 					sql.query("UPDATE app.queues SET Finished=1 WHERE ?", {ID: job.ID});
 					sendMail({
 						to: job.Client,
@@ -451,8 +517,8 @@ Further information about this file is available ${paths.moreinfo}. `;
 					});
 				});
 			
-			if (dog.get.unbilled)
-				dog.forEach(dog.trace, dog.get.unbilled, [], function (job, sql) {
+			if ( unbilled = dog.get.unbilled )
+				dog.forEach(dog.trace, unbilled, [], function (job, sql) {
 					//Trace(`BILLING ${job} FOR ${job.Client}`, sql);
 					sql.query( "UPDATE openv.profiles SET Charge=Charge+? WHERE ?", [ 
 						job.Done, {Client: job.Client} 
@@ -461,39 +527,44 @@ Further information about this file is available ${paths.moreinfo}. `;
 					sql.query( "UPDATE app.queues SET Billed=1 WHERE ?", {ID: job.ID})
 				});
 
-			if (dog.get.unfunded)
-				dog.forEach(dog.trace, dog.get.unfunded, [dog.maxage], function (job, sql) {
+			if ( unfunded = dog.get.unfunded )
+				dog.forEach(dog.trace, unfunded, [dog.max.age], function (job, sql) {
 					//Trace("KILLING ",job);
 					sql.query(
 						//"DELETE FROM app.queues WHERE ?", {ID:job.ID}
 					);
 				});
-			
-			if (dog.get.stuck)
-				dog.forAll( dog.trace, dog.get.stuck, [], function (info, sql) {
 
-					Each(queues, function (rate, queue) {  // save collected queuing charges to profiles
-						Each(queue.client, function (client, charge) {
+			if ( stuck = dog.get.stuck )
+				dog.thread( (sql) => {
+					sql.query(stuck, [], (err, info) => {
 
-							if ( charge.bill ) {
-								if ( trace ) Trace(`${trace} ${client} ${charge.bill} CREDITS`, sql);
+						Each(queues, (rate, queue) => {  // save collected queuing charges to profiles
+							Each(queue.client, function (client, charge) {
 
-								sql.query(
-									"UPDATE openv.profiles SET Charge=Charge+?,Credit=greatest(0,Credit-?) WHERE ?" , 
-									 [ charge.bill, charge.bill, {Client:client} ], 
-									function (err) {
-										Log({charging:err});
-								});
-								charge.bill = 0;
-							}
+								if ( charge.bill ) {
+									if ( trace ) Trace(`${trace} ${client} ${charge.bill} CREDITS`, sql);
 
+									sql.query(
+										"UPDATE openv.profiles SET Charge=Charge+?,Credit=greatest(0,Credit-?) WHERE ?" , 
+										 [ charge.bill, charge.bill, {Client:client} ], 
+									 	(err) => {
+											if (err)
+												Trace("Job charge failed "+err);
+									});
+									
+									charge.bill = 0;
+								}
+
+							});
 						});
-					});
+						sql.release();
 
-				});	
+					});	
+				});
 			
-			if (dog.get.polled)
-				dog.forEach( dog.trace, dog.get.polled, [], function (job, sql) {
+			if ( outsourced = dog.get.outsourced )
+				dog.forEach( dog.trace, outsourced, [], function (job, sql) {
 					sql.query(
 						"UPDATE app.queues SET ?,Age=Age+Work,Departed=Date_Add(Departed,interval Work day) WHERE ?", [
 						{ID:job.ID}
@@ -505,25 +576,22 @@ Further information about this file is available ${paths.moreinfo}. `;
 				});
 		}),
 			
-		dogSystem: Copy({
+		xdogSystem: Copy({  // legacy
 			//cycle: 100,
 			get: {
 				engs: "SELECT count(ID) AS Count FROM app.engines WHERE Enabled",
 				jobs: "SELECT count(ID) AS Count FROM app.queues WHERE Departed IS NULL",
-				pigs: "SELECT sum(DateDiff(Departed,Arrived)>1) AS Count from app.queues",
 				logs: "SELECT sum(Delay>20)+sum(Fault != '') AS Count FROM app.dblogs"
 			},
-			pigs : 2,
 			jobs : 5
 		}, function dogSystem(dog) {  // system diag watch dog
 			var 
 				diag = DEBE.diag;
 
 			if (dog.get.engs)
-				Thread( function (sql) {
+				dog.thread( function (sql) {
 					sql.forEach(dog.trace, dog.get.engs, [], function (engs) {
 					sql.forEach(dog.trace, dog.get.jobs, [], function (jobs) {
-					sql.forEach(dog.trace, dog.get.pigs, [], function (pigs) {
 					sql.forEach(dog.trace, dog.get.logs, [], function (isps) {
 						var rtn = diag.counts = {Engines:engs.Count,Jobs:jobs.Count,Pigs:pigs.Count,Faults:isps.Count,State:"ok"};
 
@@ -533,7 +601,6 @@ Further information about this file is available ${paths.moreinfo}. `;
 							if ( rtn[n] > dog[n] ) rtn.State = "warning";
 
 						sql.release();
-					});
 					});
 					});
 					});
@@ -1723,8 +1790,7 @@ function sendCert(req,res) { // create/return public-private certs
 			if (err) 
 				res( DEBE.errors.certFailed );
 				
-			else {
-				
+			else {	
 				var 
 					paths = DEBE.paths,
 					site = DEBE.site,
@@ -1740,7 +1806,7 @@ function sendCert(req,res) { // create/return public-private certs
 					}
 				});
 
-				APP.sendMail({
+				FLEX.sendMail({
 					from:  DEBE.site.ASP,
 					to:  DEBE.site.ISP,
 					cc: name,
@@ -1780,7 +1846,6 @@ To connect to ${site.Nick} from Windows:
 						contents: ""
 					}]
 				});
-	
 			}
 	
 		});
@@ -2115,28 +2180,6 @@ function sendDoc(req, res) {
 	}
 }
 
-/*
-function renderAttr(req,res) {
-	var 
-		sql = req.sql,
-		query = req.query,
-		//paths = FLEX.paths.publish,
-		//mdpath = paths[req.type] + req.name + ".xmd",
-		errors = DEBE.errors;
-
-	//Log(mdpath);
-	sql.query("SELECT * FROM app.engines WHERE least(?,1) LIMIT 1",  { name: req.table }, (err, engs) => {
-	});
-			
-	FS.readFile( mdpath, "utf8" , function (err,xmd) {
-		if (err) 
-			res( errors.badSkin );
-
-		else
-			xmd.Xfetch( res );
-	}); 
-}  */
-
 function renderSkin(req,res) {
 /**
 @method renderSkin
@@ -2154,8 +2197,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		urls = site.urls,
 		query = req.query,
 		routers = DEBE.byActionTable.select,
-		//fetcher = DEBE.fetch.fetcher,
-		dsname = req.table , //FLEX.reroute[req.table] || (req.group + "." + req.table),
+		dsname = req.table , 
 		ctx = Copy(site, {  //< default site context to render skin
 			table: req.table,
 			dataset: req.table,
@@ -2179,37 +2221,11 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 			filename: DEBE.paths.jadePath,  // jade compile requires
 			url: req.url
 		});
-		//ctx = site.context[req.table]; 
 		
 	function dsContext(ds, cb) { // callback cb(ctx) with skinning context ctx
 		
 		if ( ctxEx = DEBE.context[ds] ) // render in extended context
 			sql.serialize( ctxEx, ctx, cb );
-			/*
-			Each(ctx,  function (siteKey, ds, isLast) {
-				if ( ds.charAt(0) == "/" ) // url dataset
-					fetcher( urls.master+ds, query, null, function (data) {
-						switch ( (data||0).constructor ) {
-							case Array:
-								site[siteKey] = data.clone();
-								break;
-							case Object:
-								site[siteKey] = Copy( data, {} );
-								break;
-							default:
-								site[siteKey] = data;
-								break;
-						}
-						if ( isLast ) cb();	
-					});
-
-				else // local dataset
-					sql.forAll("CTX-"+siteKey, "SELECT * FROM ??", [ds], function (recs) {
-						site[siteKey] = recs.clone();
-						if ( isLast ) cb();
-					});
-			});
-			*/
 					
 		else  // render in default site context
 			cb( ctx );
@@ -2254,7 +2270,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 							type = field.Type.split("(")[0];
 							//group = key.split("_");
 						
-						if ( key.toLowercase() in drops ) {		// drop
+						if ( key.toLowerCase() in drops ) {		// drop
 						}
 						else
 						if ( type == "geometry") {		// drop
@@ -2306,10 +2322,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 
 			else	*/
 			
-			//dsContext("plugin", function (ctx) {  // render plugin in its plugin context
-				renderFile( paths.jades+"plugin.jade", ctx );
-			//});
-			
+			renderFile( paths.jades+"plugin.jade", ctx );
 		}		
 		
 		function renderTable( ds, ctx ) {
@@ -2961,129 +2974,12 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 						return "0";
 				}
 				return texify( val );
-				/*
-				if (  key in cache )
-					return cache[key];
-
-				else {
-					try { var val = eval( `$.${key}` ); } catch (err) {	}
-					return cache[key] = texify( val || rec[key] );
-				} */
 			}
 		}, ctx);
 		
-		// Xsolicit( viaBrowser, (html) => 
-		this.Xescape( [], (blocks,html) => html.parseJS(ctx).Xtex( (html) => html.Xtag( req, ds, viaBrowser, (html) => cb( html
-			
-			// record substitutions
-			//.parseJS(ctx)
-			/*
-			.replace(/\#\{(.*?)\}/g, function (str,key) {  // ${ TeX matrix key } 
-				function texify(recs) {
-					var tex = [];
-
-					if (recs && recs.constructor == Array) 
-						recs.forEach( function (rec) {
-							if (rec.forEach) {
-								rec.forEach( function (val,idx) {
-									rec[idx] = val.toFixed ? val.toFixed(2) : val.toUpperCase ? val : JSON.stringify(val);
-								});
-								tex.push( rec.join(" & ") );
-							}
-							else
-								tex.push( rec.toFixed ? rec.toFixed(2) : rec.toUpperCase ? rec : JSON.stringify(rec) );
-						});	
-
-					return  "\\left[ \\begin{matrix} " + tex.join("\\\\") + " \\end{matrix} \\right]";
-				}
-
-				if (  key in cache )
-					return cache[key];
-
-				else {
-					try { var val = eval( `$.${key}` ); } catch (err) {	}
-					return cache[key] = texify( val || rec[key] );
-				}
-			})*/
-			/*
-			.replace(/\#\{(.*?)\}\((.*?)\)/g, function (str,key,short) {  // #{ KEY }( SHORTCUT ) 
-				if (  key in cache )
-					return cache[key];
-
-				else {
-					try { var val = eval( `$.${key}` ); } catch (err) { }
-					return cache[key] = cache[short] = pretty(val || rec[key]);
-				}							
-			})
-			*/
-			/*
-			.replace(/\#\{(.*?)\}/g, function (str,key) {  // #{ KEY } 
-				//Log(key,cache);
-				if (  key in cache )
-					return cache[key];
-
-				else {
-					try { var val = eval( `$.${key}` ); } catch (err) { }
-					return cache[key] = pretty( val || rec[key] );
-				}
-			}) */
-			/*.replace(/\=\{(.*?)\}/g, function (str,key) {  // ={ KEY } 
-				//Log(key,cache);
-				if (  key in cache )
-					return cache[key];
-
-				else {
-					try { var val = eval( `$.${key}` ); } catch (err) { }
-					return cache[key] = pretty(val || rec[key], (val) => {
-						var rtns = [];
-						for (var key in val) 
-							rtns.push( "{" + pretty(val[key]) + "}_{" + key + "}" );
-						return rtns.join(" = ");						
-					});
-				}
-			})*/
-			/*.replace(/\!{(.*?)\}/g, function (str,expr) { // !{ JS } 
-				function Eval(expr) {
-					try {
-						return eval(expr);
-					} 
-					catch (err) {
-						return err+"";
-					}
-				}
-				return Eval(expr);
-			})*/
-
+		this.Xescape( [], (blocks,html) => html.parseJS(ctx).Xtex( (html) => html.Xtag( req, ds, viaBrowser, (html) => cb( 
+			html
 			// links, views, and highlighting
-			/*.replace(/\[([^\[\]]*?)\]\(([^\)]*?)\)/g, function (str,link,src) {  // [LINK](SRC) 
-				var
-					keys = {},
-					dsPath = ds.parsePath(keys),
-					path = src.parsePath(keys) || dsPath,
-					w = keys.w || 100,
-					h = keys.h || 100,
-					srcPath =  "/" + path.tag( "?", Copy({src:dsPath}, keys) );
-
-				//Log({link: link, keys: keys, srcPath: srcPath, src: src, ds: ds});
-				switch (link) {
-					case "image":
-					case "img":
-						return "".tag("img", { src:srcPath, width:w, height:h });
-					case "post":
-					case "iframe":
-						return "".tag("iframe", { src:srcPath, width:w, height:h });
-					case "red":
-					case "blue":
-					case "green":
-					case "yellow":
-					case "orange":
-					case "black":
-						return src.tag("font",{color:link});
-					default:
-						//Log( "".tag("iframe",{ src: srcPath, width:w, height:h } ) );
-						return link.tag("a", { href:srcPath });
-				}
-			}) */
 			.replace(/href=(.*?)\>/g, function (str,ref) { // follow <a href=REF>A</a> links
 				var q = (ref.charAt(0) == "'") ? '"' : "'";
 				return `href=${q}javascript:navigator.follow(${ref},BASE.user.client,BASE.user.source)${q}>`;
@@ -3110,13 +3006,6 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		html.serialize( fetchBlock, /(.*)?\:\n\n((.|\n)*?)\n\n/g, key, (html, fails) => {  
 			cb( blocks, html);
 		}); 		
-		
-		/*.replace(/(.*?):\n\n((.|\n)*?)\n\n/g, function (str, intro, code) {  // code embeds
-			Log(str,intro,code);
-			inList.push( code.tag("code").tag("pre") );
-			return intro + ":$in" + (inList.length-1);
-			return "";
-		})  */
 	},
 	
 	function Xsolicit( viaBrowser, cb ) {  // legacy #[URL] solicits response from site URL

@@ -1,5 +1,5 @@
 module.exports = {
-	usecase: {
+	keys: {
 		Save: "json"
 	},
 	
