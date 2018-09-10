@@ -497,7 +497,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 				pigs : 2,
 				age: 10
 			},
-			cycle: 30
+			cycle: 300
 		}, function dogJobs(dog) {
 			var
 				queues = DEBE.queues,
@@ -543,7 +543,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 							Each(queue.client, function (client, charge) {
 
 								if ( charge.bill ) {
-									if ( trace ) Trace(`${trace} ${client} ${charge.bill} CREDITS`, sql);
+									//if ( trace ) Trace(`${trace} ${client} ${charge.bill} CREDITS`, sql);
 
 									sql.query(
 										"UPDATE openv.profiles SET Charge=Charge+?,Credit=greatest(0,Credit-?) WHERE ?" , 
