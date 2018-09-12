@@ -22,7 +22,8 @@ the end. `
 	},
 
 	engine: `
-import testlib as TLIB   # imports under PYTHONPATH
+if INIT:
+	import testlib as TLIB   # imports under PYTHONPATH
 
 print "welcome to python you lazy bird"
 print "test",TLIB.testf(123)
