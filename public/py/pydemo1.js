@@ -22,19 +22,24 @@ the end. `
 	},
 
 	engine: `
-if INIT:
+def init(ctx):
+	global TLIB
 	import testlib as TLIB   # imports under PYTHONPATH
+	print ">>>>> init done"
 
-print "welcome to python you lazy bird"
-print "test",TLIB.testf(123)
+def pydemo1(ctx):
+	print "welcome to python you lazy bird"
+	print "lib", TLIB
+	print "sql", SQL0
+	print "test",TLIB.testf(123)
 
-SQL0.execute("SELECT * from app.Htest", () )
-for (rec) in SQL0:
-	print rec
+	SQL0.execute("SELECT * from app.Htest", () )
+	for (rec) in SQL0:
+		print rec
 
-CTX['Save'] = [ {'x':1, 'y':2, 'z':0}, {'x':3, 'y':4, 'z':10}]
+	ctx['Save'] = [ {'x':1, 'y':2, 'z':0}, {'x':3, 'y':4, 'z':10}]
 `
-	/*
+/*
 #from testlib import *
 #print "loc", locals()
 import testlib as TLIB
