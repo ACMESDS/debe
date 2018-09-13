@@ -492,13 +492,13 @@ append site_body
 
 				to regulate data to the plugin.  The *Flow* context	contains the supervisors':
 
-						F		// count frequencies
-						T  		// observation time
-						J		// ensemble jump counts
-						N		// ensemble size				
-						trP		// estimated transition probs
-						store	 // event store
-						getMODE(ctx, cb)  // calback cb(events, null) with ingested events or cb(null, savecb) when done
+					F		// count frequencies
+					T  		// observation time
+					J		// ensemble jump counts
+					N		// ensemble size				
+					trP		// estimated transition probs
+					store	 // event store
+					getMODE(ctx, cb)  // calback cb(events, null) with ingested events or cb(null, savecb) when done
 						
 				A plugin ingests events using getMODE = getAll || getBatch || getEach || getDrop until *events* goes null (that is, 
 				until the events have been exhausted), after which it may use the provided savecb( event list || stats object ) to write its
@@ -1074,17 +1074,17 @@ append site_body
 					Whereas the previous engines are stateless -- they do not define functions (i.e. ports) -- this
 					[stateful js-engine](/jsdemo3.exe):
 
-							x = 123;
-							function fi(tau,parm) {
-							  return 0;
-							}; 
+						x = 123;
+						function fi(tau,parm) {
+						  return 0;
+						}; 
 
-							function fo(tau,parm) {
-							  return 0;
-							};
-							
-							function jsdemo3(ctx,res) {
-							}
+						function fo(tau,parm) {
+						  return 0;
+						};
+
+						function jsdemo3(ctx,res) {
+						}
 
 					with initial context: 
 					
