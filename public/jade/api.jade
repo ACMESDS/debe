@@ -19,30 +19,30 @@ append site_body
 				PUT			/NODE ?? NODE ...
 				DELETE 	/NODE ?? NODE ...
 
-			to access dataset, engine, file and command NODEs:
+			to access dataset, plugin, file and command NODEs:
 
 				DATASET.TYPE ? QUERY ? QUERY ...
-				ENGINE.TYPE ? QUERY ? QUERY ...
+				PLUGIN.TYPE ? QUERY ? QUERY ...
 				FILEPATH.TYPE ? QUERY ? QUERY ...
 				COMMAND.TYPE ? QUERY ? QUERY ...
 
-			where the TYPE either formats data:
+			where the NODE TYPE can format returned data:
 
 				db | xml | csv | txt | tab | tree | flat | kml | encap | html | json | geojson
 
-			renders a [skin](/skinguide.view):
+			render a [skin](/skinguide.view):
 
 				view | pivot | site | spivot | brief | gridbrief | pivbrief | run | plugin | runbrief
 
-			executes, extend, or retract a [plugin's engine](/api.view):
+			execute, extend, or retract a [plugin](/api.view):
 
 				exe | add | sub
 
-			returns all events ingested by a plugin:
+			return events ingested by a plugin:
 
 				USECASE | js | py | ...
 
-			retrieve an engine attribute:
+			retrieve a plugin attribute:
 
 				tou | md | pub | status | suitors | js | py | m | me | jade | ...
 
@@ -404,7 +404,7 @@ append site_body
 			#grid.Admin(
 				path="/ADMIN.db",crush,
 				head="Print,Help",
-				cols="TABLE_NAME,TABLE_TYPE,ENGINE,VERSION,ROW_FORMAT,TABLE_ROWS,AVG_ROW_LENGTH,DATA_LENGTH,MAX_DATA_LENGTH,CREATE_TIME,UPDATE_TIME,TABLE_COMMENT")
+				cols="TABLE_NAME,TABLE_TYPE,PLUGIN,VERSION,ROW_FORMAT,TABLE_ROWS,AVG_ROW_LENGTH,DATA_LENGTH,MAX_DATA_LENGTH,CREATE_TIME,UPDATE_TIME,TABLE_COMMENT")
 
 				:markdown
 					The [ADMIN](/ADMIN.db) provides detailed storage and technical information on all *#{title}* datasets.
@@ -445,52 +445,54 @@ append site_body
 			:markdown
 				A plugin -- a dataset-engine pair -- is accessed from the following endpoints:
 
-					GET /PLUGIN.exe?id=CASE 	Run PLUGIN engine with id-specified CASE context
-					GET /PLUGIN.exe?name=CASE 	Run PLUGIN engine with name-specified CASE context
-					GET /PLUGIN.exe?QUERY 	Run PLUGIN engine with QUERY context
-					GET /PLUGIN.view	View and execute selected PLUGIN usecases
-					GET /PLUGIN.run		View, execute, edit engine and manage PLUGIN job queues
+					GET /PLUGIN.exe?id=CASE 	Run PLUGIN in id-specified CASE context
+					GET /PLUGIN.exe?name=CASE 	Run PLUGIN in name-specified CASE context
+					GET /PLUGIN.exe?QUERY 	Run PLUGIN with QUERY context
+					GET /PLUGIN.view	View and run PLUGIN contexts
+					GET /PLUGIN.run		View, run, edit engine and manage PLUGIN
 
-				An engine's usecase *context* can be agumented by optional keys:  
-				> [Export+](/#{ds}.add?Export=false) [/-](/#{ds}.sub?Export) switch writes engine results into a file  
-				> [Ingest+](/#{ds}.add?Ingest=false) [/-](/#{ds}.sub?Ingest) switch ingests engine results into the database  
-				> [Share+](/#{ds}.add?Share=false) [/-](/#{ds}.sub?Share) switch returns engine results to the status area  
-				> [Pipe+](/#{ds}.add?Pipe=doc) [/-](/#{ds}.sub?Pipe) json regulates chips and events to the engine  
-				> [Description+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description) blog markdown documents a usecase  
-				> [Config+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) js-script defines usecase context  
-				> [Save+](/#{ds}.add?Save=doc) [/-](/#{ds}.sub?Save) json aggregates engine results not captured in Save_KEYs  
-				> [Save_STATE](/#{ds}.run?options=more) json aggregates selected engine results from [{at:"STATE", ...}, ...]  
-				> [Entry+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) json primes context on entry using { KEY: "SELECT ....", ...}  
-				> [Exit+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) json saves context on exit using { KEY: "UPDATE ....", ...}  
-				> [Autorun+](/#{ds}.add?Autorun=doc) [/-](/#{ds}.sub?Autorun) switch enables the autorun watchdog.
-				
-				To place an engine into *#{title}*'s supervised workflow, provide:  
-				> [Batch+](/#{ds}.add?Batch=0) [/-](/#{ds}.sub?Batch) value overrides supervisor's batch size (0 disabled)  
-				> [Symbols+](/#{ds}.add?Symbols=[]) [/-](/#{ds}.sub?Symbols) value overrides supervisor's state symbols (null defaults)  
-				> [Steps+](/#{ds}.add?Steps=0) [/-](/#{ds}.sub?Steps) value overrides supervisor's observation interval (0 defaults)
-					
-				The supervisor automatically extends an engine's context with the following keys:  
-				> Host name of plugin  
-				> File [context](/files.view) during a piped-workflow  
-				> Voxel [context](/voxels.view) during a piped-workflow  
-				> Collects sensor context for current voxel  
-				> Chip  filepath for first jpeg collect for current voxel  
-				> Flux solar flux at earth's surface for current voxel  
-				> Events event query or list for current voxel  
-				> Flow context of workflow supervisor  
-				> Stats context shared with all plugins
+				Its usecase context can include the following optional ( add / remove ) keys:  
+				> [+](/#{ds}.add?Export=false) [/-](/#{ds}.sub?Export) *Export* switch writes engine results into a file  
+				> [+](/#{ds}.add?Ingest=false) [/-](/#{ds}.sub?Ingest) *Ingest* switch ingests engine results into the database  
+				> [+](/#{ds}.add?Share=false) [/-](/#{ds}.sub?Share) *Share* switch returns engine results to the status area  
+				> [+](/#{ds}.add?Pipe=doc) [/-](/#{ds}.sub?Pipe) *Pipe* json regulates chips and events to the engine  
+				> [+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description) *Description* documents a usecase  
+				> [+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) *Config* js-script defines usecase context  
+				> [+](/#{ds}.add?Save=doc) [/-](/#{ds}.sub?Save) *Save* aggregates results [{at:"STATE", ...}, ...] not captured in *Save_STATE* keys  
+				> [+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) *Entry* json primes context on entry using { KEY: "SELECT ....", ...}  
+				> [+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) *Exit* json saves context on exit using { KEY: "UPDATE ....", ...}  
+				> [+](/#{ds}.add?Autorun=doc) [/-](/#{ds}.sub?Autorun) *Autorun* switch enables the autorun watchdog
 
-				and uses its *Pipe* context key:
-				
+				where its *Pipe* may contain the following keys:
+
 					file: "/DATASET?QUERY" || "PLUGIN.CASE" || "FILENAME" || "FILE.jpg" || "FILE.json"  
-					group: "KEY,..." || ""  
-					where: { KEY: VALUE, ...} || {}  
-					order: "KEY,..." || "t"  
-					limit: VALUE || 1000  
-					task: "NAME" || ""  
-					aoi: "NAME" || [ [lat,lon], ... ] || []
+					group: "KEY, ..."  
+					where: { KEY: VALUE, ...}  
+					order: "KEY, ..."  
+					limit: NUMBER  
+					aoi: "NAME" || [ [lat,lon], ... ]  
+					batch: NUMBER  
+					symbols: [ NUMBER, ... ]  
+					keys: [ "KEY", ... ]  
+					steps: NUMBER   
+					actors: NUMBER
 
-				to regulate data to the plugin.  The *Flow* context	contains the supervisors':
+				to regulate an event *file* through the supervisor.  A 0-*batch* will disable the supervisor's
+				MLE batching.  The values specified for *steps*, *keys*, *symbols*, and *actors* will override default 
+				values determined when the *file* was ingested.
+
+				When piped, your plugin context will also contain [the followig](/api.view) supervisor keys:
+				> *Host* name of plugin  
+				> *File* [context](/files.view) during a piped-workflow  
+				> *Voxel* [context](/voxels.view) during a piped-workflow  
+				> *Collects* sensor context for current voxel  
+				> *Chip*  filepath for first jpeg collect for current voxel  
+				> *Flux* solar flux at earth's surface for current voxel  
+				> *Events* event query or list for current voxel  
+				> *Flow* context of workflow supervisor  
+				> *Stats* context shared with all plugins
+
+				where *Flow* contains the supervisors':
 
 					F		// count frequencies
 					T  		// observation time
@@ -498,15 +500,20 @@ append site_body
 					N		// ensemble size				
 					trP		// estimated transition probs
 					store	 // event store
-					getMODE(ctx, cb)  // calback cb(events, null) with ingested events or cb(null, savecb) when done
+					getEVENTS(ctx, cb)  // calback cb(events, null) with ingested events or cb(null, savecb) when done
 						
-				A plugin ingests events using getMODE = getAll || getBatch || getEach || getDrop until *events* goes null (that is, 
-				until the events have been exhausted), after which it may use the provided savecb( event list || stats object ) to write its
-				event list or write its computed stats object (the supervisor directs savecb data to the plugin's *Save_STATE* or 
-				its *Stats* context keys).  See [cints](/cints.run), [rats](/rats.run), [trigs](/trigs.run), [genpr](/genpr.run), 
-				and [seppfm](/seppfm.run) for examples.
+				To ingest events and present its results, a plugin provides a callback *cb* to the supervisor's
 				
-				The *Description* context key can contain [blogging tags](/skinguide.view):
+					getEVENTS = getAll || getBatch || getEach || getDrop 
+				
+				where *events* goes null when events are exhausted, after which the plugin may use the 
+				*savecb*( events || stats ) provided to present its generated *events* list (or its computed 
+				*stats* object) 
+				to the supervisor (which will get directed to the appropriate plugin *Save_STATE* keys).
+				See [cints](/cints.run), [rats](/rats.run), 
+				[trigs](/trigs.run), [genpr](/genpr.run), and [seppfm](/seppfm.run) for examples.
+				
+				Valid *Description* blogging tags include:
 
 					TEXT:\n\nCODE\n  
 					[ post ] ( SKIN.view ? w=WIDTH & h=HEIGHT & x=KEY$EXPR & y=KEY$EXPR & src=DS & id=VALUE )  
@@ -515,7 +522,7 @@ append site_body
 					$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$  
 					${ KEY } || ${tex( KEY )} || ${doc( KEY )} || ${JS EXPRESSION}  
 
-				to document plugin usecases, for example:
+				to document plugin usecases.  For example:
 
 					[post](plot.view?w=100&h=200&x=Save$a&ys=Save$b$c)
 					[post](home.view?w=500&h=100)
@@ -532,7 +539,7 @@ append site_body
 				of the localhost site, and (8) a smart tag, licensing the html content to the viewer as retained in the releases table.
 				See [plot](/plot.view?help), [treefan](/treefan.view?help), [treemap](/treefan.view?help), [force](/force.view?help), 
 				[bounce](/bounce.view?help), [tipsheet](/tipsheet.view?help) for example VIEWs. 				
-
+	
 		#fit.Publishing
 			:markdown
 				A PLUGIN  is published to *#{title}* using its publishing js-module (located at #{info.content})/TYPE/PLUGIN.js); these publishing
@@ -657,12 +664,12 @@ append site_body
 			:markdown
 				Engines can be outsourced to an agent at:
 
-					GET /ENGINE.exe?agent=AGENT&poll=N&QUERY
-					GET /ENGINE.exe?agent=AGENT&QUERY
+					GET /PLUGIN.exe?agent=AGENT&poll=N&QUERY
+					GET /PLUGIN.exe?agent=AGENT&QUERY
 
 				where the &poll request will start a job, then poll the AGENT every N seconds for its results.
 				Conversely, a poll-less request will start a job, then reply on the AGENT to claim the job.  In
-				either case, QUERY defines the ENGINE args.
+				either case, QUERY defines the PLUGIN args.
 
 				**#{title}** reciprocates by providing its own AGENT at its **/agent** endpoint.
 
@@ -670,12 +677,12 @@ append site_body
 				on each agent request.  A valid agent must provide **#{title}** the
 				following push/pull endpoints:
 
-					GET http://AGENT?push=**#{title}**.CLIENT.ENGINE.ID&args=JSON
+					GET http://AGENT?push=**#{title}**.CLIENT.PLUGIN.ID&args=JSON
 					GET http://AGENT?pull=JOBID
 
 				where the push endpoint defines the job being sent to the AGENT (with the CLIENT 
-				requesting the agent, the ENGINE being outsourced, the ID of the test case,
-				and the JSON args to the ENGINE).  The AGENT eventually responds at 
+				requesting the agent, the PLUGIN being outsourced, the ID of the test case,
+				and the JSON args to the PLUGIN).  The AGENT eventually responds at 
 				the pull endpoint with a JOBID, or a "" if no job could be created.  **#{title}** will periodically 
 				poll the agent for the results of JOBID.
 
@@ -687,10 +694,10 @@ append site_body
 			:markdown
 				Simulation engines are available at these endpoints:
 
-					GET /ENGINE.exe 	Compile and step ENGINE in a stateless workflow
-					PUT /ENGINE.exe 	Compile ENGINE in a stateful workflow
-					POST /ENGINE.exe	Step ENGINE  in a stateful workflow
-					DELETE /ENGINE.exe	Free ENGINE from a stateful workflow
+					GET /PLUGIN.exe 	Compile and step PLUGIN in a stateless workflow
+					PUT /PLUGIN.exe 	Compile PLUGIN in a stateful workflow
+					POST /PLUGIN.exe	Step PLUGIN  in a stateful workflow
+					DELETE /PLUGIN.exe	Free PLUGIN from a stateful workflow
 
 				Use the GET-endpoint to run stateless engines; use the PUT-, POST-, and DELETE-endpoints 
 				to access stateful engines.  Whereas stateless engines (being memoryless) are initialized on a GET,
@@ -1267,6 +1274,6 @@ append site_body
 				GET /help 		# request help from a poc
 				GET /ingest		# start source ingest 
 				GET /config 	# show system configuration
-				GET /service/algorithm/ENGINE # Execute ENGINE with SOAP/XML parameters
+				GET /service/algorithm/PLUGIN # Execute PLUGIN with SOAP/XML parameters
 
 //- UNCLASSIFIED

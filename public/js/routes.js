@@ -1,6 +1,6 @@
 module.exports = {  // learn transition and emission probs of a Markov process
 	keys: {
-		Batch: "int(11) default 0 comment 'override _File.Steps' ",
+		//Batch: "int(11) default 0 comment 'override _File.Steps' ",
 		Save_end: "json",
 		Save_config: "json",	
 		Pipe: "json",

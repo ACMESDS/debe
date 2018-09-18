@@ -64,45 +64,62 @@ append site_body
 				page=dspage )
 
 				:markdown
-					Execute your *#{ds}* plugin from its [customizable](/skinguide) [run](#{ds}.run), [usecase](#{ds}.view), or 
-					[plugin](#{ds}.plugin) view by selecting the desired usecase and clicking *Execute*.  You may also 
-					execute *#{ds}* [directly](/api.view) by [usecase Name](/#{ds}.exe?name=CASE) or by [usecase ID](#{ds}.exe?id=CASE).
+					Execute your *#{ds}* plugin from its [run](#{ds}.run), [usecase](#{ds}.view), or 
+					[plugin](#{ds}.plugin) view by selecting the desired usecase context and clicking *Execute*.  You 
+					may also execute *#{ds}* directly by [usecase Name](/#{ds}.exe?name=CASE) or 
+					by [usecase ID](#{ds}.exe?id=CASE).
 					
-					Your *#{ds}* plugin **context** can include the following optional ( add + / remove -) keys:  
-					> [Export+](/#{ds}.add?Export=false) [/-](/#{ds}.sub?Export) switch writes engine results into a file  
-					> [Ingest+](/#{ds}.add?Ingest=false) [/-](/#{ds}.sub?Ingest) switch ingests engine results into the database  
-					> [Share+](/#{ds}.add?Share=false) [/-](/#{ds}.sub?Share) switch returns engine results to the status area  
-					> [Pipe+](/#{ds}.add?Pipe=doc) [/-](/#{ds}.sub?Pipe) json regulates chips and events to the engine  
-					> [Description+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description) blog markdown documents a usecase  
-					> [Config+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) js-script defines usecase context  
-					> [Save+](/#{ds}.add?Save=doc) [/-](/#{ds}.sub?Save) json aggregates engine results not captured in Save_KEYs  
-					> [Save_KEY](/#{ds}.run?options=more) json aggregates selected engine results from [{at:"KEY", ...}, ...]  
-					> [Entry+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) json primes context on entry using { KEY: "SELECT ....", ...}  
-					> [Exit+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) json saves context on exit using { KEY: "UPDATE ....", ...}  
-					> [Autorun+](/#{ds}.add?Autorun=doc) [/-](/#{ds}.sub?Autorun) switch enables the autorun watchdog.
+					Its usecase context can include the following optional ( add / remove ) keys:  
+					> [+](/#{ds}.add?Export=false) [/-](/#{ds}.sub?Export) *Export* switch writes engine results into a file  
+					> [+](/#{ds}.add?Ingest=false) [/-](/#{ds}.sub?Ingest) *Ingest* switch ingests engine results into the database  
+					> [+](/#{ds}.add?Share=false) [/-](/#{ds}.sub?Share) *Share* switch returns engine results to the status area  
+					> [+](/#{ds}.add?Pipe=doc) [/-](/#{ds}.sub?Pipe) *Pipe* json regulates chips and events to the engine  
+					> [+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description) *Description* documents a usecase  
+					> [+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) *Config* js-script defines usecase context  
+					> [+](/#{ds}.add?Save=doc) [/-](/#{ds}.sub?Save) *Save* aggregates results [{at:"STATE", ...}, ...] not captured in *Save_STATE* keys  
+					> [+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) *Entry* json primes context on entry using { KEY: "SELECT ....", ...}  
+					> [+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) *Exit* json saves context on exit using { KEY: "UPDATE ....", ...}  
+					> [+](/#{ds}.add?Autorun=doc) [/-](/#{ds}.sub?Autorun) *Autorun* switch enables the autorun watchdog
 					
-					When executed, the **context** of your *#{ds}* plugin is automatically extended with keys:  
-					> Flow context of Markov/ROC supervisor  
-					> Host name of plugin  
-					> File being supervised  
-					> Voxel being supervised    
-					> Collects made under supervised voxel  
-					> Chip at earth's surface under supervised voxel  
-					> Flux at earth's surface under supervised voxel  
-					> Events query for supervised voxel  
-					
-					To place your *#{ds}* plugin into #{title}'s Markov/ROC supervisor, simply provide keys:  
-					> [Batch+](/#{ds}.add?Batch=0) [/-](/#{ds}.sub?Batch) value overrides supervisor's batch size (0 disabled)  
-					> [Symbols+](/#{ds}.add?Symbols=[]) [/-](/#{ds}.sub?Symbols) value overrides supervisor's state symbols (null defaults)  
-					> [Steps+](/#{ds}.add?Steps=0) [/-](/#{ds}.sub?Steps) value overrides supervisor's observation interval (0 defaults)
-					
-					See [plot](/plot.view?help), [treefan](/treefan.view?help), [treemap](/treefan.view?help), [force](/force.view?help), 
-					[bounce](/bounce.view?help), [tipsheet](/tipsheet.view?help) for example VIEWs.  
-					
-					Ingested files will be automatically appended to your usecases if a *Name* = ingest 
-					usecase exists providing default parameters. 
-					
-					Header colors reflect your plugin's [status](/projects.view): <font color="green">completed</font>, <font color="blue">policed</font>, <font color="orange">funded</font>, <font color="red">unfunded</font>.
+					where its *Pipe* may contain the following keys:
+				
+						file: "/DATASET?QUERY" || "PLUGIN.CASE" || "FILENAME" || "FILE.jpg" || "FILE.json"  
+						group: "KEY, ..."  
+						where: { KEY: VALUE, ...}  
+						order: "KEY, ..."  
+						limit: NUMBER  
+						aoi: "NAME" || [ [lat,lon], ... ]  
+						batch: NUMBER  
+						symbols: [ NUMBER, ... ]  
+						keys: [ "KEY", ... ]  
+						steps: NUMBER   
+						actors: NUMBER
+
+					to regulate an event *file* through the supervisor.  A 0-*batch* will disable the supervisor's
+					MLE batching.  The values specified for *steps*, *keys*, *symbols*, and *actors* will override default 
+					values determined when the *file* was ingested.
+
+					When piped, your plugin context will also contain [the followig](/api.view) supervisor keys:
+					> *Host* name of plugin  
+					> *File* [context](/files.view) during a piped-workflow  
+					> *Voxel* [context](/voxels.view) during a piped-workflow  
+					> *Collects* sensor context for current voxel  
+					> *Chip*  filepath for first jpeg collect for current voxel  
+					> *Flux* solar flux at earth's surface for current voxel  
+					> *Events* event query or list for current voxel  
+					> *Flow* context of workflow supervisor  
+					> *Stats* context shared with all plugins
+
+					Valid *Description* blogging tags inckude:
+
+						TEXT:\n\nCODE\n  
+						[ post ] ( SKIN.view ? w=WIDTH & h=HEIGHT & x=KEY$EXPR & y=KEY$EXPR & src=DS & id=VALUE )  
+						[ image ] ( PATH.jpg ? w=WIDTH & h=HEIGHT )  
+						[ LINK ]( URL )  ||  [ FONT ]( TEXT )  ||  [ ]( URL )  ||  [TOPIC]( )  
+						$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$  
+						${ KEY } || ${tex( KEY )} || ${doc( KEY )} || ${JS EXPRESSION}  
+
+					Plugin header colors reflect your plugin's [status](/projects.view): <font color="green">completed</font>, <font color="blue">policed</font>, <font color="orange">funded</font>, <font color="red">unfunded</font>.
 					
 				table!= gridify(tasks)
 	

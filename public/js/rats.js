@@ -1,8 +1,8 @@
 module.exports = {  // learn hidden intensity parameters of a Markov process
 	keys: {
 		//Symbols: "json comment '[sym, sym, ...] state symbols or null to generate' ",
-		Steps: "int(11) default 0 comment 'steps to next supervised learning' ",
-		Batch: "int(11) default 0 comment 'override File.Steps' ",
+		//Steps: "int(11) default 0 comment 'steps to next supervised learning' ",
+		//Batch: "int(11) default 0 comment 'override File.Steps' ",
 		MinEigen: "float default 1e-1 comment 'smallest eigenvalue for pc estimates' ",
 		Dim: "int(11) default 150 comment 'pc model dimension [max coherence intervals]' ",
 		Model: "varchar(16) default 'sinc' comment 'name of complex correlation model for pc estimates' ",

@@ -1666,33 +1666,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		HACK.ingestFile(sql, filePath, fileID, function (aoi) {
 			
 			Log("INGESTED", aoi);
-			/*
-			var
-				ctx = {
-					Pipe: JSON.stringify({
-						file: fileName, limit: 1000, aoi: [ [0,0], [0,0], [0,0], [0,0], [0,0] ]
-					}),
-					Name: "ingest."+fileName,
-					Description: "see " + fileName.tag("a",{href:`/files.view?ID=${fileID}`}) + " for details"
-				};
-
-			FLEX.eachPlugin( sql, "app", function (eng) {
-				sql.query( 
-					"INSERT INTO ??.?? SET ? ON DUPLICATE KEY UPDATE ?", [ 
-						group, eng.Name, ctx, {Description: ctx.Description} 
-					], function (err, info) {
-						if (false)
-							FLEX.runPlugin({  // run the plugin
-								sql: sql,
-								table: eng.Name,
-								group: group,
-								client: client,
-								query: { ID:info.insertId }
-							}, function (ctx) {
-								Log("TASKED ",eng.Name,err || rtn);
-							});	
-				});
-			}); */
 			Each(DEBE.autoTask, function (dsn, ctx) {
 				sql.query(
 					"INSERT INTO app.?? SET ? ON DUPLICATE KEY UPDATE Autorun=1",
@@ -1998,7 +1971,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						class: "plugin",
 						credit: profile.Credit,
 						name: req.table,
-						task: Pipe.task || "",
+						task: req.table,
 						notes: [
 								req.table.tag("?",{ID:query.ID}).tag("a", {href:"/" + req.table + ".run"}), 
 								((profile.Credit>0) ? "funded" : "unfunded").tag("a",{href:req.url}),
@@ -2056,11 +2029,11 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 									});
 								},  
 
-								N: ctx.Actors || File._Ingest_Actors,  // ensemble size
-								keys: ctx.Keys || File.Stats_stateKeys,
-								symbols: ctx.Symbols || File.Stats_stateSymbols || File._Ingest_States,
-								steps: ctx.Steps || File._Ingest_Steps, // process steps
-								batch: ctx.Batch || 0,  // steps to next supervised learning event 
+								N: Pipe.actors || File._Ingest_Actors,  // ensemble size
+								keys: Pipe.keys || File.Stats_stateKeys,
+								symbols: Pipe.symbols || File.Stats_stateSymbols || File._Ingest_States,
+								steps: Pipe.steps || File._Ingest_Steps, // process steps
+								batch: Pipe.batch || 0,  // steps to next supervised learning event 
 								//trP: {states: File._Ingest_States}, // trans probs
 								trP: {},
 								filter: function (str, ev) {  // filter output events

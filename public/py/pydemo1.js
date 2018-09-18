@@ -25,7 +25,7 @@ the end. `
 def init(ctx):
 	global TLIB
 	import testlib as TLIB   # imports under PYTHONPATH
-	print ">>>>> init done"
+	print "init pydemo1"
 
 def pydemo1(ctx):
 	print "welcome to python you lazy bird"
