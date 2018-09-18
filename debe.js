@@ -110,7 +110,7 @@ var
 	},
 		
 	ingester: function ingester( opts, query, cb ) {
-		function flowEvents(data, cb){
+		function ingestEvents(data, cb){
 			var evs = [];
 			if (recs = opts.get ? data[opts.get] : data) {
 				Log("ingest recs", recs.length);
@@ -142,18 +142,18 @@ var
 					case String:
 						fetcher( url, query, opts.put||null, function (data) {
 							if ( data = data.parseJSON() ) 
-								flowEvents(data, cb);
+								ingestEvents(data, cb);
 						});
 						break;
 						
 					case Function:
 						url( function (data) {
-							flowEvents(data, cb );
+							ingestEvents(data, cb );
 						});
 						break;
 						
 					default:
-						flowEvents(url, cb);
+						ingestEvents(url, cb);
 				}
 		}
 		
@@ -1918,7 +1918,6 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 */	
 	
 	var
-		flowEvents = LAB.libs.FLOW.getBatch,
 		now = new Date(),
 		sql = req.sql,
 		client = req.client,
@@ -1963,8 +1962,10 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				res("Piped");
 				
 				var
-					profile = req.profile,
-					job = { // job descriptor for regulator
+					profile = req.profile;
+
+				HACK.chipEvents(sql, Pipe, function ( jobCtx ) {  // create job for these Pipe parameters
+					sql.insertJob({ // job descriptor for regulator
 						qos: profile.QoS, 
 						priority: 0,
 						client: req.client,
@@ -1981,16 +1982,17 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 								"PMR brief".tag("a", {
 									href:`/briefs.view?options=${Pipe.task}`
 								})
-						].join(" || ")
-					};
-
-				HACK.chipEvents(sql, Pipe, function ( specs ) {  // create job for these Pipe parameters
-					sql.insertJob( Copy(specs,job), function (sql, job) {  // put voxel into job regulation queue
+						].join(" || "),
+						ctx: new Object(jobCtx)
+					}, function (sql, job) {  // put voxel into job regulation queue
 						
 						//Log("run job>>>>>>>>", job);
 						
 						var 
-							Query = req.query = Copy({  // engine query (plugin context) when selected
+							getEvents = LAB.libs.getEvents,
+							putEvents = LAB.libs.putEvents,
+							/*
+							Query = req.query = Copy({  // engine query added to a plugin context when executed
 								File: job.File,  // file linked to this voxel
 								Voxel: job.Voxel,	// voxel being processed
 								Collects: job.Collects,	// sensor collects available for this voxel
@@ -1999,31 +2001,38 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 								Stats: job.Stats,		// plugin stats available for this voxel
 								Chip: job.Chip,		// surface chip selector under this voxel
 								Host: "app." + job.name		// ds.plugin name hosting this voxel
-							}, ctx),
-							File = job.File,
+							}, jobCtx), */
+							ctx = job.ctx,
+							File = ctx.File,
 							Supervisor = new RAN({ 	// learning supervisor
-								learn: function (supercb) {  // event getter callsback supercb(evs) or learsupercbncb(null,onEnd) at end
+								learn: function (supercb) {  // event getter callsback supercb(evs) or supercb(null,onEnd) at end
 									var flow = this;
 
 									//Log("learning ctx", ctx);
-
-									flowEvents(ctx, function (evs, sinkcb) {  // callsback sinkcb(output events) when evs goes null
-										Log( evs ? `supervising ${evs.length} events` : "done!" );
+									getEvents( ctx.Events, true, function (evs) {  // save supervisor store events when input evs goes null
+										Trace( ("voxel "+ctx.Voxel.ID) + (evs ? ` supervising ${evs.length} events` : " done" ));
 
 										if (evs) 
 											supercb(evs);
 
 										else // terminate 
 											supercb(null, function onEnd( flowctx ) {  // accept flow context
-												Query.Flow = flowctx;
+												//Query.Flow = flowctx;
 
 												//Log("end flow ctx", flowctx);
+												ctx.Flow = flowctx;
+												req.query = ctx;
 												ATOM.select(req, function (ctx) {  // run plugin's engine
-													if (ctx) 
-														flow.end( ctx.Save || [], sinkcb );
-
+													if (ctx.constructor == Error)
+														Log(ctx);
+													
 													else
-														Log( `HALTED ${job.name}` );
+														flow.end( ctx.Save || [], function (evstore) {
+															//Log(">>>>>>>>>>>>supervisor ev store", evstore.length);
+															Log("evstore ctx", ctx);
+															//Log(("voxel "+ctx.Voxel.ID) + " store", evstore.length);
+															saveEvents(evstore, ctx);
+														});
 												});
 											});					
 									});
@@ -2047,8 +2056,9 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 								}  
 							});
 						
-						Supervisor.pipe( function (evs) { // pipe supervisor to this callback
-							saveEvents( evs, ctx );
+						Supervisor.pipe( function (stats) { // pipe supervisor to this callback
+							Log(("voxel "+ctx.Voxel.ID) + " piped");
+							//saveEvents( stats, ctx );
 						}); 
 					});
 				});
@@ -2083,7 +2093,7 @@ function saveEvents(evs, ctx) {
 		client = "guest",
 		fileName = `${host}.${ctx.Name}`;
 	
-	return LAB.libs.SAVE ( evs, ctx, function (evs,sql) {
+	return LAB.libs.putEvents ( evs, ctx, function (evs,sql) {
 		
 		if ( ctx.Export ) {   // export remaining events to filename
 			var

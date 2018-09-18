@@ -18,7 +18,11 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 	
 	engine: function cints(ctx,res) {  
 	/* 
-	Return MLEs for random event process [ {x,y,...}, ...] given ctx parameters
+	Return MLEs for random event process [ {x,y,...}, ...] given ctx parameters and dataset ctx.Flow parameters:
+		
+		F = count frequencies
+		T = observation interval [1/Hz]
+		N = ensemble size
 	*/
 		
 		function coherenceIntervals(solve, cb) { // unsupervised learning of coherence intervals M, SNR, etc
@@ -443,7 +447,7 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 			lma: ctx.lma	// initial guess at M = # coherence intervals
 		}, function (stats) {
 			ctx.Save = stats;
-			Log("cints save stats", stats);
+			Log("cints stats for voxel "+ctx.Voxel.ID, stats);
 			res(ctx);
 		});
 

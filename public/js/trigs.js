@@ -16,13 +16,18 @@ module.exports = {  // learn hidden trigger function of a Markov process
 	
 	engine: function trigs(ctx, res) {  
 	/* 
-	Estimate hidden trigger function for Markov process given the context ctx:
+	Estimate hidden trigger function for Markov process given context ctx parameters, dataset ctx.Flow parameters:
 	
-		File.Stats_Gain = assumed detector gain = area under trigger function
-		Stats.coherence_time = coherence time underlying the process
-		Dim = samples in profile = max coherence intervals
-		Flow.T = observation time
-		Events = query to get events
+		T = observation time
+	
+	dataset ctx.File parameters:
+	
+		Stats_Gain = assumed detector gain = area under trigger function
+	
+	and dataset ctx.Stats parameters:
+	
+		coherence_time = coherence time underlying the process
+		mean_intensity = ref mean arrivale rate (for debugging)
 	*/
 		const { sqrt, floor, random, cos, sin, abs, PI, log, exp} = Math;
 		
@@ -102,7 +107,7 @@ x = t/T;
 			flow = ctx.Flow;
 		
 		if (stats.coherence_time)
-			FLOW.getAll(ctx, function (evs) {  // fetch all the events
+			FLOW.getEvents(ctx, false, function (evs) {  // fetch all events
 				if (evs)
 					triggerProfile({  // define solver parms
 						evs: evs,		// events

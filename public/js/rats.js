@@ -18,11 +18,14 @@ module.exports = {  // learn hidden intensity parameters of a Markov process
 	
 	engine: function rats(ctx,res) {  
 	/* 
-	Return MLEs for random event process [ {x,y,...}, ...] given ctx parameters and
-		_File.Actors = ensembe size
-		_File.States = number of states consumed by process
-		_File.Steps = number of time steps
-		_Events = query to get events
+	Return MLEs for random event process [ {x,y,...}, ...] given ctx parameters, dataset ctx.Flow parameters:
+		
+		T = observation interval [1/Hz]
+		
+	and dataset ctx.Stats parameters:
+		
+		coherence_intervals = number of coherence intervals 
+		mean_intensity = mean event arrival rate [Hz]
 	*/
 		function arrivalRates( solve, cb ) { // estimate rates with callback cb(rates) 
 			
