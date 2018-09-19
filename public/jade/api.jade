@@ -499,19 +499,7 @@ append site_body
 					N		// ensemble size				
 					trP		// estimated transition probs
 					store	 // event store
-					getEVENTS(ctx, cb)  // callsback cb(events, null) with ingested events or cb(null, savecb) when done
 						
-				To ingest events and present its results, a plugin provides a callback *cb* to the supervisor's
-				
-					getEVENTS = getAll || getBatch || getEach || getDrop 
-				
-				where *events* goes null when events are exhausted, after which the plugin may use the 
-				*savecb*( events || stats ) provided to present its generated *events* list (or its computed 
-				*stats* object) 
-				to the supervisor (which will get directed to the appropriate plugin *Save_STATE* keys).
-				See [cints](/cints.run), [rats](/rats.run), 
-				[trigs](/trigs.run), [genpr](/genpr.run), and [seppfm](/seppfm.run) for examples.
-				
 				Valid *Description* blogging tags include:
 
 					TEXT:\n\nCODE\n  
@@ -538,7 +526,17 @@ append site_body
 				of the localhost site, and (8) a smart tag, licensing the html content to the viewer as retained in the releases table.
 				See [plot](/plot.view?help), [treefan](/treefan.view?help), [treemap](/treefan.view?help), [force](/force.view?help), 
 				[bounce](/bounce.view?help), [tipsheet](/tipsheet.view?help) for example VIEWs. 				
-	
+
+				Plugins typically have everything they need in the supervisor's *Flow* context, but, if needed, plugins may 
+				get events specified by the plugin's *Pipe*:
+				
+					FLOW.get( [ event list ] || "event query" , grouping switch, cb )
+					
+				with callback cb( evs ) with loaded events or cb( null ) when events are exhausted.  
+				
+				See [cints](/cints.run), [rats](/rats.run), [trigs](/trigs.run), [genpr](/genpr.run), and [seppfm](/seppfm.run) for examples.
+				
+
 		#fit.Publishing
 			:markdown
 				A PLUGIN  is published to *#{title}* using its publishing js-module (located at #{info.content})/TYPE/PLUGIN.js); these publishing

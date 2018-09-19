@@ -164,8 +164,9 @@ append site_body
 			#post.ToU(path="/#{ds}.tou",dims="1800,600",wrap)
 
 			#grid.Files(
-				path="/file.db?client=#{client}",
-				Cols="Name,Path,Ingest" )
+				path="/files.db",
+				wrap,
+				cols="Name,Path,Ingest,Classif,PoP_Expires,PoP_Start,PoP_End,PoP_durationDays,PoP_advanceDays" )
 
 			if more>0
 				#grid.ContextKeys(

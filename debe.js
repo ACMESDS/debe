@@ -1924,7 +1924,9 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		profile = req.profile,
 		group = req.group,
 		table = req.table,
-		query = req.query;
+		profile = req.profile,
+		query = req.query,
+		host = "app." + table;
 
 	//Log("exe", query );
 	if ( days = parseInt(query.days||"0") +parseInt(query.hours||"0")/24 ) {
@@ -1960,11 +1962,13 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			else
 			if ( Pipe = ctx.Pipe )  { // intercept piped for learning workflows and to regulate event stream
 				res("Piped");
-				
-				var
-					profile = req.profile;
 
-				HACK.chipEvents(sql, Pipe, function ( jobCtx ) {  // create job for these Pipe parameters
+				ctx.Host = host;
+
+				HACK.chipVoxels(sql, Pipe, function ( runctx ) {  // process each voxel being chipped
+					
+					Copy( ctx, runctx );  	// add engine context parms to the voxel run context
+					
 					sql.insertJob({ // job descriptor for regulator
 						qos: profile.QoS, 
 						priority: 0,
@@ -1972,7 +1976,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						class: "plugin",
 						credit: profile.Credit,
 						name: req.table,
-						task: req.table,
+						task: query.Name || query.ID,
 						notes: [
 								req.table.tag("?",{ID:query.ID}).tag("a", {href:"/" + req.table + ".run"}), 
 								((profile.Credit>0) ? "funded" : "unfunded").tag("a",{href:req.url}),
@@ -1983,55 +1987,41 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 									href:`/briefs.view?options=${Pipe.task}`
 								})
 						].join(" || "),
-						ctx: new Object(jobCtx)
+						runctx: runctx
 					}, function (sql, job) {  // put voxel into job regulation queue
 						
-						//Log("run job>>>>>>>>", job);
+						//Log("run job", job);
 						
 						var 
 							events = LAB.libs.EVENTS,
 							getEvents = events.get,
 							putEvents = events.put,
-							/*
-							Query = req.query = Copy({  // engine query added to a plugin context when executed
-								File: job.File,  // file linked to this voxel
-								Voxel: job.Voxel,	// voxel being processed
-								Collects: job.Collects,	// sensor collects available for this voxel
-								Flux: job.Flux,		// surface solar flux under this voxel
-								Events: job.Events || "",	// sql to get events (or an event list) for this voxel
-								Stats: job.Stats,		// plugin stats available for this voxel
-								Chip: job.Chip,		// surface chip selector under this voxel
-								Host: "app." + job.name		// ds.plugin name hosting this voxel
-							}, jobCtx), */
-							ctx = job.ctx,
-							File = ctx.File,
-							Supervisor = new RAN({ 	// learning supervisor
+							ctx = job.runctx,
+							file = runctx.File,
+							supervisor = new RAN({ 	// learning supervisor
 								learn: function (supercb) {  // event getter callsback supercb(evs) or supercb(null,onEnd) at end
 									var flow = this;
 
 									//Log("learning ctx", ctx);
 									getEvents( ctx.Events, true, function (evs) {  // save supervisor store events when input evs goes null
-										Trace( ("voxel "+ctx.Voxel.ID) + (evs ? ` supervising ${evs.length} events` : " done" ));
+										Trace( ("voxel "+ctx.Voxel.ID) + (evs ? ` supervising ${evs.length} events` : " supervised" ));
 
 										if (evs) 
 											supercb(evs);
 
 										else // terminate 
 											supercb(null, function onEnd( flowctx ) {  // accept flow context
-												//Query.Flow = flowctx;
-
-												//Log("end flow ctx", flowctx);
 												ctx.Flow = flowctx;
+												ctx.Case = "v"+ctx.Voxel.ID;
 												req.query = ctx;
+												Trace( `voxel ${ctx.Voxel.ID} starting` );
+												
 												ATOM.select(req, function (ctx) {  // run plugin's engine
-													if (ctx.constructor == Error)
+													if (ctx.constructor == Error) 
 														Log(ctx);
 													
 													else
 														flow.end( ctx.Save || [], function (evstore) {
-															//Log(">>>>>>>>>>>>supervisor ev store", evstore.length);
-															Log("evstore ctx", ctx);
-															//Log(("voxel "+ctx.Voxel.ID) + " store", evstore.length);
 															saveEvents(evstore, ctx);
 														});
 												});
@@ -2039,13 +2029,13 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 									});
 								},  
 
-								N: Pipe.actors || File._Ingest_Actors,  // ensemble size
-								keys: Pipe.keys || File.Stats_stateKeys,
-								symbols: Pipe.symbols || File.Stats_stateSymbols || File._Ingest_States,
-								steps: Pipe.steps || File._Ingest_Steps, // process steps
+								N: Pipe.actors || file._Ingest_Actors,  // ensemble size
+								keys: Pipe.keys || file.Stats_stateKeys,	// event keys
+								symbols: Pipe.symbols || file.Stats_stateSymbols || file._Ingest_States,	// state symbols
+								steps: Pipe.steps || file._Ingest_Steps, // process steps
 								batch: Pipe.batch || 0,  // steps to next supervised learning event 
-								//trP: {states: File._Ingest_States}, // trans probs
-								trP: {},
+								//trP: {states: file._Ingest_States}, // trans probs
+								trP: {},	// transition probs
 								filter: function (str, ev) {  // filter output events
 									switch ( ev.at ) {
 										case "batch":
@@ -2057,18 +2047,17 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 								}  
 							});
 						
-						Supervisor.pipe( function (stats) { // pipe supervisor to this callback
-							Log(("voxel "+ctx.Voxel.ID) + " piped");
-							//saveEvents( stats, ctx );
+						supervisor.pipe( function (stats) { // pipe supervisor to this callback
+							Trace( `voxel ${ctx.Voxel.ID} piped` );
 						}); 
 					});
 				});
 			}
 					
 			else
-			if ( "Save" in ctx )  // event generation engines do not participate in supervised workflow
+			if ( "Save" in ctx )   // event generation engines do not participate in supervised workflow
 				res( saveEvents( ctx.Save, ctx ) );
-				
+			
 			else
 				res( "ok" );
 			
@@ -2094,6 +2083,8 @@ function saveEvents(evs, ctx) {
 		client = "guest",
 		putEvents = LAB.libs.EVENTS.put,
 		fileName = `${host}.${ctx.Name}`;
+	
+	//Log("saving", evs);
 	
 	return putEvents( evs, ctx, function (evs,sql) {
 		

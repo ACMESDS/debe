@@ -14,7 +14,7 @@ module.exports = {
 	},
 	
 	engine: function jsdemo1(ctx, res) {
-		Log("jsdemo1 ctx", ctx.Pipe);
+		Log("jsdemo1 ctx", ctx);
 		var debug = false;
 		
 		if (debug) {
@@ -23,13 +23,9 @@ module.exports = {
 		}
 
 		ctx.Save = [ {u: ctx.M}, {u:ctx.M+1}, {u:ctx.M+2} ];
+		Log("jsdemo1 save", ctx.Save);
 		res(ctx);
 
-		if (debug)
-			STEP( ctx, function (evs,sink) {
-				Log(evs);
-			});
-		
 		if (debug)
 			ME.exec(ctx, "D=A*A'; E=D+D*3; disp(entry); ", (vmctx) => {
 				Log( "D=", vmctx.D, "E=", vmctx.E);
