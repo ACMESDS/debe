@@ -1989,8 +1989,9 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						//Log("run job>>>>>>>>", job);
 						
 						var 
-							getEvents = LAB.libs.getEvents,
-							putEvents = LAB.libs.putEvents,
+							events = LAB.libs.EVENTS,
+							getEvents = events.get,
+							putEvents = events.put,
 							/*
 							Query = req.query = Copy({  // engine query added to a plugin context when executed
 								File: job.File,  // file linked to this voxel
@@ -2091,9 +2092,10 @@ function saveEvents(evs, ctx) {
 		autoTask = DEBE.autoTask,
 		host = ctx.Host,
 		client = "guest",
+		putEvents = LAB.libs.EVENTS.put,
 		fileName = `${host}.${ctx.Name}`;
 	
-	return LAB.libs.putEvents ( evs, ctx, function (evs,sql) {
+	return putEvents( evs, ctx, function (evs,sql) {
 		
 		if ( ctx.Export ) {   // export remaining events to filename
 			var
