@@ -2000,7 +2000,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 							file = runctx.File,
 							supervisor = new RAN({ 	// learning supervisor
 								learn: function (supercb) {  // event getter callsback supercb(evs) or supercb(null,onEnd) at end
-									var flow = this;
+									var supervisor = this;
 
 									//Log("learning ctx", ctx);
 									getEvents( ctx.Events, true, function (evs) {  // save supervisor store events when input evs goes null
@@ -2009,23 +2009,26 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 										if (evs) 
 											supercb(evs);
 
-										else // terminate 
-											supercb(null, function onEnd( flowctx ) {  // accept flow context
-												ctx.Flow = flowctx;
+										else // terminate supervisor and start engine
+											supercb(null, function onEnd( flow ) {  // accept flow context
+												ctx.Flow = flow; 		// attach flowctx
+												//req.query = ctx;
+												//Copy(ctx,req.query);
 												ctx.Case = "v"+ctx.Voxel.ID;
-												req.query = ctx;
 												Trace( `voxel ${ctx.Voxel.ID} starting` );
-												
+												//var newreq = new Object(req);
+												//Copy(ctx, newreq.query);
+												req.query = ctx; //new Object(ctx);
 												ATOM.select(req, function (ctx) {  // run plugin's engine
 													if (ctx.constructor == Error) 
 														Log(ctx);
 													
 													else
-														flow.end( ctx.Save || [], function (evstore) {
+														supervisor.end( ctx.Save || [], function (evstore) {
 															saveEvents(evstore, ctx);
 														});
 												});
-											});					
+											});	
 									});
 								},  
 
