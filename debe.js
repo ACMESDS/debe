@@ -1993,7 +1993,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						//Log("run job", job);
 						
 						var 
-							events = LAB.libs.EVENTS,
+							events = LAB.libs.FLOW,
 							getEvents = events.get,
 							putEvents = events.put,
 							ctx = job.runctx,
@@ -2081,7 +2081,7 @@ function saveEvents(evs, ctx) {
 		autoTask = DEBE.autoTask,
 		host = ctx.Host,
 		client = "guest",
-		putEvents = LAB.libs.EVENTS.put,
+		putEvents = LAB.libs.FLOW.put,
 		fileName = `${host}.${ctx.Name}`;
 	
 	//Log("saving", evs);

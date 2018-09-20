@@ -7,7 +7,7 @@ module.exports = {
 		Description: "mediumtext"
 	},
 	
-	tou: (os) => os.read(`${os.path}.md`, "utf8") + os.read(`${os.path}.apdx`, "utf8"),
+	//tou: (os) => os.read(`${os.path}.md`, "utf8") + os.read(`${os.path}.apdx`, "utf8"),
 	
 	docs: {
 		M: "some parameter to feed me"
