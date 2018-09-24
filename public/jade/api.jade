@@ -451,7 +451,7 @@ append site_body
 					GET /PLUGIN.view	View and run PLUGIN contexts
 					GET /PLUGIN.run		View, run, edit engine and manage PLUGIN
 
-				Its usecase context can include the following optional ( add / remove ) keys:  
+				Its usecase context can include the following optional keys ( add to / remove from context):  
 				> [+](/#{ds}.add?Export=false) [/-](/#{ds}.sub?Export) *Export* switch writes engine results into a file  
 				> [+](/#{ds}.add?Ingest=false) [/-](/#{ds}.sub?Ingest) *Ingest* switch ingests engine results into the database  
 				> [+](/#{ds}.add?Share=false) [/-](/#{ds}.sub?Share) *Share* switch returns engine results to the status area  
@@ -463,24 +463,24 @@ append site_body
 				> [+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) *Exit* json saves context on exit using { KEY: "UPDATE ....", ...}  
 				> [+](/#{ds}.add?Autorun=doc) [/-](/#{ds}.sub?Autorun) *Autorun* switch enables the autorun watchdog
 
-				where its *Pipe* may include the following optional keys:  
-					> *file*: "/DATASET?QUERY" || "PLUGIN.CASE" || "FILENAME" || "FILE.jpg" || "FILE.json"  
-					> *group*: "KEY, ..."  
-					> *where*: { KEY: VALUE, ...}  
-					> *order*: "KEY, ..."  
-					> *limit*: NUMBER  
-					> *aoi*: "NAME" || [ [lat,lon], ... ]  
-					> *batch*: NUMBER  
-					> *symbols*: [ NUMBER, ... ]  
-					> *keys*: [ "KEY", ... ]  
-					> *steps*: NUMBER   
-					> *actors*: NUMBER
+				where its optional data *Pipe* may include the optional keys:  
+				> *file*: "/DATASET?QUERY" || "PLUGIN.CASE" || "FILENAME" || "FILE.jpg" || "FILE.json"  
+				> *group*: "KEY, ..."  
+				> *where*: { KEY: VALUE, ...}  
+				> *order*: "KEY, ..."  
+				> *limit*: NUMBER  
+				> *aoi*: "NAME" || [ [lat,lon], ... ]  
+				> *batch*: NUMBER  
+				> *symbols*: [ NUMBER, ... ]  
+				> *keys*: [ "KEY", ... ]  
+				> *steps*: NUMBER   
+				> *actors*: NUMBER
 
 				to regulate an event *file* through the supervisor.  A 0-*batch* will disable the supervisor's
 				MLE batching.  The values specified for *steps*, *keys*, *symbols*, and *actors* will override default 
 				values determined when the *file* was ingested.
 
-				When piped, your plugin context will also contain [the followig](/api.view) supervisor keys:
+				When piped, the supervisor will add [the following](/api.view) keys to the plugin context:
 				> *Host* name of plugin  
 				> *File* [context](/files.view) during a piped-workflow  
 				> *Voxel* [context](/voxels.view) during a piped-workflow  
@@ -491,14 +491,13 @@ append site_body
 				> *Flow* context of workflow supervisor  
 				> *Stats* context shared with all plugins
 
-				where *Flow* contains the supervisors':
-
-					F		// count frequencies
-					T  		// observation time
-					J		// ensemble jump counts
-					N		// ensemble size				
-					trP		// estimated transition probs
-					store	 // event store
+				where *Flow* contains the supervisors':  
+				> *F* where F[k] = frequency of count k  
+				> *T*  observation time [1/Hz]  
+				> *J* where J[n] = number of jumps taken by n'th process at time T  
+				> *N ensemble size  
+				> *trP*	 where trP[n,m] = estimated state transition (from,to) probs at time T  
+				> *store* event store at time T
 						
 				Valid *Description* blogging tags include:
 
@@ -528,13 +527,19 @@ append site_body
 				[bounce](/bounce.view?help), [tipsheet](/tipsheet.view?help) for example VIEWs. 				
 
 				Plugins typically have everything they need in the supervisor's *Flow* context, but, if needed, plugins may 
-				get events specified by the plugin's *Pipe*:
+				access events (those specified by its *Pipe*) via:
 				
-					FLOW.get( [ event list ] || "event query" , grouping switch, cb )
-					
-				with callback cb( evs ) with loaded events or cb( null ) when events are exhausted.  
+					FLOW.get( [ event list ] || "event query" , grouping switch, (evs) => {
+						if (evs) 
+							// process provided events
+							
+						else
+							// events have been exhausted
+					})
 				
-				See [cints](/cints.run), [rats](/rats.run), [trigs](/trigs.run), [genpr](/genpr.run), and [seppfm](/seppfm.run) for examples.
+				If the *grouping switch* is true, then the provided events *evs* are time-grouped.  See
+				[cints](/cints.run), [rats](/rats.run), [trigs](/trigs.run), [genpr](/genpr.run), 
+				and [seppfm](/seppfm.run) for examples.
 				
 
 		#fit.Publishing
@@ -649,12 +654,12 @@ append site_body
 
 		#fit.Examples
 			:markdown
-				js ex1 [ui](/jsdemo1.run) [run usecase test1](/jsdemo1.exe?Name=test1) [get usecases](/jsdemo1)
-				js ex2 [ui](/jsdemo2.run) [run usecase test1](/jsdemo2.exe?Name=test1) [get usecases](/jsdemo2)
-				py ex1 [ui](/pydemo1.run) [run usecase test1](/pydemo1.exe?Name=test1) [get usecases](/pydemo1)
-				py ex2 [ui](/pydemo2.run) [run usecase test1](/pydemo2.exe?Name=test1) [get usecases](/pydemo2)
-				m ex1 [ui](/mdemo1.run) [run usecase test1](/mdemo1.exe?Name=test1) [get usecases](/mdemo1)
-				m ex2 [ui](/mdemo2.run) [run usecase test1](/mdemo2.exe?Name=test1) [get usecases](/mdemo2)
+				js ex1 [ui](/jsdemo1.run) [run usecase test1](/jsdemo1.exe?Name=test1) [get usecases](/jsdemo1)  
+				js ex2 [ui](/jsdemo2.run) [run usecase test1](/jsdemo2.exe?Name=test1) [get usecases](/jsdemo2)  
+				py ex1 [ui](/pydemo1.run) [run usecase test1](/pydemo1.exe?Name=test1) [get usecases](/pydemo1)  
+				py ex2 [ui](/pydemo2.run) [run usecase test1](/pydemo2.exe?Name=test1) [get usecases](/pydemo2)  
+				m ex1 [ui](/mdemo1.run) [run usecase test1](/mdemo1.exe?Name=test1) [get usecases](/mdemo1)  
+				m ex2 [ui](/mdemo2.run) [run usecase test1](/mdemo2.exe?Name=test1) [get usecases](/mdemo2)  
 	
 	#accordion.Agents
 		#fit.Endpoints

@@ -356,7 +356,7 @@ var
 				//retired: "SELECT files.ID,files.Name,files.Client,count(events.id) AS evCount FROM app.events LEFT JOIN app.files ON events.fileID = files.id "
 						//+ " WHERE datediff( now(), files.added)>=? AND NOT files.Archived AND Enabled GROUP BY fileID"
 			},		
-			cycle: 30, // secs
+			cycle: 300, // secs
 			maxage: 90 // days
 		}, function dogFiles(dog) {
 			
@@ -1965,7 +1965,12 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 				ctx.Host = host;
 
-				HACK.chipVoxels(sql, Pipe, function ( runctx ) {  // process each voxel being chipped
+				var
+					events = LAB.libs.FLOW,
+					getEvents = events.get,
+					putEvents = events.put;
+				
+				HACK.chipVoxels(sql, Pipe, ( runctx ) => {  // process each voxel being chipped
 					
 					Copy( ctx, runctx );  	// add engine context parms to the voxel run context
 					
@@ -1988,14 +1993,11 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 								})
 						].join(" || "),
 						runctx: runctx
-					}, function (sql, job) {  // put voxel into job regulation queue
+					}, (sql, job) => {  // put voxel into job regulation queue
 						
 						//Log("run job", job);
 						
 						var 
-							events = LAB.libs.FLOW,
-							getEvents = events.get,
-							putEvents = events.put,
 							ctx = job.runctx,
 							file = runctx.File,
 							supervisor = new RAN({ 	// learning supervisor
@@ -2010,15 +2012,11 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 											supercb(evs);
 
 										else // terminate supervisor and start engine
-											supercb(null, function onEnd( flow ) {  // accept flow context
-												ctx.Flow = flow; 		// attach flowctx
-												//req.query = ctx;
-												//Copy(ctx,req.query);
+											supercb(null, function onEnd( flow ) {  // attach supervisor flow context
+												ctx.Flow = flow; 
 												ctx.Case = "v"+ctx.Voxel.ID;
 												Trace( `voxel ${ctx.Voxel.ID} starting` );
-												//var newreq = new Object(req);
-												//Copy(ctx, newreq.query);
-												req.query = ctx; //new Object(ctx);
+												req.query = ctx; 
 												ATOM.select(req, function (ctx) {  // run plugin's engine
 													if (ctx.constructor == Error) 
 														Log(ctx);
@@ -2050,7 +2048,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 								}  
 							});
 						
-						supervisor.pipe( function (stats) { // pipe supervisor to this callback
+						supervisor.pipe( (stats) => { // pipe supervisor to this callback
 							Trace( `voxel ${ctx.Voxel.ID} piped` );
 						}); 
 					});
