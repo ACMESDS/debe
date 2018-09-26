@@ -219,8 +219,8 @@ x = rng(-1/2, 1/2, N);
 							//Log("ctx", ctx);
 							cb({
 								intensity: {x: ctx.x, i: ctx.lambda},
-								//mean_count: ctx.Wbar,
-								//mean_intensity: ctx.evRate,
+								//mean_count: ctx.Wbar.evd,
+								//mean_intensity: ctx.evRate.evd,
 								eigen_ref: pcRef
 							});
 							Log({
@@ -247,7 +247,8 @@ x = rng(-1/2, 1/2, N);
 			stats = ctx.Stats,
 			flow = ctx.Flow;
 		
-		Log("rats ctx", stats);
+		Log("rats ctx stats,T,N,meanI", stats, flow.T, flow.N, stats.mean_intensity);
+		
 		if (stats)
 			arrivalRates({  // parms for Karhunen Loeve (intensity profile) solver
 				trace: false,   // eigen debug

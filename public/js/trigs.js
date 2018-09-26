@@ -67,7 +67,7 @@ fs = (N-1)/T;
 df = fs/N;
 nu = rng(-fs/2, fs/2, N); 
 t = rng(-T/2, T/2, N); 
-V = evpsd(evs, nu, T, "n", "t");  
+V = evpsd(evs, nu, T, "index", "t");  
 
 Lrate = V.rate / alpha;
 Accf = Lrate * ${solve.model}(t/Tc);
@@ -87,6 +87,13 @@ argH = pwt( modH, [] );
 h = re(dft( modH .* exp(i*argH),T)); 
 x = t/T; 
 `;
+			Log("trigs", {
+				run: script, 
+				evs: solve.evs.length, 
+				refRate: solve.refLambda,
+				ev0: solve.evs[0]
+			});
+				
 			ME.exec(script,  ctx, function (ctx) {
 				//Log("vmctx", ctx);
 				cb({
@@ -95,7 +102,7 @@ x = t/T;
 						h: ctx.h,
 						modH: ctx.modH,
 						argH: ctx.argH,
-						f: nu
+						f: ctx.nu
 					}
 				});
 			});
@@ -105,6 +112,8 @@ x = t/T;
 			stats = ctx.Stats,
 			file = ctx.File,
 			flow = ctx.Flow;
+		
+		Log("trigs ctx evs", ctx.Events);
 		
 		if (stats.coherence_time)
 			FLOW.get(ctx.Events, false, function (evs) {  // fetch all events

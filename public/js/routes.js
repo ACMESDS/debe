@@ -10,7 +10,7 @@ module.exports = {  // learn transition and emission probs of a Markov process
 	
 	engine: function routes(ctx, res) {  
 	/* 
-	Save supervisor's MLEs for transition and smission probs.
+	Save supervisor's MLEs for transition and emission probs.
 	*/
 		var
 			stats = ctx.Stats,
