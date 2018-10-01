@@ -2044,7 +2044,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 								filter: function (str, ev) {  // filter output events
 									switch ( ev.at ) {
 										case "batch":
-											Log("filter", ev);
+											//Log("filter", ev);
 										case "config":
 										case "end":
 											str.push(ev);
@@ -2899,89 +2899,29 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		
 	using the supplifed cache and $ hashes to store #{KEY} values and to resolve #{key} tags.
 	*/
-		/*
-		function doc(val,N) {
-			var digits = N || 2;
-			
-			if (val)
-				switch (val.constructor.name) {
-					case "Number": return val.toFixed(digits);
-
-					case "String": return val;	
-
-					case "Array": 
-						return "[" + val.joinify( (val) => val ? val.toFixed ? val.toFixed(digits) : val+"" : val+"" ) + "]";
-
-					case "Date": return val+"";
-
-					case "Object": 
-						var rtns = [];
-						for (var key in val) 
-							rtns.push( doc(val[key]).tag("div",{}) + key.tag("sub",{}) );
-
-						return rtns.join(" , ");
-
-					default: 
-						return JSON.stringify(val);
-				}
-
-			else
-				return (val == 0) ? "0" : "null";
-		} */
-
-		/*
-		function tex(val,N) {
-			var digits = N || 2;
-			
-			if (val)
-				switch (val.constructor.name) {
-					case "Number": return val.toFixed(digits);
-
-					case "String": return val;	
-
-					case "Array": 
-						var tex = []; 
-						recs.forEach( function (rec) {
-							if (rec.forEach) {
-								rec.forEach( function (val,idx) {
-									rec[idx] = val.toFixed ? val.toFixed(digits) : val.toUpperCase ? val : JSON.stringify(val);
-								});
-								tex.push( rec.join(" & ") );
-							}
-							else
-								tex.push( rec.toFixed ? rec.toFixed(digits) : rec.toUpperCase ? rec : JSON.stringify(rec) );
-						});	
-						return  "\\left[ \\begin{matrix} " + tex.join("\\\\") + " \\end{matrix} \\right]";
-
-					case "Date": return val+"";
-
-					case "Object": 
-						var rtns = [];
-						for (var key in val) 
-							rtns.push( "{" + doc(val[key]) + "}_{" + key + "}" );
-
-						return rtns.join(" , ");
-
-					default: 
-						return JSON.stringify(val);
-				}
-
-			else
-				return (val == 0) ? "0" : "null";
-		}  */
 		
 		for (var key in rec) try { ctx[key] = JSON.parse( rec[key] ); } catch (err) { ctx[key] = rec[key]; }
 	
 		var 
 			blockidx = 0;
 		
+		function docify( obj , keys ) {
+			var doc = {};
+			
+			if (keys) 
+				keys.forEach( (key) => { 
+					if ( key in obj ) doc[key] = obj[key];
+				});
+			
+			else
+				doc = obj;
+							 
+			return (JSON.stringify(doc) || "").replace(/ /g,"").replace(/_/g,"").replace(/^/g,"");
+		}
+		
 		Copy({
-			d: JSON.stringify,
-			doc: JSON.stringify
-			//doc: doc,
-			//tex: tex,
-			//d: doc,
-			//t: tex
+			d: docify,
+			doc: docify
 		}, ctx);
 		
 		this.Xescape( [], (blocks,html) => html.parseJS(ctx).Xtexgen().Xtex( (html) => html.Xtag( req, ds, viaBrowser, (html) => cb( 
@@ -3014,14 +2954,17 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 					case "Array": 
 						var tex = []; 
 						val.forEach( function (rec) {
-							if (rec.forEach) {
-								rec.forEach( function (val,idx) {
-									rec[idx] = toTeX(val);
-								});
-								tex.push( rec.join(" & ") );
-							}
+							if (rec)
+								if (rec.forEach) {
+									rec.forEach( function (val,idx) {
+										rec[idx] = toTeX(val);
+									});
+									tex.push( rec.join(" & ") );
+								}
+								else
+									tex.push( toTeX(rec) );
 							else
-								tex.push( toTeX(rec) );
+								tex.push( (rec == 0) ? "0" : "\\emptyset" );
 						});	
 						return  "\\left[ \\begin{matrix} " + tex.join("\\\\") + " \\end{matrix} \\right]";
 
@@ -3038,8 +2981,8 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 						return JSON.stringify(val);
 				}
 
-			else
-				return (val == 0) ? "0" : "null";
+			else 
+				return (val == 0) ? "0" : "\\emptyset";
 		}
 		
 		return this.replace(/(\S*) ([^ ])= (\S*)/g, (str,lhs,op,rhs) => {
@@ -3047,7 +2990,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 			switch (op) {
 				case ":":   // lhs := rhs
 					return   "$$ " + toTeX(lhs.parseJSON() || lhs) + " = " + toTeX(rhs.parseJSON() || rhs) + " $$";
-				case "$":  // lhs $= rhs
+				case ";":  // lhs $= rhs
 					return  "n$$ " + toTeX(lhs.parseJSON() || lhs) + " = " + toTeX(rhs.parseJSON() || rhs) + " $$";
 				case "<":	// lhs <= rhs
 					DEBE.blog[lhs] = parseFloat(rhs);
