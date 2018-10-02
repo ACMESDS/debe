@@ -2894,10 +2894,10 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		[ image ] ( PATH.jpg ? w=WIDTH & h=HEIGHT )  
 		[ LINK ]( URL )  ||  [ FONT ]( TEXT )  ||  [ ]( URL )  ||  [TOPIC]( )  
 		$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$  
-		${ KEY } || ${doc( KEY )} || ${ JS EXPRESSION }  
-		DOC := DOC || DOC $= DOC || DOC <= DOC
+		${ KEY } || ${doc( KEY , "IDX, ..." )}   
+		[ #KEY || DOC ] [ := || ;= || <= ] [ #KEY || DOC ]
 		
-	using the supplifed cache and $ hashes to store #{KEY} values and to resolve #{key} tags.
+	using the supplifed cache to store #{KEY} values and to resolve #{key} tags.
 	*/
 		
 		for (var key in rec) try { ctx[key] = JSON.parse( rec[key] ); } catch (err) { ctx[key] = rec[key]; }
@@ -2905,10 +2905,10 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		var 
 			blockidx = 0;
 		
-		function docify( obj , keys ) {
+		function docify( obj , idx ) {
 			var doc = {};
 			
-			if (keys) 
+			if ( keys = idx ? idx.split(",") : null ) 
 				keys.forEach( (key) => { 
 					if ( key in obj ) doc[key] = obj[key];
 				});
@@ -2924,7 +2924,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 			doc: docify
 		}, ctx);
 		
-		this.Xescape( [], (blocks,html) => html.parseJS(ctx).Xtexgen().Xtex( (html) => html.Xtag( req, ds, viaBrowser, (html) => cb( 
+		this.Xescape( [], (blocks,html) => html.Xgen(ctx).Xtex( (html) => html.Xtag( req, ds, viaBrowser, (html) => cb( 
 			html
 			// links, views, and highlighting
 			.replace(/href=(.*?)\>/g, function (str,ref) { // follow <a href=REF>A</a> links
@@ -2938,65 +2938,6 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 				return "\n\n" + blocks[ blockidx++ ] + "\n";
 			})
 		))));
-	},
-	
-	function Xtexgen( ) {  // TeX generator
-
-		function toTeX(val,N) {
-			var digits = N || DEBE.blog.digits;
-			
-			if (val)
-				switch (val.constructor.name) {
-					case "Number": return val.toFixed(digits);
-
-					case "String": return val;	
-
-					case "Array": 
-						var tex = []; 
-						val.forEach( function (rec) {
-							if (rec)
-								if (rec.forEach) {
-									rec.forEach( function (val,idx) {
-										rec[idx] = toTeX(val);
-									});
-									tex.push( rec.join(" & ") );
-								}
-								else
-									tex.push( toTeX(rec) );
-							else
-								tex.push( (rec == 0) ? "0" : "\\emptyset" );
-						});	
-						return  "\\left[ \\begin{matrix} " + tex.join("\\\\") + " \\end{matrix} \\right]";
-
-					case "Date": return val+"";
-
-					case "Object": 
-						var rtns = [];
-						for (var key in val) 
-							rtns.push( "{" + toTeX(val[key]) + "}_{" + key + "}" );
-
-						return rtns.join(" , ");
-
-					default: 
-						return JSON.stringify(val);
-				}
-
-			else 
-				return (val == 0) ? "0" : "\\emptyset";
-		}
-		
-		return this.replace(/(\S*) ([^ ])= (\S*)/g, (str,lhs,op,rhs) => {
-			//Log([lhs,rhs,op]);
-			switch (op) {
-				case ":":   // lhs := rhs
-					return   "$$ " + toTeX(lhs.parseJSON() || lhs) + " = " + toTeX(rhs.parseJSON() || rhs) + " $$";
-				case ";":  // lhs $= rhs
-					return  "n$$ " + toTeX(lhs.parseJSON() || lhs) + " = " + toTeX(rhs.parseJSON() || rhs) + " $$";
-				case "<":	// lhs <= rhs
-					DEBE.blog[lhs] = parseFloat(rhs);
-					return "";
-			}					
-		});
 	},
 	
 	function Xescape( blocks, cb ) { // code block escaper
@@ -3126,6 +3067,73 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		html.replace(/\&amp;/g, (key) => "&").serialize( fetchTag, /\[([^\[\]]*?)\]\(([^\)]*?)\)/g , key, (html, fails) => {     // /\#(.[^\(]?)(.*?) /g
 			cb(html);
 		}); 
+	},
+	
+	function Xgen( ctx ) {  // markdown generator
+
+		function toTeX(val,N) {
+			var digits = N || DEBE.blog.digits;
+
+			if (val)
+				switch (val.constructor.name) {
+					case "Number": return val.toFixed(digits);
+
+					case "String": return val;	
+
+					case "Array": 
+						var tex = []; 
+						val.forEach( function (rec) {
+							if (rec)
+								if (rec.forEach) {
+									rec.forEach( function (val,idx) {
+										rec[idx] = toTeX(val);
+									});
+									tex.push( rec.join(" & ") );
+								}
+								else
+									tex.push( toTeX(rec) );
+							else
+								tex.push( (rec == 0) ? "0" : "\\emptyset" );
+						});	
+						return  "\\left[ \\begin{matrix} " + tex.join("\\\\") + " \\end{matrix} \\right]";
+
+					case "Date": return val+"";
+
+					case "Object": 
+						var rtns = [];
+						for (var key in val) 
+							rtns.push( "{" + toTeX(val[key]) + "}_{" + key + "}" );
+
+						return rtns.join(" , ");
+
+					default: 
+						return JSON.stringify(val);
+				}
+
+			else 
+				return (val == 0) ? "0" : "\\emptyset";
+		}
+
+		function toDoc(arg) {
+			return arg.startsWith("#") 
+				? ( "${doc(" + arg.substr(1) + ")}" ).parseJS(ctx).parseJSON() 
+				: arg;
+		}
+
+		var blogctx = new Object(ctx);
+		
+		return  this.parseJS(blogctx).replace(/(\S*) ([^ ])= (\S*)/g, (str,lhs,op,rhs) => {
+			//Log([lhs,rhs,op,blogctx.abc]);
+			switch (op) {
+				case ":":   // lhs := rhs
+					return   "$$ " + toTeX( lhs.parseJSON(toDoc) ) + " = " + toTeX( rhs.parseJSON(toDoc) ) + " $$";
+				case ";":  // lhs $= rhs
+					return  "n$$ " + toTeX( lhs.parseJSON(toDoc) ) + " = " + toTeX( rhs.parseJSON(toDoc) ) + " $$";
+				case "<":	// lhs <= rhs
+					DEBE.blog[lhs] = parseFloat(rhs);
+					return "";
+			}					
+		});
 	},
 	
 	function Xtex( cb ) {  // x$$ MATH $$ replacements

@@ -506,8 +506,8 @@ append site_body
 					[ image ] ( PATH.jpg ? w=WIDTH & h=HEIGHT )  
 					[ LINK ]( URL )  ||  [ FONT ]( TEXT )  ||  [ ]( URL )  ||  [TOPIC]( )  
 					$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$  
-					${ KEY } || ${doc( KEY )} || ${ JS EXPRESSION }  
-					DOC := DOC || DOC $= DOC || DOC <= DOC
+					${ KEY } || ${doc( KEY , "IDX, ..." )}   
+					[ #KEY || DOC ] [ := || ;= || <= ] [ #KEY || DOC ]
 
 				to document plugin usecases.  For example:
 

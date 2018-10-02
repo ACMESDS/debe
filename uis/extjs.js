@@ -128,7 +128,7 @@ var
 					enableAlignments: true,
 					listeners: {
 						afterrender: function (h) {
-							//h.toggleSourceEdit(true);
+							h.toggleSourceEdit(true);
 						}
 					},
 					plugins: [
