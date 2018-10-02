@@ -120,7 +120,7 @@ module.exports = {  // generate a Markov process given its transition probabilit
 			*/
 		// [{"mu":[0,0,0],"sigma":[[0.9,0.4,0],[0.4,0.7,0],[0,0,0.1]]}, {"mu":[0.3,0.5,0], "sigma":[[0.8,0.2,0],[0.2,0.8,0],[0,0,0.1]]}]
 
-		var Super = new RAN({ // generating supervisor
+		var ran = new RAN({ // generating supervisor
 			N: ctx.Members,  // ensemble size
 			wiener: ctx.Wiener,  // wiener process steps
 			trP: ctx.trProbs, // state transition probs 
@@ -199,7 +199,7 @@ module.exports = {  // generate a Markov process given its transition probabilit
 			}  // event saver 
 		});  // create a randpr compute thread
 
-		Super.pipe( function (evs) {  // sync pipe
+		ran.pipe( function (evs) {  // sync pipe
 			ctx.Save = evs;
 			res( ctx );
 		});   // run process and capture results

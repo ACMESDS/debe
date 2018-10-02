@@ -2012,7 +2012,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 									getEvents( ctx.Events, true, function (evs) {  // save supervisor store events when input evs goes null
 										Trace( ("voxel "+ctx.Voxel.ID) + (evs ? ` supervising ${evs.length} events` : " supervised" ));
 
-										if (evs) 
+										if (evs) // feed supervisor
 											supercb(evs);
 
 										else // terminate supervisor and start engine
