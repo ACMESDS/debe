@@ -140,9 +140,8 @@ module.exports = {  // generate a Markov process given its transition probabilit
 						str.push({
 							at: ev.at,  // step name
 							t: ev.t, // time sampled
-							state: ev.state,   // state occupied
-							class: 0,							
-							index: ev.index, 	// unique identifier
+							u: ev.state,   // state occupied
+							n: ev.index, 	// unique identifier
 							x: ys[0],  	// lat
 							y: ys[1],  	// lon
 							z: ys[2] 	// alt
@@ -152,12 +151,12 @@ module.exports = {  // generate a Markov process given its transition probabilit
 					case "_step":
 						if (walking) {
 							var ev = { 
-									at: ev.at,
-									t: ran.t,
-									state: 0,
-									class: 0,
-									index: 0
-								};
+								at: ev.at,
+								t: ran.t,
+								u: 0,
+								k: 0,
+								n: 0
+							};
 
 							ran.WU.each(function (id, state) {
 								ev[ labels[id] || ("w"+id) ] = state;
@@ -173,9 +172,8 @@ module.exports = {  // generate a Markov process given its transition probabilit
 								str.push({ 
 									at: ev.at,  // step name
 									t: ran.t, // time sampled
-									class: 0,
-									state: state,   // state occupied
-									index: index, 	// unique identifier
+									u: state,   // state occupied
+									n: index, 	// unique identifier
 									x: ys[0],  	// lat
 									y: ys[1],  	// lon
 									z: ys[2] 	// alt

@@ -315,7 +315,7 @@ var
 			get: {
 				lowsnr: 
 					"SELECT count(events.ID) AS Rejects, events.voxelID AS voxelID, events.fileID AS fileID FROM app.events"
-					+ " LEFT JOIN app.voxels ON voxels.ID = events.voxelID"
+					+ " LEFT JOIN app.voxels ON voxels.ID = events.voxelID AND voxels.enabled"
 					+ " LEFT JOIN app.files ON files.ID = events.fileID"
 					+ " WHERE files.snr < voxels.minsnr"
 					+ " GROUP BY events.voxelID, events.fileID"
