@@ -575,7 +575,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 					] );
 					
 					fetcher( job.Notes, null, null, function (rtn) {
-						Trace("dogjobrun "+msg);
+						Log("dog job run "+msg);
 					});
 				});
 		}),
@@ -2010,7 +2010,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 									//Log("learning ctx", ctx);
 									getEvents( ctx.Events, true, function (evs) {  // save supervisor store events when input evs goes null
-										Trace( ("voxel "+ctx.Voxel.ID) + (evs ? ` supervising ${evs.length} events` : " supervised" ));
+										Trace( evs ? `SUPERVISING voxel${ctx.Voxel.ID} events ${evs.length}` : `SUPERVISED voxel${ctx.Voxel.ID}` , sql );
 
 										if (evs) // feed supervisor
 											supercb(evs);
@@ -2019,7 +2019,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 											supercb(null, function onEnd( flow ) {  // attach supervisor flow context
 												ctx.Flow = flow; 
 												ctx.Case = "v"+ctx.Voxel.ID;
-												Trace( `voxel ${ctx.Voxel.ID} starting` );
+												Trace( `STARTING voxel${ctx.Voxel.ID}` , sql );
 												req.query = ctx; 
 												ATOM.select(req, function (ctx) {  // run plugin's engine
 													if (ctx.constructor == Error) 
@@ -2053,7 +2053,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 							});
 						
 						supervisor.pipe( (stats) => { // pipe supervisor to this callback
-							Trace( `voxel ${ctx.Voxel.ID} piped` );
+							Trace( `PIPED voxel${ctx.Voxel.ID}` , sql );
 						}); 
 					});
 				});
