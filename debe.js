@@ -3749,8 +3749,8 @@ function sharePlugin(req,res) {  //< share plugin attribute
 		sql = req.sql,
 		query = req.query,
 		attr = req.type,
-		owner = req.client,
-		endService = query.endservice,
+		partner = req.client,
+		endService = query.endservice+"",
 		proxy = query.proxy,		
 		types = {
 			pub: "txt",
@@ -3770,7 +3770,7 @@ function sharePlugin(req,res) {  //< share plugin attribute
 
 	sql.query( "SELECT * FROM ??.engines WHERE least(?,1) LIMIT 1", [ req.group, { Name: req.table } ], (err, engs) => {
 		if ( eng = engs[0] ) 
-			FLEX.pluginAttribute( sql, attr, owner, endService, proxy, eng, (attrib) => {
+			FLEX.pluginAttribute( sql, attr, partner, endService, proxy, eng, (attrib) => {
 				req.type = types[req.type] || "txt";
 				if (attrib) 
 					res(attrib);
@@ -3782,7 +3782,7 @@ function sharePlugin(req,res) {  //< share plugin attribute
 						case "me":
 						case "m":
 							res( new Error( endService 
-								? `${endService} must contain ${owner}`
+								? `${endService} must contain ${partner}`
 								: `specify endservice=URL integrating ${eng.Name} or see its ` 
 									+ "Terms of Use".tag("a", {href: `/${eng.Name}.tou`})
 							));
