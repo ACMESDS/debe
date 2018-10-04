@@ -8,11 +8,12 @@ append base_help
 	:markdown
 		Display circle packing chart:
 
-			ds = source url returning node tree { ID:Name, count:Value, data: [ Children ]}
+			src = source url returning node tree { ID:Name, count:Value, data: [ Children ]}
+			pivots = key,key,...
 			w = drawing width
 			h = drawing height
 			debug = dump derived options
-			x,y,r,s = position, radius and weight data
+			x,y,r,s = position, radius and weight keys
 
 append base_head
 
@@ -35,10 +36,11 @@ append base_head
 
 	script.
 		var opts = {
-			ds: "!{query.ds}",
-			w: parseInt("#{query.w}"),
-			h: parseInt("#{query.h}"),
-			debug: "#{query.debug}",
+			ds: "!{query.src}.tree?_sort=#{query.pivots}",
+			w: parseInt("#{query.w}" || "0"),
+			h: parseInt("#{query.h}" || "0"),
+			debug: parseInt("#{query.debug}" || "0"),
+			kids: "#{query.kids}" || "children",
 			x: "#{query.x}" || "x",
 			y: "#{query.y}" || "y",
 			r: "#{query.r}" || "r",
@@ -67,9 +69,9 @@ append base_body
 			
 			vis = d3.select(self.frameElement).style("height", diameter + "px");
 
-		source( opts, function(opts) {
+		source( opts, function(rec) {
 			var 
-				root = opts.data,
+				root = rec,
 				
 				node = svg.datum(root).selectAll(".node")
 					.data(pack.nodes)

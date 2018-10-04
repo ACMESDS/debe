@@ -8,7 +8,8 @@ append base_help
 	:markdown
 		Display treefan chart using parameters:
 
-			ds = source url returning node tree { ID:Name, count:Value, data: [ Children ]}
+			src = source url returning node tree { ID:Name, count:Value, data: [ Children ]}
+			pivots = key,key,...
 			w = drawing width
 			h = drawing height
 			debug = dump derived options
@@ -34,10 +35,10 @@ append base_head
 
 	script.
 		var opts = {
-			ds: "!{query.ds}",
-			w: parseInt("#{query.w}"),
-			h: parseInt("#{query.h}"),
-			debug: "#{query.debug}",
+			ds: "!{query.src}.tree?_sort=#{query.pivots}",
+			w: parseInt("#{query.w}" || "0"),
+			h: parseInt("#{query.h}" || "0"),
+			debug: parseInt("#{query.debug}" || "0"),
 			kids: "#{query.kids}" || "children"
 		};
 
@@ -65,8 +66,8 @@ append base_body
 				.append("svg:g")
 				.attr("transform", "translate(" + m[3] + "," + m[0] + ")");
 
-		source( opts, function(opts) {
-			root = opts.data;
+		source( opts, function(rec) {
+			root = rec;
 			root.x0 = h / 2;
 			root.y0 = 0;
 

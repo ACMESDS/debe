@@ -43,23 +43,21 @@ append base_head
 	
 	script.
 		var opts = {  // define plot options
-			ds: "/!{query.src}?ID=!{query.ID}&x:#{query.x}&y:#{query.y}",
-			w: parseInt("#{query.w}"),
-			h: parseInt("#{query.h}"),			
-			debug: "#{query.debug}",
-
-			marker: parse("#{query.marker}", ["circle", "square", "triangle"]),
-			line: parse("#{query.line}", ["blue","green","red","black","orange","yellow"]),
-
+			ds: "/!{query.src}?ID=#{query.ID}&x:#{query.x}&y:#{query.y}",
+			w: parseInt("#{query.w}" || "0"),
+			h: parseInt("#{query.h}" || "0"),
+			debug: parseInt("#{query.debug}" || "0"),
+			marker: ( "#{query.marker}" || "circle,square,triangle" ).split(","),
+			line: ( "#{query.line}" || "blue,green,red,black,orange,yellow" ).split(","),
 			trace: "#{query.trace}",
-			label: parse("#{query.label}", []),
-			auto: parse("#{query.auto}", []),
+			label: "#{query.label}".split(","),
+			auto: "#{query.auto}".split(","),
 			initialize: true,
-			ref: parse("#{query.ref}", []),
-			min: parse("#{query.min}", []),
-			max: parse("#{query.max}", []),
-			init:  parse("#{query.init}", []),
-			extra: parse("#{query.extra}", [])
+			ref: "#{query.ref}".split(","),
+			min: "#{query.min}".split(","),
+			max: "#{query.max}".split(","),
+			init:  "#{query.init}".split(","),
+			extra: "#{query.extra}".split(",")
 		};
 				 
 append base_body

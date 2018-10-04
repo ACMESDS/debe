@@ -8,7 +8,8 @@ append base_help
 	:markdown
 		Display treemap chart using parameters:
 
-			ds = source url returning node tree { ID:Name, count:Value, data: [ Children ]}
+			src = source url returning node tree { ID:Name, count:Value, data: [ Children ]}
+			pivots = key,key,...
 			w = drawing width
 			h = drawing height
 			debug = dump derived options
@@ -41,10 +42,10 @@ append base_head
 
 	script.
 		var opts = {
-			ds: "!{query.ds}",
-			w: parseInt("#{query.w}"),
-			h: parseInt("#{query.h}"),
-			debug: "#{query.debug}",
+			ds: "!{query.src}.tree?_sort=#{query.pivots}",
+			w: parseInt("#{query.w}" || "0"),
+			h: parseInt("#{query.h}" || "0"),
+			debug: parseInt("#{query.debug}" || "0"),
 			kids: "#{query.kids}" || "children"
 		};
 
@@ -70,10 +71,10 @@ append base_body
 				.style("left", margin.left + "px")
 				.style("top", margin.top + "px");
 
-		source( opts, function(opts) {
+		source( opts, function(rec) {
 			
 			var 
-				root = opts.data,
+				root = rec,
 				
 				node = div.datum(root).selectAll(".node")
 					.data(treemap.nodes)

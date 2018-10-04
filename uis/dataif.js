@@ -72,12 +72,14 @@ Tag url (el=?|&), list (el=;|,), or tag html using specified attributes.
 }
 
 function parse(x,def) {
+	return x ? x.split(",") : def;
+	/*
 	try {
 		return x ? JSON.parse("[" + x + "]") : def;
 	}
 	catch (err) {
 		return x ? x.split(",") : def;
-	}
+	} */
 }
 
 function source(opts, cb) {

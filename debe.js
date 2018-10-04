@@ -86,6 +86,7 @@ var
 			return ctx.db+"."+ctx.from;
 		},
 		
+		syslogs: "openv.syslogs",
 		masters: "block.masters",
 		roles: "openv.roles",
 		aspreqts: "openv.aspreqts",
@@ -2895,7 +2896,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		[ LINK ]( URL )  ||  [ FONT ]( TEXT )  ||  [ ]( URL )  ||  [TOPIC]( )  
 		$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$  
 		${ KEY } || ${doc( KEY , "IDX, ..." )}   
-		[ #KEY || DOC ] [ := || ;= || <= ] [ #KEY || DOC ]
+		[ #KEY || DOC || KEY,... ] [ := || ;= || <= || >= ] [ #KEY || DOC || KEY,... ]
 		
 	using the supplifed cache to store #{KEY} values and to resolve #{key} tags.
 	*/
@@ -2934,7 +2935,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 																													  
 			// block backsub
 			.replace(/@block/g, function (str) {
-				Log(`unblock[${blockidx}]`);
+				//Log(`unblock[${blockidx}]`);
 				return "\n\n" + blocks[ blockidx++ ] + "\n";
 			})
 		))));
@@ -2945,7 +2946,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 			key = "@esc",
 			html = this,
 			fetchBlock = function ( rec, cb ) {
-				Log(`block[${blocks.length}] `, rec.url);
+				//Log(`block[${blocks.length}] `, rec.url);
 				blocks.push( rec.opt );
 				cb( rec.url + ":" + "@block");
 			};
@@ -3002,7 +3003,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 						_Product: product,
 						Path: "/tag/"+product
 					}, (pub) => {
-						cb( pub ? "@"+req.client+" " : "@none" );
+						cb( (rec.url+"=>"+(pub ? req.client : "guest")).tag("a",{href:"/tags.view"}) );
 					});
 				}
 			},
@@ -3064,12 +3065,12 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 				}
 			};
 		
-		html.replace(/\&amp;/g, (key) => "&").serialize( fetchTag, /\[([^\[\]]*?)\]\(([^\)]*?)\)/g , key, (html, fails) => {     // /\#(.[^\(]?)(.*?) /g
+		html.serialize( fetchTag, /\[([^\[\]]*?)\]\(([^\)]*?)\)/g , key, (html, fails) => {     // /\#(.[^\(]?)(.*?) /g
 			cb(html);
 		}); 
 	},
 	
-	function Xgen( ctx ) {  // markdown generator
+	function Xgen( ctx ) {  // markdown generator  [ #KEY || DOC || KEY,... ] [ := || ;= || <= || >= ] [ #KEY || DOC || KEY,... ]
 
 		function toTeX(val,N) {
 			var digits = N || DEBE.blog.digits;
@@ -3127,11 +3128,34 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 			switch (op) {
 				case ":":   // lhs := rhs
 					return   "$$ " + toTeX( lhs.parseJSON(toDoc) ) + " = " + toTeX( rhs.parseJSON(toDoc) ) + " $$";
-				case ";":  // lhs $= rhs
+				case ";":  // lhs ;= rhs
 					return  "n$$ " + toTeX( lhs.parseJSON(toDoc) ) + " = " + toTeX( rhs.parseJSON(toDoc) ) + " $$";
+				case ">": // lhs >= rhs
+					var
+						lKeys = lhs.split(","),
+						rKeys = rhs.split(","),
+						base = lKeys[0] + "$.",
+						view = rKeys[0],
+						opts = {
+							w: rKeys[1],
+							h: rKeys[2],
+							x: lKeys[1] ? base + lKeys[1] : "",
+							y: lKeys[2] ? base + lKeys[2] : "",
+							r: lKeys[3] ? base + lKeys[3] : "",
+							max: "200,1",
+							label: "x,y"
+						};
+					
+					for (var key in opts) if ( !opts[key] ) delete opts[key];
+					
+					//Log( base, view, "[post](/" + (view+".view").tag("?",opts) + ")" );
+					return "[post](/" + (view+".view").tag("?",opts) + ")";
+					
 				case "<":	// lhs <= rhs
 					DEBE.blog[lhs] = parseFloat(rhs);
 					return "";
+				default:
+					return "?";
 			}					
 		});
 	},

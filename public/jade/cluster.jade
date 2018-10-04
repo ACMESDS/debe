@@ -8,7 +8,8 @@ append base_help
 	:markdown
 		Display cluster chart using parameters:
 
-			ds = source url returning node tree { ID:Name, count:Value, data: [ Children ]}
+			src = source url returning node tree { ID:Name, count:Value, data: [ Children ]}
+			pivots = key,key,...
 			w = drawing width
 			h = drawing height
 			debug = dump derived options
@@ -38,10 +39,10 @@ append base_head
 		
 	script.
 		var opts = {
-			ds: "!{query.ds}",
-			w: parseInt("#{query.w}"),
-			h: parseInt("#{query.h}"),
-			debug: "#{query.debug}",
+			ds: "!{query.src}.tree?_sort=#{query.pivots}",
+			w: parseInt("#{query.w}" || "0"),
+			h: parseInt("#{query.h}" || "0"),
+			debug: parseInt("#{query.debug}" || "0"),
 			kids: "#{query.kids}" || "children"
 		};
 		
@@ -151,8 +152,8 @@ append base_body
 			.on("mousemove", mousemove)
 			.on("mouseup", mouseup);
 
-		source( opts, function(opts) {
-			var nodes = cluster.nodes(opts.data);
+		source( opts, function(rec) {
+			var nodes = cluster.nodes(rec);
 
 			var link = vis.selectAll("path.link")
 				.data(cluster.links(nodes))
