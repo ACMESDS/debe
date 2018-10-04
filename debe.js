@@ -146,7 +146,7 @@ var
 				switch (url.constructor) {
 					case String:
 						fetcher( url, query, opts.put||null, function (data) {
-							if ( data = data.parseJSON() ) 
+							if ( data = data.parseJSON( (val) => null ) ) 
 								ingestEvents(data, cb);
 						});
 						break;
@@ -3117,7 +3117,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 
 		function toDoc(arg) {
 			return arg.startsWith("#") 
-				? ( "${doc(" + arg.substr(1) + ")}" ).parseJS(ctx).parseJSON() 
+				? ( "${doc(" + arg.substr(1) + ")}" ).parseJS(ctx).parseJSON( (val) => "?" ) 
 				: arg;
 		}
 
@@ -3135,21 +3135,20 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 						lKeys = lhs.split(","),
 						rKeys = rhs.split(","),
 						base = lKeys[0] + "$.",
-						view = rKeys[0],
+						post = rKeys[0],
+						args = (rKeys[3] || "").replace(/;/g,","),
 						opts = {
 							w: rKeys[1],
 							h: rKeys[2],
 							x: lKeys[1] ? base + lKeys[1] : "",
 							y: lKeys[2] ? base + lKeys[2] : "",
-							r: lKeys[3] ? base + lKeys[3] : "",
-							max: "200,1",
-							label: "x,y"
+							r: lKeys[3] ? base + lKeys[3] : ""
 						};
 					
 					for (var key in opts) if ( !opts[key] ) delete opts[key];
 					
-					//Log( base, view, "[post](/" + (view+".view").tag("?",opts) + ")" );
-					return "[post](/" + (view+".view").tag("?",opts) + ")";
+					//Log( base, view, "[post](/" + (post+".view").tag("?",opts)+args + ")" );
+					return "[post](/" + (post+".view").tag("?",opts)+args + ")";
 					
 				case "<":	// lhs <= rhs
 					DEBE.blog[lhs] = parseFloat(rhs);
@@ -3313,7 +3312,7 @@ append layout_body
 				fetchBlog = function( rec, cb ) {
 					//Log("blog", key, rec);
 					if ( md = rec[key] + "" )
-						md.Xblog(req, ds+"?ID="+rec.ID, {}, {}, rec, true, (html) => cb(html) );
+						md.Xblog(req, ds+"?id="+rec.ID, {}, {}, rec, true, (html) => cb(html) );
 					
 					else
 						cb(md);

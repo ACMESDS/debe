@@ -8,9 +8,12 @@ append base_help
 	:markdown
 		 Produce d3 scatter plot:  
 
-			src = source dataset returning [ {x:[...], y:[[...] ,[...], ...}, ... ]
+			src = source dataset returning record list
 			w = drawing width
 			h = drawing height
+			id = record id (undefined implies all records)
+			x = dataset key
+			y = dataset key
 			debug = dump derived options
 			line = color,color, ... line color
 			marker = style,style, ... line markers
@@ -43,7 +46,7 @@ append base_head
 	
 	script.
 		var opts = {  // define plot options
-			ds: "/!{query.src}?ID=#{query.ID}&x:#{query.x}&y:#{query.y}",
+			ds: "/!{query.src}?ID=#{query.id}&x:#{query.x}&y:#{query.y}",
 			w: parseInt("#{query.w}" || "0"),
 			h: parseInt("#{query.h}" || "0"),
 			debug: parseInt("#{query.debug}" || "0"),
