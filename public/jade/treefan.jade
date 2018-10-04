@@ -35,7 +35,7 @@ append base_head
 
 	script.
 		var opts = {
-			ds: "!{query.src}.tree?_sort=#{query.pivots}",
+			ds: "!{query.src}.tree?ID=#{query.id}&_sort=#{query.pivots}",
 			w: parseInt("#{query.w}" || "0"),
 			h: parseInt("#{query.h}" || "0"),
 			debug: parseInt("#{query.debug}" || "0"),
