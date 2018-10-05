@@ -104,18 +104,24 @@ var
 	},
 
 	blog: {
-		digits: 2,
-		":" : (lhs,rhs,ctx) => ctx.toEqn("", lhs,rhs,ctx),
-		"|" : (lhs,rhs,ctx) => ctx.toEqn("n", lhs,rhs,ctx),
-		";" : (lhs,rhs,ctx) => ctx.toEqn("n", lhs,rhs,ctx),
-		">": (lhs,rhs,ctx) => ctx.toTag(lhs,rhs,ctx),
-		"<": (lhs,rhs,ctx) => {
-			eval(`
+		digits: 2,  // precision to show
+		":" : (lhs,rhs,ctx) => ctx.toEqn("", lhs,rhs,ctx), 		// inline TeX
+		"|" : (lhs,rhs,ctx) => ctx.toEqn("a", lhs,rhs,ctx),		// Ascii Match
+		";" : (lhs,rhs,ctx) => ctx.toEqn("n", lhs,rhs,ctx),		// break TeX
+		">": (lhs,rhs,ctx) => ctx.toTag(lhs,rhs,ctx),			// [post](url) 
+		"<": (lhs,rhs,ctx) => {												// add context value or generator
+			
+			if ( rhs.split(",").length > 1)
+				eval(`
 try {
 	ctx[lhs] = (lhs,rhs,ctx) => ctx.toTag( ${rhs} );
 }
 catch (err) {
 } `);
+			
+			else
+				ctx[lhs] = rhs.parseJS( ctx );
+			
 			return "";
 		},
 		
@@ -178,7 +184,7 @@ catch (err) {
 					lKeys = lhs.split(","),
 					rKeys = rhs.split(","),
 					base = lKeys[0] + "$.",
-					post = rKeys[0],
+					skin = rKeys[0],
 					args = (rKeys[3] || "").replace(/;/g,","),
 					opts = {
 						w: rKeys[1],
@@ -190,8 +196,8 @@ catch (err) {
 
 				for (var key in opts) if ( !opts[key] ) delete opts[key];
 
-				//Log( base, view, "[post](/" + (post+".view").tag("?",opts)+args + ")" );
-				return "[post](/" + (post+".view").tag("?",opts)+args + ")";
+				//Log( base, view, "[post](/" + (skin+".view").tag("?",opts)+args + ")" );
+				return "[post](/" + `${skin}.view`.tag("?",opts)+args + ")";
 		}
 	},
 		
@@ -832,7 +838,10 @@ Further information about this file is available ${paths.moreinfo}. `;
 		},
 		
 		blog: function (recs,req,res) {  //< renders dataset records
-			recs.blogify( req, req.flags.blog.split(","), req.table, res );
+			if (key = req.flags.blog)
+				recs.blogify( req, key, req.table, res );
+			else
+				res(recs);
 		}
 		
 	},
@@ -3013,23 +3022,27 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 			doc: docify
 		}, ctx);
 		
-		this.Xescape( [], (blocks,html) => html.Xgen(ctx).Xtex( (html) => html.Xtag( req, ds, viaBrowser, (html) => cb( 
-			html
-			// links, views, and highlighting
-			.replace(/href=(.*?)\>/g, function (str,ref) { // follow <a href=REF>A</a> links
-				var q = (ref.charAt(0) == "'") ? '"' : "'";
-				return `href=${q}javascript:navigator.follow(${ref},BASE.user.client,BASE.user.source)${q}>`;
-			})
-																													  
-			// block backsub
-			.replace(/@block/g, function (str) {
-				//Log(`unblock[${blockidx}]`);
-				return "\n\n" + blocks[ blockidx++ ] + "\n";
-			})
-		))));
+		this.Xescape( [], (blocks,html) => html.Xscript( ctx, (ctx,md) => md.Xgen(ctx).Xtex( (html) => html.Xtag( req, ds, viaBrowser, (html) => { 
+			
+			cb( 
+				html
+				// make links smart
+				.replace(/href=(.*?)\>/g, function (str,ref) { // follow <a href=REF>A</a> links
+					var q = (ref.charAt(0) == "'") ? '"' : "'";
+					return `href=${q}javascript:navigator.follow(${ref},BASE.user.client,BASE.user.source)${q}>`;
+				})
+
+				// backsub escaped blocks
+				.replace(/@block/g, function (str) {
+					//Log(`unblock[${blockidx}]`, blocks[ blockidx].tag("code",{}) );
+					return blocks[ blockidx++ ].tag("code",{});
+				})
+			);
+			
+		}))));
 	},
 	
-	function Xescape( blocks, cb ) { // code block escaper
+	function Xescape( blocks, cb ) { // escapes code blocks with callback cb(blocks, html)
 		var 
 			key = "@esc",
 			html = this,
@@ -3037,15 +3050,17 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 				//Log(`block[${blocks.length}] `, rec.url);
 				blocks.push( rec.opt );
 				cb( rec.url + ":" + "@block");
-			};
+			},
+			pattern = /\n(.*)\:\n\n((.|\n)*)\n\n/g ;
 		
-		html.serialize( fetchBlock, /(.*)?\:\n\n((.|\n)*?)\n\n/g, key, (html, fails) => {  
+		html.serialize( fetchBlock, pattern, key, (html, fails) => {  
 			cb( blocks, html);
 		}); 		
 	},
 	
+	/*
 	function Xsolicit( viaBrowser, cb ) {  // legacy #[URL] solicits response from site URL
-	/* Using in a browser typically causes a hang as the content is not received into an iframe */
+	// Using in a browser typically causes a hang as the content is not received into an iframe 
 		var 
 			key = "@solicit",
 			html = this,
@@ -3057,43 +3072,38 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 				
 				else
 					fetcher( rec.url, null, null, (html) => cb );
-			};
+			},
+			pattern = /\#\[(.[^\]]*)\]/g;
 		
-		html.serialize( fetchSite, /\#\[(.[^\]]*?)\]/g, key, (html, fails) => {
+		html.serialize( fetchSite, pattern, key, (html, fails) => {
 			cb(html);
 		}); 		
-	},
+	},  */
 	
-	function Xdummy(cb) {  // for debugging
+	function Xdummy(cb) {  // for debugging with callback(this)
 		cb(this);
 	},
 	
-	function Xtag( req, ds, viaBrowser, cb ) {  // [LINK](URL) smart tags, fetcher, and links
+	function Xtag( req, ds, viaBrowser, cb ) {  // replaces [LINK](URL) markdown then callsback cb( final html )
 		var 
 			key = "@tag",
 			html = this,
 			fetcher = DEBE.fetch.fetcher,
 			fetchTopic = function ( rec, cb) {
-				if ( rec.opt ) {  // [LINK](URL)
-					cb( rec.url.tag("a",{href:rec.opt}) );
-				}
+				var 
+					secret = "",
+					topic = rec.url,
+					product = topic+".html";
 
-				else {		// [TOPIC]() 
-					var 
-						secret = "",
-						topic = rec.url,
-						product = topic+".html";
-
-					FLEX.licenseCode( req.sql, html, {
-						_EndUser: req.client,
-						_EndService: "",  // leave empty so lincersor wont validate by connecting
-						_Published: new Date(),
-						_Product: product,
-						Path: "/tag/"+product
-					}, (pub) => {
-						cb( (rec.url+"=>"+(pub ? req.client : "guest")).tag("a",{href:"/tags.view"}) );
-					});
-				}
+				FLEX.licenseCode( req.sql, html, {
+					_EndUser: req.client,
+					_EndService: "",  // leave empty so lincersor wont validate by connecting
+					_Published: new Date(),
+					_Product: product,
+					Path: "/tag/"+product
+				}, (pub) => {
+					cb( (rec.url+"=>"+(pub ? req.client : "guest")).tag("a",{href:"/tags.view"}) );
+				});
 			},
 			
 			fetchSite = function ( rec, cb ) {
@@ -3144,44 +3154,75 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 						cb( url.tag("font",{color:opt}) );
 						break;
 						
-					case "":  // []( URL ) 
+					case "":  // []( URL ) || [fetch](URL)
+					case "fetch":
 						fetchSite(rec, cb);
 						break;
 						
-					default:		// [X](URL)
-						fetchTopic(rec, cb);
+					default:		
+						if ( url )   // [LINK](URL)
+							cb( opt.tag("a",{href:url}) );
+						
+						else		// [TOPIC]()
+							fetchTopic(rec, cb);
 				}
-			};
+			},
+			
+			pattern = /\[([^\[\]]*)\]\(([^\)]*)\)/g ;
 		
-		html.serialize( fetchTag, /\[([^\[\]]*?)\]\(([^\)]*?)\)/g , key, (html, fails) => {     // /\#(.[^\(]?)(.*?) /g
+		html.serialize( fetchTag, pattern, key, (html, fails) => {    
 			cb(html);
 		}); 
 	},
 	
-	function Xgen( ctx ) {  // markdown generator  [ #KEY || DOC || KEY,... ] [ OP= ] [ #KEY || DOC || KEY,... ]
+	function Xscript( ctx, cb ) {  // replaces script-do with markdown callsback cb(vmctx, md)
+		var 
+			script = "",
+			pattern = /script:\n((.|\n)*)/g,
+			run = this.replace( pattern , (str, xscript) => {
+				script = xscript;
+				return "";
+			});
+		
+		if ( script )
+			try {
+				LAB.libs.ME.exec( script, ctx, (vmctx) => {
+					cb( vmctx , run);
+				});
+			}
+			catch (err) {
+				cb( ctx, err+"");
+			}
+		
+		else 
+			cb(ctx, run);
+	},
+		
+	function Xgen( ctx ) {  // replaces LHS OP= RHS markdown with markdown
 
 		var 
 			genctx = Copy(DEBE.blog, new Object(ctx));
 		
 		return  this.parseJS(genctx).replace(/(\S*) ([^ ]*)= (\S*)/g, (str,lhs,op,rhs) => {
-			//Log([lhs,rhs,op,genctx.abc]);
+			//Log([lhs,rhs,op]);
 			if ( blogOp = genctx[op] ) 
 				if ( blogOp.constructor == Function )
 					return blogOp(lhs,rhs,genctx);
 				else
-					return "?";
+					return `invalid lhs ${op}= rhs markdown`;
 			else
-				return "?";
+				return `invalid lhs ${op}= rhs markdown`;
 		});
 	},
 	
-	function Xtex( cb ) {  // x$$ MATH $$ replacements
+	function Xtex( cb ) {  // replaces X$$ MATH $$ markdown with TeX then callbacks cb( final html )
 		var 
 			key = "@tex",
 			html = this,
-			fetchInlineTeX = function ( rec, cb ) {
+			fetcher = JAX.typeset,
+			fetchInTeX = function ( rec, cb ) {
 				//Log("text",rec);
-				JAX.typeset({
+				fetcher({
 					math: rec.url,
 					format: "inline-TeX",  // TeX, inline-TeX, AsciiMath, MathML
 					//html: true,
@@ -3190,34 +3231,42 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 			},
 			fetchTeX = function ( rec, cb ) {
 				//Log("text",rec);
-				JAX.typeset({
+				fetcher({
 					math: rec.url,
 					format: "TeX",  // TeX, inline-TeX, AsciiMath, MathML
 					//html: true,
 					mml: true
 				}, (d) => cb( d.mml || "" ) );
 			},
-			fetchAsciiTeX = function ( rec, cb ) {
+			fetchAscii = function ( rec, cb ) {
 				//Log("text",rec);
-				JAX.typeset({
+				fetcher({
 					math: rec.url,
 					format: "AsciiMath",  // TeX, inline-TeX, AsciiMath, MathML
 					//html: true,
 					mml: true
 				}, (d) => cb( d.mml || "" ) );
-			};			
-		
-		html.serialize( fetchAsciiTeX, /a\$\$([\$!]*?)\$\$/g, key, (html,fails) => { // a$$ ascii math $$
-		html.serialize( fetchTeX, /n\$\$([^\$]*?)\$\$/g, key,  (html,fails) => { // n$$ new line TeX $$
-		html.serialize( fetchInlineTeX, /\$\$([^\$]*?)\$\$/g, key, (html,fails) => {  // $$ inline Tex $$
+			},
+			pattern = {
+				ascii: /a\$\$([\$!]*)\$\$/g,
+				tex: /n\$\$([^\$]*?)\$\$/g,
+				intex: /\$\$([^\$]*?)\$\$/g
+			};
+			
+		html.serialize( fetchAscii, pattern.ascii, key, (html,fails) => { // a$$ ascii math $$
+		html.serialize( fetchTeX, pattern.tex, key,  (html,fails) => { // n$$ new line TeX $$
+		html.serialize( fetchInTeX, pattern.intex, key, (html,fails) => {  // $$ inline Tex $$
 			cb(html);
 		});
 		});
 		}); 
 	},
 	
-	function Xparms(product, cb) {		// replaces <!---parms KEY=VAL&...---> with script to input KEYs for product
-		cb( this.replace(/<!---parms ([^>]*)?--->/g, (str, parms) => {
+	function Xparms(product, cb) {		// replaces <!---parms KEY=VAL&...---> markdown with input script then callbacks cb( final html )
+		var
+			pattern = /<!---parms ([^>]*)?--->/g;
+		
+		cb( this.replace(pattern, (str, parms) => {
 					
 			var 
 				inputs = [],
@@ -3250,14 +3299,17 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		}) );
 	},
 	
-	function Xfetch( cb ) {  // replaces <!---fetch URL---> with site URL results
+	function Xfetch( cb ) {  // replaces <!---fetch URL---> markdown with URL results then callbacks cb( final html )
 		var 
+			key = "@fetch",
 			fetcher = DEBE.fetch.fetcher,
 			fetchSite = function ( rec, cb ) {
 				fetcher( rec.url, null, null, cb );
-			};
+			},
+			pattern = /<!---fetch ([^>]*)?--->/g;
+			
 		
-		this.serialize( fetchSite, /<!---fetch ([^>]*)?--->/g, "@fetch", (rtn,fails) => cb(rtn) );
+		this.serialize( fetchSite, pattern, key, (html,fails) => cb(html) );
 	},
 
 	function Xjade( ctx, proxy, product, cb ) { // returns product's ToU via a proxy site
@@ -3311,7 +3363,7 @@ append layout_body
 		return recs;
 	},
 
-	function blogify( req, keys, ds, cb ) {
+	function blogify( req, key, ds, cb ) {
 	/*
 	@member Array
 	@method blogify
@@ -3323,28 +3375,23 @@ append layout_body
 			sql = req.sql,
 			recs = this;
 
-		if ( key = keys[0] ) {
-			var
-				fetchBlog = function( rec, cb ) {
-					//Log("blog", key, rec);
-					if ( md = rec[key] + "" )
-						md.Xblog(req, ds+"?id="+rec.ID, {}, {}, rec, true, (html) => cb(html) );
-					
-					else
-						cb(md);
-				};
-			
-			recs.serialize( fetchBlog, function fb(rec, blog)  {
-				if (rec) 
-					rec[key] = blog;
-				
-				else 
-					cb( recs );
-			});
-		}
-		
-		else
-			cb(recs);
+		var
+			fetchBlog = function( rec, cb ) {
+				//Log("blog", key, rec);
+				if ( md = rec[key] + "" )
+					md.Xblog(req, ds+"?id="+rec.ID, {}, {}, rec, true, (html) => cb(html) );
+
+				else
+					cb(md);
+			};
+
+		recs.serialize( fetchBlog, function fb(rec, blog)  {
+			if (rec) 
+				rec[key] = blog;
+
+			else 
+				cb( recs );
+		});
 		
 	},
 		
