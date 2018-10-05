@@ -104,7 +104,95 @@ var
 	},
 
 	blog: {
-		digits: 2
+		digits: 2,
+		":" : (lhs,rhs,ctx) => ctx.toEqn("", lhs,rhs,ctx),
+		"|" : (lhs,rhs,ctx) => ctx.toEqn("n", lhs,rhs,ctx),
+		";" : (lhs,rhs,ctx) => ctx.toEqn("n", lhs,rhs,ctx),
+		">": (lhs,rhs,ctx) => ctx.toTag(lhs,rhs,ctx),
+		"<": (lhs,rhs,ctx) => {
+			eval(`
+try {
+	ctx[lhs] = (lhs,rhs,ctx) => ctx.toTag( ${rhs} );
+}
+catch (err) {
+} `);
+			return "";
+		},
+		
+		toEqn: (pre,lhs,rhs,ctx) => {
+
+			function toTeX(val)  {
+				var digits = ctx.digits;
+
+				if (val)
+					switch (val.constructor.name) {
+						case "Number": return val.toFixed(digits);
+
+						case "String": return val;	
+
+						case "Array": 
+							var tex = []; 
+							val.forEach( function (rec) {
+								if (rec)
+									if (rec.forEach) {
+										rec.forEach( function (val,idx) {
+											rec[idx] = toTeX(val);
+										});
+										tex.push( rec.join(" & ") );
+									}
+									else
+										tex.push( toTeX(rec) );
+								else
+									tex.push( (rec == 0) ? "0" : "\\emptyset" );
+							});	
+							return  "\\left[ \\begin{matrix} " + tex.join("\\\\") + " \\end{matrix} \\right]";
+
+						case "Date": return val+"";
+
+						case "Object": 
+							var rtns = [];
+							for (var key in val) 
+								rtns.push( "{" + toTeX(val[key]) + "}_{" + key + "}" );
+
+							return rtns.join(" , ");
+
+						default: 
+							return JSON.stringify(val);
+					}
+
+				else 
+					return (val == 0) ? "0" : "\\emptyset";
+			}
+		
+			function toDoc (arg) {
+				return arg.startsWith("#") 
+					? ( "${doc(" + arg.substr(1) + ")}" ).parseJS(ctx).parseJSON( (val) => "?" ) 
+					: arg;
+			}
+			
+			return pre + "$$" + toTeX( lhs.parseJSON(toDoc) ) + " = " + toTeX( rhs.parseJSON(toDoc) ) + " $$";
+		},
+			
+		toTag: (lhs,rhs,ctx) => {
+				var
+					lKeys = lhs.split(","),
+					rKeys = rhs.split(","),
+					base = lKeys[0] + "$.",
+					post = rKeys[0],
+					args = (rKeys[3] || "").replace(/;/g,","),
+					opts = {
+						w: rKeys[1],
+						h: rKeys[2],
+						x: lKeys[1] ? base + lKeys[1] : "",
+						y: lKeys[2] ? base + lKeys[2] : "",
+						r: lKeys[3] ? base + lKeys[3] : ""
+					};
+
+				for (var key in opts) if ( !opts[key] ) delete opts[key];
+
+				//Log( base, view, "[post](/" + (post+".view").tag("?",opts)+args + ")" );
+				return "[post](/" + (post+".view").tag("?",opts)+args + ")";
+		}
 	},
 		
 	init: Initialize,
@@ -2896,7 +2984,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		[ LINK ]( URL )  ||  [ FONT ]( TEXT )  ||  [ ]( URL )  ||  [TOPIC]( )  
 		$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$  
 		${ KEY } || ${doc( KEY , "IDX, ..." )}   
-		[ #KEY || DOC || KEY,... ] [ := || ;= || <= || >= ] [ #KEY || DOC || KEY,... ]
+		[ #KEY || DOC || KEY,... ] [ := || |= || <= || >= || OP= ] [ #KEY || DOC || KEY,... ]
 		
 	using the supplifed cache to store #{KEY} values and to resolve #{key} tags.
 	*/
@@ -3070,92 +3158,20 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		}); 
 	},
 	
-	function Xgen( ctx ) {  // markdown generator  [ #KEY || DOC || KEY,... ] [ := || ;= || <= || >= ] [ #KEY || DOC || KEY,... ]
+	function Xgen( ctx ) {  // markdown generator  [ #KEY || DOC || KEY,... ] [ OP= ] [ #KEY || DOC || KEY,... ]
 
-		function toTeX(val,N) {
-			var digits = N || DEBE.blog.digits;
-
-			if (val)
-				switch (val.constructor.name) {
-					case "Number": return val.toFixed(digits);
-
-					case "String": return val;	
-
-					case "Array": 
-						var tex = []; 
-						val.forEach( function (rec) {
-							if (rec)
-								if (rec.forEach) {
-									rec.forEach( function (val,idx) {
-										rec[idx] = toTeX(val);
-									});
-									tex.push( rec.join(" & ") );
-								}
-								else
-									tex.push( toTeX(rec) );
-							else
-								tex.push( (rec == 0) ? "0" : "\\emptyset" );
-						});	
-						return  "\\left[ \\begin{matrix} " + tex.join("\\\\") + " \\end{matrix} \\right]";
-
-					case "Date": return val+"";
-
-					case "Object": 
-						var rtns = [];
-						for (var key in val) 
-							rtns.push( "{" + toTeX(val[key]) + "}_{" + key + "}" );
-
-						return rtns.join(" , ");
-
-					default: 
-						return JSON.stringify(val);
-				}
-
-			else 
-				return (val == 0) ? "0" : "\\emptyset";
-		}
-
-		function toDoc(arg) {
-			return arg.startsWith("#") 
-				? ( "${doc(" + arg.substr(1) + ")}" ).parseJS(ctx).parseJSON( (val) => "?" ) 
-				: arg;
-		}
-
-		var blogctx = new Object(ctx);
+		var 
+			genctx = Copy(DEBE.blog, new Object(ctx));
 		
-		return  this.parseJS(blogctx).replace(/(\S*) ([^ ])= (\S*)/g, (str,lhs,op,rhs) => {
-			//Log([lhs,rhs,op,blogctx.abc]);
-			switch (op) {
-				case ":":   // lhs := rhs
-					return   "$$ " + toTeX( lhs.parseJSON(toDoc) ) + " = " + toTeX( rhs.parseJSON(toDoc) ) + " $$";
-				case ";":  // lhs ;= rhs
-					return  "n$$ " + toTeX( lhs.parseJSON(toDoc) ) + " = " + toTeX( rhs.parseJSON(toDoc) ) + " $$";
-				case ">": // lhs >= rhs
-					var
-						lKeys = lhs.split(","),
-						rKeys = rhs.split(","),
-						base = lKeys[0] + "$.",
-						post = rKeys[0],
-						args = (rKeys[3] || "").replace(/;/g,","),
-						opts = {
-							w: rKeys[1],
-							h: rKeys[2],
-							x: lKeys[1] ? base + lKeys[1] : "",
-							y: lKeys[2] ? base + lKeys[2] : "",
-							r: lKeys[3] ? base + lKeys[3] : ""
-						};
-					
-					for (var key in opts) if ( !opts[key] ) delete opts[key];
-					
-					//Log( base, view, "[post](/" + (post+".view").tag("?",opts)+args + ")" );
-					return "[post](/" + (post+".view").tag("?",opts)+args + ")";
-					
-				case "<":	// lhs <= rhs
-					DEBE.blog[lhs] = parseFloat(rhs);
-					return "";
-				default:
+		return  this.parseJS(genctx).replace(/(\S*) ([^ ]*)= (\S*)/g, (str,lhs,op,rhs) => {
+			//Log([lhs,rhs,op,genctx.abc]);
+			if ( blogOp = genctx[op] ) 
+				if ( blogOp.constructor == Function )
+					return blogOp(lhs,rhs,genctx);
+				else
 					return "?";
-			}					
+			else
+				return "?";
 		});
 	},
 	
