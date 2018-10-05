@@ -3205,13 +3205,16 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		
 		return  this.parseJS(genctx).replace(/(\S*) ([^ ]*)= (\S*)/g, (str,lhs,op,rhs) => {
 			//Log([lhs,rhs,op]);
-			if ( blogOp = genctx[op] ) 
-				if ( blogOp.constructor == Function )
-					return blogOp(lhs,rhs,genctx);
+			if ( op )
+				if ( blogOp = genctx[op] ) 
+					if ( blogOp.constructor == Function )
+						return blogOp(lhs,rhs,genctx);
+					else
+						return `invalid lhs ${op}= rhs markdown`;
 				else
 					return `invalid lhs ${op}= rhs markdown`;
 			else
-				return `invalid lhs ${op}= rhs markdown`;
+				return `${lhs} = ${rhs}`;
 		});
 	},
 	
