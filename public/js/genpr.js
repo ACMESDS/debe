@@ -8,7 +8,6 @@ module.exports = {  // generate a Markov process given its transition probabilit
 		Nyquist: "float default 1 comment 'process over-sampling factor' ",
 		Steps: "int(11) default 0 comment 'number of process steps' ",
 		Batch: "int(11) default 0 comment 'steps to next supervised learning' ",
-		
 		Save_end: "json",
 		Save_batch: "json",
 		Save_config: "json",

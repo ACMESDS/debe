@@ -109,16 +109,16 @@ append site_body
 					> *Flow* context of workflow supervisor  
 					> *Stats* context shared with all plugins
 
-					Valid *Description* blogging tags inckude:
+					*Description* [markdown](/api.view) includes:
 
-						TEXT:\n\nCODE\n  
-						[ post ] ( SKIN.view ? w=WIDTH & h=HEIGHT & x=KEY$EXPR & y=KEY$EXPR & src=DS & id=VALUE )  
+						[ post ] ( SKIN.view ? w=WIDTH & h=HEIGHT & x=BASE$X & y=BASE$Y & OPTS ) || BASE,X,Y >= SKIN,WIDTH,HEIGHT,OPTS  
 						[ image ] ( PATH.jpg ? w=WIDTH & h=HEIGHT )  
 						[ LINK ]( URL )  ||  [ FONT ]( TEXT )  ||  [ ]( URL )  ||  [TOPIC]( )  
-						$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$  
-						${ KEY } || ${tex( KEY )} || ${doc( KEY )} || ${JS EXPRESSION}  
+						$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$ || [#EXPR || TeX] OP= [#EXPR || TeX]  
+						\${ KEY } || \${ EXPR } || \${doc( EXPR , "IDX, ..." )}  
+						KEY <= VALUE || OP <= EXPR(lhs),EXPR(rhs)  
 
-					Plugin header colors reflect your plugin's [status](/projects.view): <font color="green">completed</font>, <font color="blue">policed</font>, <font color="orange">funded</font>, <font color="red">unfunded</font>.
+					Plugin header colors reflect [status](/projects.view): <font color="green">completed</font>, <font color="blue">policed</font>, <font color="orange">funded</font>, <font color="red">unfunded</font>.
 					
 				table!= gridify(tasks)
 	

@@ -80,7 +80,7 @@ var
 			//Log("<<<", ctx);
 			ctx.index["Nrel:"] = "count(releases._License)";
 			ctx.index[ctx.from+".*:"] = "";
-			ctx.join = `LEFT JOIN ${ctx.db}.releases ON (releases._Product = concat(engines.name,'.',engines.type)) AND releases._EndUser='${ctx.client}'`;
+			ctx.join = `LEFT JOIN ${ctx.db}.releases ON (releases._Product = concat(engines.name,'.',engines.type)) AND releases._Partner='${ctx.client}'`;
 			ctx.where["releases.id:"] = "";
 			//Log(">>>", ctx);
 			return ctx.db+"."+ctx.from;
@@ -2268,6 +2268,18 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 @param {Object} req Totem request
 @param {Function} res Totem response
 */
+	function cpuavgutil() {				// compute average cpu utilization
+		var avgUtil = 0;
+		var cpus = OS.cpus();
+
+		cpus.each(function (n,cpu) {
+			idle = cpu.times.idle;
+			busy = cpu.times.nice + cpu.times.sys + cpu.times.irq + cpu.times.user;
+			avgUtil += busy / (busy + idle);
+		});
+		return avgUtil / cpus.length;
+	}		
+
 	var 
 		sql = req.sql,
 		query = req.query,
@@ -2294,7 +2306,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 			//search: req.search,
 			session: req.session,
 			util: {
-				cpu: (req.log.Util*100).toFixed(0),
+				cpu: (cpuavgutil() * 100).toFixed(0), // (req.log.Util*100).toFixed(0),
 				disk: ((req.profile.useDisk / req.profile.maxDisk)*100).toFixed(0)
 			},
 			started: DEBE.started,
@@ -2535,7 +2547,8 @@ Impressive 'eh
 
 Jα(x)=∑m=0∞(−1)mm!Γ(m+α+1)(x2)2m+α
 Chapter 2
-`);
+`
+						);
 		}
 
 		var cols = [];
@@ -2985,17 +2998,26 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 	
 	function Xblog(req, ds, cache, ctx, rec, viaBrowser, cb) {
 	/*
-	Replaces tags in this string of the form:
+	Expands markdown of the form:
 		
-		TEXT:\n\nCODE\n  
-		[ post ] ( SKIN.view ? w=WIDTH & h=HEIGHT & x=KEY$EXPR & y=KEY$EXPR & src=DS & id=VALUE )  
+		[ post ] ( SKIN.view ? w=WIDTH & h=HEIGHT & x=BASE$X & y=BASE$Y & OPTS ) || BASE,X,Y >= SKIN,WIDTH,HEIGHT,OPTS  
 		[ image ] ( PATH.jpg ? w=WIDTH & h=HEIGHT )  
 		[ LINK ]( URL )  ||  [ FONT ]( TEXT )  ||  [ ]( URL )  ||  [TOPIC]( )  
-		$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$  
-		${ KEY } || ${doc( KEY , "IDX, ..." )}   
-		[ #KEY || DOC || KEY,... ] [ := || |= || <= || >= || OP= ] [ #KEY || DOC || KEY,... ]
+		$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$ || [#EXPR || TeX] OP= [#EXPR || TeX]  
+		\${ KEY } || \${ EXPR } || \${doc( EXPR , "IDX, ..." )}  
+		KEY <= VALUE || OP <= EXPR(lhs),EXPR(rhs)  
 		
-	using the supplifed cache to store #{KEY} values and to resolve #{key} tags.
+	using the supplifed cache to get/put KEY values, as well as block-escaping:
+				
+		HEADER:
+
+			BLOCK
+
+	and markdown scripting:
+
+		MARKDOWN
+		script:
+		MATLAB EMULATION SCRIPT
 	*/
 		
 		for (var key in rec) try { ctx[key] = JSON.parse( rec[key] ); } catch (err) { ctx[key] = rec[key]; }
@@ -3022,7 +3044,10 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 			doc: docify
 		}, ctx);
 		
-		this.Xescape( [], (blocks,html) => html.Xscript( ctx, (ctx,md) => md.Xgen(ctx).Xtex( (html) => html.Xtag( req, ds, viaBrowser, (html) => { 
+		this.Xescape( [], (blocks,html) => // excape code blocks
+		html.Xscript( ctx, (ctx,md) => // script expanded markdown 
+		md.Xgen(ctx).Xtex( (html) => // TeX expanded markdown
+		html.Xlink( req, ds, viaBrowser, (html) => { // link expanded markdown
 			
 			cb( 
 				html
@@ -3042,62 +3067,40 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		}))));
 	},
 	
-	function Xescape( blocks, cb ) { // escapes code blocks with callback cb(blocks, html)
+	function Xescape( blocks, cb ) { // escapes code blocks then callsback cb(blocks, html)
 		var 
 			key = "@esc",
 			html = this,
-			fetchBlock = function ( rec, cb ) {
+			fetchBlock = function ( rec, cb ) {	// callsback cb with block placeholder
 				//Log(`block[${blocks.length}] `, rec.url);
 				blocks.push( rec.opt );
 				cb( rec.url + ":" + "@block");
 			},
-			pattern = /\n(.*)\:\n\n((.|\n)*)\n\n/g ;
+			pattern = /\n(.*)\:\n\n((.|\n)*)\n\n/g ;	// define escaped code block
 		
 		html.serialize( fetchBlock, pattern, key, (html, fails) => {  
 			cb( blocks, html);
 		}); 		
 	},
 	
-	/*
-	function Xsolicit( viaBrowser, cb ) {  // legacy #[URL] solicits response from site URL
-	// Using in a browser typically causes a hang as the content is not received into an iframe 
-		var 
-			key = "@solicit",
-			html = this,
-			fetcher = DEBE.fetch.fetcher,
-			fetchSite = function ( rec, cb ) {
-				//Log("solicit", rec);
-				if (viaBrowser) 
-					cb( "".tag("iframe", {src:rec.url}) );
-				
-				else
-					fetcher( rec.url, null, null, (html) => cb );
-			},
-			pattern = /\#\[(.[^\]]*)\]/g;
-		
-		html.serialize( fetchSite, pattern, key, (html, fails) => {
-			cb(html);
-		}); 		
-	},  */
-	
 	function Xdummy(cb) {  // for debugging with callback(this)
 		cb(this);
 	},
 	
-	function Xtag( req, ds, viaBrowser, cb ) {  // replaces [LINK](URL) markdown then callsback cb( final html )
+	function Xlink( req, ds, viaBrowser, cb ) {  // expands [LINK](URL) tags then callsback cb( final html )
 		var 
 			key = "@tag",
 			html = this,
 			fetcher = DEBE.fetch.fetcher,
-			fetchTopic = function ( rec, cb) {
+			fetchTopic = function ( rec, cb) {  // callback cb with expanded [TOPIC]() markdown
 				var 
 					secret = "",
 					topic = rec.url,
 					product = topic+".html";
 
-				FLEX.licenseCode( req.sql, html, {
-					_EndUser: req.client,
-					_EndService: "",  // leave empty so lincersor wont validate by connecting
+				FLEX.licenseCode( req.sql, html, {  // register this html with the client
+					_Partner: req.client,
+					_EndService: "",  // leave empty so lincersor wont validate by connecting to service
 					_Published: new Date(),
 					_Product: product,
 					Path: "/tag/"+product
@@ -3106,7 +3109,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 				});
 			},
 			
-			fetchSite = function ( rec, cb ) {
+			fetchSite = function ( rec, cb ) {  // callback cb with expanded [](URL) markdown
 				//Log("solicit", rec, viaBrowser);
 				if (viaBrowser) 
 					cb( "".tag("iframe", {src:rec.opt}) );
@@ -3115,7 +3118,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 					fetcher( rec.opt, null, null, (html) => cb );
 			},
 			
-			fetchTag = function ( rec, cb ) {
+			fetchTag = function ( rec, cb ) {  // callback cb with expanded [LINK](URL) markdown
 				var
 					keys = {},
 					opt = rec.url,
@@ -3129,17 +3132,17 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 				//Log("tag",rec, dsPath, keys, srcPath);
 
 				switch (opt) {
-					case "image":  //[image](url)
+					case "image":  //[image](URL)
 					case "img":
 						cb( "".tag("img", { src:srcPath, width:w, height:h }) );
 						break;
 						
-					case "post":  // [post](url)
+					case "post":  // [post](URL)
 					case "iframe":
 						cb( "".tag("iframe", { src:srcPath, width:w, height:h }) );
 						break;
 						
-					case "R":  // [FONT](X)
+					case "R":  // [FONT](TEXT)
 					case "B":
 					case "G":
 					case "Y":
@@ -3175,10 +3178,10 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		}); 
 	},
 	
-	function Xscript( ctx, cb ) {  // replaces script-do with markdown callsback cb(vmctx, md)
+	function Xscript( ctx, cb ) {  // expands scripting tags then callsback cb(vmctx, final markdown)
 		var 
 			script = "",
-			pattern = /script:\n((.|\n)*)/g,
+			pattern = /script:\n((.|\n)*)/g,  // defines MARKDOWN\nscript:\SCRIPT tag pattern
 			run = this.replace( pattern , (str, xscript) => {
 				script = xscript;
 				return "";
@@ -3198,12 +3201,13 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 			cb(ctx, run);
 	},
 		
-	function Xgen( ctx ) {  // replaces LHS OP= RHS markdown with markdown
+	function Xgen( ctx ) {  // returns expanded LHS OP= RHS tags
 
 		var 
-			genctx = Copy(DEBE.blog, new Object(ctx));
+			genctx = Copy(DEBE.blog, new Object(ctx)),
+			pattern = /(\S*) ([^ ]*)= (\S*)/g;  // defines LHS OP= RHS tag
 		
-		return  this.parseJS(genctx).replace(/(\S*) ([^ ]*)= (\S*)/g, (str,lhs,op,rhs) => {
+		return  this.parseJS(genctx).replace(pattern, (str,lhs,op,rhs) => {
 			//Log([lhs,rhs,op]);
 			if ( op )
 				if ( blogOp = genctx[op] ) 
@@ -3218,31 +3222,31 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		});
 	},
 	
-	function Xtex( cb ) {  // replaces X$$ MATH $$ markdown with TeX then callbacks cb( final html )
+	function Xtex( cb ) {  // expands X$$ MATH $$ tags then callbacks cb( final html )
 		var 
 			key = "@tex",
 			html = this,
 			fetcher = JAX.typeset,
-			fetchInTeX = function ( rec, cb ) {
-				//Log("text",rec);
+			fetchInTeX = function ( rec, cb ) {  // callsback cb with expanded inline TeX tag
+				//Log("math",rec);
 				fetcher({
 					math: rec.url,
-					format: "inline-TeX",  // TeX, inline-TeX, AsciiMath, MathML
+					format: "inline-TeX",  
 					//html: true,
 					mml: true
 				}, (d) => cb( d.mml || "" ) );
 			},
-			fetchTeX = function ( rec, cb ) {
-				//Log("text",rec);
+			fetchTeX = function ( rec, cb ) {	// callsback cb with expanded TeX tag
+				//Log("math",rec);
 				fetcher({
 					math: rec.url,
-					format: "TeX",  // TeX, inline-TeX, AsciiMath, MathML
+					format: "TeX",  
 					//html: true,
 					mml: true
 				}, (d) => cb( d.mml || "" ) );
 			},
-			fetchAscii = function ( rec, cb ) {
-				//Log("text",rec);
+			fetchAscii = function ( rec, cb ) { // callsback cb with expanded AsciiMath tag
+				//Log("math",rec);
 				fetcher({
 					math: rec.url,
 					format: "AsciiMath",  // TeX, inline-TeX, AsciiMath, MathML
@@ -3250,22 +3254,22 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 					mml: true
 				}, (d) => cb( d.mml || "" ) );
 			},
-			pattern = {
-				ascii: /a\$\$([\$!]*)\$\$/g,
-				tex: /n\$\$([^\$]*?)\$\$/g,
-				intex: /\$\$([^\$]*?)\$\$/g
+			pattern = {  // define tag patterns
+				ascii: /a\$\$([\$!]*)\$\$/g,	// a$$ ascii math $$
+				tex: /n\$\$([^\$]*?)\$\$/g,		// n$$ new line TeX $$
+				intex: /\$\$([^\$]*?)\$\$/g		// $$ inline Tex $$
 			};
 			
-		html.serialize( fetchAscii, pattern.ascii, key, (html,fails) => { // a$$ ascii math $$
-		html.serialize( fetchTeX, pattern.tex, key,  (html,fails) => { // n$$ new line TeX $$
-		html.serialize( fetchInTeX, pattern.intex, key, (html,fails) => {  // $$ inline Tex $$
+		html.serialize( fetchAscii, pattern.ascii, key, (html,fails) => { 
+		html.serialize( fetchTeX, pattern.tex, key,  (html,fails) => { 
+		html.serialize( fetchInTeX, pattern.intex, key, (html,fails) => {  
 			cb(html);
 		});
 		});
 		}); 
 	},
 	
-	function Xparms(product, cb) {		// replaces <!---parms KEY=VAL&...---> markdown with input script then callbacks cb( final html )
+	function Xparms(product, cb) {		// expands <!---parms KEY=VAL&...---> tags then callbacks cb( final input-scripted html )
 		var
 			pattern = /<!---parms ([^>]*)?--->/g;
 		
@@ -3302,11 +3306,11 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		}) );
 	},
 	
-	function Xfetch( cb ) {  // replaces <!---fetch URL---> markdown with URL results then callbacks cb( final html )
+	function Xfetch( cb ) {  // expands <!---fetch URL---> tags then callsback cb( final url-fetched html )
 		var 
 			key = "@fetch",
 			fetcher = DEBE.fetch.fetcher,
-			fetchSite = function ( rec, cb ) {
+			fetchSite = function ( rec, cb ) {  // callsback cb with expanded fetch-tag 
 				fetcher( rec.url, null, null, cb );
 			},
 			pattern = /<!---fetch ([^>]*)?--->/g;

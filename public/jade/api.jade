@@ -501,18 +501,24 @@ append site_body
 						
 				Valid *Description* markdown includes:
 
-					[ post ] ( SKIN.view ? w=WIDTH & h=HEIGHT & x=BASE$X & y=BASE$Y & OPTS ) || BASE,X,Y >= SKIN,OPTS  
+					[ post ] ( SKIN.view ? w=WIDTH & h=HEIGHT & x=BASE$X & y=BASE$Y & OPTS ) || BASE,X,Y >= SKIN,WIDTH,HEIGHT,OPTS  
 					[ image ] ( PATH.jpg ? w=WIDTH & h=HEIGHT )  
 					[ LINK ]( URL )  ||  [ FONT ]( TEXT )  ||  [ ]( URL )  ||  [TOPIC]( )  
-					$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$ || DOC [ := ;= |= ] DOC  
-					\${ KEY } || \${doc( KEY , "IDX, ..." )}  
-					KEY <= VALUE || KEY <= LHS,RHS  
+					$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$ || [#EXPR || TeX] OP= [#EXPR || TeX]  
+					\${ KEY } || \${ EXPR } || \${doc( EXPR , "IDX, ..." )}  
+					KEY <= VALUE || OP <= EXPR(lhs),EXPR(rhs)  
 
-				as well as code-escaping, as well markdown scripting:
+				as well as block-escaping:
+				
+					HEADER:
+						
+						BLOCK
+						
+				and markdown scripting:
 				
 					MARKDOWN
 					script:
-					MATLAB EMULATION SCRIPTS
+					MATLAB EMULATION SCRIPT
 					
 				to document plugin usecases.  For example:
 
@@ -533,14 +539,14 @@ append site_body
 				[bounce](/bounce.view?help), [tipsheet](/tipsheet.view?help) for example VIEWs. 				
 
 				Plugins typically have everything they need in the supervisor's *Flow* context, but, if needed, plugins may 
-				access events (those specified by its *Pipe*) via:
+				access its *Pipe* events via:
 				
 					FLOW.get( [ event list ] || "event query" , grouping switch, (evs) => {
 						if (evs) 
-							// process provided events
+							// process events
 							
 						else
-							// events have been exhausted
+							// terminate flow
 					})
 				
 				If the *grouping switch* is true, then the provided events *evs* are time-grouped.  See
@@ -565,13 +571,20 @@ append site_body
 							KEY: "sql type", ...
 						},
 						
-						inits || initial || initialize : [  // add initial usecases
-							{ KEY: VALUE, .... }
-							....
-						],
+						inits || initial || initialize : // define initial usecases
+							function () {
+								return [ { KEY: VALUE, ...  }, ...];
+							}
+							
+							||
+						
+							[ { KEY: VALUE, .... }, .... ],
 						
 						to : "py" || "js" || "m", // convert supplied engine code to another language
-						
+							// NOTE: smop poorly translates matlab [ [a,b,...]; [c,d, ...]; ...] matricies to python 
+							// matricies.  Until fixed, manually convert "matlabarray(cat(...))" generated python  
+							// to "matlabarray([ [a,b,...], [c,d,...], ....])".
+
 						wrap: 					// js wrapper to coerce engine context ctx
 							function (ctx, res, step) { 
 								step(ctx, function (ctx) {
@@ -581,7 +594,7 @@ append site_body
 							
 							|| 
 							
-							( os ) => os.read || os.exec (`${os.path}.js`, ... ),
+							( os ) => os.read || os.exec (`${os.path}.js`, ... ),	
  
 						docs || dockeys : {  // key documentation
 							key: doc, .....
@@ -599,7 +612,7 @@ append site_body
 							
 							( os ) => os.read || os.exec (`${os.path}.js`, ... ),
 						
-						subs || subkeys : { 		// key-markdown or key-function replacements for supplied tou
+						subs || subkeys : { 		// keys and methods used to generate the ToU
 							NAME: "...",
 							totem: "...",
 							by: "...",
@@ -619,7 +632,7 @@ append site_body
 							key: value, ....
 						},
 						
-						code || engine:  
+						code || engine:  // the engine code
 							function NAME(ctx,res) {   // js engine
 								ctx.Save = [ ... ]; 
 								res(ctx); 
@@ -655,9 +668,6 @@ append site_body
 				[trigs](/trigs.tou), [genpr](/genpr.tou), and [seppfm](/seppfm.tou); and their corresponding publishing endpoints
 				[cints](/cints.pub), [rats](/rats.pub), [trigs](/trigs.pub), [genpr](/genpr.pub), and [seppfm](/seppfm.pub).
 				
-				NOTE: smop imperfectly translates matlab [ [a,b,...]; [c,d, ...]; ...] matricies to python matricies.  Until this bug is 
-				fixed, manually	convert "matlabarray(cat(...))" python code to "matlabarray([ [a,b,...], [c,d,...], ....])".
-
 		#fit.Examples
 			:markdown
 				js ex1 [ui](/jsdemo1.run) [run usecase test1](/jsdemo1.exe?Name=test1) [get usecases](/jsdemo1)  

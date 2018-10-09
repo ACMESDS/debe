@@ -58,13 +58,31 @@ Ext.require([
 
 var 
 	
-	EDCTX = {},
-		
-	EDWIN = Ext.create('Ext.window.Window', {
+	EDCTX = {  // reserve context for editors
+		states: {
+			jsonEditor: "json",
+			textEditor: "text",
+			codeEditor: "code"
+		},
+		save: null,
+		state: "text",
+		json: {},
+		text: {},
+		code: {}
+	},
+	
+	EDDOC = {  // reserve handles for editors
+		text: null,
+		code: null,
+		json: null
+	},
+	
+	EDWIN = Ext.create('Ext.window.Window', {  // popup for editors
 		title: 'Editor',
 		closeAction: "hide",
 		height: 400,
 		width: 600,
+		scrollable  : true,
 		layout: 'fit',
 		tools: [{
 			type: "save",
@@ -96,7 +114,7 @@ var
 				}
 			}
 		}], */
-		items: [ Ext.create('Ext.tab.Panel', {
+		items: [ Ext.create('Ext.tab.Panel', {  // panel to hold editors
 			border		: true,
 			header		: false,
 			tabPosition: "right",
@@ -104,10 +122,47 @@ var
 			layout		: "fit",
 			listeners: {
 				tabchange: function (tabpan, tabcard) {
-					EDCTX.code = (tabcard.id == "codeedit");
-					//alert([tabcard.id, EDCTX.code]);
 					
-					/*if (EDCTX.code)
+					var 
+						oldState = EDCTX.state,
+						newState = EDCTX.states[tabcard.id],
+						jsonOpts = {
+							change: function jsonChange(data) {  // called on every change
+								delete EDCTX.json;
+								EDCTX.json = new Object(data);
+							},
+							propertyclick: function(path) { // called when a property is clicked with the JS path to that property
+								//alert(path);
+							}
+							// propertyElement: '<textarea>', // element of the property field, <input> is default
+							// valueElement: '<textarea>'  // element of the value field, <input> is default							
+						};
+					
+					EDCTX.state = newState;
+
+					if ( !EDDOC[newState] ) {		// json editor need setup
+						var doc = EDDOC.json = $("#jsonEditor");
+
+						$("#jsonEditor-bodyEl").remove();  // stupid extjs adds a turd div
+						
+						doc.getValue = function () {
+							return JSON.stringify( EDCTX.json );
+						};
+
+						doc.setValue = function (val) {
+							try {
+								EDCTX.json = JSON.parse(val);
+								doc.jsonEditor( EDCTX.json, jsonOpts );
+							}
+							catch (err) {  // ignore "...on" error
+							}
+						};
+
+						doc.jsonEditor( EDCTX.json, jsonOpts );  // primes doc but errors so halts here						
+					}
+					
+					EDDOC[newState].setValue( EDDOC[oldState].getValue() );
+					/*if (EDCTX.state)
 					CodeMirror.fromTextArea(EDDOC[true].getEl(), {
 						lineNumbers: true,
 						lineWrapping: true,
@@ -119,16 +174,18 @@ var
 					}); */
 				}
 			},
-			items		: [
-				Ext.create( "Ext.form.field.HtmlEditor", {	
+			items		: [		// editors are created only when tabs are first selected
+				Ext.create( "Ext.form.field.HtmlEditor", {	// text editor
 					title: "text",
-					id: "textedit",
+					id: "textEditor",
+					scrollable  : true,
 					value: "hello there",
 					enableColors: true,
 					enableAlignments: true,
 					listeners: {
-						afterrender: function (h) {
-							h.toggleSourceEdit(true);
+						afterrender: function (cmp) {  // set attributes
+							EDDOC.text = cmp;
+							cmp.toggleSourceEdit(true);  // disallow html
 						}
 					},
 					plugins: [
@@ -139,55 +196,63 @@ var
 					] 
 				}),
 				
-				Ext.create( "Ext.panel.Panel", {
-					layout: "hbox",
+				Ext.create( "Ext.form.field.TextArea", {  // code editor
+					id: "codeEditor",
 					title: "code",
-					id: "codeedit",
+					layout: "fit",
+					scrollable  : true,
+					hideLabel: true,
+					//maxWidth: 100
 					listeners: {
-						afterrender: function () {
-							var doc = EDDOC.true.getEl();
-							
-							CodeMirror(doc, {
+						afterrender: function (cmp) {	// attach editor
+							var doc = cmp.getEl(); 
+							//console.log(doc);
+							EDDOC.code = CodeMirror(doc, {
 								lineNumbers: true,
 								lineWrapping: true,
 								extraKeys: {"Ctrl-Q": function(cm){ cm.foldCode(cm.getCursor()); }},
 								foldGutter: true,
 								gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],	
 								mode: "javascript",
-								value: EDDOC[false].getValue()
+								value: EDDOC.text.getValue()
 							});
+							$("#codeEditor-bodyEl").remove();  // stupid extjs adding
 						}
-					},	
-					items: [{
-						xtype: "textarea",
-						id: "codedoc"
-						//maxWidth: 100
-					} ]
-				})
+					}
+				}), 
+				
+				Ext.create( "Ext.form.field.TextArea", {  // json editor
+					title: "json",
+					id: "jsonEditor",
+					cls: "json-editor",
+					layout: "fit",
+					scrollable  : true,
+					//maxWidth: 100
+					listeners: {
+						afterrender: function (cmp) {
+						}
+					} 					
+				})				
 			]
 		}) ] 
 	}),
 
-	EDDOC = {
-		true: Ext.getCmp("codedoc"),
-		false: Ext.getCmp("textedit")
-	},
-		
 	EDSET = function ( val ) {
-		EDDOC[true].setValue( val );
-		EDDOC[false].setValue( val );
+		//EDDOC.code.setValue( val );
+		EDDOC.text.setValue( val );
+		//EDDOC.json.setValue( val );
+		try {
+			delete EDCTX.json;
+			EDCTX.json = JSON.parse(val);
+		}
+		catch (err) {
+			//alert("val="+val);
+		} 
 	},
 	
 	EDGET = function () {
-		//alert("get ctx code="+EDCTX.code);
-		//alert( EDDOC[EDCTX.code].getValue() );
-		//alert( EDDOC.true.getValue() );
-		//alert( Ext.getCmp("codeedit").getValue() );
-		return EDDOC[EDCTX.code].getValue();
+		return EDDOC[EDCTX.state].getValue();
 	},
-	
-	EDCM = null,
-	//EDCODE.foldCode(CodeMirror.Pos(13, 0));
 	
 	PROXY = {				// proxy parameters
 		ROOT: "data",		// contains array of data records
@@ -939,7 +1004,7 @@ function DS(anchor) {
 				fLock = (fQual.indexOf("lock")>=0) ? true : false,  //pivots ? true : sorts ? !(fKey in sorts) : false,
 				fTipTitle = fKey; //fTips[0] || fKey; //fTips.pop() || fKey;
 
-			switch (fType.toLowerCase()) {
+			switch (fType) {
 				case '#': 	// actions		
 					var actions = [];
 
@@ -1205,6 +1270,8 @@ function DS(anchor) {
 				case 'mediumtext':	
 				case 'longtext':
 					Blogs.push( fKey );
+				
+				case 'json':
 					return  {
 						xtype: 	"",
 						//fType		: fType,
@@ -1266,7 +1333,7 @@ function DS(anchor) {
 						}*/
 						//renderer 	: fCalc ? calcRender : null
 						listeners	: fListen   // EXTJS widget gets confused when embedded in grid
-					};			
+					};	
 
 				case 'z': 		// ignore
 				case 'zilch':
@@ -1287,7 +1354,7 @@ function DS(anchor) {
 					};
 
 				case 'x':		// text area
-				case 'json':
+				//case 'json':
 				case 'textarea':
 				case 'xtextarea':
 					return {
@@ -3711,16 +3778,14 @@ WIDGET.prototype.terminal = function (term,opts) {
 					key = head.dataIndex;
 					
 				//console.log(td,cellIndex,tr,rowIndex, key);
-				Copy({
-					save: function (val) {
-						rec.set(key,val);
-					},
-					code: false
-				}, EDCTX);
-				
-				EDSET( rec.get(key) );
-				EDWIN.setTitle( Name + "." + key);
+				EDCTX.save = function (val) {
+					rec.set(key,val);
+				};
+				EDCTX.state = "text";
+
+				EDWIN.setTitle( Name + "." + key);  //  must make window before setting contents
 				EDWIN.show();
+				EDSET( rec.get(key) );
 			}, 
 
 			// regen pivots and slaved posts if pivot column moved
@@ -4417,13 +4482,11 @@ WIDGET.prototype.form = function () {
 											form = (Widget.dataUI || Widget.UI).getForm(),
 											rec = form.getRecord();
 								
-										Copy({
-											save: function (val) {
-												rec.set( key, val );
-												form.loadRecord(rec);
-											},
-											code: false
-										}, EDCTX);
+										EDCTX.save = function (val) {
+											rec.set( key, val );
+											form.loadRecord(rec);
+										};
+										EDCTX.state = "text";
 
 										EDSET( rec.get(key) );
 										EDWIN.setTitle( name + "." + key);

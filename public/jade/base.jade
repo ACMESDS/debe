@@ -45,7 +45,8 @@ append layout_parms
 		// exjs
 		- carousel = false
 		- charting = false
-		- coding = true
+		- codeEdit = true
+		- jsonEdit = true
 		- theme = "crisp"  // crisp | neptune | aria | gray | ...
 		// jquery
 		- grid = "DataTable" // DataTable | w2UI | jqgrid | ... 
@@ -239,6 +240,7 @@ append layout_head
 
 		when "extjs"
 			if carousel  /* unsupported in ExtJS 5.x */
+				link( rel="stylesheet", type="text/css", href="/clients/extjs/resources/css/carousel.css" )
 				//- script(src="/clients/extjs/ext-core.js")
 				script(src="/clients/extjs/plugins/carousel.js")
 				script.
@@ -261,7 +263,12 @@ append layout_head
 				script(src="/clients/extjs/build/ext-all.js")
 				// script(src="/clients/ckeditor/ckeditor.js")
 
-			if coding
+			if jsonEdit
+				link(rel="stylesheet" href="/clients/flexied/jsoneditor.css")
+				script(src="/clients/flexied/jquery.min.js")
+				script(src="/clients/flexied/jquery.jsoneditor.js")
+	
+			if codeEdit
 				link(rel="stylesheet", href="/clients/codemirror/lib/codemirror.css")
 				link(rel="stylesheet", href="/clients/codemirror/addon/fold/foldgutter.css")
 				script(src="/clients/codemirror/lib/codemirror.js")
@@ -280,6 +287,7 @@ append layout_head
 				script(src="/clients/codemirror/mode/css/css.js")
 
 			if charting
+				link(type="text/css",href="/clients/extjs/build/packages/sencha-charts/build/neptune/resources/sencha-charts-all.css")
 				script(src="/clients/extjs/build/packages/sencha-charts/build/sencha-charts.js")
 
 			script.
