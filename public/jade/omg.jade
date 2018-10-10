@@ -8,7 +8,7 @@ append base_help
 	:markdown
 		 Produce d3 doodle interface:
 
-			ds = bogus source url
+			src = bogus source url
 			w = drawing width
 			h = drawing height
 			debug = dump derived options
@@ -26,7 +26,7 @@ append base_head
 
 	script.
 		var opts = {
-			ds: "!{query.ds}",
+			ds: "!{query.src}",
 			ID: "#{query.ID}",
 			w: parseInt("#{query.w}"),
 			h: parseInt("#{query.h}"),
@@ -34,6 +34,8 @@ append base_head
 		};
 
 append base_body
+
+	script(src="/clients/d3/d3.v3.min.js")
 	script.
 		var 
 			w = opts.w|| 960,

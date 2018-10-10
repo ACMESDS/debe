@@ -3531,7 +3531,7 @@ append layout_body
 
 					var node = {
 						name: key+" "+ref, 
-						weight: wt ? parseInt(rec[wt] || "0") : len,
+						size: wt ? parseInt(rec[wt] || "0") : len,
 						children: recs.treeify(pos,len,level+1,keys,wt)
 					};
 
@@ -3551,7 +3551,7 @@ append layout_body
 				var rec = recs[pos++];
 				tar.push({
 					name: "doc", 
-					weight: 0, 
+					size: 10, 
 					doc: rec
 				});
 			}

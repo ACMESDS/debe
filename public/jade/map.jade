@@ -9,7 +9,7 @@ append base_help
 	:markdown
 		Provides a map chart:
 
-			ds = path to map data [ {Name, Info, Code, ...}, ...]
+			src = path to map data [ {Name, Info, Code, ...}, ...]
 			index = field containing 2-3 letter county/state code
 			details = field containing detailed information
 			fill = field containing fill style
@@ -35,6 +35,7 @@ append base_head
 
 append base_body
 
+	script(src="/clients/d3/d3.v3.min.js")
 	script.
 		//var map = new Datamap({element: document.getElementById('content')});
 
