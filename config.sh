@@ -1,6 +1,7 @@
 #!/bin/bash
 # UNCLASSIFIED when IP addresses and passwords are undefined
 
+export BASE=/local
 export HERE=`pwd`
 
 # specific geonode client
