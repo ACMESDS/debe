@@ -33,11 +33,10 @@ module.exports = {  // generate a Markov process given its transition probabilit
 			return x;
 		}
 
+		const {exp,log,sqrt,floor,rand} = Math;
+		/*
 		var 
-			exp = Math.exp, log = Math.log, sqrt = Math.sqrt, floor = Math.floor, rand = Math.random;
-
-		var
-			/*
+			//exp = Math.exp, log = Math.log, sqrt = Math.sqrt, floor = Math.floor, rand = Math.random;
 			mvd = [], 	// multivariate distribution parms
 			mix = ctx.emProbs || {},
 			mixing = ctx.emProbs ? true : false,
@@ -99,37 +98,16 @@ module.exports = {  // generate a Markov process given its transition probabilit
 			labels = ["x","y","z"], // vector sample labels
 			sampler = samplers[mode], // sampler
 			*/
-			states = ctx.trProbs.length;
-
-		//Log(ctx);
-		Log({emP:ctx.emProbs,trP:ctx.trProbs,steps:ctx.Steps, States:states}); 
-			/*
-			mix.each( function (k,mix) {  // scale mix mu,sigma to voxel dimensions
-				//Log([k, floor(k / 20), k % 20, mix, dims]);
-
-				offsetvec( scalevec( mix.mu, dims), [
-					floor(k / 20) * dims[0] + Offsets[0],
-					(k % 20) * dims[1] + Offsets[1],
-					mix.mu[2] + Offsets[2]
-				]);  
-				//for (var i=0;i<mixdim; i++) scalevec( mix.sigma[i], dims );
-
-				mvd.push( RAN.MVN( mix.mu, mix.sigma ) );
-			});
-			*/
-		// [{"mu":[0,0,0],"sigma":[[0.9,0.4,0],[0.4,0.7,0],[0,0,0.1]]}, {"mu":[0.3,0.5,0], "sigma":[[0.8,0.2,0],[0.2,0.8,0],[0,0,0.1]]}]
 
 		var ran = new RAN({ // generating supervisor
 			N: ctx.Members,  // ensemble size
 			wiener: ctx.Wiener,  // wiener process steps
 			trP: ctx.trProbs, // state transition probs 
 			symbols: ctx.Symbols,  // state symbols
-			nyquist: ctx.Nyquist, // oversampling factor
+			dt: 1/ctx.Nyquist, // oversampling factor
 			steps: ctx.Steps, // process steps
 			emP: ctx.emProbs,  	// mixing/emission/observation parms
 			batch: ctx.Batch || 0,   // supervised learning every batch steps
-			//sigma = mix.sigma || [ [ scalevec([0.4, 0.3, 0],dims), scalevec([0.3, 0.8, 0],dims), scalevec([0, 0, 1],dims)] ],
-			//solve: ctx.Solve, // learning parameters
 			filter: function (str, ev) {  // filter output events
 				switch ( ev.at ) {
 					case "jump":
