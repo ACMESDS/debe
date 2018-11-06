@@ -4,11 +4,12 @@ module.exports = {  // generate a Markov process given its transition probabilit
 		Symbols: "json comment '[S1, S2, ... ] state symbols or null to generate defaults' ",
 		Members: "int(11) default 100 comment 'number in process ensemble' ",
 		
-		type_Markov: "json comment 'Markov process with KxK transition probs [ [pr, ...], ...] || {states: K, fr: {to: pr, ... } , ... \"fr,...\": \"to,...\" }' "	,
-		type_Wiener: "int(11) default 0 comment 'Wiener process with specified diffusion walks' ",
-		type_Bayes: "json comment 'Bayes process with specified equilibrium probs [pr, ... ]' ",
-		type_Gauss: "json comment 'Gauss proccess with specified {ints: coherence intervals, mean: mean count, maxints: max ints, lim: mineig, model: sinc||rect, }' ",
-		type_Gillespie: "int(11) comment 'Gillespie process with specified number of states' ",
+		type_Markov: "json comment 'Markov process with KxK (K^2-K parameters) transition probs [ [pr, ...], ...] || {states: K, fr: {to: pr, ... } , ... \"fr,...\": \"to,...\" }' "	,
+		type_Wiener: "int(11) default 0 comment 'Wiener process with specified diffusion steps' ",
+		type_Bayes: "json comment 'Bayes-Dirchlet process with specified equilibrium probs [pr, ... ]' ",
+		type_Gauss: "json comment 'Gauss proccess with specified {coints, mean, dim, mineig, model} parameters' ",
+		type_Gillespie: "int(11) comment 'Gillespie-Dobbs process with specified number of states' ",
+		type_Ornstein: "int(11) comment 'Ornstein-Ulenbeck process with specified theta, a = sigma/sqrt(2 theta) parameters' ",
 		
 		Nyquist: "float default 1 comment 'process over-sampling factor' ",
 		Steps: "int(11) default 0 comment 'number of process steps' ",
@@ -40,21 +41,16 @@ module.exports = {  // generate a Markov process given its transition probabilit
 
 		function KL( solve, cb ) { // Karhouen-Loeve expansion with callback cb(pcs) || cb(null)
 			
-			function getpcs(model, Emin, M, Mwin, Mmax, cb) {  // callback cb(pcs) || cb(null)
+			function getpcs(model, coints, dim, cb) {  // callback cb(pcs) || cb(null)
 
-				function genpcs(dim, steps, model, cb) {  // callback callback cb(pcs = {values,vectors,ref})
-					Log("gen pcs", {Mmax: dim, Msteps: steps, model: model}); 
-					
-					function evd( models, dim, step, cb) {   // eigen value decomp with callback cb(pcs)
-						models.forEach( function (model) {
-
-							Log("pcs", model, dim, step);
-
-							for (var M=1; M<dim; M+=step) {
+				function genpcs(coints, model, dim, cb) {  // callback callback cb(pcs = {values,vectors,ref})
+					function evd( models, coints, dim, cb) {   // eigen value decomp with callback cb(pcs)
+						models.forEach( function (model) {	// enumerate over all models
+							coints.forEach( (coints) => {	// enumerate over all coherence intervals
 								var 
 									ctx = {
 										N: dim,
-										M: M,
+										M: coints,
 										T: 50
 									},
 									script = `
@@ -65,10 +61,9 @@ Xccf = xmatrix( xccf );
 R = evd(Xccf); 
 `; 
 
-								Log(">>>>>evd script", M, dim, step);
 								ME.exec( script,  ctx, function (ctx) {
 
-									if (solve.trace)  // debugging
+									if (solve.trace)  { // debugging
 										ME.exec(`
 disp({
 M: M,
@@ -76,41 +71,43 @@ ccfsym: sum(Xccf-Xccf'),
 det: [det(Xccf), prod(R.values)],
 trace: [trace(Xccf), sum(R.values)]
 })`, ctx);
-
+									}
+									
 /*
 basis: R.vectors' * R.vectors,
 vecres: R.vectors*diag(R.values) - Xccf*R.vectors,
 */
 									cb({
 										model: model,
-										intervals: M,
+										intervals: coints,
 										values: ctx.R.values._data,
 										vectors: ctx.R.vectors._data
 									});
 								});
-							}
+							});
 						});
 					}
 
-					evd( [model], Mmax, Mwin*2, function (pcs) {
+					evd( [model], [coints], dim, function (pcs) {
 
 						var 
 							vals = pcs.values,
 							vecs = pcs.vectors,
-							dim = vals.length, 
-							ref = pcs.ref = ME.max(vals);
+							ref = ME.max(vals);
 
-						Log("evd vals=", vals.length );
-						cb( pcs );  // forward and save the pcs
+						pcs.ref = ref;
+						pcs.dim = dim;
+						
+						Log(">>>evded pcs", vals.length );
 						
 						SQL.beginBulk();
 
-						vals.forEach( (val, idx) => {
+						vals.forEach( (val, idx) => {  // save pcs
 							var
 								save = {
-									correlation_model: solve.model,
-									coherence_intervals: solve.M,
-									eigen_value: val / ref,
+									correlation_model: model,
+									coherence_intervals: coints,
+									eigen_value: val,	// val/ref
 									eigen_index: idx,
 									ref_value: ref,
 									max_intervals: dim,
@@ -123,56 +120,70 @@ vecres: R.vectors*diag(R.values) - Xccf*R.vectors,
 						});
 						
 						SQL.endBulk();
-						Log("evd saved pcs");
-						SQL.release();
+						Log(">>>>saved pcs");
+
+						cb( pcs );  // forward the saved pcs
 					});
 				}
 
-				function findpcs( cb ) {		// callback cb(pcs = {values,vectors,ref})
-					var M0 = Math.min( M, Mmax-Mwin*2 );
-
+				function findpcs( coints, model, lims, cb ) {		// callback cb(pcs = {values,vectors,ref})
 					var q = SQL.query(
-						"SELECT * FROM app.pcs WHERE coherence_intervals BETWEEN ? AND ? AND eigen_value / ref_value > ? AND least(?,1) ORDER BY eigen_index", 
-						[M0-Mwin, M0+Mwin, Emin, {
-							max_intervals: Mmax, 
+						"SELECT *, abs(? - coherence_intervals)  AS coeps FROM app.pcs WHERE coherence_intervals BETWEEN ? AND ? AND eigen_value / ref_value > ? AND least(?,1) ORDER BY coeps desc,eigen_value", 
+						[ coints, coints*(1-lims.coints), coints*(1+lims.coints), lims.mineig, {
+							max_intervals: lims.dim, 
 							correlation_model: model
 						}],
-						function (err, pcs) {
+						(err, pcs) => {
 
 							if ( err ) 
-								Log( TRACE, err );
+								Log( err );
 
 							else {
-								var vals = [], vecs = [];
+								var vals = [], vecs = [], dim = lims.dim, ref = pcs.length ? pcs[0].ref_value : 0;
 
 								pcs.forEach( (pc) => {
-									vals.push( pc.eigen_value );
-									vecs.push( JSON.parse( pc.eigen_vector ) );
+									if ( vals.length < dim ) {
+										vals.push( pc.eigen_value );
+										vecs.push( JSON.parse( pc.eigen_vector ) );
+									}
 								});
 
 								cb({
 									values: vals,
 									vectors: vecs,
-									ref: pcs.length ? pcs[0].ref_value : 0
+									dim: dim,
+									ref: ref
 								});
-								
-								SQL.release();
 							}
 					});
 
 					Log(q.sql);
 				}
 
-				findpcs( function (pcs) {
+				findpcs( solve.coints, solve.model, { 
+					coints: 0.1,
+					mineig: solve.mineig,
+					dim: solve.dim
+				}, (pcs) => {
 					Log(">>>>found pcs");
 					if ( pcs.values.length )   // found pcs so send them on
 						cb( pcs );
 					
 					else  // try to generate pcs
-						genpcs( Mmax, Mwin*2, model, (pcs) => {
+						genpcs( coints, model, dim, (pcs) => {  
 							Log(">>>>gened pcs", pcs.values.length);
 							if ( pcs.values.length )
-								cb( pcs );
+								findpcs( solve.coints, solve.model, { // must now find pcs per limits
+									coints: 0.1,
+									mineig: solve.mineig,
+									dim: solve.dim
+								}, (pcs) => {
+									if ( pcs.values.length) 
+										cb( pcs );
+									
+									else
+										cb(null);
+								});
 							
 							else
 								cb( null );
@@ -200,166 +211,25 @@ vecres: R.vectors*diag(R.values) - Xccf*R.vectors,
 	
 			// Should add a ctx.Shortcut parms to bypass pcs and use an erfc model for eigenvalues.
 
-			//Log(solve);
 			if ( solve.model )
-				getpcs( solve.model, solve.min, solve.M, solve.Mstep/2, solve.Mmax, (pcs) => {
+				getpcs( solve.model, solve.coints, solve.dim, (pcs) => {
 					pcs.mean = solve.mean;
 					cb(pcs);
 				});
 			
 			else
 				cb( null );
-				
-				/*
-				const { sqrt, random, log, exp, cos, sin, PI } = Math;
-				
-				function expdev(mean) {
-					return -mean * log(random());
-				}
-				
-				if (pcs) {
-					var 
-						pcRef = pcs.ref,  // [unitless]
-						pcVals = pcs.values,  // [unitless]
-						N = pcVals.length,
-						T = solve.T,
-						dt = T / (N-1),
-						egVals = $(N, (n,e) => e[n] = solve.lambdaBar * dt * pcVals[n] * pcRef ),  // [unitless]
-						egVecs = pcs.vectors,   // [sqrt Hz]
-						ctx = {
-							T: T,
-							N: N,
-							dt: dt,
-							
-							E: ME.matrix( egVals ),
-							
-							B: $(N, (n,B) => {
-								var
-									b = sqrt( expdev( egVals[n] ) ),  // [unitless]
-									arg = random() * PI;
-
-								Log(n,arg,b, egVals[n], T, N, solve.lambdaBar );
-								B[n] = ME.complex( b * cos(arg), b * sin(arg) );  // [unitless]
-							}),
-
-							V: egVecs   // [sqrt Hz]
-						},
-						script = `
-A=B*V; 
-lambda = abs(A).^2 / dt; 
-Wbar = {evd: sum(E), prof: sum(lambda)*dt};
-evRate = {evd: Wbar.evd/T, prof: Wbar.prof/T};
-x = rng(-1/2, 1/2, N); 
-`;
-
-//Log(ctx);
-
-					if (N) 
-						ME.exec( script , ctx, (ctx) => {
-							//Log("ctx", ctx);
-							cb({
-								intensity: {x: ctx.x, i: ctx.lambda},
-								//mean_count: ctx.Wbar.evd,
-								//mean_intensity: ctx.evRate.evd,
-								eigen_ref: pcRef
-							});
-							Log({
-								mean_count: ctx.Wbar,
-								mean_intensity: ctx.evRate,
-								eigen_ref: pcRef
-							});
-						});	
-
-					else
-						cb({
-							error: `coherence intervals ${stats.coherence_intervals} > max pc dim`
-						});
-				}
-				
-				else
-					cb({
-						error: "no pcs matched"
-					});
-*/
 		}
 		
 		function genProc(ctx, opts, res) {
-			Log("gen proc");
 			var ran = new RAN(opts);  // create a random process compute thread
 
 			ran.pipe( function (evs) {  // sync the process events to this callback
 				ctx.Save = evs;
-				Log("respond");
 				res( ctx );
 			});   // run process and capture results
 		}
 		
-		/*
-		const {exp,log,sqrt,floor,rand} = Math;
-		var 
-			//exp = Math.exp, log = Math.log, sqrt = Math.sqrt, floor = Math.floor, rand = Math.random;
-			mvd = [], 	// multivariate distribution parms
-			mix = ctx.emProbs || {},
-			mixing = ctx.emProbs ? true : false,
-
-			walking = ctx.Wiener ? true : false, // random walking		
-			mode = mixing ? parseFloat(mix.theta) ? "oo" : mix.theta || "gm" : "na",  // Process mode
-
-			mu0 = mix.mu,	// mean 
-			sigma0 = mix.sigma,  // covariance
-			theta0 = mix.theta,  	// oo time lag
-			x0 = mix.x0, 		// oo initial pos
-			ooW = [], // wiener/oo process look ahead
-
-			a = {  // process fixed parms
-				wi: 0,
-				gm: 0,
-				br: sigma0 * sigma0 / 2,
-				oo: sigma0 / sqrt(2*theta0)
-			},  		// sampler constants
-			samplers = {  // customize the random walk
-				na: function (u) {  // ignore
-					return u;
-				},
-
-				wi: function (u) {  // wiener (need to vectorize)
-					var 
-						t = ran.s, 
-						Wt = ran.W[0];
-
-					return mu0 + sigma0 * Wt;
-				},
-
-				oo: function (u) {  // ornstein-uhlenbeck (need to vectorize)
-					var 
-						t = ran.s, 
-						Et = exp(-theta0*t),
-						Et2 = exp(2*theta0*t),
-						Wt = ooW[floor(Et2 - 1)] || 0;
-
-					ooW.push( WQ[0] );
-
-					return x0 
-							? x0 * Et + mu*(1-Et) + a.oo * Et * Wt 
-							: mu + a.oo * Et * Wt;
-				},
-
-				br: function (u) { // geometric brownian (need to vectorize)
-					var 
-						t = ran.s, 
-						Wt = ran.WQ[0];
-
-					return exp( (mu0-a.br)*t + sigma0*Wt );
-				},
-
-				gm: function (u) {  // mixed gaussian (vectorized)
-					return mvd[u].sample();
-				}
-			},  // samplers
-			labels = ["x","y","z"], // vector sample labels
-			sampler = samplers[mode], // sampler
-			*/
-
 		var opts = { // supervisor config 
 			N: ctx.Members,  // ensemble size
 			symbols: ctx.Symbols,  // state symbols
@@ -368,6 +238,7 @@ x = rng(-1/2, 1/2, N);
 			markov: ctx.type_Markov, // trans probs
 			gauss: ctx.type_Gauss, // [mean count, coherence intervals]
 			bayes: ctx.type_Bayes, // equlib probs
+			ornstein: ctx.type_Ornstein,   // theta,  a = sigma / sqrt(2*theta)
 			
 			dt: 1/ctx.Nyquist, // oversampling factor
 			steps: ctx.Steps, // process steps
@@ -439,27 +310,24 @@ x = rng(-1/2, 1/2, N);
 			}  // event saver 
 		};
 
-		Log(">>>>>>genpr");
-		
-		if (gparms = opts.gauss) {
-			
+		if (gparms = opts.gauss) {	// generate gaussian process using exact pcs or approx negbin
 			var 
-				T = ctx.Steps,
+				N = ctx.Steps, 
+				T = N,
 				dt = 1/ctx.Nyquist;
 			
-			if (gparms.model && gparms.ints)
+			if (gparms.model && gparms.coints)	// exact using pcs
 				KL({  // parms for Karhunen Loeve solver
 					trace: false,   // eigen debug
 					T: T,  // observation interval  [1/Hz]
-					M: gparms.ints , // coherence intervals
+					coints: gparms.coints , // coherence intervals
 					mean: gparms.mean * dt / T, // mean events over sample time
-					Mstep: 1,  // coherence step size when pcs are generated
-					Mmax: gparms.maxints || 150,  // max coherence intervals when pcs are generated
+					dim: gparms.dim || N,  // max coherence intervals when pcs are generated
 					model: gparms.model || "sinc",  // assumed correlation model for underlying CCGP
-					min: gparms.lim || 0	// min eigen value to use
+					mineig: gparms.mineig || 0.1	// min eigen/ref level (typically >= 0.05 to use stable eigenvectors)
 				}, (pcs) => {
 
-					if (pcs) {  // use eigen expansion to gen gauss states/deviates						
+					if (pcs) {  // use eigen expansion to generate counts
 						opts.gauss = pcs;
 						
 						genProc(ctx, opts, res);
@@ -469,12 +337,11 @@ x = rng(-1/2, 1/2, N);
 						res( null );
 				});
 			
-			else { // use negbin to gen bayes states
+			else { // approx via a K-state MCMC/MH with negbin equlib probs specified by mean and coints
 				Log("mh/mcmc tbd");
-				opts.bayes = gparms.ints ? [] : []; // negbin || poisson
+				opts.bayes = gparms.coints ? [] : []; // negbin || poisson
 				genProc(ctx, opts, res);
-			}
-			
+			}	
 		}
 		
 		else
