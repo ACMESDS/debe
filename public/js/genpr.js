@@ -65,6 +65,7 @@ Xccf = xmatrix( xccf );
 R = evd(Xccf); 
 `; 
 
+								Log(">>>>>evd script", M, dim, step);
 								ME.exec( script,  ctx, function (ctx) {
 
 									if (solve.trace)  // debugging
@@ -96,19 +97,19 @@ vecres: R.vectors*diag(R.values) - Xccf*R.vectors,
 						var 
 							vals = pcs.values,
 							vecs = pcs.vectors,
-							N = vals.length, 
+							dim = vals.length, 
 							ref = pcs.ref = ME.max(vals);
 
 						Log("evd vals=", vals.length );
-						cb( pcs );  // forward them on then save em
+						cb( pcs );  // forward and save the pcs
 						
 						SQL.beginBulk();
 
 						vals.forEach( (val, idx) => {
 							var
 								save = {
-									correlation_model: pc.model,
-									coherence_intervals: pc.intervals,
+									correlation_model: solve.model,
+									coherence_intervals: solve.M,
 									eigen_value: val / ref,
 									eigen_index: idx,
 									ref_value: ref,
@@ -144,7 +145,7 @@ vecres: R.vectors*diag(R.values) - Xccf*R.vectors,
 							else {
 								var vals = [], vecs = [];
 
-								pcs.forEach( function (pc) {
+								pcs.forEach( (pc) => {
 									vals.push( pc.eigen_value );
 									vecs.push( JSON.parse( pc.eigen_vector ) );
 								});
@@ -154,6 +155,7 @@ vecres: R.vectors*diag(R.values) - Xccf*R.vectors,
 									vectors: vecs,
 									ref: pcs.length ? pcs[0].ref_value : 0
 								});
+								
 								SQL.release();
 							}
 					});
@@ -162,14 +164,16 @@ vecres: R.vectors*diag(R.values) - Xccf*R.vectors,
 				}
 
 				findpcs( function (pcs) {
+					Log(">>>>found pcs");
 					if ( pcs.values.length )   // found pcs so send them on
 						cb( pcs );
 					
 					else  // try to generate pcs
 						genpcs( Mmax, Mwin*2, model, (pcs) => {
-							Log("gen pcs", pcs.values.length);
+							Log(">>>>gened pcs", pcs.values.length);
 							if ( pcs.values.length )
 								cb( pcs );
+							
 							else
 								cb( null );
 						});
@@ -198,7 +202,10 @@ vecres: R.vectors*diag(R.values) - Xccf*R.vectors,
 
 			//Log(solve);
 			if ( solve.model )
-				getpcs( solve.model, solve.min, solve.M, solve.Mstep/2, solve.Mmax, cb );
+				getpcs( solve.model, solve.min, solve.M, solve.Mstep/2, solve.Mmax, (pcs) => {
+					pcs.mean = solve.mean;
+					cb(pcs);
+				});
 			
 			else
 				cb( null );
@@ -276,17 +283,19 @@ x = rng(-1/2, 1/2, N);
 */
 		}
 		
-		function genProc(opts, res) {
+		function genProc(ctx, opts, res) {
+			Log("gen proc");
 			var ran = new RAN(opts);  // create a random process compute thread
 
 			ran.pipe( function (evs) {  // sync the process events to this callback
 				ctx.Save = evs;
+				Log("respond");
 				res( ctx );
 			});   // run process and capture results
 		}
 		
-		const {exp,log,sqrt,floor,rand} = Math;
 		/*
+		const {exp,log,sqrt,floor,rand} = Math;
 		var 
 			//exp = Math.exp, log = Math.log, sqrt = Math.sqrt, floor = Math.floor, rand = Math.random;
 			mvd = [], 	// multivariate distribution parms
@@ -430,6 +439,8 @@ x = rng(-1/2, 1/2, N);
 			}  // event saver 
 		};
 
+		Log(">>>>>>genpr");
+		
 		if (gparms = opts.gauss) {
 			
 			var 
@@ -441,26 +452,17 @@ x = rng(-1/2, 1/2, N);
 					trace: false,   // eigen debug
 					T: T,  // observation interval  [1/Hz]
 					M: gparms.ints , // coherence intervals
-					lambdaBar: gparms.mean * dt/T, // event arrival rate [Hz]
+					mean: gparms.mean * dt / T, // mean events over sample time
 					Mstep: 1,  // coherence step size when pcs are generated
 					Mmax: gparms.maxints || 150,  // max coherence intervals when pcs are generated
 					model: gparms.model || "sinc",  // assumed correlation model for underlying CCGP
 					min: gparms.lim || 0	// min eigen value to use
-				}, function (pcs) {
+				}, (pcs) => {
 
-					if (pcs) {  // use eigen expansion to gen gauss states/deviates
+					if (pcs) {  // use eigen expansion to gen gauss states/deviates						
+						opts.gauss = pcs;
 						
-						Log("KL pcs", pcs.values.length, opts);
-						
-						var
-							vals = pcs.values,
-							vecs = pcs.vectors;
-						
-						opts.gauss = function (t) {
-							Log("gauss t", t);
-						};
-						
-						genProc(opts, res);
+						genProc(ctx, opts, res);
 					}
 
 					else 
@@ -470,13 +472,13 @@ x = rng(-1/2, 1/2, N);
 			else { // use negbin to gen bayes states
 				Log("mh/mcmc tbd");
 				opts.bayes = gparms.ints ? [] : []; // negbin || poisson
-				genProc(opts, res);
+				genProc(ctx, opts, res);
 			}
 			
 		}
 		
 		else
-			genProc(opts, res);
+			genProc(ctx, opts, res);
 		
 	}
 
