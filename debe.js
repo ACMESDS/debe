@@ -172,11 +172,11 @@ catch (err) {
 		
 			function toDoc (arg) {
 				return arg.startsWith("#") 
-					? ( "${doc(" + arg.substr(1) + ")}" ).parseJS(ctx).parseJSON( (val) => "?" ) 
+					? ( "${doc(" + arg.substr(1) + ")}" ).parseJS(ctx).parseJSON( ) || "?" 
 					: arg;
 			}
 			
-			return pre + "$$" + toTeX( lhs.parseJSON(toDoc) ) + " = " + toTeX( rhs.parseJSON(toDoc) ) + " $$";
+			return pre + "$$" + toTeX( lhs.parseJSON(toDoc) || "" ) + " = " + toTeX( rhs.parseJSON(toDoc) || "" ) + " $$";
 		},
 			
 		toTag: (lhs,rhs,ctx) => {
@@ -240,7 +240,7 @@ catch (err) {
 				switch (url.constructor) {
 					case String:
 						fetcher( url, query, opts.put||null, function (data) {
-							if ( data = data.parseJSON( (val) => null ) ) 
+							if ( data = data.parseJSON( ) ) 
 								ingestEvents(data, cb);
 						});
 						break;
@@ -1555,6 +1555,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				+ "Home".tag("a",{href:"/home.view"}) + " || "
 				+ "API".tag("a",{href:"/api.view"});
 		},
+		noPartner: new Error( "sepcified endservice did not recognize you as a transition partner" ),
 		noAttribute: new Error( "undefined engine attribute" ),
 		noEngine: new Error( "no such engine" ),
 		badAgent: new Error("bad agent request"),
@@ -3851,11 +3852,7 @@ function sharePlugin(req,res) {  //< share plugin attribute
 						case "py":
 						case "me":
 						case "m":
-							res( new Error( endService 
-								? `${endService} must contain ${partner}`
-								: `specify endservice=URL integrating ${eng.Name} or see its ` 
-									+ "Terms of Use".tag("a", {href: `/${eng.Name}.tou`})
-							));
+							res( errors.noPartner );
 							break;
 							
 						case "pub":
