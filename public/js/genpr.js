@@ -1,4 +1,4 @@
-module.exports = {  // generate a Markov process given its transition probability parameters
+module.exports = {  // generate a random process with specified parameters
 	keys: {
 		emProbs: "json comment 'gaussian mixing parameters { dims: [D1, D2 , ...] weights: [W1, W2 , ...] }' ",
 		Symbols: "json comment '[S1, S2, ... ] state symbols or null to generate defaults' ",
@@ -22,7 +22,19 @@ module.exports = {  // generate a Markov process given its transition probabilit
 	
 	engine: function genpr(ctx,res) {
 	/* 
-	Return random [ {x,y,...}, ...] process for given ctx parameters.
+	Return random gaussian, markov, ornstein, bayes, gillespie, or weiner process [ {x,y,...}, ...] given ctx parameters:
+	
+			Members  // ensemble size
+			Symbols  // state symbols
+			type_Wiener // wiener process walks
+			type_Markov // markov process transition probs
+			type_Gauss  // gaussian process [mean count, coherence intervals]
+			type_Bayes  // bayes process equlib probs
+			type_Ornstein   // ornstein process theta with parameter a = sigma / sqrt(2*theta)
+			Nyquist // oversampling factor
+			Steps // process steps
+			emProbs 	// mixing/emission/observation parms
+			Batch    // supervised learning every batch steps (0 disables)
 	*/
 
 		function randint(a) {
@@ -47,24 +59,20 @@ module.exports = {  // generate a Markov process given its transition probabilit
 					function evd( models, coints, dim, cb) {   // eigen value decomp with callback cb(pcs)
 						models.forEach( function (model) {	// enumerate over all models
 							coints.forEach( (coints) => {	// enumerate over all coherence intervals
-								var 
-									ctx = {
-										N: dim,
-										M: coints,
-										T: 50
-									},
-									script = `
+								$( `
 t = rng(-T, T, 2*N-1);
 Tc = T/M;
 xccf = ${model}( t/Tc );
 Xccf = xmatrix( xccf ); 
-R = evd(Xccf); 
-`; 
-
-								ME.exec( script,  ctx, function (ctx) {
+R = evd(Xccf); `,   
+								{
+									N: dim,
+									M: coints,
+									T: 50
+								}, function (ctx) {
 
 									if (solve.trace)  { // debugging
-										ME.exec(`
+										$(`
 disp({
 M: M,
 ccfsym: sum(Xccf-Xccf'),
@@ -77,7 +85,7 @@ trace: [trace(Xccf), sum(R.values)]
 basis: R.vectors' * R.vectors,
 vecres: R.vectors*diag(R.values) - Xccf*R.vectors,
 */
-									cb({
+									cb({  // return computed stats
 										model: model,
 										intervals: coints,
 										values: ctx.R.values._data,
@@ -93,7 +101,7 @@ vecres: R.vectors*diag(R.values) - Xccf*R.vectors,
 						var 
 							vals = pcs.values,
 							vecs = pcs.vectors,
-							ref = ME.max(vals);
+							ref = $.max(vals);
 
 						pcs.ref = ref;
 						pcs.dim = dim;

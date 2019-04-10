@@ -21,7 +21,7 @@
 @requires totem
 @requires atomic
 @requires geohack
-@requires jslab
+@requires $
 @requires randpr
 
 @requires strdif
@@ -63,7 +63,7 @@ var
 	ATOM = require("atomic"), 
 	FLEX = require("flex"),
 	TOTEM = require("totem"),
-	LAB = require("jslab"),
+	$ = require("$"),
 	RAN = require("randpr"),
 	HACK = require("geohack");
 
@@ -203,7 +203,7 @@ catch (err) {
 		
 	init: Initialize,
 		
-	plugins: LAB.libs,
+	//plugins: $.libs,
 		
 	autoTask: {  //< reserved for autorun plugins determined at startup
 	},
@@ -2068,11 +2068,6 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 				ctx.Host = host;
 
-				var
-					events = LAB.libs.FLOW,
-					getEvents = events.get,
-					putEvents = events.put;
-				
 				HACK.chipVoxels(sql, Pipe, ( runctx ) => {  // process each voxel being chipped
 					
 					Copy( ctx, runctx );  	// add engine context parms to the voxel run context
@@ -2105,17 +2100,21 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 							file = runctx.File,
 							supervisor = new RAN({ 	// learning supervisor
 								learn: function (supercb) {  // event getter callsback supercb(evs) or supercb(null,onEnd) at end
-									var supervisor = this;
+									var 
+										supervisor = this,
+										evs = ctx.Events;
 
 									//Log("learning ctx", ctx);
-									getEvents( ctx.Events, true, function (evs) {  // save supervisor store events when input evs goes null
-										Trace( evs ? `SUPERVISING voxel${ctx.Voxel.ID} events ${evs.length}` : `SUPERVISED voxel${ctx.Voxel.ID}` , sql );
+									
+									if (evs) 
+										evs.$( true, function (evs) {  // get supervisor evs until null; then save supervisor computed events
+											Trace( evs ? `SUPERVISING voxel${ctx.Voxel.ID} events ${evs.length}` : `SUPERVISED voxel${ctx.Voxel.ID}` , sql );
 
-										if (evs) // feed supervisor
-											supercb(evs);
+											if (evs) // feed supervisor
+												supercb(evs);
 
-										else // terminate supervisor and start engine
-											supercb(null, function onEnd( flow ) {  // attach supervisor flow context
+											else // terminate supervisor and start engine
+												supercb(null, function onEnd( flow ) {  // attach supervisor flow context
 												ctx.Flow = flow; 
 												ctx.Case = "v"+ctx.Voxel.ID;
 												Trace( `STARTING voxel${ctx.Voxel.ID}` , sql );
@@ -2130,7 +2129,10 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 														});
 												});
 											});	
-									});
+										});
+									
+									else	// terminate supervisor
+										supercb(null);
 								},  
 
 								N: Pipe.actors || file._Ingest_Actors,  // ensemble size
@@ -2185,49 +2187,67 @@ function saveEvents(evs, ctx) {
 		autoTask = DEBE.autoTask,
 		host = ctx.Host,
 		client = "guest",
-		putEvents = LAB.libs.FLOW.put,
 		fileName = `${host}.${ctx.Name}`;
 	
 	//Log("saving", evs);
 	
-	return putEvents( evs, ctx, function (evs,sql) {
-		
-		if ( ctx.Export ) {   // export remaining events to filename
-			var
-				evidx = 0,
-				srcStream = new STREAM.Readable({    // establish source stream for export pipe
-					objectMode: false,
-					read: function () {  // read event source
-						if ( ev = evs[evidx++] )  // still have an event
-							this.push( JSON.stringify(ev)+"\n" );
-						else 		// signal events exhausted
-							this.push( null );
+	if (evs)
+		switch (evs.constructor.name) {
+			case "Error": 
+				return evs+"";
+
+			case "Object":  // keys in the plugin context are used to create the stash
+				var stash = {};
+				Each(evs, function (key, val) {  // remove splits from bulk save
+					if ( key in ctx ) stash[key] = val;
+				});
+				break;
+				
+			default:
+				return evs.$( ctx, function (evs,sql) {  // save/export events
+
+					if ( ctx.Export ) {   // export remaining events to filename
+						var
+							evidx = 0,
+							srcStream = new STREAM.Readable({    // establish source stream for export pipe
+								objectMode: false,
+								read: function () {  // read event source
+									if ( ev = evs[evidx++] )  // still have an event
+										this.push( JSON.stringify(ev)+"\n" );
+									else 		// signal events exhausted
+										this.push( null );
+								}
+							});
+
+						DEBE.uploadFile( "", srcStream, `stores/${fileName}.${host}` );
 					}
-				});
 
-			DEBE.uploadFile( "", srcStream, `stores/${fileName}.${host}` );
+					if ( ctx.Ingest )  // ingest remaining events
+						DEBE.getFile( client, `plugins/${fileName}`, function (area, fileID) {
+							sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
+
+							HACK.ingestList( sql, evs, fileID, function (aoi) {
+								Log("INGESTED",aoi);
+								Each(autoTask, function (dsn,ctx) {
+									sql.query(
+										"INSERT INTO app.?? SET ? ON DUPLICATE KEY UPDATE Autorun=1",
+										[dsn, Copy({
+											Pipe: `{ "file": ${fileName}, "limit": 150e3}`,
+											Autorun: 1,
+											Name: fileName
+										}, ctx)]
+									);
+								});
+							});
+						});
+
+				}); 
+
 		}
-
-		if ( ctx.Ingest )  // ingest remaining events
-			DEBE.getFile( client, `plugins/${fileName}`, function (area, fileID) {
-				sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
-
-				HACK.ingestList( sql, evs, fileID, function (aoi) {
-					Log("INGESTED",aoi);
-					Each(autoTask, function (dsn,ctx) {
-						sql.query(
-							"INSERT INTO app.?? SET ? ON DUPLICATE KEY UPDATE Autorun=1",
-							[dsn, Copy({
-								Pipe: `{ "file": ${fileName}, "limit": 150e3}`,
-								Autorun: 1,
-								Name: fileName
-							}, ctx)]
-						);
-					});
-				});
-			});
-
-	}); 
+	
+	else
+		return "empty";
+	
 }
 
 function sendDoc(req, res) {
@@ -2770,9 +2790,10 @@ Initialize DEBE on startup.
 			thread: DEBE.thread
 		});
 		
-		LAB.config({
+		$.config({
 			thread: DEBE.thread,
-			fetcher: DEBE.fetch.fetcher
+			tasker: DEBE.tasker
+			//fetcher: DEBE.fetch.fetcher
 		});
 		
 		ATOM.config({
@@ -2782,10 +2803,11 @@ Initialize DEBE on startup.
 			plugins: Copy({   // share selected FLEX and other modules with engines
 				// MAIL: FLEX.sendMail,
 				RAN: require("randpr"),
-				TASK: {
+				$: $
+				/*TASK: {
 					shard: DEBE.tasker
-				},
-			}, LAB.libs)
+				}, */
+			}, $ )
 		});
 		
 		JAX.config({
@@ -3190,7 +3212,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		
 		if ( script )
 			try {
-				LAB.libs.ME.exec( script, ctx, (vmctx) => {
+				$( script, ctx, (vmctx) => {
 					cb( vmctx , run);
 				});
 			}

@@ -18,7 +18,14 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 	
 	engine: function cints(ctx,res) {  
 	/* 
-	Return MLEs for random event process [ {x,y,...}, ...] given ctx parameters and dataset ctx.Flow parameters:
+	Return MLEs for random event process [ {x,y,...}, ...] given ctx parameters:
+	
+		Use  || "lma" // solution to retain
+		lfa || [50] // initial guess at coherence intervals
+		bfs || [1,200,5]  // range and step to search coherence intervals
+		lma	|| [50] // initial guess at coherence intervals
+	
+	and dataset ctx.Flow parameters:
 		
 		F = count frequencies
 		T = observation interval [1/Hz]
@@ -177,7 +184,7 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 					), 
 					Psi1 = Zeta.sum(),
 					Psi = $(Kmax, (x,P) =>   // recurrence to build the diGamma Psi
-							P[x] = x ? P[x-1] + 1/x : Psi1 
+						P[x] = x ? P[x-1] + 1/x : Psi1 
 					);
 
 				return NRAP( (x) => chiSq1(f, Kbar, x), (x) => chiSq2(f, Kbar, x), init[0]);  // 1-parameter newton-raphson
@@ -279,12 +286,12 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 			x = M = coherence intervals			
 			*/
 				function NegBin(NB, Kbar, M, logp) {
-					NB.use( (k) => NB[k] = exp( logp(k, Kbar, M) ) );
+					NB.$( (k) => NB[k] = exp( logp(k, Kbar, M) ) );
 				}
 
 				function chiSquared(p, f, N) {
 					var chiSq = 0, err = 0;
-					p.use( (k) => {
+					p.$( (k) => {
 						//chiSq += (H[k] - N*p[k])**2 / (N*p[k]);
 						chiSq += (f[k] - p[k])**2 / p[k];
 					});
@@ -351,12 +358,12 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 
 			//H.forEach( (h,n) => Log([n,h]) );
 
-			H.use( (k) => {
+			H.$( (k) => {
 				Kbar += k * fK[k];
 				Nevs += k * H[k];
 			});
 
-			fK.use( (k) => {   
+			fK.$( (k) => {   
 				if ( compress ) {
 					if ( fK[k] ) K.push( k );
 				}
@@ -386,7 +393,7 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 			});
 
 			if (false)
-				K.use( (n) => {
+				K.$( (n) => {
 					var k = K[n];
 					Log(n, k, logNB(k,Kbar,55), logNB(k,Kbar,65), log( fK[k] ), logfK[n] );
 				});
@@ -406,7 +413,7 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 					M.bfs = BFS( solve.bfs, fK, logNB);
 
 				var 
-					M0 = M[solve.use || "lma"],
+					M0 = M[solve.$ || "lma"],
 					snr = sqrt( Kbar / ( 1 + Kbar/M0 ) ),
 					bias = sqrt( (Nevs-1)/2 ) * exp(GAMMA.log((Nevs-2)/2) - GAMMA.log((Nevs-1)/2)),		// bias of snr estimate
 					mu = (Nevs>=4) ? (Nevs-1) / (Nevs-3) - bias**2 : 2.5;		// rel error in snr estimate
@@ -441,10 +448,10 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 			H: flow.F,		// count frequencies
 			T: flow.T,  		// observation time
 			N: flow.N,		// ensemble size
-			use: ctx.Use,  // solution to retain
-			lfa: ctx.lfa, // [50],  // initial guess at M = # coherence intervals
-			bfs: ctx.bfs, // [1,200,5],  // M range and step to search
-			lma: ctx.lma	// initial guess at M = # coherence intervals
+			use: ctx.Use || "lma",  // solution to retain
+			lfa: ctx.lfa || [50],  // initial guess at coherence intervals
+			bfs: ctx.bfs || [1,200,5],  // range and step to search cohernece intervals
+			lma: ctx.lma || [50]	// initial guess at coherence intervals
 		}, function (stats) {
 			ctx.Save = stats;
 			Log("cints stats for voxel "+ctx.Voxel.ID, stats);
