@@ -18,11 +18,17 @@ module.exports = {  // learn hidden intensity parameters of a Markov process
 	
 	engine: function rats(ctx,res) {  
 	/* 
-	Return MLEs for random event process [ {x,y,...}, ...] given ctx parameters, dataset ctx.Flow parameters:
+	Return MLEs for random event process [ {x,y,...}, ...] given ctx parameters:
+
+		Dim || 150  // max coherence intervals when pc created
+		Model || "sinc"  // assumed correlation model for underlying CCGP
+		MinEigen || 0	// min eigen value to use
+
+	ctx.Flow parameters:
 		
 		T = observation interval [1/Hz]
 		
-	and dataset ctx.Stats parameters:
+	and ctx.Stats parameters:
 		
 		coherence_intervals = number of coherence intervals 
 		mean_intensity = mean event arrival rate [Hz]
@@ -40,36 +46,33 @@ module.exports = {  // learn hidden intensity parameters of a Markov process
 							Log("pcs", model, dim, step);
 
 							for (var M=1; M<dim; M+=step) {
-								var 
-									ctx = {
-										N: dim,
-										M: M,
-										T: 50
-									},
-									script = `
+								$( `
 t = rng(-T, T, 2*N-1);
 Tc = T/M;
 xccf = ${model}( t/Tc );
 Xccf = xmatrix( xccf ); 
 R = evd(Xccf); 
-`; 
+`,  								{
+										N: dim,
+										M: M,
+										T: 50
+									}, (ctx) => {
 
-								ME.exec( script,  ctx, function (ctx) {
+									if (solve.trace)  { // debugging
+										$(`
+	disp({
+	M: M,
+	ccfsym: sum(Xccf-Xccf'),
+	det: [det(Xccf), prod(R.values)],
+	trace: [trace(Xccf), sum(R.values)]
+	})`, ctx);
+									}
 
-									if (solve.trace)  // debugging
-										ME.exec(`
-disp({
-M: M,
-ccfsym: sum(Xccf-Xccf'),
-det: [det(Xccf), prod(R.values)],
-trace: [trace(Xccf), sum(R.values)]
-})`, ctx);
-
-/*
-basis: R.vectors' * R.vectors,
-vecres: R.vectors*diag(R.values) - Xccf*R.vectors,
-*/
-									cb({
+	/*
+	basis: R.vectors' * R.vectors,
+	vecres: R.vectors*diag(R.values) - Xccf*R.vectors,
+	*/
+									cb({  // return PCs
 										model: model,
 										intervals: M,
 										values: ctx.R.values._data,
@@ -87,7 +90,7 @@ vecres: R.vectors*diag(R.values) - Xccf*R.vectors,
 							vals = pc.values,
 							vecs = pc.vectors,
 							N = vals.length, 
-							ref = ME.max(vals);
+							ref = $.max(vals);
 
 						vals.forEach( (val, idx) => {
 							var
@@ -185,51 +188,47 @@ vecres: R.vectors*diag(R.values) - Xccf*R.vectors,
 						T = solve.T,
 						dt = T / (N-1),
 						egVals = $(N, (n,e) => e[n] = solve.lambdaBar * dt * pcVals[n] * pcRef ),  // [unitless]
-						egVecs = pcs.vectors,   // [sqrt Hz]
-						ctx = {
-							T: T,
-							N: N,
-							dt: dt,
-							
-							E: ME.matrix( egVals ),
-							
-							B: $(N, (n,B) => {
-								var
-									b = sqrt( expdev( egVals[n] ) ),  // [unitless]
-									arg = random() * PI;
+						egVecs = pcs.vectors;   // [sqrt Hz]
 
-								Log(n,arg,b, egVals[n], T, N, solve.lambdaBar );
-								B[n] = ME.complex( b * cos(arg), b * sin(arg) );  // [unitless]
-							}),
-
-							V: egVecs   // [sqrt Hz]
-						},
-						script = `
+					if (N) {
+						$( `
 A=B*V; 
 lambda = abs(A).^2 / dt; 
 Wbar = {evd: sum(E), prof: sum(lambda)*dt};
 evRate = {evd: Wbar.evd/T, prof: Wbar.prof/T};
-x = rng(-1/2, 1/2, N); 
-`;
+x = rng(-1/2, 1/2, N); ` , 
+						  	{
+								T: T,
+								N: N,
+								dt: dt,
 
-//Log(ctx);
+								E: $.matrix( egVals ),
 
-					if (N) 
-						ME.exec( script , ctx, (ctx) => {
-							//Log("ctx", ctx);
-							cb({
-								intensity: {x: ctx.x, i: ctx.lambda},
-								//mean_count: ctx.Wbar.evd,
-								//mean_intensity: ctx.evRate.evd,
-								eigen_ref: pcRef
-							});
-							Log({
-								mean_count: ctx.Wbar,
-								mean_intensity: ctx.evRate,
-								eigen_ref: pcRef
-							});
-						});	
+								B: $(N, (n,B) => {
+									var
+										b = sqrt( expdev( egVals[n] ) ),  // [unitless]
+										arg = random() * PI;
 
+									Log(n,arg,b, egVals[n], T, N, solve.lambdaBar );
+									B[n] = $.complex( b * cos(arg), b * sin(arg) );  // [unitless]
+								}),
+
+								V: egVecs   // [sqrt Hz]
+							}, (ctx) => {
+								cb({  // return computed stats
+									intensity: {x: ctx.x, i: ctx.lambda},
+									//mean_count: ctx.Wbar.evd,
+									//mean_intensity: ctx.evRate.evd,
+									eigen_ref: pcRef
+								});
+								Log({  // debugging
+									mean_count: ctx.Wbar,
+									mean_intensity: ctx.evRate,
+									eigen_ref: pcRef
+								});
+							});	
+					}
+					
 					else
 						cb({
 							error: `coherence intervals ${stats.coherence_intervals} > max pc dim`
@@ -247,7 +246,7 @@ x = rng(-1/2, 1/2, N);
 			stats = ctx.Stats,
 			flow = ctx.Flow;
 		
-		Log("rats ctx stats,T,N,meanI", stats, flow.T, flow.N, stats.mean_intensity);
+		Log("rates ctx stats,T,N,meanI", stats, flow.T, flow.N, stats.mean_intensity);
 		
 		if (stats)
 			arrivalRates({  // parms for Karhunen Loeve (intensity profile) solver
@@ -257,8 +256,8 @@ x = rng(-1/2, 1/2, N);
 				lambdaBar: stats.mean_intensity, // event arrival rate [Hz]
 				Mstep: 1,  // coherence step size when pc created
 				Mmax: ctx.Dim || 150,  // max coherence intervals when pc created
-				model: ctx.Model,  // assumed correlation model for underlying CCGP
-				min: ctx.MinEigen	// min eigen value to use
+				model: ctx.Model || "sinc",  // assumed correlation model for underlying CCGP
+				min: ctx.MinEigen || 0	// min eigen value to use
 			}, function (stats) {
 				ctx.Save = stats;
 				Log("save", stats);

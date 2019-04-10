@@ -25,7 +25,7 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 		bfs || [1,200,5]  // range and step to search coherence intervals
 		lma	|| [50] // initial guess at coherence intervals
 	
-	and dataset ctx.Flow parameters:
+	and ctx.Flow parameters:
 		
 		F = count frequencies
 		T = observation interval [1/Hz]

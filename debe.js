@@ -63,7 +63,7 @@ var
 	ATOM = require("atomic"), 
 	FLEX = require("flex"),
 	TOTEM = require("totem"),
-	$ = require("$"),
+	$ = require("man"),
 	RAN = require("randpr"),
 	HACK = require("geohack");
 
@@ -3919,6 +3919,10 @@ function Trace(msg,sql) {
 //======================= unit tests
 
 switch ( process.argv[2] ) { //< unit tests
+	case "?":
+		Log("unit test with 'node debe [D1 || D2 || ...]'"
+		break;
+			
 	case "D1": 
 		var DEBE = require("../debe").config({
 			onFile: {
