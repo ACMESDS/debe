@@ -50,11 +50,7 @@ Simply require, configure and start DEBE:
 	var DEBE = require("debe").config({
 		key: value, 						// set key
 		"key.key": value, 					// indexed set
-		"key.key.": value,					// indexed append
-		OBJECT: [ function (){}, ... ], 	// add OBJECT prototypes 
-		Function: function () {} 			// add chained initializer callback
-		:
-		:
+		"key.key.": value					// indexed append
 	}, function (err) {
 		console.log( err ? "something evil is lurking" : "look mom - Im running!");
 	});
