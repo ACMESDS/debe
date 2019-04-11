@@ -16,15 +16,20 @@ module.exports = {  // learn hidden trigger function of a Markov process
 	
 	engine: function trigs(ctx, res) {  
 	/* 
-	Estimate hidden trigger function for Markov process given context ctx parameters, dataset ctx.Flow parameters:
+	Estimate hidden trigger function for Markov process given context ctx parameters:
+	
+		Dim 	// samples in profile = max coherence intervals
+		Model  	// name correlation model
+	
+	ctx.Flow parameters:
 	
 		T = observation time
 	
-	dataset ctx.File parameters:
+	ctx.File parameters:
 	
 		Stats_Gain = assumed detector gain = area under trigger function
 	
-	and dataset ctx.Stats parameters:
+	and ctx.Stats parameters:
 	
 		coherence_time = coherence time underlying the process
 		mean_intensity = ref mean arrivale rate (for debugging)
@@ -52,16 +57,13 @@ module.exports = {  // learn hidden trigger function of a Markov process
 			T = observation time
 		*/
 			
-			var 
-				ctx = {
-					evs: ME.matrix( solve.evs ),
-					N: solve.N,
-					refLambda: solve.refLambda,
-					alpha: solve.alpha,
-					T: solve.T,
-					Tc: solve.Tc
-				},
-				script = `
+			Log("trigs", {
+				evs: solve.evs.length, 
+				refRate: solve.refLambda,
+				ev0: solve.evs[0]
+			});
+				
+			$(`
 N0 = fix( (N+1)/2 );
 fs = (N-1)/T;
 df = fs/N;
@@ -85,26 +87,25 @@ modH = sqrt(V.psd ./ Upsd );
 
 argH = pwt( modH, [] ); 
 h = re(dft( modH .* exp(i*argH),T)); 
-x = t/T; 
-`;
-			Log("trigs", {
-				run: script, 
-				evs: solve.evs.length, 
-				refRate: solve.refLambda,
-				ev0: solve.evs[0]
-			});
-				
-			ME.exec(script,  ctx, function (ctx) {
-				//Log("vmctx", ctx);
-				cb({
-					trigger: {
-						x: ctx.x,
-						h: ctx.h,
-						modH: ctx.modH,
-						argH: ctx.argH,
-						f: ctx.nu
-					}
-				});
+x = t/T; `,  
+				{
+					evs: $.matrix( solve.evs ),
+					N: solve.N,
+					refLambda: solve.refLambda,
+					alpha: solve.alpha,
+					T: solve.T,
+					Tc: solve.Tc
+				}, (ctx) => {
+					//Log("vmctx", ctx);
+					cb({
+						trigger: {
+							x: ctx.x,
+							h: ctx.h,
+							modH: ctx.modH,
+							argH: ctx.argH,
+							f: ctx.nu
+						}
+					});
 			});
 		}
 		
