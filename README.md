@@ -62,9 +62,9 @@ Simply require, configure and start DEBE:
 where [its configuration keys](https://totem.west.ile.nga.ic.gov/shares/prm/debe/index.html) follow 
 the [ENUM copy()](https://github.com/acmesds/enum) conventions.
 
-The following examples are from DEBE's unit tester:
+The following examples are from unit tester:
 
-	node totem [D1 || D2 || ... ]
+	node debe.js [D1 || D2 || ... ]
 	
 ### D1 - Encypted with a database
 
