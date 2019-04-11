@@ -3920,7 +3920,7 @@ function Trace(msg,sql) {
 
 switch ( process.argv[2] ) { //< unit tests
 	case "?":
-		Log("unit test with 'node debe [D1 || D2 || ...]'"
+		Log("unit test with 'node debe [D1 || D2 || ...]'");
 		break;
 			
 	case "D1": 
