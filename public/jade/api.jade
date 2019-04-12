@@ -1124,15 +1124,6 @@ append site_body
 					function with the current **tau** workflow events and the **parm** set to the 
 					corresponding "ports" hash.					
 
-					# common modules
-					
-					*#{title}* provides the
-					[LWIP(lightweight imaging)](https://github.com/EyalAr/lwip), 
-					[SQL(jsdb-extended database connector)](https://www.npmjs.com/package/mysql), 
-					[JSON(encoder-decoder)](https://nodejs.org/docs/latest/api/json), 
-					[CRYPTO(cryptography)](https://nodejs.org/docs/latest/api/crypto), and 
-					[$(matlab emulator)](tbd) modules to all js-engines.
-					
 					# interfacing with supervisor
 					
 					While all Pipe-enabled engines are transparently attached 
@@ -1157,10 +1148,9 @@ append site_body
 					
 					# matrix manipulator
 					
-					The matrix manipulator $( ... ) extends mathjs, mljs, lwip, and math to provide js: matlab-like 
-					matrix manipulators, light weight image processing, symbolic algebra, dsp, machine learning, 
-					regression, expectation-maximization methods, neural and bayseian networks, data i/o,
-					task sharding, and special functions.  Use $( ... ) as follows:
+					The matrix manipulator $( ... ) provides: matlab-like matrix manipulators, light weight image processing, 
+					symbolic algebra, dsp, machine learning, regression, expectation-maximization methods, neural and 
+					bayseian networks, data i/o, task sharding, and special functions.  Use $( ... ) as follows:
 					
 						$( "matlab script", ctx, (ctx) => {   // eval script into context ctx with callback(ctx)
 							...
