@@ -76,7 +76,7 @@ var
 	DEBE = module.exports = Copy({
 	
 	reroute: {  //< sql.acces routes to provide secure access to db
-		engines: function (ctx) {
+		engines: function (ctx) { // protect engines that are not registered to requesting client
 			//Log("<<<", ctx);
 			ctx.index["Nrel:"] = "count(releases._License)";
 			ctx.index[ctx.from+".*:"] = "";
@@ -1555,7 +1555,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				+ "Home".tag("a",{href:"/home.view"}) + " || "
 				+ "API".tag("a",{href:"/api.view"});
 		},
-		noPartner: new Error( "sepcified endservice did not recognize you as a transition partner" ),
+		noPartner: new Error( "endservice missing or did not respond with transition partner" ),
 		noAttribute: new Error( "undefined engine attribute" ),
 		noEngine: new Error( "no such engine" ),
 		badAgent: new Error("bad agent request"),
@@ -2107,7 +2107,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 									//Log("learning ctx", ctx);
 									
 									if (evs) 
-										evs.$( true, function (evs) {  // get supervisor evs until null; then save supervisor computed events
+										evs.$( "group", function (evs) {  // get supervisor evs until null; then save supervisor computed events
 											Trace( evs ? `SUPERVISING voxel${ctx.Voxel.ID} events ${evs.length}` : `SUPERVISED voxel${ctx.Voxel.ID}` , sql );
 
 											if (evs) // feed supervisor
@@ -2441,7 +2441,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 		function renderTable( ds, ctx ) {
 			sql.query( 
 				"SHOW FULL COLUMNS FROM ??", 
-				sql.access( ds ), 
+				sql.reroute( ds ), 
 				function (err,fields) {
 				
 				if (err) // render jade file
@@ -3865,6 +3865,7 @@ function sharePlugin(req,res) {  //< share plugin attribute
 		if ( eng = engs[0] ) 
 			FLEX.pluginAttribute( sql, attr, partner, endService, proxy, eng, (attrib) => {
 				req.type = types[req.type] || "txt";
+				
 				if (attrib) 
 					res(attrib);
 

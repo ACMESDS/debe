@@ -25,9 +25,13 @@ run stateless | stateful engines:
 
 	exe | sim
 
-or return plugin attributes:
+return plugin attributes:
 
-	code | jade | classif | readability | client | size | risk
+	tou | md | pub | status | suitors
+	
+or return plugin code:
+
+	js | py | m | me | jade | ...
 	
 ## Installation
 
