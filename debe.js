@@ -350,11 +350,20 @@ catch (err) {
 		dogSystem: Copy({
 			cycle: 10,
 			max: {
-				util: 0.8,
-				GB: 50
+				cpu: 0.8,
+				disk: 200
 			},
 			get: {
-				cpu: function () {				// compute average cpu utilization
+				threads:  function (sql, cb) {
+					sql.query("show session status like 'Thread%'", {}, (err, stats) => {
+						cb({
+							running: stats[2].Value,
+							connected: stats[1].Value
+						});
+					});
+				},
+				
+				cpu: function (sql, cb) {				// compute average cpu utilization
 					var avgUtil = 0;
 					var cpus = OS.cpus();
 
@@ -363,10 +372,10 @@ catch (err) {
 						busy = cpu.times.nice + cpu.times.sys + cpu.times.irq + cpu.times.user;
 						avgUtil += busy / (busy + idle);
 					});
-					return avgUtil / cpus.length;
+					cb(avgUtil / cpus.length);
 				},
 				
-				disk: function (sql, maxGB, cb) {
+				disk: function (sql, cb) {
 					sql.query(
 						"SELECT table_schema AS DB, "
 					 + "SUM(data_length + index_length) / 1024 / 1024 / 1024 AS GB FROM information_schema.TABLES "
@@ -376,33 +385,46 @@ catch (err) {
 						stats.forEach( (stat) => {
 							GB += stat.GB;
 						});
-						cb( GB / maxGB );
+						cb( GB );
 					});
 				}
 			}
 		}, function dogSystem(dog) {
 			
-			if (cpu = dog.get.cpu)
-				if ( cpu() > dog.max.util )
-					FLEX.sendMail({
-						subject: `${dog.site.nick} resource warning`,
-						to: dog.site.pocs.admin,
-						body: `Please add more VMs to ${dog.site.nick} or ` + "shed load".tag("a",{href:dog.site.urls.worker+"/queues.view"})
+			dog.thread( function (sql) {
+				dog.get.threads( sql, (threads) => {
+				dog.get.cpu( sql, (cpu) => {
+				dog.get.disk( sql, (disk) => {
+								
+					sql.query("INSERT INTO openv.syslogs SET ?", {
+						t: new Date(),		 					// start time
+						Action: "watch", 				// db action
+						runningThreads: threads.running,
+						connectedThreads: threads.connected,
+						cpuUtil: cpu,
+						diskUtil: disk,
+						Module: TRACE
 					});
 
-			if (disk = dog.get.disk)
-				dog.thread( function (sql) {
-					disk(sql, dog.max.GB, (util) => {
-						if ( util > dog.max.util ) 
-							FLEX.sendMail({
-								subject: `${dog.site.nick} resource warning`,
-								to: dog.site.pocs.admin,
-								body: `Please add more disk space to ${dog.site.nick} or ` + "shed load".tag("a",{href:dog.site.urls.worker+"/queues.view"})
-							});
-					});
+					if ( cpu > dog.max.cpu )
+						FLEX.sendMail({
+							subject: `${dog.site.nick} resource warning`,
+							to: dog.site.pocs.admin,
+							body: `Please add more VMs to ${dog.site.nick} or ` + "shed load".tag("a",{href:dog.site.urls.worker+"/queues.view"})
+						});
+
+					if ( disk > dog.max.disk ) 
+						FLEX.sendMail({
+							subject: `${dog.site.nick} resource warning`,
+							to: dog.site.pocs.admin,
+							body: `Please add more disk space to ${dog.site.nick} or ` + "shed load".tag("a",{href:dog.site.urls.worker+"/queues.view"})
+						});
+
 					sql.release();
 				});
-
+				});
+				});
+			});
 		}),
 				
 		dogStats: Copy({
@@ -2289,18 +2311,6 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 @param {Object} req Totem request
 @param {Function} res Totem response
 */
-	function cpuavgutil() {				// compute average cpu utilization
-		var avgUtil = 0;
-		var cpus = OS.cpus();
-
-		cpus.each(function (n,cpu) {
-			idle = cpu.times.idle;
-			busy = cpu.times.nice + cpu.times.sys + cpu.times.irq + cpu.times.user;
-			avgUtil += busy / (busy + idle);
-		});
-		return avgUtil / cpus.length;
-	}		
-
 	var 
 		sql = req.sql,
 		query = req.query,
@@ -2326,10 +2336,11 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 			group: req.group,
 			//search: req.search,
 			session: req.session,
+			/*
 			util: {
 				cpu: (cpuavgutil() * 100).toFixed(0), // (req.log.Util*100).toFixed(0),
 				disk: ((req.profile.useDisk / req.profile.maxDisk)*100).toFixed(0)
-			},
+			},*/
 			started: DEBE.started,
 			filename: DEBE.paths.jadePath,  // jade compile requires
 			url: req.url

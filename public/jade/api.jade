@@ -482,13 +482,13 @@ append site_body
 
 				When piped, the supervisor will add [the following](/api.view) keys to the plugin context:
 				> *Host* name of plugin  
-				> *File* [context](/files.view) during a piped-workflow  
-				> *Voxel* [context](/voxels.view) during a piped-workflow  
-				> *Collects* sensor context for current voxel  
-				> *Chip*  filepath for first jpeg collect for current voxel  
-				> *Flux* solar flux at earth's surface for current voxel  
-				> *Events* event query or list for current voxel  
-				> *Flow* context of workflow supervisor  
+				> *File* [context](/files.view) of current voxel  
+				> *Voxel* [context](/voxels.view) of current voxel      
+				> *Collects* sensor context of current voxel  
+				> *Chip*  filepath to first jpeg of current voxel  
+				> *Flux* solar flux at earth's surface of current voxel  
+				> *Events* event query (or an event list) of current voxel  
+				> *Flow* context of supervisor  
 				> *Stats* context shared with all plugins
 
 				where *Flow* contains the supervisors':  
@@ -537,22 +537,6 @@ append site_body
 				of the localhost site, and (8) a smart tag, licensing the html content to the viewer as retained in the releases table.
 				See [plot](/plot.view?help), [treefan](/treefan.view?help), [treemap](/treefan.view?help), [force](/force.view?help), 
 				[bounce](/bounce.view?help), [tipsheet](/tipsheet.view?help) for example VIEWs. 				
-
-				Plugins typically have everything they need in the supervisor's *Flow* context, but, if needed, plugins may 
-				access its *Pipe* events via:
-				
-					FLOW.get( [ event list ] || "event query" , grouping switch, (evs) => {
-						if (evs) 
-							// process events
-							
-						else
-							// terminate flow
-					})
-				
-				If the *grouping switch* is true, then the provided events *evs* are time-grouped.  See
-				[cints](/cints.run), [rats](/rats.run), [trigs](/trigs.run), [genpr](/genpr.run), 
-				and [seppfm](/seppfm.run) for examples.
-				
 
 		#fit.Publishing
 			:markdown
@@ -1124,33 +1108,12 @@ append site_body
 					function with the current **tau** workflow events and the **parm** set to the 
 					corresponding "ports" hash.					
 
-					# interfacing with supervisor
-					
-					While all Pipe-enabled engines are transparently attached 
-					to [#{title}'s Markov/ROC supervisor](https://github.com/ACMESDS/randpr) , js-engines 
-					(unlike other engines) can interface directly with its supervisor via the:
-					
-						GET.forBatch(ctx, (ievs,sink) => { ...} )  
-						GET.forEach(ctx, (ievs,sink) => { ...} )  
-						GET.forAll(ctx, (ievs,sink) => { ...} )   
-						GET.forDrop(ctx, (ievs,sink) => { ...} )  
-
-					[event BUFFER](https://github.com/ACMESDS/jslab) methods using the following pattern:
-
-						BUFFER(ctx, (ievs, sink) => {  // sink the plugin's ingested ievs
-							if (ievs)   // there are ingested events
-								ievs.forEach( ev) { // process event ev
-								});
-
-							else // events exhausted so
-								sink([ {...}, {...} ]);  // respond with outputs oevs to be saved by the plugin  
-						});
-					
 					# matrix manipulator
 					
-					The matrix manipulator $( ... ) provides: matlab-like matrix manipulators, light weight image processing, 
-					symbolic algebra, dsp, machine learning, regression, expectation-maximization methods, neural and 
-					bayseian networks, data i/o, task sharding, and special functions.  Use $( ... ) as follows:
+					All js-plugins have access to the $( ... ) matrix manipulator providing: matlab-like matrix manipulators, 
+					light weight image processing, symbolic algebra, dsp, machine learning, regression, expectation-
+					maximization methods, neural and bayseian networks, data i/o, task sharding, and special functions.
+					Use $( ... ) as follows:
 					
 						$( "matlab script", ctx, (ctx) => {   // eval script into context ctx with callback(ctx)
 							...
@@ -1220,9 +1183,13 @@ append site_body
 
 						$("mysharder( [1:100], [50:200] )");  // execute the sharder
 						
-						evs.$( boolean, (evs) => { ... } );  // thread events evs = [ev, ev, ...] to callback(grouped evs) or callback(null) at end
+						evs.$ || "query".$ ( "group" || "all", (evs) => {  // thread events evs = [ev, ev, ...] to callback(evs || null) 
+						
+							if (evs)   // there are ingested events
 
-						"query".$( boolean, (evs) => { ... } );	// thread with optional grouping sql queried events to callback(grouped evs)
+							else 	// events exhausted so
+						
+						} );  
 
 						evs.$( ctx, (evs) => { ... } );		// save aggregated events to context ctx with callback(unsaved events)
 

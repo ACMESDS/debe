@@ -49,7 +49,7 @@ append base_body
 	#hold.Options(path=JSON.stringify(options||parms),cols="Name,Path")
 	#hold.Lookups(path="/lookups.db",cols="Name,Ref,Path")
 	
-	- titlebar = [nick, dataset, client, (profile.Credit*1e-3).toFixed(0)+"$ "+profile.QoS+"qos "+util.cpu + "%cpu " + util.disk+"%disk", "Issues", "Baseline", "Moderate", warning, "Login"].linkify(["requirements", "/edit.view?name="+dataset, "/home.view?option=chat", "*", "", "/baseline.exe", "", "", "/login?pass=totem"])
+	- titlebar = [nick, dataset, client, (profile.Credit*1e-3).toFixed(0)+"$ "+profile.QoS+"qos", "Issues", "Baseline", "Moderate", warning, "Login"].linkify(["requirements", "/edit.view?name="+dataset, "/home.view?option=chat", "*", "", "/baseline.exe", "", "", "/login?pass=totem"])
 	- goto = query.goto || ""
 	- browsers = {Ok: ["supported","Chrome","Firefox","Opera","Safari"],Bad: ["unsupported","IE","Netscape","Traveler","TheWorld","Maxthon"] }
 
