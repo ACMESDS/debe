@@ -1326,12 +1326,14 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	"byType.": { //< routers for endpoint types at /DATASET.TYPE
 		// file attributes
 		//code: sharePlugin,
-		//jade: sharePlugin,		
+		//jade: sharePlugin,	
+		/*
 		classif: sendAttr,
 		readability: sendAttr,
 		client: sendAttr,
 		size: sendAttr,
 		risk: sendAttr,
+		*/
 		
 		// doc generators
 		xpdf: sendDoc,
@@ -1603,6 +1605,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		jades: "./public/jade/",		// path to default view skins
 		
 		mime: {
+			/*
 			//tour: ".",		 			//< enable totem touring 
 			//jobs: "./public/jobs",		//< path to tau simulator job files
 			stash: ".", 		//< totem static file area
@@ -1619,13 +1622,16 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			uis: ".", 					//< path to debe ui drivers
 			//icons: ".",				//< path to icons
 			captcha: ".",		//< path to captcha jpgs for antibot protection		
-			index: { 					//< paths for allowed file indexers ("" to use url path)
+			*/
+			/*index: { 					//< paths for allowed file indexers ("" to use url path)
 				shares: "",
 				uploads: "",
 				stores: ""
 				//public: "",
 				//data: ""
-			},
+			},*/
+			xlate: null,  	//< i18n path to po translation files
+			
 			extensions: {  // extend mime types as needed
 				rdp: "application/mstsc",
 				run: "text/html",
@@ -1795,7 +1801,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				sql.query(
 					"INSERT INTO app.?? SET ? ON DUPLICATE KEY UPDATE Autorun=1",
 					[dsn, Copy({
-						Pipe: `{ "file": ${fileName}, "limit": 150e3}`,
+						Pipe: `/{fileName}?limit=150e3`,
 						Autorun: 1,
 						Name: fileName
 					}, ctx)]
@@ -1960,7 +1966,8 @@ Totem(req,res) endpoint to send the .area attribute of a .table file
 @param {Function} res Totem response
 */
 	
-	var attr = req.area,
+	var 
+		attr = req.area,
 		table = req.table,
 		sql = req.sql;
 
@@ -2051,7 +2058,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		table = req.table,
 		profile = req.profile,
 		query = req.query,
-		host = "app." + table;
+		host = table;
 
 	//Log("exe", query );
 	if ( days = parseInt(query.days||"0") +parseInt(query.hours||"0")/24 ) {
@@ -2076,7 +2083,9 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		FLEX.runPlugin(req, function (ctx) {  // run engine using requested usecase via the job regulator 
 
 			//Log("run ctx", ctx);
-			
+			ctx.Host = host;
+			Log("ctx host>>>", ctx.Host, req.table);
+
 			if ( !ctx)
 				res( DEBE.errors.noContext );
 			
@@ -2087,8 +2096,6 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			else
 			if ( Pipe = ctx.Pipe )  { // intercept piped for learning workflows and to regulate event stream
 				res("Piped");
-
-				ctx.Host = host;
 
 				HACK.chipVoxels(sql, Pipe, ( runctx ) => {  // process each voxel being chipped
 					
@@ -2209,7 +2216,7 @@ function saveEvents(evs, ctx) {
 		autoTask = DEBE.autoTask,
 		host = ctx.Host,
 		client = "guest",
-		fileName = `${host}.${ctx.Name}`;
+		fileName = `${ctx.Host}.${ctx.Name}`;
 	
 	//Log("saving", evs);
 	
@@ -2226,7 +2233,7 @@ function saveEvents(evs, ctx) {
 				break;
 				
 			default:
-				return evs.$( ctx, function (evs,sql) {  // save/export events
+				return evs.$( ctx, function (evs,sql) {  // save events and callback with remaining unsaved evs
 
 					if ( ctx.Export ) {   // export remaining events to filename
 						var
@@ -2241,11 +2248,11 @@ function saveEvents(evs, ctx) {
 								}
 							});
 
-						DEBE.uploadFile( "", srcStream, `stores/${fileName}.${host}` );
+						DEBE.uploadFile( "", srcStream, `./stores/${fileName}` );
 					}
 
 					if ( ctx.Ingest )  // ingest remaining events
-						DEBE.getFile( client, `plugins/${fileName}`, function (area, fileID) {
+						DEBE.getFile( client, fileName, function (fileID, sql) {
 							sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
 
 							HACK.ingestList( sql, evs, fileID, function (aoi) {
@@ -2254,7 +2261,7 @@ function saveEvents(evs, ctx) {
 									sql.query(
 										"INSERT INTO app.?? SET ? ON DUPLICATE KEY UPDATE Autorun=1",
 										[dsn, Copy({
-											Pipe: `{ "file": ${fileName}, "limit": 150e3}`,
+											Pipe: `/${fileName}?limit=150e3`,
 											Autorun: 1,
 											Name: fileName
 										}, ctx)]
@@ -2784,7 +2791,7 @@ Initialize DEBE on startup.
 			skinner: JADE,
 			fetcher: DEBE.fetch.fetcher,
 			indexer: DEBE.indexFile,
-			uploader: DEBE.uploadFile,
+			//uploader: DEBE.uploadFile,
 
 			createCert: DEBE.createCert,
 			
@@ -3021,12 +3028,13 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 //====================== extend objects
 	
 [  // string prototypes
+	/*
 	function toQuery(sql, query) {
 		var 
 			name = this.parsePath(query);
 		
 		return sql.toQuery( name ? Copy({Name: name}, query) : query );
-	},
+	},  */
 	
 	// string serializers callback cb(html) with tokens replaced
 	
@@ -3349,7 +3357,6 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 			},
 			pattern = /<!---fetch ([^>]*)?--->/g;
 			
-		
 		this.serialize( fetchSite, pattern, key, (html,fails) => cb(html) );
 	},
 
@@ -3943,7 +3950,7 @@ switch ( process.argv[2] ) { //< unit tests
 					sql.getFirst(  // get client for registered file
 						"UPLOAD",
 						"SELECT ID,Client,Added FROM app.files WHERE least(?) LIMIT 1", 
-						{Name: name, Area:"uploads"}, function (file) {
+						{Name: name}, function (file) {
 
 						if (file) {  // ingest only registered file
 							var 
