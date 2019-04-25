@@ -67,8 +67,6 @@ module.exports = {  // logistic regression
 			file = ctx.File,
 			flow = ctx.Flow;
 		
-		Log("logreg ctx", ctx.Events.length);
-		
 		ctx.Events.$( "all", function (evs) {  // fetch all events
 			if (evs)
 				regress({  // define solver parms
