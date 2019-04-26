@@ -30,11 +30,11 @@ append site_body
 
 				db | xml | csv | txt | tab | tree | flat | kml | encap | html | json | geojson
 
-			render a [skin](/skinguide.view):
+			[render/skin](/skinguide.view) a plugin:
 
 				view | pivot | site | spivot | brief | gridbrief | pivbrief | run | plugin | runbrief
 
-			execute, extend, or retract a [plugin](/api.view):
+			execute, extend/remove plugin keys:
 
 				exe | add | sub
 
@@ -54,13 +54,12 @@ append site_body
 
 				pdf | xdoc | xppt | xxls ...
 
-			Default COMMAND endpoints include:
+			DEBE provides COMMAND endpoints:
 
-				help | alert | ping | ingest | config | riddle | task
+				agent | alert | ingest | riddle | task | ping
 
-			to provide a brief synopsis of the *#{title}* interface, send a message to all *#{title}* users,
-			test your *#{title}* connection, ..., return *#{title}*'s current configuration, initiate and resolve
-			a *#{title}* connection riddle, or start a task shard with *#{title}*.
+			to interface with its job queues, users, data ingesters, session managers, task sharding, and
+			test current session.
 
 	#accordion.Views
 

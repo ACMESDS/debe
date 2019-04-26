@@ -10,29 +10,49 @@
 DEBE provides full-featured web service for 
 managing interfaces, requirements, project metrics, geoint products and workflows.
 
-As documented in its [api](https://totem.west.ile.nga.ic.gov/api.view) and 
-in its [skinguide](https://totem.west.ile.nga.ic.gov/skinguide.view), DEBE 
-configures its [TOTEM base web service](https://github.com/acmesds/totem) to support
-endpoints TYPEs that format datasets:
+As documented in its [api](https://totem.west.ile.nga.ic.gov/api.view), DEBE extends 
+its [base web service interface](https://github.com/acmesds/totem):
+
+	POST		/NODE ?? NODE ...
+	GET			/NODE ?? NODE ...
+	PUT			/NODE ?? NODE ...
+	DELETE	/NODE ?? NODE ...
+
+where a NODE represents either a dataset, engine, files or command:
+
+	DATASET.TYPE ? QUERY ? QUERY ...
+	PLUGIN.TYPE ? QUERY ? QUERY ...
+	FILE.TYPE ? QUERY ? QUERY ...
+	COMMAND.TYPE ? QUERY ? QUERY ...
+
+with TYPEs to [convert datasets](https://totem.west.ile.nga.ic.gov/api.view):
 
 	db | xml | csv | txt | tab | view | tree | flat | delta | nav | kml | encap | html | json
 
-render plugins:
+[render plugins](https://totem.west.ile.nga.ic.gov/skinguide.view):
 
 	view | run | plugin | pivot | site | spivot | brief | gridbrief | pivbrief | runbrief
 
-run stateless | stateful engines:
+[execute, extend/remove plugin keys](https://totem.west.ile.nga.ic.gov/api.view):
 
-	exe | sim
+	exe | add | sub
 
-return plugin attributes:
+access [plugin attributes](https://totem.west.ile.nga.ic.gov/api.view):
 
 	tou | md | pub | status | suitors
 	
-or return plugin code:
+return licensed (watermark protected) [plugin code](https://totem.west.ile.nga.ic.gov/api.view):
 
 	js | py | m | me | jade | ...
 	
+return [plugin usecase](https://totem.west.ile.nga.ic.gov/api.view) information:
+
+	CASE
+	
+DEBE also provides the following COMMAND endpoints:
+
+	agent | alert | ingest
+
 ## Installation
 
 Clone [DEBE web service](https://github.com/acmesds/debe) into your PROJECT/debe folder.  

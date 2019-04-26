@@ -81,22 +81,21 @@ append site_body
 					> [+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) *Exit* json saves context on exit using { KEY: "UPDATE ....", ...}  
 					> [+](/#{ds}.add?Autorun=doc) [/-](/#{ds}.sub?Autorun) *Autorun* switch enables the autorun watchdog
 					
-					Your plugin's *Pipe* may include the following optional keys:  
-					> *file*: "/DATASET?QUERY" || "PLUGIN.CASE" || "FILENAME" || "FILE.jpg" || "FILE.json"  
-					> *group*: "KEY, ..."  
-					> *where*: { KEY: VALUE, ...}  
-					> *order*: "KEY, ..."  
-					> *limit*: NUMBER  
-					> *aoi*: "NAME" || [ [lat,lon], ... ]  
-					> *batch*: NUMBER  
-					> *symbols*: [ NUMBER, ... ]  
-					> *keys*: [ "KEY", ... ]  
-					> *steps*: NUMBER   
-					> *actors*: NUMBER
-
-					to regulate an event *file* through the supervisor.  A 0-*batch* will disable the supervisor's
-					MLE batching.  The values specified for *steps*, *keys*, *symbols*, and *actors* will override default 
-					values determined when the *file* was ingested.
+					Your plugin's *Pipe* = "/DATASET?QUERY" to load JSON data, or *Pipe* = "PLUGIN.CASE?QUERY" to supervise events ingested 
+					by PLUGIN.CASE filtered by QUERY keys:  
+					> group = "KEY, ..."  
+					> where = { KEY: VALUE, ...}  
+					> order = "KEY, ..."  
+					> limit = NUMBER  
+					> aoi = "NAME" || [ [lat,lon], ... ]  
+					> batch = NUMBER  
+					> symbols = [ NUMBER, ... ]  
+					> keys = [ "KEY", ... ]  
+					> steps = NUMBER   
+					> actors = NUMBER
+					
+					A 0-*batch* will disable the supervisor's MLE batching.  The values specified for *steps*, *keys*, *symbols*, and *actors* will 
+					override default values determined when the *file* was ingested.
 
 					When piped, your plugin context will also contain [the following](/api.view) supervisor keys:
 					> *Host* name of plugin  
