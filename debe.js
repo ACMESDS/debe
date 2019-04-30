@@ -67,7 +67,7 @@ var
 	RAN = require("randpr"),
 	HACK = require("geohack");
 
-const { Copy,Each,Log } = require("enum");
+const { Copy,Each,Log,isString,isFunction,isError,isArray } = require("enum");
 
 var										// shortcuts and globals
 	Thread = TOTEM.thread;
@@ -215,7 +215,7 @@ catch (err) {
 				Log("ingest recs", recs.length);
 				recs.forEach( function (rec, idx) {
 					if (ev = opts.ev) 
-						if ( ev.constructor == String ) {
+						if ( isString(ev) ) {
 							var 
 								ctx = VM.createContext({rec: rec, query: query, evs: evs}),
 								reader = `evs.push( (${opts.ev})(rec, evs.length) );` ;
@@ -367,7 +367,7 @@ catch (err) {
 					var avgUtil = 0;
 					var cpus = OS.cpus();
 
-					cpus.each(function (n,cpu) {
+					cpus.forEach( (cpu) => {
 						idle = cpu.times.idle;
 						busy = cpu.times.nice + cpu.times.sys + cpu.times.irq + cpu.times.user;
 						avgUtil += busy / (busy + idle);
@@ -883,8 +883,8 @@ Further information about this file is available ${paths.moreinfo}. `;
 			res( TOKML({}) );
 		},
 		
-		flat: function index(recs,req,res) { //< dataset.flat flattens records
-			recs.each( function (n,rec) {
+		flat: function (recs,req,res) { //< dataset.flat flattens records
+			recs.forEach( (rec,n) => {
 				var rtns = new Array();
 				for (var key in rec) rtns.push( rec[key] );
 				recs[n] = rtns;
@@ -899,9 +899,9 @@ Further information about this file is available ${paths.moreinfo}. `;
 				for (var n in head) cols.push(n);
 				txt += cols.join(list) + cr;
 
-				recs.each(function (n,rec) {
+				recs.forEach( (rec) => {
 					var cols = [];
-					for (var n in rec) cols.push(rec[n]);
+					for (var key in rec) cols.push(rec[key]);
 					txt += cols.join(list) + cr;
 				});
 			}
@@ -922,7 +922,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 					"view","pivot","site","spivot","brief","gridbrief","pivbrief","run","plugin","runbrief",
 					"exe", "stat"];
 
-			uses.each( function (n, use) {
+			uses.forEach( (use) => {
 				uses[n] = use.tag("a",{href: "/"+table+"."+use});
 			});
 			
@@ -932,7 +932,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 					res(err);
 				
 				else {
-					stats.each( function (n,stat) {
+					stats.forEeach( (stat,n) => {
 						stats[n] = stat.Field.tag("a",{href: "/"+table+"?_index="+stat.Field});
 					});
 					
@@ -976,7 +976,7 @@ Usage: ${uses.join(",")}  `);
 			sql.context(ctx, function (ctx) {   		// establish skinning context for requested table
 				ctx.src.rec = function (Recs,me) {  // select the baseline records 
 					
-					if (Recs.constructor == Error)
+					if ( isError(Recs) )
 						res( Recs );
 					
 					else
@@ -1023,7 +1023,7 @@ Usage: ${uses.join(",")}  `);
 Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Folder}`);
 			
 			if (Folder)   	// at branch
-				recs.each( function (n,rec) {
+				recs.forEach( (rec,n) => {
 					Files.push({
 						mime: "directory",	// mime type
 						ts:1310252178,		// time stamp format?
@@ -1040,7 +1040,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				});
 			
 			else 				// at leaf
-				recs.each( function (n,rec) {  // at leafs
+				recs.forEach( (rec,n) => {  // at leafs
 					Files.push({
 						mime: "application/tbd", //"application/x-genesis-rom",	//"image/jpg", // mime type
 						ts:1310252178,		// time stamp format?
@@ -1460,7 +1460,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			switch ( (index||0).constructor ) {
 				case String: 
 					var idx = {};
-					index.split(",").each(function (n,key) {
+					index.split(",").forEach( (key) => {
 						idx[key] = key;
 					});
 					index = idx;
@@ -1486,7 +1486,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					return null;					
 			}
 			
-			recs.each(function (n,rec) {
+			recs.forEach( (rec) => {
 				var match = true;
 
 				if (where)
@@ -1518,7 +1518,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						var rtn = new Object();
 						for (var key in index) {
 							var src = rec;
-							key.split(".").each( function (k,idx) {
+							key.split(".").forEach( (idx) => {
 								src = src[idx];
 							});
 							rtn[ index[key] ] = src;
@@ -2084,13 +2084,12 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 			//Log("run ctx", ctx);
 			ctx.Host = host;
-			Log("ctx host>>>", ctx.Host, req.table);
 
 			if ( !ctx)
 				res( DEBE.errors.noContext );
 			
 			else
-			if (ctx.constructor == Error)
+			if ( isError(ctx) )
 				res( ctx );
 			
 			else
@@ -2149,7 +2148,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 												Trace( `STARTING voxel${ctx.Voxel.ID}` , sql );
 												req.query = ctx; 
 												ATOM.select(req, function (ctx) {  // run plugin's engine
-													if (ctx.constructor == Error) 
+													if ( isError(ctx)  )
 														Log(ctx);
 													
 													else
@@ -2408,7 +2407,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 						}
 						else {		// take
 							var
-								doc = escape(field.Comment).replace(/\./g, "$dot"),
+								doc = escape(field.Comment).replace(/\./g, "%2E"),
 								qual = "short";
 							
 							if ( key.indexOf("Save") == 0) qual += "hideoff" ;
@@ -2423,7 +2422,7 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 					break;
 					
 				case String:
-					fields.split(",").each(function (n,field) {
+					fields.split(",").forEach( (field) => {
 						if ( field != "ID") cols.push( field );
 					});	
 					break;
@@ -2593,7 +2592,7 @@ Chapter 2
 		var cols = [];
 		var rows = [cols];
 
-		recs.each( function (n,rec) {
+		recs.forEach( (rec,n) => {
 			if (n == 0) 
 				for (var key in rec)
 					rows.push({
@@ -2804,7 +2803,7 @@ Initialize DEBE on startup.
 		HACK.config({
 			//source: "",
 			taskPlugin: null,
-			//fetcher: DEBE.fetch.fetcher,
+			fetcher: DEBE.fetch.fetcher,
 			thread: DEBE.thread
 		});
 		
@@ -2842,9 +2841,9 @@ Initialize DEBE on startup.
 		var path = DEBE.paths.jades;
 
 		if (false)
-		DEBE.indexFile( path, function (files) {  // publish new engines
+		DEBE.indexFile( path, (files) => {  // publish new engines
 			var ignore = {".": true, "_": true};
-			files.each( function (n,file) {
+			files.forEach( (file) => {
 				if ( !ignore[file.charAt(0)] )
 					try {
 						Trace("PUBLISHING "+file);
@@ -3253,7 +3252,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 			//Log([lhs,rhs,op]);
 			if ( op )
 				if ( blogOp = genctx[op] ) 
-					if ( blogOp.constructor == Function )
+					if ( isFunction(blogOp ) )
 						return blogOp(lhs,rhs,genctx);
 					else
 						return `invalid lhs ${op}= rhs markdown`;
@@ -3470,7 +3469,7 @@ append layout_body
 
 		var rem = stash.remainder;
 
-		this.each( function (n,stat) {  // split-save all stashable keys
+		this.forEach( (stat,n) => {  // split-save all stashable keys
 			var 
 				key = targetPrefix + (stat[watchKey] || "rem"),  // target ctx key 
 				ev = ( key in stash )
@@ -3520,7 +3519,7 @@ append layout_body
 		var k=0,Rec = Recs[k],ID=10000;
 
 		if (Rec)
-		recs.each( function (n, rec) {
+		recs.forEach( (rec,n) => {
 //Log([n,k,recs.length, Recs.length, idx, rec[idx], Rec[idx]]);
 
 			while (Rec && (rec[idx]  == Rec[idx])) {
@@ -3759,7 +3758,7 @@ append layout_body
 						var row = "", intro = "";
 						Each(heads, function (key,val) {
 							if (val = rec[key])
-								row += (val.constructor == Array)
+								row += isArray(val)
 									? table(val)
 									: (val+"").tag("td", intro ? {class:"intro"} : {});
 							else
@@ -3777,7 +3776,7 @@ append layout_body
 					var rtn = "";
 					Each(recs, function (key,val) {
 						if (val)
-							rtn += (val.constructor == Array)
+							rtn += isArray(val)
 								? table(val)
 								: (key.tag("td") + JSON.stringify(val).tag("td")).tag("tr");
 					});

@@ -963,7 +963,7 @@ function DS(anchor) {
 				fKey = fOpts[0],
 				fParm = PARMS[ fKey ] || {Type: calc ? "mediumtext" : "text", Label:fKey, Special:""},
 				fType = fOpts[1] || fParm.Type || "text",
-				fDoc = unescape(fOpts[2] || "please follow link to document this field").replace(/\$dot/g,"."),
+				fDoc = unescape(fOpts[2] || "please follow link to document this field"), //.replace(/\$dot/g,"."),
 				fQual = fOpts[3] || "",
 				//fLabel = fOpts[2] || fParm.Label || fKey,
 				//fChange = HISTORY[path+"."+fKey] || {Moderators:""},

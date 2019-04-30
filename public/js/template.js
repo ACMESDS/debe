@@ -21,7 +21,16 @@ module.exports = {
 		Description: "mediumtext",	// ctx.Description documents usecase 
 		Autorun: "boolean default 0"	// ctx.Autorun toggles autorun-on-ingest
 		
-		// Stats, File, Flow, ... are dynamic keys that are added to the context when the plugin is executed
+		// The followin dynamic keys are added to the context when the plugin is executed:
+		// Host name of plugin  
+		// File context during a piped workflow  
+		// Voxel context during a piped workflow  
+		// Sensor context during a piped workflow
+		// Chip  filepath for first jpeg collect for current voxel  
+		// Flux solar flux at earth's surface for current voxel  
+		// Events found in current voxel  
+		// Flow context of workflow supervisor  
+		// Stats context shared with all plugins		
 	},
 	
 	engine: function logreg(ctx, res) {  // Engine code.  If the engine 

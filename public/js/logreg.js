@@ -1,5 +1,5 @@
 module.exports = {  // logistic regression
-	keys: {
+	modkeys: {
 		Dim: "int(11) default 150 comment 'pc model dimension [max coherence intervals]' ",		
 		Model: "varchar(16) default 'sinc' comment 'name of complex correlation model for pc estimates' ",
 		
@@ -66,6 +66,8 @@ module.exports = {  // logistic regression
 			stats = ctx.Stats,
 			file = ctx.File,
 			flow = ctx.Flow;
+		
+		Log("evs logreg>>", ctx.Events);
 		
 		ctx.Events.$( "all", function (evs) {  // fetch all events
 			if (evs)

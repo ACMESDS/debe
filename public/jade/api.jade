@@ -462,35 +462,44 @@ append site_body
 				> [+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) *Exit* json saves context on exit using { KEY: "UPDATE ....", ...}  
 				> [+](/#{ds}.add?Autorun=doc) [/-](/#{ds}.sub?Autorun) *Autorun* switch enables the autorun watchdog
 
-				where its optional data *Pipe* may include the optional keys:  
-				> *file*: "/DATASET?QUERY" || "PLUGIN.CASE" || "FILENAME" || "FILE.jpg" || "FILE.json"  
-				> *group*: "KEY, ..."  
-				> *where*: { KEY: VALUE, ...}  
-				> *order*: "KEY, ..."  
-				> *limit*: NUMBER  
-				> *aoi*: "NAME" || [ [lat,lon], ... ]  
-				> *batch*: NUMBER  
-				> *symbols*: [ NUMBER, ... ]  
-				> *keys*: [ "KEY", ... ]  
-				> *steps*: NUMBER   
-				> *actors*: NUMBER
+				To bring data into your plugin, use:  
 
-				to regulate an event *file* through the supervisor.  A 0-*batch* will disable the supervisor's
-				MLE batching.  The values specified for *steps*, *keys*, *symbols*, and *actors* will override default 
-				values determined when the *file* was ingested.
+					Pipe = "/DATASET?QUERY"
 
-				When piped, the supervisor will add [the following](/api.view) keys to the plugin context:
-				> *Host* name of plugin  
-				> *File* [context](/files.view) of current voxel  
-				> *Voxel* [context](/voxels.view) of current voxel      
-				> *Collects* sensor context of current voxel  
-				> *Chip*  filepath to first jpeg of current voxel  
-				> *Flux* solar flux at earth's surface of current voxel  
-				> *Events* event query (or an event list) of current voxel  
-				> *Flow* context of supervisor  
-				> *Stats* context shared with all plugins
+				to load the json DATASET directly into your plugin, or use:  
 
-				where *Flow* contains the supervisors':  
+					Pipe = "PLUGIN.CASE?QUERY" 
+
+				to place your plugin in a supervised stream of the events ingested by the specified 
+				PLUGIN.CASE and QUERY filter:  
+
+					group = "KEY, ..."  
+					where = { KEY: VALUE, ...}  
+					order = "KEY, ..."  
+					limit = NUMBER  
+					aoi = "NAME" || [ [lat,lon], ... ]  
+					batch = NUMBER  
+					symbols = [ NUMBER, ... ]  
+					keys = [ "KEY", ... ]  
+					steps = NUMBER   
+					actors = NUMBER
+
+				A *batch* = 0 will disable the supervisor's MLE batching.  The values specified for *steps*, *keys*, *symbols*, 
+				and *actors* will override default values determined when the *file* was ingested.
+
+				When piped, your plugin context will also contain [the following](/api.view) supervisor keys:
+
+					Host name of plugin  
+					File context during a piped-workflow  
+					Voxel context during a piped-workflow  
+					Sensor context for current voxel  
+					Chip  context with filepath for first jpeg collected in current voxel  
+					Flux solar flux at earth's surface for current voxel  
+					Events associated with current voxel  
+					Flow context of workflow supervisor  
+					Stats context shared with all plugins
+
+				*Flow* contains the supervisors':   
 				> *F* where F[k] = frequency of count k  
 				> *T*  observation time [1/Hz]  
 				> *J* where J[n] = number of jumps taken by n'th process at time T  
