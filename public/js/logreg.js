@@ -1,7 +1,7 @@
 module.exports = {  // logistic regression
 	keys: {
 		Method: "varchar(16) default 'sinc' comment 'name of complex correlation model for pc estimates' ",
-		numStep: "int(11) default 0 comment 'number of steps in lrm solver' ",
+		numSteps: "int(11) default 0 comment 'number of steps in lrm solver' ",
 		learningRate: "float default 0 comment 'lrm learning rate' ",
 		Save_model: "json",
 		Save_predict: "json",
@@ -36,9 +36,9 @@ module.exports = {  // logistic regression
 			use = ctx.Method;
 		
 		if ( y ) {  // train the model
-			x.length = 10;
-			y.length = 10;
-			Log("logreg evs>>", use, "xy=", [x.length, y.length]);
+			//x.length = 10;
+			//y.length = 10;
+			Log("logreg train>>", use, "xy=", [x.length, y.length]);
 
 			$(` cls = ${use}Train( x, y, solve, save ); `, 
 				Copy({
@@ -54,9 +54,19 @@ module.exports = {  // logistic regression
 		
 		else {	// predict using the model
 			
+			var
+				restore = {
+					def: (cls) => cls,
+					svm: $.SVM.restore,
+					lrm: $.LRM.load
+				};
+			
+			//x.length = 4;
+			Log("logreg predict>>", use, "x=", [x.length]);
+			
 			$(` y = ${use}Predict( cls, x );`, 
 				Copy({
-					cls: ( use == "svm" ) ? $.SVM.restore(ctx.Save_model) : ctx.Save_model
+					cls: (restore[use] || restore.def)(ctx.Save_model)
 				}, ctx), (ctx) => {
 					ctx.Save = {Save_predict: ctx.y};
 					res(ctx);
