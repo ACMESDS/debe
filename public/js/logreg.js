@@ -35,20 +35,34 @@ module.exports = {  // logistic regression
 			y = ctx.y,
 			use = ctx.Method;
 		
-		x.length = 10;
-		y.length = 10;
-		Log("logreg evs>>", use, "xy=", [x.length, y.length]);
+		if ( y ) {  // train the model
+			x.length = 10;
+			y.length = 10;
+			Log("logreg evs>>", use, "xy=", [x.length, y.length]);
 
-		ctx.save = (cls) => {
-			ctx.Save = {Save_model: cls};
-			res(ctx);
-		};
+			$(` cls = ${use}Train( x, y, solve, save ); `, 
+				Copy({
+					save: (cls) => {
+						ctx.Save = {Save_model: cls};
+						res(ctx);
+					},
+					solve: ctx
+				}, ctx), (ctx) => {
+					Log("logreg trained");
+				});
+		}
 		
-		ctx.solve = ctx;
-		
-		$(` cls = ${use}Train( x, y, solve, save ); `, ctx, (ctx) => {
-			Log("logreg done");
-		});
+		else {	// predict using the model
+			
+			$(` y = ${use}Predict( cls, x );`, 
+				Copy({
+					cls: ( use == "svm" ) ? $.SVM.restore(ctx.Save_model) : ctx.Save_model
+				}, ctx), (ctx) => {
+					ctx.Save = {Save_predict: ctx.y};
+					res(ctx);
+					Log("logreg predicted");
+				});
+		}
 		
 //y0 = lrmPredict( cls, x0);`, 
 		

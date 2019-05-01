@@ -2108,9 +2108,11 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						if ( filename.charAt(0) == "/" ) // send source to the plugin
 							fetcher( filename, null, (evs) => {		// fetch events and route them to plugin
 
+								function Eval($,str) { return eval(str); }
+								
 								var evs = evs.parseJSON({ });
 								
-								for (var key in pipe) ctx[key] = evs[ pipe[key] || key ];
+								for (var key in pipe) ctx[key] = Eval( evs, pipe[key] || ("$."+key) );
 								
 								req.query = ctx; 
 								ATOM.select(req, function (ctx) {  // run plugin
