@@ -1,14 +1,12 @@
 module.exports = {  // logistic regression
-	modkeys: {
-		Dim: "int(11) default 150 comment 'pc model dimension [max coherence intervals]' ",		
-		Model: "varchar(16) default 'sinc' comment 'name of complex correlation model for pc estimates' ",
-		
-		Save_end: "json",
-		Save_config: "json",	
-		Save_batch: "json",
+	keys: {
+		Method: "varchar(16) default 'sinc' comment 'name of complex correlation model for pc estimates' ",
+		numStep: "int(11) default 0 comment 'number of steps in lrm solver' ",
+		learningRate: "float default 0 comment 'lrm learning rate' ",
+		Save_model: "json",
+		Save_predict: "json",
 		Pipe: "json",
-		Description: "mediumtext",
-		Autorun: "boolean default 0"
+		Description: "mediumtext"
 	},
 	
 	engine: function logreg(ctx, res) {  
@@ -31,59 +29,29 @@ module.exports = {  // logistic regression
 		coherence_time = coherence time underlying the process
 		mean_intensity = ref mean arrivale rate (for debugging)
 	*/
-		const { sqrt, floor, random, cos, sin, abs, PI, log, exp} = Math;
-		
-		function regress( solve, cb) {
-		/**
-		Use the Paley-Wiener Theorem to return the trigger function stats:
-
-			x = normalized time interval of recovered trigger
-			h = recovered trigger function at normalized times x
-			modH = Fourier modulous of recovered trigger at frequencies f
-			argH = Fourier argument of recovered trigger at frequencies f
-			f = spectral frequencies
-
-		via the callback cb(stats) given a solve request:
-
-			evs = events list
-			refLambda = ref mean arrival rate (for debugging)
-			alpha = assumed detector gain
-			N = profile sample times = max coherence intervals
-			model = correlation model name
-			Tc = coherence time of arrival process
-			T = observation time
-		*/
-			
-			Log("logreg", {
-				evs: solve.evs.length, 
-				refRate: solve.refLambda,
-				ev0: solve.evs[0]
-			});
-				
-		}
-		
 		var
 			stats = ctx.Stats,
-			file = ctx.File,
-			flow = ctx.Flow;
+			x = ctx.x,
+			y = ctx.y,
+			use = ctx.Method;
 		
-		Log("evs logreg>>", ctx.Events);
+		x.length = 10;
+		y.length = 10;
+		Log("logreg evs>>", use, "xy=", [x.length, y.length]);
+
+		ctx.save = (cls) => {
+			ctx.Save = {Save_model: cls};
+			res(ctx);
+		};
 		
-		ctx.Events.$( "all", function (evs) {  // fetch all events
-			if (evs)
-				regress({  // define solver parms
-					evs: evs,		// events
-					refLambda: stats.mean_intensity, // ref mean arrival rate (for debugging)
-					alpha: file.Stats_Gain, // assumed detector gain
-					N: ctx.Dim, 		// samples in profile = max coherence intervals
-					model: ctx.Model,  	// name correlation model
-					Tc: stats.coherence_time,  // coherence time of arrival process
-					T: flow.T  		// observation time
-				}, function (stats) {
-					ctx.Save = stats;
-					res(ctx);
-				});
+		ctx.solve = ctx;
+		
+		$(` cls = ${use}Train( x, y, solve, save ); `, ctx, (ctx) => {
+			Log("logreg done");
 		});
+		
+//y0 = lrmPredict( cls, x0);`, 
+		
 	}
 
 }
