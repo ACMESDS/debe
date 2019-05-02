@@ -233,13 +233,13 @@ catch (err) {
 			cb(evs);
 		}
 		
-		var fetcher = DEBE.fetch.fetcher;
+		var fetcher = DEBE.fetcher;
 		
 		try {
 			if (url = opts.url)
 				switch (url.constructor) {
 					case String:
-						fetcher( url.tag("?", query), opts.put||null, function (data) {
+						fetcher( url.tag("?", query), opts.put||null, null, function (data) {
 							if ( data = data.parseJSON( ) ) 
 								ingestEvents(data, cb);
 						});
@@ -491,7 +491,7 @@ catch (err) {
 			
 			var 
 				urls = DEBE.site.urls,
-				fetcher = DEBE.fetch.fetcher;
+				fetcher = DEBE.fetcher;
 
 			/*
 			dog.forEach(dog.trace, dog.get.ungraded, [], function (file, sql) {
@@ -592,7 +592,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 						radius: HACK.ringRadius(ring),
 						ring: ring,
 						durationDays: file.PoP_durationDays
-					}), null, function (msg) {
+					}), null, null, function (msg) {
 						Log("INGEST", msg);
 					});
 
@@ -622,7 +622,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 		}, function dogJobs(dog) {
 			var
 				queues = DEBE.queues,
-				fetcher = DEBE.fetch.fetcher;
+				fetcher = DEBE.fetcher;
 			
 			if ( pigs = dog.get.pigs )
 				dog.forEach(dog.trace, pigs, [], function (pigs) {
@@ -691,7 +691,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 						{ID:job.ID}
 					] );
 					
-					fetcher( job.Notes, null, function (rtn) {
+					fetcher( job.Notes, null, null, function (rtn) {
 						Log("dog job run "+msg);
 					});
 				});
@@ -2049,6 +2049,20 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 @param {Function} res Totem response callback
 */	
 	
+	function pipePlugin( pipe, ctx, cb ) {
+		req.query = ctx; 
+		ATOM.select(req, function (ctx) {  // run plugin
+			
+			for (var key in pipe) delete ctx[key];
+			
+			if ( isError(ctx)  )
+				Log(`${host} ` + ctx);
+
+			else 
+				cb(ctx);
+		});
+	}
+	
 	var
 		now = new Date(),
 		sql = req.sql,
@@ -2101,29 +2115,21 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 						var
 							pipe = {},
-							fetcher = DEBE.fetch.fetcher,
+							fetcher = DEBE.fetcher,
 							chipper = HACK.chipVoxels,
 							filename = Pipe.parsePath(pipe);
 
 						if ( filename.charAt(0) == "/" ) // send source to the plugin
-							fetcher( filename, null, (evs) => {		// fetch events and route them to plugin
+							fetcher( filename, null, pipe, (evs, pipe) => {		// fetch events and route them to plugin
 
 								function Eval($,str) { return eval(str); }
 								
-								var evs = evs.parseJSON({ });
+								var 
+									evs = evs.parseJSON({ });
 								
 								for (var key in pipe) ctx[key] = Eval( evs, pipe[key] || ("$."+key) );
 								
-								req.query = ctx; 
-								ATOM.select(req, function (ctx) {  // run plugin
-									if ( isError(ctx)  )
-										Log(ctx);
-
-									else {
-										//Log("eng save", ctx.Save);
-										saveEvents(ctx.Save, ctx);
-									}
-								});
+								pipePlugin( pipe, ctx, (ctx) => saveEvents(ctx.Save, ctx) );
 							});
 
 						else // stream source through supervisor to the plugin
@@ -2181,15 +2187,11 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 																		ctx.Flow = flow; 
 																		ctx.Case = "v"+ctx.Voxel.ID;
 																		Trace( `STARTING voxel${ctx.Voxel.ID}` , sql );
-																		req.query = ctx; 
-																		ATOM.select(req, function (ctx) {  // run plugin's engine
-																			if ( isError(ctx)  )
-																				Log(ctx);
-
-																			else
-																				supervisor.end( ctx.Save || [], function (evstore) {
-																					saveEvents(evstore, ctx);
-																				});
+																		
+																		pipePlugin( {}, ctx, (ctx) => {
+																			supervisor.end( ctx.Save || [], (evstore) => {
+																				saveEvents(evstore, ctx);
+																			});
 																		});
 																	});	
 															});
@@ -2241,14 +2243,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 					case Array:  // src contains event list
 						ctx.Events = Pipe;
-						req.query = ctx; 
-						ATOM.select(req, function (ctx) {  // run plugin's engine
-							if ( isError(ctx)  )
-								Log(ctx);
-
-							else
-								saveEvents(null, ctx);
-						});
+						pipePlugin( {}, ctx, (ctx) => saveEvents(null, ctx) );
 						break;
 
 					case Object:  // src contains single event
@@ -2857,7 +2852,7 @@ Initialize DEBE on startup.
 			thread: Thread,
 			emitter: DEBE.IO ? DEBE.IO.sockets.emit : null,
 			skinner: JADE,
-			fetcher: DEBE.fetch.fetcher,
+			fetcher: DEBE.fetcher,
 			indexer: DEBE.indexFile,
 			//uploader: DEBE.uploadFile,
 
@@ -2878,7 +2873,7 @@ Initialize DEBE on startup.
 		$.config({
 			thread: DEBE.thread,
 			tasker: DEBE.tasker
-			//fetcher: DEBE.fetch.fetcher
+			//fetcher: DEBE.fetcher
 		});
 		
 		ATOM.config({
@@ -3200,7 +3195,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		var 
 			key = "@tag",
 			html = this,
-			fetcher = DEBE.fetch.fetcher,
+			fetcher = DEBE.fetcher,
 			fetchTopic = function ( rec, cb) {  // callback cb with expanded [TOPIC]() markdown
 				var 
 					secret = "",
@@ -3224,7 +3219,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 					cb( "".tag("iframe", {src:rec.opt}) );
 				
 				else
-					fetcher( rec.opt, null, (html) => cb );
+					fetcher( rec.opt, null, null, (html) => cb );
 			},
 			
 			fetchTag = function ( rec, cb ) {  // callback cb with expanded [LINK](URL) markdown
@@ -3418,9 +3413,9 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 	function Xfetch( cb ) {  // expands <!---fetch URL---> tags then callsback cb( final url-fetched html )
 		var 
 			key = "@fetch",
-			fetcher = DEBE.fetch.fetcher,
+			fetcher = DEBE.fetcher,
 			fetchSite = function ( rec, cb ) {  // callsback cb with expanded fetch-tag 
-				fetcher( rec.url, null, cb );
+				fetcher( rec.url, null, null, cb );
 			},
 			pattern = /<!---fetch ([^>]*)?--->/g;
 			
