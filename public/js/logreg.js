@@ -1,8 +1,13 @@
 module.exports = {  // logistic regression
 	keys: {
 		Method: "varchar(16) default 'sinc' comment 'name of complex correlation model for pc estimates' ",
+		
 		numSteps: "int(11) default 0 comment 'number of steps in lrm solver' ",
 		learningRate: "float default 0 comment 'lrm learning rate' ",
+		latentVectors: "int(11) default 0 comment 'number of pls latenent vectors' ",
+		tolerance: "float default 0 comment 'pls tolerance' ",
+		k: "int(11) default 0 comment 'number of nearest neighbors to use in knn majority voting' ",
+		
 		Save_model: "json",
 		Save_predict: "json",
 		Pipe: "json",
@@ -58,7 +63,9 @@ module.exports = {  // logistic regression
 				restore = {
 					def: (cls) => cls,
 					svm: $.SVM.restore,
-					lrm: $.LRM.load
+					lrm: $.LRM.load,
+					knn: $.KNN.load,
+					pls: $.PLS.load
 				};
 			
 			//x.length = 4;
