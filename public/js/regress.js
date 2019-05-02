@@ -44,7 +44,7 @@ module.exports = {  // regression
 			model = ctx[ `Save_${use}` ];
 		
 		if ( loader)
-			if ( y ) {  // train the model
+			if ( x && y ) {  // train the model
 				//x.length = 10;
 				//y.length = 10;
 				Log("regress train>>", use, "xy:", [x.length, y.length]);
