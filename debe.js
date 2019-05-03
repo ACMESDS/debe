@@ -276,6 +276,12 @@ catch (err) {
 				body: "Just FYI"
 			});
 		
+		sql.query(
+			"SELECT File FROM openv.watches WHERE substr(File,1,1) = '/' GROUP BY File",
+			[] )
+		.on("result", (link) => {
+			addAutorun( "."+link.File );
+		});
 		/*
 		sql.getTables("app", function (tables) {  // scan through all tables looking for plugins participating w ingest
 			tables.forEach( function (dsn) {
@@ -2119,49 +2125,16 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 							pipe = {},
 							fetcher = DEBE.fetcher,
 							chipper = HACK.chipVoxels,
-							filename = Pipe.parsePath(pipe),
-							get = {
-								link: "INSERT INTO openv.watches SET ?",
-								file: "SELECT * FROM app.files WHERE Name=?",
-								plugin: "SELECT Run FROM openv.watches WHERE File=?"
-							};
+							filename = Pipe.parsePath(pipe);
 
-						sql.query( get.link, {  // associate file with plugin
+						sql.query( "INSERT INTO openv.watches SET ?", {  // associate file with plugin
 							File: filename,
 							Run: `${host}.${ctx.Name}`
 						}, (err,info) => {
 							
 							if ( !err )
 								if ( filename.charAt(0) == "/" )
-									DEBE.watchFile( "."+filename, (sql,name,path) => {
-										Log("watch", name, path);
-										sql.query( get.file, path.substr(1) )
-										.on("result", (file) => {
-
-											var 
-												now = new Date(),
-												startOk = now >= file.PoP_Start || !file.PoP_Start,
-												endOk = now <= file.PoP_End || !file.PoP_End,
-												fileOk = startOk && endOk;
-											
-											Log("watch", startOk, endOk);
-											
-											if ( fileOk )
-												sql.query( get.plugin, path.substr(1) )
-												.on("result", (link) => {
-													var 
-														parts = link.Run.split("."),
-														pluginName = parts[0],
-														caseName = parts[1],
-														exePath = `/${pluginName}.exe?Name=${caseName}`;
-												
-													Log("autorun", link,exePath);
-													fetcher( exePath, null, null, (rtn) => {
-														Log("autorun", rtn);
-													});
-												});
-										});
-									});
+									addAutorun( "."+filename );
 						});
 						
 						if ( filename.charAt(0) == "/" ) // send source to the plugin
@@ -4035,6 +4008,42 @@ function sharePlugin(req,res) {  //< share plugin attribute
 			res( errors.noEngine );
 	});
 
+}
+
+function addAutorun(path) {
+	
+	DEBE.watchFile( path, (sql,name,path) => {
+
+		Log("autorun", path);
+		sql.query( "SELECT * FROM app.files WHERE Name=?", path.substr(1) )
+		.on("result", (file) => {
+
+			var 
+				fetcher = DEBE.fetcher,
+				now = new Date(),
+				startOk = now >= file.PoP_Start || !file.PoP_Start,
+				endOk = now <= file.PoP_End || !file.PoP_End,
+				fileOk = startOk && endOk;
+
+			Log("autorun", startOk, endOk);
+
+			if ( fileOk )
+				sql.query( "SELECT Run FROM openv.watches WHERE File=?", path.substr(1) )
+				.on("result", (link) => {
+					var 
+						parts = link.Run.split("."),
+						pluginName = parts[0],
+						caseName = parts[1],
+						exePath = `/${pluginName}.exe?Name=${caseName}`;
+
+					Log("autorun", link,exePath);
+					fetcher( exePath, null, null, (rtn) => {
+						Log("autorun", rtn);
+					});
+				});
+		});
+		
+	});
 }
 
 //======================= execution tracing
