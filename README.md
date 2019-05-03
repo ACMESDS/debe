@@ -103,7 +103,7 @@ The following examples are from unit tester:
 			pass: ENV.MYSQL_PASS
 		},
 		watch: {
-			"./uploads": function (file) {
+			"./uploads/": function (file) {
 			}
 		}
 
