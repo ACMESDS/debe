@@ -47,14 +47,14 @@ to [license plugin code](https://totem.west.ile.nga.ic.gov/api.view):
 	
 and to [return plugin ingests](https://totem.west.ile.nga.ic.gov/api.view):
 
-	CASE
+	CASENAME
 	
 DEBE provides the following COMMANDs:
 
 	agent | alert | ingest | riddle | task | ping
 	
 for distributing jobs, alerting clients, inngesting data, validating sessions, sharding tasks, and 
-testing connections.  In addition, DEBE esablished FILE areas: 
+testing connections.  In addition, DEBE esablishes FILE areas: 
 
 	stores | uploads | shares
 
