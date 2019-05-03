@@ -2348,6 +2348,7 @@ function saveEvents(evs, ctx) {
 								
 								DEBE.thread( (sql) => {	// autorun plugins linked to this ingest
 									exeAutorun(sql,"", `.${ctx.Host}.${ctx.Name}` );
+									sql.release();
 								});
 								/*
 								Each(autoTask, function (dsn,ctx) {
