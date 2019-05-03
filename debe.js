@@ -2137,11 +2137,14 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						var
 							pipe = {},
 							chipper = HACK.chipVoxels,
-							filename = Pipe.parsePath(pipe);
+							filename = Pipe.parsePath(pipe),
+							autoname = `${ctx.Host}.${ctx.Name}`;
 
+						sql.query( "DELETE FROM openv.watches WHERE File != ? AND Run = ?", [filename, autoname] );
+						
 						sql.query( "INSERT INTO openv.watches SET ?", {  // associate file with plugin
 							File: filename,
-							Run: `${host}.${ctx.Name}`
+							Run: autoname
 						}, (err,info) => {
 							
 							if ( !err )
