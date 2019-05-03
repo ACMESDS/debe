@@ -238,7 +238,7 @@ catch (err) {
 			if (url = opts.url)
 				switch (url.constructor) {
 					case String:
-						fetcher( url.tag("?", query), opts.put||null, null, function (data) {
+						fetcher( url.tag("?", query), opts.put, function (data) {
 							if ( data = data.parseJSON( ) ) 
 								ingestEvents(data, cb);
 						});
@@ -280,7 +280,7 @@ catch (err) {
 			"SELECT File FROM openv.watches WHERE substr(File,1,1) = '/' GROUP BY File",
 			[] )
 		.on("result", (link) => {
-			addAutorun( "."+link.File );
+			watchAutorun( link.File );
 		});
 		/*
 		sql.getTables("app", function (tables) {  // scan through all tables looking for plugins participating w ingest
@@ -598,7 +598,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 						radius: HACK.ringRadius(ring),
 						ring: ring,
 						durationDays: file.PoP_durationDays
-					}), null, null, function (msg) {
+					}), null, function (msg) {
 						Log("INGEST", msg);
 					});
 
@@ -697,7 +697,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 						{ID:job.ID}
 					] );
 					
-					fetcher( job.Notes, null, null, function (rtn) {
+					fetcher( job.Notes, null, function (rtn) {
 						Log("dog job run "+msg);
 					});
 				});
@@ -2064,7 +2064,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			for (var key in pipe) delete ctx[key];
 			
 			if ( isError(ctx)  )
-				Log(`${host} ` + ctx);
+				Log(`${ctx.Host} ` + ctx);
 
 			else 
 				cb(ctx);
@@ -2121,9 +2121,21 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 				switch ( Pipe.constructor ) {
 					case String: 
 
+						function fetchEvents( path, ctx, pipe, cb ) {  //< fetch events from path and place them in ctx keys defined by the pipe
+							DEBE.fetcher( path, null, (info) => {
+								function Eval($,str) { return eval(str); }
+								
+								var 
+									evs = info.parseJSON({ });
+								
+								for (var key in pipe) ctx[key] = Eval( evs, pipe[key] || ("$."+key) );
+								
+								cb( ctx, pipe );
+							});
+						}
+						
 						var
 							pipe = {},
-							fetcher = DEBE.fetcher,
 							chipper = HACK.chipVoxels,
 							filename = Pipe.parsePath(pipe);
 
@@ -2134,19 +2146,11 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 							
 							if ( !err )
 								if ( filename.charAt(0) == "/" )
-									addAutorun( "."+filename );
+									watchAutorun( filename );
 						});
 						
 						if ( filename.charAt(0) == "/" ) // send source to the plugin
-							fetcher( filename, null, pipe, (evs, pipe) => {		// fetch events and route them to plugin
-
-								function Eval($,str) { return eval(str); }
-								
-								var 
-									evs = evs.parseJSON({ });
-								
-								for (var key in pipe) ctx[key] = Eval( evs, pipe[key] || ("$."+key) );
-								
+							fetchEvents( filename, ctx, pipe, (evs, pipe) => {		// fetch events and route them to plugin
 								pipePlugin( pipe, ctx, (ctx) => saveEvents(ctx.Save, ctx) );
 							});
 
@@ -2154,6 +2158,8 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 							sql.forEach( TRACE, "SELECT * FROM app.files WHERE Name LIKE ? ", filename , (file) => {		// regulate requested file(s)
 
 								function chipFile( file , ctx ) { 
+									
+									//Log( "chip file>>>", file );
 									ctx.File = file;
 									chipper(sql, pipe, ( runctx ) => {  // process each voxel being chipped
 
@@ -2188,12 +2194,11 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 												supervisor = new RAN({ 	// learning supervisor
 													learn: function (supercb) {  // event getter callsback supercb(evs) or supercb(null,onEnd) at end
 														var 
-															supervisor = this,
-															evs = ctx.Events;
+															supervisor = this;
 
 														//Log("learning ctx", ctx);
 
-														if (evs) 
+														if ( evs = ctx.Events ) 
 															evs.$( "group", function (evs) {  // get supervisor evs until null; then save supervisor computed events
 																Trace( evs ? `SUPERVISING voxel${ctx.Voxel.ID} events ${evs.length}` : `SUPERVISED voxel${ctx.Voxel.ID}` , sql );
 
@@ -2244,8 +2249,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 								}
 								
 								["stateKeys", "stateSymbols"].parseJSON(file);
-								Log( "chip file>>>", file );
-
+								
 								if (file._State_Archived) 
 									CP.exec("", function () {  // revise to add a script to cp from lts and unzip
 										Trace("RESTORING "+file.Name);
@@ -2338,6 +2342,10 @@ function saveEvents(evs, ctx) {
 
 							HACK.ingestList( sql, evs, fileID, function (aoi) {
 								Log("INGESTED",aoi);
+								
+								DEBE.thread( (sql) => {	// autorun plugins linked to this ingest
+									exeAutorun(sql,"", `.${ctx.Host}.${ctx.Name}` );
+								});
 								/*
 								Each(autoTask, function (dsn,ctx) {
 									sql.query(
@@ -2873,8 +2881,6 @@ Initialize DEBE on startup.
 			skinner: JADE,
 			fetcher: DEBE.fetcher,
 			indexer: DEBE.indexFile,
-			//uploader: DEBE.uploadFile,
-
 			createCert: DEBE.createCert,
 			
 			diag: DEBE.diag,
@@ -2892,7 +2898,6 @@ Initialize DEBE on startup.
 		$.config({
 			thread: DEBE.thread,
 			tasker: DEBE.tasker
-			//fetcher: DEBE.fetcher
 		});
 		
 		ATOM.config({
@@ -3238,7 +3243,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 					cb( "".tag("iframe", {src:rec.opt}) );
 				
 				else
-					fetcher( rec.opt, null, null, (html) => cb );
+					fetcher( rec.opt, null, (html) => cb );
 			},
 			
 			fetchTag = function ( rec, cb ) {  // callback cb with expanded [LINK](URL) markdown
@@ -3434,7 +3439,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 			key = "@fetch",
 			fetcher = DEBE.fetcher,
 			fetchSite = function ( rec, cb ) {  // callsback cb with expanded fetch-tag 
-				fetcher( rec.url, null, null, cb );
+				fetcher( rec.url, null, cb );
 			},
 			pattern = /<!---fetch ([^>]*)?--->/g;
 			
@@ -3934,7 +3939,7 @@ append layout_body
 	}
 ].extend(Date);
 
-function sharePlugin(req,res) {  //< share plugin attribute
+function sharePlugin(req,res) {  //< share plugin attribute / license plugin code
 	
 	var 
 		errors = DEBE.errors,
@@ -4010,40 +4015,41 @@ function sharePlugin(req,res) {  //< share plugin attribute
 
 }
 
-function addAutorun(path) {
-	
-	DEBE.watchFile( path, (sql,name,path) => {
+function exeAutorun(sql,name,path) {
 
-		Log("autorun", path);
-		sql.query( "SELECT * FROM app.files WHERE Name=?", path.substr(1) )
-		.on("result", (file) => {
+	Log("autorun", path);
+	sql.query( "SELECT * FROM app.files WHERE Name=?", path.substr(1) )
+	.on("result", (file) => {
 
-			var 
-				fetcher = DEBE.fetcher,
-				now = new Date(),
-				startOk = now >= file.PoP_Start || !file.PoP_Start,
-				endOk = now <= file.PoP_End || !file.PoP_End,
-				fileOk = startOk && endOk;
+		var 
+			fetcher = DEBE.fetcher,
+			now = new Date(),
+			startOk = now >= file.PoP_Start || !file.PoP_Start,
+			endOk = now <= file.PoP_End || !file.PoP_End,
+			fileOk = startOk && endOk;
 
-			Log("autorun", startOk, endOk);
+		Log("autorun", startOk, endOk);
 
-			if ( fileOk )
-				sql.query( "SELECT Run FROM openv.watches WHERE File=?", path.substr(1) )
-				.on("result", (link) => {
-					var 
-						parts = link.Run.split("."),
-						pluginName = parts[0],
-						caseName = parts[1],
-						exePath = `/${pluginName}.exe?Name=${caseName}`;
+		if ( fileOk )
+			sql.query( "SELECT Run FROM openv.watches WHERE File=?", path.substr(1) )
+			.on("result", (link) => {
+				var 
+					parts = link.Run.split("."),
+					pluginName = parts[0],
+					caseName = parts[1],
+					exePath = `/${pluginName}.exe?Name=${caseName}`;
 
-					Log("autorun", link,exePath);
-					fetcher( exePath, null, null, (rtn) => {
-						Log("autorun", rtn);
-					});
+				Log("autorun", link,exePath);
+				fetcher( exePath, null, (rtn) => {
+					Log("autorun", rtn);
 				});
-		});
-		
+			});
 	});
+
+}
+
+function watchAutorun(path) {
+	DEBE.watchFile( "."+path, exeAutorun );
 }
 
 //======================= execution tracing
