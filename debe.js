@@ -205,8 +205,7 @@ catch (err) {
 		
 	//plugins: $.libs,
 		
-	autoTask: {  //< reserved for autorun plugins determined at startup
-	},
+	//autoTask: { }, //< reserved for autorun plugins determined at startup
 		
 	ingester: function ingester( opts, query, cb ) {
 		function ingestEvents(data, cb){
@@ -267,8 +266,8 @@ catch (err) {
 		var
 			site = DEBE.site,
 			pocs = site.pocs,
-			sendMail = FLEX.sendMail,
-			autoTask = DEBE.autoTask;
+			sendMail = FLEX.sendMail;
+			//autoTask = DEBE.autoTask;
 		
 		if (pocs.admin)
 			sendMail({
@@ -277,6 +276,7 @@ catch (err) {
 				body: "Just FYI"
 			});
 		
+		/*
 		sql.getTables("app", function (tables) {  // scan through all tables looking for plugins participating w ingest
 			tables.forEach( function (dsn) {
 				sql.query(
@@ -289,7 +289,7 @@ catch (err) {
 					}
 				});
 			});
-		});
+		}); */
 		
 	},
 		
@@ -765,6 +765,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 			
 		}),
 			
+		/*
 		dogAutoruns: Copy({
 			//cycle: 600
 		}, function dogAutoruns(sql, dog) {
@@ -785,7 +786,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 				
 				sql.query("UPDATE app.? SET Autorun=0", [dsn]);
 			}
-		}),
+		}),  */
 			
 		dogEngines: Copy({
 			//cycle: 600,
@@ -1797,6 +1798,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		HACK.ingestFile(sql, filePath, fileID, function (aoi) {
 			
 			Log("INGESTED", aoi);
+			/*
 			Each(DEBE.autoTask, function (dsn, ctx) {
 				sql.query(
 					"INSERT INTO app.?? SET ? ON DUPLICATE KEY UPDATE Autorun=1",
@@ -1806,7 +1808,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						Name: fileName
 					}, ctx)]
 				);
-			});
+			}); */
 		});
 	},
 	
@@ -2117,8 +2119,51 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 							pipe = {},
 							fetcher = DEBE.fetcher,
 							chipper = HACK.chipVoxels,
-							filename = Pipe.parsePath(pipe);
+							filename = Pipe.parsePath(pipe),
+							get = {
+								link: "INSERT INTO openv.watches SET ?",
+								file: "SELECT * FROM app.files WHERE Name=?",
+								plugin: "SELECT Run FROM openv.watches WHERE File=?"
+							};
 
+						sql.query( get.link, {  // associate file with plugin
+							File: filename,
+							Run: `${host}.${ctx.Name}`
+						}, (err,info) => {
+							
+							if ( !err )
+								if ( filename.charAt(0) == "/" )
+									DEBE.watchFile( "."+filename, (sql,name,path) => {
+										Log("watch", name, path);
+										sql.query( get.file, path.substr(1) )
+										.on("result", (file) => {
+
+											var 
+												now = new Date(),
+												startOk = now >= file.PoP_Start || !file.PoP_Start,
+												endOk = now <= file.PoP_End || !file.PoP_End,
+												fileOk = startOk && endOk;
+											
+											Log("watch", startOk, endOk);
+											
+											if ( fileOk )
+												sql.query( get.plugin, path.substr(1) )
+												.on("result", (link) => {
+													var 
+														parts = link.Run.split("."),
+														pluginName = parts[0],
+														caseName = parts[1],
+														exePath = `/${pluginName}.exe?Name=${caseName}`;
+												
+													Log("autorun", link,exePath);
+													fetcher( exePath, null, null, (rtn) => {
+														Log("autorun", rtn);
+													});
+												});
+										});
+									});
+						});
+						
 						if ( filename.charAt(0) == "/" ) // send source to the plugin
 							fetcher( filename, null, pipe, (evs, pipe) => {		// fetch events and route them to plugin
 
@@ -2238,7 +2283,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 								else
 									chipFile(file, pipe);
 							});
-
+			
 						break;
 
 					case Array:  // src contains event list
@@ -2275,7 +2320,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 function saveEvents(evs, ctx) {
 	var
-		autoTask = DEBE.autoTask,
+		//autoTask = DEBE.autoTask,
 		host = ctx.Host,
 		client = "guest",
 		fileName = `${ctx.Host}.${ctx.Name}`;
@@ -2320,6 +2365,7 @@ function saveEvents(evs, ctx) {
 
 							HACK.ingestList( sql, evs, fileID, function (aoi) {
 								Log("INGESTED",aoi);
+								/*
 								Each(autoTask, function (dsn,ctx) {
 									sql.query(
 										"INSERT INTO app.?? SET ? ON DUPLICATE KEY UPDATE Autorun=1",
@@ -2329,7 +2375,7 @@ function saveEvents(evs, ctx) {
 											Name: fileName
 										}, ctx)]
 									);
-								});
+								}); */
 							});
 						});
 
@@ -4007,7 +4053,7 @@ switch ( process.argv[2] ) { //< unit tests
 	case "D1": 
 		var DEBE = require("../debe").config({
 			onFile: {
-				"./public/uploads/": function (sql, name, path) {  // watch changes to a file				
+				"./uploads/": function (sql, name, path) {  // watch changes to a file				
 
 					sql.getFirst(  // get client for registered file
 						"UPLOAD",
