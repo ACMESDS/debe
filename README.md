@@ -18,40 +18,47 @@ its [base web service interface](https://github.com/acmesds/totem):
 	PUT			/NODE ?? NODE ...
 	DELETE	/NODE ?? NODE ...
 
-where a NODE represents either a dataset, engine, files or command:
+where a NODE references a dataset, engine, file or command:
 
 	DATASET.TYPE ? QUERY ? QUERY ...
 	PLUGIN.TYPE ? QUERY ? QUERY ...
 	FILE.TYPE ? QUERY ? QUERY ...
 	COMMAND.TYPE ? QUERY ? QUERY ...
 
-with TYPEs to [convert datasets](https://totem.west.ile.nga.ic.gov/api.view):
+DEBE provides TYPEs to [convert datasets](https://totem.west.ile.nga.ic.gov/api.view):
 
 	db | xml | csv | txt | tab | view | tree | flat | delta | nav | kml | encap | html | json
 
-[render plugins](https://totem.west.ile.nga.ic.gov/skinguide.view):
+to [render plugins](https://totem.west.ile.nga.ic.gov/skinguide.view):
 
 	view | run | plugin | pivot | site | spivot | brief | gridbrief | pivbrief | runbrief
 
-[execute, extend/remove plugin keys](https://totem.west.ile.nga.ic.gov/api.view):
+to [execute, extend and retract plugins](https://totem.west.ile.nga.ic.gov/api.view):
 
 	exe | add | sub
 
-access [plugin attributes](https://totem.west.ile.nga.ic.gov/api.view):
+to [access plugin attributes](https://totem.west.ile.nga.ic.gov/api.view):
 
 	tou | md | pub | status | suitors
 	
-return licensed (watermark protected) [plugin code](https://totem.west.ile.nga.ic.gov/api.view):
+to [license plugin code](https://totem.west.ile.nga.ic.gov/api.view):
 
 	js | py | m | me | jade | ...
 	
-return [plugin usecase](https://totem.west.ile.nga.ic.gov/api.view) information:
+and to [return plugin ingests](https://totem.west.ile.nga.ic.gov/api.view):
 
 	CASE
 	
-DEBE also provides the following COMMAND endpoints:
+DEBE provides the following COMMANDs:
 
-	agent | alert | ingest
+	agent | alert | ingest | riddle | task | ping
+	
+for distributing jobs, alerting clients, inngesting data, validating sessions, sharding tasks, and 
+testing connections.  In addition, DEBE esablished FILE areas: 
+
+	stores | uploads | shares
+
+for uploading, storing and serving files.
 
 ## Installation
 
