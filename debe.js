@@ -205,8 +205,6 @@ catch (err) {
 		
 	//plugins: $.libs,
 		
-	//autoTask: { }, //< reserved for autorun plugins determined at startup
-		
 	ingester: function ingester( opts, query, cb ) {
 		function ingestEvents(data, cb){
 			var evs = [];
@@ -267,7 +265,6 @@ catch (err) {
 			site = DEBE.site,
 			pocs = site.pocs,
 			sendMail = FLEX.sendMail;
-			//autoTask = DEBE.autoTask;
 		
 		if (pocs.admin)
 			sendMail({
@@ -280,23 +277,8 @@ catch (err) {
 			"SELECT File FROM openv.watches WHERE substr(File,1,1) = '/' GROUP BY File",
 			[] )
 		.on("result", (link) => {
-			watchAutorun( link.File );
-		});
-		/*
-		sql.getTables("app", function (tables) {  // scan through all tables looking for plugins participating w ingest
-			tables.forEach( function (dsn) {
-				sql.query(
-					"SELECT * FROM app.?? WHERE Name='ingest' LIMIT 1", 
-					[dsn], function (err, recs) {
-
-					if (ctx = err ? null : recs[0]) {
-						autoTask[dsn] = Copy(ctx, {});
-						Trace("AUTOADD "+dsn);
-					}
-				});
-			});
-		}); */
-		
+			dogAutoruns( link.File );
+		});		
 	},
 		
 	// watchdog configuration
@@ -614,9 +596,9 @@ Further information about this file is available ${paths.moreinfo}. `;
 		dogJobs: Copy({
 			get: {
 				//pigs: "SELECT sum(DateDiff(Departed,Arrived)>1) AS Count from app.queues",			
-				unbilled: "SELECT * FROM app.queues WHERE Finished AND NOT Billed",
+				//unbilled: "SELECT * FROM app.queues WHERE Finished AND NOT Billed",
 				unfunded: "SELECT * FROM app.queues WHERE NOT Funded AND now()-Arrived>?",				
-				stuck: "UPDATE app.queues SET Departed=now(), Notes=concat(Notes, ' is ', link('billed', '/profile.view')), Age=Age + (now()-Arrived)/3600e3, Finished=1 WHERE least(Departed IS NULL,Done=Work)", 
+				//stuck: "UPDATE app.queues SET Departed=now(), Notes=concat(Notes, ' is ', link('billed', '/profile.view')), Age=Age + (now()-Arrived)/3600e3, Finished=1 WHERE least(Departed IS NULL,Done=Work)", 
 				outsourced: "SELECT * FROM app.queues WHERE Class='polled' AND Now() > Departed",
 				unmailed: "SELECT * FROM app.queues WHERE NOT Finished AND Class='email' "
 			},
@@ -770,29 +752,6 @@ Further information about this file is available ${paths.moreinfo}. `;
 				});		
 			
 		}),
-			
-		/*
-		dogAutoruns: Copy({
-			//cycle: 600
-		}, function dogAutoruns(sql, dog) {
-
-			for (var dsn in DEBE.autoTask) {
-				sql.query("SELECT ID, ? AS _Plugin FROM app.? WHERE Autorun", [dsn, dsn])
-				.on("result", (run) => {
-					exePlugin({
-						sql: sql,
-						client: "watchdog",
-						group: "app",
-						table: run._Plugin,
-						query: {ID: run.ID}
-					}, function (msg) {
-						Log(dsn,msg);
-					});
-				});
-				
-				sql.query("UPDATE app.? SET Autorun=0", [dsn]);
-			}
-		}),  */
 			
 		dogEngines: Copy({
 			//cycle: 600,
@@ -1717,104 +1676,12 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		post: "/service/algorithm/:proxy"		//< hydra endpoint
 	},  		//< reserved for soap interfaces
 		
-	/*
-	autoRuns: function (sql, group, aoi, cb) {  // task and run ingestable plugins
-
-		var
-			ring = aoi.ring;
-		
-		FLEX.taskPlugins( sql, group, function (taskID, pluginName) {
-
-			cb( pluginName, ring );
-
-			if (0)
-			FLEX.runPlugin({
-				sql: sql,
-				table: pluginName,
-				query: {ID:taskID}
-			}, function (err, rtn, ctx) {
-			});
-
-		});
-		
-		/ *
-		var 
-			group = "app",
-			TL = [aoi.yMax, aoi.xMin],   // [lon,lat] degs
-			TR = [aoi.yMax, aoi.xMax],
-			BL = [aoi.yMin, aoi.xMin],
-			BR = [aoi.yMin, aoi.xMax], 
-			ring = {voiring:[ TL, TR, BR, BL, TL ]};
-
-		// add this aoi as a usecase to all applicable plugins 
-		sql.eachTable( group, function (table) {  // look for plugins that have a data loader and a Pipe key
-			var tarkeys = [], srckeys = [], hasJob = false;
-
-			// if (table == "gaussmix") // debug filter
-			if ( loader = DEBE.loaders[table] )
-				sql.query(  // get plugin usecase keys
-					"SHOW FIELDS FROM ??.?? WHERE Field != 'ID' ", 
-					[ group, table ], 
-					function (err,keys) {
-
-					keys.each( function (n,key) { // look for Pipe key
-						var keyesc = "`" + key.Field + "`";
-						switch (key.Field) {
-							case "Save":
-								break;
-							case "Pipe":
-								hasJob = true;
-							case "Name":
-								srckeys.push("? AS "+keyesc);
-								tarkeys.push(keyesc);
-								break;
-							default:
-								srckeys.push(keyesc);
-								tarkeys.push(keyesc);
-						}
-					});
-
-					if (hasJob) {
-						Trace( `TASKING AOI ${ring.voiring} TO ${table} PLUGIN` );
-
-						sql.query( // add usecase to plugin by cloning its Name="ingest" usecase
-							"INSERT INTO ??.?? ("+tarkeys.join()+") SELECT "+srckeys.join()+" FROM ??.?? WHERE name='ingest' ", [
-								group, table,
-								"ingest " + new Date(),
-								JSON.stringify(ring),
-								group, table
-						], function (err, info) {
-
-							if ( !err && info.insertId )  // relay a fetch request to load the data with the usecase that was just added 
-								loader( {ID:info.insertId}, function (rtn) {
-									Trace(`AUTORUN ${table}`);  // rtn = json parsed or null
-								});
-						});
-					}
-				});
-		});
-		* /
-	},
-	*/
-		
 	ingestFile: function(sql, filePath, fileName, fileID, cb) {  // ingest events from file with callback cb(aoi).
 		
 		//Log("ingest file", filePath, fileName, fileID);
 		
-		HACK.ingestFile(sql, filePath, fileID, function (aoi) {
-			
+		HACK.ingestFile(sql, filePath, fileID, function (aoi) {			
 			Log("INGESTED", aoi);
-			/*
-			Each(DEBE.autoTask, function (dsn, ctx) {
-				sql.query(
-					"INSERT INTO app.?? SET ? ON DUPLICATE KEY UPDATE Autorun=1",
-					[dsn, Copy({
-						Pipe: `/{fileName}?limit=150e3`,
-						Autorun: 1,
-						Name: fileName
-					}, ctx)]
-				);
-			}); */
 		});
 	},
 	
@@ -2123,12 +1990,12 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 						function fetchEvents( path, ctx, pipe, cb ) {  //< fetch events from path and place them in ctx keys defined by the pipe
 							DEBE.fetcher( path, null, (info) => {
-								function Eval($,str) { return eval(str); }
+								function evalEvents($,str) { return eval(str); }
 								
 								var 
 									evs = info.parseJSON({ });
 								
-								for (var key in pipe) ctx[key] = Eval( evs, pipe[key] || ("$."+key) );
+								for (var key in pipe) ctx[key] = evalEvents( Copy(evs,$), pipe[key] || ("$."+key) );
 								
 								cb( ctx, pipe );
 							});
@@ -2149,12 +2016,44 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 							
 							if ( !err )
 								if ( filename.charAt(0) == "/" )
-									watchAutorun( filename );
+									dogAutoruns( filename );
 						});
 						
+						//Log(req.client, profile.QoS, profile.Credit, req.table, query);
+						
 						if ( filename.charAt(0) == "/" ) // send source to the plugin
-							fetchEvents( filename, ctx, pipe, (evs, pipe) => {		// fetch events and route them to plugin
-								pipePlugin( pipe, ctx, (ctx) => saveEvents(ctx.Save, ctx) );
+							sql.insertJob({ // job descriptor for regulator
+								qos: 1, //profile.QoS, 
+								priority: 0,
+								client: req.client,
+								class: "plugin",
+								credit: 100, // profile.Credit,
+								name: req.table,
+								task: query.Name || query.ID,
+								notes: [
+										req.table.tag("?",{ID:query.ID}).tag("a", {href:"/" + req.table + ".run"}), 
+										((profile.Credit>0) ? "funded" : "unfunded").tag("a",{href:req.url}),
+										"RTP".tag("a", {
+											href:`/rtpsqd.view?task=${pipe.task}`
+										}),
+										"PMR brief".tag("a", {
+											href:`/briefs.view?options=${pipe.task}`
+										})
+								].join(" || "),
+								ctx: ctx,
+								pipe: pipe,
+								filename: filename
+							}, (job, sql) => { 							
+								var
+									ctx = job.ctx,
+									pipe = job.pipe,
+									filename = job.filename;
+								
+								Log("pipe", filename, pipe);
+								fetchEvents( filename, ctx, pipe, (evs, pipe) => {		// fetch events and route them to plugin
+									pipePlugin( pipe, ctx, (ctx) => saveEvents(ctx.Save, ctx) );
+								});
+								
 							});
 
 						else // stream source through supervisor to the plugin
@@ -2164,9 +2063,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 									
 									//Log( "chip file>>>", file );
 									ctx.File = file;
-									chipper(sql, pipe, ( runctx ) => {  // process each voxel being chipped
-
-										Copy( ctx, runctx );  	// add engine context parms to the voxel run context
+									chipper(sql, pipe, ( voxctx ) => {  // process each voxel being chipped
 
 										sql.insertJob({ // job descriptor for regulator
 											qos: profile.QoS, 
@@ -2186,14 +2083,14 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 														href:`/briefs.view?options=${pipe.task}`
 													})
 											].join(" || "),
-											runctx: runctx
-										}, (sql, job) => {  // put voxel into job regulation queue
+											ctx: Copy( ctx, voxctx )  	// add engine context parms to the voxel run context
+										}, (job, sql) => {  // put voxel into job regulation queue
 
 											//Log("run job", job);
 
 											var 
-												ctx = job.runctx,
-												file = runctx.File,
+												ctx = job.ctx,
+												file = ctx.File,
 												supervisor = new RAN({ 	// learning supervisor
 													learn: function (supercb) {  // event getter callsback supercb(evs) or supercb(null,onEnd) at end
 														var 
@@ -2300,7 +2197,6 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 function saveEvents(evs, ctx) {
 	var
-		//autoTask = DEBE.autoTask,
 		host = ctx.Host,
 		client = "guest",
 		fileName = `${ctx.Host}.${ctx.Name}`;
@@ -2350,17 +2246,6 @@ function saveEvents(evs, ctx) {
 									exeAutorun(sql,"", `.${ctx.Host}.${ctx.Name}` );
 									sql.release();
 								});
-								/*
-								Each(autoTask, function (dsn,ctx) {
-									sql.query(
-										"INSERT INTO app.?? SET ? ON DUPLICATE KEY UPDATE Autorun=1",
-										[dsn, Copy({
-											Pipe: `/${fileName}?limit=150e3`,
-											Autorun: 1,
-											Name: fileName
-										}, ctx)]
-									);
-								}); */
 							});
 						});
 
@@ -3118,14 +3003,6 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 //====================== extend objects
 	
 [  // string prototypes
-	/*
-	function toQuery(sql, query) {
-		var 
-			name = this.parsePath(query);
-		
-		return sql.toQuery( name ? Copy({Name: name}, query) : query );
-	},  */
-	
 	// string serializers callback cb(html) with tokens replaced
 	
 	function Xblog(req, ds, cache, ctx, rec, viaBrowser, cb) {
@@ -3333,7 +3210,7 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 			cb(ctx, run);
 	},
 		
-	function Xgen( ctx ) {  // returns expanded LHS OP= RHS tags
+	function Xgen( ctx ) {  // expands LHS OP= RHS tags
 
 		var 
 			genctx = Copy(DEBE.blog, new Object(ctx)),
@@ -4052,7 +3929,7 @@ function exeAutorun(sql,name,path) {
 
 }
 
-function watchAutorun(path) {
+function dogAutoruns(path) {
 	DEBE.watchFile( "."+path, exeAutorun );
 }
 

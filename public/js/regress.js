@@ -2,16 +2,26 @@ module.exports = {  // regression
 	addkeys: {
 		Method: "varchar(16) default 'sinc' comment 'name of complex correlation model for pc estimates' ",
 		
-		numSteps: "int(11) default 0 comment 'number of steps in lrm solver' ",
-		learningRate: "float default 0 comment 'lrm learning rate' ",
-		latentVectors: "int(11) default 0 comment 'number of pls latenent vectors' ",
-		tolerance: "float default 0 comment 'pls tolerance' ",
-		k: "int(11) default 0 comment 'number of nearest neighbors to use in knn majority voting' ",
+		lrm_numSteps: "int(11) default 0 comment 'number of steps in lrm solver' ",
+		lrm_learningRate: "float default 0 comment 'lrm learning rate' ",
+		
+		pls_latentVectors: "int(11) default 0 comment 'number of pls latenent vectors' ",
+		pls_tolerance: "float default 0 comment 'pls tolerance' ",
+		
+		ols_degree: "int(11) default 0 comment 'maximum degree of the polynomial' ",
+
+		knn_k: "int(11) default 0 comment 'number of nearest neighbors to use in knn majority voting' ",
+		
+		som_iterations: "int(11) default 0 comment 'Number of iterations over the training set for the training phase (default: 10). The total number of training steps will be iterations * trainingSet.length' ",
+		som_learningRate: "float default 0 comment' Multiplication coefficient for the learning algorithm (default: 0.1)' ",
+		som_method: "varchar(32) default 'random' comment 'Iteration method of the learning algorithm (default: random)' ",
 		
 		Save_lrm: "json comment 'lrm model' ",
 		Save_svm: "json comment 'svm model' ",
 		Save_plc: "json comment 'plc model' ",
 		Save_knn: "json comment 'knn model' ",
+		Save_som: "json comment 'knn model' ",
+		Save_ols: "json comment 'knn model' ",
 		Save_predict: "json comment predictions ",
 
 		Pipe: "json",
@@ -34,14 +44,23 @@ module.exports = {  // regression
 			x = ctx.x,
 			y = ctx.y,
 			use = ctx.Method,
+			solveKey = use +"_",
 			loaders = {
 				svm: $.SVM.restore,
 				lrm: $.LRM.load,
 				knn: $.KNN.load,
-				pls: $.PLS.load
+				pls: $.PLS.load,
+				som: $.SOM.load,
+				ols: ctx.ols_degree ? $.SPR.load : $.MLR.load
 			},
 			loader = loaders[use],
-			model = ctx[ `Save_${use}` ];
+			model = ctx[ `Save_${use}` ], 
+			solve = {};
+		
+		for (var key in ctx) 
+			if ( key.indexOf( solveKey ) == 0 ) solve[ key.substr( solveKey.length ) ] = ctx[key];
+		
+		//Log("solve", solve);
 		
 		if ( loader)
 			if ( x && y ) {  // train the model
@@ -57,7 +76,7 @@ module.exports = {  // regression
 								ctx.Save[ `Save_${use}` ] = cls;
 								res(ctx);
 							},
-							solve: ctx
+							solve: solve
 						}, ctx), (ctx) => {
 							Log("regressor trained");
 						});
