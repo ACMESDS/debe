@@ -16,12 +16,14 @@ module.exports = {  // regression
 		som_learningRate: "float default 0 comment' Multiplication coefficient for the learning algorithm (default: 0.1)' ",
 		som_method: "varchar(32) default 'random' comment 'Iteration method of the learning algorithm (default: random)' ",
 		
+		Save_raf: "json comment 'raf model' ",
+		Save_dtr: "json comment 'dtr model' ",
 		Save_lrm: "json comment 'lrm model' ",
 		Save_svm: "json comment 'svm model' ",
 		Save_plc: "json comment 'plc model' ",
 		Save_knn: "json comment 'knn model' ",
-		Save_som: "json comment 'knn model' ",
-		Save_ols: "json comment 'knn model' ",
+		Save_som: "json comment 'som model' ",
+		Save_ols: "json comment 'old model' ",
 		Save_predict: "json comment predictions ",
 
 		Pipe: "json",
@@ -43,7 +45,7 @@ module.exports = {  // regression
 			stats = ctx.Stats,
 			x = ctx.x,
 			y = ctx.y,
-			use = ctx.Method,
+			use = ctx.Method.toLowerCase(),
 			solveKey = use +"_",
 			loaders = {
 				svm: $.SVM.restore,
@@ -51,6 +53,8 @@ module.exports = {  // regression
 				knn: $.KNN.load,
 				pls: $.PLS.load,
 				som: $.SOM.load,
+				raf: (model) => model,
+				dtr: (model) => model,
 				ols: ctx.ols_degree ? $.SPR.load : $.MLR.load
 			},
 			loader = loaders[use],
@@ -60,7 +64,7 @@ module.exports = {  // regression
 		for (var key in ctx) 
 			if ( key.indexOf( solveKey ) == 0 ) solve[ key.substr( solveKey.length ) ] = ctx[key];
 		
-		//Log("solve", solve);
+		Log("solve", solve, loader);
 		
 		if ( loader)
 			if ( x && y ) {  // train the model
