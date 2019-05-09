@@ -281,6 +281,15 @@ catch (err) {
 		});		
 	},
 		
+	onUpdate: function (sql,ds,body) { // update change journal 
+		sql.hawk({Dataset:ds, Field:""});  // journal entry for the record itself
+		if (false)   // journal entry for each record key being changed
+			for (var key in body) { 		
+				sql.hawk({Dataset:ds, Field:key});
+				sql.hawk({Dataset:"", Field:key});
+			}
+	},
+		
 	// watchdog configuration
 		
 	dogs: {  //< watch dogs cycle time in secs (zero to disable)
@@ -2751,7 +2760,7 @@ Initialize DEBE on startup.
 
 		Trace("INIT CRUDE");
 		for ( crude in {select:1,delete:1,insert:1,update:1,execute:1} ) {
-			DEBE[crude] = FLEX[crude].ds;
+			//DEBE[crude] = FLEX[crude].ds;
 			DEBE.byActionTable[crude] = FLEX[crude];
 		}
 
@@ -2766,7 +2775,7 @@ Initialize DEBE on startup.
 
 		FLEX.config({ 
 			thread: Thread,
-			emitter: DEBE.IO ? DEBE.IO.sockets.emit : null,
+			//emitter: DEBE.IO ? DEBE.IO.sockets.emit : null,
 			skinner: JADE,
 			fetcher: DEBE.fetcher,
 			indexer: DEBE.indexFile,
