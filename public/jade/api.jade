@@ -12,54 +12,58 @@ append site_body
 	#fit.Intro
 
 		:markdown
-			*#{title}* provides [CRUD-compliant endpoints](/api.view):
+			#{title} provides full-featured web service for 
+			managing interfaces, requirements, project metrics, geoint products and workflows.
 
-				POST		/NODE ?? NODE ...
-				GET			/NODE ?? NODE ...
-				PUT			/NODE ?? NODE ...
-				DELETE 	/NODE ?? NODE ...
+			As documented in its [api](https://totem.west.ile.nga.ic.gov/api.view), #{title} extends 
+			its [base web service interface](https://github.com/acmesds/totem):
 
-			to access dataset, plugin, file and command NODEs:
+				POST /NODE ?? NODE ...
+				GET /NODE ?? NODE ...
+				PUT /NODE ?? NODE ...
+				DELETE /NODE ?? NODE ...
 
-				DATASET.TYPE ? QUERY ? QUERY ...
-				PLUGIN.TYPE ? QUERY ? QUERY ...
-				FILEPATH.TYPE ? QUERY ? QUERY ...
-				COMMAND.TYPE ? QUERY ? QUERY ...
+			where a NODE references a dataset, engine, file or command:
 
-			where the NODE TYPE can format returned data:
+				DATASET.TYPE ? QUERY
+				PLUGIN.TYPE ? QUERY
+				FILE.TYPE ? QUERY
+				COMMAND.TYPE ? QUERY
 
-				db | xml | csv | txt | tab | tree | flat | kml | encap | html | json | geojson
+			#{title} provides TYPEs to [convert datasets](https://totem.west.ile.nga.ic.gov/api.view):
 
-			[render/skin](/skinguide.view) a plugin:
+				db | xml | csv | txt | tab | view | tree | flat | delta | nav | kml | encap | html | json
 
-				view | pivot | site | spivot | brief | gridbrief | pivbrief | run | plugin | runbrief
+			to [render plugins](https://totem.west.ile.nga.ic.gov/skinguide.view):
 
-			execute, extend/remove plugin keys:
+				view | run | plugin | pivot | site | spivot | brief | gridbrief | pivbrief | runbrief
+
+			to [execute, extend and retract plugins](https://totem.west.ile.nga.ic.gov/api.view):
 
 				exe | add | sub
 
-			return events ingested by a plugin:
+			to [access plugin attributes](https://totem.west.ile.nga.ic.gov/api.view):
 
-				USECASE | js | py | ...
+				tou | md | pub | status | suitors
 
-			retrieve a plugin attribute:
+			to [license plugin code](https://totem.west.ile.nga.ic.gov/api.view):
 
-				tou | md | pub | status | suitors | js | py | m | me | jade | ...
+				js | py | m | me | jade | ...
 
-			retrieve dataset attributes:
+			and to [return plugin ingests](https://totem.west.ile.nga.ic.gov/api.view):
 
-				delta | nav | stat
+				CASENAME
 
-			or generate an office file:
-
-				pdf | xdoc | xppt | xxls ...
-
-			DEBE provides COMMAND endpoints:
+			#{title} provides the following COMMANDs:
 
 				agent | alert | ingest | riddle | task | ping
 
-			to interface with its job queues, users, data ingesters, session managers, task sharding, and
-			test current session.
+			for distributing jobs, alerting clients, inngesting data, validating sessions, sharding tasks, and 
+			testing connections.  In addition, #{title} esablishes FILE areas: 
+
+				stores | uploads | shares
+
+			for uploading, storing and serving files.
 
 	#accordion.Views
 
