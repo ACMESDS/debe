@@ -1981,7 +1981,6 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 		FLEX.runPlugin(req, function (ctx) {  // run engine using requested usecase via the job regulator 
 
 			//Log("run ctx", ctx);
-			ctx.Host = host;
 
 			if ( !ctx)
 				res( DEBE.errors.noContext );
@@ -1994,17 +1993,22 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 			if ( Pipe = ctx.Pipe )  { // intercept piped for learning workflows and to regulate event stream
 				res("Piped");
 
+				ctx.Host = host;
+
 				switch ( Pipe.constructor ) {
 					case String: 
 
 						function fetchEvents( path, ctx, pipe, cb ) {  //< fetch events from path and place them in ctx keys defined by the pipe
 							DEBE.fetcher( path, null, (info) => {
-								function evalEvents($,str) { return eval(str); }
+								// function evalEvents($,str) { return eval(str); }
 								
+								Copy( info.parseJSON( {} ), ctx );
+								/*
 								var 
 									evs = info.parseJSON({ });
 								
 								for (var key in pipe) ctx[key] = evalEvents( Copy(evs,$), pipe[key] || ("$."+key) );
+								*/
 								
 								cb( ctx, pipe );
 							});
@@ -2013,7 +2017,7 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 						var
 							pipe = {},
 							chipper = HACK.chipVoxels,
-							filename = Pipe.parsePath(pipe),
+							filename = Pipe.parsePath(pipe,{},{},{}),
 							autoname = `${ctx.Host}.${ctx.Name}`;
 
 						sql.query( "DELETE FROM openv.watches WHERE File != ? AND Run = ?", [filename, autoname] );

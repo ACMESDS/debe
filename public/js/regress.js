@@ -64,7 +64,7 @@ module.exports = {  // regression
 		for (var key in ctx) 
 			if ( key.indexOf( solveKey ) == 0 ) solve[ key.substr( solveKey.length ) ] = ctx[key];
 		
-		Log("solve", solve, loader);
+		//Log("solve", solve, loader);
 		
 		if ( loader)
 			if ( x && y ) {  // train the model
