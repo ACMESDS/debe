@@ -2055,15 +2055,15 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 								].join(" || "),
 								ctx: ctx,
 								pipe: pipe,
-								filename: filename
+								path: Pipe
 							}, (job, sql) => { 							
 								var
 									ctx = job.ctx,
 									pipe = job.pipe,
-									filename = job.filename;
+									path = job.path;
 								
-								Log("pipe", filename, pipe);
-								fetchEvents( filename, ctx, pipe, (evs, pipe) => {		// fetch events and route them to plugin
+								Log("pipe", path, pipe);
+								fetchEvents( path, ctx, pipe, (evs, pipe) => {		// fetch events and route them to plugin
 									pipePlugin( pipe, ctx, (ctx) => saveEvents(ctx.Save, ctx) );
 								});
 								
