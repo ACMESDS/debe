@@ -303,31 +303,25 @@ append site_body
 		#fit.Queries
 			:markdown
 				Relational:
-				> KEY = value  
-				> KEY <= value  
-				> KEY >= value  
-				> KEY != value  
-				> KEY *= [min,max]  
-				> KEY %= like pattern  
-				> KEY < value  
-				> KEY > value  
+				> KEY = VALUE  
+				> KEY <= VALUE  
+				> KEY >= VALUE  
+				> KEY != VALUE  
+				> KEY < VALUE  
+				> KEY > VALUE  
 
 				Indexing:
-				> ASKEY : expression  
-				> ASKEY : jsonKey$.key, ...  
-				> ASKEY : jsonKey$[idx], ...  
-				> ASKEY : jsonKey$.key$.key ... , ...  
-				> ASKEY : jsonKey$[idx]$[idx] .... , ...  
-
-				Scoring:
-				> KEY /$= nlp pattern  
-				> KEY |$= query expansion pattern  
-				> KEY ^$= binary expression pattern  
+				> ASKEY := KEY  
+				> ASKEY := RELATIONAL  
 
 				Searching:
-				> KEY /= nlp pattern  
-				> KEY |= query expansion pattern  
-				> KEY ^= binary expression pattern  
+				> KEY, ... /= nlp pattern  
+				> KEY, ... |= query expansion pattern  
+				> KEY, ... ^= binary expression pattern  
+
+				Keying json store:
+				> STORE$[ INDEX ]  
+				> STORE$.KEY
 
 				Grouping and Sorting:
 				> _pivot = KEY,KEY,... pivot records on KEYs with NodeID = "ID,ID,..." groups  
