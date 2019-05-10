@@ -1702,18 +1702,22 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	blindTesting : false		//< Enable for double-blind testing (eg make FLEX susceptible to sql injection attacks)
 }, TOTEM, ".");
 
-/*
+/**
+@class DEBE.Utilities.SOAP
+*/
+
 function SOAPsession(req,res,peer,action) {
-/ **
+/**
 @method SOAPsession
 @private
+
 Process an bySOAP session peer-to-peer request.  Currently customized for Hydra-peer and 
 could/should be revised to support more generic peer-to-peer bySOAP interfaces.
  
 @param {Object} req HTTP request
 @param {Object} res HTTP response
 @param {Function} proxy Name of APP proxy function to handle this session.
-* /
+*/
 	Thread( function (sql) {
 		req.addListener("data", function (data) {
 			XML2JS.parseString(data.toString(), function (err,json) {  // hydra specific parse
@@ -1752,7 +1756,6 @@ could/should be revised to support more generic peer-to-peer bySOAP interfaces.
 		sql.reply(res,"0");
 	});
 }
-*/
 
 function icoFavicon(req,res) {   // extjs trap
 	res("No icons here"); 
@@ -2516,10 +2519,13 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 	});
 }
 
+/**
+@class DEBE.Utilities.Skinning
+*/
 function genDoc(recs,req,res) {
 /**
 @method genDoc
-Convert recods to requested req.type office file.
+Convert records to requested req.type office file.
 @param {Array} recs list of records to be converted
 @param {Object} req Totem request
 @param {Function} res Totem response
@@ -2637,6 +2643,182 @@ Chapter 2
 		res(DEBE.errors.badOffice);
 }
 
+/**
+@class DEBE.End_Points.System
+service maintenance endpoints
+*/
+
+function sysIngest(req,res) {
+/**
+@method sysIngest
+Totem (req,res)-endpoint to ingest a source into the sql database
+@param {Object} req Totem request
+@param {Function} res Totem response
+*/
+	
+	var 
+		sql = req.sql,
+		query = req.query,
+		body = req.body,
+		src = query.src,
+		fileID = query.fileID;
+	
+	Log("INGEST", query, body);
+	res("ingesting");
+
+	if (fileID) {
+		//sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
+		
+		if ( onIngest = DEBE.onIngest[src] )   // use builtin ingester
+			DEBE.ingester( onIngest, query, function (evs) {
+				HACK.ingestList( sql, evs, fileID, function (aoi) {
+					Log("INGEST aoi", aoi);
+				});
+			});
+
+		else  // use custom ingester
+			sql.query("SELECT _Ingest_Script FROM app.files WHERE ? AND _Ingest_Script", {ID: fileID})
+			.on("results", function (file) {
+				if ( onIngest = JSON.parse(file._Ingest_Script) ) 
+					DEBE.ingester( onIngest, query, function (evs) {
+						HACK.ingestList( sql, evs, fileID, function (aoi) {
+							Log("INGEST aoi", aoi);
+						});
+					});
+			});
+	}
+}
+
+function sysAgent(req,res) {
+/**
+@method sysAlert
+Totem (req,res)-endpoint to send notice to outsource jobs to agents.
+@param {Object} req Totem request
+@param {Function} res Totem response
+*/
+	
+	var
+		sql = req.sql,
+		query = req.query;
+	
+	if (push = query.push) 
+		CRYPTO.randomBytes(64, function (err, jobid) {
+
+			try {
+				var args = JSON.parse(query.args);
+			}
+			catch (parserr) {
+				err = parserr;
+			}
+			
+			if (err) 
+				res( "" );
+
+			else
+				res( jobid.toString("hex") );
+
+		});
+	
+	else
+	if (pull = query.pull) {
+		var jobid = query.jobid;
+		
+		if (jobid) 
+			res( {result: 123} );
+		
+		else
+			res( "Missing jobid" );
+	}
+
+	else
+	if ( flush = query.flush )
+		ATOM.matlab.flush(sql, flush);
+	
+	else
+	if ( thread = query.load ) {
+		var
+			parts = thread.split("_"),
+			id = parts.pop(),
+			plugin = "app." + parts.pop(),
+			results = ATOM.matlab.path.save + thread + ".out";
+		
+		Log("SAVE MATLAB",query.save,plugin,id,results);
+
+		FS.readFile(results, "utf8", function (err,json) {
+
+			sql.query("UPDATE ?? SET ? WHERE ?", [plugin, {Save: json}, {ID: id}], function (err) {
+				Log("save",err);
+			});
+
+		});	
+	}
+	
+	else
+	if ( thread = query.save ) {
+		var 
+			Thread = thread.split("."),
+			Thread = {
+				case: Thread.pop(),
+				plugin: Thread.pop(),
+				client: Thread.pop()
+			};
+		
+		sql.forFirst("agent", "SELECT * FROM openv.agents WHERE ? LIMIT 1", {queue: thread}, function (agent) {
+			
+			if (agent) {
+				sql.query("DELETE FROM openv.agents WHERE ?", {ID: agent.ID});
+				
+				if ( evs = JSON.parse(agent.script) )
+					FLEX.getContext(sql, "app."+Thread.plugin, {ID: Thread.case}, function (ctx) {
+						res( saveEvents( evs, ctx ) );
+					});
+				
+				else
+					res( DEBE.errors.badAgent );
+			}
+			
+			else
+				res( DEBE.errors.badAgent );
+				
+		});
+		
+	}
+	
+	else
+		res( DEBE.errors.badAgent );
+	
+}
+
+function sysAlert(req,res) {
+/**
+@method sysAlert
+Totem (req,res)-endpoint to send notice to all clients
+@param {Object} req Totem request
+@param {Function} res Totem response
+*/
+	if (IO = DEBE.IO)
+		IO.sockets.emit("alert",{msg: req.query.msg || "system alert", to: "all", from: DEBE.site.title});
+			
+	res("Broadcasting alert");
+}
+
+function sysStop(req,res) {
+/**
+@method sysStop
+Totem (req,res)-endpoint to send emergency message to all clients then halt totem
+@param {Object} req Totem request
+@param {Function} res Totem response
+*/
+	if (IO = DEBE.IO)
+		IO.sockets.emit("alert",{msg: req.query.msg || "system halted", to: "all", from: DEBE.site.title});
+	
+	res("Server stopped");
+	process.exit();
+}
+
+/**
+@class DEBE.Utilities.Startup_and_Initialization
+*/
 function Initialize (sql) {
 /**
 @method Initialize
@@ -2866,179 +3048,6 @@ Initialize DEBE on startup.
 		
 	}); }); }); 
 } 
-
-/**
-@class DEBE.End_Points.System
-service maintenance endpoints
-*/
-
-function sysIngest(req,res) {
-/**
-@method sysIngest
-Totem (req,res)-endpoint to ingest a source into the sql database
-@param {Object} req Totem request
-@param {Function} res Totem response
-*/
-	
-	var 
-		sql = req.sql,
-		query = req.query,
-		body = req.body,
-		src = query.src,
-		fileID = query.fileID;
-	
-	Log("INGEST", query, body);
-	res("ingesting");
-
-	if (fileID) {
-		//sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
-		
-		if ( onIngest = DEBE.onIngest[src] )   // use builtin ingester
-			DEBE.ingester( onIngest, query, function (evs) {
-				HACK.ingestList( sql, evs, fileID, function (aoi) {
-					Log("INGEST aoi", aoi);
-				});
-			});
-
-		else  // use custom ingester
-			sql.query("SELECT _Ingest_Script FROM app.files WHERE ? AND _Ingest_Script", {ID: fileID})
-			.on("results", function (file) {
-				if ( onIngest = JSON.parse(file._Ingest_Script) ) 
-					DEBE.ingester( onIngest, query, function (evs) {
-						HACK.ingestList( sql, evs, fileID, function (aoi) {
-							Log("INGEST aoi", aoi);
-						});
-					});
-			});
-	}
-}
-
-function sysAgent(req,res) {
-/**
-@method sysAlert
-Totem (req,res)-endpoint to send notice to outsource jobs to agents.
-@param {Object} req Totem request
-@param {Function} res Totem response
-*/
-	
-	var
-		sql = req.sql,
-		query = req.query;
-	
-	if (push = query.push) 
-		CRYPTO.randomBytes(64, function (err, jobid) {
-
-			try {
-				var args = JSON.parse(query.args);
-			}
-			catch (parserr) {
-				err = parserr;
-			}
-			
-			if (err) 
-				res( "" );
-
-			else
-				res( jobid.toString("hex") );
-
-		});
-	
-	else
-	if (pull = query.pull) {
-		var jobid = query.jobid;
-		
-		if (jobid) 
-			res( {result: 123} );
-		
-		else
-			res( "Missing jobid" );
-	}
-
-	else
-	if ( flush = query.flush )
-		ATOM.matlab.flush(sql, flush);
-	
-	else
-	if ( thread = query.load ) {
-		var
-			parts = thread.split("_"),
-			id = parts.pop(),
-			plugin = "app." + parts.pop(),
-			results = ATOM.matlab.path.save + thread + ".out";
-		
-		Log("SAVE MATLAB",query.save,plugin,id,results);
-
-		FS.readFile(results, "utf8", function (err,json) {
-
-			sql.query("UPDATE ?? SET ? WHERE ?", [plugin, {Save: json}, {ID: id}], function (err) {
-				Log("save",err);
-			});
-
-		});	
-	}
-	
-	else
-	if ( thread = query.save ) {
-		var 
-			Thread = thread.split("."),
-			Thread = {
-				case: Thread.pop(),
-				plugin: Thread.pop(),
-				client: Thread.pop()
-			};
-		
-		sql.forFirst("agent", "SELECT * FROM openv.agents WHERE ? LIMIT 1", {queue: thread}, function (agent) {
-			
-			if (agent) {
-				sql.query("DELETE FROM openv.agents WHERE ?", {ID: agent.ID});
-				
-				if ( evs = JSON.parse(agent.script) )
-					FLEX.getContext(sql, "app."+Thread.plugin, {ID: Thread.case}, function (ctx) {
-						res( saveEvents( evs, ctx ) );
-					});
-				
-				else
-					res( DEBE.errors.badAgent );
-			}
-			
-			else
-				res( DEBE.errors.badAgent );
-				
-		});
-		
-	}
-	
-	else
-		res( DEBE.errors.badAgent );
-	
-}
-
-function sysAlert(req,res) {
-/**
-@method sysAlert
-Totem (req,res)-endpoint to send notice to all clients
-@param {Object} req Totem request
-@param {Function} res Totem response
-*/
-	if (IO = DEBE.IO)
-		IO.sockets.emit("alert",{msg: req.query.msg || "system alert", to: "all", from: DEBE.site.title});
-			
-	res("Broadcasting alert");
-}
-
-function sysStop(req,res) {
-/**
-@method sysStop
-Totem (req,res)-endpoint to send emergency message to all clients then halt totem
-@param {Object} req Totem request
-@param {Function} res Totem response
-*/
-	if (IO = DEBE.IO)
-		IO.sockets.emit("alert",{msg: req.query.msg || "system halted", to: "all", from: DEBE.site.title});
-	
-	res("Server stopped");
-	process.exit();
-}
 
 //====================== extend objects
 	
@@ -3618,9 +3627,9 @@ append layout_body
 
 	function sample( cb ) {
 	/*
-	@member Array
-	@method sample
-	@param {Function} cb callback(rec) returns recordresults to append
+	@member sample
+	@method Array
+	@param {Function} cb callback(rec) returns record results to append
 	Samples a record list:
 		[ {x:"a"}, {x:"b"} ].sample( (rec) => rec.x=="a" )
 	
@@ -3730,9 +3739,11 @@ append layout_body
 	},
 	
 	function gridify(noheader) {	//< dump dataset as html table
-		/**
-		@method gridify
-		*/
+	/**
+	@member Array
+	@method gridify
+	@param {Boolean} noheader switch to enable header processing
+	*/
 		function join(recs,sep) { 
 			switch (recs.constructor) {
 				case Array: 
