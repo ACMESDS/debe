@@ -1359,7 +1359,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	/**
 	@private
 	@cfg {Object}
-	@member context
+	@member DEBE
 	Defines site context keys to load skinning context before a skin is rendered.
 	Each skin has its own {key: "SQL DB.TABLE" || "/URL?QUERY", ... } spec.
 	*/
@@ -1398,7 +1398,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		get: function(recs, where, index, subs) {  //< index dataset
 		/**
-		@member SKINS
+		@member DEBE.Skinning
 		@method get
 		Provides a data indexer when a skin is being rendered.
 		@param {Array} recs Record source
@@ -1510,7 +1510,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		json: function(recs) {  //< jsonize dataset
 		/**
-		@member SKINS
+		@member DEBE.Skinning
 		@method json
 		Jsonize records.
 		@param {Array} recs Record source
@@ -1520,7 +1520,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		tag: function (src,el,tags) {
 		/**
-		@member SKINS
+		@member DEBE.Skinning
 		@method tag
 		*/
 			return tags ? src.tag(el,tags) : src.tag("a",{href:el});
@@ -1528,7 +1528,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		hover: function (ti,fn) {
 		/**
-		@member SKINS
+		@member DEBE.Skinning
 		@method hover
 		Title ti fileName fn
 		*/
@@ -1759,11 +1759,18 @@ function icoFavicon(req,res) {   // extjs trap
 }
 
 /**
-@class ATTRIB get and send dataset attributes
+@class DEBE.End_Points.Attributes
+get and send dataset attributes
 */
 
 function sendCert(req,res) { // create/return public-private certs
-			
+/**
+@method sendCert
+Totem (req,res)-endpoint to create/return public-private certs
+@param {Object} req Totem request
+@param {Function} res Totem response
+*/
+	
 	var 
 		owner = req.table,
 		pass = req.type;
@@ -1845,7 +1852,7 @@ To connect to ${site.Nick} from Windows:
 function sendAttr(req,res) { // send file attribute
 /**
 @method sendAttr
-Totem(req,res) endpoint to send the .area attribute of a .table file 
+Totem (req,res)-endpoint to send the .area attribute of a .table file 
 @param {Object} req Totem request
 @param {Function} res Totem response
 */
@@ -1864,13 +1871,15 @@ Totem(req,res) endpoint to send the .area attribute of a .table file
 }
 
 /**
-@class PLUGIN support for dataset-engine plugins
+@class DEBE.End_Points.Plugin
+support for plugins (a dataset-engine couple).
 */
 
 function extendPlugin(req,res) {
 /**
 @private
 @method extendPlugin
+Totem (req,res)-endpoint to add req.query keys to plugin req.table.
 @param {Object} req http request
 @param {Function} res Totem response callback
 */
@@ -1906,6 +1915,7 @@ function retractPlugin(req,res) {
 /**
 @private
 @method retractPlugin
+Totem (req,res)-endpoint to remove req.query keys from plugin req.table.
 @param {Object} req http request
 @param {Function} res Totem response callback
 */
@@ -1928,7 +1938,7 @@ function exePlugin(req,res) {
 /**
 @private
 @method exePlugin
-Interface to execute a dataset-engine plugin with a specified usecase as defined in [api](/api.view).
+Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID || req.query.Name.
 @param {Object} req http request
 @param {Function} res Totem response callback
 */	
@@ -2208,6 +2218,37 @@ Interface to execute a dataset-engine plugin with a specified usecase as defined
 
 }
 
+function sendDoc(req, res) {
+	var
+		site = DEBE.site,
+		master = "http://localhost:8080", //site.urls.master,	
+		query = req.query,
+		type = req.type.substr(1),
+		name = req.table,
+		docf = `./temps/docs/${req.table}.${type}`;	
+
+	res( "Claim file "+"here".link(docf) );
+
+	switch (type) {
+		case "pdf":
+		case "jpg":
+		case "gif":
+			
+			var 
+				url = `${master}/${name}.view`.tag("?", query),
+				res = (type != "pdf") ? "1920px" : "";
+			
+			Trace("SCRAPE "+url);
+			CP.execFile( "node", ["phantomjs", "rasterize.js", url, docf, res], function (err,stdout) { 
+				if (err) Log(err,stdout);
+			});
+			break;
+
+		default:
+
+	}
+}
+
 function saveEvents(evs, ctx) {
 	var
 		host = ctx.Host,
@@ -2271,42 +2312,14 @@ function saveEvents(evs, ctx) {
 	
 }
 
-function sendDoc(req, res) {
-	var
-		site = DEBE.site,
-		master = "http://localhost:8080", //site.urls.master,	
-		query = req.query,
-		type = req.type.substr(1),
-		name = req.table,
-		docf = `./temps/docs/${req.table}.${type}`;	
-
-	res( "Claim file "+"here".link(docf) );
-
-	switch (type) {
-		case "pdf":
-		case "jpg":
-		case "gif":
-			
-			var 
-				url = `${master}/${name}.view`.tag("?", query),
-				res = (type != "pdf") ? "1920px" : "";
-			
-			Trace("SCRAPE "+url);
-			CP.execFile( "node", ["phantomjs", "rasterize.js", url, docf, res], function (err,stdout) { 
-				if (err) Log(err,stdout);
-			});
-			break;
-
-		default:
-
-	}
-}
-
+/**
+@class DEBE.End_Points.Skinning
+*/
 function renderSkin(req,res) {
 /**
 @method renderSkin
 @member DEBE
-Totem(req,res) endpoint to render jade code requested by .table jade engine. 
+Totem (req,res)-endpoint to render req.table using its associated jade engine. 
 @param {Object} req Totem request
 @param {Function} res Totem response
 */
@@ -2506,7 +2519,6 @@ Totem(req,res) endpoint to render jade code requested by .table jade engine.
 function genDoc(recs,req,res) {
 /**
 @method genDoc
-@member DEBE
 Convert recods to requested req.type office file.
 @param {Array} recs list of records to be converted
 @param {Object} req Totem request
@@ -2856,10 +2868,18 @@ Initialize DEBE on startup.
 } 
 
 /**
-@class MAINT service maintenance endpoints
+@class DEBE.End_Points.System
+service maintenance endpoints
 */
 
 function sysIngest(req,res) {
+/**
+@method sysIngest
+Totem (req,res)-endpoint to ingest a source into the sql database
+@param {Object} req Totem request
+@param {Function} res Totem response
+*/
+	
 	var 
 		sql = req.sql,
 		query = req.query,
@@ -2894,6 +2914,13 @@ function sysIngest(req,res) {
 }
 
 function sysAgent(req,res) {
+/**
+@method sysAlert
+Totem (req,res)-endpoint to send notice to outsource jobs to agents.
+@param {Object} req Totem request
+@param {Function} res Totem response
+*/
+	
 	var
 		sql = req.sql,
 		query = req.query;
@@ -2989,7 +3016,7 @@ function sysAgent(req,res) {
 function sysAlert(req,res) {
 /**
 @method sysAlert
-Totem(req,res) endpoint to send notice to all clients
+Totem (req,res)-endpoint to send notice to all clients
 @param {Object} req Totem request
 @param {Function} res Totem response
 */
@@ -3002,7 +3029,7 @@ Totem(req,res) endpoint to send notice to all clients
 function sysStop(req,res) {
 /**
 @method sysStop
-Totem(req,res) endpoint to send emergency message to all clients then halt totem
+Totem (req,res)-endpoint to send emergency message to all clients then halt totem
 @param {Object} req Totem request
 @param {Function} res Totem response
 */
@@ -3019,7 +3046,8 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 	// string serializers callback cb(html) with tokens replaced
 	
 	function Xblog(req, ds, cache, ctx, rec, viaBrowser, cb) {
-	/*
+	/**
+	@member String
 	Expands markdown of the form:
 		
 		[ post ] ( SKIN.view ? w=WIDTH & h=HEIGHT & x=BASE$X & y=BASE$Y & OPTS ) || BASE,X,Y >= SKIN,WIDTH,HEIGHT,OPTS  
@@ -3040,6 +3068,14 @@ Totem(req,res) endpoint to send emergency message to all clients then halt totem
 		MARKDOWN
 		script:
 		MATLAB EMULATION SCRIPT
+		
+	@param {Object} req Totem request
+	@param {String} ds dataset name for 
+	@param {Object} cache hash for cacheing markdown variables
+	@param {Object} ctx hash holding markdown variables
+	@param {Obect} rec record hash for markdown variables
+	@param {Boolean} viaBrowser true to render markdown to browser
+	@param {Function} cb callback(markdown html)
 	*/
 		
 		for (var key in rec) try { ctx[key] = JSON.parse( rec[key] ); } catch (err) { ctx[key] = rec[key]; }
@@ -3695,7 +3731,6 @@ append layout_body
 	
 	function gridify(noheader) {	//< dump dataset as html table
 		/**
-		@member SKINS
 		@method gridify
 		*/
 		function join(recs,sep) { 
@@ -3954,12 +3989,19 @@ function Trace(msg,sql) {
 
 //======================= unit tests
 
+/**
+@class DEBE.Unit_tests_Use_Cases
+*/
+
 switch ( process.argv[2] ) { //< unit tests
 	case "?":
 		Log("unit test with 'node debe [D1 || D2 || ...]'");
 		break;
 			
 	case "D1": 
+		/**
+		@method D1
+		*/
 		var DEBE = require("../debe").config({
 			onFile: {
 				"./uploads/": function (sql, name, path) {  // watch changes to a file				
@@ -4054,6 +4096,9 @@ clients, users, system health, etc).`
 		break;
 		
 	case "D2":
+		/**
+		@method D1
+		*/
 		var DEBE = require("../debe").config({
 			riddles: 10,
 			"byTable.": {
@@ -4071,6 +4116,10 @@ clients, users, system health, etc).`
 		break;
 		
 	case "D3":
+		/**
+		@method D3
+		*/
+		
 		var DEBE = require("../debe").config({
 		}, function (err) {
 			Trace( err || "Stateful network flow manger started" );
