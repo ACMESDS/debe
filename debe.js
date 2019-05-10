@@ -1396,9 +1396,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		info: {
 		},
 		
+		/**
+		@class DEBE.Skinning
+		*/
 		get: function(recs, where, index, subs) {  //< index dataset
 		/**
-		@member DEBE.Skinning
 		@method get
 		Provides a data indexer when a skin is being rendered.
 		@param {Array} recs Record source
@@ -1510,7 +1512,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		json: function(recs) {  //< jsonize dataset
 		/**
-		@member DEBE.Skinning
 		@method json
 		Jsonize records.
 		@param {Array} recs Record source
@@ -1520,7 +1521,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		tag: function (src,el,tags) {
 		/**
-		@member DEBE.Skinning
 		@method tag
 		*/
 			return tags ? src.tag(el,tags) : src.tag("a",{href:el});
@@ -1528,7 +1528,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		hover: function (ti,fn) {
 		/**
-		@member DEBE.Skinning
 		@method hover
 		Title ti fileName fn
 		*/
@@ -1541,6 +1540,9 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		},
 		
 		gridify: function (recs,noheader) {	//< dump dataset as html table
+		/**
+		@method gridify
+		*/
 			return recs.gridify(noheader);
 		}		
 	},
@@ -2318,6 +2320,7 @@ function saveEvents(evs, ctx) {
 /**
 @class DEBE.End_Points.Skinning
 */
+
 function renderSkin(req,res) {
 /**
 @method renderSkin
@@ -2372,10 +2375,13 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 	
 	dsContext(dsname, function (ctx) {  // get skinning context for this skin
 
+		/**
+		@class DEBE.Utilities.Skinning
+		*/
 		function renderFile( file, ctx ) { 
 		/**
 		@private
-		@method render
+		@method renderFile
 		Render Jade file at path this to res( err || html ) in a new context created for this request.  
 		**/
 			try {
@@ -2387,6 +2393,11 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 		}
 
 		function renderPlugin( fields, ctx ) { // render using plugin skin
+		/**
+		@private
+		@method renderPlugin
+		Render Jade file at path this to res( err || html ) in a new context created for this request.  
+		**/
 			
 			Copy({
 				mode: req.type,
@@ -2465,6 +2476,11 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 		}		
 		
 		function renderTable( ds, ctx ) {
+		/**
+		@private
+		@method renderPlugin
+		Render table at path this to res( err || html ) in a new context created for this request.  
+		**/			
 			sql.query( 
 				"SHOW FULL COLUMNS FROM ??", 
 				sql.reroute( ds ), 
@@ -2481,7 +2497,7 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 		function renderJade( jade, ctx ) { 
 		/**
 		@private
-		@method render
+		@method renderJade
 		Render Jade string this to res( err || html ) in a new context created for this request. 
 		**/
 			try {
@@ -2520,7 +2536,7 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 }
 
 /**
-@class DEBE.Utilities.Skinning
+@class DEBE.Utilities.Doc_Generation
 */
 function genDoc(recs,req,res) {
 /**
