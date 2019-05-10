@@ -46,7 +46,7 @@ append base_head
 	
 	script.
 		var opts = {  // define plot options
-			ds: "/!{query.src}?ID=#{query.id}&x:#{query.x}&y:#{query.y}",
+			ds: "/!{query.src}?ID=#{query.id}&x:=#{query.x}&y:=#{query.y}",
 			w: parseInt("#{query.w}" || "0"),
 			h: parseInt("#{query.h}" || "0"),
 			debug: parseInt("#{query.debug}" || "0"),

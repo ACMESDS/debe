@@ -111,6 +111,7 @@ function source(opts, cb) {
 	
 	if (opts.debug)  alert( JSON.stringify(opts) ); 
 
+	//alert(">>>>>>>>>>ds: "+opts.ds);
 	d3.json( opts.ds , function (recs) {
 		//alert( recs ? "got data" : "no data" );
 		//alert(JSON.stringify(recs));

@@ -3181,8 +3181,8 @@ Totem (req,res)-endpoint to send emergency message to all clients then halt tote
 					keys = {},
 					opt = rec.url,
 					url = rec.opt,
-					dsPath = ds.parsePath(keys),
-					srcPath = url.parsePath(keys) || dsPath,
+					dsPath = ds.parsePath(keys,{},{},{}),
+					srcPath = url.parsePath(keys,{},{},{}) || dsPath,
 					w = keys.w || 100,
 					h = keys.h || 100,
 					srcPath =  srcPath.tag( "?", Copy({src:dsPath}, keys) );				
