@@ -8,7 +8,7 @@ append base_help
 	:markdown
 		Display sankey chart:
 
-			ds = bogus source url
+			src = bogus source url
 			w = drawing width
 			h = drawing height
 			debug = dump derived options
@@ -36,7 +36,7 @@ append base_head
 
 	script.
 		var opts = {
-			ds: "!{query.ds}",
+			ds: "!{query.src}",
 			w: parseInt("#{query.w}"),
 			h: parseInt("#{query.h}"),
 			debug: "#{query.debug}"

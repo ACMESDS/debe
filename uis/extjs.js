@@ -56,8 +56,75 @@ Ext.require([
 	'Ext.util.TaskManager'
 ]);
 
-var 
+const {Copy,Each,isString} = BASE;
+
+function DBstore( name, path, cols, opts ) {
 	
+	var
+		proxy = {	// Proxy to read/write from/to the server.
+			type: 'rest',						// wonderful restful
+			url: path,							// HTTP path to this dataset
+			reader: {							// parms to read JSON from server
+				type			: "json",		// of course
+				rootProperty	: PROXY.ROOT,	
+				idProperty		: PROXY.KEY,
+				totalProperty  	: PROXY.TOTAL,	
+				successProperty	: PROXY.STATE,	
+				messageProperty	: PROXY.MESSAGE	
+				// dataProperty implicitly "data"
+				// insertIDProperty explicitly handled in store update
+			}, 
+			writer	: {   						// methods to write parms to server
+				writeAllFields: false			// false to only send revised fields on updates (implied true in TreeStore)
+			},
+			appendId: false,					// no sense in appending as server has this info in its req
+			idParam	: PROXY.KEY,			// yep - record ID yet again - stupid EXTJS
+			filterParam: PROXY.FILTER,
+			sortParam:	PROXY.SORT,				
+			startParam: PROXY.START,
+			limitParam: PROXY.LIMIT,				
+			pageParam: PROXY.PAGE,					
+			//extraParams: links ? Copy(links,{}) : null,					// linking parms (EXTJS BUG -- ignored on form submits)
+			actionMethods: 						// HTTP methods corresponding to CRUD operations
+				{create: PROXY.INSERT, read: PROXY.SELECT, update: PROXY.UPDATE, destroy: PROXY.DELETE}
+		},
+		
+		model = Ext.define( name, {
+			extend: 'Ext.data.Model',
+			fields: cols,
+			idProperty: PROXY.KEY,
+			proxy: proxy
+		});
+	
+	return isString(path)
+		? Ext.create('Ext.data.Store', Copy( opts || {}, {
+				model: model,
+				proxy: proxy /*{
+					type: "rest",
+					url: url,
+					reader: {
+						type: "json",
+						rootProperty : PROXY.ROOT,	
+						idProperty	: PROXY.KEY,
+						totalProperty : PROXY.TOTAL,	
+						successProperty	: PROXY.STATE,	
+						messageProperty	: PROXY.MESSAGE
+					},
+					filterParam: PROXY.FILTER,
+					sortParam:	PROXY.SORT,				
+					startParam: PROXY.START,
+					limitParam: PROXY.LIMIT,				
+					pageParam: PROXY.PAGE				
+				} */
+			}))
+	
+		: Ext.create('Ext.data.Store', Copy( opts || {}, {
+				model: model,
+				data: path
+		}));
+}
+
+var 
 	EDCTX = {  // reserve context for editors
 		states: {
 			jsonEditor: "json",
@@ -271,6 +338,18 @@ var
 		DELETE: "DELETE"	// CRUD delete
 	},	
 
+	LOOKUPS = {
+		keys: {},
+		
+		store: DBstore( 'lookups', '/lookups.db', [
+				{name: "Name", type: "string"},
+				{name: "Ref", type: "string"},
+				{name: "Path", type: "string"}
+			], { 	
+			autoLoad: true 
+		}) 
+	},
+	
 	CHARTS = {  			// allowed charts
 		bar:"cartesian",
 		bar3d:"cartesian",
@@ -357,61 +436,6 @@ var
 		YearMonth: "F, Y"
 	};	
 
-String.prototype.parseURL = function (xx,pin) {
-
-	/**
-	 * @method Format
-	 * 
-	 * Format a string S containing ${X.key} tags.  The String wrapper for this
-	 * method extends X with optional plugins like X.F = {fn: function (X){}, ...}.
-	 * */
-	function Format(X,S) {
-
-		try {
-			var rtn = eval("`" + S + "`");
-			return rtn;
-		}
-		catch (err) {
-			return "[bad]";
-		}
-
-	}
-
-	var x = d = {};
-	function xs(n) {
-		if (n)
-			if ( x = xx[n] )
-				return x;
-			else
-				return x = xx[n] = xx.def || {};
-		else
-			return x;
-	}
-
-	function ds(n) {
-		if (n)
-			if ( d = xx[n] = DSLIST[n] ) 
-				return d;
-			else
-				return d = xx[n] = xx.def || {};
-		else
-			return d;
-	}
-	
-	if (pin) xx.pin = pin;
-	
-	return Format(xx,this);
-};
-
-String.prototype.parseJSON = function (def) {
-	try {
-		return JSON.parse(this);
-	}
-	catch (err) {
-		return def;
-	}
-}
-
 function defineProxy(path,links,key) {  
 /**
  * @method defineProxy
@@ -423,7 +447,7 @@ function defineProxy(path,links,key) {
 		url: path,							// HTTP path to this dataset
 		reader: {							// parms to read JSON from server
 			type			: "json",		// of course
-			root			: PROXY.ROOT,	
+			rootProperty	: PROXY.ROOT,	
 			idProperty		: key || PROXY.KEY,
 			totalProperty  	: PROXY.TOTAL,	
 			successProperty	: PROXY.STATE,	
@@ -459,7 +483,7 @@ function DS(anchor) {
  * @param {HTMLElement} anchor Associated DOM element defining DS widget attributes.
  */
 	
-	function initialize() {  // Defines This.proxy, .Store, .load(), and .setProxy() then starts loading data
+	function initializeStore() {  // Defines .Store then starts loading data
 		
 		/*
 		function extendRecs(hash,idxkey,valkey,recs) {
@@ -492,16 +516,9 @@ function DS(anchor) {
 		//alert("init "+name+" path="+path+" url="+url+" key="+key+" fs="+Fields.length);
 		
 		var 
-			proxy = This.proxy = defineProxy(url,flags,key);
+			//proxy = This.proxy = defineProxy(url,flags,key);
 			isResolved = url != "/undefined.db";
 		
-		Ext.define(name, {   			// create data model for the store
-			extend		: 'Ext.data.Model',
-			fields		: Fields,
-			proxy		: proxy,
-			idProperty	: key || PROXY.KEY  // rep - again stupid EXTJS
-		});
-
 		if (path.charAt(0) == "[") 
 			var type = "inline";
 		
@@ -512,12 +529,24 @@ function DS(anchor) {
 		else
 			var type = anchor.id;
 		
+		/*
+		Ext.define(name, {   			// create data model for the store
+			extend		: 'Ext.data.Model',
+			fields		: Fields,
+			proxy		: proxy,
+			idProperty	: key || PROXY.KEY  // rep - again stupid EXTJS
+		}); */
+		
 		switch (type) { 		// dynamic data
 			case "inline":  	// static inline data
-				var Store = This.Store = Ext.create('Ext.data.Store', {
-					model 	: name,
+				var Store = This.Store = DBstore( name, path.parseJSON([]) );
+					
+				/*
+				Ext.create('Ext.data.Store', {
+					model 	: name, 
 					data	: path.parseJSON([])
-				});
+				});  */
+					
 				Store.setproxy = Store.load = function () {};
 				break;
 		
@@ -531,11 +560,14 @@ function DS(anchor) {
 					recs.push( new Object({ID:recs.length+1, Name: key, Ref: name, Path: opts[key]}) );
 
 				//console.log(name, JSON.stringify(recs));
-				Store = This.Store = Ext.create('Ext.data.Store', {
-					model	: name,
-					data	: recs
-						// extendRecs( cols[0].dataIndex, cols[ cols[1]?1:0 ].dataIndex, []  )
-				});
+				Store = This.Store = DBstore( name, recs );
+					
+					/*
+					Ext.create('Ext.data.Store', {
+						model	: name,
+						data	: recs
+							// extendRecs( cols[0].dataIndex, cols[ cols[1]?1:0 ].dataIndex, []  )
+					}); */
 
 				Store.setproxy = Store.load = function () {};
 				break;
@@ -670,19 +702,28 @@ function DS(anchor) {
 			case "data":
 			case "find":				// regular store
 
-				var Store = This.Store = Ext.create('Ext.data.Store', {
-					model		: name,
+				var Store = This.Store = DBstore( name, url, Fields, {
 					autoLoad	: isResolved,
-					/*autoLoad: {			// call its load method after store created
-							params: Copy(Link.Flag, {}) // EXTJS BUG - load revises params
-						}, */
-					
 					//autoSync	: false,  	// disabled forces use of update to sync changes
 					//buffered	: false, 	// used with paging and verticalScroller but EXTJS BUG
 					pageSize	: page,  	// used with paging and verticalScroller
 					remoteFilter: true,
 					remoteSort	: true	// enable remote sorting
 				});
+				
+					/*Ext.create('Ext.data.Store', {
+					model		: name,
+					autoLoad	: isResolved,
+					/ *autoLoad: {			// call its load method after store created
+							params: Copy(Link.Flag, {}) // EXTJS BUG - load revises params
+						},  * /
+					
+					//autoSync	: false,  	// disabled forces use of update to sync changes
+					//buffered	: false, 	// used with paging and verticalScroller but EXTJS BUG
+					pageSize	: page,  	// used with paging and verticalScroller
+					remoteFilter: true,
+					remoteSort	: true	// enable remote sorting
+				});*/
 				break;
 
 			case "border":
@@ -690,15 +731,20 @@ function DS(anchor) {
 			case "content":
 			case "form": 				// provide store for excess form records
 
-				var Store = This.Store = Ext.create('Ext.data.Store', {
-					model	: name,
+				var Store = This.Store = DBstore( name, url, Fields, {
 					data	: [],
 					autoLoad: isResolved 
 				});
+					
+					/*Ext.create('Ext.data.Store', {
+						model	: name,
+						data	: [],
+						autoLoad: isResolved 
+					}); */
 				
 				Store.load = function () {
 					Ext.Ajax.request({
-						url : This.proxy.url,
+						url : This.Store.getProxy().url, //This.proxy.url,
 						method: "GET",
 						success: function (res) {
 							var info = Ext.decode(res.responseText);
@@ -725,9 +771,10 @@ function DS(anchor) {
 				});
 
 				Store.setProxy = function (proxy) {
-					Copy(proxy, Store.ds.proxy);
+					Copy(proxy, Store.getProxy() );
+						 // Store.ds.proxy);
 				};
-				Store.ds = This;
+				//Store.ds = This;
 				Store.load = function () {
 					var
 						dims = Store.ds.dims,
@@ -801,7 +848,7 @@ function DS(anchor) {
  */
 		// sorts = this.sorts ? hashify( this.sorts ) : null,
 		sorts = anchor.getAttribute("sorts"),
-		sorts = sorts ? hashify(sorts.split(",")) : null,
+		sorts = sorts ? sorts.split(",").hashify( {} ) : null,
 	
 		//shifts	= anchor.getAttribute("shifts") ? true : false,
 		
@@ -855,7 +902,7 @@ function DS(anchor) {
 
 	// Each token from the parser corresponds to an ExtJS column.
 
-	cols = this.cols = cols.parse( PARMS, function cb(tok,args) {
+	cols = this.cols = cols.lisp( PARMS, function cb(tok,args) {
 
 		function gridColumn(fSpec, fCalc) { 
 		/**
@@ -962,7 +1009,7 @@ function DS(anchor) {
 				fOpts = fSpec.split("."),
 				fKey = fOpts[0],
 				fParm = PARMS[ fKey ] || {Type: calc ? "mediumtext" : "text", Label:fKey, Special:""},
-				fType = fOpts[1] || fParm.Type || "text",
+				fType = LOOKUPS.keys[ fKey ] ? "o" : fOpts[1] || fParm.Type || "text",
 				fDoc = unescape(fOpts[2] || "please follow link to document this field"), //.replace(/\$dot/g,"."),
 				fQual = fOpts[3] || "",
 				//fLabel = fOpts[2] || fParm.Label || fKey,
@@ -1553,95 +1600,66 @@ function DS(anchor) {
 					};		
 
 				case 'combo': 	// queue pulldown
-				case "o":
+				case 'o':
 
-					if ( Lookups = DSLIST.Lookups )
-						return {	// Lookups were defined
-							xtype: "",
-							//fType		: fType,
-							dataIndex	: fKey,
-							filter		: "string",
-							sortable	: true,
-							hideable	: true,
-							hidden: fHide,
-							locked		: fLock,
-							disabled	: fOff,
-							width		: 100,
-							text		: fLabel,
-							qtip		: fTip, 
-							//qtitle	 	: fTipTitle,
-							editor		: {
-								xtype: 'combobox',
-								disabled: fOff,
-								defaultValue: "",
-								forceSelection: false,
-								//format: "",
-								emptyText: '<<null>>',
-								listConfig : { minWidth: 400 }, //, itemTpl: "{"+fDisp+"}" },
-								allowBlank: true,
-								typeAhead: true,
-								triggerAction: 'all',
-								//multiSelect: false, 
-								store : Lookups.Store,
-								displayField : "Name",
-								valueField : "Path",
-								selectOnTab: true,
-								queryMode: 'local',	
-								//submitValue: true, 
-								width: 100,
-								//renderer	: fieldRender,
-								listeners	: {
-									// EXTJS BUG - combobox bound to out-of-band store (i.e. store not containing the
-									// target valueField) always sets newValue to null.  Must slap EXTJS upside its
-									// head by resetting value to selected value.
-									afterRender: function (me,eOpts) { 
-										me.store.filter("Ref", fKey);
-										//combo.setValue(null); // EXTJS BUG set globally
-									}, 
-									
-									change: function ( scope, newValue, oldValue, eOpts ) {
-										var rawValue = scope.getRawValue();
-
-										//console.log("chg", oldValue, rawValue, newValue);
-										if ( typeof oldValue == "object" ) //isArray(oldValue)) 
-											scope.setRawValue(rawValue.split(","));
-										else
-										if (newValue === null) 
-											scope.setValue(newValue);
-
-										return true;
-									}
-								} 
-							}
-						};
-					
-					else 
-						return { // Lookups never defined
-							xtype: "",
-							//fType		: fType,
-							dataIndex	: fKey,
-							filter		: "string",
-							sortable	: true,
-							hideable	: true,
-							hidden: fHide,
-							locked		: fLock,
-							disabled	: fOff,
-							width		: 100,
-							text			: fLabel,
-							qtip			: fTip, 
-							//qtitle	 	: fTipTitle,
-							editor		: {	
-								xtype: 'textfield',
-								disabled: fOff,
-								defaultValue: "",
-								format: "",
-								minLength: 0,
-								allowBlank: true,
-								width: 400
-							},
+					return {
+						xtype: "",
+						//fType		: fType,
+						dataIndex	: fKey,
+						filter		: "string",
+						sortable	: true,
+						hideable	: true,
+						hidden: fHide,
+						locked		: fLock,
+						disabled	: fOff,
+						width		: 100,
+						text		: fLabel,
+						qtip		: fTip, 
+						//qtitle	 	: fTipTitle,
+						editor		: {
+							xtype: 'combobox',
+							disabled: fOff,
+							defaultValue: "",
+							forceSelection: false,
+							//format: "",
+							emptyText: '<<null>>',
+							listConfig : { minWidth: 400 }, //, itemTpl: "{"+fDisp+"}" },
+							allowBlank: true,
+							typeAhead: true,
+							triggerAction: 'all',
+							//multiSelect: false, 
+							store : LOOKUPS.store,
+							displayField : "Name",
+							valueField : "Path",
+							selectOnTab: true,
+							queryMode: 'local',	
+							//submitValue: true, 
+							width: 100,
 							//renderer	: fieldRender,
-							listeners	: fListen
-						};
+							listeners	: {
+								// EXTJS BUG - combobox bound to out-of-band store (i.e. store not containing the
+								// target valueField) always sets newValue to null.  Must slap EXTJS upside its
+								// head by resetting value to selected value.
+								afterRender: function (me,eOpts) { 
+									me.store.filter("Ref", fKey);
+									//combo.setValue(null); // EXTJS BUG set globally
+								}, 
+
+								change: function ( scope, newValue, oldValue, eOpts ) {
+									var rawValue = scope.getRawValue();
+
+									//console.log("chg", oldValue, rawValue, newValue);
+									if ( typeof oldValue == "object" ) //isArray(oldValue)) 
+										scope.setRawValue(rawValue.split(","));
+									else
+									if (newValue === null) 
+										scope.setValue(newValue);
+
+									return true;
+								}
+							} 
+						}
+					};
 
 				default:	// punt
 
@@ -1776,7 +1794,7 @@ function DS(anchor) {
 				break;
 		}
 		
-		switch (fKey) {		// Handle reserved field names
+		switch (fKey) {		// Handle reserved field names <<<<<<<< may need to revise names
 			case "NodeCount":
 				fCol.persist = false;
 				break;
@@ -1965,7 +1983,7 @@ function DS(anchor) {
 		
 		else {
 			//alert("preinit "+this.name+"="+this.title+"="+This.title+"="+anchor.getAttribute("title"));
-			initialize();
+			initializeStore();
 			DSLIST[name] = this;
 		}
 	}
@@ -1973,11 +1991,12 @@ function DS(anchor) {
 
 DS.prototype.relink = function (cb) {  // Relink dataset proxy to a new url
 	var 
-		proxy = this.proxy,
-		Store = this.Store;
+		//Proxy = this.proxy,
+		Store = this.Store,
+		Proxy = Store.getProxy();
 
 	if (cb) {
-		cb(proxy, proxy.extraParams, this);
+		cb(Proxy, Proxy.extraParams, this);
 		
 	/*
 		var recData = rec.getData();
@@ -1985,7 +2004,7 @@ DS.prototype.relink = function (cb) {  // Relink dataset proxy to a new url
 		proxy.url = this.path.parseURL(Soft);
 	*/
 		
-		Store.setProxy( proxy );
+		Store.setProxy( Proxy );
 	}
 	
 	//alert("relink="+proxy.url + " for="+this.name );
@@ -2094,7 +2113,19 @@ Ext.onReady( function () {
 	}); 
 
 	Ext.QuickTips.init();
-					
+
+	Ext.Ajax.request({
+		async: false,
+		url: "/lookups.db?_pivot=Ref",
+		method: "GET",
+		success: (res) => {
+			res.responseText.parseJSON({data:[]}).data.hashify( LOOKUPS.keys, "Ref" );
+			alert(JSON.stringify(LOOKUPS.keys));
+		},
+		failure: (res) => {
+		}
+	});
+	
 	BASE.start({
 		
 		parser: {								// Dom parsing widget switches, attribues and parameters
@@ -2299,24 +2330,6 @@ Ext.onReady( function () {
 	
 });
 
-/*
-String.prototype.tagurl = function (at) {
-	var rtn = this;
-
-	for (var n in at) {
-		rtn += n + "=";
-		switch ( (at[n] || 0).constructor ) {
-			//case Array: rtn += at[n].join(",");	break;
-			case Array:
-			case Date:
-			case Object: rtn += JSON.stringify(at[n]); break;
-			default: rtn += at[n];
-		}
-		rtn += "&";
-	}
-	return rtn;
-} */
-
 WIDGET.prototype.menuTools = function () {
 
 	function Status(msg) {
@@ -2332,16 +2345,11 @@ WIDGET.prototype.menuTools = function () {
 			base64 = ";base64,",
 			idx = data.indexOf(base64);
 
-		/*Each(parms, function (n,parm) {
-			opts += n+"="+parm+";";
-		}); */
-
 		Ext.Ajax.request({
 				url	: url,
 				method	: "POST",
 				params	: 
 						"".tag(";", parms)
-						//"".tagurl(parms).replace(/&/g,";") 
 						+ data.substr(0,idx).replace("data:","type=") 
 						+ "\r\n" 
 						+ data.substr(idx+base64.length)
@@ -2402,7 +2410,7 @@ WIDGET.prototype.menuTools = function () {
 			});
 	}
 
-	function combo (label, ds, cb) {
+	function combo (label, cb) {
 		return Ext.create("Ext.form.ComboBox", {
 			disabled: false,
 			forceSelection: false,
@@ -2442,7 +2450,7 @@ WIDGET.prototype.menuTools = function () {
 				minWidth: 500
 			},
 
-			store: ds.Store
+			store: LOOKUPS.store
 		});
 	}
 	
@@ -2629,9 +2637,8 @@ WIDGET.prototype.menuTools = function () {
 	if (this.menu) menu = this.menu + "," + menu;
 		 
 	if (menu)  
-		this.Menu = menu.parse( null, function (tok,args) { 
+		this.Menu = menu.lisp( {}, function (tok,args) { 
 			var 
-				Lookups = DSLIST[tok] || DSLIST.Lookups,
 				key = tok.toLowerCase();
 			
 			if (args)  			// wrap sub menu items in another pulldown menu
@@ -2715,11 +2722,11 @@ WIDGET.prototype.menuTools = function () {
 										if (rec) {
 											var 
 												Store = Widget.Data.Store,
-												proxy = Widget.Data.proxy;
+												Proxy = Store.getProxy(); //Widget.Data.proxy;
 												
 											//Widget.Data.Store.setProxy(defineProxy(rec.get("Path")));
-											proxy.url = rec.get("Path");
-											Store.setProxy(proxy);
+											Proxy.url = rec.get("Path");
+											Store.setProxy(Proxy);
 											Store.load();
 										}
 									},
@@ -2803,28 +2810,28 @@ WIDGET.prototype.menuTools = function () {
 												{	text: "<i>Contains String</i>",
 													icon: "/clients/icons/tips/Contains.ico",
 													handler: function (item) {
-														Data.relink( function (proxy,flags) {
+														Data.relink( function (proxy, flags) {
 															flags._has = escape(SearchBox);
 														});
 													}},
 												{	text: "<i>Natural Language</i>",
 													icon: "/clients/icons/tips/NaturalLanguage.ico",
 													handler: function (item) {
-														Data.relink( function (proxy,flags) {
+														Data.relink( function (proxy, flags) {
 															flags._nlp = escape(SearchBox);
 														});
 													}},
 												{	text: "<i>Binary Expression</i>",
 													icon: "/clients/icons/tips/Relevance.ico",
 													handler: function (item) {
-														Data.relink( function (proxy,flags) {
+														Data.relink( function (proxy, flags) {
 															flags._bin = escape(SearchBox);
 														});
 													}},
 												{	text: "<i>Implied Knowledge</i>",
 													icon: "/clients/icons/tips/ImpliedKnowledge.ico",
 													handler: function (item) {
-														Data.relink( function (proxy,flags) {
+														Data.relink( function (proxy, flags) {
 															flags._qex = escape(SearchBox);
 														});
 													}} ]
@@ -2868,7 +2875,7 @@ WIDGET.prototype.menuTools = function () {
 									//Flag._delta = delta ? "Num" : "";
 									//Widget.Data.Store.setProxy(defineProxy(Widget.Data.proxy.url, delta ? {_delta:"Num"} : null));
 
-									Widget.Data.relink( function (proxy,flags) {
+									Widget.Data.relink( function (proxy, flags) {
 										flags._delta = deltaed ? "Num" : "";
 									});
 									deltaed = !deltaed;
@@ -3283,34 +3290,22 @@ WIDGET.prototype.menuTools = function () {
 										  
 					case "summary":
 
-						if (Lookups) 
-							return combo( tok, Lookups , function (val) {
-							});
-						
-						else
-							return button(tok);
+						return combo( tok, function (val) {
+						});
 
 					case "datasets":
 						
-						if (Lookups) 
-							return combo( tok, Lookups, function (path) {
-								Widget.Data.relink( function (proxy, flags) {
-									proxy.url = path;
-								});
+						return combo( tok, function (path) {
+							Widget.Data.relink( function (proxy, flags) {
+								proxy.url = path;
 							});
-
-						else
-							return button(tok);
+						});
 					
 					case "agents":
 						
-						if (Lookups) 
-							return combo( tok, Lookups, function (path) {
-								agent = path || "";
-							});
-
-						else
-							return button(tok);
+						return combo( tok,  function (path) {
+							agent = path || "";
+						});
 					
 					default:
 						var 
@@ -3337,9 +3332,8 @@ WIDGET.prototype.menuTools = function () {
 								}
 							});
 						
-						else
-						if (Lookups) 		// pulldown via dataset of another widget
-							return combo( tok, Lookups, function (val) {
+						else	// pulldown via dataset of another widget
+							return combo( tok, function (val) {
 								switch (key) {
 									case "options":
 										var 
@@ -3366,9 +3360,6 @@ WIDGET.prototype.menuTools = function () {
 										}
 								}
 							});
-						
-						else
-							return button(tok);
 				}
 		});
 		

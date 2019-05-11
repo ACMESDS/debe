@@ -9,23 +9,20 @@ append base_help
 		 Produce d3 scatter plot:  
 
 			src = source dataset returning record list
-			w = drawing width
-			h = drawing height
-			id = record id (undefined implies all records)
+			id = record id (default all records)
 			x = dataset key
 			y = dataset key
-			debug = dump derived options
+			w = drawing width
+			h = drawing height
+			debug = enable debugging alerts
 			line = color,color, ... line color
 			marker = style,style, ... line markers
 			label = X,Y labels
 			auto = X,Y auto scales
-			trace = data trace interval
 			min = X,Y axis minimums
 			max = X,Y axis maximums
-			xy = xindex,yindex,yindex,... index to data
-			ref = [x,y], ... reference path
-			init = [x,y], ... data to prefix
-			extra = [x,y], ... data to append to plots
+			extra = [[x,y], ... ] data to append to plots
+			details = show xy locations
 
 append base_head
 
@@ -49,18 +46,15 @@ append base_head
 			ds: "/!{query.src}?ID=#{query.id}&x:=#{query.x}&y:=#{query.y}",
 			w: parseInt("#{query.w}" || "0"),
 			h: parseInt("#{query.h}" || "0"),
-			debug: parseInt("#{query.debug}" || "0"),
-			marker: ( "#{query.marker}" || "circle,square,triangle" ).split(","),
-			line: ( "#{query.line}" || "blue,green,red,black,orange,yellow" ).split(","),
-			trace: "#{query.trace}",
-			label: "#{query.label}".split(","),
+			debug: "#{query.debug}",
+			marker: ( "#{query.marker}" || "circle" ).option(),
+			line: ( "#{query.line}" || "black" ).option(),
+			label: ( "#{query.label}" || "x,y" ).option(),
 			auto: "#{query.auto}".split(","),
-			initialize: true,
-			ref: "#{query.ref}".split(","),
 			min: "#{query.min}".split(","),
 			max: "#{query.max}".split(","),
-			init:  "#{query.init}".split(","),
-			extra: "#{query.extra}".split(",")
+			extra: "#{query.extra}".option(),
+			details: "#{query.details}"
 		};
 				 
 append base_body
@@ -77,98 +71,12 @@ append base_body
 					isView ? d.details : "",
 					"_blank",
 					"left="+d.x+"px,"
-					+ "top="+d.y[yidx]+"px,"
+					+ "top="+d.y[nplot]+"px,"
 					+ "width=50,height=50,location=0,menubar=0,status=0,titlebar=0,toolbar=0");
 
 				if ( !isView )
 					doc.document.write(JSON.stringify( details ));
 			}
-		}
-
-		function axes(opts,yidx) {
-			var line = d3.svg.line();
-
-			line
-				.x(function (d) { return xa(d.x); })
-				.y(function (d) { return ya(d.y[yidx]); })
-				.interpolate('linear');
-
-			var xaxis = svg
-				.append("g")
-				.attr("class", "x axis")
-				.attr("transform", "translate(0," + height + ")")
-				.call(xAxis)
-				.append("text")
-				.attr("class", "label")
-				.attr("x", width)
-				.attr("y", -45)
-				.attr("dy", "1em")
-				.style("text-anchor", "end")
-				.text(opts.label[0] || "x");
-
-			var yaxis = svg
-				.append("g")
-				.attr("class", "y axis")
-				.call(yAxis)
-				.append("text")
-				.attr("class", "label")
-				.attr("transform", "rotate(-90)")
-				.attr("y", 20)
-				.attr("dy", "1em")
-				.style("text-anchor", "end")
-				.text(opts.label[1] || "y");
-
-			/*
-			svg
-				.append('path')
-				.attr('d', line([[opts.min[0],opts.min[1]],[opts.max[0],opts.min[1]]]))
-				.attr('stroke', "black")
-				.attr('stroke-width', 2)
-				.attr('fill', 'none');
-
-			svg
-				.append('path')
-				.attr('d', line([[opts.min[0],opts.min[0]],[opts.min[0],opts.max[1]]]))
-				.attr('stroke', "black")
-				.attr('stroke-width', 2)
-				.attr('fill', 'none');
-			*/
-
-			/*
-			if (opts.ref.length) 
-				svg
-				.append('path')
-				.attr('d', line(opts.ref))
-				.attr('stroke', "black")
-				.attr('stroke-width', 2)
-				.attr('fill', 'none');
-
-			if (opts.name) {   // add legend
-				var legend = svg
-				.selectAll(".legend")
-				.data(color.domain())
-				.enter()
-				.append("g")
-				.attr("class", "legend")
-				.attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
-
-				for (var m=0,M=opts.name.length; m<M; m++) {
-					svg
-					.append("rect")
-					.attr("x", width - 18)
-					.attr("width", 25)
-					.attr("height", 25)
-					.style("fill", opts.line[m] || "black");
-
-					svg
-					.append("text")
-					.attr("x", width - 24)
-					.attr("y", 9)
-					.attr("dy", ".35em")
-					.style("text-anchor", "end")
-					.text(opts.name[m]);
-				}
-			}*/
 		}
 
 		var 
@@ -179,139 +87,194 @@ append base_body
 			vis = d3.select("#content"),
 
 			svg = vis.append("svg")
-				.attr("width", width + margin.left + margin.right)
-				.attr("height", height + margin.top + margin.bottom)
-				.append("g")
-				.attr("transform", "translate(" + margin.left + "," + margin.top + ")"),
+			.attr("width", width + margin.left + margin.right)
+			.attr("height", height + margin.top + margin.bottom)
+			.append("g")
+			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-			xa = d3.scale.linear()
-				.domain([0,1])
-				.range([0, width]),
-
-			ya = d3.scale.linear()
-				.domain([0,1])
-				.range([height, 0]),
-
-			color = d3.scale.category10(),
-
-			xAxis = d3.svg.axis()
-				.scale(xa)
-				.orient("bottom"),
-
-			yAxis = d3.svg.axis()
-				.scale(ya)
-				.orient("left");
-
-		/*
-		opts.xy.each(function (n,xy) {
-			if (n == 0) {
-				//if ((opts.x = parseInt(xy)) != NaN) 
-				opts.x = xy;
-			}
-			else {
-				//if((opts.y = parseInt(xy)) != NaN) 
-				opts.y = xy;
-				opts.ys.push( opts.y );
-			}
-		});*/
-
-		source( opts, function plotter (rec) {
-			//var pdata = opts.init.concat(data.concat(opts.extra));
-			
+		BASE.load( opts, (recs) => {
 			var 
-				plots = 1,
-				pdata = [],
-				x = rec.x || [],
-				y = rec.y || [];
-				
-			if (ys = rec.ys) {
-				plots = ys.length;
-				x.forEach( function (x,n) {
-					pdata.push( { x: x, y: ys[n] } );
-				});	
-			}
-			else
-				x.forEach( function (x,n) {
-					pdata.push( { x: x, y: [y[n]] } );
-				});	
+				markerStyles = opts.marker || [],
+				markerDef = markerStyles[0],
+				lineStyles = opts.line || [],
+				lineDef = lineStyles[0];
 			
-			//alert(JSON.stringify(pdata));
-			/*
-			if (y = opts.y)
-				if ( (y[0]||0).constructor == Array )
-					for (var x=opts.x, N=x.length, plots=y[0].length, n=0; n<N; n++)
-						pdata.push( {x: x[n], y: y[n] } );
-			
-				else
-					for (var x=opts.x, N=x.length, plots=1, n=0; n<N; n++)
-						pdata.push( {x: x[n], y: [y[n]]  } ); */
+			recs.forEach( (rec) => {
+				var
+					ys = rec.ys,
+					plots = ys ? ys.length : 1,
+					x = rec.x || [],
+					y = rec.y || [];
 
-			var line = d3.svg.line();
+				for (var nplot=0; nplot<plots; nplot++) {
+					var
+						xy = [];
 
-			//alert("plots="+plots);
+					x.forEach( (x,n) => {
+						xy.push( { x: x, y: ys ? ys[nplot] : y[n] } );
+					});	
 
-			for (var yidx=0; yidx<plots; yidx++) {
-				if (opts.initialize) {  // setup axes on first source
-					opts.initialize = false;
+					if ( extra = opts.extra )	// append extra xy data
+						for (var N=extra.length, n=0; n<N; n++)
+							xy.push( {x: extra[n], y: extra[n] } ); 
 
-					if (opts.auto[0]) // assumes data is an array
-						xa.domain(d3.extent(data, function(d) { return d.x; })).nice();
-					else
-						xa.domain([opts.min[0] || 0, opts.max[0] || 1]);
+					if ( !nplot ) {  // setup axes on first source
+						//if (opts.debug) alert(opts.debug+"xy"+JSON.stringify(xy));
 
-					if (opts.auto[1]) 
-						ya.domain(d3.extent(data, function(d) { return d.y[yidx]; })).nice();
-					else
-						ya.domain([opts.min[1] || 0, opts.max[1] || 1]);
+						var	// define data scalers
+							xa = d3.scale.linear()
+							.domain([0,1])
+							.range([0, width]),
 
-					axes(opts, 0);
-				}
+							ya = d3.scale.linear()
+							.domain([0,1])
+							.range([height, 0]),
 
-				//alert(JSON.stringify(pdata));
+							color = d3.scale.category10();
 
-				line
-					.x(function (d) { return xa(d.x); })
-					.y(function (d) { return ya(d.y[yidx]); })
-					.interpolate('linear');
+						// auto scale axis based on data or options
 
-				if (markers = opts.marker.length)  			// add markers
-					for (var m=0,n=0; m<markers; m++,n+=2) 
-						var marks = svg
-						.selectAll(".marker")
-						.data(pdata)
-						.enter()
-						.append( "circle" )
-						.attr("class", "marker")
-						.attr("r", 3.5)
-						.attr("cx", function(d) { return xa(d.x); })
-						.attr("cy", function(d) { return ya(d.y[yidx]); })
-						.on("click", click) ;
-						//.style("fill", function(d) { return color(d[2]); });
+						if (opts.auto[0])
+							xa.domain(d3.extent(xy, (d) => d.x )).nice();
+						else
+							xa.domain([opts.min[0] || 0, opts.max[0] || 1]);
 
-				if (lines = opts.line.length) 				// add lines
-					for (var m=0,n=0; m<lines; m++,n+=2) 
+						if (opts.auto[1]) 
+							ya.domain(d3.extent(xy, (d) => d.y )).nice();
+						else
+							ya.domain([opts.min[1] || 0, opts.max[1] || 1]);
+
+						var // define axes
+							xAxis = d3.svg.axis()
+							.scale(xa)
+							.orient("bottom"),
+
+							yAxis = d3.svg.axis()
+							.scale(ya)
+							.orient("left"),
+
+							xaxis = svg
+							.append("g")
+							.attr("class", "x axis")
+							.attr("transform", "translate(0," + height + ")")
+							.call(xAxis)
+							.append("text")
+							.attr("class", "label")
+							.attr("x", width)
+							.attr("y", -45)
+							.attr("dy", "1em")
+							.style("text-anchor", "end")
+							.text( opts.label[0] ),
+
+							yaxis = svg
+							.append("g")
+							.attr("class", "y axis")
+							.call(yAxis)
+							.append("text")
+							.attr("class", "label")
+							.attr("transform", "rotate(-90)")
+							.attr("y", 20)
+							.attr("dy", "1em")
+							.style("text-anchor", "end")
+							.text( opts.label[1] );
+
+						/*
 						svg
 						.append('path')
-						.attr('d', line(pdata))
-						.attr('stroke', opts.line[m])
+						.attr('d', line([[opts.min[0],opts.min[1]],[opts.max[0],opts.min[1]]]))
+						.attr('stroke', "black")
 						.attr('stroke-width', 2)
 						.attr('fill', 'none');
 
-				if ( opts.trace ) 
-					var 
-						labs = 0,
-						trace = svg
+						svg
+						.append('path')
+						.attr('d', line([[opts.min[0],opts.min[0]],[opts.min[0],opts.max[1]]]))
+						.attr('stroke', "black")
+						.attr('stroke-width', 2)
+						.attr('fill', 'none');
+						*/
+
+						/*
+						if (opts.ref.length) 
+							svg
+							.append('path')
+							.attr('d', line(opts.ref))
+							.attr('stroke', "black")
+							.attr('stroke-width', 2)
+							.attr('fill', 'none');
+
+						if (opts.name) {   // add legend
+							var legend = svg
+							.selectAll(".legend")
+							.data(color.domain())
+							.enter()
+							.append("g")
+							.attr("class", "legend")
+							.attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+							for (var m=0,M=opts.name.length; m<M; m++) {
+								svg
+								.append("rect")
+								.attr("x", width - 18)
+								.attr("width", 25)
+								.attr("height", 25)
+								.style("fill", opts.line[m] || "black");
+
+								svg
+								.append("text")
+								.attr("x", width - 24)
+								.attr("y", 9)
+								.attr("dy", ".35em")
+								.style("text-anchor", "end")
+								.text(opts.name[m]);
+							}
+						}*/
+					}
+
+					if ( style = markerStyles[nplot] || markerDef ) {  // add markers
+						svg
+						.selectAll(".marker")
+						.data(xy)
+						.enter()
+						.append( style )
+						.attr("class", "marker")
+						.attr("r", 3.5)
+						.attr("cx", (d) => xa(d.x) )
+						.attr("cy", (d) => ya(d.y) )
+						.on("click", click) ;
+						//.style("fill", function(d) { return color(d[2]); });
+					}
+
+					if ( style = lineStyles[nplot] || lineDef ) { // add lines
+
+						var line = d3.svg.line()
+						.x( (d) => xa(d.x) )
+						.y( (d) => ya(d.y) )
+						.interpolate('linear');
+
+						svg
+						.append('path')
+						.attr('d', line(xy))
+						.attr('stroke', style )
+						.attr('stroke-width', 2)
+						.attr('fill', 'none');
+					}
+
+					if ( details = opts.details ) {
+						svg
 						.selectAll(".text")
-						.data(pdata)
+						.data(xy)
 						.enter()
 						.append("text")
-						.text(function (d){ labs++; return (labs % opts.trace) ? "" : d.x.toFixed(2)+" , "+d.y[yidx].toFixed(2); } )
-						.attr("x",function (d){ return xa(d.x); } )
-						.attr("y",function (d){ return ya(d.y[yidx]); } )
+						.text( (d) => details+":"+d.x.toFixed(2)+" , "+d.y.toFixed(2) )
+						.attr("x", (d) => xa(d.x) )
+						.attr("y", (d) => ya(d.y) )
 						.attr("dy", ".35em")
 						.attr("font-family", "sans-serif")
 						.attr("font-size", "11px")
 						.attr("fill", "red"); 
+					}
 
-			}
+				}
+			});
 		});

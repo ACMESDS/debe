@@ -2011,7 +2011,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 				ctx.Host = host;
 
 				switch ( Pipe.constructor ) {
-					case String: 
+					case String: // pipe define path to file or ingested events
 
 						function fetchEvents( path, ctx, pipe, cb ) {  //< fetch events from path and place them in ctx keys defined by the pipe
 							DEBE.fetcher( path, null, (info) => {
@@ -2077,11 +2077,10 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 									pipe = job.pipe,
 									path = job.path;
 								
-								Log("pipe", path, pipe);
+								//Log("pipe", path, pipe);
 								fetchEvents( path, ctx, pipe, (evs, pipe) => {		// fetch events and route them to plugin
 									pipePlugin( pipe, ctx, (ctx) => saveEvents(ctx.Save, ctx) );
 								});
-								
 							});
 
 						else // stream source through supervisor to the plugin
@@ -2191,12 +2190,14 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 			
 						break;
 
-					case Array:  // src contains event list
+					case Array:  // pipe contains event list
 						ctx.Events = Pipe;
 						pipePlugin( {}, ctx, (ctx) => saveEvents(null, ctx) );
 						break;
 
-					case Object:  // src contains single event
+					case Object:  // pipe contains single event
+						Copy( Pipe, ctx );
+						pipePlugin( Pipe, ctx, (ctx) => saveEvents(null, ctx) );
 						break;
 				}
 			}
@@ -3484,10 +3485,6 @@ append layout_body
 		
 	},
 		
-	function isEmpty() {
-		return this.length == 0;
-	},
-
 	function stashify(watchKey, targetPrefix, ctx, stash, cb) {
 	/*
 	@member Array

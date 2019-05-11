@@ -371,21 +371,18 @@ append site_body
 					> KEY* matches "KEY0, KEY1, ..." if found in the **Parms** dataset  
 					> KEY*N returns "KEY0, KEY1, ... KEY[N-1]"  
 					> TYPE can be  
-						>	int | bigint | tinyint | autonum | auto  
+						>	int | bigint | tinyint | autonum | auto
 						>	checkbox | boolean  
 						>	varchar | text  
 						>	html | longtext | mediumtext  
 						>	textarea | xtextarea | json  
-						>	file | svg | zilch | combo | geometry  
-						>	number | float | double | percent | money  
+						>	file | svg | zilch | geometry  
+						>	combo (defaults when KEY found in the /lookups.db dataset)
+						>	number | float | double  
+						>	percent | money  
 						>	date | datetime | mediumdate | defaultdate | iso8601long | iso8601short |shortdate | longdate | fulldatetime | monthday | shorttime | longtime | sortabledatetime | universalsortabledatetime | yearmonth  
 						>	##... action tokens from class img-Action-value0 | 1 | 2 ...   
 					> QUAL can contain hide | off | lock | short
-
-					The `combo` TYPE requires a `#hold.Lookups(path="/lookups.ds",cols="Name,Ref,Path")`
-					WIDGET to provide a display-value combobox for a `Ref` KEY.  #{title} will group KEYs
-					named G1_G2_...N under field groups G1, G2, ... using a QUAL = short, and will use
-					a QUAL = off.short for KEYs named _N.
 
 					Grid Attributes
 

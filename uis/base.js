@@ -12,6 +12,154 @@
  
 var BASE = {
 	
+	isString: (obj) => obj.constructor == String,
+	isNumber: (obj) => obj.constructor == Number,
+	isArray: (obj) => obj.constructor == Array,
+	isObject: (obj) => obj.constructor == isObject,
+	isDate: (obj) => obj.constructor == Date,
+	isFunction: (obj) => obj.constructor == Function,
+	isError: (obj) => obj.constructor == Error,
+	
+	isEmpty: (opts) => {
+		for ( var key in opts ) return false;
+		return true;
+	},
+	
+	Copy: (src,tar,deep) => {
+	/**
+	 @method copy
+	 @member ENUM
+	 @param {Object} src source hash
+	 @param {Object} tar target hash
+	 @param {String} deep copy key 
+	 @return {Object} target hash
+	 
+	 Copy source hash to target hash; thus Copy({...}, {}) is equivalent to new Object({...}).
+	 If a deep deliminator (e.g. ".") is provided, src  keys are treated as keys into the target thusly:
+	 
+	 		{	
+	 			A: value,			// sets target[A] = value
+	 
+	 			"A.B.C": value, 	// sets target[A][B][C] = value
+	 
+	 			"A.B.C.": {			// appends X,Y to target[A][B][C]
+	 				X:value, Y:value, ...
+	 			},	
+	 
+	 			OBJECT: [ 			// prototype OBJECT (Array,String,Date,Object) = method X,Y, ...
+	 				function X() {}, 
+	 				function Y() {}, 
+	 			... ]
+	 
+	 		} 
+	 
+	 */
+		for (var key in src) {
+			var val = src[key];
+
+			if (deep) 
+				switch (key) {
+					case Array: 
+						val.extend(Array);
+						break;
+
+					case "String": 
+						val.extend(String);
+						break;
+
+					case "Date": 
+						val.extend(Date);
+						break;
+
+					case "Object": 	
+						val.extend(Object);
+						break;
+
+					/*case "Function": 
+						this.callStack.push( val ); 
+						break; */
+
+					default:
+
+						var 
+							keys = key.split(deep), 
+							Tar = tar,
+							idx = keys[0];
+						
+						for (  // index to the element to set/append
+								var n=0,N=keys.length-1 ; 
+								n < N ; 
+								idx = keys[++n]	) 	
+								
+							if ( idx in Tar ) 
+								Tar = Tar[idx];
+							else
+								Tar = Tar[idx] = new Array();
+
+						if (idx)  // set target
+							Tar[idx] = val;
+
+						else  // append to target
+						if (val.constructor == Object) 
+							for (var n in val) 
+								Tar[n] = val[n];
+
+						else
+							Tar.push( val );
+				}
+			
+			else
+				tar[key] = val;
+		}
+
+		return tar;
+	},
+
+	Each: (src,cb) => {
+	/**
+	 * @method each
+	 * @member ENUM
+	 * @param {Object} src source hash
+	 * @param {Function} cb callback (idx,val, isLast) returns true or false to terminate
+	 * 
+	 * Enumerates src with optional callback cb(idx,val,isLast) and returns isEmpty.
+	 * */
+		var 
+			keys = Object.keys(src),
+			last = keys.length-1;
+
+		if (cb)
+			keys.forEach( (key,idx) => cb(key, src[key], idx == last ) );
+
+		return keys.length==0;
+	},
+	
+	load: function (opts, cb) {
+		if (opts.debug) alert( opts.debug+"opts"+JSON.stringify(opts) ); 
+
+		d3.json( opts.ds , function (recs) {
+			//alert( recs ? "got data" : "no data" );
+			if (opts.debug) alert(opts.debug+"recs"+JSON.stringify(recs));
+
+			if ( recs ) cb(recs);
+		}); 
+
+		/*
+		else
+		if ( opts.pivots )
+			d3.json( `/${opts.ds}?_pivot=${opts.pivots}`, function (recs) {
+				if ( opts.data = recs )
+					cb( opts );
+			});
+
+		else
+			d3.json( `/${opts.ds}`, function (recs) {
+				if ( opts.data = recs )
+					cb( opts );
+			});*/
+
+	},
+	
 	alert: "Skinning error: ",
 	
 	socketio: null,
@@ -279,6 +427,61 @@ var BASE = {
 
 }
 
+String.prototype.parseURL = function (xx,pin) {
+
+	/**
+	 * @method Format
+	 * 
+	 * Format a string S containing ${X.key} tags.  The String wrapper for this
+	 * method extends X with optional plugins like X.F = {fn: function (X){}, ...}.
+	 * */
+	function Format(X,S) {
+
+		try {
+			var rtn = eval("`" + S + "`");
+			return rtn;
+		}
+		catch (err) {
+			return "[bad]";
+		}
+
+	}
+
+	var x = d = {};
+	function xs(n) {
+		if (n)
+			if ( x = xx[n] )
+				return x;
+			else
+				return x = xx[n] = xx.def || {};
+		else
+			return x;
+	}
+
+	function ds(n) {
+		if (n)
+			if ( d = xx[n] = DSLIST[n] ) 
+				return d;
+			else
+				return d = xx[n] = xx.def || {};
+		else
+			return d;
+	}
+	
+	if (pin) xx.pin = pin;
+	
+	return Format(xx,this);
+};
+
+String.prototype.parseJSON = function (def) {
+	try {
+		return JSON.parse(this);
+	}
+	catch (err) {
+		return def ? (def.constructor == Function) ? def(this) : def : null;
+	}
+}
+
 /**
 * @class Date
 */
@@ -296,16 +499,86 @@ Date.prototype.toJSON = function () {
 * @class String
 */
 
-String.prototype.parse = function parse(parms,cb,endcb) {
+String.prototype.lisp = function lisp(parms,cb,endcb) {
 /**
- * @method parse
- * Parse this string using the {@link PARSE#String Parser}.
+ * @method lisp
+ * Parse this string using the {@link LISP#String Parser}.
  *
  * @param {Function} cb Callback(token,args) returns an arg for the next args list
  * @return {Array} arg list returned by callback
  */
-	var ps = new PARSE(this,parms,cb,endcb);
+	var ps = new LISP(this,parms,cb,endcb);
 	return ps.args;
+}
+
+Array.prototype.get = function (idx, key) {
+	var keys = key.split(","), K = keys.length, rtns = [], recs = this, at = Object.keys(idx)[0], match = idx[at];
+
+	if ( keys[0] && at )
+		for (var n=0, N=recs.length; n<N; n++) {
+			var rec = recs[n], rtn = {};
+
+			if ( rec[at] == match )  {
+				for (var k=0; k<K; k++) {
+					var key = keys[k];
+					rtn[key] = rec[key];
+				}
+				rtns.push(rtn);
+			}
+		}
+}
+
+String.prototype.tag = function (el,at) {
+/**
+@method tag
+Tag url (el=?|&), list (el=;|,), or tag html using specified attributes.
+@param {String} el tag element
+@param {String} at tag attributes
+@return {String} tagged results
+*/
+
+	if (  el == "?" || el == "&" ) {  // tag a url or list
+		var rtn = this+el;
+
+		for (var n in at) 
+			if ( val = at[n] )
+				switch ( val.constructor ) {
+					//case Array: rtn += at[n].join(",");	break;
+					case Array:
+					case Date:
+					case Object: rtn += JSON.stringify(at[n]); break;
+					default: rtn += n + "=" + val + "&";
+				}
+
+		return rtn;				
+	}
+
+	else {  // tag html
+		var rtn = "<"+el+" ";
+
+		for (var n in at) 
+			if ( val = at[n] )
+				rtn += n + "='" + val + "' ";
+
+		switch (el) {
+			case "embed":
+			case "img":
+			case "link":
+			case "input":
+				return rtn+">" + this;
+			default:
+				return rtn+">" + this + "</"+el+">";
+		}
+	}
+}
+
+String.prototype.option = function () {
+	try {
+		return JSON.parse(this);
+	}
+	catch (err) {
+		return (this == "none") ? null : this ? this.split(",") : null;
+	} 
 }
 
 /*
@@ -320,14 +593,15 @@ String.prototype.indent = function (tag,at) {
 }
 */
 
+/*
 String.prototype.tag = function tag(el,at,eq) {
-/**
+/ **
 @method tag
 Tag url (el=?) or tag html (el=html tag) with specified attributes.
 @param {String} el tag element
 @param {String} at tag attributes
 @return {String} tagged results
-*/
+* /
 
 	if ( el == "?" || el == "&" ) {  // tag a url
 		var rtn = this+el;
@@ -359,15 +633,17 @@ Tag url (el=?) or tag html (el=html tag) with specified attributes.
 		}
 	}
 }
+*/
 
 /**
 * @class Array
 */
 
+/*
 Array.prototype.hashify = function (val) {
-/**
+/ **
  * @method hashify
- */
+ * /
 	var rtn = new Object();
 	var N = this.length;
 
@@ -378,6 +654,7 @@ Array.prototype.hashify = function (val) {
 	
 	return rtn;
 }
+*/
 
 Array.prototype.Each = function (cb) {
 /**
@@ -390,7 +667,7 @@ Array.prototype.Each = function (cb) {
 	return false;
 }
 
-function hashify(recs) { 
+Array.prototype.hashify = function (rtn, key) { 
 /**
 * @method hashify
 * @public
@@ -399,11 +676,15 @@ function hashify(recs) {
 * @param {Object} rtn hash to return
 * @param {String} idx index into record
 */
-	rtn = {};
-	
-	recs.Each( function (n,rec) {
-		rtn[rec] = n;
-	});
+	if (key) 
+		this.forEach( (rec) => {
+			rtn[rec[key]] = true;
+		});
+		
+	else
+		this.forEach( (rec,n) => {
+			rtn[rec] = n+1;
+		});
 	
 	return rtn;
 }
@@ -448,22 +729,25 @@ function joinify(hash, list, cb) {
 }
 */
 
-function PARSE(text,parms,cb,fincb) {
 /**
- * @class PARSE
- * @constructor
- * Construct and execute the String Parser against supplied text, returning an
- * aray of arguments corresponding to callbacks on Each token.
- * 
- * text = "token(token,token, ... token(token, ...))" where token = [Name, 
- * NameIndex, Name*, Name*Count] returns the Name parm, all parms starting 
- * with Name, the parm[Index], and the parms Name0-NameCount-1.
- * 
- * @param {String} text string to be parsed.
- * @param {Object} parms hash of parameter token keys
- * @param {Function} cb callback (token,args,depth,asm) returns arg hash for given token, args list (when a token call), and destination assmembly at given call depth.
- * @param {Function} fincb final callback (asm,depth,count) for assembly at given depth in all count assemblies
- * @return {Array} args returned by cb callback
+@class LISP
+*/
+
+function LISP(text,parms,cb,fincb) {
+/**
+@constructor
+Construct and execute the list processor against supplied text, returning an
+aray of arguments corresponding to callbacks on Each token.
+ 
+text = "token(token,token, ... token(token, ...))" where token = [Name, 
+NameIndex, Name*, Name*Count] returns the Name parm, all parms starting 
+with Name, the parm[Index], and the parms Name0-NameCount-1.
+ 
+@param {String} text string to be parsed.
+@param {Object} parms hash of parameter token keys
+@param {Function} cb callback (token,args,depth,asm) returns arg hash for given token, args list (when a token call), and destination assmembly at given call depth.
+@param {Function} fincb final callback (asm,depth,count) for assembly at given depth in all count assemblies
+@return {Array} args returned by cb callback
  */
 	
 /**
@@ -495,10 +779,10 @@ function PARSE(text,parms,cb,fincb) {
  * @property {Array}
  * An array of args returned by calls to cb
  */
-	this.args = this.parse(cb,fincb);
+	this.args = this.lisp(cb,fincb);
 }
 
-PARSE.prototype.tokens = function (tok) { 
+LISP.prototype.tokens = function (tok) { 
 /**
 * @method tokens
 */
@@ -530,9 +814,9 @@ PARSE.prototype.tokens = function (tok) {
 	return toks;
 }
 
-PARSE.prototype.parse = function (cb,fincb) { 
+LISP.prototype.lisp = function (cb,fincb) { 
 /**
- * @method parse
+ * @method lisp
  * Parse this string from current position with callbacks on every token.
  * @param {Function} cb callback(token,[args]) returns an arg.
  * @return {Array} arg array corresponding to Each arg returned by cb 
@@ -551,7 +835,7 @@ PARSE.prototype.parse = function (cb,fincb) {
 				depth++;
 				if (depth >= asms.length) asms.push( new Array() );
 				
-				args.push(cb(tok,this.parse(cb),depth,asm));
+				args.push(cb(tok,this.lisp(cb),depth,asm));
 				tok = "";
 				break;
 				
@@ -865,8 +1149,9 @@ WIDGET.prototype.status = function (oper,msg) {
 		console.log(oper+" "+this.name+" "+(msg||""));
 }
 
+/*
 function Copy(src,tar,cb) {
-/**
+/ **
  * @method Copy
  * @public
  * @param {Object} src source hash
@@ -875,7 +1160,7 @@ function Copy(src,tar,cb) {
  * @return {Object} target hash
  * 
  * Shallow Copy of source hash under supervision of callback. 
- */
+ * /
 
 	if (cb) 
 		for (var key in src) 
@@ -886,21 +1171,23 @@ function Copy(src,tar,cb) {
 
 	return tar;
 }
+*/
 
 /*
 function Clone(src,cb) {
 	return Copy(src,{},cb);
 } */
 
+/*
 function Each(src,cb) {
-/**
+/ **
  * @method Each
  * @public
  * @param {Object} src source hash
  * @param {Function} cb callback (idx,val) returning true or false
  * 
  * Shallow enumeration over source hash until callback returns true.
- * */
+ * * /
 	
 	if (src)
 	switch (src.constructor) {
@@ -935,6 +1222,7 @@ function Each(src,cb) {
 			
 	}
 }
+*/
 
 /*
 String.prototype.format = function (req,plugin) {
