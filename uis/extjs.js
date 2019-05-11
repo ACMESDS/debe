@@ -2120,7 +2120,7 @@ Ext.onReady( function () {
 		method: "GET",
 		success: (res) => {
 			res.responseText.parseJSON({data:[]}).data.hashify( LOOKUPS.keys, "Ref" );
-			alert(JSON.stringify(LOOKUPS.keys));
+			//alert(JSON.stringify(LOOKUPS.keys));
 		},
 		failure: (res) => {
 		}
