@@ -2480,7 +2480,7 @@ WIDGET.prototype.menuTools = function () {
 				//alert(JSON.stringify(flags));
 				
 				Ext.Ajax.request({
-					url : Data.proxy.url,
+					url : Data.Store.getProxy().url,
 					params: (meth=="GET") ? flags : JSON.stringify(flags),
 					method: meth,
 					success: function (res) {
@@ -3164,7 +3164,7 @@ WIDGET.prototype.menuTools = function () {
 									var parms = {ID: Rec.getId()};
 									
 									Ext.Ajax.request({
-										url : Data.proxy.url.replace(".db",".exe")+agent,
+										url : Data.Store.getProxy().url.replace(".db",".exe")+agent,
 										params: parms,
 										method: "GET",
 										success: function (res) {
@@ -3179,7 +3179,7 @@ WIDGET.prototype.menuTools = function () {
 
 							onAction: function (Data,Status) {
 								Ext.Ajax.request({
-									url : Data.proxy.url.replace(".db",".exe"),
+									url : Data.Store.getProxy().url.replace(".db",".exe"),
 									method: "GET",
 									success: function (res) {
 										Status(res.responseText);
