@@ -3076,8 +3076,8 @@ Initialize DEBE on startup.
 	@member String
 	Expands markdown of the form:
 		
-		[ post ] ( SKIN.view ? w=WIDTH & h=HEIGHT & x=BASE$X & y=BASE$Y & OPTS ) || BASE,X,Y >= SKIN,WIDTH,HEIGHT,OPTS  
-		[ image ] ( PATH.jpg ? w=WIDTH & h=HEIGHT )  
+		[ post ] ( /SKIN.view ? w=WIDTH & h=HEIGHT & x=KEY$X & y=KEY$Y & OPTS ) || KEY,X,Y >= SKIN,WIDTH,HEIGHT,OPTS  
+		[ image ] ( /PATH.jpg ? w=WIDTH & h=HEIGHT )  
 		[ LINK ]( URL )  ||  [ FONT ]( TEXT )  ||  [ ]( URL )  ||  [TOPIC]( )  
 		$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$ || [#EXPR || TeX] OP= [#EXPR || TeX]  
 		\${ KEY } || \${ EXPR } || \${doc( EXPR , "IDX, ..." )}  
@@ -3096,7 +3096,7 @@ Initialize DEBE on startup.
 		MATLAB EMULATION SCRIPT
 		
 	@param {Object} req Totem request
-	@param {String} ds dataset name for 
+	@param {String} ds default dataset in [post](URL) markdown
 	@param {Object} cache hash for cacheing markdown variables
 	@param {Object} ctx hash holding markdown variables
 	@param {Obect} rec record hash for markdown variables
