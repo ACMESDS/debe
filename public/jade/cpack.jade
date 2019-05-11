@@ -86,7 +86,7 @@ append base_body
 				.size([diameter - margin, diameter - margin])
 				.padding(2);
 
-		source( opts, function(root) {
+		BASE.load( opts, function(root) {
 			alert(JSON.stringify(root));
 			root = d3.hierarchy(root)
 				.sum(function(d) { return d.size; })

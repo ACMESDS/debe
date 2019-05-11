@@ -153,7 +153,7 @@ append base_body
 			.on("mousemove", mousemove)
 			.on("mouseup", mouseup);
 
-		source( opts, function(rec) {
+		BASE.load( opts, function(rec) {
 			var nodes = cluster.nodes(rec);
 
 			var link = vis.selectAll("path.link")
