@@ -777,9 +777,11 @@ function DS(anchor) {
 				//Store.ds = This;
 				Store.load = function () {
 					var
-						dims = Store.ds.dims,
+						dims = This.dims, // Store.ds.dims,
 						tags = {
-							src: (type=="post") ? path : path ? `/${type}.view?ds=${path}` : Store.ds.proxy.url,
+							src: (type=="post") ? path : path ? `/${type}.view?ds=${path}` : 
+								This.Store.getProxy().url,
+								// Store.ds.proxy.url,
 							width: dims[0],
 							height: dims[1]
 						},

@@ -1952,13 +1952,17 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 		req.query = ctx; 
 		ATOM.select(req, function (ctx) {  // run plugin
 			
-			for (var key in pipe) delete ctx[key];
-			
-			if ( isError(ctx)  )
-				Log(`${ctx.Host} ` + ctx);
+			if ( ctx )
+				if ( isError(ctx)  )
+					Log(`${ctx.Host} ` + ctx);
 
-			else 
-				cb(ctx);
+				else {
+					for (var key in pipe) delete ctx[key];		
+					cb(ctx);
+				}
+			
+			else
+				Log("no ctx!!!");
 		});
 	}
 	
