@@ -32,14 +32,11 @@ module.exports = {  // regression
 	
 	engine: function regress(ctx, res) {  
 	/* 
-	Train lrm | svm | pls | knn | etc regressor given (x,y) data, or predict given x data where solver parameters include:
+	Train regressor given (x,y) data, or predict from given x data, where:
 
-		Method: regression technique to use = lrm | svm | pls | knn		
-		numSteps: number of steps in lrm solver
-		learningRate: lrm learning rate
-		latentVectors: number of pls latenent vectors
-		tolerance: pls tolerance
-		k: number of nearest neighbors to use in knn majority voting
+		Method: regression technique to USE = lrm | svm | pls | knn	| ols | ...
+		Save_USE: training model for used Method saved here
+		USE_solve: solver parameter for used Method 
 	*/
 		var
 			stats = ctx.Stats,
