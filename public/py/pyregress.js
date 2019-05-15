@@ -17,13 +17,24 @@ solver=’liblinear’. ‘auto’ selects ‘ovr’ if the data is binary, or i
 		
 		ols_normalize: "boolean default 0 comment 'normalize the regressors by subtracting the mean and dividing by the l2-norm' ",
 
-		knn_k: "int(11) default 0 comment 'number of nearest neighbors to use in knn majority voting' ",
+		knn_k: "int(11) default 0 comment 'number of nearest neighbors to use in knn majority voting' ",		
+		
+		enr_alpha: "float default 1 comment 'Constant that multiplies the penalty terms. See the notes for the exact mathematical meaning of this parameter. alpha = 0 is equivalent to an ordinary least square, solved by the LinearRegression object. For numerical reasons, using alpha = 0 with the Lasso object is not advised.' ",
+		"enr_l1#ratio": "float default 	0.5 comment 'The ElasticNet mixing parameter, with 0 <= l1#ratio <= 1. For l1#ratio = 0 the penalty is an L2 penalty. For l1#ratio = 1 it is an L1 penalty. For 0 < l1#ratio < 1, the penalty is a combination of L1 and L2.' ",	
+		
+		"brr_n#iter": "int(11) default 300 comment 'Maximum number of iterations. Should be greater than or equal to 1' ",
+		"brr_alpha#1": "float default 1e66 comment 'Hyper-parameter : shape parameter for the Gamma distribution prior over the alpha parameter. ' ",
+		"brr_alpha#2": "float default 1e-6 comment 'Hyper-parameter : inverse scale parameter (rate parameter) for the Gamma distribution prior over the alpha parameter', ",
+		"brr_lambda#1": "float default 1e-6 comment 'Hyper-parameter : shape parameter for the Gamma distribution prior over the lambda parameter.' ",
+		"brr_lambda#2": "float default 1e-6 comment 'Hyper-parameter : inverse scale parameter (rate parameter) for the Gamma distribution prior ' ",
 		
 		som_iterations: "int(11) default 0 comment 'Number of iterations over the training set for the training phase (default: 10). The total number of training steps will be iterations * trainingSet.length' ",
 		som_learningRate: "float default 0 comment' Multiplication coefficient for the learning algorithm (default: 0.1)' ",
 		som_method: "varchar(32) default 'random' comment 'Iteration method of the learning algorithm (default: random)' ",
 		
 		Save_raf: "json comment 'raf model' ",
+		Save_enr: "json comment 'raf model' ",
+		Save_brr: "json comment 'raf model' ",
 		Save_dtr: "json comment 'dtr model' ",
 		Save_lrm: "json comment 'LRM model' ",
 		Save_svm: "json comment 'svm model' ",
@@ -45,10 +56,13 @@ def pyregress(ctx):
 	#	Save_USE: trained model saved here
 	#	USE_solver: parameter feed to solver
 	#
-	global LMS,LRM,OLS
+	global LMS,LRM,OLS,BRR,ENR
 	from sklearn import linear_model as LMS
 	LRM = LMS.LogisticRegression
 	OLS = LMS.LinearRegression
+	BRR = LMS.BayesianRidge
+	ENR = LMS.ElasticNet
+	print BRR,ENR
 	#
 	def serialize(cls):
 		mod = {}
@@ -85,7 +99,9 @@ def pyregress(ctx):
 	model = ctx['Save_lrm']
 	maker = {
 		'lrm': LRM,
-		'ols': OLS
+		'ols': OLS,
+		'enr': ENR,
+		'brr': BRR
 	}
 	make = maker[use] if use in maker else None
 	solve = {}
