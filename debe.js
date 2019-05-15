@@ -3133,9 +3133,10 @@ Initialize DEBE on startup.
 		}, ctx);
 		
 		this.Xescape( [], (blocks,html) => // excape code blocks
-		html.Xscript( ctx, (ctx,md) => // script expanded markdown 
-		md.Xgen(ctx).Xtex( (html) => // TeX expanded markdown
-		html.Xlink( req, ds, viaBrowser, (html) => { // link expanded markdown
+		html.Xscript( ctx, (ctx,html) => // expand scripts 
+		html.Xgen(ctx, (html) => // expand generators
+		html.Xtex( (html) => // expand TeX
+		html.Xlink( req, ds, viaBrowser, (html) => { // expand links
 			
 			cb( 
 				html
@@ -3152,7 +3153,7 @@ Initialize DEBE on startup.
 				})
 			);
 			
-		}))));
+		})))));
 	},
 	
 	function Xescape( blocks, cb ) { // escapes code blocks then callsback cb(blocks, html)
@@ -3206,16 +3207,24 @@ Initialize DEBE on startup.
 					fetcher( rec.opt, null, (html) => cb );
 			},
 			
-			fetchTag = function ( rec, cb ) {  // callback cb with expanded [LINK](URL) markdown
+			fetchLink = function ( rec, cb ) {  // expand [LINK](URL) markdown
 				var
+					colors = {
+						R: "red", 
+						B: "blue",
+						G: "green",
+						Y: "yellow",
+						O: "orange",
+						K: "black"
+					},						
 					keys = {},
 					opt = rec.url,
 					url = rec.opt,
 					dsPath = ds.parsePath(keys,{},{},{}),
-					srcPath = url.parsePath(keys,{},{},{}) || dsPath,
+					urlPath = url.parsePath(keys,{},{},{}),
 					w = keys.w || 100,
 					h = keys.h || 100,
-					srcPath =  srcPath.tag( "?", Copy({src:dsPath}, keys) );				
+					srcPath =  urlPath.tag( "?", Copy({src:dsPath}, keys) );
 
 				//Log("tag",rec, dsPath, keys, srcPath);
 
@@ -3230,13 +3239,7 @@ Initialize DEBE on startup.
 						cb( "".tag("iframe", { src:srcPath, width:w, height:h }) );
 						break;
 						
-					case "R":  // [FONT](TEXT)
-					case "B":
-					case "G":
-					case "Y":
-					case "O":
-					case "K":
-					case "red":
+					case "red":			// [FONT](TEXT)
 					case "blue":
 					case "green":
 					case "yellow":
@@ -3250,9 +3253,17 @@ Initialize DEBE on startup.
 						fetchSite(rec, cb);
 						break;
 						
-					default:		
+					default:
+						if ( color = colors[opt] )
+							cb( url.tag("font",{color:color}) );
+						
+						else
 						if ( url )   // [LINK](URL)
-							cb( opt.tag("a",{href:url}) );
+							if (urlPath)
+								cb( opt.tag("a",{href:url}) );
+							
+							else
+								cb( "".tag("iframe", { src:`${opt}.view${srcPath}`, width:w, height:h }) );
 						
 						else		// [TOPIC]()
 							fetchTopic(rec, cb);
@@ -3261,7 +3272,7 @@ Initialize DEBE on startup.
 			
 			pattern = /\[([^\[\]]*)\]\(([^\)]*)\)/g ;
 		
-		html.serialize( fetchTag, pattern, key, (html, fails) => {    
+		html.serialize( fetchLink, pattern, key, (html, fails) => {    
 			cb(html);
 		}); 
 	},
@@ -3289,13 +3300,13 @@ Initialize DEBE on startup.
 			cb(ctx, run);
 	},
 		
-	function Xgen( ctx ) {  // expands LHS OP= RHS tags
+	function Xgen( ctx, cb ) {  // expands LHS OP= RHS tags
 
 		var 
 			genctx = Copy(DEBE.blog, new Object(ctx)),
 			pattern = /(\S*) ([^ ]*)= (\S*)/g;  // defines LHS OP= RHS tag
 		
-		return  this.parseJS(genctx).replace(pattern, (str,lhs,op,rhs) => {
+		cb( this.parseJS(genctx).replace(pattern, (str,lhs,op,rhs) => {
 			//Log([lhs,rhs,op]);
 			if ( op )
 				if ( blogOp = genctx[op] ) 
@@ -3307,7 +3318,7 @@ Initialize DEBE on startup.
 					return `invalid lhs ${op}= rhs markdown`;
 			else
 				return `${lhs} = ${rhs}`;
-		});
+		}) );
 	},
 	
 	function Xtex( cb ) {  // expands X$$ MATH $$ tags then callbacks cb( final html )
