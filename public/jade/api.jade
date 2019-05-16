@@ -44,7 +44,7 @@ append site_body
 
 			to [access plugin attributes](https://totem.west.ile.nga.ic.gov/api.view):
 
-				tou | md | pub | status | suitors
+				tou | md | pub | status | suitors | users | help | jade
 
 			to [license plugin code](https://totem.west.ile.nga.ic.gov/api.view):
 
@@ -486,11 +486,14 @@ append site_body
 						
 				Valid *Description* markdown includes:
 
-					[ post ] ( /SKIN.view ? w=WIDTH & h=HEIGHT & x=KEY$X & y=KEY$Y & OPTS ) || KEY,X,Y >= SKIN,WIDTH,HEIGHT,OPTS  
+					[ post ] ( /SKIN.view ? w=WIDTH & h=HEIGHT & x=KEY$X & y=KEY$Y & ... ) || [ SKIN ]( ? ... )  
 					[ image ] ( /PATH.jpg ? w=WIDTH & h=HEIGHT )  
-					[ LINK ]( URL )  ||  [ FONT ]( TEXT )  ||  [ ]( URL )  ||  [TOPIC]( )  
+					[ fetch || get ]( URL )  
+					[ LINK ]( URL )  ||  [ COLOR ]( TEXT )  
+					[ # ]( TOPIC ? starts=DATE & ends=DATE )  
 					$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$ || [#EXPR || TeX] OP= [#EXPR || TeX]  
 					\${ KEY } || \${ EXPR } || \${doc( EXPR , "IDX, ..." )}  
+					KEY,X,Y >= SKIN,WIDTH,HEIGHT,OPTS  
 					KEY <= VALUE || OP <= EXPR(lhs),EXPR(rhs)  
 
 				as well as block-escaping:

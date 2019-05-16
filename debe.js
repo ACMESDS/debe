@@ -36,6 +36,19 @@ Required app.datasets:
 	voxels, files, events, queues, engines, dblogs, quizes
 	
 */
+/*
+schema changes:
+master:
+	License, EndService no _
+	Master -> longtext
+tags: 
+	message -> mediumtext
+	license vc(128)
+	keyid: license,target,topic
+	on -> viewed
+	to -> target
+	tag -> topic vc(64)
+*/
 
 var 									
 	// globals
@@ -1287,7 +1300,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		//help: sysHelp,
 		alert: sysAlert,
 		//ping: sysPing,
-		ingest: sysIngest
+		ingest: sysIngest,
+		decode: sysDecode,
 		//stop: sysStop,
 		//bit: sysBIT,
 		//atom: ATOM.exe
@@ -2710,6 +2724,25 @@ Totem (req,res)-endpoint to ingest a source into the sql database
 	}
 }
 
+function sysDecode(req,res) {
+	var
+		sql = req.sql,
+		query = req.query;
+	
+	sql.query("SELECT Master,releases.* FROM app.masters LEFT JOIN app.releases ON releases._License = masters.License WHERE ?", {
+		License: query.License
+	}, (err, recs) => {
+		if (rec = recs[0]) {
+			var info = Copy(rec,{});
+			delete info.Master;
+			res( [info].gridify() + "<br>" + rec.Master );
+		}
+		
+		else
+			res(err);
+	});
+}
+
 function sysAgent(req,res) {
 /**
 @method sysAlert
@@ -3080,11 +3113,14 @@ Initialize DEBE on startup.
 	@member String
 	Expands markdown of the form:
 		
-		[ post ] ( /SKIN.view ? w=WIDTH & h=HEIGHT & x=KEY$X & y=KEY$Y & OPTS ) || KEY,X,Y >= SKIN,WIDTH,HEIGHT,OPTS  
+		[ post ] ( /SKIN.view ? w=WIDTH & h=HEIGHT & x=KEY$X & y=KEY$Y & ... ) || [ SKIN ]( ? ... )  
 		[ image ] ( /PATH.jpg ? w=WIDTH & h=HEIGHT )  
-		[ LINK ]( URL )  ||  [ FONT ]( TEXT )  ||  [ ]( URL )  ||  [TOPIC]( )  
+		[ fetch || get ]( URL )  
+		[ LINK ]( URL )  ||  [ COLOR ]( TEXT )  
+		[ # ]( TOPIC ? starts=DATE & ends=DATE )  
 		$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$ || [#EXPR || TeX] OP= [#EXPR || TeX]  
 		\${ KEY } || \${ EXPR } || \${doc( EXPR , "IDX, ..." )}  
+		KEY,X,Y >= SKIN,WIDTH,HEIGHT,OPTS  
 		KEY <= VALUE || OP <= EXPR(lhs),EXPR(rhs)  
 		
 	using the supplifed cache to get/put KEY values, as well as block-escaping:
@@ -3184,7 +3220,7 @@ Initialize DEBE on startup.
 			fetchTopic = function ( rec, cb) {  // callback cb with expanded [TOPIC]() markdown
 				var 
 					secret = "",
-					topic = rec.url,
+					topic = rec.topic,
 					product = topic+".html";
 
 				FLEX.licenseCode( req.sql, html, {  // register this html with the client
@@ -3193,8 +3229,17 @@ Initialize DEBE on startup.
 					_Published: new Date(),
 					_Product: product,
 					Path: "/tag/"+product
-				}, (pub) => {
-					cb( (rec.url+"=>"+(pub ? req.client : "guest")).tag("a",{href:"/tags.view"}) );
+				}, (pub, sql) => {
+					if (pub) {
+						cb( `${rec.topic}=>${req.client}`.tag("a",{href:"/tags.view"}) );
+						sql.query("INSERT INTO app.tags SET ? ON DUPLICATE KEY UPDATE Views=Views+1", {
+							Viewed: pub._Published,
+							Target: pub._Partner,
+							Topic: topic,
+							License: pub._License,
+							Message: "get view".tag("a",{href:"/decode.html".tag("?",{Target:pub._Partner,License:pub._License,Topic:topic})})
+						});
+					}
 				});
 			},
 			
@@ -3224,6 +3269,7 @@ Initialize DEBE on startup.
 					urlPath = url.parsePath(keys,{},{},{}),
 					w = keys.w || 100,
 					h = keys.h || 100,
+					now = new Date(),
 					srcPath =  urlPath.tag( "?", Copy({src:dsPath}, keys) );
 
 				//Log("tag",rec, dsPath, keys, srcPath);
@@ -3239,7 +3285,7 @@ Initialize DEBE on startup.
 						cb( "".tag("iframe", { src:srcPath, width:w, height:h }) );
 						break;
 						
-					case "red":			// [FONT](TEXT)
+					case "red":			// [COLOR](TEXT)
 					case "blue":
 					case "green":
 					case "yellow":
@@ -3248,25 +3294,31 @@ Initialize DEBE on startup.
 						cb( url.tag("font",{color:opt}) );
 						break;
 						
-					case "":  // []( URL ) || [fetch](URL)
+					case "":  
+					case "#":
+						rec.topic = urlPath;
+						if ( (keys.starts ? now>=new Date(keys.starts) : true) && (keys.ends ? now<=new Date(keys.ends) : true) )
+							fetchTopic( rec, cb );
+						else
+							cb( rec.topic.tag("a",{href:"/tags.view"}) );
+						
+						break;
+						
+					case "get":		// [fetch](URL)
 					case "fetch":
 						fetchSite(rec, cb);
 						break;
 						
 					default:
-						if ( color = colors[opt] )
+						if ( color = colors[opt] )		// [ COLOR ]( TEXT )
 							cb( url.tag("font",{color:color}) );
 						
 						else
-						if ( url )   // [LINK](URL)
-							if (urlPath)
-								cb( opt.tag("a",{href:url}) );
-							
-							else
-								cb( "".tag("iframe", { src:`${opt}.view${srcPath}`, width:w, height:h }) );
-						
-						else		// [TOPIC]()
-							fetchTopic(rec, cb);
+						if (urlPath)
+							cb( opt.tag("a",{href:url}) );
+
+						else
+							cb( "".tag("iframe", { src:`${opt}.view${srcPath}`, width:w, height:h }) );
 				}
 			},
 			
