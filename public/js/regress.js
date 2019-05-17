@@ -1,5 +1,5 @@
 module.exports = {  // regression
-	keys: {
+	addkeys: {
 		Method: "varchar(16) default 'sinc' comment 'name of complex correlation model for pc estimates' ",
 		
 		lrm_numSteps: "int(11) default 0 comment 'number of steps in lrm solver' ",
@@ -24,7 +24,8 @@ module.exports = {  // regression
 		Save_knn: "json comment 'knn model' ",
 		Save_som: "json comment 'som model' ",
 		Save_ols: "json comment 'old model' ",
-		Save_predict: "json comment predictions ",
+		Save_predict: "json comment 'predictions stash' ",
+		Save_train: "json comment 'training stash' ",
 
 		Pipe: "json",
 		Description: "mediumtext"

@@ -117,7 +117,7 @@ var
 	},
 
 	blog: {
-		digits: 2,  // precision to show
+		digits: 2,  // precision to show values in [JSON || #DOC || TEX] OP= [JSON || #DOC || TEX] expansions
 		":" : (lhs,rhs,ctx) => ctx.toEqn("", lhs,rhs,ctx), 		// inline TeX
 		"|" : (lhs,rhs,ctx) => ctx.toEqn("a", lhs,rhs,ctx),		// Ascii Match
 		";" : (lhs,rhs,ctx) => ctx.toEqn("n", lhs,rhs,ctx),		// break TeX
@@ -138,7 +138,7 @@ catch (err) {
 			return "";
 		},
 		
-		toEqn: (pre,lhs,rhs,ctx) => {
+		toEqn: (pre,lhs,rhs,ctx) => {		// expand [JSON || #DOC || TEX] OP= [JSON || #DOC || TEX] 
 
 			function toTeX(val)  {
 				var digits = ctx.digits;
@@ -147,7 +147,9 @@ catch (err) {
 					switch (val.constructor.name) {
 						case "Number": return val.toFixed(digits);
 
-						case "String": return val;	
+						case "String": 
+							//Log("tex str", val);
+							return val;	
 
 						case "Array": 
 							var tex = []; 
@@ -164,6 +166,7 @@ catch (err) {
 								else
 									tex.push( (rec == 0) ? "0" : "\\emptyset" );
 							});	
+							Log("tex list", tex);
 							return  "\\left[ \\begin{matrix} " + tex.join("\\\\") + " \\end{matrix} \\right]";
 
 						case "Date": return val+"";
@@ -184,12 +187,21 @@ catch (err) {
 			}
 		
 			function toDoc (arg) {
-				return arg.startsWith("#") 
-					? ( "${doc(" + arg.substr(1) + ")}" ).parseJS(ctx).parseJSON( ) || "?" 
-					: arg;
+				switch ( arg.charAt(0) ) {
+					case "#":
+						return ("${doc(" + arg.substr(1) + ")}" ).parseJS(ctx).parseJSON( "?" );
+						
+					case "[":
+					case "{":
+						return arg.JSONparse({});
+						
+					default:
+						var keys = arg.split(",");
+						return (keys.length>1) ? keys : arg;
+				}
 			}
 			
-			return pre + "$$" + toTeX( lhs.parseJSON(toDoc) || "" ) + " = " + toTeX( rhs.parseJSON(toDoc) || "" ) + " $$";
+			return pre + "$$" + toTeX( lhs.parseJSON(toDoc) ) + " = " + toTeX( rhs.parseJSON(toDoc) ) + " $$";
 		},
 			
 		toTag: (lhs,rhs,ctx) => {
@@ -3118,7 +3130,7 @@ Initialize DEBE on startup.
 		[ fetch || get ]( URL )  
 		[ LINK ]( URL )  ||  [ COLOR ]( TEXT )  
 		[ # ]( TOPIC ? starts=DATE & ends=DATE )  
-		$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$ || [#EXPR || TeX] OP= [#EXPR || TeX]  
+		$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$ || [JSON || #DOC || TeX] OP= [JSON || #DOC || TeX]  
 		\${ KEY } || \${ EXPR } || \${doc( EXPR , "IDX, ..." )}  
 		KEY,X,Y >= SKIN,WIDTH,HEIGHT,OPTS  
 		KEY <= VALUE || OP <= EXPR(lhs),EXPR(rhs)  

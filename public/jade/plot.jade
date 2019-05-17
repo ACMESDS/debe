@@ -18,7 +18,6 @@ append base_help
 			line = color,color, ... line color
 			marker = style,style, ... line markers
 			label = X,Y labels
-			auto = X,Y auto scales
 			min = X,Y axis minimums
 			max = X,Y axis maximums
 			extra = [[x,y], ... ] data to append to plots
@@ -50,7 +49,6 @@ append base_head
 			marker: ( "#{query.marker}" || "circle" ).option(),
 			line: ( "#{query.line}" || "black" ).option(),
 			label: ( "#{query.label}" || "x,y" ).option(),
-			auto: "#{query.auto}".split(","),
 			min: "#{query.min}".split(","),
 			max: "#{query.max}".split(","),
 			extra: "#{query.extra}".option(),
@@ -79,6 +77,8 @@ append base_body
 			}
 		}
 
+		const {isArray} = BASE;
+		
 		var 
 			margin = {top: 20, right: 20, bottom: 30, left: 40},
 			width = (opts.w || 800) - margin.left - margin.right,
@@ -101,18 +101,31 @@ append base_body
 			
 			recs.forEach( (rec) => {
 				var
-					ys = rec.ys,
-					plots = ys ? ys.length : 1,
 					x = rec.x || [],
-					y = rec.y || [];
+					y = rec.y || [],
+					x0 = x[0] || 0,
+					y0 = y[0] || 0,
+					xs = isArray( x0 ) ? x : null,
+					ys = isArray( y0 ) ? y : null,
+					dims = xs ? x0.length : 2,
+					plots = ys ? y0.length : 1,
+					min = opts.min,
+					max = opts.max,
+					hard = min[0] ? { x: [parseFloat(min[0]), parseFloat(max[0])], y: [parseFloat(min[1]), parseFloat(max[1])] } : null;
 
 				for (var nplot=0; nplot<plots; nplot++) {
 					var
-						xy = [];
+						xy = [],
+						y0 = ys ? ys[nplot] : y;
 
-					x.forEach( (x,n) => {
-						xy.push( { x: x, y: ys ? ys[nplot] : y[n] } );
-					});	
+					if (xs)		// cluster plots
+						x.forEach( (x,n) => {
+							xy.push( { x: x[0], y: x[1], f: y0[n] } );
+						});	
+					else		// regression plots
+						x.forEach( (x,n) => {
+							xy.push( { x: x, y: y0[n], f: 0 } );
+						});	
 
 					if ( extra = opts.extra )	// append extra xy data
 						for (var N=extra.length, n=0; n<N; n++)
@@ -134,15 +147,14 @@ append base_body
 
 						// auto scale axis based on data or options
 
-						if (opts.auto[0])
+						if ( hard ) {
+							xa.domain( hard.x );
+							ya.domain( hard.y );
+						}
+						else {
 							xa.domain(d3.extent(xy, (d) => d.x )).nice();
-						else
-							xa.domain([opts.min[0] || 0, opts.max[0] || 1]);
-
-						if (opts.auto[1]) 
 							ya.domain(d3.extent(xy, (d) => d.y )).nice();
-						else
-							ya.domain([opts.min[1] || 0, opts.max[1] || 1]);
+						}
 
 						var // define axes
 							xAxis = d3.svg.axis()
@@ -241,11 +253,11 @@ append base_body
 						.attr("r", 3.5)
 						.attr("cx", (d) => xa(d.x) )
 						.attr("cy", (d) => ya(d.y) )
-						.on("click", click) ;
-						//.style("fill", function(d) { return color(d[2]); });
+						.on("click", click)
+						.style("fill", (d) => color(d.f) );
 					}
 
-					if ( style = lineStyles[nplot] || lineDef ) { // add lines
+					if ( style = lineStyles[nplot] || lineDef ) if ( !xs ) { // add lines
 
 						var line = d3.svg.line()
 						.x( (d) => xa(d.x) )
@@ -260,7 +272,7 @@ append base_body
 						.attr('fill', 'none');
 					}
 
-					if ( details = opts.details ) {
+					if ( details = opts.details ) {  // add label details
 						svg
 						.selectAll(".text")
 						.data(xy)
@@ -274,7 +286,6 @@ append base_body
 						.attr("font-size", "11px")
 						.attr("fill", "red"); 
 					}
-
 				}
 			});
 		});

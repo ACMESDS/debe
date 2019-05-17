@@ -1,6 +1,7 @@
 module.exports = {  // regression
-	addkeys: {
+	_keys: {
 		Method: "varchar(16) default 'sinc' comment 'name of complex correlation model for pc estimates' ",
+		Keep: "int(11) default 0 comment 'number of (x,y) values to retain during training' ",
 		
 		//lrm_numSteps: "int(11) default 0 comment 'number of steps in LRM solver' ",
 		//lrm_learningRate: "float default 0 comment 'LRM learning rate' ",
@@ -42,7 +43,8 @@ solver=’liblinear’. ‘auto’ selects ‘ovr’ if the data is binary, or i
 		Save_knn: "json comment 'knn model' ",
 		Save_som: "json comment 'som model' ",
 		Save_ols: "json comment 'old model' ",
-		Save_predict: "json comment predictions ",
+		Save_predict: "json comment 'predictions stash' ",
+		Save_train: "json comment 'training stash' ",	
 
 		Pipe: "json",
 		Description: "mediumtext"
@@ -62,19 +64,16 @@ def pyregress(ctx):
 	OLS = LMS.LinearRegression
 	BRR = LMS.BayesianRidge
 	ENR = LMS.ElasticNet
-	print BRR,ENR
 	#
-	def serialize(cls):
-		mod = {}
+	def serialize(cls, mod):		# serialize classification class cls into a model dictionary mod
 		for key, val in cls.__dict__.items():
 			if (type(val) is NP.ndarray) and key[-1:] == "_":
 				mod[key] = val.tolist()
 			else:
 				mod[key] = val
-		print "ser", mod
 		return mod
 	#
-	def deserialize(mod, cls):
+	def deserialize(mod, cls):	# deserialize a model dictionary mod into a classification class cls
 		for key in mod:
 			val = mod[key]
 			if type(val) is list:
@@ -83,7 +82,7 @@ def pyregress(ctx):
 				setattr(cls, key, val)
 		return cls
 	#
-	def copy(src, tar):
+	def copy(src, tar):	# copy source hash src to a target hash tar
 		for key in src:
 			tar[key] = src[key]
 		return tar
@@ -94,6 +93,7 @@ def pyregress(ctx):
 	#print "x",x, "y",y
 	x = NP.array( ctx['x'] )
 	y = NP.reshape( NP.array( ctx['y'] ), (len(x),) ) if 'y' in ctx else None
+	keep = int( ctx['Keep'] )
 	use = ctx['Method'].lower()
 	USE = use.upper()
 	model = ctx['Save_lrm']
@@ -108,13 +108,20 @@ def pyregress(ctx):
 	for key in ctx:
 		if key.find(use+"_") == 0:
 			solve[ key[len(use)+1:].replace("#","_") ] = ctx[key]
-	print "solve",use,solve
+	print "solve",use,solve,keep
 	#
 	if make:
 		if y != None:		# requesting a training
 			print "x",x.shape,"y",y.shape, make
 			cls = deserialize( solve, make() )
-			ctx['Save'] = {'Save_'+use: serialize( cls.fit(x,y) )}
+			ctx['Save'] = {
+				'Save_'+use: serialize( cls.fit(x,y), {} ),
+				'Save_train': {
+					'method': use,
+					'x': x.tolist()[0:keep],
+					'y': y.tolist()[0:keep]
+				}
+			}
 		else:		# requesting a prediction
 			if model != None:
 				cls = deserialize( copy(model, solve), make() )
