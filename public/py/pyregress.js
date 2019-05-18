@@ -1,5 +1,5 @@
 module.exports = {  // regression
-	_keys: {
+	_addkeys: {
 		Method: "varchar(16) default 'sinc' comment 'name of complex correlation model for pc estimates' ",
 		Keep: "int(11) default 0 comment 'number of (x,y) values to retain during training' ",
 		
@@ -65,6 +65,20 @@ def pyregress(ctx):
 	BRR = LMS.BayesianRidge
 	ENR = LMS.ElasticNet
 	#
+	def shuffle(x,y,N): 	# return N random samples of (x,y)
+		def sortKey(d):
+			return d['val']
+		xy = []
+		for n in range(0,N):
+			xy.append({'idx': n, 'val': NP.random.uniform()})
+		xy.sort(key = sortKey)
+		x0 = []
+		y0 = []
+		for n in range(0,N):
+			x0.append( x[ xy[n]['idx'] ] )
+			y0.append( y[ xy[n]['idx'] ] )
+		return (x0,y0)
+	#
 	def serialize(cls, mod):		# serialize classification class cls into a model dictionary mod
 		for key, val in cls.__dict__.items():
 			if (type(val) is NP.ndarray) and key[-1:] == "_":
@@ -114,12 +128,13 @@ def pyregress(ctx):
 		if y != None:		# requesting a training
 			print "x",x.shape,"y",y.shape, make
 			cls = deserialize( solve, make() )
+			(x0,y0) = shuffle(x.tolist(),y.tolist(),keep)
 			ctx['Save'] = {
 				'Save_'+use: serialize( cls.fit(x,y), {} ),
 				'Save_train': {
 					'method': use,
-					'x': x.tolist()[0:keep],
-					'y': y.tolist()[0:keep]
+					'x': x0,
+					'y': y0
 				}
 			}
 		else:		# requesting a prediction

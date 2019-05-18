@@ -1,6 +1,7 @@
 module.exports = {  // regression
-	addkeys: {
+	_addkeys: {
 		Method: "varchar(16) default 'sinc' comment 'name of complex correlation model for pc estimates' ",
+		Keep: "int(11) default 0 comment 'number of (x,y) values to retain during training' ",
 		
 		lrm_numSteps: "int(11) default 0 comment 'number of steps in lrm solver' ",
 		lrm_learningRate: "float default 0 comment 'lrm learning rate' ",
@@ -71,12 +72,21 @@ module.exports = {  // regression
 				Log("regress train>>", use, "xy:", [x.length, y.length]);
 
 				if (x.length == y.length)
-					$(` cls = ${use}Train( x, y, solve, save ); `, 
+					$(`cls = ${use}_train( x, y, solve, save ); `, 
+					  
 						Copy({
 							save: (cls) => {
-								ctx.Save = {};
-								ctx.Save[ `Save_${use}` ] = cls;
-								res(ctx);
+								$(`u = shuffle(x,y,Keep);`, ctx, (ctx) => {
+									ctx.Save = {
+										Save_train: {
+											method: use,
+											x: ctx.u.x._data,
+											y: ctx.u.y._data
+										}
+									};
+									ctx.Save[ `Save_${use}` ] = cls;
+									res(ctx);
+								});
 							},
 							solve: solve
 						}, ctx), (ctx) => {
@@ -94,7 +104,7 @@ module.exports = {  // regression
 				Log("regress predict>>", use, "x:", [x.length]);
 
 				if ( model )
-					$(` y = ${use}Predict( cls, x );`, 
+					$(` y = ${use}_predict( cls, x );`, 
 						Copy({
 							cls: loader(model)
 						}, ctx), (ctx) => {
