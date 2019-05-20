@@ -2458,7 +2458,7 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 						}
 						else {		// take
 							var
-								doc = escape(field.Comment).replace(/\./g, "%2E"),
+								doc = escape(field.Comment).replace(/\./g, "%2E").replace(/\_/g,"%5F"),
 								qual = "short";
 							
 							if ( key.indexOf("Save") == 0) qual += "hideoff" ;
