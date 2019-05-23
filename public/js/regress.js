@@ -107,12 +107,10 @@ tolerance: float>= [0] tolerance
 			if ( key.indexOf( solveKey ) == 0 ) solve[ key.substr( solveKey.length ) ] = ctx[key];
 		*/
 		
-		Log("solve", solve, loader);
+		Log("solve", solve );
 		
 		if ( loader)
 			if ( x && y ) {  // train the model
-				//x.length = 10;
-				//y.length = 10;
 				Log("regress train>>", use, "xy:", [x.length, y.length]);
 
 				if (x.length == y.length)
