@@ -74,6 +74,12 @@ You will typically want to redirect the following to your project
 	ln -s PROJECT/totem/certs certs					# truststore folder for name.pfx certs 
 	ln -s PROJECT/JPGS captcha 	 				# folder for captcha digits
 
+### Manage 
+
+	npm run [ edit || start ]			# Configure environment
+	npm test [ ? || D1 || D2 || ... ]		# Unit test
+	npm run [ prmprep || prmload ]		# Revise PRM
+
 ## Usage
 
 Simply require, configure and start DEBE:
@@ -89,10 +95,6 @@ Simply require, configure and start DEBE:
 where [its configuration keys](https://totem.west.ile.nga.ic.gov/shares/prm/debe/index.html) follow 
 the [ENUM copy()](https://github.com/acmesds/enum) conventions.
 
-The following examples are from unit tester:
-
-	node debe.js [D1 || D2 || ... ]
-	
 ### D1 - Encypted with a database
 
 	var DEBE = require("../debe").config({

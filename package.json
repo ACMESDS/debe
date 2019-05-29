@@ -4,7 +4,11 @@
   "description": "built on totem - does everything but eat",
   "main": "debe.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+	  "prmprep": "source ./maint.sh prmput",
+	  "prmload": "source ./maint.sh prmget",
+	  "edit": "vi ./config.sh",
+	  "start": "source ./config.sh",
+    "test": "node debe.js"
   },
   "repository": {
     "type": "git",
@@ -13,14 +17,14 @@
   "author": "ACME Software Disposal Service",
   "license": "ISC",
   "dependencies": {
-    "i18n-abide": "0.0.25",
-    "jade": "^1.9.0",
+    "i18n-abide": "0.0.26",
+    "jade": "^1.11.0",
     "markdown": "^0.5.0",
-    "marked": "^0.3.12",
+    "marked": "^0.6.2",
     "mathjax-node": "^1.3.0",
-    "officegen": "^0.4.5",
+    "officegen": "^0.4.8",
     "optimist": "^0.6.1",
-    "string-similarity": "^1.2.0",
+    "string-similarity": "^1.2.2",
     "supermarked": "^2.0.0",
     "togeojson": "^0.16.0",
     "tokml": "^0.4.0"

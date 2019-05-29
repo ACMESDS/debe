@@ -21,11 +21,9 @@
 @requires totem
 @requires atomic
 @requires geohack
-@requires $
+@requires man
 @requires randpr
-
-@requires strdif
-@requires string-similarity
+@requires enum
 
 Required env vars: none
 
