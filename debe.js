@@ -2154,7 +2154,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 														//Log("learning ctx", ctx);
 
 														if ( evs = ctx.Events ) 
-															evs.$( "group", function (evs) {  // get supervisor evs until null; then save supervisor computed events
+															evs.load( "group", function (evs) {  // get supervisor evs until null; then save supervisor computed events
 																Trace( evs ? `SUPERVISING voxel${ctx.Voxel.ID} events ${evs.length}` : `SUPERVISED voxel${ctx.Voxel.ID}` , sql );
 
 																if (evs) // feed supervisor
@@ -2220,22 +2220,18 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 
 					case Array:  // pipe contains event list
 						ctx.Events = Pipe;
-						pipePlugin( {}, ctx, (ctx) => saveEvents(null, ctx) );
+						pipePlugin( {}, ctx, (ctx) => saveEvents(ctx.Save, ctx) );
 						break;
 
 					case Object:  // pipe contains single event
 						Copy( Pipe, ctx );
-						pipePlugin( Pipe, ctx, (ctx) => saveEvents(null, ctx) );
+						pipePlugin( Pipe, ctx, (ctx) => saveEvents(ctx.Save, ctx) );
 						break;
 				}
 			}
 					
-			else
-			if ( "Save" in ctx )   // event generation engines do not participate in supervised workflow
-				res( saveEvents( ctx.Save, ctx ) );
-			
-			else
-				res( "ok" );
+			else	// unpiped (e.g. event generation) engines do not have participate in supervised workflow
+				res( saveEvents( ctx.Save, ctx ) || "ok" );
 			
 		});
 		
@@ -2284,6 +2280,13 @@ function sendDoc(req, res) {
 }
 
 function saveEvents(evs, ctx) {
+/**
+Aggregate and save events evs = [ev, ...] || { } || Error under direction of the supplied context 
+ctx = { Save: { ... }, Ingest: true||false, Export: true||false, ... }.  Stashify is used to 
+aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev = 
+{ at: KEY, A: a1, B: b1, ... } || { x: x1, y: y1 } are saved in Save_KEY = 
+{A: [a1, a2,  ...], B: [b1, b2, ...], ...} iff Save_KEY is in the supplied ctx.  
+*/
 	var
 		host = ctx.Host,
 		client = "guest",
@@ -2299,13 +2302,13 @@ function saveEvents(evs, ctx) {
 			case "Object":  // keys in the plugin context are used to create the stash
 				evs.ID = ctx.ID;
 				evs.Host = ctx.Host;
-				return "save".$( evs, function (evs,sql) {
+				return [].save( evs, (evs,sql) => {
 					//Log("save ctx done");
 				});
 				break;
 				
 			default:
-				return evs.$( ctx, function (evs,sql) {  // save events and callback with remaining unsaved evs
+				return evs.save( ctx, (evs,sql) => {  // save events and callback with remaining unsaved evs
 
 					if ( ctx.Export ) {   // export remaining events to filename
 						var
@@ -2342,7 +2345,7 @@ function saveEvents(evs, ctx) {
 		}
 	
 	else
-		return "empty";
+		return null;
 	
 }
 
@@ -3562,49 +3565,6 @@ append layout_body
 		
 	},
 		
-	function stashify(watchKey, targetPrefix, ctx, stash, cb) {
-	/*
-	@member Array
-	@method stashify
-	@param [String] watchKey  this = [ { watchKey:"KEY", x:X, y: Y, ...}, ... }
-	@param [String] targetPrefix  stash = { (targetPrefix + watchKey): { x: [X,...], y: [Y,...], ... }, ... } 
-	@param [Object] ctx plugin context keys
-	@param [Object] stash refactored output suitable for a Save_KEY
-	@param [Function] cb callback(ev,stat) returns refactored result to put into stash
-	Used by plugins for aggregating ctx keys into optional Save_KEY stashes such that:
-
-			[	{ at: "check", A: a1, B: b1, ... }, { at: "check", A: a1, B: b1, ... }, ... 
-				{ at: "other", ...}, { x:x1, y:y1, ...}, { x:x2: y:y2, ... } 
-			].stashify( "at", "save_", {save_check: {}, ...} , stash, cb )
-
-	creates a stash.save_check = {A: [a1, a2,  ...], B: [b1, b2, ...], ...}.   No stash.other is
-	created because its does not exist in the supplied ctx.  If no stash.rem is provided 
-	by the ctx, the {x, y, ...} are appended (w/o aggregation) to stash.remainder. Conversely, 
-	had	the ctx contain a stash.rem, the {x, y, ...} would be aggregated to stash.rem.
-	*/
-
-		var rem = stash.remainder;
-
-		this.forEach( (stat,n) => {  // split-save all stashable keys
-			var 
-				key = targetPrefix + (stat[watchKey] || "rem"),  // target ctx key 
-				ev = ( key in stash )
-					? stash[key]  // stash was already primed
-					: (key in ctx)  // see if its in the ctx
-							? stash[key] = cb(null,stat, ctx[key]) // prime stash
-							: null;  // not in ctx so stash in remainder
-
-			if ( ev )  { // found a ctx target key to save results
-				delete stat[watchKey];
-				cb(ev, stat);
-			}
-
-			else  
-			if (rem)  // stash remainder 
-				rem.push( stat );
-		});
-	},
-
 	function merge(Recs,idx) {
 	/**
 	@member Array

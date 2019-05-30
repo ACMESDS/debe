@@ -951,13 +951,8 @@ append site_body
 				:markdown
 					This [stateless py-engine](/pydemo1.run):
 
-						def init(ctx):
-							global TLIB
-							import testlib as TLIB   # looks for imports under PYTHONPATH
-
 						def pydemo1(ctx):
 							print "welcome to python you lazy bird"
-							print "test",TLIB.testf(123)
 
 							SQL0.execute("SELECT * from app.Htest", () )
 							for (rec) in SQL0:
