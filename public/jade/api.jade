@@ -949,7 +949,7 @@ append site_body
 
 			#fit.py
 				:markdown
-					This [stateless py-engine](/pydemo1.run):
+					This [stateless python engine](/pydemo1.run):
 
 						def pydemo1(ctx):
 							print "welcome to python you lazy bird"
@@ -960,37 +960,27 @@ append site_body
 
 							ctx['Save'] = [ {'x':1, 'y':2, 'z':0}, {'x':3, 'y':4, 'z':10}]
 
-					with initial context:
-
-						"query": {"Name":"test"}
-
-					will display *Htest* data at the service console, then returns *Save* data to its plugin context.  The
-					plugin could store data in any CTX key, but the *Save* and *Save_STATE* keys can be used to 
-					interface with the master workflow (see Plugins).  Every python engine also has access to the 
-					SYS, JSON, IMP and CAFFE (if on GPU VMs) libs, as well as the SQL0 (read) and SQL1 (write) cursors.
+					will log *Htest* data at the service console, then return *Save* to the plugin's context.  The
+					plugin can store data in any CTX key, but the *Save* member interfaces with the plugin
+					workflow (see Plugins).  Python engines are also provided SYS, JSON, IMP and CAFFE (if 
+					on GPU VMs) libs, as well as the SQL0 (read) and SQL1 (write) cursors.
 					
 					This [stateful python engine](/pydemo2.exe) can be used in a workflow to 
 					maximize data stationarity:
 
-						def f1(tau,parm):
-							print "in port f1"
+						def f1(tau,spec):
+							print "in input port f1","events",tau,"port spec",spec
 							return 0
 
-						def f2(tau,parm):
-							print "in port f2"
+						def f2(tau,spec):
+							print "in output port f2","events",tau,"port spec",spec
 							return 0
 
 						print "executing on port " + PORT
 
-					with initial context: 
-
-						"query": {"Name":"test"},
-						"ports": {
-						}
-
 					by defining its i/o ports *f1* / *f2* to be called during the workflow 
-					with the incoming *tau* event token and the assoicated *parm* hash taken 
-					from the defined *ports* hash.  Although this engine would be typically used
+					with the incoming *tau* events at CTX['tau'], and the assoicated port *spec* at
+					CTX['ports'][PORT] .  Although this engine would typically be used
 					in [stateful flows](/nodeflow.view), it can also be used in a stateless flow
 					by passing *port* (as demonstrated [here](/demo2.py?port=f1)).
 					

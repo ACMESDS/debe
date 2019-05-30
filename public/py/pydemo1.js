@@ -24,11 +24,11 @@ the end. `
 	engine: `
 def pydemo1(ctx):
 	print "welcome to python you lazy bird"
-	#print "sql", SQL0
+	print "sql", SQL0
 
-	#SQL0.execute("SELECT * from app.Htest", () )
-	#for (rec) in SQL0:
-	#	print rec
+	SQL0.execute("SELECT * from app.Htest", () )
+	for (rec) in SQL0:
+		print rec
 
 	ctx['Save'] = [ {'x':1, 'y':2, 'z':0}, {'x':3, 'y':4, 'z':10}]
 `

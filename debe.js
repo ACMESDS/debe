@@ -2041,7 +2041,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 				switch ( Pipe.constructor ) {
 					case String: // pipe define path to file or ingested events
 
-						function fetchEvents( path, ctx, pipe, cb ) {  //< fetch events from path and place them in ctx keys defined by the pipe
+						function fetchEvents( path, ctx, pipe, cb ) {  // fetch events from path and place them in ctx keys defined by the pipe
 							DEBE.fetcher( path, null, (info) => {
 								// function evalEvents($,str) { return eval(str); }
 								
@@ -2061,24 +2061,8 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 							pipe = {},
 							chipper = HACK.chipVoxels,
 							filename = Pipe.parsePath(pipe,{},{},{}),
-							autoname = `${ctx.Host}.${ctx.Name}`;
-
-						sql.query( "DELETE FROM openv.watches WHERE File != ? AND Run = ?", [filename, autoname] );
-						
-						sql.query( "INSERT INTO openv.watches SET ?", {  // associate file with plugin
-							File: filename,
-							Run: autoname
-						}, (err,info) => {
-							
-							if ( !err )
-								if ( filename.charAt(0) == "/" )
-									dogAutoruns( filename );
-						});
-						
-						//Log(req.client, profile.QoS, profile.Credit, req.table, query);
-						
-						if ( filename.charAt(0) == "/" ) // send source to the plugin
-							sql.insertJob({ // job descriptor for regulator
+							autoname = `${ctx.Host}.${ctx.Name}`,
+							job = { // job descriptor for regulator
 								qos: 1, //profile.QoS, 
 								priority: 0,
 								client: req.client,
@@ -2095,13 +2079,31 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 										"PMR brief".tag("a", {
 											href:`/briefs.view?options=${pipe.task}`
 										})
-								].join(" || "),
+								].join(" || ")
+							};
+
+						sql.query( "DELETE FROM openv.watches WHERE File != ? AND Run = ?", [filename, autoname] );
+						
+						sql.query( "INSERT INTO openv.watches SET ?", {  // associate file with plugin
+							File: filename,
+							Run: autoname
+						}, (err,info) => {
+							
+							if ( !err )
+								if ( filename.charAt(0) == "/" )
+									dogAutoruns( filename );
+						});
+						
+						//Log(req.client, profile.QoS, profile.Credit, req.table, query);
+						
+						if ( filename.charAt(0) == "/" ) // send source to the plugin
+							sql.insertJob( Copy({ // add context to job
 								ctx: ctx,
 								pipe: pipe,
 								path: Pipe
-							}, (job, sql) => { 							
+							}, job), (job, sql) => { 
 								var
-									ctx = job.ctx,
+									ctx = job.ctx,		// recover job context
 									pipe = job.pipe,
 									path = job.path;
 								
@@ -2118,33 +2120,16 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 									
 									//Log( "chip file>>>", file );
 									ctx.File = file;
-									chipper(sql, pipe, ( voxctx ) => {  // process each voxel being chipped
+									chipper(sql, pipe, ( voxctx ) => {  // get voxel context for each voxel being chipped
 
-										sql.insertJob({ // job descriptor for regulator
-											qos: profile.QoS, 
-											priority: 0,
-											client: req.client,
-											class: "plugin",
-											credit: profile.Credit,
-											name: req.table,
-											task: query.Name || query.ID,
-											notes: [
-													req.table.tag("?",{ID:query.ID}).tag("a", {href:"/" + req.table + ".run"}), 
-													((profile.Credit>0) ? "funded" : "unfunded").tag("a",{href:req.url}),
-													"RTP".tag("a", {
-														href:`/rtpsqd.view?task=${pipe.task}`
-													}),
-													"PMR brief".tag("a", {
-														href:`/briefs.view?options=${pipe.task}`
-													})
-											].join(" || "),
-											ctx: Copy( ctx, voxctx )  	// add engine context parms to the voxel run context
-										}, (job, sql) => {  // put voxel into job regulation queue
+										sql.insertJob( Copy({ // add context to job
+											ctx: Copy( ctx, voxctx )  	// add engine context parms to the voxel context
+										}, job), (job, sql) => {  // put voxel into job regulation queue
 
 											//Log("run job", job);
 
 											var 
-												ctx = job.ctx,
+												ctx = job.ctx, // recover job context
 												file = ctx.File,
 												supervisor = new RAN({ 	// learning supervisor
 													learn: function (supercb) {  // event getter callsback supercb(evs) or supercb(null,onEnd) at end
@@ -2199,7 +2184,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 											supervisor.pipe( (stats) => { // pipe supervisor to this callback
 												Trace( `PIPED voxel${ctx.Voxel.ID}` , sql );
 											}); 
-										});
+										}); 
 									});									
 								}
 								
