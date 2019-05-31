@@ -131,7 +131,7 @@ catch (err) {
 } `);
 			
 			else
-				ctx[lhs] = rhs.parseJS( ctx );
+				ctx[lhs] = rhs.parseEMAC( ctx );
 			
 			return "";
 		},
@@ -187,7 +187,7 @@ catch (err) {
 			function toDoc (arg) {
 				switch ( arg.charAt(0) ) {
 					case "#":
-						return ("${doc(" + arg.substr(1) + ")}" ).parseJS(ctx).parseJSON( "?" );
+						return ("${doc(" + arg.substr(1) + ")}" ).parseEMAC(ctx).parseJSON( "?" );
 						
 					case "[":
 					case "{":
@@ -1972,21 +1972,25 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 @param {Function} res Totem response callback
 */	
 	
-	function pipePlugin( pipe, ctx, cb ) {
+	function pipePlugin( data, pipe, ctx, cb ) {
 		req.query = ctx; 
+		Log("pipe plugin", pipe);
+		for ( var key in pipe )	// add pipe keys to engine ctx
+			ctx[key] = pipe[key].parseJS( data );
+		
 		ATOM.select(req, function (ctx) {  // run plugin
 			
 			if ( ctx )
 				if ( isError(ctx)  )
 					Log(`${ctx.Host} ` + ctx);
 
-				else {
-					for (var key in pipe) delete ctx[key];		
+				else {	// remove pipe keys from ctx
+					for (var key in pipe) delete ctx[key];
 					cb(ctx);
 				}
 			
 			else
-				Log("no ctx!!!");
+				Log("lost engine contxt");
 		});
 	}
 	
@@ -2041,27 +2045,14 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 				switch ( Pipe.constructor ) {
 					case String: // pipe define path to file or ingested events
 
-						function fetchEvents( path, ctx, pipe, cb ) {  // fetch events from path and place them in ctx keys defined by the pipe
-							DEBE.fetcher( path, null, (info) => {
-								// function evalEvents($,str) { return eval(str); }
-								
-								Copy( info.parseJSON( {} ), ctx );
-								/*
-								var 
-									evs = info.parseJSON({ });
-								
-								for (var key in pipe) ctx[key] = evalEvents( Copy(evs,$), pipe[key] || ("$."+key) );
-								*/
-								
-								cb( ctx, pipe );
-							});
-						}
-						
 						var
-							pipe = {},
 							chipper = HACK.chipVoxels,
+							pipe = {},
 							filename = Pipe.parsePath(pipe,{},{},{}),
+							fileparts = filename.split("."),
+							filetype = fileparts[1],
 							autoname = `${ctx.Host}.${ctx.Name}`,
+							fetcher = DEBE.fetcher,
 							job = { // job descriptor for regulator
 								qos: 1, //profile.QoS, 
 								priority: 0,
@@ -2074,133 +2065,154 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 										req.table.tag("?",{ID:query.ID}).tag("a", {href:"/" + req.table + ".run"}), 
 										((profile.Credit>0) ? "funded" : "unfunded").tag("a",{href:req.url}),
 										"RTP".tag("a", {
-											href:`/rtpsqd.view?task=${pipe.task}`
+											href:`/rtpsqd.view?task=${query.Name}`
 										}),
 										"PMR brief".tag("a", {
-											href:`/briefs.view?options=${pipe.task}`
+											href:`/briefs.view?options=${query.Name}`
 										})
-								].join(" || ")
+								].join(" || "),
+								pipe: pipe,
+								path: filename,
+								script: Pipe.substr(filename.length+1),
+								ctx: ctx
 							};
 
-						sql.query( "DELETE FROM openv.watches WHERE File != ? AND Run = ?", [filename, autoname] );
-						
-						sql.query( "INSERT INTO openv.watches SET ?", {  // associate file with plugin
-							File: filename,
-							Run: autoname
-						}, (err,info) => {
-							
-							if ( !err )
-								if ( filename.charAt(0) == "/" )
-									dogAutoruns( filename );
-						});
-						
 						//Log(req.client, profile.QoS, profile.Credit, req.table, query);
+
+						if (filename) {  // update pipe change watchers and run pipe
+							sql.query( "DELETE FROM openv.watches WHERE File != ? AND Run = ?", [filename, autoname] );
+
+							sql.query( "INSERT INTO openv.watches SET ?", {  // associate file with plugin
+								File: filename,
+								Run: autoname
+							}, (err,info) => {
+
+								if ( !err )
+									if ( filename.charAt(0) == "/" )
+										dogAutoruns( filename );
+							});
+						}
 						
-						if ( filename.charAt(0) == "/" ) // send source to the plugin
-							sql.insertJob( Copy({ // add context to job
-								ctx: ctx,
-								pipe: pipe,
-								path: Pipe
-							}, job), (job, sql) => { 
-								var
-									ctx = job.ctx,		// recover job context
-									pipe = job.pipe,
-									path = job.path;
+						switch (filetype) {
+							case "jpg":		// run data scripting pipe
+								sql.insertJob( job, (job, sql) => { 
+									var
+										ctx = job.ctx,		// recover job context
+										script = `$.path.read( img => $.cb( ${job.script} ) )`;
+
+									Log("script", script);
+
+									script.parseJS( Copy({
+										path: filename,
+										cb: data => {
+											Log("script >>>> data", data);
+											pipePlugin(data, {xymc: "$"}, ctx, ctx => saveEvents(ctx.Save, ctx) );
+										}
+									}, ctx), ctx );
+								});	
+								break;							
 								
-								//Log("pipe", path, pipe);
-								fetchEvents( path, ctx, pipe, (evs, pipe) => {		// fetch events and route them to plugin
-									pipePlugin( pipe, ctx, (ctx) => saveEvents(ctx.Save, ctx) );
-								});
-							});
+							case "json":	// send source to the plugin
+								sql.insertJob( job, (job, sql) => { 
+									var
+										ctx = job.ctx,		// recover job context
+										path = job.path,
+										pipe = job.pipe;
 
-						else // stream source through supervisor to the plugin
-							sql.forEach( TRACE, "SELECT * FROM app.files WHERE Name LIKE ? ", filename , (file) => {		// regulate requested file(s)
-
-								function chipFile( file , ctx ) { 
-									
-									//Log( "chip file>>>", file );
-									ctx.File = file;
-									chipper(sql, pipe, ( voxctx ) => {  // get voxel context for each voxel being chipped
-
-										sql.insertJob( Copy({ // add context to job
-											ctx: Copy( ctx, voxctx )  	// add engine context parms to the voxel context
-										}, job), (job, sql) => {  // put voxel into job regulation queue
-
-											//Log("run job", job);
-
-											var 
-												ctx = job.ctx, // recover job context
-												file = ctx.File,
-												supervisor = new RAN({ 	// learning supervisor
-													learn: function (supercb) {  // event getter callsback supercb(evs) or supercb(null,onEnd) at end
-														var 
-															supervisor = this;
-
-														//Log("learning ctx", ctx);
-
-														if ( evs = ctx.Events ) 
-															evs.load( "group", function (evs) {  // get supervisor evs until null; then save supervisor computed events
-																Trace( evs ? `SUPERVISING voxel${ctx.Voxel.ID} events ${evs.length}` : `SUPERVISED voxel${ctx.Voxel.ID}` , sql );
-
-																if (evs) // feed supervisor
-																	supercb(evs);
-
-																else // terminate supervisor and start engine
-																	supercb(null, function onEnd( flow ) {  // attach supervisor flow context
-																		ctx.Flow = flow; 
-																		ctx.Case = "v"+ctx.Voxel.ID;
-																		Trace( `STARTING voxel${ctx.Voxel.ID}` , sql );
-																		
-																		pipePlugin( {}, ctx, (ctx) => {
-																			supervisor.end( ctx.Save || [], (evstore) => {
-																				saveEvents(evstore, ctx);
-																			});
-																		});
-																	});	
-															});
-
-														else	// terminate supervisor
-															supercb(null);
-													},  
-
-													N: pipe.actors || file._Ingest_Actors,  // ensemble size
-													keys: pipe.keys || file.Stats_stateKeys,	// event keys
-													symbols: pipe.symbols || file.Stats_stateSymbols || file._Ingest_States,	// state symbols
-													steps: pipe.steps || file._Ingest_Steps, // process steps
-													batch: pipe.batch || 0,  // steps to next supervised learning event 
-													//trP: {states: file._Ingest_States}, // trans probs
-													trP: {},	// transition probs
-													filter: function (str, ev) {  // filter output events
-														switch ( ev.at ) {
-															case "batch":
-																//Log("filter", ev);
-															case "config":
-															case "end":
-																str.push(ev);
-														}
-													}  
-												});
-
-											supervisor.pipe( (stats) => { // pipe supervisor to this callback
-												Trace( `PIPED voxel${ctx.Voxel.ID}` , sql );
-											}); 
-										}); 
-									});									
-								}
-								
-								["stateKeys", "stateSymbols"].parseJSON(file);
-								
-								if (file._State_Archived) 
-									CP.exec("", function () {  // revise to add a script to cp from lts and unzip
-										Trace("RESTORING "+file.Name);
-										sql.query("UPDATE app.files SET _State_Archived=false WHERE ?", {ID: file.ID});
-										chipFile(file, pipe);
+									fetcher( path, null, info => {	// fetch events and route them to plugin
+										pipePlugin( info.parseJSON( {} ), pipe, ctx, ctx => saveEvents(ctx.Save, ctx) );
 									});
+								});
+								break;
 
-								else
-									chipFile(file, pipe);
-							});
-			
+							default: 	// stream source through supervisor to the plugin
+								sql.forEach( TRACE, "SELECT * FROM app.files WHERE Name LIKE ? ", filename , file => {		// regulate requested file(s)
+
+									function chipFile( file , ctx ) { 
+
+										//Log( "chip file>>>", file );
+										ctx.File = file;
+										chipper(sql, pipe, ( voxctx ) => {  // get voxel context for each voxel being chipped
+
+											sql.insertJob( Copy({ // add context to job
+												ctx: Copy( ctx, voxctx )  	// add engine context parms to the voxel context
+											}, job), (job, sql) => {  // put voxel into job regulation queue
+
+												//Log("run job", job);
+
+												var 
+													ctx = job.ctx, // recover job context
+													file = ctx.File,
+													supervisor = new RAN({ 	// learning supervisor
+														learn: function (supercb) {  // event getter callsback supercb(evs) or supercb(null,onEnd) at end
+															var 
+																supervisor = this;
+
+															//Log("learning ctx", ctx);
+
+															if ( evs = ctx.Events ) 
+																evs.load( "group", function (evs) {  // get supervisor evs until null; then save supervisor computed events
+																	Trace( evs ? `SUPERVISING voxel${ctx.Voxel.ID} events ${evs.length}` : `SUPERVISED voxel${ctx.Voxel.ID}` , sql );
+
+																	if (evs) // feed supervisor
+																		supercb(evs);
+
+																	else // terminate supervisor and start engine
+																		supercb(null, function onEnd( flow ) {  // attach supervisor flow context
+																			ctx.Flow = flow; 
+																			ctx.Case = "v"+ctx.Voxel.ID;
+																			Trace( `STARTING voxel${ctx.Voxel.ID}` , sql );
+
+																			pipePlugin( {}, ctx, (ctx) => {
+																				supervisor.end( ctx.Save || [], (evstore) => {
+																					saveEvents(evstore, ctx);
+																				});
+																			});
+																		});	
+																});
+
+															else	// terminate supervisor
+																supercb(null);
+														},  
+
+														N: pipe.actors || file._Ingest_Actors,  // ensemble size
+														keys: pipe.keys || file.Stats_stateKeys,	// event keys
+														symbols: pipe.symbols || file.Stats_stateSymbols || file._Ingest_States,	// state symbols
+														steps: pipe.steps || file._Ingest_Steps, // process steps
+														batch: pipe.batch || 0,  // steps to next supervised learning event 
+														//trP: {states: file._Ingest_States}, // trans probs
+														trP: {},	// transition probs
+														filter: function (str, ev) {  // filter output events
+															switch ( ev.at ) {
+																case "batch":
+																	//Log("filter", ev);
+																case "config":
+																case "end":
+																	str.push(ev);
+															}
+														}  
+													});
+
+												supervisor.pipe( (stats) => { // pipe supervisor to this callback
+													Trace( `PIPED voxel${ctx.Voxel.ID}` , sql );
+												}); 
+											}); 
+										});									
+									}
+
+									["stateKeys", "stateSymbols"].parseJSON(file);
+
+									if (file._State_Archived) 
+										CP.exec("", function () {  // revise to add a script to cp from lts and unzip
+											Trace("RESTORING "+file.Name);
+											sql.query("UPDATE app.files SET _State_Archived=false WHERE ?", {ID: file.ID});
+											chipFile(file, pipe);
+										});
+
+									else
+										chipFile(file, pipe);
+								});
+						}
 						break;
 
 					case Array:  // pipe contains event list
@@ -2287,7 +2299,7 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 			case "Object":  // keys in the plugin context are used to create the stash
 				evs.ID = ctx.ID;
 				evs.Host = ctx.Host;
-				return [].save( evs, (evs,sql) => {
+				return "".save( evs, (evs,sql) => {
 					//Log("save ctx done");
 				});
 				break;
@@ -3356,7 +3368,7 @@ Initialize DEBE on startup.
 			genctx = Copy(DEBE.blog, new Object(ctx)),
 			pattern = /(\S*) ([^ ]*)= (\S*)/g;  // defines LHS OP= RHS tag
 		
-		cb( this.parseJS(genctx).replace(pattern, (str,lhs,op,rhs) => {
+		cb( this.parseEMAC(genctx).replace(pattern, (str,lhs,op,rhs) => {
 			//Log([lhs,rhs,op]);
 			if ( op )
 				if ( blogOp = genctx[op] ) 

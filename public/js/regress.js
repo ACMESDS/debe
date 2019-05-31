@@ -1,5 +1,5 @@
 module.exports = {  // regression
-	addkeys: {
+	_addkeys: {
 		Method: "varchar(16) default 'sinc' comment 'name of complex correlation model for pc estimates' ",
 		Keep: "int(11) default 0 comment 'number of (x,y) values to retain during training' ",
 
@@ -82,10 +82,124 @@ tolerance: float>= [0] tolerance
 		Save_USE: training model for used Method saved here
 		USE_solve: solver parameter for used Method 
 	*/
+		function train(x, y, cb) {  
+			Log({
+				train: use, 
+				dims: [x.length, y.length],
+				solve: solve
+			});
+
+			if (x.length == y.length) {
+				$(
+					`cls = ${use}_train( x, y, solve, save ); `, 
+
+					Copy({
+						x: x,
+						y: y,
+						save: cb,
+						solve: solve
+					}, ctx), 
+					
+				  	ctx => Log("regressor trained")
+				);
+			}
+			
+			else 
+				cb( null );
+		}
+
+		function trainer(x,y) {
+			function saver( cls, x, y, cb ) {
+				$(
+					`u = shuffle(x,y,keep);`, 
+
+					Copy({
+						x: x,
+						y: y,
+						keep: keep
+					}, ctx),
+
+					ctx => {
+						var save = {
+							Save_train: {
+								solver: use,
+								x: ctx.u.x._data,
+								y: ctx.u.y._data
+							}
+						};
+
+						save[ `Save_${use}` ] = cls;
+
+						cb( save );
+					}
+				);
+			}
+			
+			train( x, y, cls => {
+				if ( cls )
+					saver( cls, x, y, save => {
+						ctx.Save = save; 
+						res(ctx);
+					});
+
+				else
+					res( new Error("bad x/y training dims") );
+			});
+		}
+
+		function trainers(xy) {
+			
+			function saver( cls, cb) {
+				regs[chan] = new Object(cls);
+
+				if ( chan == chans ) {
+					Log(" all trainers done !! ");
+					cb();
+				}
+			}
+				
+			var 
+				x = xy.x,
+				y = xy.y,
+				chans = x.length,
+				regs = ctx.Save[ `Save_${use}` ] = new Array( chans );
+
+			Log("multichan", chans);
+			for ( var chan = 0; chan<chans; chan++ ) 
+				train( x[chan], y[chan], cls => {
+					if ( cls ) 
+						saver( cls, () => res(ctx) );
+
+					else
+						res( new Error( `bad x/y training dims in channel ${chan}` ) );								
+				});
+		}
+		
+		function predict(x, cb) {
+			Log({
+				predict: use, 
+				dims: x.length
+			});
+
+			$(
+				`y = ${use}_predict( cls, x );`, 
+				
+				Copy({
+					x: x,
+					cls: loader(model)
+				}, ctx), 
+			  	
+				ctx => cb( ctx.y ) 
+			 );
+		}
+		
 		var
 			stats = ctx.Stats,
 			x = ctx.x,
 			y = ctx.y,
+			xy = ctx.xy,
+			xymc = ctx.xymc,
+			keep = ctx.Keep,
 			use = ctx.Method.toLowerCase(),
 			solveKey = use +"_",
 			loaders = {
@@ -107,60 +221,41 @@ tolerance: float>= [0] tolerance
 			if ( key.indexOf( solveKey ) == 0 ) solve[ key.substr( solveKey.length ) ] = ctx[key];
 		*/
 		
-		Log("solve", solve );
+		Log({
+			solve: solve,
+			keep: keep,
+			use: use,
+			training: ((x && y) || xy || xymc) ? true : false,
+			predicting: x ? true : false,
+			loader: loader ? true : false,
+			model: model ? true : false
+		});
 		
 		if ( loader)
-			if ( x && y ) {  // train the model
-				Log("regress train>>", use, "xy:", [x.length, y.length]);
-
-				if (x.length == y.length)
-					$(`cls = ${use}_train( x, y, solve, save ); `, 
-					  
-						Copy({
-							save: (cls) => {
-								$(`u = shuffle(x,y,Keep);`, ctx, (ctx) => {
-									ctx.Save = {
-										Save_train: {
-											method: use,
-											x: ctx.u.x._data,
-											y: ctx.u.y._data
-										}
-									};
-									ctx.Save[ `Save_${use}` ] = cls;
-									res(ctx);
-								});
-							},
-							solve: solve
-						}, ctx), (ctx) => {
-							Log("regressor trained");
-						});
-
-				else 
-					res(new Error("bad x and/or y dimensions") );
-			}
+			if ( x && y ) // in x,y training mode
+				trainer( x, y );
+			
+			else
+			if ( xy ) // in xy training mode
+				trainer( xy.x, xy.y );
 
 			else
-			if ( x ) {	// predict using the model
-
-				//x.length = 4;
-				Log("regress predict>>", use, "x:", [x.length]);
-
-				if ( model )
-					$(` y = ${use}_predict( cls, x );`, 
-						Copy({
-							cls: loader(model)
-						}, ctx), (ctx) => {
-							ctx.Save = {Save_predict: ctx.y};
-							res(ctx);
-							Log("regress predicted");
-						});
-				
-				else
-					res( new Error("regressor never trained") );
-			}
+			if ( xymc ) // in xy multichannel training mode
+				trainers( xymc );
 		
 			else
-				res( new Error("no x or y provided to regressor") );
+			if ( x ) // in prediction mode
+				if ( model ) 
+					predict(x, y => {
+						ctx.Save = {Save_predict: y};
+						res(ctx);
+					});
+										
+				else
+					res( new Error("regressor never trained") );
+					
+			else
+				res( new Error("missing x/y/xy/xymc to regressor") );
 		
 		else
 			res( new Error("invalid regression method") );
