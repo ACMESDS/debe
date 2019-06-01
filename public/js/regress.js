@@ -147,22 +147,19 @@ tolerance: float>= [0] tolerance
 			});
 		}
 
-		function trainers(xy) {
+		function trainers(x,y) {
 			
 			function saver( cls, cb) {
 				regs[chan] = new Object(cls);
 
-				if ( chan == chans ) {
-					Log(" all trainers done !! ");
-					cb();
-				}
+				if ( ++done == chans ) cb();
 			}
 				
 			var 
-				x = xy.x,
-				y = xy.y,
 				chans = x.length,
-				regs = ctx.Save[ `Save_${use}` ] = new Array( chans );
+				save = ctx.Save = {},
+				done = 0,
+				regs = save[ `Save_${use}` ] = new Array( chans );
 
 			Log("multichan", chans);
 			for ( var chan = 0; chan<chans; chan++ ) 
@@ -198,10 +195,10 @@ tolerance: float>= [0] tolerance
 			x = ctx.x,
 			y = ctx.y,
 			xy = ctx.xy,
-			xymc = ctx.xymc,
+			mc = ctx.mc,
 			keep = ctx.Keep,
 			use = ctx.Method.toLowerCase(),
-			solveKey = use +"_",
+			solveKey = use + "_",
 			loaders = {
 				svm: $.SVM.restore,
 				lrm: $.LRM.load,
@@ -225,7 +222,7 @@ tolerance: float>= [0] tolerance
 			solve: solve,
 			keep: keep,
 			use: use,
-			training: ((x && y) || xy || xymc) ? true : false,
+			training: ((x && y) || xy || mc) ? true : false,
 			predicting: x ? true : false,
 			loader: loader ? true : false,
 			model: model ? true : false
@@ -240,8 +237,8 @@ tolerance: float>= [0] tolerance
 				trainer( xy.x, xy.y );
 
 			else
-			if ( xymc ) // in xy multichannel training mode
-				trainers( xymc );
+			if ( mc ) // in xy multichannel training mode
+				trainers( mc.x, mc.y );
 		
 			else
 			if ( x ) // in prediction mode
@@ -255,7 +252,7 @@ tolerance: float>= [0] tolerance
 					res( new Error("regressor never trained") );
 					
 			else
-				res( new Error("missing x/y/xy/xymc to regressor") );
+				res( new Error("missing x||y||xy||mc to regressor") );
 		
 		else
 			res( new Error("invalid regression method") );
