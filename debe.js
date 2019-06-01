@@ -86,54 +86,6 @@ var										// shortcuts and globals
 var
 	DEBE = module.exports = Copy({
 	
-	scripts: {
-		log: console.log,
-
-		read: (path,cb) => {	// read and forward jpg to callback
-			$.IMP.read( "."+ path )
-			.then( img => { 
-				Log("read", path, img.bitmap.height, img.bitmap.width);
-				if (cb) cb(img); 
-				return img; 
-			} )
-			.catch( err => Log(err) );
-		},
-
-		auto: img => {	// autocomplete over vertical axis
-			var 
-				bitmap = img.bitmap,
-				data = bitmap.data,
-				Rows = bitmap.height,
-				Cols = 4, //bitmap.width,
-				rows = Math.floor(Rows/2),
-				X = [],
-				Y = [],
-				red = 0, green = 1, blue = 2;
-
-			Log( "auto", Rows, Cols );
-			for (var col = 0; col<Cols; col++) {
-				var 
-					x = [],
-					y = [];
-
-				for ( var row=0, Row=Rows-1; row<rows; row++, Row-- ) {
-					var
-						idx = img.getPixelIndex( col, row ),
-						Idx = img.getPixelIndex( col, Row );
-
-					x.push( [ data[ idx+red ] + data[ idx+green] + data[ idx+blue] ] );
-					y.push( data[ Idx+red ] + data[ Idx+green] + data[ Idx+blue] );
-				}
-
-				X.push( x );
-				Y.push( y );
-			}
-
-			img.results = {x: X, y: Y};
-			return(img);
-		}	
-	},
-		
 	reroute: {  //< sql.acces routes to provide secure access to db
 		engines: function (ctx) { // protect engines that are not registered to requesting client
 			//Log("<<<", ctx);
@@ -2151,13 +2103,23 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 
 									Log("script", script);
 
-									script.parseJS( Copy( DEBE.scripts, {
+									script.parseJS({
+										log: console.log,
+
+										read: (path,cb) => {	// read and forward jpg to callback
+											$.IMP.read( "."+ path )
+											.then( img => { 
+												Log("read", path, img.bitmap.height, img.bitmap.width);
+												if (cb) cb( img); 
+												return img; 
+											} )
+											.catch( err => Log(err) );
+										},
+										
 										path: filename,
 
-										cb: img => {
-											pipePlugin( img, {mc: "$.results"}, ctx, ctx => saveEvents(ctx.Save, ctx) );
-										}
-									}) );
+										cb: img => pipePlugin( img, {mc: "$.results"}, ctx, ctx => saveEvents(ctx.Save, ctx) )
+									});
 								});	
 								break;							
 								
@@ -4091,19 +4053,52 @@ function dogAutoruns(path) {
 	DEBE.watchFile( "."+path, exeAutorun );
 }
 
-//======================= execution tracing
-
-function Trace(msg,sql) {
+function Trace(msg,sql) {	// execution tracing
 	TRACE.trace(msg,sql);
 }
 
-//======================= unit tests
+[ // add Jimp methods
+	function auto() {	// autocomplete over vertical axis
+		var 
+			img = this,
+			bitmap = img.bitmap,
+			data = bitmap.data,
+			Rows = bitmap.height,
+			Cols = 4, //bitmap.width,
+			rows = Math.floor(Rows/2),
+			X = [],
+			Y = [],
+			red = 0, green = 1, blue = 2;
+
+		Log( "auto", Rows, Cols );
+		for (var col = 0; col<Cols; col++) {
+			var 
+				x = [],
+				y = [];
+
+			for ( var row=0, Row=Rows-1; row<rows; row++, Row-- ) {
+				var
+					idx = img.getPixelIndex( col, row ),
+					Idx = img.getPixelIndex( col, Row );
+
+				x.push( [ data[ idx+red ] + data[ idx+green] + data[ idx+blue] ] );
+				y.push( data[ Idx+red ] + data[ Idx+green] + data[ Idx+blue] );
+			}
+
+			X.push( x );
+			Y.push( y );
+		}
+
+		img.results = {x: X, y: Y};
+		return(img);
+	}
+].extend( $.IMP );
 
 /**
 @class DEBE.Unit_tests_Use_Cases
 */
 
-switch ( process.argv[2] ) { //< unit tests
+switch ( process.argv[2] ) { // unit tests
 	case "?":
 		Log("unit test with 'node debe [D1 || D2 || ...]'");
 		break;
