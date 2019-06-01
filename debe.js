@@ -1973,18 +1973,19 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 */	
 	
 	function pipePlugin( data, pipe, ctx, cb ) {
-		req.query = ctx; 
+		req.query = ctx;   // let plugin mixin its own keys
 		Log("pipe plugin", pipe);
 		for ( var key in pipe )	// add pipe keys to engine ctx
 			ctx[key] = pipe[key].parseJS( {$: data} );
 			
-		ATOM.select(req, function (ctx) {  // run plugin
+		ATOM.select(req, ctx => {  // run plugin
 			
 			if ( ctx )
 				if ( isError(ctx)  )
 					Log(`${ctx.Host} ` + ctx);
 
 				else {	// remove pipe keys from ctx
+					Log("clear pipe", pipe);
 					for (var key in pipe) delete ctx[key];
 					cb(ctx);
 				}
@@ -2042,8 +2043,6 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 
 				ctx.Host = host;
 
-				Log(Pipe, Pipe.constructor);
-				
 				switch ( Pipe.constructor ) {
 					case String: // pipe define path to file or ingested events
 
@@ -2097,7 +2096,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 						
 						switch (filetype) {
 							case "jpg":		// run data scripting pipe
-								sql.insertJob( job, (job, sql) => { 
+								sql.insertJob( job, job => { 
 									var
 										ctx = job.ctx,		// recover job context
 										script = `read( path, img => cb( ${job.script} ) )`;
@@ -2119,13 +2118,15 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 										
 										path: filename,
 
-										cb: img => pipePlugin( img, {mc: "$.results"}, ctx, ctx => saveEvents(ctx.Save, ctx) )
+										cb: img => {
+											pipePlugin( img, {mc: "$.results"}, ctx, ctx => saveEvents(ctx.Save, ctx) );
+										}
 									});
 								});	
 								break;							
 								
 							case "json":	// send source to the plugin
-								sql.insertJob( job, (job, sql) => { 
+								sql.insertJob( job, job => { 
 									var
 										ctx = job.ctx,		// recover job context
 										path = job.path,
@@ -4060,43 +4061,6 @@ function dogAutoruns(path) {
 function Trace(msg,sql) {	// execution tracing
 	TRACE.trace(msg,sql);
 }
-
-[ // add Jimp methods
-	function auto() {	// autocomplete over vertical axis
-		var 
-			img = this,
-			bitmap = img.bitmap,
-			data = bitmap.data,
-			Rows = bitmap.height,
-			Cols = 4, //bitmap.width,
-			rows = Math.floor(Rows/2),
-			X = [],
-			Y = [],
-			red = 0, green = 1, blue = 2;
-
-		Log( "auto", Rows, Cols );
-		for (var col = 0; col<Cols; col++) {
-			var 
-				x = [],
-				y = [];
-
-			for ( var row=0, Row=Rows-1; row<rows; row++, Row-- ) {
-				var
-					idx = img.getPixelIndex( col, row ),
-					Idx = img.getPixelIndex( col, Row );
-
-				x.push( [ data[ idx+red ] + data[ idx+green] + data[ idx+blue] ] );
-				y.push( data[ Idx+red ] + data[ Idx+green] + data[ Idx+blue] );
-			}
-
-			X.push( x );
-			Y.push( y );
-		}
-
-		img.results = {x: X, y: Y};
-		return(img);
-	}
-].extend( $.IMP );
 
 /**
 @class DEBE.Unit_tests_Use_Cases

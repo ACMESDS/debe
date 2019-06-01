@@ -93,12 +93,12 @@ tolerance: float>= [0] tolerance
 				$(
 					`cls = ${use}_train( x, y, solve, save ); `, 
 
-					Copy({
+					Copy(ctx, {
 						x: x,
 						y: y,
 						save: cb,
 						solve: solve
-					}, ctx), 
+					}), 
 					
 				  	ctx => Log("regressor trained")
 				);
@@ -181,10 +181,10 @@ tolerance: float>= [0] tolerance
 			$(
 				`y = ${use}_predict( cls, x );`, 
 				
-				Copy({
+				Copy(ctx, {
 					x: x,
 					cls: loader(model)
-				}, ctx), 
+				}), 
 			  	
 				ctx => cb( ctx.y ) 
 			 );
@@ -226,6 +226,10 @@ tolerance: float>= [0] tolerance
 			predicting: x ? true : false,
 			loader: loader ? true : false,
 			model: model ? true : false
+			//x: x ? true : false,
+			//y: y ? true : false,
+			//xy: xy ? true : false,
+			//mc: mc ? true : false
 		});
 		
 		if ( loader)
