@@ -1974,7 +1974,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 	
 	function pipePlugin( data, pipe, ctx, cb ) {
 		req.query = ctx;   // let plugin mixin its own keys
-		Log("pipe plugin", pipe);
+		Log("prime pipe", pipe);
 		for ( var key in pipe )	// add pipe keys to engine ctx
 			ctx[key] = pipe[key].parseJS( {$: data} );
 			
@@ -2074,7 +2074,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 								].join(" || "),
 								pipe: pipe,
 								path: filename,
-								script: Pipe.substr(filename.length+1),
+								//script: Pipe.substr(filename.length+1),
 								ctx: ctx
 							};
 
@@ -2099,29 +2099,37 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 								sql.insertJob( job, job => { 
 									var
 										ctx = job.ctx,		// recover job context
-										script = `read( path, img => cb( ${job.script} ) )`;
+										pipe = job.pipe,
+										path = job.path,
+										data = {},
+										firstKey = "";
 
-									Log("script", script);
+									for (var key in pipe)  // first key is special scripting-with-callback key
+										if ( !firstKey ) {
+											firstKey = key;
+											`read( path, img => cb( ${pipe[key]} ) )`
+											.parseJS({
+												log: console.log,
 
-									script.parseJS({
-										log: console.log,
+												read: (path,cb) => {	// read and forward jpg to callback
+													$.IMP.read( "."+ path )
+													.then( img => { 
+														Log("read", path, img.bitmap.height, img.bitmap.width);
+														if (cb) cb( img); 
+														return img; 
+													} )
+													.catch( err => Log(err) );
+												},
 
-										read: (path,cb) => {	// read and forward jpg to callback
-											$.IMP.read( "."+ path )
-											.then( img => { 
-												Log("read", path, img.bitmap.height, img.bitmap.width);
-												if (cb) cb( img); 
-												return img; 
-											} )
-											.catch( err => Log(err) );
-										},
-										
-										path: filename,
+												path: path,
 
-										cb: img => {
-											pipePlugin( img, {mc: "$.results"}, ctx, ctx => saveEvents(ctx.Save, ctx) );
+												cb: rtn => {
+													data[firstKey] = rtn;
+													pipe[firstKey] = `$.${firstKey}`;
+													pipePlugin( data, pipe, ctx, ctx => saveEvents(ctx.Save, ctx) );
+												}
+											});	
 										}
-									});
 								});	
 								break;							
 								
