@@ -2323,8 +2323,8 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 				});
 				break;
 				
-			default:
-				return evs.save( ctx, (evs,sql) => {  // save events and callback with remaining unsaved evs
+			case "Array":
+				return Array.from(evs).save( ctx, (evs,sql) => {  // save events and callback with remaining unsaved evs
 
 					if ( ctx.Export ) {   // export remaining events to filename
 						var
@@ -2357,7 +2357,6 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 						});
 
 				}); 
-
 		}
 	
 	else

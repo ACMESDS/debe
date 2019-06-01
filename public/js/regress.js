@@ -90,7 +90,7 @@ tolerance: float>= [0] tolerance
 			});
 
 			if (x.length == y.length) {
-				$(
+				$( 
 					`cls = ${use}_train( x, y, solve, save ); `, 
 
 					Copy(ctx, {
@@ -108,71 +108,63 @@ tolerance: float>= [0] tolerance
 				cb( null );
 		}
 
-		function trainer(x,y) {
+		function trainer(x,y,cb) {
+			
 			function saver( cls, x, y, cb ) {
-				$(
-					`u = shuffle(x,y,keep);`, 
+				if (keep) {
+					$( 
+						`u = shuffle(x,y,keep);  y0 = is(x0) ? ${use}_predict(cls, x0) : null; `,
 
-					Copy({
-						x: x,
-						y: y,
-						keep: keep
-					}, ctx),
+						Copy( ctx, {
+							x: x,
+							y: y,
+							x0: ctx.x0,
+							cls: cls,
+							keep: keep
+						}),
 
-					ctx => {
-						var save = {
-							Save_train: {
+						ctx => cb({
+							keep: {
 								solver: use,
 								x: ctx.u.x._data,
-								y: ctx.u.y._data
-							}
-						};
+								y: ctx.u.y._data,
+								x0: ctx.x0,
+								y0: ctx.y0
+							},
+							cls: cls
+						})
+					);
+				}
 
-						save[ `Save_${use}` ] = cls;
-
-						cb( save );
-					}
-				);
+				else 
+					cb({
+						keep: {},
+						cls: cls
+					});
 			}
 			
 			train( x, y, cls => {
 				if ( cls )
-					saver( cls, x, y, save => {
-						ctx.Save = save; 
-						res(ctx);
-					});
+					saver( cls, x, y, cb );
 
 				else
 					res( new Error("bad x/y training dims") );
 			});
 		}
 
-		function trainers(x,y) {
-			
-			function saver( cls, cb) {
-				regs[chan] = new Object(cls);
-
-				if ( ++done == chans ) cb();
-			}
-				
+		function trainers(x,y,cb) {
 			var 
 				chans = x.length,
-				save = ctx.Save = {},
-				done = 0,
-				regs = save[ `Save_${use}` ] = new Array( chans );
+				done = 0;
 
-			Log("multichan", chans);
 			for ( var chan = 0; chan<chans; chan++ ) 
-				train( x[chan], y[chan], cls => {
-					if ( cls ) 
-						saver( cls, () => res(ctx) );
-
-					else
-						res( new Error( `bad x/y training dims in channel ${chan}` ) );								
+				trainer( x[chan], y[chan], info => {
+					saver(info,chan);
+					if ( ++done == chans ) cb();
 				});
 		}
 		
-		function predict(x, cb) {
+		function predict(x, cls, cb) {
 			Log({
 				predict: use, 
 				dims: x.length
@@ -183,11 +175,43 @@ tolerance: float>= [0] tolerance
 				
 				Copy(ctx, {
 					x: x,
-					cls: loader(model)
+					cls: cls
 				}), 
 			  	
 				ctx => cb( ctx.y ) 
 			 );
+		}
+		
+		function predicter(x, cls) {
+			function saver(y) {
+				ctx.Save = {Save_predict: y};
+				res(ctx);
+			}
+
+			if (cls)
+				predict( x, cls, saver );
+			
+			else
+				res( new Error("invalid model") );
+		}
+		
+		function predicters(x, cls) {
+			function saver(y) {
+				ctx.Save = {Save_predict: y};
+				res(ctx);
+			}
+			
+			if (cls)
+				for (var chan=0, chans=cls.length; chan<chans; chan++)
+					predict( x[chan], cls[chan], saver );
+			
+			else
+				res( new Error("invalid model") );
+		}
+		
+		function saver(info,idx) {
+			save.push({ at: "train", chan: idx, keep: info.keep });
+			save.push({ at: use, chan: idx, cls: info.cls });
 		}
 		
 		var
@@ -197,6 +221,7 @@ tolerance: float>= [0] tolerance
 			xy = ctx.xy,
 			mc = ctx.mc,
 			keep = ctx.Keep,
+			save = ctx.Save = [],
 			use = ctx.Method.toLowerCase(),
 			solveKey = use + "_",
 			loaders = {
@@ -222,10 +247,11 @@ tolerance: float>= [0] tolerance
 			solve: solve,
 			keep: keep,
 			use: use,
-			training: ((x && y) || xy || mc) ? true : false,
-			predicting: x ? true : false,
+			canTrain: ((x && y) || xy || mc) ? true : false,
+			canPredict: x ? true : false,
 			loader: loader ? true : false,
 			model: model ? true : false
+			//x0: x0
 			//x: x ? true : false,
 			//y: y ? true : false,
 			//xy: xy ? true : false,
@@ -233,24 +259,25 @@ tolerance: float>= [0] tolerance
 		});
 		
 		if ( loader)
-			if ( x && y ) // in x,y training mode
-				trainer( x, y );
+			if ( x && y ) // in x,y single channel training mode 
+				trainer( x, y, info => { saver(info,0); res(ctx); } );
 			
 			else
-			if ( xy ) // in xy training mode
-				trainer( xy.x, xy.y );
+			if ( xy )  // in xy singe channel training mode
+				trainer( xy.x, xy.y, info => { saver(info,0); res(ctx); } );
 
 			else
 			if ( mc ) // in xy multichannel training mode
-				trainers( mc.x, mc.y );
+				trainers( mc.x, mc.y, () => res(ctx) );
 		
 			else
 			if ( x ) // in prediction mode
 				if ( model ) 
-					predict(x, y => {
-						ctx.Save = {Save_predict: y};
-						res(ctx);
-					});
+					if ( model.length )	{	// multichannel predictions
+					}
+		
+					else	// single channel predictions
+						predicter( x, loader(model) );
 										
 				else
 					res( new Error("regressor never trained") );
