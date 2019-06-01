@@ -1975,10 +1975,9 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 	function pipePlugin( data, pipe, ctx, cb ) {
 		req.query = ctx; 
 		Log("pipe plugin", pipe);
-		for ( var key in pipe )	{ // add pipe keys to engine ctx
+		for ( var key in pipe )	// add pipe keys to engine ctx
 			ctx[key] = pipe[key].parseJS( {$: data} );
-			Log(key, pipe[key], ctx[key].x.length);
-		}
+			
 		ATOM.select(req, function (ctx) {  // run plugin
 			
 			if ( ctx )
@@ -2043,6 +2042,8 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 
 				ctx.Host = host;
 
+				Log(Pipe, Pipe.constructor);
+				
 				switch ( Pipe.constructor ) {
 					case String: // pipe define path to file or ingested events
 
@@ -2051,7 +2052,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 							pipe = {},
 							filename = Pipe.parsePath(pipe,{},{},{}),
 							fileparts = filename.split("."),
-							filetype = fileparts[1],
+							filetype = fileparts[1] || "",
 							autoname = `${ctx.Host}.${ctx.Name}`,
 							fetcher = DEBE.fetcher,
 							job = { // job descriptor for regulator
@@ -2137,6 +2138,9 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 								break;
 
 							case "txt": // NLP training
+								break;
+								
+							case "": // no source
 								break;
 								
 							default: 	// stream source through supervisor to the plugin
