@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js">&quot;use strict&quot;;
+
+// UNCLASSIFIED
+
+<span id='ATOM'>/**
+</span> * @class ATOM
+ * @requires child_process
+ * @requires fs
+ * @requires engineIF
+ * @requires enum
+ * @requires vm
+ */
+
+var // NodeJS modules
+CP = require(&quot;child_process&quot;),
+    FS = require(&quot;fs&quot;),
+    CLUSTER = require(&quot;cluster&quot;),
+    NET = require(&quot;net&quot;),
+    VM = require(&quot;vm&quot;);
+
+var // Totem modules
+ENUM = require(&quot;enum&quot;),
+    Copy = ENUM.copy,
+    Each = ENUM.each,
+    Log = console.log,
+    ENV = process.env;
+
+var ATOM = module.exports = Copy( //&lt; extend the engineIF built by node-gyp
+require(&quot;./ifs/build/Release/engineIF&quot;), {
+
+<span id='ATOM-cfg-paths'>	/**
+</span> @cfg {Object}
+ @private
+ @member ATOM
+ Paths to various things.
+ */
+	paths: {
+		jobs: &quot;./jobs/&quot;
+	},
+
+<span id='ATOM-cfg-thread'>	/**
+</span> @cfg {Function}
+ @private
+ @member ATOM
+ @method thread
+ Start a sql thread
+ */
+	thread: null,
+
+<span id='ATOM-cfg-cores'>	/**
+</span> @cfg {Number}
+ @member ATOM
+ Number of worker cores (aka threads) to provide in the cluster.  0 cores provides only the master.
+ */
+	cores: 0, //&lt; number if cores: 0 master on port 8080; &gt;0 master on 8081, workers on 8080
+
+<span id='ATOM-cfg-nextcore'>	/**
+</span> @cfg {Number}
+ @private
+ Next available core
+ */
+	nextcore: 0,
+
+	matlab: { //&lt; support for matlab engines
+		path: { //&lt; file and service paths
+			save: &quot;./public/matlab/&quot;,
+			agent: &quot;http://totem.west.ile.nga.ic.gov:8080/matlab&quot;
+		},
+
+		flush: function flush(sql, qname) {
+			//&lt;  flush jobs in qname=init|step|... queue
+			var agent = ATOM.matlab.path.agent,
+			    func = qname,
+			    path = ATOM.matlab.path.save + func + &quot;.m&quot;,
+			    script = &quot;disp(webread('&quot; + agent + &quot;?flush=&quot; + qname + &quot;'));&quot;;
+
+			Trace(&quot;FLUSH MATLAB&quot;);
+
+			sql.query(&quot;INSERT INTO openv.matlab SET ?&quot;, {
+				queue: qname,
+				script: script
+			}, function (err) {
+
+				sql.query(&quot;SELECT * FROM openv.matlab WHERE ? ORDER BY ID&quot;, {
+					queue: qname
+				}, function (err, recs) {
+
+					FS.writeFile(path, recs.joinify(&quot;\n&quot;, function (rec) {
+						return rec.script;
+					}), &quot;utf8&quot;);
+
+					sql.query(&quot;DELETE FROM openv.matlab WHERE ?&quot;, {
+						queue: qname
+					});
+				});
+			});
+		},
+
+		queue: function queue(qname, script) {
+			//&lt; append script job to qname=init|step|... queue
+
+			ATOM.thread(function (sql) {
+				sql.query(&quot;INSERT INTO openv.matlab SET ?&quot;, {
+					queue: qname,
+					script: script
+				}, function (err) {
+					Log(&quot;matlab queue&quot;, err);
+				});
+				sql.release();
+			});
+		}
+	},
+
+<span id='ATOM-cfg-config'>	/**
+</span> @cfg {Object}
+ @method config
+ @member ATOM
+ Configure are start the engine interface, estblish worker core connections
+ */
+	config: function config(opts) {
+		//&lt; configure with options
+
+		Trace(&quot;CONFIG ATOMS&quot;);
+
+		if (opts) Copy(opts, ATOM);
+
+		if (CLUSTER.isMaster) {
+			/*var ipcsrv = NET.createServer( function (c) {
+   	L(&quot;srv got connect&quot;);
+   	c.on(&quot;data&quot;, function (d) {
+   		L(&quot;srv got data&quot;,d);
+   	});
+   	c.on(&quot;end&quot;, function () {
+   		L(&quot;srv got end&quot;);
+   	});
+   	//c.pipe(c);
+   	//c.write(&quot;your connected&quot;);
+   });
+   ipcsrv.listen(&quot;/tmp/totem.sock&quot;);*/
+
+			/*
+   var sock = ATOM.ipcsocket = NET.createConnection(&quot;/tmp/totem.sock&quot;, function () {
+   	console.log(&quot;connected?&quot;);
+   });
+   sock.on(&quot;error&quot;, function (err) {
+   	console.log(&quot;sockerr&quot;,err);
+   });
+   sock.on(&quot;data&quot;, function (d) {
+   	console.log(&quot;got&quot;,d);
+   }); */
+		}
+
+		if (thread = ATOM.thread) thread(function (sql) {
+			// compile engines defined in engines DB
+
+			ATOM.matlab.flush(sql, &quot;init_queue&quot;);
+			ATOM.matlab.flush(sql, &quot;step_queue&quot;);
+
+			// Using https generates a TypeError(&quot;Listener must be a function&quot;) at runtime.
+
+			process.on(&quot;message&quot;, function (req, socket) {
+				// cant use CLUSTER.worker.process.on
+
+				if (req.action) {
+					// process only our messages (ignores sockets, etc)
+					if (CLUSTER.isWorker) {
+						console.log(&quot;CORE&quot; + CLUSTER.worker.id + &quot; GRABBING &quot; + req.action);
+						//console.log(req);							
+						if (route = ATOM[req.action]) ATOM.thread(function (sql) {
+							req.sql = sql;
+							//delete req.socket;
+							route(req, function (tau) {
+								console.log(&quot;sending &quot; + JSON.stringify(tau));
+								sql.release();
+								socket.end(JSON.stringify(tau));
+							});
+						});else socket.end(ATOM.errors.badRequest + &quot;&quot;);
+					} else {}
+				}
+			});
+		});
+
+		return ATOM;
+	},
+
+	flex: null,
+
+<span id='ATOM-cfg-plugins'>	/**
+</span> @cfg {Object}
+ @member ATOM
+ Modules to share accross all js-engines
+ */
+	plugins: {// js-engine plugins 
+	},
+
+<span id='ATOM-cfg-errors'>	/**
+</span> @cfg {Object}
+ @private
+ @member ATOM
+ Error messages
+ */
+	errors: { // error messages
+		0: null,
+		101: new Error(&quot;engine could not be loaded&quot;),
+		102: new Error(&quot;engine received bad port/query&quot;),
+		103: new Error(&quot;engine port invalid&quot;),
+		104: new Error(&quot;engine failed to compile&quot;),
+		105: new Error(&quot;engine exhausted thread pool&quot;),
+		106: new Error(&quot;engine received bad arguments&quot;),
+		badType: new Error(&quot;engine type not supported&quot;),
+		badPort: new Error(&quot;engine provided invalid port&quot;),
+		badError: new Error(&quot;engine returned invalid code&quot;),
+		lostContext: new Error(&quot;engine context lost&quot;),
+		badEngine: new Error(&quot;engine does not exist, is disabled, has invalid context, or failed to compile&quot;),
+		badStep: new Error(&quot;engine step faulted&quot;),
+		badContext: new Error(&quot;engine context invalid&quot;),
+		badRequest: new Error(&quot;engine worker handoff failed&quot;)
+	},
+
+	context: {}, // engine contexts
+
+	vm: {}, // js-machines
+
+	tau: function tau(job) {
+		// default source/sink event tokens when engine in stateful workflows
+		return new Object({
+			job: job || &quot;&quot;, // Current job thread N.N... 
+			work: 0, // Anticipated/delivered data volume (dims, bits, etc)
+			disem: &quot;&quot;, // Disemination channel for this event
+			classif: &quot;&quot;, // Classification of this event
+			cost: &quot;&quot;, // Billing center
+			policy: &quot;&quot;, // Data retention policy (time+place to hold, method to remove, outside disem rules)
+			status: 0, // Status code (health, purpose, etc)
+			value: 0 // Flow calculation
+		});
+	},
+
+	program: function program(sql, ctx, cb) {
+		//&lt; program engine with callback cb(ctx) or cb(null) if error
+		var runctx = ctx.req.query;
+
+		if (initEngine = ctx.init) ATOM.prime(sql, runctx, function (runctx) {
+			// mixin sql vars into engine query
+			//Log(&quot;eng prime&quot;, ctx.thread, runctx);
+
+			if (runctx) initEngine(ctx.thread, ctx.code || &quot;&quot;, runctx, function (err) {
+				//Log(&quot;eng init&quot;, err);
+				cb(err ? null : ctx);
+			});else cb(null);
+		});else cb(null);
+	},
+
+	run: function run(req, cb) {
+		//&lt; run engine on its worker with callback cb(context, stepper) or cb(null) if error
+
+		/*
+  Request contains:
+  
+  		req = { group, table, client, query, body, action, state }
+  	If the engine's req.state is not provided, then the engine is programmed; otherwise it is stepped.
+  
+  Allocate the supplied callback cb(core) with the engine core that is/was allocated to a Client.Engine.Type.Instance
+  thread as defined by this request (in the req.body and req.log).  If a workflow Instance is
+  provided, then the engine is assumed to be in a workflow (thus the returned core will remain
+  on the same compile-step thread); otherwise, the engine is assumed to be standalone (thus forcing
+  the engine to re-compile each time it is stepped).
+   
+  As used here (and elsewhere) the terms &quot;process&quot;, &quot;engine core&quot;, &quot;safety core&quot;, and &quot;worker&quot; are 
+  equivalent, and should not be confused with a physical &quot;cpu core&quot;.  Because heavyweight 
+  (spawned) workers run in their own V8 instance, these workers can tollerate all faults (even 
+  core-dump exceptions). The lightweight (cluster) workers used here, however, share the same V8 
+  instance.  Heavyweight workers thus provide greater safety for bound executables (like opencv and 
+  python) at the expense of greater cpu overhead.  
+  
+  The goal of hyperthreading is to balance threads across cpu cores.  The workerless (master only)
+  configuration will intrinsically utilize only one of its underlying cpu cores (the OS remains, 
+  however, free to bounce between cpu cores via SMP).  A worker cluster, however, tends to 
+  balance threads across all cpu cores, especially when the number of allocated workers exceeds
+  the number of physical cpu cores.
+   
+  Only the cluster master can see its workers; thus workers can not send work to other workers, only
+  the master can send work to workers.  Thus hyperthreading to *stateful* engines can be supported
+  only when master and workers are listening on different ports (workers are all listening on 
+  same ports to provide *stateless* engines).  So typically place master on port N+1 (to server
+  stateful engines) and its workers on port N (to serve stateless engines).  
+  
+  This method will callback cb(core) with the requested engine core; null if the core could not
+   be located or allocated.
+  */
+		var sql = req.sql,
+		    query = req.query,
+		    client = req.client.replace(&quot;.ic.gov&quot;, &quot;&quot;).replace(/\./g, &quot;&quot;).replace(&quot;@&quot;, &quot;&quot;),
+		    thread = client + &quot;.&quot; + req.table + &quot;.&quot; + (query.ID || 0);
+
+		//Log(&quot;def eng thread&quot;, thread, req.query);
+
+		function CONTEXT(thread) {
+			// engine context constructor for specified thread 
+			this.worker = CLUSTER.isMaster ? ATOM.cores ? CLUSTER.workers[Math.floor(Math.random() * ATOM.cores)] // assign a worker
+			: 0 // assign to master
+			: CLUSTER.worker; // use this worker
+
+			this.thread = thread;
+			this.req = null;
+			/*
+   var sock = this.socket = NET.connect(&quot;/tmp/totem.&quot;+thread+&quot;.sock&quot;);
+   sock.on(&quot;data&quot;, function (d) {
+   	console.log(&quot;thread&quot;,this.thread,&quot;rx&quot;,d);
+   }); 
+   sock.write(&quot;hello there&quot;);*/
+		}
+
+		function execute(ctx, cb) {
+			//&lt; callback cb(ctx,stepcb) with revised engine ctx and stepper
+			var sql = req.sql,
+			    query = ctx.req.query,
+			    body = ctx.req.body,
+			    port = body.port || &quot;&quot;,
+			    runctx = body.tau || Copy(req.query, query);
+
+			//Log(&quot;exe ctx&quot;,runctx);
+
+			cb(runctx, function (res) {
+				// callback engine using this stepper
+
+				if (stepEngine = ctx.step) ATOM.prime(sql, runctx, function (runctx) {
+					// mixin sql vars into engine query
+					//Log(&quot;prime ctx&quot;, runctx);
+
+					try {
+						// step the engine then return an error if it failed or null if it worked
+						return ATOM.errors[stepEngine(ctx.thread, port, runctx, res)] || ATOM.badError;
+					} catch (err) {
+						return err;
+					}
+				});else return ATOM.errors.badEngine;
+			});
+		}
+
+		function handoff(ctx, cb) {
+			//&lt; handoff ctx to worker or  cb(null) if handoff fails
+			var ipcreq = { // ipc request must not contain sql, socket, state etc
+				group: req.group,
+				table: req.table,
+				client: req.client,
+				query: req.query,
+				body: req.body,
+				action: req.action
+			};
+
+			if (CLUSTER.isWorker) // handoff thread to master
+				process.send(ipcreq, req.resSocket());else if (worker = ctx.worker) //handoff thread to worker 
+				worker.send(ipcreq, req.resSocket());else // cant handoff 
+				cb(null);
+		}
+
+		function initialize(ctx, cb) {
+			//&lt; initialize engine then callback cb(ctx,stepper) or cb(null) if failed
+			var sql = req.sql;
+
+			//Log(&quot;eng init&quot;,req.query);
+
+			ATOM.getEngine(req, ctx, function (ctx) {
+				//Log(&quot;get eng&quot;, ctx);
+
+				if (ctx) ATOM.program(sql, ctx, function (ctx) {
+					// program/initialize the engine
+
+					//Log(&quot;pgm eng&quot;, ctx);
+					if (ctx) // all went well so execute it
+						execute(ctx, cb);else // failed to compile
+						cb(null);
+				});else cb(null);
+			});
+		}
+
+		Log(&quot;eng thread&quot;, thread, CLUSTER.isMaster ? &quot;on master&quot; : &quot;on worker&quot;, ATOM.context[thread] ? &quot;has ctx&quot; : &quot;needs ctx&quot;);
+
+		if (CLUSTER.isMaster) {
+			// on master so handoff to worker or execute 
+			if (ctx = ATOM.context[thread]) {
+					// get context
+					if (ATOM.cores) // handoff to worker
+						handoff(ctx, cb);else if (ctx.req) // was sucessfullly initialized so execute it
+						execute(ctx, cb);else // never initialized so reject it
+						cb(null);
+			} else {
+				// assign a worker to new context then handoff or initialize
+				var ctx = ATOM.context[thread] = new CONTEXT(thread);
+				if (ATOM.cores) handoff(ctx, cb);else initialize(ctx, cb);
+			}
+		} else {
+			// on worker 
+			if (ctx = ATOM.context[thread]) {
+				// run it if worker has an initialized context
+				Trace(&quot;RUN core-&quot; + ctx.worker.id + &quot; FOR &quot; + ctx.thread, sql);
+				if (ctx.req) // was sucessfullyl initialized so can execute it
+					execute(ctx, cb);else // had failed initialization so must reject
+					cb(null);
+			} else {
+				// worker must initialize its context, then run it
+				var ctx = ATOM.context[thread] = new CONTEXT(thread);
+				Trace(&quot;INIT core-&quot; + ctx.worker.id + &quot; FOR &quot; + ctx.thread);
+				initialize(ctx, cb);
+			}
+		}
+	},
+
+	save: function save(sql, taus, port, engine, saves) {
+<span id='ATOM-method-save'>		/**
+</span>   * @method save
+   * @member ATOM
+   * 
+   * Save tau job files.
+  */
+
+		var t = new Date();
+
+		Each(taus, function (n, tau) {
+			if (tau.job) {
+				var hasjpg = FS.existsSync(tau.job + &quot;.jpg&quot;);
+				var log = hasjpg ? { jpg: &quot;jpg&quot;.tag(&quot;a&quot;, { href: tau.job + &quot;.jpg&quot; }) } : {};
+
+				FS.readFile(tau.job + &quot;.json&quot;, { encoding: &quot;utf8&quot; }, function (err, data) {
+					if (!err) {
+						var rtn = data.parse({});
+
+						Each(saves.split(&quot;,&quot;), function (i, save) {
+							if (save in rtn) switch (save) {
+								case &quot;file&quot;:
+								case &quot;jpg&quot;:
+									log[save] = &quot;jpg&quot;.tag(&quot;a&quot;, { href: rtn[save] });
+									break;
+
+								default:
+									log[save] = rtn[save];
+							}
+						});
+					}
+
+					Each(log, function (logn, logv) {
+						sql.query(&quot;INSERT INTO simresults SET ?&quot;, {
+							t: t,
+							input: tau.job,
+							output: engine + &quot;.&quot; + port,
+							name: logn,
+							value: logv,
+							special: logv
+						});
+					});
+				});
+			}
+		});
+	},
+
+	/*
+ returns: function (context) {  //&lt; legacy  Return tau parameters in matrix format
+ 	var tau = context.tau || [];
+ 		return tau;
+ 		if (tau.constructor == Array) {
+ 		for (var n=0,N=tau.length; n&lt;N; n++)
+ 			switch ( tau[n].constructor ) {
+ 				case Array:
+ 					var fix = {};
+ 					for (var m=0,M=tau[n].length; m&lt;M; m++)
+ 						fix['tau'+m] = tau[n][m];
+ 						tau[n] = fix;
+ 					break;
+ 					case Object:
+ 					break;
+ 					default:
+ 					tau[n] = {tau: JSON.stringify(tau[n])};
+ 			}
+ 			return tau;
+ 	}
+ 	
+ 	else
+ 		return [{tau: JSON.stringify(tau)}];
+ 	}, */
+
+<span id='ATOM-method-insert'>	/**
+</span>  @method insert(step)
+  @method delete(kill)
+  @method select(read)
+  @method update(init)
+   
+  Provides engine CRUD interface: step/insert/POST, compile/update/PUT, run/select/GET, and 
+  free/delete/DELETE.
+ */
+	insert: function insert(req, res) {
+		//&lt; step a stateful engine
+		ATOM.run(req, function (ctx, step) {
+			//Log(&quot;&gt;step &quot;,ctx);
+			if (ctx) step(res);else res(ATOM.errors.badThread);
+		});
+	},
+
+	delete: function _delete(req, res) {
+		//&lt; free a stateful engine
+		ATOM.run(req, function (ctx, step) {
+			//Log(&quot;&gt;kill &quot;,ctx);
+
+			res(ctx ? &quot;&quot; : ATOM.errors.badThread);
+		});
+	},
+
+	select: function select(req, res) {
+		//&lt; run a stateless engine callback res(context) or res(error)
+		ATOM.run(req, function (ctx, step) {
+			// get engine stepper and its context
+			//Log(&quot;&gt;run&quot;, ctx);
+
+			if (ctx) // step engine
+				step(res);else res(ATOM.errors.badEngine);
+		});
+	},
+
+	update: function update(req, res) {
+		//&lt; compile a stateful engine
+		ATOM.run(req, function (ctx, step) {
+			//console.log(&quot;&gt;init&quot;,ctx);
+
+			res(ctx ? &quot;&quot; : ATOM.errors.badThread);
+		});
+	},
+
+	prime: function prime(sql, ctx, cb) {
+		//&lt; callback cb(ctx) with ctx primed by sql ctx.entry and ctx.exit queries
+<span id='ATOM-method-prime'>		/**
+</span>  @method prime
+  	Callback engine cb(ctx) with its state ctx primed with state from its ctx.entry, then export its 
+  ctx state specified by its ctx.exit.
+  The ctx.sqls = {var:&quot;query...&quot;, ...} || &quot;query...&quot; enumerates the engine's ctx.entry (to import 
+  state into its ctx before the engine is run), and enumerates the engine's ctx.exit (to export 
+  state from its ctx after the engine is run).  If an sqls entry/exit exists, this will cause the 
+  ctx.req = [var, ...] list to be built to synchronously import/export the state into/from the 
+  engine's context.
+   * */
+		var keys = ctx.keys;
+
+		if (keys) {
+			// enumerate over each sql key
+			if (keys.length) {
+				// more keys to import/export
+				var key = keys.pop(),
+				    // var to import/export
+				query = ctx.sqls[key]; // sql query to import/export
+
+				if (typeof query != &quot;string&quot;) {
+					query = query[0];
+					args = query.slice(1);
+				}
+
+				//Trace([key,query]);
+
+				if (ctx.sqls == ctx.entry) {
+					// importing this var into the ctx
+					var data = ctx[key] = [];
+					var args = ctx.query;
+				} else {
+					// exporting this var from the ctx
+					var data = ctx[key] || [];
+					var args = [key, { result: data }, ctx.query];
+				}
+
+				//Trace(JSON.stringify(args));
+
+				sql.query(query, args, function (err, recs) {
+					// import/export this var
+
+					//Trace([key,err,q.sql]);
+
+					if (err) {
+						//ctx.err = err;
+						ctx[key] = null;
+					} else if (ctx.sqls == ctx.entry) // importing matrix
+						recs.each(function (n, rec) {
+							var vec = [];
+							data.push(vec);
+							for (var x in rec) {
+								vec.push(rec[x]);
+							}
+						});else {// exporting matrix
+					}
+
+					ATOM.prime(sql, ctx, cb);
+				});
+			} else // no more keys to load
+				if (cb) {
+					// run engine in its ctx
+					cb(ctx);
+
+					if (ctx.exit) {
+						// save selected engine ctx keys
+						var sqls = ctx.sqls = ctx.exit;
+						var keys = ctx.keys = [];for (var n in sqls) {
+							keys.push(n);
+						}ATOM.prime(sql, ctx);
+					}
+				}
+		} else if (ctx.entry) {
+			// build ctx.keys from the ctx.entry sqls
+			var sqls = ctx.sqls = ctx.entry;
+
+			if (sqls.constructor == String) // load entire ctx
+				sql.query(sqls).on(&quot;result&quot;, function (rec) {
+					cb(Copy(rec, ctx));
+				});else {
+				// load specific ctx keys
+				var keys = ctx.keys = [];
+				for (var key in sqls) {
+					keys.push(key);
+				}
+			}
+
+			ATOM.prime(sql, ctx, cb);
+		} else cb(ctx);
+	},
+
+	getEngine: function getEngine(req, ctx, cb) {
+		//&lt; callback cb(ctx) with engine context or null if failed
+
+		var sql = req.sql,
+		    group = req.group,
+		    name = req.table;
+
+		//Log(&quot;eng get&quot;,name);
+		sql.getFirst(&quot;ENG&quot;, &quot;SELECT * FROM ??.engines WHERE least(?) LIMIT 1&quot;, [group, {
+			Name: name,
+			Enabled: true
+		}], function (eng) {
+
+			if (eng) try {
+				// define and return engine context
+				cb(Copy({
+					req: { // http request to get and prime engine context
+						group: req.group,
+						table: req.table,
+						client: req.client,
+						query: Copy( // passed querey keys override engine state context
+						req.query, JSON.parse(eng.State || &quot;null&quot;) || {}),
+						body: req.body,
+						action: req.action
+					},
+					type: eng.Type, // engine type: js, py, etc
+					code: eng.Code, // engine code
+					init: ATOM.init[eng.Type], // method to initialize/program the engine
+					step: ATOM.step[eng.Type] // method to advance the engine
+				}, ctx));
+			} catch (err) {
+				// failed
+				cb(null);
+			} else cb(null);
+		});
+	},
+
+	gen: { //&lt; controls code generation when engine initialized/programed
+		debug: false,
+		trace: false,
+		dbcon: {
+			user: ENV.DB_USER,
+			name: ENV.DB_NAME,
+			pass: ENV.DB_PASS
+		},
+		db: true,
+		libs: true,
+		code: true
+	},
+
+	init: { //&lt; initalize/program engine on given thread=case.plugin.client with callback cb(ctx) or ctx(null)
+		py: function pyInit(thread, code, ctx, cb) {
+			function portsDict(portsHash) {
+				var ports = Object.keys(portsHash);
+
+				ports.each(function (n, port) {
+					ports[n] = port + &quot;:&quot; + port;
+				});
+
+				return &quot;{&quot; + ports.join(&quot;,&quot;) + &quot;}&quot;;
+			}
+
+			var Thread = thread.split(&quot;.&quot;),
+			    Thread = {
+				case: Thread.pop(),
+				plugin: Thread.pop(),
+				client: Thread.pop()
+			},
+			    script = &quot;&quot;,
+			    gen = ATOM.gen,
+			    ports = portsDict(ctx.ports || {}),
+			    logic = { // flush-load-save-code logic
+				flush: {
+					all: &quot;\ndef flush(ctx,rec,recs):\n\treturn False&quot;,
+
+					none: &quot;\ndef flush(ctx,rec,recs):\n\treturn True&quot;,
+
+					byTime: &quot;\ndef flush(ctx,rec,recs):\n\tif len(recs):\n\t\treturn (rec[ 't' ] -recs[0][ 't' ] ) &gt; ctx.Job.buffer\n\telse:\n\t\treturn False&quot;,
+
+					byDepth: &quot;\ndef flush(ctx,rec,recs):\n\treturn len(recs) &lt; ctx.Job.buffer&quot;
+				},
+
+				save: &quot;\ndef save(ctx):  #save jpg/json/event results\n\tif ctx:\n\t\tif 'Dump' in ctx:\n\t\t\tQuery = ctx['Dump']\n\t\t\tif 'Save' in ctx:\n\t\t\t\tData = ctx['Save']\n\t\t\t\tif Query.endswith(\&quot;.jpg\&quot;):\n\t\t\t\t\tData.save(Query, \&quot;jpg\&quot;)\n\t\t\t\telif Query.endswith(\&quot;.json\&quot;):\n\t\t\t\t\tfid = open(Query, \&quot;w\&quot;)\n\t\t\t\t\tfid.write( JSON.dumps( Data ) )\n\t\t\t\t\tfid.close()\n\t\t\t\telif Query:\n\t\t\t\t\tSQL0.execute(Query,Data)\n&quot;,
+
+				load: &quot;\ndef load(ctx, os, cb):  #load jpg/json/event dataset\n\tSQL = os['SQL']\n\tos['SQL0'] = SQL.cursor(buffered=True)\n\tos['SQL1'] = SQL.cursor(buffered=True)\n\n\tif 'Load' in ctx:\n\t\tQuery = ctx['Load']\n\t\tif Query.endswith(\&quot;.jpg\&quot;):\n\t\t\tcb( LWIP.open(Query), os )\n\t\telif Query.endswith(\&quot;.json\&quot;):\n\t\t\tcb( JSON.loads(Query), os )\n\t\telif Query.startswith(\&quot;/\&quot;):\n\t\t\trecs = []\n\t\t\tfor (rec) in FETCH(query):\n\t\t\t\tif flush(ctx,rec,recs):\n\t\t\t\t\tprint \&quot;FLUSH\&quot;, len(recs)\n\t\t\t\t\tcb( recs, os )\n\t\t\t\t\trecs = []\n\t\t\t\trecs.append(rec)\n\t\t\tprint \&quot;FLUSH\&quot;, len(recs)\n\t\t\tcb( recs, os )\n\t\telif Query:\n\t\t\trecs = []\n\t\t\tSQL0.execute(Query)\n\t\t\tfor (rec) in SQL0:\n\t\t\t\tif flush(ctx,rec,recs):\n\t\t\t\t\tprint \&quot;FLUSH\&quot;, len(recs)\n\t\t\t\t\tcb( recs, os )\n\t\t\t\t\trecs = []\n\t\t\t\trecs.append(rec)\n\t\t\tprint \&quot;FLUSH\&quot;, len(recs)\n\t\t\tcb( recs, os )\n\t\telse:\n\t\t\tcb( 0, os )\n\telse:\n\t\tcb( 0, os )\n&quot;,
+
+				step: &quot;\n\tos = locals()\n\tprint \&quot;os\&quot;, os  # why is this dump required to make sql connector visibile to plugin ?\n\tload(CTX, os, loadcb)\n&quot;
+			},
+			    Job = ctx.Job || {},
+			    flush = logic.flush[Job.flush |= &quot;&quot;] || logic.flush.all,
+			    script = &quot;&quot;;
+
+			Job.buffer |= 0;
+
+			script += &quot;\nif INIT:\n\tINIT = 0\n&quot;;
+
+			if (gen.libs) {
+				script += &quot;\n\t#import modules\n\t#import caffe as CAFFE\t\t#caffe interface\n\timport mysql.connector as SQLC\t\t#db connector interface\n\tfrom PIL import Image as LWIP\t\t#jpeg image interface\n\timport json as JSON\t\t\t#json interface\n\timport sys as SYS\t\t\t#system info\n&quot;;
+			}
+
+			if (gen.db) {
+				script += &quot;\n\t#connect to db\n\tSQL = SQLC.connect(user='&quot; + gen.dbcon.user + &quot;', password='&quot; + gen.dbcon.pass + &quot;', database='&quot; + gen.dbcon.name + &quot;')\n&quot;;
+			}
+
+			if (gen.debug) {
+				script += &quot;\n\t#trace engine context\n\tprint 'py&gt;locals', locals()\n\tprint 'py&gt;sys', SYS.path, SYS.version\n\t#print 'py&gt;caffe',CAFFE\n\t#print 'py&gt;sql', SQL\n\tprint 'py&gt;ctx',CTX\n\tprint 'py&gt;port',PORT\n&quot;;
+			}
+
+			if (gen.code) {
+				script += &quot;\n# record buffering logic\n&quot; + flush + &quot;\n\n# data saving logic\n&quot; + logic.save + &quot;\n\n# data loading logic\n&quot; + logic.load + &quot;\n\n# engine and port logic\n&quot; + code + &quot;\n\nPORTS = &quot; + ports + &quot;\n\ndef loadcb(data, os):\n\t#print \&quot;loadcb\&quot;, os['SQL']\n\tport = os['PORT']\n\tports = os['PORTS']\n\tctx = os['CTX']\n\tplugin = os['&quot; + Thread.plugin + &quot;']\n\tos['Data'] = data\n\tif port:\n\t\tif port in ports:\n\t\t\treturn ports[port]( ctx['tau'], ctx['ports'][port] )\n\t\telse:\n\t\t\treturn 103\n\telse:\n\t\tplugin(ctx,os)\n\t\tsave(ctx)\n\t\treturn 0\n\nif not INIT:\n\t&quot; + logic.step + &quot;\n&quot;;
+			}
+
+			if (false) {
+				script += &quot;\n#exit code\nSQL.commit()\nSQL0.close()\nSQL1.close()\n&quot;;
+			}
+
+			/*
+   	mysql connection notes:
+   	install the python2.7 connector (rpm -Uvh mysql-conector-python-2.x.rpm)
+   	into /usr/local/lib/python2.7/site-packages/mysql, then copy
+   	this mysql folder to the anaconda/lib/python2.7/site-packages.
+   		import will fail with mysql-connector-python-X installed (rum or rpm installed as root using either
+   	python 2.2 or python 2.7).  Will however import under python 2.6.  To fix, we must:
+   				cp -R /usr/lib/python2.6/site-packages/mysql $CONDA/lib/python2.7/site-packages
+   		after &quot;rpm -i mysql-connector-python-2.X&quot;.
+   	
+   	For some reaon, only two sql cursors are allowed.
+   */
+
+			if (gen.trace) Log(script);
+
+			cb(ATOM.python(thread, script, ctx), ctx);
+		},
+
+		cv: function cvInit(thread, code, ctx, cb) {
+			var Thread = thread.split(&quot;.&quot;),
+			    Thread = {
+				case: Thread.pop(),
+				plugin: Thread.pop(),
+				client: Thread.pop()
+			},
+			    gen = ATOM.gen,
+			    script = &quot;&quot;,
+			    logic = {
+				flush: &quot;&quot;,
+				save: &quot;&quot;,
+				load: &quot;&quot;,
+				code: code,
+				startup: &quot;&quot;
+			};
+
+			if (ctx.frame &amp;&amp; ctx.detector) {
+				if (err = ATOM.opencv(thread, code, ctx)) cb(null, ctx);else cb(null, ctx);
+			} else cb(ATOM.errors.badContext, ctx);
+		},
+
+		js: function jsInit(thread, code, ctx, cb) {
+			var Thread = thread.split(&quot;.&quot;),
+			    Thread = {
+				case: Thread.pop(),
+				plugin: Thread.pop(),
+				client: Thread.pop()
+			},
+			    gen = ATOM.gen,
+			    script = &quot;&quot;,
+			    plugins = ATOM.plugins,
+			    vm = ATOM.vm[thread] = {
+				ctx: VM.createContext(gen.libs ? plugins : {}),
+				code: &quot;&quot;
+			};
+
+			if (gen.debug) {
+				script += &quot;\n// trace engine context\nLOG(\&quot;js&gt;ctx\&quot;, CTX);\n&quot;;
+			}
+
+			if (gen.code) {
+				script += &quot;\n// engine logic\n&quot; + code + &quot;\n\nif ( CTX )\n\tif ( port = PORTS[PORT] )   // stateful port processing\n\t\tERR = port(CTX.tau, CTX.ports[PORT]);\n\n\telse  // stateless processing\n\t\tERR = &quot; + Thread.plugin + &quot;(CTX, function (ctx) {\n\t\t\tif (ctx) \n\t\t\t\tPUT(\&quot;\&quot;, ctx, RES);\n\t\t\telse\n\t\t\t\tRES( null );\n\t\t});\n&quot;;
+			}
+
+			if (gen.trace) Log(script);
+			vm.code = script;
+
+			cb(null, ctx);
+		},
+
+		ma: function maInit(thread, code, ctx, cb) {
+
+			var Thread = thread.split(&quot;.&quot;),
+			    Thread = {
+				case: Thread.pop(),
+				plugin: Thread.pop(),
+				client: Thread.pop()
+			},
+			    func = thread.replace(/\./g, &quot;_&quot;),
+			    agent = ATOM.matlab.path.agent,
+			    path = ATOM.matlab.path.save + func + &quot;.m&quot;,
+			    logic = {
+				save: &quot;\n\tfunction send(res)\n\t\tfid = fopen('&quot; + func + &quot;.out', 'wt');\n\t\tfprintf(fid, '%s', jsonencode(res) );\n\t\tfclose(fid);\n\t\twebread( '&quot; + agent + &quot;?save=&quot; + func + &quot;' );\n\tend\n\n\tfunction save(ctx)\n\t\tquery = ctx.Dump;\n\n\t\tif length(query)&gt;1\n\t\t\tif endsWith(query, \&quot;.jpg\&quot;)   % save jpeg file\n\t\t\t\timwrite(ctx.Save, query);\n\n\t\t\telseif endsWith(query, \&quot;.json\&quot;)  % use file system as json db\n\t\t\t\tfid = fopen(query, 'wt');\n\t\t\t\tfprintf(fid, '%s', jsonencode(ctx.Save) );\n\t\t\t\tfclose(fid);\n\n\t\t\telseif ws.db\t\t% db provided\n\t\t\t\tupdate( ws.db, '&quot; + Thread.plugin + &quot;', {'Save'}, jsonencode(ctx.Save), 'where ID=&quot; + Thread.ID + &quot;' );\n\t\t\tend\n\n\t\telse\n\t\t\tfid = fopen('&quot; + func + &quot;.out', 'wt');\n\t\t\tfprintf(fid, '%s', jsonencode(ctx.Save) );\n\t\t\tfclose(fid);\n\t\t\twebread( '&quot; + agent + &quot;?save=&quot; + func + &quot;' );\n\n\t\tend\n\tend &quot;,
+
+				load: &quot;\n\tfunction load(ctx, res)\n\t\tquery = ctx._Load;\n\t\tctx.Data = 0;\n\n\t\ttry\n\t\t\tif length(query)&gt;1\n\t\t\t\tif endsWith(query, '.jpg')\n\t\t\t\t\tctx.Data = imread(query);\n\n\t\t\t\telseif endsWith(query, '.json')\n\t\t\t\t\tfid = fopen(query, 'rt');\n\t\t\t\t\tctx.Data = jsondecode(getl( fid ));\n\t\t\t\t\tfclose(fid);\n\n\t\t\t\telse\n\t\t\t\t\tif isstruct(ws.db)   % db provided\n\t\t\t\t\t\tctx.Data = select(ws.db, query);\n\t\t\t\t\tend\t\n\t\t\t\tend\n\n\t\t\tend\n\t\t\n\t\tcatch \n\t\tend\n\n\t\tsend(res);\n\tend &quot;,
+
+				step: &quot;\n\tfunction step(ctx)\n\t\tload(ctx, &quot; + Thread.plugin + &quot;(ctx));\n\n\t\t% engine logic and ports\n\t\t&quot; + code + &quot;\t\n\tend &quot;
+			},
+			    script = &quot;&quot;,
+			    gen = ATOM.gen;
+
+			if (gen.code) {
+				script += &quot;\nfunction ws = &quot; + func + &quot;( )\n\tws.set = @set;\n\tws.get = @get;\n\tws.step = @step;\n\tws.save = @save;\n\tws.load = @load;\n\tws.send = @send;\n\n\tif false % &quot; + gen.db + &quot;\n\t\tws.db = database('&quot; + gen.dbcon.name + &quot;','&quot; + gen.dbcon.user + &quot;','&quot; + gen.dbcon.pass + &quot;');\n\telse\n\t\tws.db = 0;\n\tend\n\n\tfunction set(key,val)\n\t\tws.(key) = val;\n\tend\n\n\tfunction val = get(key)\n\t\tval = ws.(key);\n\tend\n\n\t&quot; + logic.load + &quot;\n\t&quot; + logic.save + &quot;\n\t&quot; + logic.step + &quot;\n\nend&quot;;
+			};
+
+			if (gen.trace) Log(script);
+			FS.writeFile(path, script, &quot;utf8&quot;);
+
+			ATOM.matlab.queue(&quot;init_queue&quot;, &quot;\nws_&quot; + func + &quot; = &quot; + func + &quot;; \nws_&quot; + func + &quot;.send( \&quot;Queued\&quot; );&quot;);
+
+			cb(null, ctx);
+		},
+
+		/*
+  em: function emInit(thread,code,ctx,cb) {
+  		Copy(ATOM.plugins, ctx);
+  	
+  	if (ctx.require) 
+  		ATOM.plugins.MATH.import( ctx.require );
+  		ATOM.plugins.MATH.eval(code,ctx);
+  		cb( null, ctx );
+  },
+  */
+
+		sq: function sqInit(thread, code, ctx, cb) {
+			ATOM.thread(function (sql) {
+				ctx.SQL[ctx.action](sql, [], function (recs) {
+					//ctx.Save = [1,2,3];  // cant work as no cb exists
+				});
+			});
+
+			return null;
+		},
+
+		sh: function shInit(thread, code, ctx, cb) {
+			// Linux shell engines
+			if (code) context.code = code;
+
+			CP.exec(context.code, function (err, stdout, stderr) {
+				Log(err || stdout);
+			});
+
+			return null;
+		}
+	},
+
+	step: { //&lt; step engines on given thread with callback cb(ctx) or cb(null) if error
+		py: function pyStep(thread, port, ctx, cb) {
+
+			if (err = ATOM.python(thread, port, ctx)) {
+				cb(null);
+				return ATOM.errors[err] || ATOM.errors.badError;
+			} else {
+				cb(ctx);
+				return null;
+			}
+		},
+
+		cv: function cvStep(thread, port, ctx, cb) {
+			if (ctx.frame &amp;&amp; ctx.detector) {
+				if (err = ATOM.opencv(thread, code, ctx)) {
+					cb(null);
+					return ATOM.errors[err] || ATOM.errors.badError;
+				} else {
+					cb(ctx);
+					return null;
+				}
+			} else return ATOM.errors.badContext;
+		},
+
+		js: function jsStep(thread, port, ctx, cb) {
+			//Log(&quot;step thread&quot;,thread, ATOM.vm[thread] ? &quot;has thread&quot; : &quot; no thread&quot;);
+
+			var plugins = ATOM.plugins;
+
+			if (vm = ATOM.vm[thread]) ATOM.thread(function (sql) {
+				Copy({ RES: cb, LIBS: plugins, SQL: sql, CTX: ctx, PORT: port, PORTS: vm.ctx }, vm.ctx);
+
+				VM.runInContext(vm.code, vm.ctx);
+
+				return null;
+			});else return ATOM.errors.lostContext;
+		},
+
+		ma: function maStep(thread, port, ctx, cb) {
+			function arglist(x) {
+				var rtn = [],
+				    q = &quot;'&quot;;
+				Each(x, function (key, val) {
+					rtn.push(&quot;'&quot; + key + &quot;'&quot;);
+
+					if (val) switch (val.constructor) {
+						case Array:
+						case Object:
+							rtn.push(&quot;jsondecode('&quot; + JSON.stringify(val) + &quot;')&quot;);break;
+
+						case String:
+							rtn.push(q + val + q);break;
+
+						default:
+							rtn.push(val || 0);
+					} else rtn.push(0);
+				});
+				return &quot;struct(&quot; + rtn.join(&quot;,&quot;) + &quot;)&quot;;
+			}
+
+			var func = thread.replace(/\./g, &quot;_&quot;);
+
+			ctx._Load = ctx._Load || &quot;&quot;;
+			ctx._Dump = ctx._Dump || &quot;&quot;;
+
+			if (!ctx._Load) cb(0); // detach thread and set default responce
+
+			ATOM.matlab.queue(&quot;step_queue&quot;, &quot;ws_&quot; + func + &quot;.step( &quot; + arglist(ctx) + &quot; );&quot;);
+
+			return null;
+		},
+
+		/*
+  em: function meStep(thread,code,ctx) {
+  	if ( vm = ATOM.vm[thread] )
+  		ATOM.thread( function (sql) {
+  			Copy( {SQL: sql, CTX: ctx, DATA: [], RES: [], PORT: port, PORTS: vm.ctx}, vm.ctx );
+  			
+  			ATOM.plugins.MATH.eval(vm.code,vm.ctx);
+  			return null;
+  		});
+  	
+  	else
+  		return ATOM.errors.lostContext;					
+  },
+  */
+
+		sq: function sqStep(thread, port, ctx, cb) {
+
+			ctx.SQL = {};
+			ctx.ports = ctx.ports || {};
+
+			VM.runInContext(code, ctx);
+
+			ATOM.app.select[thread] = function (req, cb) {
+				ctx.SQL.select(req.sql, [], function (recs) {
+					cb(recs);
+				});
+			};
+			ATOM.app.insert[thread] = function (req, cb) {
+				ctx.SQL.insert(req.sql, [], function (recs) {
+					cb(recs);
+				});
+			};
+			ATOM.app.delete[thread] = function (req, cb) {
+				ctx.SQL.delete(req.sql, [], function (recs) {
+					cb(recs);
+				});
+			};
+			ATOM.app.update[thread] = function (req, cb) {
+				ctx.SQL.update(req.sql, [], function (recs) {
+					cb(recs);
+				});
+			};
+
+			return null;
+		},
+
+		sh: function shStep(thread, port, ctx, cb) {
+			// Linux shell engines
+			if (code) context.code = code;
+
+			CP.exec(context.code, function (err, stdout, stderr) {
+				Trace(err || stdout);
+			});
+
+			return null;
+		}
+	}
+
+});
+
+Array.prototype.joinify = function (sep, cb) {
+
+	if (cb) {
+		var rtn = [];
+		this.each(function (n, rec) {
+			rtn.push(cb(rec));
+		});
+		return rtn.join(sep);
+	} else return this.join(sep);
+};
+
+function Trace(msg, sql) {
+	ENUM.trace(&quot;E&gt;&quot;, msg, sql);
+}
+
+// UNCLASSIFIED</pre>
+</body>
+</html>

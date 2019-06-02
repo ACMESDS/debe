@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>The source code</title>
+  <link href="../resources/prettify/prettify.css" type="text/css" rel="stylesheet" />
+  <script type="text/javascript" src="../resources/prettify/prettify.js"></script>
+  <style type="text/css">
+    .highlight { display: block; background-color: #ddd; }
+  </style>
+  <script type="text/javascript">
+    function highlight() {
+      document.getElementById(location.hash.replace(/#/, "")).className = "highlight";
+    }
+  </script>
+</head>
+<body onload="prettyPrint(); highlight();">
+  <pre class="prettyprint lang-js">&quot;use strict&quot;;
+
+/// UNCLASSIFIED 
+
+function ENUM(opts) {
+	if (opts) this.copy(opts, this, &quot;.&quot;);
+	this.callStack = [];
+}
+
+ENUM.prototype = {
+	trace: function trace(pre, msg, sql) {
+		if (msg.constructor == String) {
+			if (sql) {
+				var parts = msg.split(&quot; &quot;),
+				    action = parts[0],
+				    target = parts[1],
+				    client = &quot;&quot;;
+
+				parts.each(function (n, part) {
+					if (part == &quot;FOR&quot;) client = parts[n + 1];
+				});
+
+				sql.query(&quot;INSERT INTO openv.syslogs SET ?&quot;, {
+					Action: action,
+					Target: target,
+					Module: pre,
+					t: new Date(),
+					Client: client
+				});
+
+				console.log(pre, msg);
+			} else console.log(pre, msg);
+		} else console.log(pre, msg);
+	},
+
+	copy: function copy(src, tar, deep, cb) {
+<span id='ENUM-method-copy'>		/**
+</span>   * @method copy
+   * @member ENUM
+   * @param {Object} src source hash
+   * @param {Object} tar target hash
+   * @param {String} deep copy key deliminator
+   * @param {Function} cb callback(idx,val) returns true to drop
+   * @return {Object} target hash
+   * 
+   * Copy source hash to target hash under supervision of optional callback. 
+   * If a deep key deliminator (e.g. &quot;.&quot;) is specified, the copy is deep where src 
+   * keys are treated as keys into the target thusly:
+   * 
+   * 		{	
+   * 			A: value,			// sets target[A] = value
+   * 
+   * 			&quot;A.B.C&quot;: value, 	// sets target[A][B][C] = value
+   * 
+   * 			&quot;A.B.C.&quot;: {			// appends X,Y to target[A][B][C]
+   * 				X:value, Y:value, ...
+   * 			},	
+   * 
+   * 			OBJECT: [ 			// prototype OBJECT (Array,String,Date,Object) = method X,Y, ...
+   * 				function X() {}, 
+   * 				function Y() {}, 
+   * 			... ],
+   * 
+   * 			Function: 			// append method X to ENUM callback stack
+   * 				function X() {}
+   * 		} 
+   * 
+   */
+
+		for (var key in src) {
+			var val = src[key];
+
+			if (deep) switch (key) {
+				case &quot;Array&quot;:
+					val.each(function (n, val) {
+						Array.prototype[val.name] = val;
+					});
+
+					break;
+
+				case &quot;String&quot;:
+					val.each(function (n, val) {
+						String.prototype[val.name] = val;
+					});
+
+					break;
+
+				case &quot;Date&quot;:
+					val.each(function (n, val) {
+						Date.prototype[val.name] = val;
+					});
+
+					break;
+
+				case &quot;Object&quot;:
+					val.each(function (n, val) {
+						Object.prototype[val.name] = val;
+					});
+
+					break;
+
+				case &quot;Function&quot;:
+					this.callStack.push(val);
+
+					break;
+
+				default:
+
+					var keys = key.split(deep),
+					    Tar = tar;
+
+					for (var n = 0, N = keys.length - 1, idx = keys[0]; n &lt; N &amp;&amp; idx; idx = keys[++n]) {
+						Tar = Tar[idx];
+					}if (cb &amp;&amp; cb(key, val)) {
+						var x = 1;
+					} else if (!Tar) throw new Error(&quot;no copy target \&quot;&quot; + keys + &quot;\&quot;&quot;);else if (idx) Tar[idx] = val;else if (val.constructor == Object) for (var n in val) {
+						Tar[n] = val[n];
+					} else Tar[idx] = val;
+
+			} else if (cb) tar[key] = cb(key, val);else tar[key] = val;
+		}
+
+		return tar;
+	},
+
+	each: function each(src, cb) {
+<span id='ENUM-method-each'>		/**
+</span>   * @method each
+   * @member ENUM
+   * @param {Object} src source hash
+   * @param {Function} cb callback (idx,val) returning true or false
+   * 
+   * Enumerate over source until optional callback(key,val,isLast) returns isEmpty.  Returns isEmpty.
+   * */
+
+		if (src.constructor == Object) {
+			if (cb) {
+				var last = null;
+
+				for (var key in src) {
+					last = key;
+				}if (last &amp;&amp; cb) for (var key in src) {
+					if (cb(key, src[key], key == last)) return true;
+				}return last == null;
+			} else {
+				for (var key in src) {
+					return false;
+				}return true;
+			}
+		} else {
+			var keys = Object.keys(src),
+			    N = keys.length,
+			    last = N - 1;
+
+			if (cb) for (var n = 0; n &lt; N; n++) {
+				if (cb(key = keys[n], src[key], n == last)) return true;
+			}return last &lt; 0;
+		}
+
+		/*
+  if (src)
+  	switch (src.constructor) {
+  		case String:
+  				for (var n=0,N=src.length; n&lt;N; n++) 
+  				if (cb(n,src.charAt(n))) return true;
+  				return false;
+  			case Array:
+  				for (var n=0,N = src.length;n&lt;N;n++) 
+  				if (cb(n,src[n])) return true;
+  				return false;
+  			case Object:
+  				for (var n in src)  
+  				if (cb(n,src[n])) return true;
+  				return false;
+  			default:
+  				for (var n in src)  
+  				if (src.hasOwnProperty(n)) 
+  					if (cb(n,src[n])) return true;
+  				return false;
+  		}
+  	*/
+	},
+
+	extend: function extend(opts, methods) {
+<span id='ENUM-method-extend'>		/**
+</span>   * @method extend
+   * @member ENUM
+   * Extend the opts prototype with specified methods, or, if no methods are provided, 
+   * extend this ENUM with the given opts.  Array, String, Date, and Object keys are 
+   * interpretted to extend their respective prototypes.  A Function key is interpretted
+   * to push the function to the ENUM callStack (which can be drained by the ENUM flush
+   * method).
+   * */
+
+		if (methods) {
+			methods.each(function (n, method) {
+				opts.prototype[method.name] = method;
+			});
+			return this;
+		} else if (opts) return this.copy(opts, this, &quot;.&quot;);
+	},
+
+	test: function test(opts) {
+<span id='ENUM-method-test'>		/**
+</span>   * @method test
+   * @member ENUM
+   * Unit-test a module as documented in its config.js.
+   * */
+
+		var N = opts.N || process.argv[2];
+
+		if (N in opts) {
+			if (typeof opts[N] == &quot;function&quot;) {
+
+				opts[N]();
+			} else console.log(&quot;Test &quot; + N + &quot; must be a function&quot;);
+		} else {
+			var tests = [];
+			for (var n in opts) {
+				if (typeof opts[n] == &quot;function&quot;) if (opts[n] != this[n]) tests.push(n);
+			}switch (tests.length) {
+				case 0:
+					return console.log(&quot;No tests are available&quot;);
+				case 1:
+					return console.log(&quot;Test &quot; + tests + &quot; is available&quot;);
+
+				default:
+					console.log(&quot;Configurations &quot; + tests + &quot; are available&quot;);
+			}
+		}
+
+		return this;
+	},
+
+	flush: function flush() {
+<span id='ENUM-method-flush'>		/**
+</span>   * @method flush
+   * @private
+   * @member ENUM
+   * Flush the ENUM call stack defined by the extend() Function keys.
+   * */
+
+		this.callStack.each(function (n, call) {
+			call();
+		});
+	}
+
+};
+
+Array.prototype.each = function (cb) {
+<span id='Array-method-each'>	/**
+</span> @method each
+ @member Array
+ Enumerate through array until optional callback(idx, val, isLast) returns isEmpty.  Returns isEmpty.
+ */
+	var N = this.length,
+	    last = N - 1;
+
+	if (cb) for (var n = 0; n &lt; N; n++) {
+		if (cb(n, this[n], n == last)) return true;
+	}return last &lt; 0;
+};
+
+/*
+Array.prototype.joinify = 	function (sep,cb) {
+	
+	if (cb) {
+		var rtn = [];
+		this.each( function (n,rec) {
+			rtn.push( cb(rec) );
+		});
+		return rtn.join(sep);
+	}
+
+	else
+		return this.join(sep);
+}
+*/
+
+module.exports = new ENUM();
+
+// UNCLASSIFIED</pre>
+</body>
+</html>

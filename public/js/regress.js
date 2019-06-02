@@ -1,5 +1,5 @@
 module.exports = {  // regression
-	_addkeys: {
+	addkeys: {
 		Method: "varchar(16) default 'sinc' comment 'name of complex correlation model for pc estimates' ",
 		Keep: "int(11) default 0 comment 'number of (x,y) values to retain during training' ",
 
