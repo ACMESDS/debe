@@ -2038,13 +2038,13 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 				res( ctx );
 			
 			else
-			if ( Pipe = ctx.Pipe )  { // intercept piped for learning workflows and to regulate event stream
+			if ( Pipe = ctx.Pipe )  { // intercept pipe for supervised and regulated workflow
 				res("Piped");
 
 				ctx.Host = host;
 
 				switch ( Pipe.constructor ) {
-					case String: // pipe define path to file or ingested events
+					case String: // pipe contains a source path (json, events, text, etc)
 
 						var
 							chipper = HACK.chipVoxels,
@@ -2080,7 +2080,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 
 						//Log(req.client, profile.QoS, profile.Credit, req.table, query);
 
-						if (filename) {  // update pipe change watchers and run pipe
+						if (filename) {  // update file change watchers 
 							sql.query( "DELETE FROM openv.watches WHERE File != ? AND Run = ?", [filename, autoname] );
 
 							sql.query( "INSERT INTO openv.watches SET ?", {  // associate file with plugin
@@ -2094,8 +2094,8 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 							});
 						}
 						
-						switch (filetype) {
-							case "jpg":		// run data scripting pipe
+						switch (filetype) {  // file types determine workflow
+							case "jpg":		// run image scripting pipe
 								sql.insertJob( job, job => { 
 									var
 										ctx = job.ctx,		// recover job context
@@ -2133,7 +2133,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 								});	
 								break;							
 								
-							case "json":	// send source to the plugin
+							case "json":	// send raw json data to the plugin
 								sql.insertJob( job, job => { 
 									var
 										ctx = job.ctx,		// recover job context
@@ -2152,7 +2152,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 							case "": // no source
 								break;
 								
-							default: 	// stream source through supervisor to the plugin
+							default: 	// stream indexed events through supervisor 
 								sql.forEach( TRACE, "SELECT * FROM app.files WHERE Name LIKE ? ", filename , file => {		// regulate requested file(s)
 
 									function chipFile( file , ctx ) { 
@@ -2254,7 +2254,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 				}
 			}
 					
-			else	// unpiped (e.g. event generation) engines do not have participate in supervised workflow
+			else	// unpiped (e.g. event generation) engines never participate in a supervised workflow
 				res( saveEvents( ctx.Save, ctx ) || "ok" );
 			
 		});
