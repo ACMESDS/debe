@@ -451,20 +451,20 @@ append site_body
 					GET /PLUGIN.run		View, run, edit engine and manage PLUGIN
 
 				Its usecase context can include the following optional keys ( add to / remove from context):  
-				> [+](/#{ds}.add?Export=false) [/-](/#{ds}.sub?Export) *Export* switch writes engine results into a file  
-				> [+](/#{ds}.add?Ingest=false) [/-](/#{ds}.sub?Ingest) *Ingest* switch ingests engine results into the database  
-				> [+](/#{ds}.add?Share=false) [/-](/#{ds}.sub?Share) *Share* switch returns engine results to the status area  
+				> [+](/#{ds}.add?Export=false) [/-](/#{ds}.sub?Export) *Export* switch writes engine events into a file  
+				> [+](/#{ds}.add?Ingest=false) [/-](/#{ds}.sub?Ingest) *Ingest* switch ingests engine events into the database  
+				> [+](/#{ds}.add?Share=false) [/-](/#{ds}.sub?Share) *Share* switch returns engine events to the status area  
 				> [+](/#{ds}.add?Pipe=doc) [/-](/#{ds}.sub?Pipe) *Pipe* json regulates chips and events to the engine  
 				> [+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description) *Description* documents a usecase  
 				> [+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) *Config* js-script defines usecase context  
-				> [+](/#{ds}.add?Save=doc) [/-](/#{ds}.sub?Save) *Save* aggregates results [{at:"STATE", ...}, ...] not captured in *Save_STATE* keys  
 				> [+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) *Entry* json primes context on entry using { KEY: "SELECT ....", ...}  
 				> [+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) *Exit* json saves context on exit using { KEY: "UPDATE ....", ...}  
-				> [+](/#{ds}.add?Autorun=doc) [/-](/#{ds}.sub?Autorun) *Autorun* switch enables the autorun watchdog
+				> *Save_STATE* aggregates events [ {at:"STATE", ...}, ... ]  
+				> *Save_rem* aggregates remaining events  
+				> *Save_jpg* generates jpg
 
-				Use the *Pipe* = "/DATASET?QUERY" || "PLUGIN.CASE?QUERY" to bring || stream
-				data into your plugin. When streamed, your plugin context will also contain
-				the following supervisor keys:
+				Use the *Pipe* = "DATASET.TYPE?QUERY" where TYPE = json || jpg || CASE to place the source
+				DATASET into the correct supervised (and regulated) workflow which may contains keys:
 
 					Host name of plugin  
 					File context during a piped-workflow  

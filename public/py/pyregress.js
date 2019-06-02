@@ -85,7 +85,7 @@ method: [random || ....] Iteration method of the learning algorithm.
 		Save_las: "json comment 'lasso model' ",
 		Save_laslars: "json comment 'lasso lars model' ",
 		Save_lascv: "json comment 'las cv model' ",
-		Save_rem:  "json comment 'remainder stash' ",
+		Save_jpg:  "json comment 'remainder stash' ",
 		
 		Save_predict: "json comment 'predictions stash' ",
 		Save_train: "json comment 'training stash' ",	

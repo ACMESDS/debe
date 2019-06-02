@@ -69,7 +69,7 @@ tolerance: float>= [0] tolerance
 
 		Save_predict: "json comment 'predictions stash' ",
 		Save_train: "json comment 'training stash' ",
-		Save_rem:  "json comment 'remainder stash' ",
+		Save_jpg:  "json comment 'remainder stash' ",
 		
 		Pipe: "json",
 		Description: "mediumtext"
@@ -210,13 +210,14 @@ tolerance: float>= [0] tolerance
 		}
 		
 		function saver(info,idx) {
-			save.push({ at: "train", chan: idx, sample: info.sample });
+			save.push({ at: "train", chan: idx, x: info.sample.x, y: info.sample.y });
 			save.push({ at: use, chan: idx, cls: info.cls });
+			saveValues.push( info.sample.y0 );
 		}
 
 		function sender(info) {
 			if (info) saver(info,0);
-			save.push({ idx: n0 });
+			save.push({ at: "jpg", index: n0, values: saveValues, prime: primePath, save: savePath });
 			res(ctx);
 		}
 		
@@ -230,6 +231,9 @@ tolerance: float>= [0] tolerance
 			n0 = ctx.n0 || null,
 			keep = ctx.Keep,
 			save = ctx.Save = [],
+			primePath = ctx.Pipe.split("?")[0] || "",
+			savePath = `/shares/${ctx.Host}_${ctx.Name}.jpg`,
+			saveValues = [],
 			use = ctx.Method.toLowerCase(),
 			solveKey = use + "_",
 			loaders = {
