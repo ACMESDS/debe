@@ -69,7 +69,8 @@ tolerance: float>= [0] tolerance
 
 		Save_predict: "json comment 'predictions stash' ",
 		Save_train: "json comment 'training stash' ",
-
+		Save_rem:  "json comment 'remainder stash' ",
+		
 		Pipe: "json",
 		Description: "mediumtext"
 	},
@@ -108,9 +109,9 @@ tolerance: float>= [0] tolerance
 				cb( null );
 		}
 
-		function trainer(x,y,cb) {
+		function trainer(x,y,x0,cb) {
 			
-			function saver( cls, x, y, cb ) {
+			function saver( cls, x, y, x0, cb ) {
 				if (keep) {
 					$( 
 						`u = shuffle(x,y,keep);  y0 = is(x0) ? ${use}_predict(cls, x0) : null; `,
@@ -118,7 +119,7 @@ tolerance: float>= [0] tolerance
 						Copy( ctx, {
 							x: x,
 							y: y,
-							x0: ctx.x0,
+							x0: x0,
 							cls: cls,
 							keep: keep
 						}),
@@ -137,27 +138,27 @@ tolerance: float>= [0] tolerance
 
 				else 
 					cb({
-						keep: {},
+						sample: {},
 						cls: cls
 					});
 			}
 			
 			train( x, y, cls => {
 				if ( cls )
-					saver( cls, x, y, cb );
+					saver( cls, x, y, x0, cb );
 
 				else
 					res( new Error("bad x/y training dims") );
 			});
 		}
 
-		function trainers(x,y,cb) {
+		function trainers(x,y,x0,cb) {
 			var 
 				chans = x.length,
 				done = 0;
 
 			for ( var chan = 0; chan<chans; chan++ ) 
-				trainer( x[chan], y[chan], info => {
+				trainer( x[chan], y[chan], x0[chan], info => {
 					saver(info,chan);
 					if ( ++done == chans ) cb();
 				});
@@ -212,13 +213,21 @@ tolerance: float>= [0] tolerance
 			save.push({ at: "train", chan: idx, sample: info.sample });
 			save.push({ at: use, chan: idx, cls: info.cls });
 		}
+
+		function sender(info) {
+			if (info) saver(info,0);
+			save.push({ idx: n0 });
+			res(ctx);
+		}
 		
 		var
 			stats = ctx.Stats,
-			x = ctx.x,
-			y = ctx.y,
-			xy = ctx.xy,
-			mc = ctx.mc,
+			x = ctx.x || null,
+			y = ctx.y || null,
+			xy = ctx.xy || null,
+			mc = ctx.mc || null,
+			x0 = ctx.x0 || null,
+			n0 = ctx.n0 || null,
 			keep = ctx.Keep,
 			save = ctx.Save = [],
 			use = ctx.Method.toLowerCase(),
@@ -259,15 +268,17 @@ tolerance: float>= [0] tolerance
 		
 		if ( loader)
 			if ( x && y ) // in x,y single channel training mode 
-				trainer( x, y, info => { saver(info,0); res(ctx); } );
+				trainer( x, y, x0, info => sender(info) );
 			
 			else
 			if ( xy )  // in xy singe channel training mode
-				trainer( xy.x, xy.y, info => { saver(info,0); res(ctx); } );
+				trainer( xy.x, xy.y, x0, info => sender(info) );
 
 			else
-			if ( mc ) // in xy multichannel training mode
-				trainers( mc.x, mc.y, () => res(ctx) );
+			if ( mc ) { // in xy multichannel training mode
+				n0 = mc.n0 || null;
+				trainers( mc.x, mc.y, mc.x0, () => sender() );
+			}
 		
 			else
 			if ( x ) // in prediction mode

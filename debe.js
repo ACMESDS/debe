@@ -2044,7 +2044,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 				ctx.Host = host;
 
 				switch ( Pipe.constructor ) {
-					case String: // pipe contains a source path (json, events, text, etc)
+					case String: // pipe contains a source path
 
 						var
 							chipper = HACK.chipVoxels,
