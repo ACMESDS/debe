@@ -124,8 +124,7 @@ tolerance: float>= [0] tolerance
 						}),
 
 						ctx => cb({
-							keep: {
-								solver: use,
+							sample: {
 								x: ctx.u.x._data,
 								y: ctx.u.y._data,
 								x0: ctx.x0,
@@ -210,7 +209,7 @@ tolerance: float>= [0] tolerance
 		}
 		
 		function saver(info,idx) {
-			save.push({ at: "train", chan: idx, keep: info.keep });
+			save.push({ at: "train", chan: idx, sample: info.sample });
 			save.push({ at: use, chan: idx, cls: info.cls });
 		}
 		
