@@ -3771,14 +3771,17 @@ WIDGET.prototype.terminal = function (term,opts) {
 					key = head.dataIndex;
 					
 				//console.log(td,cellIndex,tr,rowIndex, key);
-				EDCTX.save = function (val) {
-					rec.set(key,val);
-				};
-				EDCTX.state = "text";
+				//console.log(head);
+				if ( !head.disabled ) {
+					EDCTX.save = function (val) {
+						rec.set(key,val);
+					};
+					EDCTX.state = "text";
 
-				EDWIN.setTitle( Name + "." + key);  //  must make window before setting contents
-				EDWIN.show();
-				EDSET( rec.get(key) );
+					EDWIN.setTitle( Name + "." + key);  //  must make window before setting contents
+					EDWIN.show();
+					EDSET( rec.get(key) );
+				}
 			}, 
 
 			// regen pivots and slaved posts if pivot column moved
