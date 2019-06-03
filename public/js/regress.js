@@ -1,5 +1,5 @@
 module.exports = {  // regression
-	addkeys: {
+	_addkeys: {
 		Method: "varchar(16) default 'sinc' comment 'name of complex correlation model for pc estimates' ",
 		Keep: "int(11) default 0 comment 'number of (x,y) values to retain during training' ",
 
@@ -217,7 +217,7 @@ tolerance: float>= [0] tolerance
 
 		function sender(info) {
 			if (info) saver(info,0);
-			save.push({ at: "jpg", index: n0, values: saveValues, prime: primePath, save: savePath });
+			if (mc) save.push({ at: "jpg", index: n0, values: saveValues, prime: primePath, save: savePath });
 			res(ctx);
 		}
 		
@@ -232,7 +232,7 @@ tolerance: float>= [0] tolerance
 			keep = ctx.Keep,
 			save = ctx.Save = [],
 			primePath = ctx.Pipe.split("?")[0] || "",
-			savePath = `/shares/${ctx.Host}_${ctx.Name}.jpg`,
+			savePath = `${ctx.Host}_${ctx.Name}.jpg`,
 			saveValues = [],
 			use = ctx.Method.toLowerCase(),
 			solveKey = use + "_",

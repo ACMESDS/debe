@@ -283,7 +283,7 @@ catch (err) {
 		
 	onIngest: require("./ingesters"),
 
-	onStartup: function (sql) {
+	onStartup: sql => {
 		var
 			site = DEBE.site,
 			pocs = site.pocs,
@@ -411,7 +411,7 @@ catch (err) {
 			}
 		}, function dogSystem(dog) {
 			
-			dog.thread( function (sql) {
+			dog.thread( sql => {
 				dog.get.threads( sql, (threads) => {
 				dog.get.cpu( sql, (cpu) => {
 				dog.get.disk( sql, (disk) => {
@@ -576,7 +576,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 
 					/*
 					need to export events to output file, then archive this output file
-					CP.exec(`git commit -am "archive ${path}"; git push github master; rm ${zip}`, function (err) {
+					CP.exec(`git commit -am "archive ${path}"; git push github master; rm ${zip}`, err => {
 					});*/
 
 					if ( sendMail = FLEX.sendMail ) sendMail({
@@ -730,7 +730,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 				diag = DEBE.diag;
 
 			if (dog.get.engs)
-				dog.thread( function (sql) {
+				dog.thread( sql => {
 					sql.forEach(dog.trace, dog.get.engs, [], function (engs) {
 					sql.forEach(dog.trace, dog.get.jobs, [], function (jobs) {
 					sql.forEach(dog.trace, dog.get.logs, [], function (isps) {
@@ -1472,7 +1472,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					break;
 					
 				case Function:
-					Thread( function (sql) {
+					Thread( sql => {
 						try {
 							sql.query( select(where), [req.group, recs, where], function (err,recs) {								
 								index( err ? [] : recs );
@@ -1572,7 +1572,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 	
 	"errors.": {  //< error messages
-		pretty: function (err) {
+		pretty: err => {
 			return "".tag("img",{src:"/stash/reject.jpg",width:40,height:60})
 				+ (err+"").replace(/\n/g,"<br>").replace(process.cwd(),"").replace("Error:","")
 				+ ". "
@@ -1744,7 +1744,7 @@ could/should be revised to support more generic peer-to-peer bySOAP interfaces.
 @param {Object} res HTTP response
 @param {Function} proxy Name of APP proxy function to handle this session.
 */
-	Thread( function (sql) {
+	Thread( sql => {
 		req.addListener("data", function (data) {
 			XML2JS.parseString(data.toString(), function (err,json) {  // hydra specific parse
 
@@ -1809,7 +1809,7 @@ Totem (req,res)-endpoint to create/return public-private certs
 		CP.exec(
 			`puttygen ${owner}.key -N ${pass} -o ${owner}.ppk`, 
 			
-			function (err) {
+			err => {
 			
 			if (err) 
 				res( DEBE.errors.certFailed );
@@ -2567,14 +2567,14 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 			Name: req.table,
 			Type: "jade",
 			Enabled: 1
-		}, function (eng) {
+		}, eng => {
 
 			if (eng)  // render view with this jade engine
 				renderJade( eng.Code || "", ctx );
 
 			else
 			if ( route = routers[dsname] )   // render ds returned by an engine 
-				route(req, function (recs) { 
+				route(req, recs => { 
 					//Log({eng:recs, ds:req.table});
 					if (recs)
 						renderPlugin( recs[0] || {}, ctx );
@@ -2836,7 +2836,7 @@ Totem (req,res)-endpoint to send notice to outsource jobs to agents.
 
 		FS.readFile(results, "utf8", function (err,json) {
 
-			sql.query("UPDATE ?? SET ? WHERE ?", [plugin, {Save: json}, {ID: id}], function (err) {
+			sql.query("UPDATE ?? SET ? WHERE ?", [plugin, {Save: json}, {ID: id}], err => {
 				Log("save",err);
 			});
 
@@ -3024,7 +3024,7 @@ Initialize DEBE on startup.
 					.on("result", function (app) {
 						Trace(app.Name+" v"+app.Ver+" url="+app.Host+":"+app.Port+" db="+app.DB+" nick="+app.Nick+" sockted="+(app.Sockets?"yes":"no")+" cores="+app.Cores+" pki="+app.PKI);
 					})
-					.on("error", function (err) {
+					.on("error", err => {
 						Trace(err);
 					})
 					.on("end", function () {
@@ -3149,13 +3149,12 @@ Initialize DEBE on startup.
 	@member String
 	Expands markdown of the form:
 		
-		[ post ] ( /SKIN.view ? w=WIDTH & h=HEIGHT & x=KEY$X & y=KEY$Y & ... ) || [ SKIN ]( ? ... )  
-		[ image ] ( /PATH.jpg ? w=WIDTH & h=HEIGHT )  
-		[ fetch || get ]( URL )  
-		[ LINK ]( URL )  ||  [ COLOR ]( TEXT )  
-		[ # ]( TOPIC ? starts=DATE & ends=DATE )  
-		$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$ || [JSON || #DOC || TeX] OP= [JSON || #DOC || TeX]  
-		\${ KEY } || \${ EXPR } || \${doc( EXPR , "IDX, ..." )}  
+		[ TEXT ] ( PATH.TYPE ? w=WIDTH & h=HEIGHT & x=KEY$INDEX & y=KEY$INDEX ... )  
+		[ TEXT ]( COLOR )  
+		[ TOPIC ]( ? starts=DATE & ends=DATE )  
+		$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$  
+		[JS || #JS || TeX] OP= [JS || #JS || TeX]  
+		$ { KEY } || $ { JS } || $ {doc( JS , "INDEX" )}  
 		KEY,X,Y >= SKIN,WIDTH,HEIGHT,OPTS  
 		KEY <= VALUE || OP <= EXPR(lhs),EXPR(rhs)  
 		
@@ -3189,7 +3188,7 @@ Initialize DEBE on startup.
 			var doc = {};
 			
 			if ( keys = idx ? idx.split(",") : null ) 
-				keys.forEach( (key) => { 
+				keys.forEach( key => { 
 					if ( key in obj ) doc[key] = obj[key];
 				});
 			
@@ -3291,15 +3290,21 @@ Initialize DEBE on startup.
 			fetchLink = function ( rec, cb ) {  // expand [LINK](URL) markdown
 				var
 					colors = {
-						R: "red", 
-						B: "blue",
-						G: "green",
-						Y: "yellow",
-						O: "orange",
-						K: "black"
+						r: "red", 
+						b: "blue",
+						g: "green",
+						y: "yellow",
+						o: "orange",
+						k: "black",
+						red: "red",
+						blue: "blue",
+						green: "green",
+						yellow: "yellow",
+						orange: "orange",
+						black: "black"
 					},						
 					keys = {},
-					opt = rec.url,
+					opt = rec.url,  // swap meaning of url,opt - kludge
 					url = rec.opt,
 					dsPath = ds.parsePath(keys,{},{},{}),
 					urlPath = url.parsePath(keys,{},{},{}),
@@ -3310,51 +3315,51 @@ Initialize DEBE on startup.
 
 				//Log("tag",rec, dsPath, keys, srcPath);
 
-				switch (opt) {
-					case "image":  //[image](URL)
-					case "img":
-						cb( "".tag("img", { src:srcPath, width:w, height:h }) );
-						break;
-						
-					case "post":  // [post](URL)
-					case "iframe":
-						cb( "".tag("iframe", { src:srcPath, width:w, height:h }) );
-						break;
-						
-					case "red":			// [COLOR](TEXT)
-					case "blue":
-					case "green":
-					case "yellow":
-					case "orange":
-					case "black":
-						cb( url.tag("font",{color:opt}) );
-						break;
-						
-					case "":  
-					case "#":
-						rec.topic = urlPath;
-						if ( (keys.starts ? now>=new Date(keys.starts) : true) && (keys.ends ? now<=new Date(keys.ends) : true) )
-							fetchTopic( rec, cb );
-						else
-							cb( rec.topic.tag("a",{href:"/tags.view"}) );
-						
-						break;
-						
-					case "get":		// [fetch](URL)
-					case "fetch":
-						fetchSite(rec, cb);
-						break;
-						
-					default:
-						if ( color = colors[opt] )		// [ COLOR ]( TEXT )
-							cb( url.tag("font",{color:color}) );
-						
-						else
-						if (urlPath)
-							cb( opt.tag("a",{href:url}) );
+				if (opt)
+					if (urlPath) 
+						if ( color = colors[urlPath.toLowerCase()] )		// [ COLOR ]( TEXT )
+							cb( opt.tag("font",{color:color}) );
 
 						else
+							cb( opt.tag("a",{href:srcPath}) );
+				
+					else 
+						if ( (keys.starts ? now>=new Date(keys.starts) : true) && 
+							 (keys.ends ? now<=new Date(keys.ends) : true) ) {
+							rec.topic = opt;
+							fetchTopic( rec, cb );
+						}
+						
+						else
+							cb( opt.tag("a",{href:"/tags.view"}) );
+				
+				else {
+					var
+						urlParts = urlPath.split("."),
+						urlName = urlParts[0],
+						urlType = urlParts[1];
+					
+					switch (urlType) {  //  [](PATH.TYPE?w=W&h=H)
+						case "jpg":  
+						case "png":
+							cb( "".tag("img", { src:url, width:w, height:h }) );
+							break;
+
+						case "view": 
+							cb( "".tag("iframe", { src:srcPath, width:w, height:h }) );
+							break;
+
+						case "":
 							cb( "".tag("iframe", { src:`${opt}.view${srcPath}`, width:w, height:h }) );
+							break;
+							
+						case "html":
+						case "txt":
+						case "json":
+						default:  // [](URL)
+							fetchSite(rec, cb);
+							break;
+					}
 				}
 			},
 			
@@ -4133,14 +4138,14 @@ assessments from our worldwide reporting system, please contact ${poc} for consi
 											Added: now,
 											PoP_Expires: exit
 										}, {ID: file.ID}
-									], function (err) {
+									], err => {
 										DEBE.ingestFile(sql, path, name, file.ID, function (aoi) {
 											//Trace( `CREDIT ${client}` );
 
 											sql.query("UPDATE app.profiles SET Credit=Credit+? WHERE Client=?", [aoi.snr, client]);
 
 											if (false)  // put upload into LTS - move this to file watchDog
-												CP.exec(`zip ${path}.zip ${path}; rm ${path}; touch ${path}`, function (err) {
+												CP.exec(`zip ${path}.zip ${path}; rm ${path}; touch ${path}`, err => {
 													Trace(`PURGED ${name}`);
 												});
 										});
@@ -4166,7 +4171,7 @@ assessments from our worldwide reporting system, please contact ${poc} for consi
 				} */
 
 			}
-		}, function (err) {
+		}, err => {
 		Trace( err || 
 `Yowzers - this does everything but eat!  An encrypted service, a database, a jade UI for clients,
 usecase-engine plugins, file-upload watchers, and watch dogs that monitor system resources (jobs, files, 
@@ -4190,7 +4195,7 @@ clients, users, system health, etc).`
 					});
 				}
 			}
-		}, function (err) {
+		}, err => {
 			Trace( "This bad boy in an encrypted service with a database and has an /wfs endpoint" );
 		});
 		break;
@@ -4201,7 +4206,7 @@ clients, users, system health, etc).`
 		*/
 		
 		var DEBE = require("../debe").config({
-		}, function (err) {
+		}, err => {
 			Trace( err || "Stateful network flow manger started" );
 		});
 		break;
