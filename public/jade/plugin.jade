@@ -81,7 +81,7 @@ append site_body
 					> [+](/#{ds}.add?Autorun=doc) [/-](/#{ds}.sub?Autorun) *Autorun* switch enables the autorun watchdog
 					> *Save_STATE* aggregates events [ {at:"STATE", ...}, ... ]  
 					> *Save_rem* collects remaining unaggregated events  
-					> *Save_jpg* generates PLUGIN_CASE.jpg given prime, index, values
+					> *Save_jpg* generates jpg from {at: "jpg": prime: "name", save: "name", index: [...], values: [...] } event  
 
 					Use the *Pipe* = "DATASET.TYPE?QUERY" where TYPE = json || jpg || CASE to place the source
 					DATASET into the correct supervised (and regulated) workflow which may contains keys:

@@ -459,9 +459,9 @@ append site_body
 				> [+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) *Config* js-script defines usecase context  
 				> [+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) *Entry* json primes context on entry using { KEY: "SELECT ....", ...}  
 				> [+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) *Exit* json saves context on exit using { KEY: "UPDATE ....", ...}  
-				> *Save_STATE* aggregates events [ {at:"STATE", ...}, ... ]  
-				> *Save_rem* aggregates remaining events  
-				> *Save_jpg* generates jpg
+				> *Save_STATE* collects aggregated events [ {at:"STATE", ...}, ... ]  
+				> *Save_rem* collects remaining unaggregated events  
+				> *Save_jpg* generates jpg from {at: "jpg": prime: "name", save: "name", index: [...], values: [...] } event  
 
 				Use the *Pipe* = "DATASET.TYPE?QUERY" where TYPE = json || jpg || CASE to place the source
 				DATASET into the correct supervised (and regulated) workflow which may contains keys:
