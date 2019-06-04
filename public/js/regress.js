@@ -217,7 +217,7 @@ tolerance: float>= [0] tolerance
 
 		function sender(info) {
 			if (info) saver(info,0);
-			if (mc) save.push({ at: "jpg", index: n0, values: saveValues, prime: primePath, save: savePath });
+			if (mc) save.push({ at: "jpg", index: n0, keep: 10, values: saveValues, input: mc.input, save: savePath });
 			res(ctx);
 		}
 		
@@ -231,8 +231,8 @@ tolerance: float>= [0] tolerance
 			n0 = ctx.n0 || null,
 			keep = ctx.Keep,
 			save = ctx.Save = [],
-			primePath = ctx.Pipe.split("?")[0] || "",
-			savePath = `${ctx.Host}_${ctx.Name}.jpg`,
+			//primePath = ctx.Pipe.split("?")[0] || "",
+			savePath = `/shares/${ctx.Host}_${ctx.Name}.jpg`,
 			saveValues = [],
 			use = ctx.Method.toLowerCase(),
 			solveKey = use + "_",

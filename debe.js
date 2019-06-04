@@ -2115,6 +2115,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 													$.IMP.read( "."+ path )
 													.then( img => { 
 														Log("read", path, img.bitmap.height, img.bitmap.width);
+														img.readPath = path;
 														if (cb) cb( img); 
 														return img; 
 													} )
@@ -4091,7 +4092,7 @@ switch ( process.argv[2] ) { // unit tests
 			onFile: {
 				"./uploads/": function (sql, name, path) {  // watch changes to a file				
 
-					sql.getFirst(  // get client for registered file
+					sql.forFirst(  // get client for registered file
 						"UPLOAD",
 						"SELECT ID,Client,Added FROM app.files WHERE least(?) LIMIT 1", 
 						{Name: name}, function (file) {
@@ -4115,7 +4116,7 @@ switch ( process.argv[2] ) { // unit tests
 									].join(", "), */
 								poc = site.distro.d;
 
-							sql.getFirst(  // credit client for upload
+							sql.forFirst(  // credit client for upload
 								"UPLOAD",
 								"SELECT `Group` FROM openv.profiles WHERE ? LIMIT 1", 
 								{Client:client}, 
