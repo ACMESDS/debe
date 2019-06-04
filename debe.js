@@ -3343,7 +3343,7 @@ Initialize DEBE on startup.
 					switch (urlType) {  //  [](PATH.TYPE?w=W&h=H)
 						case "jpg":  
 						case "png":
-							cb( "".tag("img", { src:url, width:w, height:h }) );
+							cb( "".tag("img", { src:`${url}?killcache=${new Date()}`, width:w, height:h }) );
 							break;
 
 						case "view": 

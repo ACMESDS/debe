@@ -100,6 +100,20 @@ append base_body
 				lineDef = lineStyles[0];
 			
 			recs.forEach( (rec) => {
+				function size(x,d) {
+					if (d) {
+						if ( isArray(x0 = x[0]) ) {
+							d.push( x0.length );
+							size( x0, d );
+						}
+					}
+					else {
+						var d = [];
+						size(x, d);
+						return d;
+					}
+				}
+							
 				var
 					x = rec.x || [],
 					y = rec.y || [],
@@ -113,19 +127,26 @@ append base_body
 					max = opts.max,
 					hard = min[0] ? { x: [parseFloat(min[0]), parseFloat(max[0])], y: [parseFloat(min[1]), parseFloat(max[1])] } : null;
 
+				alert(plots);
+				alert("xdims:" + size(x));
+				alert("ydims:" + size(y));
 				for (var nplot=0; nplot<plots; nplot++) {
 					var
 						xy = [],
 						y0 = ys ? ys[nplot] : y;
 
-					if (xs)		// cluster plots
+					if (false)	{	// cluster plots
+						alert("clus");
 						x.forEach( (x,n) => {
-							xy.push( { x: x[0], y: x[1], f: y0[n] } );
+							xy.push( { x: x[n][0], y: x[n][1], f: y0[n] } );
 						});	
-					else		// regression plots
+					}
+					else		{ // regression plots
+						alert("reg");
 						x.forEach( (x,n) => {
-							xy.push( { x: x, y: y0[n], f: 0 } );
+							xy.push( { x: x[n][0], y: y[n][0], f: 0 } );
 						});	
+					}
 
 					if ( extra = opts.extra )	// append extra xy data
 						for (var N=extra.length, n=0; n<N; n++)
