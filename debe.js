@@ -11,7 +11,7 @@
 @requires i18n-abide
 @requires socket.io
 @requires socket.io-clusterhub
-@requires jade
+@requires jade@1.9.0
 @requires jade-filters
 @requires optimist
 @requires tokml
