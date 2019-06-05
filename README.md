@@ -7,45 +7,42 @@
 	
 # DEBE
 
-DEBE provides full-featured web service for 
-managing interfaces, requirements, project metrics, geoint products and workflows.
-
-As documented in its [api](https://totem.west.ile.nga.ic.gov/api.view), DEBE extends 
-its [base web service interface](https://github.com/acmesds/totem):
+DEBE provides a [cloud computing service](https://totem.west.ile.nga.ic.gov/api.view) for producing geoint products using
+its [base TOTEM endpoints](https://github.com/acmesds/totem):
 
 	POST /NODE ?? NODE ...
 	GET /NODE ?? NODE ...
 	PUT /NODE ?? NODE ...
 	DELETE /NODE ?? NODE ...
 
-where a NODE references a dataset, engine, file or command:
+A NODE references a dataset, plugin, file or command:
 
 	DATASET.TYPE ? QUERY
 	PLUGIN.TYPE ? QUERY
 	FILE.TYPE ? QUERY
 	COMMAND.TYPE ? QUERY
 
-DEBE provides TYPEs to [convert datasets](https://totem.west.ile.nga.ic.gov/api.view):
+where TYPE can [convert datasets](https://totem.west.ile.nga.ic.gov/api.view):
 
 	db | xml | csv | txt | tab | view | tree | flat | delta | nav | kml | encap | html | json
 
-to [render plugins](https://totem.west.ile.nga.ic.gov/skinguide.view):
+[render plugins](https://totem.west.ile.nga.ic.gov/skinguide.view):
 
 	view | run | plugin | pivot | site | spivot | brief | gridbrief | pivbrief | runbrief
 
-to [execute, extend and retract plugins](https://totem.west.ile.nga.ic.gov/api.view):
+[execute, extend and retract plugins](https://totem.west.ile.nga.ic.gov/api.view):
 
 	exe | add | sub
 
-to [access plugin attributes](https://totem.west.ile.nga.ic.gov/api.view):
+[access plugin attributes](https://totem.west.ile.nga.ic.gov/api.view):
 
 	tou | md | pub | status | suitors
 	
-to [license plugin code](https://totem.west.ile.nga.ic.gov/api.view):
+[license plugin code](https://totem.west.ile.nga.ic.gov/api.view):
 
 	js | py | m | me | jade | ...
 	
-and to [return plugin ingests](https://totem.west.ile.nga.ic.gov/api.view):
+or [return plugin ingests](https://totem.west.ile.nga.ic.gov/api.view):
 
 	CASENAME
 	
