@@ -1,7 +1,9 @@
 module.exports = {  // regression
-	addkeys: {
-		Method: "varchar(16) default 'sinc' comment 'name of complex correlation model for pc estimates' ",
-		Keep: "int(11) default 0 comment 'number of (x,y) values to retain during training' ",
+	_addkeys: {
+		Samples: "int(11) default 1 comment 'number of training samples taken at random from supplied dataset' ",
+		Channels: "int(11) default 1 comment 'number of training channels takens consecutively from supplied dataset' ",
+		Method: "varchar(16) default 'ols' comment 'regression technique to USE = lrm | svm | pls | knn	| ols | ...' ",
+		Keep: "int(11) default 0 comment 'number of regression pairs to retain after training' ",
 		
 		hyper_lrm: `json comment '
 solver: [libfgs || liblinear || newton-cg || sag || n saga] solver method 

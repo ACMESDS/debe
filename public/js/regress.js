@@ -1,7 +1,9 @@
 module.exports = {  // regression
 	_addkeys: {
-		Method: "varchar(16) default 'sinc' comment 'name of complex correlation model for pc estimates' ",
-		Keep: "int(11) default 0 comment 'number of (x,y) values to retain during training' ",
+		Samples: "int(11) default 1 comment 'number of training samples taken at random from supplied dataset' ",
+		Channels: "int(11) default 1 comment 'number of training channels takens consecutively from supplied dataset' ",
+		Method: "varchar(16) default 'ols' comment 'regression technique to USE = lrm | svm | pls | knn	| ols | ... ",
+		Keep: "int(11) default 0 comment 'number of regression pairs to retain after training' ",
 
 		hyper_lrm: `json comment '
 numSteps: int>=[1] number of steps in LRM solver
@@ -80,11 +82,16 @@ tolerance: float>= [0] tolerance
 	Train regressor given (x,y) data, or predict from given x data, where:
 
 		Method: regression technique to USE = lrm | svm | pls | knn	| ols | ...
-		Save_USE: training model for used Method saved here
-		USE_solve: solver parameter for used Method 
+		Save_USE: training model for specified Method 
+		hyper_USE: solver parameter for specified Method 
+		Save_jpg: jpg generation parameters
+		Samples: number of training samples taken at random from supplied dataset
+		Channel: number of training channels takens consecutively from supplied dataset
+		Keep:  number of regression pairs to retain after training'
 	*/
 		function train(x, y, cb) {  
-			Log({
+			
+			if (false) Log({
 				train: use, 
 				dims: [x.length, y.length],
 				solve: solve
@@ -101,7 +108,8 @@ tolerance: float>= [0] tolerance
 						solve: solve
 					}), 
 					
-				  	ctx => Log("regressor trained")
+				  	ctx => {  // regressor trained
+					}
 				);
 			}
 			
@@ -116,7 +124,7 @@ tolerance: float>= [0] tolerance
 					$( 
 						`u = shuffle(x,y,keep);  y0 = is(x0) ? ${use}_predict(cls, x0) : null; `,
 
-						Copy( ctx, {
+						Copy( ctx, {	// revise $ context
 							x: x,
 							y: y,
 							x0: x0,
@@ -124,7 +132,7 @@ tolerance: float>= [0] tolerance
 							keep: keep
 						}),
 
-						ctx => cb({
+						ctx => cb({		// return $ results
 							sample: {
 								x: ctx.u.x._data,
 								y: ctx.u.y._data,
@@ -231,7 +239,6 @@ tolerance: float>= [0] tolerance
 			n0 = ctx.n0 || null,
 			keep = ctx.Keep,
 			save = ctx.Save = [],
-			//primePath = ctx.Pipe.split("?")[0] || "",
 			savePath = `/shares/${ctx.Host}_${ctx.Name}.jpg`,
 			saveValues = [],
 			use = ctx.Method.toLowerCase(),
@@ -249,11 +256,6 @@ tolerance: float>= [0] tolerance
 			loader = loaders[use],
 			model = ctx[ `Save_${use}` ], 
 			solve = ctx[`hyper_${use}` ] || {};
-		
-		/*
-		for (var key in ctx) 
-			if ( key.indexOf( solveKey ) == 0 ) solve[ key.substr( solveKey.length ) ] = ctx[key];
-		*/
 		
 		Log({
 			solve: solve,

@@ -2108,7 +2108,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 										if ( !firstKey ) {
 											firstKey = key;
 											`read( path, img => cb( ${pipe[key]} ) )`
-											.parseJS({
+											.parseJS( Copy(ctx, { // define parse context
 												log: console.log,
 
 												read: (path,cb) => {	// read and forward jpg to callback
@@ -2129,7 +2129,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 													pipe[firstKey] = `$.${firstKey}`;
 													pipePlugin( data, pipe, ctx, ctx => saveEvents(ctx.Save, ctx) );
 												}
-											});	
+											}) );	
 										}
 								});	
 								break;							

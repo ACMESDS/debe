@@ -80,6 +80,7 @@ append base_body
 		const {isArray} = BASE;
 		
 		var 
+			Log = console.log,
 			margin = {top: 20, right: 20, bottom: 30, left: 40},
 			width = (opts.w || 800) - margin.left - margin.right,
 			height = (opts.h || 400) - margin.top - margin.bottom,
@@ -100,28 +101,203 @@ append base_body
 				lineDef = lineStyles[0];
 			
 			recs.forEach( (rec) => {
-				function reduce(x, cb) {
-					if ( x0 = x[0] ) 
-						if ( isArray(x0) )
-							if ( x0.length == 1 ) {
-								var 
-									N = x.length,
-									x1 = new Array(N);
+				function xyplot(x,y,depth,cb) {
 
-									for (var n=0; n<N; n++) x1[n] = x0[0];
-									reduce( x1, cb);
+					function compress(x) {
+						if ( (x0=x[0]) && isArray(x0) && (x0.length==1) ) 
+							for ( var n=0,N=x.length; n<N; n++) x[n] = x[n][0];
+					}
+						
+					switch (depth) {
+						case 0:
+							for ( var n=0, N=x.length; n<N; n++ )
+								xyplot( x[n], y[n], depth+1, cb );
+							break;
+							
+						case 1:
+							compress(y);
+							compress(x);
+							
+							xyplot( x, y, depth+1, cb );
+							break;
+									  
+						case 2:								
+							var xy = [];
+
+							if ( (x0=x[0]) && isArray(x0) )		// cluster plot
+								x.forEach( (xn,n) => {
+									xy.push( { x: xn[0], y: xn[1], f: y[n] } );
+								});	
+							else // regression plot
+								x.forEach( (xn,n) => {
+									xy.push( { x: xn, y: y[n], f: 0 } );
+								});	
+
+							//Log(xy);
+							if ( extra = opts.extra )	// append extra xy data
+								for (var N=extra.length, n=0; n<N; n++)
+									xy.push( {x: extra[n], y: extra[n] } ); 
+
+							if ( !plots ) {  // setup axes on first source
+								//if (opts.debug) alert(opts.debug+"xy"+JSON.stringify(xy));
+
+								var	// define data scalers
+									xa = d3.scale.linear()
+									.domain([0,1])
+									.range([0, width]),
+
+									ya = d3.scale.linear()
+									.domain([0,1])
+									.range([height, 0]),
+
+									color = d3.scale.category10();
+
+								// auto scale axis based on data or options
+
+								if ( hard ) {
+									xa.domain( hard.x );
+									ya.domain( hard.y );
+								}
+								else {
+									xa.domain(d3.extent(xy, (d) => d.x )).nice();
+									ya.domain(d3.extent(xy, (d) => d.y )).nice();
+								}
+
+								var // define axes
+									xAxis = d3.svg.axis()
+									.scale(xa)
+									.orient("bottom"),
+
+									yAxis = d3.svg.axis()
+									.scale(ya)
+									.orient("left"),
+
+									xaxis = svg
+									.append("g")
+									.attr("class", "x axis")
+									.attr("transform", "translate(0," + height + ")")
+									.call(xAxis)
+									.append("text")
+									.attr("class", "label")
+									.attr("x", width)
+									.attr("y", -45)
+									.attr("dy", "1em")
+									.style("text-anchor", "end")
+									.text( opts.label[0] ),
+
+									yaxis = svg
+									.append("g")
+									.attr("class", "y axis")
+									.call(yAxis)
+									.append("text")
+									.attr("class", "label")
+									.attr("transform", "rotate(-90)")
+									.attr("y", 20)
+									.attr("dy", "1em")
+									.style("text-anchor", "end")
+									.text( opts.label[1] );
+
+								/*
+								svg
+								.append('path')
+								.attr('d', line([[opts.min[0],opts.min[1]],[opts.max[0],opts.min[1]]]))
+								.attr('stroke', "black")
+								.attr('stroke-width', 2)
+								.attr('fill', 'none');
+
+								svg
+								.append('path')
+								.attr('d', line([[opts.min[0],opts.min[0]],[opts.min[0],opts.max[1]]]))
+								.attr('stroke', "black")
+								.attr('stroke-width', 2)
+								.attr('fill', 'none');
+								*/
+
+								/*
+								if (opts.ref.length) 
+									svg
+									.append('path')
+									.attr('d', line(opts.ref))
+									.attr('stroke', "black")
+									.attr('stroke-width', 2)
+									.attr('fill', 'none');
+
+								if (opts.name) {   // add legend
+									var legend = svg
+									.selectAll(".legend")
+									.data(color.domain())
+									.enter()
+									.append("g")
+									.attr("class", "legend")
+									.attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+									for (var m=0,M=opts.name.length; m<M; m++) {
+										svg
+										.append("rect")
+										.attr("x", width - 18)
+										.attr("width", 25)
+										.attr("height", 25)
+										.style("fill", opts.line[m] || "black");
+
+										svg
+										.append("text")
+										.attr("x", width - 24)
+										.attr("y", 9)
+										.attr("dy", ".35em")
+										.style("text-anchor", "end")
+										.text(opts.name[m]);
+									}
+								}*/
 							}
 
-							else
-								x.forEach( x => reduce( x, cb ) );
+							if ( style = markerStyles[plots] || markerDef ) {  // add markers
+								svg
+								.selectAll(".marker")
+								.data(xy)
+								.enter()
+								.append( style )
+								.attr("class", "marker")
+								.attr("r", 3.5)
+								.attr("cx", (d) => d.x )
+								.attr("cy", (d) => d.y )
+								.on("click", click)
+								.style("fill", (d) => color( d.f ) );
+							}
 
-						else
-							cb(x);
+							if ( style = lineStyles[plots] || lineDef ) if ( true ) { // add lines
 
-					else
-						cb(x);
+								var line = d3.svg.line()
+								.x( (d) => d.x )
+								.y( (d) => d.y )
+								.interpolate('linear');
+
+								svg
+								.append('path')
+								.attr('d', line(xy))
+								.attr('stroke', style )
+								.attr('stroke-width', 2)
+								.attr('fill', 'none');
+							}
+
+							if ( details = opts.details ) {  // add label details
+								svg
+								.selectAll(".text")
+								.data(xy)
+								.enter()
+								.append("text")
+								.text( (d) => details+":"+d.x.toFixed(2)+" , "+d.y.toFixed(2) )
+								.attr("x", (d) => d.x )
+								.attr("y", (d) => d.y )
+								.attr("dy", ".35em")
+								.attr("font-family", "sans-serif")
+								.attr("font-size", "11px")
+								.attr("fill", "red"); 
+							}
+
+							cb( ++plots );
+					}
 				}
-							
+			
 				var
 					x = rec.x || [],
 					y = rec.y || [],
@@ -130,187 +306,6 @@ append base_body
 					plots = 0,
 					hard = min[0] ? { x: [parseFloat(min[0]), parseFloat(max[0])], y: [parseFloat(min[1]), parseFloat(max[1])] } : null;
 
-				reduce(x, xs => {
-					reduce(y, ys => {
-						
-						var xy = [];
-						
-						if (false)	{	// cluster plots
-							x.forEach( (x,n) => {
-								xy.push( { x: xs[n][0], y: xs[n][1], f: ys[n] } );
-							});	
-						}
-						else { // regression plots
-							x.forEach( (x,n) => {
-								xy.push( { x: xs[n], y: ys[n], f: 0 } );
-							});	
-						}
-
-						//alert(JSON.stringify(xy));
-						alert( [xs.length, ys.length]+"");
-						
-						if ( extra = opts.extra )	// append extra xy data
-							for (var N=extra.length, n=0; n<N; n++)
-								xy.push( {x: extra[n], y: extra[n] } ); 
-
-						if ( !plots ) {  // setup axes on first source
-							//if (opts.debug) alert(opts.debug+"xy"+JSON.stringify(xy));
-
-							var	// define data scalers
-								xa = d3.scale.linear()
-								.domain([0,1])
-								.range([0, width]),
-
-								ya = d3.scale.linear()
-								.domain([0,1])
-								.range([height, 0]),
-
-								color = d3.scale.category10();
-
-							// auto scale axis based on data or options
-
-							if ( hard ) {
-								xa.domain( hard.x );
-								ya.domain( hard.y );
-							}
-							else {
-								xa.domain(d3.extent(xy, (d) => d.x )).nice();
-								ya.domain(d3.extent(xy, (d) => d.y )).nice();
-							}
-
-							var // define axes
-								xAxis = d3.svg.axis()
-								.scale(xa)
-								.orient("bottom"),
-
-								yAxis = d3.svg.axis()
-								.scale(ya)
-								.orient("left"),
-
-								xaxis = svg
-								.append("g")
-								.attr("class", "x axis")
-								.attr("transform", "translate(0," + height + ")")
-								.call(xAxis)
-								.append("text")
-								.attr("class", "label")
-								.attr("x", width)
-								.attr("y", -45)
-								.attr("dy", "1em")
-								.style("text-anchor", "end")
-								.text( opts.label[0] ),
-
-								yaxis = svg
-								.append("g")
-								.attr("class", "y axis")
-								.call(yAxis)
-								.append("text")
-								.attr("class", "label")
-								.attr("transform", "rotate(-90)")
-								.attr("y", 20)
-								.attr("dy", "1em")
-								.style("text-anchor", "end")
-								.text( opts.label[1] );
-
-							/*
-							svg
-							.append('path')
-							.attr('d', line([[opts.min[0],opts.min[1]],[opts.max[0],opts.min[1]]]))
-							.attr('stroke', "black")
-							.attr('stroke-width', 2)
-							.attr('fill', 'none');
-
-							svg
-							.append('path')
-							.attr('d', line([[opts.min[0],opts.min[0]],[opts.min[0],opts.max[1]]]))
-							.attr('stroke', "black")
-							.attr('stroke-width', 2)
-							.attr('fill', 'none');
-							*/
-
-							/*
-							if (opts.ref.length) 
-								svg
-								.append('path')
-								.attr('d', line(opts.ref))
-								.attr('stroke', "black")
-								.attr('stroke-width', 2)
-								.attr('fill', 'none');
-
-							if (opts.name) {   // add legend
-								var legend = svg
-								.selectAll(".legend")
-								.data(color.domain())
-								.enter()
-								.append("g")
-								.attr("class", "legend")
-								.attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
-
-								for (var m=0,M=opts.name.length; m<M; m++) {
-									svg
-									.append("rect")
-									.attr("x", width - 18)
-									.attr("width", 25)
-									.attr("height", 25)
-									.style("fill", opts.line[m] || "black");
-
-									svg
-									.append("text")
-									.attr("x", width - 24)
-									.attr("y", 9)
-									.attr("dy", ".35em")
-									.style("text-anchor", "end")
-									.text(opts.name[m]);
-								}
-							}*/
-						}
-
-						if ( style = markerStyles[plots] || markerDef ) {  // add markers
-							svg
-							.selectAll(".marker")
-							.data(xy)
-							.enter()
-							.append( style )
-							.attr("class", "marker")
-							.attr("r", 3.5)
-							.attr("cx", (d) => xa(d.x) )
-							.attr("cy", (d) => ya(d.y) )
-							.on("click", click)
-							.style("fill", (d) => color( d.f ) );
-						}
-
-						if ( style = lineStyles[plots] || lineDef ) if ( !xs ) { // add lines
-
-							var line = d3.svg.line()
-							.x( (d) => xa(d.x) )
-							.y( (d) => ya(d.y) )
-							.interpolate('linear');
-
-							svg
-							.append('path')
-							.attr('d', line(xy))
-							.attr('stroke', style )
-							.attr('stroke-width', 2)
-							.attr('fill', 'none');
-						}
-
-						if ( details = opts.details ) {  // add label details
-							svg
-							.selectAll(".text")
-							.data(xy)
-							.enter()
-							.append("text")
-							.text( (d) => details+":"+d.x.toFixed(2)+" , "+d.y.toFixed(2) )
-							.attr("x", (d) => xa(d.x) )
-							.attr("y", (d) => ya(d.y) )
-							.attr("dy", ".35em")
-							.attr("font-family", "sans-serif")
-							.attr("font-size", "11px")
-							.attr("fill", "red"); 
-						}
-						
-						plots++;
-					});
-				});
+				xyplot(x,y, 0, plots => {} );
 			});
 		});
