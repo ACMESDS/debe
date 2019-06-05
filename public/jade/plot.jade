@@ -69,7 +69,7 @@ append base_body
 					isView ? d.details : "",
 					"_blank",
 					"left="+d.x+"px,"
-					+ "top="+d.y[nplot]+"px,"
+					+ "top="+d.y[plots]+"px,"
 					+ "width=50,height=50,location=0,menubar=0,status=0,titlebar=0,toolbar=0");
 
 				if ( !isView )
@@ -107,17 +107,17 @@ append base_body
 								var 
 									N = x.length,
 									x1 = new Array(N);
-								
+
 									for (var n=0; n<N; n++) x1[n] = x0[0];
 									reduce( x1, cb);
 							}
-						
+
 							else
-								reduce( x0, cb );
-						
+								x.forEach( x => reduce( x, cb ) );
+
 						else
 							cb(x);
-						
+
 					else
 						cb(x);
 				}
@@ -132,6 +132,9 @@ append base_body
 
 				reduce(x, xs => {
 					reduce(y, ys => {
+						
+						var xy = [];
+						
 						if (false)	{	// cluster plots
 							x.forEach( (x,n) => {
 								xy.push( { x: xs[n][0], y: xs[n][1], f: ys[n] } );
@@ -143,11 +146,14 @@ append base_body
 							});	
 						}
 
+						//alert(JSON.stringify(xy));
+						alert( [xs.length, ys.length]+"");
+						
 						if ( extra = opts.extra )	// append extra xy data
 							for (var N=extra.length, n=0; n<N; n++)
 								xy.push( {x: extra[n], y: extra[n] } ); 
 
-						if ( !plots++ ) {  // setup axes on first source
+						if ( !plots ) {  // setup axes on first source
 							//if (opts.debug) alert(opts.debug+"xy"+JSON.stringify(xy));
 
 							var	// define data scalers
@@ -259,7 +265,7 @@ append base_body
 							}*/
 						}
 
-						if ( style = markerStyles[nplot] || markerDef ) {  // add markers
+						if ( style = markerStyles[plots] || markerDef ) {  // add markers
 							svg
 							.selectAll(".marker")
 							.data(xy)
@@ -273,7 +279,7 @@ append base_body
 							.style("fill", (d) => color( d.f ) );
 						}
 
-						if ( style = lineStyles[nplot] || lineDef ) if ( !xs ) { // add lines
+						if ( style = lineStyles[plots] || lineDef ) if ( !xs ) { // add lines
 
 							var line = d3.svg.line()
 							.x( (d) => xa(d.x) )
@@ -302,6 +308,8 @@ append base_body
 							.attr("font-size", "11px")
 							.attr("fill", "red"); 
 						}
+						
+						plots++;
 					});
 				});
 			});
