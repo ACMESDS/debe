@@ -86,14 +86,20 @@ var										// shortcuts and globals
 var
 	DEBE = module.exports = Copy({
 	
+	super: {
+		"brian.d.james@coe.ic.gov": 1
+	},
+		
 	reroute: {  //< sql.acces routes to provide secure access to db
 		engines: function (ctx) { // protect engines that are not registered to requesting client
 			//Log("<<<", ctx);
-			ctx.index["Nrel:"] = "count(releases._License)";
-			ctx.index[ctx.from+".*:"] = "";
-			ctx.join = `LEFT JOIN ${ctx.db}.releases ON (releases._Product = concat(engines.name,'.',engines.type)) AND releases._Partner='${ctx.client}'`;
-			ctx.where["releases.id:"] = "";
-			//Log(">>>", ctx);
+			if ( !DEBE.super[ ctx.client ] ) {
+				ctx.index["Nrel:"] = "count(releases._License)";
+				ctx.index[ctx.from+".*:"] = "";
+				ctx.join = `LEFT JOIN ${ctx.db}.releases ON (releases._Product = concat(engines.name,'.',engines.type)) AND releases._Partner='${ctx.client}'`;
+				ctx.where["releases.id:"] = "";
+				//Log(">>>", ctx);
+			}
 			return ctx.db+"."+ctx.from;
 		},
 		
