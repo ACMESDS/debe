@@ -61,6 +61,7 @@ var
 	FS = require("fs"), 				//< filesystem and uploads
 	OS = require("os"), 		//< system utilizations for watch dogs
 	URL = require("url"),		//< data fetcher url parser
+	CRYPTO = require("crypto"), 	//< to hash names
 	
 	// 3rd party modules
 	ODOC = require("officegen"), 	//< office doc generator
@@ -93,7 +94,7 @@ var
 	reroute: {  //< sql.acces routes to provide secure access to db
 		engines: function (ctx) { // protect engines that are not registered to requesting client
 			//Log("<<<", ctx);
-			if ( !DEBE.super[ ctx.client ] ) {
+			if ( !DEBE.super[ ctx.client.toLowerCase() ] ) {
 				ctx.index["Nrel:"] = "count(releases._License)";
 				ctx.index[ctx.from+".*:"] = "";
 				ctx.join = `LEFT JOIN ${ctx.db}.releases ON (releases._Product = concat(engines.name,'.',engines.type)) AND releases._Partner='${ctx.client}'`;
@@ -791,6 +792,67 @@ Further information about this file is available ${paths.moreinfo}. `;
 			
 		}),
 			
+		dogNews: Copy({
+			cycle: 30,
+			get: {
+				toRemove: "SELECT * FROM app.news WHERE datediff(now(), Ingested) > ?",
+				remove: "DELETE FROM app.news WHERE ?",
+				addEntry: "INSERT INTO app.news SET ? ON DUPLICATE KEY UPDATE Scanned=Scanned+1"
+			},
+			maxAge: 1,
+			newsPath: "./news"
+		}, function dogNews(dog) {
+			
+			dog.thread( sql => {
+				sql.query( dog.get.toRemove, dog.maxAge)
+				.on("result", news => {
+					sql.query( dog.get.remove, {ID: news.ID});
+					CP.exec( `
+cd ${dog.newsPath} ;
+rm -RIf ${news.Name}*
+`, 
+							err => {
+								Trace( `News ${news.Name} purged` );
+					});
+				});
+
+				DEBE.indexFile( dog.newsPath, files => {
+					files.forEach( file => {					
+						var 
+							title = file.replace(".html",""),
+							name = CRYPTO.createHmac("sha256", "pass").update(title).digest("hex") ;
+
+						//Log(title,name);
+						if ( file.endsWith(".html" ) )
+							sql.query( dog.get.addEntry, {
+								Name: name,
+								Ingested: new Date(),
+								Publish: false,
+								Title: title
+							}, (err,info) => {
+								
+								if (info.insertId) {  // new news
+									CP.exec( `
+	cd ${dog.newsPath} ;	
+	mkdir ${name} ;
+	mv '${title}'* ${name} ;
+	source ./maint.sh flatten ${name} ;
+	rm -RIf ${name} 
+	`, 
+											err => {
+												Trace( `News ${name} preped` );
+									});
+								}
+
+							});
+
+					});
+				});
+				
+				sql.release();
+			});
+		}),
+					  
 		dogEngines: Copy({
 			//cycle: 600,
 			get: {
