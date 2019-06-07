@@ -795,9 +795,9 @@ Further information about this file is available ${paths.moreinfo}. `;
 		dogNews: Copy({
 			cycle: 30,
 			get: {
-				toRemove: "SELECT * FROM app.news WHERE datediff(now(), Ingested) > ?",
+				toRemove: "SELECT * FROM app.news WHERE datediff(now(), _Ingested) > ? OR status_Remove OR now() > status_Ends",
 				remove: "DELETE FROM app.news WHERE ?",
-				addEntry: "INSERT INTO app.news SET ? ON DUPLICATE KEY UPDATE Scanned=Scanned+1"
+				addEntry: "INSERT INTO app.news SET ?"
 			},
 			maxAge: 1,
 			newsPath: "./news"
@@ -810,42 +810,89 @@ Further information about this file is available ${paths.moreinfo}. `;
 					CP.exec( `
 cd ${dog.newsPath} ;
 rm -RIf ${news.Name}*
-`, 
-							err => {
-								Trace( `News ${news.Name} purged` );
-					});
+`	);
 				});
 
 				DEBE.indexFile( dog.newsPath, files => {
-					files.forEach( file => {					
-						var 
-							title = file.replace(".html",""),
-							name = CRYPTO.createHmac("sha256", "pass").update(title).digest("hex") ;
-
-						//Log(title,name);
-						if ( file.endsWith(".html" ) )
+					files.forEach( file => {
+						if ( file.endsWith(".html" ) ) {
+							var 
+								msg = file.replace(".html",""),
+								name = CRYPTO.createHmac("sha256", "pass").update(msg).digest("hex") ;
+							
 							sql.query( dog.get.addEntry, {
-								Name: name,
-								Ingested: new Date(),
-								Publish: false,
-								Title: title
-							}, (err,info) => {
-								
-								if (info.insertId) {  // new news
+								_Name: name,
+								_Ingested: new Date(),
+								status_Publish: false,
+								Message: msg,
+								Category: "packed",
+								To: "editor1"
+							}, err => {
+								if ( !err ) {  // pack news for transport
 									CP.exec( `
-	cd ${dog.newsPath} ;	
-	mkdir ${name} ;
-	mv '${title}'* ${name} ;
-	source ./maint.sh flatten ${name} ;
-	rm -RIf ${name} 
-	`, 
+cd ${dog.newsPath} ;	
+mkdir ${name} ;
+mv '${msg}'* ${name} ;
+source ./maint.sh flatten ${name} ;
+rm -RIf ${name} 
+`, 
 											err => {
-												Trace( `News ${name} preped` );
+												Trace( `News packed ${name}` );
 									});
 								}
-
 							});
+						}
 
+						else 
+						if ( file.startsWith("F_" ) ) {
+							var 
+								parts = file.split("_"),
+								name = parts[1];
+							
+							sql.query( dog.get.addEntry, {
+								_Name: name,
+								_Ingested: new Date(),
+								status_Publish: false,
+								_Scanned: 0,
+								Starts: new Date(),
+								To: "editor2",
+								Category: "unpacked"
+							}, 	(err,entry) => {
+								
+								if ( !err ) {
+									Trace( `News unpack ${name}` );
+									CP.exec( `
+cd ${dog.newsPath} ;
+source ./maint.sh expand ${name} ;
+`, 
+										err => {
+											DEBE.indexFile( `${dog.newsPath}/${name}`, files => {
+												files.forEach( file => {
+													if ( file.endsWith(".html") ) {
+														var msg = file.replace(".html","");
+														sql.query( "UPDATE app.news SET ? WHERE ?", [{
+																Message: file.replace(".html","").tag("a",{href: dog.newsPath.substr(1)+`/${name}/index.html`})
+															}, {
+																ID: entry.insertId
+															}
+														], err => {
+															
+															CP.exec(`
+cd ${dog.newsPath}/${name} ;
+mv '${msg}'.html index.html ;
+mv '${msg}'_files index_files ;
+`, 
+																err => Trace(`News renamed ${name}` + err)
+															);
+															
+														});
+													}
+												});
+											})											
+									});
+								}
+							});
+						}
 					});
 				});
 				
