@@ -1748,7 +1748,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			},*/
 			xlate: null,  	//< i18n path to po translation files
 			
-			extensions: {  // extend mime types as needed
+			extensions: {  // Extend mime types as needed
 				rdp: "application/mstsc",
 				run: "text/html",
 				exe: "text/html",
@@ -2418,6 +2418,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 							//sql.query( `DELETE FROM app.${host} WHERE Name LIKE '${setCtx.Name}-%' `, err => Log("clr", err) );
 							sql.query( `INSERT INTO app.${host} SET ?`, runCtx, err=> Log("new case",err) );
 
+							if ( !Pipe.norun )
 							fetcher( `/${host}.exe?Name=${setCtx.Name}`, null, info => Log("run", info) );
 						});
 						break;
@@ -3309,7 +3310,7 @@ Initialize DEBE on startup.
 	}); }); }); 
 } 
 
-//====================== extend objects
+//====================== Extend objects
 	
 [  // string prototypes
 	// string serializers callback cb(html) with tokens replaced
@@ -3710,7 +3711,7 @@ append layout_body
 		}
 	}
 											
-].extend(String);
+].Extend(String);
 	
 [  // array prototypes
 	function groupify() {
@@ -4105,7 +4106,7 @@ append layout_body
 				: "none" ;
 	}
 	
-].extend(Array);
+].Extend(Array);
 	
 [  // date prototypes
 	function getWeek() {
@@ -4125,7 +4126,7 @@ append layout_body
 		d.setDate( d.getDate() + days);
 		return d;
 	}
-].extend(Date);
+].Extend(Date);
 
 function sharePlugin(req,res) {  //< share plugin attribute / license plugin code
 	

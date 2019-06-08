@@ -307,7 +307,7 @@ append site_body
 		#fit.Queries
 			:markdown
 				Relational:
-				> KEY = VALUE  
+				> KEY = VALUE || PATTERN
 				> KEY <= VALUE  
 				> KEY >= VALUE  
 				> KEY != VALUE  
@@ -318,11 +318,6 @@ append site_body
 				> ASKEY := KEY  
 				> ASKEY := RELATIONAL  
 
-				Searching:
-				> KEY, ... /= nlp pattern  
-				> KEY, ... |= query expansion pattern  
-				> KEY, ... ^= binary expression pattern  
-
 				Keying json store:
 				> STORE$[ INDEX ]  
 				> STORE$.KEY  
@@ -332,24 +327,24 @@ append site_body
 				> _pivot = KEY,KEY,... pivot records on KEYs with NodeID = "ID,ID,..." groups  
 				> _browse = KEY,KEY,... browse records on KEYs with NodeID = "name/name/ ..."  
 				> _group = KEY,KEY,... group records on KEYs  
-				> _index = KEY,KEY,... return only specified KEYs  
-				> _sort	= KEY,KEY,... sort records ascending on KEYs  
-				> _sort	= [{property:KEY,sort:DIRECT}, ...] sort records asc|desc on KEYs   
-				> _trace = enable to trace sql at console
+				> _sort	= KEY,KEY,... || [{property:KEY,sort:DIRECT}, ...] sort records on KEYs  
+				> _trace = enable to trace sql at console  
 
-				Converting:
+				Misc:
 				> _queue = KEY for queuing record state   
 				> _nav = open | tree | rename | size ,root/A/B/... folder navigation  
-
-				Blogging:  
-				> _blog	= KEY blog markdown in record KEY
-
-				Limiting:
 				> _lock	= enable record locking  
 				> _view = name of view to correlate with dataset  
+				> _blog	= KEY blog markdown in record KEY
+
+				Searching, Filtering, Limiting:
+				> _nlp = pattern  
+				> _exp = pattern  
+				> _bin = pattern  
 				> _limit = number of records to return  
-				> _start = record position to start returning records  
-				> _score = minimum search score required
+				> _offset = record position to start returning records  
+				> _score = minimum search score required  
+				> _filters = [{property:KEY,value:PATTERN}, ...]
 
 				Legacy:
 				> _geo = KEY,KEY,... add geojson geometry KEYs to the records  
@@ -463,8 +458,26 @@ append site_body
 				> *Save_rem* collects remaining unaggregated events  
 				> *Save_jpg* generates jpg from {at: "jpg": prime: "name", save: "name", index: [...], values: [...] } event  
 
-				Use the *Pipe* = "DATASET.TYPE?QUERY" where TYPE = json || jpg || CASE to place the source
-				DATASET into the correct supervised (and regulated) workflow which may contains keys:
+				Place a DATASET into a supervised workflow using the *Pipe*:
+				
+					"DATASET.TYPE?QUERY"  
+					{ "path": "DATASET.TYPE?QUERY", "KEY": [VALUE, ...] , ... "norun": true }
+					
+				where the { ... } form generates usecases over the specified context KEYs, and where
+				TYPE = json || jpg || CASE selects the workflow.   CASE workflows accept QUERY filters:
+				
+					group = "KEY, ..."  
+					where = { KEY: VALUE, ...}  
+					order = "KEY, ..."  
+					limit = NUMBER  
+					aoi = "NAME" || [ [lat,lon], ... ]  
+					batch = NUMBER  // 0 disables  
+					symbols = [ NUMBER, ... ]  
+					keys = [ "KEY", ... ]  
+					steps = NUMBER   // overrides file defaults  
+					actors = NUMBER  // overrides file defaults
+					
+				and provide additional context keys:
 
 					Host name of plugin  
 					File context during a piped-workflow  
@@ -476,7 +489,7 @@ append site_body
 					Flow context of workflow supervisor  
 					Stats context shared with all plugins
 
-				*Flow* contains the supervisors':   
+				where *Flow* contains the supervisors':   
 				> *F* where F[k] = frequency of count k  
 				> *T*  observation time [1/Hz]  
 				> *J* where J[n] = number of jumps taken by n'th process at time T  

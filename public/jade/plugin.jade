@@ -83,8 +83,26 @@ append site_body
 					> *Save_rem* collects remaining unaggregated events  
 					> *Save_jpg* generates jpg from {at: "jpg": prime: "name", save: "name", index: [...], values: [...] } event  
 
-					Use the *Pipe* = "DATASET.TYPE?QUERY" where TYPE = json || jpg || CASE to place the source
-					DATASET into the correct supervised (and regulated) workflow which may contains keys:
+					Place a DATASET into a supervised workflow using the *Pipe*:
+
+						"DATASET.TYPE?QUERY"  
+						{ "path": "DATASET.TYPE?QUERY", "KEY": [VALUE, ...] , ... "norun": true }
+
+					where the { ... } form generates usecases over the specified context KEYs, and where
+					TYPE = json || jpg || CASE selects the workflow.  CASE workflows accept QUERY filters:
+				
+						group = "KEY, ..."  
+						where = { KEY: VALUE, ...}  
+						order = "KEY, ..."  
+						limit = NUMBER  
+						aoi = "NAME" || [ [lat,lon], ... ]  
+						batch = NUMBER  // 0 disables  
+						symbols = [ NUMBER, ... ]  
+						keys = [ "KEY", ... ]  
+						steps = NUMBER   // overrides file defaults  
+						actors = NUMBER  // overrides file defaults
+
+					and provide additional context keys:
 
 						Host name of plugin  
 						File context during a piped-workflow  
@@ -95,6 +113,14 @@ append site_body
 						Events associated with current voxel  
 						Flow context of workflow supervisor  
 						Stats context shared with all plugins
+
+					where *Flow* contains the supervisors':   
+					> *F* where F[k] = frequency of count k  
+					> *T*  observation time [1/Hz]  
+					> *J* where J[n] = number of jumps taken by n'th process at time T  
+					> *N ensemble size  
+					> *trP*	 where trP[n,m] = estimated state transition (from,to) probs at time T  
+					> *store* event store at time T
 
 					Plugin header colors reflect [status](/projects.view): <font color="green">completed</font>, <font color="blue">policed</font>, <font color="orange">funded</font>, <font color="red">unfunded</font>.
 	

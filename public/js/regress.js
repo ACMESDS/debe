@@ -1,4 +1,4 @@
-module.exports = {  // regression
+module.exports = {  // regressors
 	_addkeys: {
 		Samples: "int(11) default 1 comment 'number of training samples taken at random from supplied dataset' ",
 		Channels: "int(11) default 1 comment 'number of training channels takens consecutively from supplied dataset' ",
