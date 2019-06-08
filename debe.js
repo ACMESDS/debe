@@ -171,7 +171,7 @@ catch (err) {
 								else
 									tex.push( (rec == 0) ? "0" : "\\emptyset" );
 							});	
-							Log("tex list", tex);
+							//Log("tex list", tex);
 							return  "\\left[ \\begin{matrix} " + tex.join("\\\\") + " \\end{matrix} \\right]";
 
 						case "Date": return val+"";
@@ -2087,7 +2087,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 @param {Function} res Totem response callback
 */	
 	
-	function pipePlugin( data, pipe, ctx, cb ) {
+	function pipePlugin( data, pipe, ctx, cb ) { // prime plugin with pipe and run in context ctx
 		req.query = ctx;   // let plugin mixin its own keys
 		Log("prime pipe", pipe);
 		for ( var key in pipe )	// add pipe keys to engine ctx
@@ -2110,7 +2110,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 		});
 	}
 	
-	function crossPlugin( depth, keys, forCtx, setCtx, cb ){
+	function pipeCross( depth, keys, forCtx, setCtx, cb ){	// enumerate over forCtx keys will callback cb(setCtx)
 		if ( depth == keys.length ) 
 			cb( setCtx );
 		
@@ -2122,7 +2122,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 			if (values)
 				values.forEach( value => {
 					setCtx[ key ] = value;
-					crossPlugin( depth+1, keys, forCtx, setCtx, cb );
+					pipeCross( depth+1, keys, forCtx, setCtx, cb );
 				});
 		}
 	}
@@ -2403,23 +2403,26 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 						var 
 							keys = [], 
 							runCtx = smartCopy(ctx), 
-							idx = 0, 
+							jobs = [], inserts = 0,
 							fetcher = DEBE.fetcher;
 						
 						for (var key in Pipe)  if ( key in ctx ) keys.push( key );
 						
 						//Log("for", keys, host);
+						sql.query( `DELETE FROM app.${host} WHERE Name LIKE '${ctx.Name}-%' ` );
 						
-						crossPlugin( 0 , keys, Pipe, {}, setCtx => {
-							setCtx.Name = `${ctx.Name}-${idx}`;
-							Copy( setCtx, runCtx ); idx++;
-							Log( "defcase", setCtx.Name );
-							
-							//sql.query( `DELETE FROM app.${host} WHERE Name LIKE '${setCtx.Name}-%' `, err => Log("clr", err) );
-							sql.query( `INSERT INTO app.${host} SET ?`, runCtx, err=> Log("new case",err) );
-
-							if ( !Pipe.norun )
-							fetcher( `/${host}.exe?Name=${setCtx.Name}`, null, info => Log("run", info) );
+						pipeCross( 0 , keys, Pipe, {}, setCtx => {
+							jobs.push( Copy(setCtx, { Name: `${ctx.Name}-${jobs.length}` }) );
+						})
+						
+						jobs.forEach( job => {
+							sql.query( `INSERT INTO app.${host} SET ?`, Copy(job, runCtx), err => {
+								if ( ++inserts == jobs.length )
+									if ( !Pipe.norun )
+										jobs.forEach( job => {
+											fetcher( `/${host}.exe?Name=${job.Name}`, null, info => {} );
+										});
+							});
 						});
 						break;
 				}
