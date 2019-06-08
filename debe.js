@@ -3321,8 +3321,8 @@ Initialize DEBE on startup.
 	Expands markdown of the form:
 		
 		[ TEXT ] ( PATH.TYPE ? w=WIDTH & h=HEIGHT & x=KEY$INDEX & y=KEY$INDEX ... )  
-		[ TEXT ]( COLOR )  
-		[ TOPIC ]( ? starts=DATE & ends=DATE )  
+		[ TEXT ] ( COLOR )  
+		[ TOPIC ] ( ? starts=DATE & ends=DATE )  
 		$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$  
 		[JS || #JS || TeX] OP= [JS || #JS || TeX]  
 		$ { KEY } || $ { JS } || $ {doc( JS , "INDEX" )}  
