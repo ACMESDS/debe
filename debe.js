@@ -2110,6 +2110,38 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 		});
 	}
 	
+	function crossPlugin( depth, keys, forCtx, setCtx, cb ){
+		if ( depth == keys.length ) 
+			cb( setCtx );
+		
+		else {
+			var 
+				key = keys[depth],
+				values = forCtx[ key ];
+			
+			if (values)
+				values.forEach( value => {
+					setCtx[ key ] = value;
+					crossPlugin( depth+1, keys, forCtx, setCtx, cb );
+				});
+		}
+	}
+	
+	function smartCopy(ctx) {
+		var 
+			rtn = {Pipe: '"' + ctx.Pipe.path + '"' },
+			skip = {Host: 1, ID: 1, Pipe: 1};
+		
+		for (var key in  ctx) 
+			if ( (key in skip) || key.startsWith("Save_") ) {
+			}
+		
+			else
+				rtn[key] = ctx[key];
+		
+		return rtn;
+	}
+	
 	var
 		now = new Date(),
 		sql = req.sql,
@@ -2363,9 +2395,31 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 						pipePlugin( {}, ctx, (ctx) => saveEvents(ctx.Save, ctx) );
 						break;
 
-					case Object:  // pipe contains single event
+					case Object:  // monte-carlo pipe
+						/*
 						Copy( Pipe, ctx );
-						pipePlugin( Pipe, ctx, (ctx) => saveEvents(ctx.Save, ctx) );
+						pipePlugin( Pipe, ctx, (ctx) => saveEvents(ctx.Save, ctx) ); 
+						*/
+						var 
+							keys = [], 
+							runCtx = smartCopy(ctx), 
+							idx = 0, 
+							fetcher = DEBE.fetcher;
+						
+						for (var key in Pipe)  if ( key in ctx ) keys.push( key );
+						
+						//Log("for", keys, host);
+						
+						crossPlugin( 0 , keys, Pipe, {}, setCtx => {
+							setCtx.Name = `${ctx.Name}-${idx}`;
+							Copy( setCtx, runCtx ); idx++;
+							Log( "defcase", setCtx.Name );
+							
+							//sql.query( `DELETE FROM app.${host} WHERE Name LIKE '${setCtx.Name}-%' `, err => Log("clr", err) );
+							sql.query( `INSERT INTO app.${host} SET ?`, runCtx, err=> Log("new case",err) );
+
+							fetcher( `/${host}.exe?Name=${setCtx.Name}`, null, info => Log("run", info) );
+						});
 						break;
 				}
 			}
