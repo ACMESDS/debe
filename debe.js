@@ -2396,10 +2396,6 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 						break;
 
 					case Object:  // monte-carlo pipe
-						/*
-						Copy( Pipe, ctx );
-						pipePlugin( Pipe, ctx, (ctx) => saveEvents(ctx.Save, ctx) ); 
-						*/
 						var 
 							keys = [], 
 							runCtx = smartCopy(ctx), 
@@ -2408,7 +2404,6 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 						
 						for (var key in Pipe)  if ( key in ctx ) keys.push( key );
 						
-						//Log("for", keys, host);
 						sql.query( `DELETE FROM app.${host} WHERE Name LIKE '${ctx.Name}-%' ` );
 						
 						pipeCross( 0 , keys, Pipe, {}, setCtx => {
