@@ -1538,115 +1538,16 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		/**
 		@class DEBE.Skinning
 		*/
-		get: function(recs, where, index, subs) {  //< index dataset
-		/**
-		@method get
-		Provides a data indexer when a skin is being rendered.
-		@param {Array} recs Record source
-		@param {Array} where {recKey:value, ...} to match recs
-		@param {Array} index "recKey,..." keys to retain from recs
-		@param {Array} subs {hash: {recKey: {key:value, ...}. ...}, ...} replace record values
-		*/
+		get: function(recs, js) { 
+			return recs.get(js);
+		},
 		
-			function select(keys) {
-				
-				switch ( (keys||0).constructor) {
-					case Object:
-						for (var key in keys) 
-							return "SELECT * FROM ??.?? WHERE least(?,1)";
-						
-						return "SELECT * FROM ??.??";
-						
-					case Array:
-						return "";
-						
-					case String:
-						return "SELECT * FROM ??.? WHERE " + keys;
-						
-					case Function:
-						return "";
-						
-					default:
-						return "";
-				}
-			}
-			
-			var rtns = [];
-			
-			switch ( (index||0).constructor ) {
-				case String: 
-					var idx = {};
-					index.split(",").forEach( (key) => {
-						idx[key] = key;
-					});
-					index = idx;
-					break;
-					
-				case Array:
-					return null;
-					break;
-					
-				case Function:
-					Thread( sql => {
-						try {
-							sql.query( select(where), [req.group, recs, where], function (err,recs) {								
-								index( err ? [] : recs );
-							}).end();
-							//sql.release();
-						}
-						
-						catch (err) {
-							index( [] );
-						}
-					});
-					return null;					
-			}
-			
-			recs.forEach( (rec) => {
-				var match = true;
-
-				if (where)
-					for (var x in where) 
-						if (rec[x] != where[x]) match = false;
-
-				if (match) {
-					if (subs)
-						Each(subs, function (pre, sub) {  // make #key and ##kEy substitutions
-							for (var idx in sub) {
-								var keys = sub[idx];
-								if ( rec[idx] )
-									for (var key in keys)
-										rec[idx] = (rec[idx] + "").replace(pre + key, keys[key]);
-							}
-						});
-
-					/*
-					if (sub1) {
-						for (var idx in sub1) {
-							var keys = sub1[idx];
-							if ( rec[idx] )
-								for (var key in keys)
-									rec[idx] = (rec[idx] + "").replace("#" + key, keys[key]);
-						}
-					}*/
-					
-					if (index) {
-						var rtn = new Object();
-						for (var key in index) {
-							var src = rec;
-							key.split(".").forEach( (idx) => {
-								src = src[idx];
-							});
-							rtn[ index[key] ] = src;
-						}
-						rec = rtn;
-					}
-					
-					rtns.push( rec );
-				}
-			});
-			
-			return rtns;
+		match: function (recs,where,get) {
+			return recs.match(where,get);
+		},
+		
+		replace: function (recs,subs) {
+			return recs.replace(subs);
 		},
 		
 		json: function(recs) {  //< jsonize dataset
@@ -2090,8 +1991,9 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 	function pipePlugin( data, pipe, ctx, cb ) { // prime plugin with pipe and run in context ctx
 		req.query = ctx;   // let plugin mixin its own keys
 		Log("prime pipe", pipe);
+		Copy(ctx,data);
 		for ( var key in pipe )	// add pipe keys to engine ctx
-			ctx[key] = pipe[key].parseJS( {$: data} );
+			ctx[key] = data[key] = pipe[key].parseJS( data );
 			
 		ATOM.select(req, ctx => {  // run plugin
 			
