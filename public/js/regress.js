@@ -111,7 +111,7 @@ The following context keys are accepted:
 			
 			if (false) Log({
 				train: use, 
-				dims: [x.length, y.length],
+				dims: [x.length, y ? y.length : 0],
 				solve: solve
 			});
 
@@ -183,6 +183,7 @@ The following context keys are accepted:
 				chans = x.length,
 				done = 0;
 
+			//Log("channels", chans, y.length, x0.length);
 			for ( var chan = 0; chan<chans; chan++ ) 
 				trainer( x[chan], y[chan], x0[chan], info => {
 					saver(info,chan);
