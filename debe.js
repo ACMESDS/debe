@@ -3303,11 +3303,12 @@ Initialize DEBE on startup.
 			key = "@esc",
 			html = this,
 			fetchBlock = function ( rec, cb ) {	// callsback cb with block placeholder
-				//Log(`block[${blocks.length}] `, rec.url);
+				//Log(`block[${blocks.length}] `, rec.url );
 				blocks.push( rec.opt );
 				cb( rec.url + ":" + "@block");
 			},
-			pattern = /\n(.*)\:\n\n((.|\n)*)\n\n/g ;	// define escaped code block
+			pattern = /(.*)\:\n\n((\t.*\n)+)\n/g ;
+				// /\n(.*)\:\n\n((.|\n)*)\n\n/g ;	// define escaped code block
 		
 		html.serialize( fetchBlock, pattern, key, (html, fails) => {  
 			cb( blocks, html);
