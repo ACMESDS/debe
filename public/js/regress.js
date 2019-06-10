@@ -1,5 +1,5 @@
 module.exports = {  // regressors
-	modkeys: {
+	_modkeys: {
 		Samples: "int(11) default 1 comment 'number of training samples taken at random from supplied dataset' ",
 		Channels: "int(11) default 1 comment 'number of training channels takens consecutively from supplied dataset' ",
 		Method: "varchar(16) default 'ols' comment 'regression technique to USE = lrm | svm | pls | knn	| ols | ... ",
@@ -255,7 +255,7 @@ The following context keys are accepted:
 			mc = ctx.mc || null,
 			x0 = ctx.x0 || null,
 			n0 = ctx.n0 || null,
-			xun = ctx.xun || null,
+			un = ctx.un || null,
 			keep = ctx.Keep,
 			save = ctx.Save = [],
 			savePath = `/shares/${ctx.Host}_${ctx.Name}.jpg`,
@@ -280,7 +280,7 @@ The following context keys are accepted:
 			solve: solve,
 			keep: keep,
 			use: use,
-			canTrain: ((x && y) || xy || mc) ? true : false,
+			canTrain: ((x && y) || xy || mc || un) ? true : false,
 			canPredict: x ? true : false,
 			loader: loader ? true : false,
 			model: model ? true : false

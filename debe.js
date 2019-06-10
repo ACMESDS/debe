@@ -2228,7 +2228,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 															//Log("learning ctx", ctx);
 
 															if ( evs = ctx.Events ) 
-																evs.load( "group", function (evs) {  // get supervisor evs until null; then save supervisor computed events
+																evs.feed( "t", function (evs) {  // get supervisor evs until null; then save supervisor computed events
 																	Trace( evs ? `SUPERVISING voxel${ctx.Voxel.ID} events ${evs.length}` : `SUPERVISED voxel${ctx.Voxel.ID}` , sql );
 
 																	if (evs) // feed supervisor
@@ -3775,8 +3775,9 @@ append layout_body
 		return tar;
 	},
 
-	function sample( cb ) {
 	/*
+	function sample( cb ) {
+	/ *
 	@member sample
 	@method Array
 	@param {Function} cb callback(rec) returns record results to append
@@ -3787,13 +3788,13 @@ append layout_body
 		[ {x:"a"} ]
 		
 	using the callback cb(rec) which returns true/false to retain/drop an item.
-	*/
+	* /
 		var rtns = [];
 		this.forEach( function (rec) {
 			rtns.push( cb(rec) );
 		});
 		return rtns;
-	},
+	},  */
 
 	function joinify(cb) {
 	/*
