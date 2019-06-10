@@ -264,7 +264,7 @@ The following context keys are accepted:
 			use = ctx.Method.toLowerCase(),
 			solveKey = use + "_",
 			loaders = {
-				svm: $.SVM.restore,
+				svm: $.SVM.load, //$.SVM.restore,
 				lrm: $.LRM.load,
 				knn: $.KNN.load,
 				pls: $.PLS.load,
@@ -323,7 +323,7 @@ The following context keys are accepted:
 					res( new Error("regressor never trained") );
 					
 			else
-				res( new Error("missing x||y||xy||mc to regressor") );
+				res( new Error("missing x||y||xy||mc||un to regressor") );
 		
 		else
 			res( new Error("invalid regression method") );
