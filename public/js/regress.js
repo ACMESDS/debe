@@ -79,15 +79,23 @@ tolerance: float>= [0] tolerance
 	
 	engine: function regress(ctx, res) {  
 	/* 
-	Train regressor given (x,y) data, or predict from given x data, where:
+	Train regressor where:
 
 		Method: regression technique to USE = lrm | svm | pls | knn	| ols | ...
 		Save_USE: training model for specified Method 
 		hyper_USE: solver parameter for specified Method 
 		Save_jpg: jpg generation parameters
 		Samples: number of training samples taken at random from supplied dataset
-		Channel: number of training channels takens consecutively from supplied dataset
-		Keep:  number of regression pairs to retain after training'
+		Channels: number of training channels takens consecutively from supplied dataset
+		Keep:  number of regression pairs to retain after training
+		
+	given x,y data presented as:
+	
+		x = [...], y = [...]				// training mode
+		x = [...]							// predict mode
+		xy = { x: [...] , y: [...} } 		// training mode
+		mc = { x: [ [...]...], y: [ [...]...], x0: [ [...]...] } 	// training mode multichannel
+		un = [...] 							// unsupervised training mode
 	*/
 		function train(x, y, cb) {  
 			
@@ -97,7 +105,7 @@ tolerance: float>= [0] tolerance
 				solve: solve
 			});
 
-			if (x.length == y.length) {
+			if ( !y || (x.length == y.length) ) {
 				$( 
 					`cls = ${use}_train( x, y, solve, save ); `, 
 
@@ -120,7 +128,7 @@ tolerance: float>= [0] tolerance
 		function trainer(x,y,x0,cb) {
 			
 			function saver( cls, x, y, x0, cb ) {
-				if (keep) {
+				if ( y && keep ) {
 					$( 
 						`u = shuffle(x,y,keep);  y0 = is(x0) ? ${use}_predict(cls, x0) : null; `,
 
@@ -237,6 +245,7 @@ tolerance: float>= [0] tolerance
 			mc = ctx.mc || null,
 			x0 = ctx.x0 || null,
 			n0 = ctx.n0 || null,
+			xun = ctx.xun || null,
 			keep = ctx.Keep,
 			save = ctx.Save = [],
 			savePath = `/shares/${ctx.Host}_${ctx.Name}.jpg`,
@@ -285,7 +294,11 @@ tolerance: float>= [0] tolerance
 				n0 = mc.n0 || null;
 				trainers( mc.x, mc.y, mc.x0, () => sender() );
 			}
-		
+
+			else
+			if (un) // in unsupervised training mode
+				trainer( un, null, x0, info => sender(info) );
+
 			else
 			if ( x ) // in prediction mode
 				if ( model ) 
