@@ -244,7 +244,7 @@ The following context keys are accepted:
 
 		function sender(info) {
 			if (info) saver(info,0);
-			if (mc) save.push({ at: "jpg", index: n0, keep: 10, values: saveValues, input: mc.input, save: savePath });
+			if (mc) save.push({ at: "jpg", index: n0, values: saveValues.sampler(keep), input: mc.input, save: savePath });
 			res(ctx);
 		}
 		
@@ -285,11 +285,6 @@ The following context keys are accepted:
 			canPredict: x ? true : false,
 			loader: loader ? true : false,
 			model: model ? true : false
-			//x0: x0
-			//x: x ? true : false,
-			//y: y ? true : false,
-			//xy: xy ? true : false,
-			//mc: mc ? true : false
 		});
 		
 		if ( loader)

@@ -577,7 +577,7 @@ String.prototype.option = function () {
 		return JSON.parse(this);
 	}
 	catch (err) {
-		return (this == "none") ? null : this ? this.split(",") : null;
+		return (this == "none") ? null : this.length ? this.split(",") : null;
 	} 
 }
 
