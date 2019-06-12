@@ -34,19 +34,6 @@ Required app.datasets:
 	voxels, files, events, queues, engines, dblogs, quizes
 	
 */
-/*
-schema changes:
-master:
-	License, EndService no _
-	Master -> longtext
-tags: 
-	message -> mediumtext
-	license vc(128)
-	keyid: license,target,topic
-	on -> viewed
-	to -> target
-	tag -> topic vc(64)
-*/
 
 var 									
 	// globals
@@ -122,7 +109,11 @@ var
 	},
 
 	blog: {
+		d: docify,
+		doc: docify,
+		
 		digits: 2,  // precision to show values in [JSON || #DOC || TEX] OP= [JSON || #DOC || TEX] expansions
+		
 		":" : (lhs,rhs,ctx) => ctx.toEqn("", lhs,rhs,ctx), 		// inline TeX
 		"|" : (lhs,rhs,ctx) => ctx.toEqn("a", lhs,rhs,ctx),		// Ascii Match
 		";" : (lhs,rhs,ctx) => ctx.toEqn("n", lhs,rhs,ctx),		// break TeX
@@ -854,7 +845,7 @@ rm -RIf ${name}
 								_Ingested: new Date(),
 								status_Publish: false,
 								_Scanned: 0,
-								Starts: new Date(),
+								status_Starts: new Date(),
 								To: "editor2",
 								Category: "unpacked"
 							}, 	(err,entry) => {
@@ -3256,47 +3247,27 @@ Initialize DEBE on startup.
 		var 
 			blockidx = 0;
 		
-		function docify( obj , idx ) {
-			var doc = {};
-			
-			if ( keys = idx ? idx.split(",") : null ) 
-				keys.forEach( key => { 
-					if ( key in obj ) doc[key] = obj[key];
-				});
-			
-			else
-				doc = obj;
-							 
-			return (JSON.stringify(doc) || "").replace(/ /g,"").replace(/_/g,"").replace(/^/g,"");
-		}
-		
-		Copy({
-			d: docify,
-			doc: docify
-		}, ctx);
+		Copy(DEBE.blog, new Object(ctx));
 		
 		this.Xescape( [], (blocks,html) => // excape code blocks
 		html.Xscript( ctx, (ctx,html) => // expand scripts 
-		html.Xgen(ctx, (html) => // expand generators
-		html.Xtex( (html) => // expand TeX
-		html.Xlink( req, ds, viaBrowser, (html) => { // expand links
+		html.Xkeys( ctx, html => // expand js keys
+		html.Xgen(ctx, html => // expand generators
+		html.Xtex( html => // expand TeX
+		html.Xlink( req, ds, viaBrowser, html => { // expand links
 			
-			cb( 
-				html
-				// make links smart
-				.replace(/href=(.*?)\>/g, function (str,ref) { // follow <a href=REF>A</a> links
+			if ( viaBrowser )
+				html = 	html.replace(/href=(.*?)\>/g, (str,ref) => { // smart links to follow <a href=REF>A</a> links
 					var q = (ref.charAt(0) == "'") ? '"' : "'";
 					return `href=${q}javascript:navigator.follow(${ref},BASE.user.client,BASE.user.source)${q}>`;
-				})
+				});
 
-				// backsub escaped blocks
-				.replace(/@block/g, function (str) {
+			cb( html.replace(/@block/g, str => {  // backsub escaped blocks
 					//Log(`unblock[${blockidx}]`, blocks[ blockidx].tag("code",{}) );
 					return blocks[ blockidx++ ].tag("code",{});
-				})
-			);
+				}) );
 			
-		})))));
+		}))))));
 	},
 	
 	function Xescape( blocks, cb ) { // escapes code blocks then callsback cb(blocks, html)
@@ -3466,18 +3437,21 @@ Initialize DEBE on startup.
 			cb(ctx, run);
 	},
 		
+	function Xkeys( ctx, cb ) {  // expand js keys ${script} || ${keys}
+		cb( this.parseEMAC(ctx) );
+	},
+	
 	function Xgen( ctx, cb ) {  // expands LHS OP= RHS tags
 
 		var 
-			genctx = Copy(DEBE.blog, new Object(ctx)),
 			pattern = /(\S*) ([^ ]*)= (\S*)/g;  // defines LHS OP= RHS tag
 		
-		cb( this.parseEMAC(genctx).replace(pattern, (str,lhs,op,rhs) => {
+		cb( this.replace(pattern, (str,lhs,op,rhs) => {
 			//Log([lhs,rhs,op]);
 			if ( op )
-				if ( blogOp = genctx[op] ) 
+				if ( blogOp = ctx[op] ) 
 					if ( isFunction(blogOp ) )
-						return blogOp(lhs,rhs,genctx);
+						return blogOp(lhs,rhs,ctx);
 					else
 						return `invalid lhs ${op}= rhs markdown`;
 				else
@@ -4031,6 +4005,20 @@ append layout_body
 	}
 ].Extend(Date);
 
+function docify( obj , idx ) {
+	var doc = {};
+
+	if ( keys = idx ? idx.split(",") : null ) 
+		keys.forEach( key => { 
+			if ( key in obj ) doc[key] = obj[key];
+		});
+
+	else
+		doc = obj;
+
+	return (JSON.stringify(doc) || "").replace(/ /g,"").replace(/_/g,"").replace(/^/g,"");
+}
+		
 function sharePlugin(req,res) {  //< share plugin attribute / license plugin code
 	
 	var 
