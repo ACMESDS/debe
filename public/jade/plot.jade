@@ -86,21 +86,22 @@ append base_body
 			height = (opts.h || 400) - margin.top - margin.bottom,
 
 			vis = d3.select("#content"),
-
-			svg = vis.append("svg")
+			
+			svg = vis
+			.append("svg")
 			.attr("width", width + margin.left + margin.right)
 			.attr("height", height + margin.top + margin.bottom)
 			.append("g")
 			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-		BASE.load( opts, (recs) => {
+					
+		BASE.load( opts, recs => {
 			var 
 				markerStyles = opts.marker || [],
 				markerDef = markerStyles[0],
 				lineStyles = opts.line || [],
 				lineDef = lineStyles[0];
 			
-			recs.forEach( (rec) => {
+			recs.forEach( rec => {
 				function xyplot(x,y,cb) {
 
 					function compress(x) {
@@ -114,7 +115,7 @@ append base_body
 						Ny = y0.length || 0,
 						mode = ((Nx <= 1) ? Nx : "n") + "x" + ((Ny <= 1) ? Ny : "n");
 							
-					Log(`plot: ${mode} ${Nx}x${Ny}`);
+					Log(`plot: ${mode} host ${x.length}x${y.length} = [${Nx}x${Ny}]`);
 					switch ( mode ) {
 						case "nxn":
 							for ( var n=0; n<Nx; n++ ) xyplot( x[n], y[n], cb );
@@ -123,14 +124,14 @@ append base_body
 						case "nx1":		// cluster plot
 							var xy = [];
 							x.forEach( (xn,n) => {
-								xy.push( { x: xn[0], y: xn[1], f: y[n][0] } );
+								xy.push( { x: xn[0], y: xn[1], f: y[n][0] % 4 } );
 							});	
 							break;
 							
 						case "nx0":		// cluster plot
 							var xy = [];
 							x.forEach( (xn,n) => {
-								xy.push( { x: xn[0], y: xn[1], f: y[n] } );
+								xy.push( { x: xn[0], y: xn[1], f: y[n] % 4 } );
 							});	
 							break;
 							
@@ -167,66 +168,12 @@ append base_body
 						for (var N=extra.length, n=0; n<N; n++)
 							xy.push( {x: extra[n], y: extra[n] } ); 
 
-					Log( JSON.stringify(xy) );
+					//Log( JSON.stringify(xy) );
 
 					if ( !plots ) {  // setup axes on first source
 						//if (opts.debug) alert(opts.debug+"xy"+JSON.stringify(xy));
 
-						var	// define data scalers
-							xa = d3.scale.linear()
-							.domain([0,1])
-							.range([0, width]),
-
-							ya = d3.scale.linear()
-							.domain([0,1])
-							.range([height, 0]),
-
-							color = d3.scale.category10();
-
 						// auto scale axis based on data or options
-
-						if ( hard ) {
-							xa.domain( hard.x );
-							ya.domain( hard.y );
-						}
-						else {
-							xa.domain(d3.extent(xy, (d) => d.x )).nice();
-							ya.domain(d3.extent(xy, (d) => d.y )).nice();
-						}
-
-						var // define axes
-							xAxis = d3.svg.axis()
-							.scale(xa)
-							.orient("bottom"),
-
-							yAxis = d3.svg.axis()
-							.scale(ya)
-							.orient("left"),
-
-							xaxis = svg
-							.append("g")
-							.attr("class", "x axis")
-							.attr("transform", "translate(0," + height + ")")
-							.call(xAxis)
-							.append("text")
-							.attr("class", "label")
-							.attr("x", width)
-							.attr("y", -45)
-							.attr("dy", "1em")
-							.style("text-anchor", "end")
-							.text( opts.label[0] ),
-
-							yaxis = svg
-							.append("g")
-							.attr("class", "y axis")
-							.call(yAxis)
-							.append("text")
-							.attr("class", "label")
-							.attr("transform", "rotate(-90)")
-							.attr("y", 20)
-							.attr("dy", "1em")
-							.style("text-anchor", "end")
-							.text( opts.label[1] );
 
 						/*
 						svg
@@ -283,23 +230,24 @@ append base_body
 
 					if ( style = markerStyles[plots] || markerDef ) {  // add markers
 						svg
-						.selectAll(".marker")
+						.append("g")
+						.selectAll( style )
 						.data(xy)
 						.enter()
-						.append( style )
-						.attr("class", "marker")
-						.attr("r", 3.5)
-						.attr("cx", (d) => d.x )
-						.attr("cy", (d) => d.y )
-						.on("click", click)
-						.style("fill", (d) => color( d.f ) );
+							.append( style )
+							.attr("class", "marker")
+							.attr("r", 3.5)
+							.attr("cx", d => xscale(d.x) )  
+							.attr("cy", d => yscale(d.y) )
+							.on("click", click)
+							.style("fill", d => color( d.f ) );
 					}
 
-					if ( style = lineStyles[plots] || lineDef ) if ( true ) { // add lines
+					if ( style = lineStyles[plots] || lineDef ) if ( false ) { // add lines
 
 						var line = d3.svg.line()
-						.x( (d) => d.x )
-						.y( (d) => d.y )
+						.x( d => xscale(d.x) )
+						.y( d => yscale(d.y) )
 						.interpolate('linear');
 
 						svg
@@ -316,9 +264,9 @@ append base_body
 						.data(xy)
 						.enter()
 						.append("text")
-						.text( (d) => details+":"+d.x.toFixed(2)+" , "+d.y.toFixed(2) )
-						.attr("x", (d) => d.x )
-						.attr("y", (d) => d.y )
+						.text( d => details+":"+d.x.toFixed(2)+" , "+d.y.toFixed(2) )
+						.attr("x", d => xscale(d.x) )
+						.attr("y", d => yscale(d.y) )
 						.attr("dy", ".35em")
 						.attr("font-family", "sans-serif")
 						.attr("font-size", "11px")
@@ -335,6 +283,53 @@ append base_body
 					max = opts.max,
 					plots = 0,
 					hard = min[0] ? { x: [parseFloat(min[0]), parseFloat(max[0])], y: [parseFloat(min[1]), parseFloat(max[1])] } : null;
+
+				var
+					xscale = d3.scale.linear()
+					.domain( hard ? hard.x : [0,1])
+					.range([0, width]),
+
+					yscale = d3.scale.linear()
+					.domain( hard ? hard.y : [0,1])
+					.range([height, 0]),
+
+					color = d3.scale.category10(),
+					
+				//		xscale.domain(d3.extent(xy, d => d.x )).nice();
+				//		yscale.domain(d3.extent(xy, d => d.y )).nice();
+
+					xAxis = d3.svg.axis()
+					.scale(xscale)
+					.orient("bottom"),
+
+					yAxis = d3.svg.axis()
+					.scale(yscale)
+					.orient("left"),
+
+					xaxis = svg
+					.append("g")
+					.attr("class", "x axis")
+					.attr("transform", "translate(0," + height + ")")
+					.call(xAxis)
+					.append("text")
+					.attr("class", "label")
+					.attr("x", width)
+					.attr("y", -45)
+					.attr("dy", "1em")
+					.style("text-anchor", "end")
+					.text( opts.label[0] ),
+
+					yaxis = svg
+					.append("g")
+					.attr("class", "y axis")
+					.call(yAxis)
+					.append("text")
+					.attr("class", "label")
+					.attr("transform", "rotate(-90)")
+					.attr("y", 20)
+					.attr("dy", "1em")
+					.style("text-anchor", "end")
+					.text( opts.label[1] );
 
 				xyplot(x, y, plots => {} );
 			});

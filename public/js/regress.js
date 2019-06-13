@@ -244,7 +244,13 @@ The following context keys are accepted:
 
 		function sender(info) {
 			if (info) saver(info,0);
-			if (mc) save.push({ at: "jpg", index: n0, values: saveValues.sampler(keep), input: mc.input, save: savePath });
+			if (mc) save.push({ 
+				at: "jpg", 
+				input: mc.input, 
+				save: savePath,
+				index: n0,
+				values: saveValues
+			});
 			res(ctx);
 		}
 		
