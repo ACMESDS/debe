@@ -12,13 +12,13 @@
  
 var BASE = {
 	
-	isString: (obj) => obj.constructor == String,
-	isNumber: (obj) => obj.constructor == Number,
-	isArray: (obj) => obj.constructor == Array,
-	isObject: (obj) => obj.constructor == isObject,
-	isDate: (obj) => obj.constructor == Date,
-	isFunction: (obj) => obj.constructor == Function,
-	isError: (obj) => obj.constructor == Error,
+	isString: (obj) => obj.constructor.name == "String",
+	isNumber: (obj) => obj.constructor.name == "Number",
+	isArray: (obj) => obj.constructor.name == "Array",
+	isObject: (obj) => obj.constructor.name == "isObject",
+	isDate: (obj) => obj.constructor.name == "Date",
+	isFunction: (obj) => obj.constructor.name == "Function",
+	isError: (obj) => obj.constructor.name == "Error",
 	
 	isEmpty: (opts) => {
 		for ( var key in opts ) return false;
@@ -134,15 +134,74 @@ var BASE = {
 		return keys.length==0;
 	},
 	
-	load: function (opts, cb) {
-		if (opts.debug) alert( opts.debug+"opts"+JSON.stringify(opts) ); 
-
-		d3.json( opts.ds , function (recs) {
-			//alert( recs ? "got data" : "no data" );
+	load: function (opts, cb) {		// callback cb(recs) with loaded recs from path opts.ds = "/src?x:=STORE$.x[$KEY]&y:=STORE$.y[$KEY]..." given global d3 env
+		function loader (recs) {
 			if (opts.debug) alert(opts.debug+"recs"+JSON.stringify(recs));
 
 			if ( recs ) cb(recs);
-		}); 
+		}
+		
+		function d3tag (d3el, tag, attrs ) {
+			var el = d3el.append(tag), q = "'";
+			
+			for (key in attrs) {
+				//alert("tag "+key+" " + attrs[key]);
+				switch (key) {
+					case "text":
+						el.text( attrs[key] ); 
+						break;
+					case "xstyle":
+						el.style( attrs[key]); 
+						break;
+					default:
+						el.attr(key, attrs[key]);
+				}
+			}
+			
+			return el;
+		}				
+		
+		if (opts.debug) alert( opts.debug+"opts: "+JSON.stringify(opts) ); 
+
+		var 
+			view = d3.select("body"),
+			keys = opts.keys = {};
+		
+		//alert("body" + (body?true:false) );
+		
+		opts.ds.replace(/\$(\w+)/g, (str,key) => {
+			if ( !keys[key] ) {
+				keys[key] = true;
+				var id = "_"+key;
+				
+				//alert( `new ${key} id = ${id}` );
+
+				var 
+					label = d3tag(view, "label", {for: id, style: "display: inline-block; width: 240px; text-align: right", text: key }),
+					input = d3tag(view, "input", {type: "number", min: "0", max:"255", step:"1", value:"0", id:id} );
+				
+				/*
+				label
+					.insert( "span" ) 
+					.attr("id", id+"-value");  */
+				
+				input.on("input", () => {
+					var 
+						el = input[0][0],		// dom is a major Kludge!
+						value = el.value,
+						id = el.id,
+						key = id.substr(1),
+						reg = new RegExp( `\\$${key}` , "g" ),
+						ds = opts.ds.replace( reg, value );
+					
+					//Log(input[0][0]);
+					Log(`adjust ${key}=${value} ds=${opts.ds} -> ${ds}`);
+					d3.json( ds , loader );
+				});
+			}
+		});
+					
+		d3.json( opts.ds.replace(/\$\w+/g, "0") , loader); 
 
 		/*
 		else
@@ -157,7 +216,6 @@ var BASE = {
 				if ( opts.data = recs )
 					cb( opts );
 			});*/
-
 	},
 	
 	alert: "Skinning error: ",

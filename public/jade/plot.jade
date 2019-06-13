@@ -22,6 +22,7 @@ append base_help
 			max = X,Y axis maximums
 			extra = [[x,y], ... ] data to append to plots
 			details = show xy locations
+			title = title string
 
 append base_head
 
@@ -39,7 +40,7 @@ append base_head
 		.legend { }
 
 		.text {}
-	
+
 	script.
 		var opts = {  // define plot options
 			ds: "/!{query.src}?ID=#{query.id}&x:=#{query.x}&y:=#{query.y}",
@@ -52,6 +53,7 @@ append base_head
 			min: "#{query.min}".split(","),
 			max: "#{query.max}".split(","),
 			extra: "#{query.extra}".option(),
+			title: "#{query.title}",
 			details: "#{query.details}"
 		};
 				 
@@ -77,23 +79,27 @@ append base_body
 			}
 		}
 
-		const {isArray} = BASE;
-		
 		var 
 			Log = console.log,
+			
 			margin = {top: 20, right: 20, bottom: 30, left: 40},
 			width = (opts.w || 800) - margin.left - margin.right,
 			height = (opts.h || 400) - margin.top - margin.bottom,
 
-			vis = d3.select("#content"),
+			view = d3.select("#content");
 			
-			svg = vis
-			.append("svg")
-			.attr("width", width + margin.left + margin.right)
-			.attr("height", height + margin.top + margin.bottom)
-			.append("g")
-			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-					
+		/*
+		label(for="_Value", style="display: inline-block; width: 240px; text-align: right").
+			channel: <span id="_Value-value"></span>
+
+		input(type="number", min="0", max="255",step="1",value="50",id="_Value")
+
+		d3.select("#_Value").on("input", () => {
+			alert("new channel" + this.value);
+			opts.ds = "/!{query.src}?ID=#{query.id}&x:=#{query.x}&y:=#{query.y}".replace(/\n$n/g, this.value);
+			alert(opts.ds);
+		}); */
+
 		BASE.load( opts, recs => {
 			var 
 				markerStyles = opts.marker || [],
@@ -104,10 +110,6 @@ append base_body
 			recs.forEach( rec => {
 				function xyplot(x,y,cb) {
 
-					function compress(x) {
-						for ( var n=0,N=x.length; n<N; n++) x[n] = x[n][0];
-					}
-						
 					var
 						x0 = x[0] || 0,
 						y0 = y[0] || 0,
@@ -115,7 +117,7 @@ append base_body
 						Ny = y0.length || 0,
 						mode = ((Nx <= 1) ? Nx : "n") + "x" + ((Ny <= 1) ? Ny : "n");
 							
-					Log(`plot: ${mode} host ${x.length}x${y.length} = [${Nx}x${Ny}]`);
+					Log(`switch [${Nx}x${Ny}] -> ${mode} in ${x.length}x${y.length} `);
 					switch ( mode ) {
 						case "nxn":
 							for ( var n=0; n<Nx; n++ ) xyplot( x[n], y[n], cb );
@@ -124,14 +126,14 @@ append base_body
 						case "nx1":		// cluster plot
 							var xy = [];
 							x.forEach( (xn,n) => {
-								xy.push( { x: xn[0], y: xn[1], f: y[n][0] % 4 } );
+								xy.push( { x: xn[0], y: xn[1], f: y[n][0] } );	// d3 assigns y to 1 of 10 fill categories
 							});	
 							break;
 							
 						case "nx0":		// cluster plot
 							var xy = [];
 							x.forEach( (xn,n) => {
-								xy.push( { x: xn[0], y: xn[1], f: y[n] % 4 } );
+								xy.push( { x: xn[0], y: xn[1], f: y[n] } );
 							});	
 							break;
 							
@@ -171,10 +173,6 @@ append base_body
 					//Log( JSON.stringify(xy) );
 
 					if ( !plots ) {  // setup axes on first source
-						//if (opts.debug) alert(opts.debug+"xy"+JSON.stringify(xy));
-
-						// auto scale axis based on data or options
-
 						/*
 						svg
 						.append('path')
@@ -284,7 +282,18 @@ append base_body
 					plots = 0,
 					hard = min[0] ? { x: [parseFloat(min[0]), parseFloat(max[0])], y: [parseFloat(min[1]), parseFloat(max[1])] } : null;
 
-				var
+				d3.select("svg").remove();
+				
+				var	
+					svg = view
+					.append("svg")
+					.attr("width", width + margin.left + margin.right)
+					.attr("height", height + margin.top + margin.bottom)
+					.append("g")
+					.attr("transform", "translate(" + margin.left + "," + margin.top + ")"),
+				
+					title = svg.append("p").text(opts.title),
+				
 					xscale = d3.scale.linear()
 					.domain( hard ? hard.x : [0,1])
 					.range([0, width]),
@@ -293,8 +302,10 @@ append base_body
 					.domain( hard ? hard.y : [0,1])
 					.range([height, 0]),
 
+					colors = 10,
 					color = d3.scale.category10(),
 					
+				// need to fix this so when !hard scans over all x,y data to set domains
 				//		xscale.domain(d3.extent(xy, d => d.x )).nice();
 				//		yscale.domain(d3.extent(xy, d => d.y )).nice();
 
