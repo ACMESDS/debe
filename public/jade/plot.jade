@@ -16,13 +16,13 @@ append base_help
 			h = drawing height
 			debug = enable debugging alerts
 			line = color,color, ... line color
-			marker = style,style, ... line markers
+			marker = style,style, ... line markerslabels
 			label = X,Y labels
 			min = X,Y axis minimums
 			max = X,Y axis maximums
 			extra = [[x,y], ... ] data to append to plots
 			details = show xy locations
-			chan = "min:max:step" channel widget
+			chan = "min:max:step" x,y channel widget
 
 append base_head
 
@@ -90,18 +90,6 @@ append base_body
 
 			view = d3.select("#content");
 			
-		/*
-		label(for="_Value", style="display: inline-block; width: 240px; text-align: right").
-			channel: <span id="_Value-value"></span>
-
-		input(type="number", min="0", max="255",step="1",value="50",id="_Value")
-
-		d3.select("#_Value").on("input", () => {
-			alert("new channel" + this.value);
-			opts.ds = "/!{query.src}?ID=#{query.id}&x:=#{query.x}&y:=#{query.y}".replace(/\n$n/g, this.value);
-			alert(opts.ds);
-		}); */
-
 		BASE.load( opts, recs => {
 			var 
 				markerStyles = opts.marker || [],

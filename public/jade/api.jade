@@ -458,13 +458,27 @@ append site_body
 				> *Save_rem* collects remaining unaggregated events  
 				> *Save_jpg* generates jpg from {at: "jpg": prime: "name", save: "name", index: [...], values: [...] } event  
 
-				Place a DATASET into a supervised workflow using the *Pipe*:
+				# Place a plugin into a supervised workflow using the *Pipe*:
 				
-					"DATASET.TYPE?QUERY"  
-					{ "path": "DATASET.TYPE?QUERY", "KEY": [VALUE, ...] , ... "norun": true }
+					"/DATASET.TYPE?QUERY"  
+					{ "path": "/DATASET.TYPE?QUERY", "KEY": [VALUE, ...] , ... "norun": true }
 					
 				where the { ... } form generates usecases over the specified context KEYs, and where
-				TYPE = json || jpg || CASE selects the workflow.   CASE workflows accept QUERY filters:
+				the DATASET.TYPE form selects the TYPE-defined workflow.   
+				
+				## The { ... } pipe
+				
+				This pipe will generate and run (unless *norun* specified) the usecases defined
+				by crossing the values of the specified context KEYs.
+				
+				## The DATASET.json pipe
+				
+				## The DATASET.jpg pipe
+
+				## The DATASET.CASE pipe
+				
+				This pipe sources events ingested by the specified use-CASE of the specified 
+				DATASET plugin.  This pipe accepts the QUERY keys:
 				
 					group = "KEY, ..."  
 					where = { KEY: VALUE, ...}  
@@ -477,7 +491,7 @@ append site_body
 					steps = NUMBER   // overrides file defaults  
 					actors = NUMBER  // overrides file defaults
 					
-				and provide additional context keys:
+				to filter source events, and provides additional context keys:
 
 					Host name of plugin  
 					File context during a piped-workflow  
@@ -497,7 +511,7 @@ append site_body
 				> *trP*	 where trP[n,m] = estimated state transition (from,to) probs at time T  
 				> *store* event store at time T
 						
-				Valid *Description* markdown includes:
+				# Valid *Description* markdown includes:
 
 					[ TEXT ] ( PATH.TYPE ? w=WIDTH & h=HEIGHT & x=KEY$INDEX & y=KEY$INDEX ... )  
 					[ TEXT ] ( COLOR )  
@@ -522,21 +536,18 @@ append site_body
 					
 				to document plugin usecases.  For example:
 
-					[post](plot.view?w=100&h=200&x=Save$a&ys=Save$b$c)
-					[post](home.view?w=500&h=100)
-					[go here grasshopper](here/there.txt)
-					[image](shares/a1.jpg)
-					[force](force.view?w=100&h=100&src=/queues?_pivots=class)
+					[](/plot.view?src=regress&name=test1&w=600&h=400&x=Save_train$.x[$chan]&y=Save_train$.y[$chan]&min=0,0&max=255,255)
+					[go home](home.view?w=500&h=100)
+					[go here grasshopper](https://here.gov/test.txt)
+					[](/shares/a1.jpg)
+					[](force.view?w=100&h=100&src=/queues?_pivots=class)
 					$$ \alpha = 1 + \beta $$ impressive 'eh
-					[](http://localhost:8080)
-					[jsdemo1]()
 
-				will embed: (1) a plot of the requested x,y data using the [d3 plot](/plot.view), (2) the [home.view](/home.view), 
-				(3) a link to the url, (4) the [image](/shares.jpg), (5) a force graph of the queues dataset pivoted by class using 
-				the [d3 force](/force.view) into a frame of specified W x H dimensions, (6) an inline TeX equation, (7) contents
-				of the localhost site, and (8) a smart tag, licensing the html content to the viewer as retained in the releases table.
+				will embed: (1) a [d3 plot](/plot.view) of the x,y data from regress usecase "test1" using the chan widget, (2) 
+				a link to the [home.view](/home.view), (3) a link to [the url](https://here.gov/test.txt), (4) the [image](/shares/a1.jpg), 
+				(5) a [d3 force](/force.view) of the queues dataset pivoted by class, (6) an inline TeX equation, 
 				See [plot](/plot.view?help), [treefan](/treefan.view?help), [treemap](/treefan.view?help), [force](/force.view?help), 
-				[bounce](/bounce.view?help), [tipsheet](/tipsheet.view?help) for example VIEWs. 				
+				[bounce](/bounce.view?help), [tipsheet](/tipsheet.view?help) for supported views. 				
 
 		#fit.Publishing
 			:markdown
@@ -646,22 +657,12 @@ append site_body
 							( os ) => os.read || os.exec (`${os.path}.js`, ... )
 					}
 
-				[cints](/js/cints.js), [rats](/js/rats.js), [trigs](/js/trigs.js), [genpr](/js/genpr.js), and [seppfm](/py/seppfm.js) provide
-				example publishing modules for the [cints](/cints.run), [rats](/rats.run), [trigs](/trigs.run), [genpr](/genpr.run), 
-				and [seppfm](/seppfm.run) plugins, their corresponding Terms-Of-Use [cints](/cints.tou), [rats](/rats.tou), 
-				[trigs](/trigs.tou), [genpr](/genpr.tou), and [seppfm](/seppfm.tou); and their corresponding publishing endpoints
-				[cints](/cints.pub), [rats](/rats.pub), [trigs](/trigs.pub), [genpr](/genpr.pub), and [seppfm](/seppfm.pub).  Because
-				the client interface interprets KEYs of the form GROUP_SUBGROUP_NAME as grouped (possibly r/o) keys,
-				use "#" in place of "_" if NAME contains an "_".
+				The client interprets KEYs of the form GROUP_SUBGROUP_NAME 
+				as grouped (possibly r/o) keys; thus use "#" in place of "\_" if NAME contains an "\_".
 				
 		#fit.Examples
 			:markdown
-				js ex1 [ui](/jsdemo1.run) [run usecase test1](/jsdemo1.exe?Name=test1) [get usecases](/jsdemo1)  
-				js ex2 [ui](/jsdemo2.run) [run usecase test1](/jsdemo2.exe?Name=test1) [get usecases](/jsdemo2)  
-				py ex1 [ui](/pydemo1.run) [run usecase test1](/pydemo1.exe?Name=test1) [get usecases](/pydemo1)  
-				py ex2 [ui](/pydemo2.run) [run usecase test1](/pydemo2.exe?Name=test1) [get usecases](/pydemo2)  
-				m ex1 [ui](/mdemo1.run) [run usecase test1](/mdemo1.exe?Name=test1) [get usecases](/mdemo1)  
-				m ex2 [ui](/mdemo2.run) [run usecase test1](/mdemo2.exe?Name=test1) [get usecases](/mdemo2)  
+				See [published plugins](/publist.view) for examples.
 	
 	#accordion.Agents
 		#fit.Endpoints
