@@ -208,10 +208,11 @@ var
 					EDCTX.state = newState;
 
 					if ( !EDDOC[newState] ) {		// json editor need setup
-						var doc = EDDOC.json = $("#jsonEditor");
+						var doc = EDDOC.json = Ext.get("jsonEditor"); //$("#jsonEditor");
 
-						$("#jsonEditor-bodyEl").remove();  // stupid extjs adds a turd div
-						
+						//$("#jsonEditor-bodyEl").remove();  // stupid extjs adds a turd div
+						Ext.get("jsonEditor-bodyEl").destroy();  // stupid extjs adds a turd div
+
 						doc.getValue = function () {
 							return JSON.stringify( EDCTX.json );
 						};
@@ -283,7 +284,8 @@ var
 								mode: "javascript",
 								value: EDDOC.text.getValue()
 							});
-							$("#codeEditor-bodyEl").remove();  // stupid extjs adding
+							// $("#codeEditor-bodyEl").remove();  // stupid extjs adding
+							if (el=Ext.get("codeEditor-bodyEl")) el.destroy();
 						}
 					}
 				}), 
@@ -645,11 +647,11 @@ function DS(anchor) {
 								alert(JSON.stringify(raw));					
 								alert("nodes="+store.getCount());
 
-								data.Each(function (n,data) {
+								data.forEach( data => {
 									alert([n,data.ID,"("+data.parentId+")",data.leaf,data.expanded]);
 								});
 
-								data.Each(function (n,data) {
+								data.forEach( data => {
 									//data.ID += 100;
 									root.appendChild(data);
 								});
@@ -662,13 +664,13 @@ function DS(anchor) {
 
 								store.getRootNode().expand(true);
 
-								data.Each(function (n,data) {
+								data.forEach( data => {
 									var rec = Ext.create(name, data);
 									store.add(rec);
 									alert("added "+[n,store.getCount(),rec.get("NodeID")]);
 								});
 
-								data.Each(function (n,datarec) {
+								data.forEach( datarec => {
 									if (datarec.parentId != "root") {
 										//datarec.NodeID = datarec.NodeID + "." + n;
 										var newRec = Ext.create(name, datarec);
@@ -679,14 +681,14 @@ function DS(anchor) {
 									alert("added "+[n,store.getCount()]);
 								});
 
-								data.Each(function (n,datarec) {
+								data.forEach( datarec => {
 									if (datarec.parentId != "root") 
 										root.appendChild(datarec);
 
 									//alert("added "+[n,store.getCount()]);
 								});
 
-								store.getRange().Each( function (n,rec) {
+								store.getRange().forEach( rec => {
 									var data = rec.getData();
 									//rec.setId(data.NodeID);
 									//alert([data.ID,data.NodeID,data.name,data.TRL,data.NodeCount,data.leaf,data.expandable,data.expanded]);
@@ -803,7 +805,7 @@ function DS(anchor) {
 	}
 	
 	function mapper(data,map,key) {
-		data.Each(function (n,rec) {
+		data.forEach( rec => {
 			map[rec[key]] = Copy(rec,{});
 		});
 	}
@@ -1057,7 +1059,7 @@ function DS(anchor) {
 				case '#': 	// actions		
 					var actions = [];
 
-					fType.Each(function (i,type) {
+					fType.forEach( type => {
 						actions.push({
 							getClass: function(val, meta, rec, rowIdx, colIdx, store) {
 								var states = rec.get(fKey);
@@ -1811,7 +1813,7 @@ function DS(anchor) {
 				fCol.cls = "pivot";  // used when moving columns
 				
 				if (args) 
-					args.Each(function (n,arg) {
+					args.forEach( arg => {
 						switch (arg.dataIndex) {
 							case "NodeID":
 							case "NodeCount":
@@ -2374,7 +2376,7 @@ WIDGET.prototype.menuTools = function () {
 			var store = tarDS.Store;
 			var links = tarDS.Links;
 
-			recs.Each( function (i,rec) {
+			recs.forEach( rec => {
 				
 				// Forget about priming the target model with the source record, as
 				// EXTJS will hose-up any conversions (e.g. multiselects) being performed.
@@ -2402,11 +2404,11 @@ WIDGET.prototype.menuTools = function () {
 			});
 		}
 		else									// query = TargetDT/path/link/link/ ...
-			recs.Each( function (n,rec) {
+			recs.forEach( rec => {
 				var link = body(query,rec.getData()).split("/"); 
 				var tarDS = DSLIST[link[0]];
 
-				tarDS.relink( function (proxy) {
+				tarDS.relink( proxy => {
 					proxy.url = link.parseURL({ def: rec.getData() });
 				});
 			});
@@ -2625,7 +2627,7 @@ WIDGET.prototype.menuTools = function () {
 
 	// retain only non-region UIs
 	var helpUIs = [];
-	this.UIs.Each( function (n,UI) {
+	this.UIs.forEach( UI => {
 		if (UI)
 			if ( !UI.region ) helpUIs.push( UI );
 	});
@@ -2980,7 +2982,7 @@ WIDGET.prototype.menuTools = function () {
 								var 
 									Store = Data.Store;
 
-								Recs.Each( function (n,Rec) {
+								Recs.forEach( Rec => {
 									if (false) {	// tree store
 										Rec.appendChild(Ext.create(Data.name, Rec.getData()));
 										Rec.expand();
@@ -3162,7 +3164,7 @@ WIDGET.prototype.menuTools = function () {
 							},
 
 							onSelect: function (Recs, Data, Status) {
-								Recs.Each(function (n,Rec) {
+								Recs.forEach( Rec => {
 									var parms = {ID: Rec.getId()};
 									
 									Ext.Ajax.request({
@@ -3438,7 +3440,7 @@ WIDGET.prototype.terminal = function (term,opts) {
 			reorderable: false 
 		} );
 
-		Sorts.Each( function (i, sort) {
+		Sorts.forEach( sort => {
 			docks.push( sortButton({
 				text: sort,
 				reorderable: true,
@@ -3792,7 +3794,7 @@ WIDGET.prototype.terminal = function (term,opts) {
 					var cols = header.getGridColumns();		// get columns in pivot group
 					var NodePivots = [];
 
-					cols.Each( function (n,col) {			// find new pivots
+					cols.forEach( col => {			// find new pivots
 						if (col.ownerCt.hasCls("pivot"))
 							switch (col.dataIndex) {
 								case "NodeID":
@@ -4091,10 +4093,8 @@ WIDGET.prototype.folder = function() {
 	
 	// Build redundant hash due to EXTJS BUG with TabPanel methods
 	
-	UIs.Each(function (n,UI) { 
-		
+	UIs.forEach( UI => { 		
 		TABLIST[UI.title] = UI;
-		
 	});
 	
 	this.UI = Ext.create('Ext.tab.Panel', {
@@ -4400,7 +4400,7 @@ WIDGET.prototype.form = function () {
 		var name = Widget.name;
 		var UIs = new Array(cols.length);
 
-		cols.Each( function (i,Col) {
+		cols.forEach( (Col,i) => {
 			// EXTJS BUG.  Because most browsers require field labels to be unique -- the stupidity
 			// here seemingly motivated by a misplaced need for form cacheing -- we need to make 
 			// sure that field ids are unique.  EXTJS failed to document this behavior.

@@ -2089,7 +2089,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 						var
 							chipper = HACK.chipVoxels,
 							pipe = {},
-							filename = Pipe.parsePath(pipe,{},{},{}),
+							filename = Pipe.parseURL(pipe,{},{},{}),
 							fileparts = filename.split("."),
 							filetype = fileparts[1] || "",
 							autoname = `${ctx.Host}.${ctx.Name}`,
@@ -3350,8 +3350,8 @@ Initialize DEBE on startup.
 					keys = {},
 					opt = rec.url,  // swap meaning of url,opt - kludge
 					url = rec.opt,
-					dsPath = ds.parsePath(keys,{},{},{}),
-					urlPath = url.parsePath(keys,{},{},{}),
+					dsPath = ds.parseURL(keys,{},{},{}),
+					urlPath = url.parseURL(keys,{},{},{}),
 					w = keys.w || 100,
 					h = keys.h || 100,
 					now = new Date(),

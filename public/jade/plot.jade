@@ -22,7 +22,7 @@ append base_help
 			max = X,Y axis maximums
 			extra = [[x,y], ... ] data to append to plots
 			details = show xy locations
-			title = title string
+			chan = "min:max:step" channel widget
 
 append base_head
 
@@ -53,8 +53,10 @@ append base_head
 			min: "#{query.min}".split(","),
 			max: "#{query.max}".split(","),
 			extra: "#{query.extra}".option(),
-			title: "#{query.title}",
-			details: "#{query.details}"
+			details: "#{query.details}",
+			widgets: {
+				chan: ("#{query.chan}" || "0:255:1").option()
+			}
 		};
 				 
 append base_body

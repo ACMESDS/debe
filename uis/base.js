@@ -9,16 +9,18 @@
  * 
  * See the BASE.start() method for further information.
  * */
- 
+
+var Log = console.log;
+
 var BASE = {
 	
-	isString: (obj) => obj.constructor.name == "String",
-	isNumber: (obj) => obj.constructor.name == "Number",
-	isArray: (obj) => obj.constructor.name == "Array",
-	isObject: (obj) => obj.constructor.name == "isObject",
-	isDate: (obj) => obj.constructor.name == "Date",
-	isFunction: (obj) => obj.constructor.name == "Function",
-	isError: (obj) => obj.constructor.name == "Error",
+	isString: obj => obj.constructor.name == "String",
+	isNumber: obj => obj.constructor.name == "Number",
+	isArray: obj => obj.constructor.name == "Array",
+	isObject: obj => obj.constructor.name == "isObject",
+	isDate: obj => obj.constructor.name == "Date",
+	isFunction: obj => obj.constructor.name == "Function",
+	isError: obj => obj.constructor.name == "Error",
 	
 	isEmpty: (opts) => {
 		for ( var key in opts ) return false;
@@ -134,7 +136,7 @@ var BASE = {
 		return keys.length==0;
 	},
 	
-	load: function (opts, cb) {		// callback cb(recs) with loaded recs from path opts.ds = "/src?x:=STORE$.x[$KEY]&y:=STORE$.y[$KEY]..." given global d3 env
+	load: function (opts, cb) {		// callback cb(recs) with loaded recs from path opts.ds = "/src?x:=STORE$.x[$INPUT]&y:=STORE$.y[$INPUT]..." given global d3 env
 		function loader (recs) {
 			if (opts.debug) alert(opts.debug+"recs"+JSON.stringify(recs));
 
@@ -142,7 +144,7 @@ var BASE = {
 		}
 		
 		function d3tag (d3el, tag, attrs ) {
-			var el = d3el.append(tag), q = "'";
+			var el = d3el.append(tag);
 			
 			for (key in attrs) {
 				//alert("tag "+key+" " + attrs[key]);
@@ -165,27 +167,37 @@ var BASE = {
 
 		var 
 			view = d3.select("body"),
-			keys = opts.keys = {};
+			widgets = opts.widgets || {},
+			def = "0:100:1".split(":");
 		
-		//alert("body" + (body?true:false) );
+		def.type = "range";
 		
 		opts.ds.replace(/\$(\w+)/g, (str,key) => {
-			if ( !keys[key] ) {
-				keys[key] = true;
-				var id = "_"+key;
+			var 
+				id = "_"+key,
+				widget = widgets[key] || ( widgets[key] = def );
+			
+			if ( !widget.created ) {
+				widget.created = true;
 				
-				//alert( `new ${key} id = ${id}` );
+				switch (widget.type) {
+					case "range":
+						var input = d3tag(view, "input", {type: "number", min: widget[0], max: widget[1], step: widget[2], value: widget[0], id:id} );
+						break;
+						
+					case "select":
+						var input = d3tag(view, "select", { value: widget[0], id:id} );
+						
+						widget.forEach( (arg,n) => input.insert("option").attr( "value", arg ).text( arg ) );
+						break;
+						
+					default:
+						var input = null;
+				}
+				
+				Log( `new ${key} id = ${id} type = ${widget.type}` );
 
-				var 
-					label = d3tag(view, "label", {for: id, style: "display: inline-block; width: 240px; text-align: right", text: key }),
-					input = d3tag(view, "input", {type: "number", min: "0", max:"255", step:"1", value:"0", id:id} );
-				
-				/*
-				label
-					.insert( "span" ) 
-					.attr("id", id+"-value");  */
-				
-				input.on("input", () => {
+				if (input) input.on("change", () => {
 					var 
 						el = input[0][0],		// dom is a major Kludge!
 						value = el.value,
@@ -193,7 +205,7 @@ var BASE = {
 						key = id.substr(1),
 						reg = new RegExp( `\\$${key}` , "g" ),
 						ds = opts.ds.replace( reg, value );
-					
+
 					//Log(input[0][0]);
 					Log(`adjust ${key}=${value} ds=${opts.ds} -> ${ds}`);
 					d3.json( ds , loader );
@@ -485,14 +497,35 @@ var BASE = {
 
 }
 
+Array.prototype.Extend = function (con) {
+/**
+ * @method Extend
+ * @member ENUM
+ * Extend the opts prototype with specified methods, or, if no methods are provided, 
+ * extend this ENUM with the given opts.  Array, String, Date, and Object keys are 
+ * interpretted to extend their respective prototypes.  
+ * */
+	this.forEach( function (proto) {
+		//console.log("ext", proto.name, con);
+		con.prototype[proto.name] = proto;
+	});
+};
+
+[ // extend Date
+	function toJSON () {
+/**
+ * @method toJSON
+ * Return MySQL compliant date string.
+ * @return {String} MySQL compliant version of this date
+ */
+	return this.toISOString().split(".")[0];
+}
+].Extend(Date);
+
+[  // extend String
+/*
 String.prototype.parseURL = function (xx,pin) {
 
-	/**
-	 * @method Format
-	 * 
-	 * Format a string S containing ${X.key} tags.  The String wrapper for this
-	 * method extends X with optional plugins like X.F = {fn: function (X){}, ...}.
-	 * */
 	function Format(X,S) {
 
 		try {
@@ -529,46 +562,116 @@ String.prototype.parseURL = function (xx,pin) {
 	if (pin) xx.pin = pin;
 	
 	return Format(xx,this);
-};
-
-String.prototype.parseJSON = function (def) {
-	try {
-		return JSON.parse(this);
-	}
-	catch (err) {
-		return def ? (def.constructor == Function) ? def(this) : def : null;
-	}
 }
-
-/**
-* @class Date
 */
+	function parseURL( query ) {
+		var 
+			parts = this.split("?"),
+			path = parts[0] || "",
+			parms = (parts[1] || "").split("&");
+		
+		parms.forEach( parm => {
+			parm.replace( /(.*)(=)(.*)/g, (rem,lhs,op,rhs) => query[lhs] = rhs );
+		});
+		
+		return path;
+	},
+	
+	function parseJSON (def) {
+		try {
+			return JSON.parse(this);
+		}
+		catch (err) {
+			return def ? BASE.isFunction(def) ? def(this) : def : null;
+		}
+	},
 
-Date.prototype.toJSON = function () {
-/**
- * @method toJSON
- * Return MySQL compliant date string.
- * @return {String} MySQL compliant version of this date
- */
-	return this.toISOString().split(".")[0];
-}
+	function lisp(parms,cb,endcb) {
+	/**
+	 * @method lisp
+	 * Parse this string using the {@link LISP#String Parser}.
+	 *
+	 * @param {Function} cb Callback(token,args) returns an arg for the next args list
+	 * @return {Array} arg list returned by callback
+	 */
+		var ps = new LISP(this,parms,cb,endcb);
+		return ps.args;
+	},
 
-/**
-* @class String
-*/
+	function tag(el,at) {
+	/**
+	@method tag
+	Tag url (el=?|&), list (el=;|,), or tag html using specified attributes.
+	@param {String} el tag element
+	@param {String} at tag attributes
+	@return {String} tagged results
+	*/
 
-String.prototype.lisp = function lisp(parms,cb,endcb) {
-/**
- * @method lisp
- * Parse this string using the {@link LISP#String Parser}.
- *
- * @param {Function} cb Callback(token,args) returns an arg for the next args list
- * @return {Array} arg list returned by callback
- */
-	var ps = new LISP(this,parms,cb,endcb);
-	return ps.args;
-}
+		if (  el == "?" || el == "&" ) {  // tag a url or list
+			var rtn = this+el;
 
+			for (var n in at) 
+				if ( val = at[n] )
+					switch ( val.constructor ) {
+						//case Array: rtn += at[n].join(",");	break;
+						case Array:
+						case Date:
+						case Object: rtn += JSON.stringify(at[n]); break;
+						default: rtn += n + "=" + val + "&";
+					}
+
+			return rtn;				
+		}
+
+		else {  // tag html
+			var rtn = "<"+el+" ";
+
+			for (var n in at) 
+				if ( val = at[n] )
+					rtn += n + "='" + val + "' ";
+
+			switch (el) {
+				case "embed":
+				case "img":
+				case "link":
+				case "input":
+					return rtn+">" + this;
+				default:
+					return rtn+">" + this + "</"+el+">";
+			}
+		}
+	},
+
+	function option () {
+		var
+			types = {
+				":" : "range",
+				"|" : "select",
+				"," : "list"
+			};
+		
+		if (this)
+			try {
+				return JSON.parse(this);
+			}
+			catch (err) {
+				for (var tok in types) 
+					if ( args = this.split(tok) ) 
+						if ( args.length > 1 || tok == "," ) {
+							args.type = types[tok];
+							Log(tok, args);
+							return args;
+						}					
+					
+				return [this];
+			} 
+					
+		else
+			return null;
+	}
+].Extend(String);
+
+/*
 Array.prototype.get = function (idx, key) {
 	var keys = key.split(","), K = keys.length, rtns = [], recs = this, at = Object.keys(idx)[0], match = idx[at];
 
@@ -585,213 +688,43 @@ Array.prototype.get = function (idx, key) {
 			}
 		}
 }
-
-String.prototype.tag = function (el,at) {
-/**
-@method tag
-Tag url (el=?|&), list (el=;|,), or tag html using specified attributes.
-@param {String} el tag element
-@param {String} at tag attributes
-@return {String} tagged results
 */
+[ // extend Array
+	function Each (cb) {
+	/**
+	 * @method Each
+	 * Enumerate with callback
+	 * @param {Object} cb callback (index,value) returns true to terminate
+	*/
+		var N = this.length;
+		for (var n=0;n<N;n++) if (cb(n,this[n])) return true;
+		return false;
+	},
 
-	if (  el == "?" || el == "&" ) {  // tag a url or list
-		var rtn = this+el;
+	function hashify (rtn, key) { 
+	/**
+	* @method hashify
+	* @public
+	* Build map hash from data records.
+	* @param {Array} recs records to map
+	* @param {Object} rtn hash to return
+	* @param {String} idx index into record
+	*/
+		if (key) 
+			this.forEach( (rec) => {
+				rtn[rec[key]] = true;
+			});
 
-		for (var n in at) 
-			if ( val = at[n] )
-				switch ( val.constructor ) {
-					//case Array: rtn += at[n].join(",");	break;
-					case Array:
-					case Date:
-					case Object: rtn += JSON.stringify(at[n]); break;
-					default: rtn += n + "=" + val + "&";
-				}
-
-		return rtn;				
-	}
-
-	else {  // tag html
-		var rtn = "<"+el+" ";
-
-		for (var n in at) 
-			if ( val = at[n] )
-				rtn += n + "='" + val + "' ";
-
-		switch (el) {
-			case "embed":
-			case "img":
-			case "link":
-			case "input":
-				return rtn+">" + this;
-			default:
-				return rtn+">" + this + "</"+el+">";
-		}
-	}
-}
-
-String.prototype.option = function () {
-	try {
-		return JSON.parse(this);
-	}
-	catch (err) {
-		return (this == "none") ? null : this.length ? this.split(",") : null;
-	} 
-}
-
-/*
-String.prototype.indent = function (tag,at) {	
-	if (tag) 
-		if (at)
-			return tag + "(" + BASE.joinify(at) + ")" + "\n\t" + this.split("\n").join("\n\t");
 		else
-			return tag + "\n\t" + this.split("\n").join("\n\t");
-	else
-		return "\t" + this.split("\n").join("\n\t");
-}
-*/
+			this.forEach( (rec,n) => {
+				rtn[rec] = n+1;
+			});
 
-/*
-String.prototype.tag = function tag(el,at,eq) {
-/ **
-@method tag
-Tag url (el=?) or tag html (el=html tag) with specified attributes.
-@param {String} el tag element
-@param {String} at tag attributes
-@return {String} tagged results
-* /
-
-	if ( el == "?" || el == "&" ) {  // tag a url
-		var rtn = this+el;
-
-		for (var n in at) {
-			var val = at[n];
-			rtn += n + (eq||"=") + ((typeof val == "string") ? val : JSON.stringify(val)) + "&"; 
-		}
-
-		return rtn;	
+		return rtn;
 	}
+].Extend(Array);
 
-	else {  // tag html
-		var rtn = "<"+el+" ";
-
-		for (var n in at) {
-			var val = at[n];
-			rtn += n + "='" + val + "' ";
-		}
-
-		switch (el) {
-			case "embed":
-			case "img":
-			case "link":
-			case "input":
-				return rtn+">" + this;
-			default:
-				return rtn+">" + this + "</"+el+">";
-		}
-	}
-}
-*/
-
-/**
-* @class Array
-*/
-
-/*
-Array.prototype.hashify = function (val) {
-/ **
- * @method hashify
- * /
-	var rtn = new Object();
-	var N = this.length;
-
-	if (val)
-		for (n=0;n<N;n++) rtn[this[n][val]] = n;
-	else
-		for (n=0;n<N;n++) rtn[this[n]] = n;
-	
-	return rtn;
-}
-*/
-
-Array.prototype.Each = function (cb) {
-/**
- * @method Each
- * Enumerate with callback
- * @param {Object} cb callback (index,value) returns true to terminate
-*/
-	var N = this.length;
-	for (var n=0;n<N;n++) if (cb(n,this[n])) return true;
-	return false;
-}
-
-Array.prototype.hashify = function (rtn, key) { 
-/**
-* @method hashify
-* @public
-* Build map hash from data records.
-* @param {Array} recs records to map
-* @param {Object} rtn hash to return
-* @param {String} idx index into record
-*/
-	if (key) 
-		this.forEach( (rec) => {
-			rtn[rec[key]] = true;
-		});
-		
-	else
-		this.forEach( (rec,n) => {
-			rtn[rec] = n+1;
-		});
-	
-	return rtn;
-}
-
-/*
-function listify(hash,idxkey,valkey) {
-/ **
-* @method listify
-* @public
-* Build data records from a hash.
-* @param {String} idxkey index key name
-* @param {String} valkey value key name
-* @param {hash} input input key-value hash
-* @return {Array} output records
-* /
-	var list = [];
-	var n = 0;
-	
-	if (idxkey)
-		for (var idx in hash) {
-			rec = {ID:n++};
-			rec[idxkey] = idx;
-			rec[valkey] = hash[idx];
-			list.push( rec );
-		}
-	else
-		for (var idx in hash) 
-			list.push(idx);
-			
-	return list;
-}
-
-function joinify(hash, list, cb) {
-	var rtn = [];
-
-	for (var n in hash) 
-		if (n)
-			if (hash.hasOwnProperty(n)) 
-				rtn.push( cb ? cb(n,escape(hash[n])) : n + "=" + escape(hash[n]) );
-	
-	return rtn.join(list || ",");
-}
-*/
-
-/**
-@class LISP
-*/
-
-function LISP(text,parms,cb,fincb) {
+function LISP(text,parms,cb,fincb) {	// list processing
 /**
 @constructor
 Construct and execute the list processor against supplied text, returning an
@@ -840,7 +773,8 @@ with Name, the parm[Index], and the parms Name0-NameCount-1.
 	this.args = this.lisp(cb,fincb);
 }
 
-LISP.prototype.tokens = function (tok) { 
+[ // extend LISP
+	function tokens (tok) { 
 /**
 * @method tokens
 */
@@ -870,9 +804,9 @@ LISP.prototype.tokens = function (tok) {
 	}
 	
 	return toks;
-}
-
-LISP.prototype.lisp = function (cb,fincb) { 
+},
+	
+	function lisp (cb,fincb) { 
 /**
  * @method lisp
  * Parse this string from current position with callbacks on every token.
@@ -935,8 +869,10 @@ LISP.prototype.lisp = function (cb,fincb) {
 		
 	return args;
 }
+].Extend(LISP);
 
-HTMLDivElement.prototype.Each = function (cb) {
+[	// extend HTMLDivElement
+	function Each (cb) {
 	var nodes = this.childNodes;
 	
 	for (var n=0,N=nodes.length; n<N; n++) 
@@ -944,6 +880,7 @@ HTMLDivElement.prototype.Each = function (cb) {
 		
 	return false;
 }
+].Extend( HTMLDivElement );
 
 function DS(anchor) {   // to be overridden by client
 }
@@ -1197,7 +1134,8 @@ function WIDGET (Anchor) {
 	this.HTML = HTML;
 }
 
-WIDGET.prototype.status = function (oper,msg) {
+[	// extend WIDGET
+	function status (oper,msg) {
 /**
 * @method status
 */
@@ -1206,96 +1144,6 @@ WIDGET.prototype.status = function (oper,msg) {
 		//window.status = oper+" "+this.name+" "+(msg||"");
 		console.log(oper+" "+this.name+" "+(msg||""));
 }
-
-/*
-function Copy(src,tar,cb) {
-/ **
- * @method Copy
- * @public
- * @param {Object} src source hash
- * @param {Object} tar target hash
- * @param {Function} cb callback(idx,val) returns true to drop
- * @return {Object} target hash
- * 
- * Shallow Copy of source hash under supervision of callback. 
- * /
-
-	if (cb) 
-		for (var key in src) 
-			tar[key] = cb( key, src[key] );
-	else 
-		for (var key in src) 
-			tar[key] = src[key];
-
-	return tar;
-}
-*/
-
-/*
-function Clone(src,cb) {
-	return Copy(src,{},cb);
-} */
-
-/*
-function Each(src,cb) {
-/ **
- * @method Each
- * @public
- * @param {Object} src source hash
- * @param {Function} cb callback (idx,val) returning true or false
- * 
- * Shallow enumeration over source hash until callback returns true.
- * * /
-	
-	if (src)
-	switch (src.constructor) {
-		case String:
-		
-			for (var n=0,N=src.length; n<N; n++) 
-				if (cb(n,src.charAt(n))) return true;
-				
-			return false;
-		
-		case Array:
-
-			for (var n=0,N = src.length;n<N;n++) 
-				if (cb(n,src[n])) return true;
-				
-			return false;
-		
-		case Object:
-
-			for (var n in src)  
-				if (cb(n,src[n])) return true;
-			
-			return false;
-
-		default:
-		
-			for (var n in src)  
-				if (src.hasOwnProperty(n)) 
-					if (cb(n,src[n])) return true;
-			
-			return false;
-			
-	}
-}
-*/
-
-/*
-String.prototype.format = function (req,plugin) {
-	req.plugin = req.F = plugin || {};
-	return BASE.format(req,this);
-} */
-
-/*
-String.prototype.json = function (def) {
-	try {
-		return JSON.parse(this);
-	}
-	catch (err) {
-		return def;
-	}
-} */
+].Extend(WIDGET);
 
 // UNCLASSIFIED
