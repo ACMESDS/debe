@@ -1575,7 +1575,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		@method gridify
 		*/
 			return recs.gridify(noheader);
-		}		
+		}
 	},
 	
 	"errors.": {  //< error messages
