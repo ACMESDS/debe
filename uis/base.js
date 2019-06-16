@@ -5,7 +5,7 @@
  * The base client modules is used by Totem frameworks (grids, models, guides, etc) to support 
  * [Totem's content management](/skinguide.view)nc function. This module is typically used as follows:
  *
- * 		BASE.start( { options .... }, function cb(content widget) { ... } )
+ * 		BASE.start( { key: value options .... }, contentWidget => { ... } )
  * 
  * See the BASE.start() method for further information.
  * */
@@ -30,7 +30,7 @@ var BASE = {
 	Copy: (src,tar,deep) => {
 	/**
 	 @method copy
-	 @member ENUM
+	 @member BASE
 	 @param {Object} src source hash
 	 @param {Object} tar target hash
 	 @param {String} deep copy key 
@@ -120,7 +120,7 @@ var BASE = {
 	Each: (src,cb) => {
 	/**
 	 * @method each
-	 * @member ENUM
+	 * @member BASE
 	 * @param {Object} src source hash
 	 * @param {Function} cb callback (idx,val, isLast) returns true or false to terminate
 	 * 
@@ -136,7 +136,25 @@ var BASE = {
 		return keys.length==0;
 	},
 	
-	load: function (opts, cb) {		// callback cb(recs) with loaded recs from path opts.ds = "/src?x:=STORE$.x[$INPUT]&y:=STORE$.y[$INPUT]..." given global d3 env
+	load: function (opts, cb) {		
+	/**
+	@method BASE.load
+	Callback cb(recs) with records recs loaded from path 
+	
+		opts.ds = "/src?x:=STORE$.x[$WIDGET]&y:=STORE$.y[$WIDGET]..." 
+	
+	where optional source-control WIDGETs are defined by
+	
+		opts.WIDGET = [ ARG, ... ].TYPE 
+		
+	where TYPE = range | list | select | ... specifies the ui widget that controls
+	source reloading.
+	
+	The global d3 must be available.
+	
+	@param {Object} opts source loading options {ds: "/path", ... }
+	@param {Function} cb callback(recs)
+	*/
 		function loader (recs) {
 			if (opts.debug) alert(opts.debug+"recs"+JSON.stringify(recs));
 
@@ -215,19 +233,6 @@ var BASE = {
 					
 		d3.json( opts.ds.replace(/\$\w+/g, "0") , loader); 
 
-		/*
-		else
-		if ( opts.pivots )
-			d3.json( `/${opts.ds}?_pivot=${opts.pivots}`, function (recs) {
-				if ( opts.data = recs )
-					cb( opts );
-			});
-
-		else
-			d3.json( `/${opts.ds}`, function (recs) {
-				if ( opts.data = recs )
-					cb( opts );
-			});*/
 	},
 	
 	alert: "Skinning error: ",
