@@ -3596,6 +3596,40 @@ append layout_body
 	}
 											
 ].Extend(String);
+
+
+function schemify(stash) {
+	var 
+		kids = [];
+
+	if ( stash )
+		if ( isObject(stash) )
+			for (var key in stash) 
+				kids.push({
+					name: key,
+					size: 1,
+					children: schemify( stash[key] )
+				});
+	
+		else
+		if ( isArray(stash) ) {
+			if ( kid0 = stash[0] )
+				kids.push({
+					name: `[${stash.length}]`,
+					size: 1,
+					children: schemify( kid0 )
+				});
+	
+			else
+				kids.push({
+					name: `[]`,
+					size: 1,
+					children: []
+				});
+		}
+		
+	return kids;
+}
 	
 [  // array prototypes
 	function groupify() {
