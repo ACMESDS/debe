@@ -21,7 +21,7 @@ module.exports = function nodeify(store, path) {
 		}
 	
 		else {
-			var subs = {};
+			var subs = {}, root = "root";
 			for ( var key in store ) {
 				var 
 					ref = subs, 
@@ -29,7 +29,13 @@ module.exports = function nodeify(store, path) {
 					groups = key.split("_"), 
 					depth = groups.length-1;
 				
-				groups.forEach( (group,idx) => {
+				try {  // convert json stores
+					rec = JSON.parse(rec);
+				}
+				catch (err) {
+				}
+				
+				groups.forEach( (group,idx) => {  // build subs hash
 					var _key = "_" + group;
 					
 					if ( !ref[_key] ) ref[_key] = (idx<depth) ? {} : rec;
@@ -37,7 +43,11 @@ module.exports = function nodeify(store, path) {
 					ref = ref[_key];
 				});
 			}
-			return nodeify( subs, "root" );
+			return {
+				name: root,
+				size: 10,
+				children : nodeify( subs, root )
+			};
 		}
 			
 	else	// at an array node

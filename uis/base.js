@@ -14,6 +14,8 @@ var Log = console.log;
 
 var BASE = {
 	
+	Log: console.log,
+	
 	isString: obj => obj.constructor.name == "String",
 	isNumber: obj => obj.constructor.name == "Number",
 	isArray: obj => obj.constructor.name == "Array",
@@ -136,9 +138,9 @@ var BASE = {
 		return keys.length==0;
 	},
 	
-	load: function (opts, cb) {		
+	Load: function (opts, cb) {		
 	/**
-	@method BASE.load
+	@method BASE.Load
 	Callback cb(recs) with records recs loaded from path 
 	
 		opts.ds = "/src?x:=STORE$.x[$WIDGET]&y:=STORE$.y[$WIDGET]..." 
@@ -161,26 +163,6 @@ var BASE = {
 			if ( recs ) cb(recs);
 		}
 		
-		function d3tag (d3el, tag, attrs ) {
-			var el = d3el.append(tag);
-			
-			for (key in attrs) {
-				//alert("tag "+key+" " + attrs[key]);
-				switch (key) {
-					case "text":
-						el.text( attrs[key] ); 
-						break;
-					case "xstyle":
-						el.style( attrs[key]); 
-						break;
-					default:
-						el.attr(key, attrs[key]);
-				}
-			}
-			
-			return el;
-		}				
-		
 		if (opts.debug) alert( opts.debug+"opts: "+JSON.stringify(opts) ); 
 
 		var 
@@ -200,13 +182,17 @@ var BASE = {
 				
 				switch (widget.type) {
 					case "range":
-						var input = d3tag(view, "input", {type: "number", min: widget[0], max: widget[1], step: widget[2], value: widget[0], id:id} );
+						var input = "input".d3tag(view, {type: "number", min: widget[0], max: widget[1], step: widget[2], value: widget[0], id:id} );
 						break;
 						
 					case "select":
-						var input = d3tag(view, "select", { value: widget[0], id:id} );
+						var input = "select".d3tag(view, { value: widget[0], id:id} );
 						
 						widget.forEach( (arg,n) => input.insert("option").attr( "value", arg ).text( arg ) );
+						break;
+						
+					case "list":
+						var input = "input".d3tag(view, {type: "text", value: widget[0], id:id} );
 						break;
 						
 					default:
@@ -528,47 +514,67 @@ Array.prototype.Extend = function (con) {
 ].Extend(Date);
 
 [  // extend String
-/*
-String.prototype.parseURL = function (xx,pin) {
+	function d3tag (d3el, attrs ) {
+		var el = d3el.append(this);
 
-	function Format(X,S) {
-
-		try {
-			var rtn = eval("`" + S + "`");
-			return rtn;
+		for (key in attrs) {
+			//alert("tag "+key+" " + attrs[key]);
+			switch (key) {
+				case "text":
+					el.text( attrs[key] ); 
+					break;
+				case "xstyle":  // seems to crash so x-ed out
+					el.style( attrs[key]); 
+					break;
+				default:
+					el.attr(key, attrs[key]);
+			}
 		}
-		catch (err) {
-			return "[bad]";
+
+		return el;
+	},
+		
+	/*
+	String.prototype.parseURL = function (xx,pin) {
+
+		function Format(X,S) {
+
+			try {
+				var rtn = eval("`" + S + "`");
+				return rtn;
+			}
+			catch (err) {
+				return "[bad]";
+			}
+
 		}
 
-	}
-
-	var x = d = {};
-	function xs(n) {
-		if (n)
-			if ( x = xx[n] )
+		var x = d = {};
+		function xs(n) {
+			if (n)
+				if ( x = xx[n] )
+					return x;
+				else
+					return x = xx[n] = xx.def || {};
+			else
 				return x;
-			else
-				return x = xx[n] = xx.def || {};
-		else
-			return x;
-	}
+		}
 
-	function ds(n) {
-		if (n)
-			if ( d = xx[n] = DSLIST[n] ) 
-				return d;
+		function ds(n) {
+			if (n)
+				if ( d = xx[n] = DSLIST[n] ) 
+					return d;
+				else
+					return d = xx[n] = xx.def || {};
 			else
-				return d = xx[n] = xx.def || {};
-		else
-			return d;
+				return d;
+		}
+
+		if (pin) xx.pin = pin;
+
+		return Format(xx,this);
 	}
-	
-	if (pin) xx.pin = pin;
-	
-	return Format(xx,this);
-}
-*/
+	*/
 	function parseURL( query ) {
 		var 
 			parts = this.split("?"),
@@ -664,7 +670,7 @@ String.prototype.parseURL = function (xx,pin) {
 					if ( args = this.split(tok) ) 
 						if ( args.length > 1 || tok == "," ) {
 							args.type = types[tok];
-							Log(tok, args);
+							//Log(tok, args);
 							return args;
 						}					
 					

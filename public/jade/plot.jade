@@ -58,10 +58,10 @@ append base_head
 				chan: ("#{query.chan}" || "0:255:1").option()
 			}
 		};
-				 
+
 append base_body
 
-	script(src="/clients/d3/d3.v3.min.js")
+	// script(src="/clients/d3/d3.v3.min.js")
 
 	script.
 		function click(d) {
@@ -81,16 +81,16 @@ append base_body
 			}
 		}
 
+		const {Load} = BASE;
+
 		var 
-			Log = console.log,
-			
 			margin = {top: 20, right: 20, bottom: 30, left: 40},
 			width = (opts.w || 800) - margin.left - margin.right,
 			height = (opts.h || 400) - margin.top - margin.bottom,
 
 			view = d3.select("#content");
 			
-		BASE.load( opts, recs => {
+		Load( opts, recs => {
 			var 
 				markerStyles = opts.marker || [],
 				markerDef = markerStyles[0],

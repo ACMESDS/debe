@@ -35,21 +35,30 @@ append base_head
 
 	script.
 		var opts = {
-			ds: "!{query.src}.tree?ID=#{query.id}&_sort=#{query.pivots}",
+			ds: "!{query.src}.tree?ID=#{query.id}",
+				// "!{query.src}.tree?ID=#{query.id}&_sort=#{query.pivots}",
 			w: parseInt("#{query.w}" || "0"),
 			h: parseInt("#{query.h}" || "0"),
-			debug: parseInt("#{query.debug}" || "0"),
+			debug: "#{query.debug}",
 			kids: "#{query.kids}" || "children"
 		};
 
 append base_body
 
 	script.
-		var m = [20, 120, 20, 120],
-		w = (opts.w || 1200) - m[1] - m[3],
-		h = (opts.h || 500) - m[0] - m[2],
-		i = 0,
-		root;
+		var 
+			m = [20, 120, 20, 120],
+			w = (opts.w || 1200) - m[1] - m[3],
+			h = (opts.h || 500) - m[0] - m[2],
+			i = 0,
+			root = null,
+			docWindow = null; /*window.open(
+				"",
+				"_blank",
+				"left=50px,top=50px,width=50,height=50,location=0,menubar=0,status=0,titlebar=0,toolbar=0"
+		); */
+
+		const {isString,Load} = BASE;
 
 		var 
 			tree = d3.layout.tree()
@@ -57,8 +66,11 @@ append base_body
 			
 			diagonal = d3.svg
 				.diagonal()
-				.projection(function(d) { return [d.y, d.x]; }),
+				.projection( d =>  [d.y, d.x] ),
 
+			view = d3.select("body"),
+			msg = "p".d3tag(view, {text: "root"}),
+			
 			vis = d3.select("#content")
 				.append("svg:svg")
 				.attr("width", w + m[1] + m[3])
@@ -66,8 +78,8 @@ append base_body
 				.append("svg:g")
 				.attr("transform", "translate(" + m[3] + "," + m[0] + ")");
 
-		BASE.load( opts, function(rec) {
-			root = rec;
+		Load( opts, recs => {
+			root = recs[0];
 			root.x0 = h / 2;
 			root.y0 = 0;
 
@@ -178,14 +190,13 @@ append base_body
 			});
 		}
 
-		function click(d) { 
+		function click(d) { // provide/hide node details
 			toggle(d); 
 			update(d); 
 			if (d.doc) details(d); 
 		}
 
-		// Toggle children.
-		function toggle(d) {
+		function toggle(d) {	// Toggle children.
 			if (d.children) {
 				d._children = d.children;
 				d.children = null;
@@ -196,18 +207,17 @@ append base_body
 			}
 		}
 
-		function details(d) {
-			var isView = d.doc.constructor == String;
+		function details(d) { // dump nods details
 
-			var doc = window.open(
-				isView ? d.doc : "",
-				"_blank",
-				"left="+d.x+"px,"
-				+ "top="+d.y+"px,"
-				+ "width=50,height=50,location=0,menubar=0,status=0,titlebar=0,toolbar=0");
-
-			if ( !isView )
-				doc.document.write(JSON.stringify( d.doc ));
+			if ( isString(d.doc) ) 
+				msg.html( d.doc );
+			
+			else
+				msg.text( JSON.stringify( d.doc ) );
+			
+			//docWindow.document.style.backgroundColor = "blue";
+			//docWindow.document.body.innerHTML = (isString(d.doc) ? d.doc : JSON.stringify( d.doc )).tag("p",{});
+			//docWindow.document.write( isString(d.doc) ? d.doc : JSON.stringify( d.doc ));
 		}
 
 //- UNCLASSIFIED

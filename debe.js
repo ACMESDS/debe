@@ -66,7 +66,7 @@ var
 	RAN = require("randpr"),
 	HACK = require("geohack");
 
-const { Copy,Each,Log,isString,isFunction,isError,isArray } = require("enum");
+const { Copy,Each,Log,isObject,isString,isFunction,isError,isArray } = require("enum");
 
 var										// shortcuts and globals
 	Thread = TOTEM.thread;
@@ -1060,13 +1060,20 @@ Usage: ${uses.join(",")}  `);
 		xppt: genDoc,
 		
 		tree: function (recs,req,res) { //< dataset.tree treeifies records sorted with _sort=keys
-			res({
-				name: "root", 
-				weight: 1, 
-				children: req.flags.sort 
-					? recs.treeify( 0, recs.length, 0, req.flags.sort.split(",") )
-					: []
-			});
+			var 
+				flags = req.flags,
+				query = req.query,
+				src = ("/"+req.table).tag("?",{ID:query.ID});
+			
+			if (sorts = flags.sort)			
+				res({
+					name: "root", 
+					size: 1, 
+					children: recs.treeify( 0, recs.length, 0, sorts.split(",") )
+				});
+			
+			else
+				res( recs.schemafy( src ) );
 		},
 		
 		delta: function (recs,req,res) { //< dataset.delta adds change records from last baseline
@@ -3597,40 +3604,6 @@ append layout_body
 											
 ].Extend(String);
 
-
-function schemify(stash) {
-	var 
-		kids = [];
-
-	if ( stash )
-		if ( isObject(stash) )
-			for (var key in stash) 
-				kids.push({
-					name: key,
-					size: 1,
-					children: schemify( stash[key] )
-				});
-	
-		else
-		if ( isArray(stash) ) {
-			if ( kid0 = stash[0] )
-				kids.push({
-					name: `[${stash.length}]`,
-					size: 1,
-					children: schemify( kid0 )
-				});
-	
-			else
-				kids.push({
-					name: `[]`,
-					size: 1,
-					children: []
-				});
-		}
-		
-	return kids;
-}
-	
 [  // array prototypes
 	function groupify() {
 		return this.splitify("_").joinify();
@@ -3734,6 +3707,92 @@ function schemify(stash) {
 		return recs;
 	},
 
+	function schemafy(src) {
+		function nodeify(store, path, cb) {
+
+			//Log("isobj", isObject(store), store.constructor.name );
+			
+			if ( isObject(store) ) // at an object node
+				if ( path ) {
+					var 
+						nodes = [];
+					
+					Each(store, (key,val) => { // make nodes
+						var 
+							inGroup = path.substr(-1) == "_",
+							nodeName = inGroup ? key : "."+key,
+							nodePath = path + nodeName,
+							node = {
+								name: nodeName,
+								doc: nodePath.tag("a",{href:cb(nodePath)}),
+								size: 20,
+								children: nodeify( val || 0,  nodePath, cb )
+							};
+						
+						nodes.push(node);
+					});
+
+					return nodes;
+				}
+
+				else {
+					var subs = {}, root = "root";
+					Each( store, (key,val) => {
+						var 
+							ref = subs, 
+							groups = key.split("_"), 
+							depth = groups.length-1;
+
+						try {  // convert json stores
+							val = JSON.parse(val);
+						}
+						catch (err) {
+						}
+
+						groups.forEach( (group,idx) => {  // build subs hash
+							var 
+								isLast = idx == depth,
+								key = isLast ? group : group+"_";
+
+							if ( !ref[key] ) ref[key] = isLast ? val : {};
+
+							ref = ref[key];
+						});
+					});
+					
+					return [{
+						name: root,
+						size: 10,
+						children : nodeify( subs, root, cb )
+					}];
+				}
+
+			else	// at an array node
+			if ( isArray(store) ) {
+				var 
+					N = store.length,
+					nodeName = "[" + (N ? (N==1) ? "0" : `0:${N-1}` : "") + "]",
+					nodePath = (path || "") + nodeName,
+					node = { 
+						name: nodeName,
+						size: 50,
+						doc: nodePath.tag("a",{href:cb(nodePath)}),
+						children: nodeify( store[0] || 0, nodePath, cb )
+					};
+				
+				return [node];
+			}
+
+			else	// at a leaf node
+				return [];
+
+		}	
+		
+		return nodeify( Copy(this[0] || {}, {} ), null, path => {
+			return src+"&test:=" + path;
+		});
+	},
+	
 	function treeify(idx,kids,level,keys,wt) {
 	/**
 	@member Array
