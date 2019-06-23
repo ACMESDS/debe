@@ -22,27 +22,33 @@ A NODE references a dataset, plugin, file or command:
 	FILE.TYPE ? QUERY
 	COMMAND.TYPE ? QUERY
 
-where TYPE can [convert datasets](https://totem.west.ile.nga.ic.gov/api.view):
+where (see [API](https://totem.west.ile.nga.ic.gov/api.view) and 
+[skinning guide](https://totem.west.ile.nga.ic.gov/skinguide.view)) TYPE 
+converts DATASET:
 
-	db | xml | csv | txt | tab | view | tree | flat | delta | nav | kml | encap | html | json
+	db | xml | csv | txt | flat | kml | html | json
 
-[render plugins](https://totem.west.ile.nga.ic.gov/skinguide.view):
+inspects DATASET:
 
+	tree | schema | nav | stat | delta
+
+renders PLUGIN:
+ 
 	view | run | plugin | pivot | site | spivot | brief | gridbrief | pivbrief | runbrief
 
-[execute, extend and retract plugins](https://totem.west.ile.nga.ic.gov/api.view):
+executes, extends or retracts PLUGIN:
 
 	exe | add | sub
 
-[access plugin attributes](https://totem.west.ile.nga.ic.gov/api.view):
+probes PLUGIN attributes:
 
 	tou | md | pub | status | suitors
 	
-[license plugin code](https://totem.west.ile.nga.ic.gov/api.view):
+licenses PLUGIN code:
 
 	js | py | m | me | jade | ...
 	
-or [return plugin ingests](https://totem.west.ile.nga.ic.gov/api.view):
+or returns PLUGIN ingests:
 
 	CASENAME
 	

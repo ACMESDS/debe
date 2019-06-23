@@ -1022,11 +1022,11 @@ mv '${msg}'_files index_files ;
 				table = req.table,
 				group = req.group,
 				uses = [
-					"db", "xml", "csv", "txt", "tab", "view", "tree", "flat", "delta", "nav", "encap", "html", "json",
+					"db", "xml", "csv", "txt", "schema", "view", "tree", "flat", "delta", "nav", "html", "json",
 					"view","pivot","site","spivot","brief","gridbrief","pivbrief","run","plugin","runbrief",
 					"exe", "stat"];
 
-			uses.forEach( (use) => {
+			uses.forEach( (use,n) => {
 				uses[n] = use.tag("a",{href: "/"+table+"."+use});
 			});
 			
@@ -1036,14 +1036,14 @@ mv '${msg}'_files index_files ;
 					res(err);
 				
 				else {
-					stats.forEeach( (stat,n) => {
+					stats.forEach( (stat,n) => {
 						stats[n] = stat.Field.tag("a",{href: "/"+table+"?_index="+stat.Field});
 					});
 					
 					res(`
 Records: ${recs.length}<br>
-Fields: ${stats.join(",")}<br>
-Usage: ${uses.join(",")}  `);
+Fields: ${stats.join(", ")}<br>
+Usage: ${uses.join(", ")}  `);
 				}
 			});
 			
@@ -1062,18 +1062,26 @@ Usage: ${uses.join(",")}  `);
 		tree: function (recs,req,res) { //< dataset.tree treeifies records sorted with _sort=keys
 			var 
 				flags = req.flags,
-				query = req.query,
-				src = ("/"+req.table).tag("?",{ID:query.ID});
+				query = req.query;
 			
 			if (sorts = flags.sort)			
-				res({
+				res([{
 					name: "root", 
 					size: 1, 
 					children: recs.treeify( 0, recs.length, 0, sorts.split(",") )
-				});
+				}]);
 			
 			else
-				res( recs.schemafy( src ) );
+				res( new Error("missing sorts=key,... flag") );
+		},
+		
+		schema: function (recs,req,res) { //< dataset.schema 
+			var 
+				flags = req.flags,
+				query = req.query,
+				src = ("/"+req.table).tag("?",{ID:query.ID});
+			
+			res( recs.schemafy( src ) );
 		},
 		
 		delta: function (recs,req,res) { //< dataset.delta adds change records from last baseline
@@ -3257,7 +3265,13 @@ Initialize DEBE on startup.
 	@param {Function} cb callback(markdown html)
 	*/
 		
-		for (var key in rec) try { ctx[key] = JSON.parse( rec[key] ); } catch (err) { ctx[key] = rec[key]; }
+		for (var key in rec)  // parse json stores
+			try { 
+				ctx[key] = JSON.parse( rec[key] ); 
+			} 
+			catch (err) { 
+				ctx[key] = rec[key]; 
+			}
 	
 		var 
 			blockidx = 0;
