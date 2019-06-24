@@ -1509,28 +1509,33 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	Each skin has its own {key: "SQL DB.TABLE" || "/URL?QUERY", ... } spec.
 	*/
 	context: { //< site context extenders
-		/*swag: {  // context keys for swag.view
-			projs: "openv.milestones"
+		/*
+		swag: {  // context keys for swag.view
+			projs: "select * from openv.milestones"
 		},
 		airspace: {
-			projs: "openv.milestones"
+			projs: "select * from openv.milestones"
 		},
 		plugin: {
-			projs: "openv.milestones"
+			projs: "select * from openv.milestones"
 		},
 		briefs: {
-			projs: "openv.milestones"
+			projs: "select * from openv.milestones"
 		},
 		rtpsqd: {
-			apps:"openv.apps",
-			users: "openv.profiles",
-			projs: "openv.milestones",
-			QAs: "app.QAs"
+			apps:"select * from openv.apps",
+			users: "select * from openv.profiles",
+			projs: "select * from openv.milestones",
+			QAs: "select * from app.QAs"
 			//stats:{table:"openv.profiles",group:"client",index:"client,event"}
-		} */
+		} 
+		*/
 	},
 		
 	"site.": { 		//< initial site context
+		/**
+		@class DEBE.SiteSkinning
+		*/
 
 		classif: {
 			level: "",
@@ -1541,9 +1546,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		info: {
 		},
 		
-		/**
-		@class DEBE.Skinning
-		*/
 		get: function(recs, js) { 
 			return recs.get(js);
 		},
@@ -1556,7 +1558,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			return recs.replace(subs);
 		},
 		
-		json: function(recs) {  //< jsonize dataset
+		jsonify: function(recs) {  //< jsonize dataset
 		/**
 		@method json
 		Jsonize records.
@@ -2507,8 +2509,8 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 		
 	function dsContext(ds, cb) { // callback cb(ctx) with skinning context ctx
 		
-		if ( ctxEx = DEBE.context[ds] ) // render in extended context
-			sql.serialize( ctxEx, ctx, cb );
+		if ( dsreq = DEBE.context[ds] ) // render in ds context
+			sql.serialize( dsreq, ctx, cb );
 					
 		else  // render in default site context
 			cb( ctx );
@@ -3228,7 +3230,7 @@ Initialize DEBE on startup.
 //====================== Extend objects
 	
 [  // string prototypes
-	// string serializers callback cb(html) with tokens replaced
+	// string serializers 
 	
 	function Xblog(req, ds, cache, ctx, rec, viaBrowser, cb) {
 	/**
@@ -3321,6 +3323,11 @@ Initialize DEBE on startup.
 	},
 	
 	function Xlink( req, ds, viaBrowser, cb ) {  // expands [LINK](URL) tags then callsback cb( final html )
+		/*
+		req = null to disable topic expand
+		ds = dataset?ID=N default url path
+		viaBrowser = true to enable produce html compatible with browser
+		*/
 		var 
 			key = "@tag",
 			html = this,
@@ -3331,24 +3338,28 @@ Initialize DEBE on startup.
 					topic = rec.topic,
 					product = topic+".html";
 
-				FLEX.licenseCode( req.sql, html, {  // register this html with the client
-					_Partner: req.client,
-					_EndService: "",  // leave empty so lincersor wont validate by connecting to service
-					_Published: new Date(),
-					_Product: product,
-					Path: "/tag/"+product
-				}, (pub, sql) => {
-					if (pub) {
-						cb( `${rec.topic}=>${req.client}`.tag("a",{href:"/tags.view"}) );
-						sql.query("INSERT INTO app.tags SET ? ON DUPLICATE KEY UPDATE Views=Views+1", {
-							Viewed: pub._Published,
-							Target: pub._Partner,
-							Topic: topic,
-							License: pub._License,
-							Message: "get view".tag("a",{href:"/decode.html".tag("?",{Target:pub._Partner,License:pub._License,Topic:topic})})
-						});
-					}
-				});
+				if (req)
+					FLEX.licenseCode( req.sql, html, {  // register this html with the client
+						_Partner: req.client,
+						_EndService: "",  // leave empty so lincersor wont validate by connecting to service
+						_Published: new Date(),
+						_Product: product,
+						Path: "/tag/"+product
+					}, (pub, sql) => {
+						if (pub) {
+							cb( `${rec.topic}=>${req.client}`.tag("a",{href:"/tags.view"}) );
+							sql.query("INSERT INTO app.tags SET ? ON DUPLICATE KEY UPDATE Views=Views+1", {
+								Viewed: pub._Published,
+								Target: pub._Partner,
+								Topic: topic,
+								License: pub._License,
+								Message: "get view".tag("a",{href:"/decode.html".tag("?",{Target:pub._Partner,License:pub._License,Topic:topic})})
+							});
+						}
+					});
+				
+				else
+					cb( "");
 			},
 			
 			fetchSite = function ( rec, cb ) {  // callback cb with expanded [](URL) markdown
@@ -3357,7 +3368,7 @@ Initialize DEBE on startup.
 					cb( "".tag("iframe", {src:rec.opt}) );
 				
 				else
-					fetcher( rec.opt, null, (html) => cb );
+					fetcher( rec.opt, null, html => cb );
 			},
 			
 			fetchLink = function ( rec, cb ) {  // expand [LINK](URL) markdown
@@ -3384,7 +3395,7 @@ Initialize DEBE on startup.
 					w = keys.w || 100,
 					h = keys.h || 100,
 					now = new Date(),
-					srcPath =  urlPath.tag( "?", Copy({src:dsPath}, keys) );
+					srcPath = urlPath.tag( "?", Copy({src:dsPath}, keys) );
 
 				//Log("tag",rec, dsPath, keys, srcPath);
 
@@ -3397,15 +3408,15 @@ Initialize DEBE on startup.
 							cb( opt.tag("a",{href:srcPath}) );
 				
 					else 
-						if ( (keys.starts ? now>=new Date(keys.starts) : true) && 
-							 (keys.ends ? now<=new Date(keys.ends) : true) ) {
-							rec.topic = opt;
-							fetchTopic( rec, cb );
-						}
+					if ( (keys.starts ? now>=new Date(keys.starts) : true) && 
+						 (keys.ends ? now<=new Date(keys.ends) : true) ) {
+						rec.topic = opt;
+						fetchTopic( rec, cb );
+					}
+
+					else
+						cb( opt.tag("a", {href:"/tags.view"}) );
 						
-						else
-							cb( opt.tag("a",{href:"/tags.view"}) );
-				
 				else {
 					var
 						urlParts = urlPath.split("."),
@@ -3438,7 +3449,7 @@ Initialize DEBE on startup.
 			
 			pattern = /\[([^\[\]]*)\]\(([^\)]*)\)/g ;
 		
-		html.serialize( fetchLink, pattern, key, (html, fails) => {    
+		html.serialize( fetchLink, pattern, key, html => {    
 			cb(html);
 		}); 
 	},
@@ -3651,15 +3662,18 @@ append layout_body
 
 		var
 			fetchBlog = function( rec, cb ) {
-				//Log("blog", key, rec);
-				if ( md = rec[key] + "" )
-					md.Xblog(req, ds+"?id="+rec.ID, {}, {}, rec, true, (html) => cb(html) );
-
+				if ( md = rec[key] + "" ) 
+					md.Xblog(req, ds.tag("?", { name: 
+							(rec.Pipe.charAt(0) == "{") 
+								? rec.Name + "-%"	// pipe defines a monte-carlo cross product so get them all
+								: rec.Name	// pipe defines a simple path
+						}), {}, {}, rec, true, html => cb(html) );
+				
 				else
 					cb(md);
 			};
 
-		recs.serialize( fetchBlog, function fb(rec, blog)  {
+		recs.serialize( fetchBlog, function (rec, blog)  {
 			if (rec) 
 				rec[key] = blog;
 

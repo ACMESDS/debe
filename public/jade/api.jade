@@ -12,18 +12,15 @@ append site_body
 	#fit.Intro
 
 		:markdown
-			#{title} provides full-featured web service for 
-			managing interfaces, requirements, project metrics, geoint products and workflows.
-
-			As documented in its [api](https://totem.west.ile.nga.ic.gov/api.view), #{title} extends 
-			its [base web service interface](https://github.com/acmesds/totem):
+			#{title} provides a [cloud computing service](https://totem.west.ile.nga.ic.gov/api.view) for producing geoint products.
+			#{title} uses [TOTEM endpoints](https://github.com/acmesds/totem):
 
 				POST /NODE ?? NODE ...
 				GET /NODE ?? NODE ...
 				PUT /NODE ?? NODE ...
 				DELETE /NODE ?? NODE ...
 
-			A NODE references a dataset, engine, file or command:
+			to access its NODEs.  A NODE references a dataset, plugin, file or command:
 
 				DATASET.TYPE ? QUERY
 				PLUGIN.TYPE ? QUERY
@@ -32,31 +29,31 @@ append site_body
 
 			where (see [API](https://totem.west.ile.nga.ic.gov/api.view) and 
 			[skinning guide](https://totem.west.ile.nga.ic.gov/skinguide.view)) TYPE 
-			converts DATASET:
+			will convert DATASET:
 
 				db | xml | csv | txt | flat | kml | html | json
 
-			inspects DATASET:
+			inspect DATASET:
 
 				tree | schema | nav | stat | delta
 
-			renders PLUGIN:
+			render PLUGIN:
 
 				view | run | plugin | pivot | site | spivot | brief | gridbrief | pivbrief | runbrief
 
-			executes, extends or retracts PLUGIN:
+			execute, extend or retract PLUGIN:
 
 				exe | add | sub
 
-			probes PLUGIN attributes:
+			probe PLUGIN attributes:
 
 				tou | md | pub | status | suitors
 
-			licenses PLUGIN code:
+			license PLUGIN code:
 
 				js | py | m | me | jade | ...
 
-			or returns PLUGIN ingests:
+			or return PLUGIN events:
 
 				CASENAME
 

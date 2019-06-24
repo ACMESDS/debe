@@ -7,15 +7,15 @@
 	
 # DEBE
 
-DEBE provides a [cloud computing service](https://totem.west.ile.nga.ic.gov/api.view) for producing geoint products using
-its [base TOTEM endpoints](https://github.com/acmesds/totem):
+DEBE provides a [cloud computing service](https://totem.west.ile.nga.ic.gov/api.view) for producing geoint products.
+DEBE uses [TOTEM endpoints](https://github.com/acmesds/totem):
 
 	POST /NODE ?? NODE ...
 	GET /NODE ?? NODE ...
 	PUT /NODE ?? NODE ...
 	DELETE /NODE ?? NODE ...
 
-A NODE references a dataset, plugin, file or command:
+to access its NODEs.  A NODE references a dataset, plugin, file or command:
 
 	DATASET.TYPE ? QUERY
 	PLUGIN.TYPE ? QUERY
@@ -24,31 +24,31 @@ A NODE references a dataset, plugin, file or command:
 
 where (see [API](https://totem.west.ile.nga.ic.gov/api.view) and 
 [skinning guide](https://totem.west.ile.nga.ic.gov/skinguide.view)) TYPE 
-converts DATASET:
+will convert DATASET:
 
 	db | xml | csv | txt | flat | kml | html | json
 
-inspects DATASET:
+inspect DATASET:
 
 	tree | schema | nav | stat | delta
 
-renders PLUGIN:
+render PLUGIN:
  
 	view | run | plugin | pivot | site | spivot | brief | gridbrief | pivbrief | runbrief
 
-executes, extends or retracts PLUGIN:
+execute, extend or retract PLUGIN:
 
 	exe | add | sub
 
-probes PLUGIN attributes:
+probe PLUGIN attributes:
 
 	tou | md | pub | status | suitors
 	
-licenses PLUGIN code:
+license PLUGIN code:
 
 	js | py | m | me | jade | ...
 	
-or returns PLUGIN ingests:
+or return PLUGIN events:
 
 	CASENAME
 	

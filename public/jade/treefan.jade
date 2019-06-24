@@ -8,7 +8,8 @@ append base_help
 	:markdown
 		Display treefan chart using parameters:
 
-			src = source url returning node tree { ID:Name, count:Value, data: [ Children ]}
+			src = source url returning node tree { name: "...", size: int, children: [ {...}, ... ] }
+			name = case name of source record
 			pivots = key,key,...
 			w = drawing width
 			h = drawing height
@@ -36,8 +37,8 @@ append base_head
 	script.
 		var opts = {
 			ds: "#{query.pivots}"
-				? "!{query.src}.tree?ID=#{query.id}&_sort=#{query.pivots}"
-				: "!{query.src}.schema?ID=#{query.id}",
+				? "!{query.src}.tree?name=#{query.name}&_sort=#{query.pivots}"
+				: "!{query.src}.schema?name=#{query.name}",
 			
 			w: parseInt("#{query.w}" || "0"),
 			h: parseInt("#{query.h}" || "0"),

@@ -9,7 +9,7 @@ append base_help
 		 Produce d3 scatter plot:  
 
 			src = source dataset returning a list of records
-			id = source record id (default all records)
+			name = case name of source record
 			x = source x-key
 			y = source y-key
 			w = drawing width
@@ -43,7 +43,7 @@ append base_head
 
 	script.
 		var opts = {  // define plot options
-			ds: "/!{query.src}?ID=#{query.id}&x:=#{query.x}&y:=#{query.y}",
+			ds: "/!{query.src}?name=#{query.name}&x:=#{query.x}&y:=#{query.y}&case:=name",
 			w: parseInt("#{query.w}" || "0"),
 			h: parseInt("#{query.h}" || "0"),
 			debug: "#{query.debug}",
