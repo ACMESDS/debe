@@ -20,6 +20,7 @@ append base_help
 			label = X,Y labels
 			min = X,Y axis minimums
 			max = X,Y axis maximums
+			index = X,Y indexors $[key].key
 			extra = [[x,y], ... ] data to append to plots
 			details = show xy locations
 			chan = "min:max:step" x,y channel widget
@@ -54,6 +55,7 @@ append base_head
 			max: "#{query.max}".split(","),
 			extra: "#{query.extra}".option(),
 			details: "#{query.details}",
+			index: "#{query.index}".option(),
 			widgets: {
 				chan: ("#{query.chan}" || "0:255:1").option()
 			}
@@ -95,11 +97,19 @@ append base_body
 				markerStyles = opts.marker || [],
 				markerDef = markerStyles[0],
 				lineStyles = opts.line || [],
-				lineDef = lineStyles[0];
+				lineDef = lineStyles[0],
+				xIndex = opts.index[0],
+				yIndex = opts.index[1];
 			
 			recs.forEach( rec => {
 				function xyplot(x,y,cb) {
 
+					function index(pair) {
+						if (xIndex) pair.x = xIndex.parseEval(pair.x);
+						if (yIndex) pair.y = yIndex.parseEval(pair.y);
+						return pair;
+					}
+					
 					var
 						x0 = x[0] || 0,
 						y0 = y[0] || 0,
@@ -108,6 +118,7 @@ append base_body
 						mode = ((Nx <= 1) ? Nx : "n") + "x" + ((Ny <= 1) ? Ny : "n");
 							
 					Log(`switch [${Nx}x${Ny}] -> ${mode} in ${x.length}x${y.length} `);
+					
 					switch ( mode ) {
 						case "nxn":
 							for ( var n=0; n<Nx; n++ ) xyplot( x[n], y[n], cb );
@@ -116,42 +127,42 @@ append base_body
 						case "nx1":		// cluster plot
 							var xy = [];
 							x.forEach( (xn,n) => {
-								xy.push( { x: xn[0], y: xn[1], f: y[n][0] } );	// d3 assigns y to 1 of 10 fill categories
+								xy.push( index({ x: xn[0], y: xn[1], f: y[n][0] }) );	// d3 assigns y to 1 of 10 fill categories
 							});	
 							break;
 							
 						case "nx0":		// cluster plot
 							var xy = [];
 							x.forEach( (xn,n) => {
-								xy.push( { x: xn[0], y: xn[1], f: y[n] } );
+								xy.push( index({ x: xn[0], y: xn[1], f: y[n] }) );
 							});	
 							break;
 							
 						case "1x1": // regression plot
 							var xy = [];
 							x.forEach( (xn,n) => {
-								xy.push( { x: x[n][0], y: y[n][0], f: 0 } );
+								xy.push( index({ x: x[n][0], y: y[n][0], f: 0 }) );
 							});	
 							break;
 							
 						case "0x0": // regression plot
 							var xy = [];
 							x.forEach( (xn,n) => {
-								xy.push( { x: x[n], y: y[n], f: 0 } );
+								xy.push( index({ x: x[n], y: y[n], f: 0 }) );
 							});	
 							break;
 
 						case "1x0": // regression plot
 							var xy = [];
 							x.forEach( (xn,n) => {
-								xy.push( { x: x[n][0], y: y[n], f: 0 } );
+								xy.push( index({ x: x[n][0], y: y[n], f: 0 }) );
 							});	
 							break;
 
 						case "0x1": // regression plot
 							var xy = [];
 							x.forEach( (xn,n) => {
-								xy.push( { x: x[n], y: y[n][0], f: 0 } );
+								xy.push( index({ x: x[n], y: y[n][0], f: 0 }) );
 							});	
 							break;							
 					}
@@ -160,7 +171,7 @@ append base_body
 						for (var N=extra.length, n=0; n<N; n++)
 							xy.push( {x: extra[n], y: extra[n] } ); 
 
-					//Log( JSON.stringify(xy) );
+					// Log( JSON.stringify(xy) );
 
 					if ( !plots ) {  // setup axes on first source
 						/*

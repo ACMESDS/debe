@@ -611,35 +611,31 @@ Array.prototype.Extend = function (con) {
 
 	function tag(el,at) {
 	/**
+	@member String
 	@method tag
-	Tag url (el=?|&), list (el=;|,), or tag html using specified attributes.
-	@param {String} el tag element
-	@param {String} at tag attributes
+
+	Tag url (el = ? || &) or html (el = html tag) with specified attributes.
+
+	@param {String} el tag element = ? || & || html tag
+	@param {String} at tag attributes = {key: val, ...}
 	@return {String} tagged results
 	*/
 
-		if (  el == "?" || el == "&" ) {  // tag a url or list
-			var rtn = this+el;
+		if ( el == "?" || el == "&" ) {  // tag a url
+			var rtn = this;
 
-			for (var n in at) 
-				if ( val = at[n] )
-					switch ( val.constructor ) {
-						//case Array: rtn += at[n].join(",");	break;
-						case Array:
-						case Date:
-						case Object: rtn += JSON.stringify(at[n]); break;
-						default: rtn += n + "=" + val + "&";
-					}
+			Each(at, (key,val) => {
+				rtn += el + key + "=" + ( (typeof val == "string") ? val : JSON.stringify(val) ); 
+				el = "&";
+			});
 
-			return rtn;				
+			return rtn;	
 		}
 
 		else {  // tag html
 			var rtn = "<"+el+" ";
 
-			for (var n in at) 
-				if ( val = at[n] )
-					rtn += n + "='" + val + "' ";
+			Each( at, (key,val) => rtn += key + "='" + val + "' " );
 
 			switch (el) {
 				case "embed":
@@ -679,6 +675,24 @@ Array.prototype.Extend = function (con) {
 					
 		else
 			return null;
+	},
+	
+	function parseEval($) {
+	/**
+	@member String
+	@method parseEval
+
+	Parse "$.KEY" || "$[INDEX]" expressions given $ hash.
+
+	@param {Object} $ source hash
+	*/
+		try {
+			return eval(this+"");
+		}
+		
+		catch (err) {
+			return err+"";
+		}
 	}
 ].Extend(String);
 
