@@ -9,21 +9,21 @@ append base_help
 		 Produce d3 scatter plot:  
 
 			src = source dataset returning a list of records
-			name = case name of source record
-			x = source x-key
-			y = source y-key
+			name = "name" || "name%" of source record(s)
+			x = source x-key = store$key
+			y = source y-key = store$key
 			w = drawing width
 			h = drawing height
 			debug = enable debugging alerts
 			line = color,color, ... line color
-			marker = style,style, ... line markerslabels
+			marker = style,style, ... line markers
 			label = X,Y labels
 			min = X,Y axis minimums
 			max = X,Y axis maximums
-			index = X,Y indexors $[key].key
+			index = X,Y indexors = $key
 			extra = [[x,y], ... ] data to append to plots
 			details = show xy locations
-			chan = "min:max:step" x,y channel widget
+			chan = widget "min:max:step" on x,y channels
 
 append base_head
 
