@@ -1079,7 +1079,7 @@ Usage: ${uses.join(", ")}  `);
 			var 
 				flags = req.flags,
 				query = req.query,
-				src = ("/"+req.table).tag("?",{ID:query.ID});
+				src = ("/"+req.table).tag("?",{name:query.name});
 			
 			res( recs.schemafy( src ) );
 		},
@@ -3325,7 +3325,7 @@ Initialize DEBE on startup.
 	function Xlink( req, ds, viaBrowser, cb ) {  // expands [LINK](URL) tags then callsback cb( final html )
 		/*
 		req = null to disable topic expand
-		ds = dataset?ID=N default url path
+		ds = dataset?query default url path
 		viaBrowser = true to enable produce html compatible with browser
 		*/
 		var 
@@ -4319,10 +4319,10 @@ switch ( process.argv[2] ) { // unit tests
 										group = prof.Group,
 										revised = "revised".tag("a", {href:`/files.view?ID=${file.ID}`} ),
 										notes = `
-Thank you ${client} for your sample deposit to ${port} on ${now}.  If your 
+Thank you ${client} for your sample deposited to ${port} on ${now}.  If your 
 sample passes initial quality assessments, additional ${metrics} will become available.  Unless
 ${revised}, these samples will expire on ${exit}.  Should you wish to remove these quality 
-assessments from our worldwide reporting system, please contact ${poc} for consideration.
+assessments from our worldwide reporting system, please contact ${poc}.
 `;
 									sql.query("UPDATE app.files SET ? WHERE ?", [{
 											_State_Notes: notes,
