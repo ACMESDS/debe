@@ -13,7 +13,7 @@ append base_help
 			pivots = key,key,...
 			w = drawing width
 			h = drawing height
-			debug = dump derived options
+			debug = level of debugging alerts
 			kids = key name of children
 			
 append base_head
@@ -40,9 +40,9 @@ append base_head
 				? "!{query.src}.tree?name=#{query.name}&_sort=#{query.pivots}"
 				: "!{query.src}.schema?name=#{query.name}",
 			
-			w: parseInt("#{query.w}" || "0"),
-			h: parseInt("#{query.h}" || "0"),
-			debug: "#{query.debug}",
+			w: parseInt("#{query.w}") || 200,
+			h: parseInt("#{query.h}") || 200,
+			debug: parseInt("#{query.debug}"),
 			kids: "#{query.kids}" || "children"
 		};
 

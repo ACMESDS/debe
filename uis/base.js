@@ -158,12 +158,12 @@ var BASE = {
 	@param {Function} cb callback(recs)
 	*/
 		function loader (recs) {
-			if (opts.debug) alert(opts.debug+"recs"+JSON.stringify(recs));
+			if (opts.debug>1) alert("recs"+JSON.stringify(recs));
 
 			if ( recs ) cb(recs);
 		}
 		
-		if (opts.debug) alert( opts.debug+"opts: "+JSON.stringify(opts) ); 
+		if (opts.debug) alert( "opts: "+JSON.stringify(opts) ); 
 
 		var 
 			view = d3.select("body"),

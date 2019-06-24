@@ -14,7 +14,7 @@ append base_help
 			y = source y-key = store$key
 			w = drawing width
 			h = drawing height
-			debug = enable debugging alerts
+			debug = level send debugging alerts
 			line = color,color, ... line color
 			marker = style,style, ... line markers
 			label = X,Y labels
@@ -45,9 +45,9 @@ append base_head
 	script.
 		var opts = {  // define plot options
 			ds: "/!{query.src}?name=#{query.name}&x:=#{query.x}&y:=#{query.y}&case:=name",
-			w: parseInt("#{query.w}" || "0"),
-			h: parseInt("#{query.h}" || "0"),
-			debug: "#{query.debug}",
+			w: parseInt("#{query.w}") || 200,
+			h: parseInt("#{query.h}") || 200,
+			debug: parseInt("#{query.debug}"),
 			marker: ( "#{query.marker}" || "circle" ).option(),
 			line: ( "#{query.line}" || "black" ).option(),
 			label: ( "#{query.label}" || "x,y" ).option(),
@@ -275,6 +275,8 @@ append base_body
 					cb( ++plots );
 				}
 			
+				if (opts.debug > 2) alert( "case: "+rec.case );
+				
 				var
 					x = rec.x || [],
 					y = rec.y || [],
