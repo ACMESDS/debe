@@ -1623,7 +1623,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	
 	"paths.": {  //< paths to things
 		//default: "home.view",
-		
 		jadePath: "./public/jade/ref.jade",	// jade reference path for includes, exports, appends
 		
 		engine: "SELECT * FROM app.engines WHERE least(?,1) LIMIT 1",
@@ -1674,6 +1673,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		}
 	},
 	
+	"paths.url.home": "/treefan.view?src=info&w=1000&h=600",	
+		
 	/**
 	@cfg {Boolean}
 	@member DEBE

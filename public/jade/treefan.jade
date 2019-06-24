@@ -9,8 +9,8 @@ append base_help
 		Display treefan chart using parameters:
 
 			src = source url returning node tree { name: "...", size: int, children: [ {...}, ... ] }
-			name = "name" || "name%" of source record(s)
-			pivots = key,key,...
+			name = "name" || "name%..." || "" of source record(s)
+			pivots = "key,key,..." || "" source record grouping keys
 			w = drawing width
 			h = drawing height
 			debug = level of debugging alerts
@@ -37,8 +37,10 @@ append base_head
 	script.
 		var opts = {
 			ds: "#{query.pivots}"
-				? "!{query.src}.tree?name=#{query.name}&_sort=#{query.pivots}"
-				: "!{query.src}.schema?name=#{query.name}",
+				? "/!{query.src}.tree?name=#{query.name}&_sort=#{query.pivots}"
+				: "#{query.name}"
+							? "/!{query.src}.schema?name=#{query.name}"
+							: "/!{query.src}",
 			
 			w: parseInt("#{query.w}") || 200,
 			h: parseInt("#{query.h}") || 200,
