@@ -8,13 +8,13 @@ append base_help
 	:markdown
 		Display treefan chart using parameters:
 
-			src = source url returning node tree { name: "...", size: int, children: [ {...}, ... ] }
+			src = source url returning [ { name: "...", size: N, children: [ {...}, ... ] }, ... ]
 			name = "name" || "name%..." || "" of source record(s)
 			pivots = "key,key,..." || "" source record grouping keys
 			w = drawing width
 			h = drawing height
 			debug = level of debugging alerts
-			kids = key name of children
+			node,children,value,size,parent = key names
 			
 append base_head
 
@@ -41,12 +41,18 @@ append base_head
 				: "#{query.name}"
 							? "/!{query.src}.schema?name=#{query.name}"
 							: "/!{query.src}",
-			
+
 			w: parseInt("#{query.w}") || 200,
 			h: parseInt("#{query.h}") || 200,
 			debug: parseInt("#{query.debug}"),
-			kids: "#{query.kids}" || "children"
+			NODE: "#{query.node}" || "name",
+			CHILDREN: "#{query.children}" || "children",
+			VALUE: "#{query.value}" || "value",
+			PARENT: "#{query.parent}" || "parent",
+			SIZE: "#{query.size}" || "size"	
 		};
+										
+		const {NODE, CHILDREN, VALUE, SIZE, PARENT} = opts;
 
 append base_body
 
@@ -84,23 +90,23 @@ append base_body
 				.attr("transform", "translate(" + m[3] + "," + m[0] + ")");
 
 		Load( opts, recs => {
-			root = recs[0];
+			root = recs[0] || {};
 			root.x0 = h / 2;
 			root.y0 = 0;
 
 			function toggleAll(d) {
-				if (d.children) {
-					d.children.forEach(toggleAll);
+				if (d[CHILDREN]) {
+					d[CHILDREN].forEach(toggleAll);
 					toggle(d);
 				}
 			}
 
 			// Initialize the display to show a few nodes.
-			root.children.forEach(toggleAll);
-			//	toggle(root.children[1]);
-			//	toggle(root.children[1].children[2]);
-			//	toggle(root.children[9]);
-			//	toggle(root.children[9].children[0]);
+			root[CHILDREN].forEach(toggleAll);
+			//	toggle(root[CHILDREN][1]);
+			//	toggle(root[CHILDREN][1][CHILDREN][2]);
+			//	toggle(root[CHILDREN][9]);
+			//	toggle(root[CHILDREN][9][CHILDREN][0]);
 
 			update(root);
 		});
@@ -129,10 +135,10 @@ append base_body
 			.style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
 
 			nodeEnter.append("svg:text")
-			.attr("x", function(d) { return d.children || d._children ? -10 : 10; })
+			.attr("x", function(d) { return d[CHILDREN] || d._children ? -10 : 10; })
 			.attr("dy", ".35em")
-			.attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
-			.text(function(d) { return d.name; })
+			.attr("text-anchor", function(d) { return d[CHILDREN] || d._children ? "end" : "start"; })
+			.text(function(d) { return d[NODE]; })
 			.style("fill-opacity", 1e-6);
 
 			// Transition nodes to their new position.
@@ -202,12 +208,12 @@ append base_body
 		}
 
 		function toggle(d) {	// Toggle children.
-			if (d.children) {
-				d._children = d.children;
-				d.children = null;
+			if (d[CHILDREN]) {
+				d._children = d[CHILDREN];
+				d[CHILDREN] = null;
 			} 
 			else {
-				d.children = d._children;
+				d[CHILDREN] = d._children;
 				d._children = null;
 			}
 		}

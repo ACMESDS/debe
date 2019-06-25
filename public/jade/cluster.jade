@@ -8,12 +8,12 @@ append base_help
 	:markdown
 		Display cluster chart using parameters:
 
-			src = source url returning node tree { ID:Name, count:Value, data: [ Children ]}
+			src = source url returning [ {x: N, y: N}, ... ]
 			pivots = key,key,...
 			w = drawing width
 			h = drawing height
 			debug = dump derived options
-			kids = key name of children
+			node,children,value,size,parent = key names
 
 append base_head
 
@@ -39,16 +39,21 @@ append base_head
 
 	script.
 		var opts = {
-			ds: "!{query.src}.tree?ID=#{query.id}&_sort=#{query.pivots}",
-			w: parseInt("#{query.w}" || "0"),
-			h: parseInt("#{query.h}" || "0"),
-			debug: parseInt("#{query.debug}" || "0"),
-			kids: "#{query.kids}" || "children"
+			ds: "/!{query.src}.tree?ID=#{query.id}&_sort=#{query.pivots}",
+			w: parseInt("#{query.w}") || 200,
+			h: parseInt("#{query.h}") || 200,
+			debug: parseInt("#{query.debug}"),
+			NODE: "#{query.node}" || "name",
+			CHILDREN: "#{query.children}" || "children",
+			VALUE: "#{query.value}" || "value",
+			PARENT: "#{query.parent}" || "parent",
+			SIZE: "#{query.size}" || "size"										
 		};
 		
+		const {NODE, CHILDREN, VALUE, SIZE, PARENT} = opts;
+
 append base_body
 
-	script(src="/clients/d3/d3.v3.min.js")
 	script.
 		function click(d) { 
 			var isView = d.details.constructor == String;
@@ -153,8 +158,8 @@ append base_body
 			.on("mousemove", mousemove)
 			.on("mouseup", mouseup);
 
-		BASE.load( opts, function(rec) {
-			var nodes = cluster.nodes(rec);
+		BASE.Load( opts, recs => {
+			var nodes = cluster.nodes(recs);
 
 			var link = vis.selectAll("path.link")
 				.data(cluster.links(nodes))

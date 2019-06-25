@@ -8,14 +8,14 @@ append base_help
 	:markdown
 		Display d3 force graph:
 
-			src = source url returning node tree { ID:Name, count:Value, data: [ Children ]}
+			src = source url returning [ { name: "...", size: N, children: [ {...}, ... ] }, ... ]
 			pivots = key,key,...
 			w = drawing width
 			h = drawing height
-			debug = dump derived options
-			kids = key name of children
+			debug = debugging level
+			node,children,value,size,parent = key names
 
-		Graph nodes are sized to node.weight + length(node.children).
+		Graph nodes are sized to node.weight + length(node[CHILDREN]).
 
 append base_head
 	style.
@@ -32,17 +32,26 @@ append base_head
 
 	script.
 		var opts = {
-			ds: "!{query.src}.tree?ID=#{query.id}&_sort=#{query.pivots}",
-			w: parseInt("#{query.w}" || "0"),
-			h: parseInt("#{query.h}" || "0"),
-			debug: parseInt("#{query.debug}" || "0"),
-			kids: "#{query.kids}" || "children"
+			ds: "#{query.pivots}"
+				? "/!{query.src}.tree?name=#{query.name}&_sort=#{query.pivots}"
+				: "#{query.name}"
+							? "/!{query.src}.schema?name=#{query.name}"
+							: "/!{query.src}",
+
+			w: parseInt("#{query.w}") || 200,
+			h: parseInt("#{query.h}") || 200,
+			debug: parseInt("#{query.debug}"),
+			NODE: "#{query.node}" || "name",
+			CHILDREN: "#{query.children}" || "children",
+			VALUE: "#{query.value}" || "value",
+			PARENT: "#{query.parent}" || "parent",
+			SIZE: "#{query.size}" || "size"										
 		};
-		//console.log( JSON.parse("#{JSON.stringify(query)}") );
+
+		const {NODE, CHILDREN, VALUE, SIZE, PARENT} = opts;
 
 append base_body
 
-	script(src="/clients/d3/d3.v3.min.js")
 	script.
 		function update() {
 			var nodes = flatten(root),
@@ -78,10 +87,10 @@ append base_body
 
 			node.transition()
 				.attr("r", function(d) { 
-					return d.size*2;
-					// return d.children ? (d.size||1)*d.children.length : 10; //d.size ? Math.sqrt(d.size) / 10 : 10; 					
+					return d[SIZE];
+					// return d[CHILDREN] ? (d[SIZE]||1)*d[CHILDREN].length : 10; //d[SIZE] ? Math.sqrt(d[SIZE]) / 10 : 10; 					
 					// 	return 5; 
-					//	return d.children ? 14.5 : d.size ? Math.sqrt(d.size) / 1 : 200; 
+					//	return d[CHILDREN] ? 14.5 : d[SIZE] ? Math.sqrt(d[SIZE]) / 1 : 200; 
 				});
 
 			// Enter any new nodes.
@@ -90,8 +99,8 @@ append base_body
 				.attr("cx", function(d) { return d.x; })
 				.attr("cy", function(d) { return d.y; })
 				.attr("r", function(d) { 
-					return d.size*2;
-					//return d.children ? (d.size||1)*d.children.length : d.size ? Math.sqrt(d.size) / 10 : 2; 
+					return d[SIZE];
+					//return d[CHILDREN] ? (d[SIZE]||1)*d[CHILDREN].length : d[SIZE] ? Math.sqrt(d[SIZE]) / 10 : 2; 
 				})
 				.style("fill", color)
 				.on("click", click)
@@ -148,16 +157,16 @@ append base_body
 
 		// Color leaf nodes orange, and packages white or blue.
 		function color(d) {
-			return d._children ? "#3182bd" : d.children ? "#c6dbef" : "#fd8d3c";
+			return d._children ? "#3182bd" : d[CHILDREN] ? "#c6dbef" : "#fd8d3c";
 		}
 
 		// Toggle children on click.
 		function click(d) {
-			if (d.children) {
-				d._children = d.children;
-				d.children = null;
+			if (d[CHILDREN]) {
+				d._children = d[CHILDREN];
+				d[CHILDREN] = null;
 			} else {
-				d.children = d._children;
+				d[CHILDREN] = d._children;
 				d._children = null;
 			}
 
@@ -170,23 +179,21 @@ append base_body
 			var nodes = [], i = 0;
 
 			function recurse(node) {
+				var size = 0;
 
-				if (node.children)
-					node.size = node.children.reduce(function(weight, node) { 
-						//console.log([node.name, weight, node.weight]);
-						return /*(node.weight||10) +*/ weight + recurse(node); 
-					}, 0);
-
-				else
-					node.size = node.weight || 1;
+				if (children = node[CHILDREN]) 
+					children.forEach( node => size += children.reduce( function(weight, node) { 
+						return weight + recurse(node); 
+					}, 0) ); 
 
 				if (!node.id) node.id = ++i;
 
 				nodes.push(node);
-				return node.size;
+				node[SIZE] = 2;
+				return size;
 			}
 
-			root.size = recurse(root);
+			root[SIZE] = recurse(root);
 			return nodes;
 		}
 
@@ -199,7 +206,7 @@ append base_body
 
 		var force = d3.layout.force()
 			.on("tick", tick)
-			.charge(function(d) { return d._children ? -d.size / 100 : -30; })
+			.charge(function(d) { return d._children ? -d[SIZE] / 100 : -30; })
 			.linkDistance(function(d) { return d.target._children ? 80 : 30; })
 			.size([width, height]);
 
@@ -207,8 +214,9 @@ append base_body
 			.attr("width", width)
 			.attr("height", height);
 
-		BASE.load( opts, function (rec) {
-			root = rec;
+		BASE.Load( opts, recs => {
+			root = recs[0] || {};
+			console.log( root );
 			root.fixed = true;
 			root.x = width / 2;
 			root.y = height / 2;

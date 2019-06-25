@@ -31,7 +31,7 @@ l1_ratio: 0<= float [0.5] <=1 Mixing parameter.  For l1_ratio = 0 the penalty is
 		hyper_las: `json comment '
 alpha: float>=0 [1] Constant that multiplies the L1 term. alpha = 0 is equivalent to an ordinary least square, solved by LinearRegression.
 normalize : [False | True].  Ignored when fit_intercept is set to False. If True, the regressors X will be normalized before regression by subtracting the mean and dividing by the l2-norm.
-max_iter: int >= 1[1] Maximum number of iterations.
+max_iter: int >= 1[1] Maximum number of it Regressionerations.
 tol: float >= [0] Optional tolerance for the optimization: if the updates are smaller than tol, the optimization code checks the dual gap for optimality and continues until it is smaller than tol.
 ' `,
 		
@@ -63,7 +63,7 @@ tolerance: float>= [0] tolerance
 		Save_dtr: "json comment 'dtr model' ",
 		Save_lrm: "json comment 'lrm model' ",
 		Save_svm: "json comment 'svm model' ",
-		Save_plc: "json comment 'plc model' ",
+		Save_pls: "json comment 'pls model' ",
 		Save_knn: "json comment 'knn model' ",
 		Save_som: "json comment 'som model' ",
 		Save_ols: "json comment 'ols model' ",

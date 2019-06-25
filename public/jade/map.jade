@@ -10,10 +10,8 @@ append base_help
 		Provides a map chart:
 
 			src = path to map data [ {Name, Info, Code, ...}, ...]
-			index = field containing 2-3 letter county/state code
-			details = field containing detailed information
-			fill = field containing fill style
-			trace = display options
+			debug = debugging level
+			node,children,value,size,parent,code,info = key names
 
 append base_head
 	style.
@@ -25,30 +23,36 @@ append base_head
 	script.
 		var opts = {
 			ds: "/!{query.src}",
-			index: "#{query.index}" || "Name",
-			ctries: "/ctries",
-			details: "#{query.details}" || "Info",
 			raw: true,
-			fill: "#{query.fill}" || "Code",
-			trace: "#{query.trace}" || false
+			w: parseInt("#{query.w}") || 200,
+			h: parseInt("#{query.h}") || 200,
+			debug: parseInt("#{query.debug}"),
+			INFO: "#{query.details}" || "Info",
+			CODE: "#{query.fill}" || "Code",
+			NODE: "#{query.node}" || "Name",
+			CHILDREN: "#{query.children}" || "children",
+			VALUE: "#{query.value}" || "value",
+			PARENT: "#{query.parent}" || "parent",
+			SIZE: "#{query.size}" || "size"										
 		};
+		
+		const {NODE, CODE, INFO} = opts;
 
 append base_body
 
-	script(src="/clients/d3/d3.v3.min.js")
 	script.
 		//var map = new Datamap({element: document.getElementById('content')});
 
-		d3.json(opts.ctries, function (ctries) {
+		ds.json("/ctries", init => {
 			var cmap = {}, vmap = [];
-			ctries.forEach( function (ctry) {
-				cmap[ctry.Name.toUpperCase()] = {
-					fillKey: ctry.Code.toUpperCase(),
-					info: ctry.Info
+			init.forEach( function (ctry) {
+				cmap[ctry[NODE].toUpperCase()] = {
+					fillKey: ctry[CODE].toUpperCase(),
+					info: ctry[INFO]
 				}
 			});
 
-			BASE.load(opts, function(recs) {
+			BASE.Load(opts, recs => {
 				
 				recs.forEach( function (rec) {
 					vmap.push({

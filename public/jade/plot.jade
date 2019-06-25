@@ -43,23 +43,25 @@ append base_head
 		.text {}
 
 	script.
-		var opts = {  // define plot options
-			ds: "/!{query.src}?name=#{query.name}&x:=#{query.x}&y:=#{query.y}&case:=name",
-			w: parseInt("#{query.w}") || 200,
-			h: parseInt("#{query.h}") || 200,
-			debug: parseInt("#{query.debug}"),
-			marker: ( "#{query.marker}" || "circle" ).option(),
-			line: ( "#{query.line}" || "black" ).option(),
-			label: ( "#{query.label}" || "x,y" ).option(),
-			min: "#{query.min}".split(","),
-			max: "#{query.max}".split(","),
-			extra: "#{query.extra}".option(),
-			details: "#{query.details}",
-			index: "#{query.index}".option(),
-			widgets: {
-				chan: ("#{query.chan}" || "0:255:1").option()
-			}
-		};
+		var 
+			opts = {  // define plot options
+				ds: "/!{query.src}?name=#{query.name}&x:=#{query.x}&y:=#{query.y}&case:=name",
+				w: parseInt("#{query.w}") || 200,
+				h: parseInt("#{query.h}") || 200,
+				debug: parseInt("#{query.debug}"),
+				marker: ( "#{query.marker}" || "circle" ).option(),
+				line: ( "#{query.line}" || "black" ).option(),
+				label: ( "#{query.label}" || "x,y" ).option(),
+				min: "#{query.min}".split(","),
+				max: "#{query.max}".split(","),
+				extra: "#{query.extra}".option(),
+				details: "#{query.details}",
+				index: "#{query.index}".option(),
+				keys: ("#{query.keys}" || "x,y,details").option(),
+				widgets: {
+					chan: ("#{query.chan}" || "0:255:1").option()
+				}
+			};
 
 append base_body
 
@@ -72,7 +74,7 @@ append base_body
 				var isView = details.constructor == String;
 
 				var doc = window.open(
-					isView ? d.details : "",
+					isView ? d[2] : "",
 					"_blank",
 					"left="+d.x+"px,"
 					+ "top="+d.y[plots]+"px,"

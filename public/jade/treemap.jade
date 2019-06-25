@@ -8,12 +8,12 @@ append base_help
 	:markdown
 		Display treemap chart using parameters:
 
-			src = source url returning node tree { ID:Name, count:Value, data: [ Children ]}
+			src = source url returning [ { name: "...", size: int, children: [ {...}, ... ] }, ... ]
 			pivots = key,key,...
 			w = drawing width
 			h = drawing height
-			debug = dump derived options
-			kids = key name of children
+			debug = level of debugging alerts
+			name,children,value,size,parent = key names
 
 append base_head
 
@@ -42,12 +42,18 @@ append base_head
 
 	script.
 		var opts = {
-			ds: "!{query.src}.tree?ID=#{query.id}&_sort=#{query.pivots}",
-			w: parseInt("#{query.w}" || "0"),
-			h: parseInt("#{query.h}" || "0"),
-			debug: parseInt("#{query.debug}" || "0"),
-			kids: "#{query.kids}" || "children"
+			ds: "/!{query.src}.tree?ID=#{query.id}&_sort=#{query.pivots}",
+			w: parseInt("#{query.w}") || 200,
+			h: parseInt("#{query.h}") || 200,
+			debug: parseInt("#{query.debug}"),
+			NAME: "#{query.name}" || "name",
+			CHILDREN: "#{query.children}" || "children",
+			VALUE: "#{query.value}" || "value",
+			PARENT: "#{query.parent}" || "parent",
+			SIZE: "#{query.size}" || "size"										
 		};
+		
+		const {NAME, CHILDREN, VALUE, SIZE, PARENT} = opts;
 
 append base_body
 
@@ -71,18 +77,18 @@ append base_body
 				.style("left", margin.left + "px")
 				.style("top", margin.top + "px");
 
-		BASE.load( opts, function(rec) {
+		BASE.Load( opts, recs => {
 			
 			var 
-				root = rec,
+				root = recs[0] || {},
 				
 				node = div.datum(root).selectAll(".node")
 					.data(treemap.nodes)
 					.enter().append("div")
 					.attr("class", "node")
 					.call(position)
-					.style("background", function(d) { return d.children ? color(d.name) : null; })
-					.text(function(d) { return d.children ? null : d.name; })
+					.style("background", function(d) { return d[CHILDREN] ? color(d[NAME]) : null; })
+					.text(function(d) { return d[CHILDREN] ? null : d[NAME]; })
 					.on("click", click);
 
 			d3.selectAll("input").on("change", function change() {

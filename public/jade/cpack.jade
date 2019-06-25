@@ -14,6 +14,7 @@ append base_help
 			h = drawing height
 			debug = dump derived options
 			x,y,r,s = position, radius and weight keys
+			node,children,value,size,parent = key names
 
 append base_head
 
@@ -48,17 +49,23 @@ append base_head
 	script.
 		var opts = {
 			ds: 
-				//"data/flare.json", 
-				"!{query.src}.tree?ID=#{query.id}&_sort=#{query.pivots}",
-			w: parseInt("#{query.w}" || "0"),
-			h: parseInt("#{query.h}" || "0"),
-			debug: parseInt("#{query.debug}" || "0"),
-			kids: "#{query.kids}" || "children",
+				//"/store/flare.json", 
+				"/!{query.src}.tree?ID=#{query.id}&_sort=#{query.pivots}",
+			w: parseInt("#{query.w}") || 200,
+			h: parseInt("#{query.h}") || 200,
+			debug: parseInt("#{query.debug}"),
 			x: "#{query.x}" || "x",
 			y: "#{query.y}" || "y",
 			r: "#{query.r}" || "r",
-			s: "#{query.q}" || "weight"
+			s: "#{query.q}" || "weight",
+			NODE: "#{query.node}" || "name",
+			CHILDREN: "#{query.children}" || "children",
+			VALUE: "#{query.value}" || "value",
+			PARENT: "#{query.parent}" || "parent",
+			SIZE: "#{query.size}" || "size"	
 		};
+										
+		const {NODE, CHILDREN, VALUE, SIZE, PARENT} = opts;
 
 append base_body
 
@@ -83,14 +90,13 @@ append base_body
 
 		var 
 			pack = d3.pack()
-				.size([diameter - margin, diameter - margin])
+				[SIZE]([diameter - margin, diameter - margin])
 				.padding(2);
 
-		BASE.load( opts, function(root) {
-			alert(JSON.stringify(root));
+		BASE.Load( opts, root => {
 			root = d3.hierarchy(root)
-				.sum(function(d) { return d.size; })
-				.sort(function(a, b) { return b.value - a.value; });
+				.sum(function(d) { return d[SIZE]; })
+				.sort(function(a, b) { return b[VALUE] - a[VALUE]; });
 
 			var 
 				focus = root,
@@ -101,8 +107,8 @@ append base_body
 				circle = g.selectAll("circle")
 					.data(nodes)
 					.enter().append("circle")
-					.attr("class", function(d) { return d.parent ? d.children ? "node" : "node node--leaf" : "node node--root"; })
-					.style("fill", function(d) { return d.children ? color(d.depth) : null; })
+					.attr("class", function(d) { return d[PARENT] ? d[CHILDREN] ? "node" : "node node--leaf" : "node node--root"; })
+					.style("fill", function(d) { return d[CHILDREN] ? color(d.depth) : null; })
 					.on("click", function(d) { if (focus !== d) zoom(d), d3.event.stopPropagation(); });
 
 			var 
@@ -110,9 +116,9 @@ append base_body
 					.data(nodes)
 					.enter().append("text")
 					.attr("class", "label")
-					.style("fill-opacity", function(d) { return d.parent === root ? 1 : 0; })
-					.style("display", function(d) { return d.parent === root ? "inline" : "none"; })
-					.text(function(d) { return d.data.name; });
+					.style("fill-opacity", function(d) { return d[PARENT] === root ? 1 : 0; })
+					.style("display", function(d) { return d[PARENT] === root ? "inline" : "none"; })
+					.text(function(d) { return d[NODE]; });
 
 			var 
 				node = g.selectAll("circle,text");
@@ -134,10 +140,10 @@ append base_body
 				});
 
 				transition.selectAll("text")
-					.filter(function(d) { return d.parent === focus || this.style.display === "inline"; })
-					.style("fill-opacity", function(d) { return d.parent === focus ? 1 : 0; })
-					.on("start", function(d) { if (d.parent === focus) this.style.display = "inline"; })
-					.on("end", function(d) { if (d.parent !== focus) this.style.display = "none"; });
+					.filter(function(d) { return d[PARENT] === focus || this.style.display === "inline"; })
+					.style("fill-opacity", function(d) { return d[PARENT] === focus ? 1 : 0; })
+					.on("start", function(d) { if (d[PARENT] === focus) this.style.display = "inline"; })
+					.on("end", function(d) { if (d[PARENT] !== focus) this.style.display = "none"; });
 			}
 
 			function zoomTo(v) {

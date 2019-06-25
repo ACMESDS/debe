@@ -9,12 +9,12 @@ append base_help
 	:markdown
 		Display chord wheel chart using parameters:
 
-			src = source url returning node tree { ID:Name, count:Value, data: [ Children ]}
+			src = source url returning [ {name:"", value: N}, ... ]
 			pivots = key,key,...
 			w = drawing width
 			h = drawing height
 			debug = dump derived options
-			kids = key name of children
+			node,children,value,size,parent = key names
 
 append base_head
 
@@ -33,16 +33,21 @@ append base_head
 
 	script.
 		var opts = {
-			ds: "!{query.src}.tree?ID=#{query.id}&_sort=#{query.pivots}",
-			w: parseInt("#{query.w}" || "0"),
-			h: parseInt("#{query.h}" || "0"),
-			debug: parseInt("#{query.debug}" || "0"),
-			kids: "#{query.kids}" || "children"
+			ds: "/!{query.src}.tree?ID=#{query.id}&_sort=#{query.pivots}",
+			w: parseInt("#{query.w}") || 200,
+			h: parseInt("#{query.h}") || 200,
+			debug: parseInt("#{query.debug}"),
+			NODE: "#{query.node}" || "name",
+			CHILDREN: "#{query.children}" || "children",
+			VALUE: "#{query.value}" || "value",
+			PARENT: "#{query.parent}" || "parent",
+			SIZE: "#{query.size}" || "size"										
 		};
+		
+		const {NODE, CHILDREN, VALUE, SIZE, PARENT} = opts;
 
 append base_body
     
-	script(src="/clients/d3/d3.v3.min.js")
 	script.
 		// Chart dimensions.
 		var 
@@ -91,9 +96,8 @@ append base_body
 			.attr("transform", "translate(" + w / 2 + "," + h / 2 + ")");
 
 		// Load our data file…
-		BASE.load( opts, function(rec) {
+		BASE.Load( opts, data => {
 			var 
-				data = rec.children,
 				countries = {},
 				array = [],
 				n = 0;
@@ -104,7 +108,7 @@ append base_body
 				d.creditor = country(d.creditor);
 				d.debtor = country(d.debtor);
 				d.debtor.risk = d.risk;
-				d.valueOf = value; // convert object to number implicitly
+				d[VALUE]Of = value; // convert object to number implicitly
 			});
 
 			// Initialize a square matrix of debits and credits.
@@ -137,11 +141,11 @@ append base_body
 					.data(layout.chords)
 					.enter().append("svg:path")
 					.attr("class", "chord")
-					.style("fill", function(d) { return fill(d.source.value.risk); })
-					.style("stroke", function(d) { return d3.rgb(fill(d.source.value.risk)).darker(); })
+					.style("fill", function(d) { return fill(d.source[VALUE].risk); })
+					.style("stroke", function(d) { return d3.rgb(fill(d.source[VALUE].risk)).darker(); })
 					.attr("d", chord)
 					.append("svg:title")
-					.text(function(d) { return d.source.value.debtor.name + " owes " + d.source.value.creditor.name + " $" + format(d.source.value) + "B."; });
+					.text(function(d) { return d.source[VALUE].debtor[NODE] + " owes " + d.source[VALUE].creditor[NODE] + " $" + format(d.source[VALUE]) + "B."; });
 
 				// Add groups.
 				var g = svg.selectAll("g.group")
@@ -155,17 +159,17 @@ append base_body
 					.attr("id", function(d, i) { return "group" + d.index + "-" + j; })
 					.attr("d", arc)
 					.append("svg:title")
-					.text(function(d) { return array[d.index].name + " " + (j ? "owes" : "is owed") + " $" + format(d.value) + "B."; });
+					.text(function(d) { return array[d.index][NODE] + " " + (j ? "owes" : "is owed") + " $" + format(d[VALUE]) + "B."; });
 
 				// Add the group label (but only for large groups, where it will fit).
 				// An alternative labeling mechanism would be nice for the small groups.
 				g.append("svg:text")
 					.attr("x", 6)
 					.attr("dy", 15)
-					.filter(function(d) { return d.value > 110; })
+					.filter(function(d) { return d[VALUE] > 110; })
 					.append("svg:textPath")
 					.attr("xlink:href", function(d) { return "#group" + d.index + "-" + j; })
-					.text(function(d) { return array[d.index].name; });
+					.text(function(d) { return array[d.index][NODE]; });
 			});
 
 			// Memoize the specified country, computing a unique id.

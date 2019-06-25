@@ -8,7 +8,7 @@ append base_help
 	:markdown
 		Display sankey chart:
 
-			src = bogus source url
+			src = source url
 			w = drawing width
 			h = drawing height
 			debug = dump derived options
@@ -36,17 +36,18 @@ append base_head
 
 	script.
 		var opts = {
-			ds: "!{query.src}",
+			ds: "/!{query.src}",
 			w: parseInt("#{query.w}"),
 			h: parseInt("#{query.h}"),
-			debug: "#{query.debug}"
+			debug: parseInt("#{query.debug}")
 		};
 
 append base_body
 
 	script.
 		d3.sankey = function() {
-			var sankey = {},
+			var 
+				sankey = {},
 				nodeWidth = 24,
 				nodePadding = 8,
 				size = [1, 1],
@@ -364,9 +365,9 @@ append base_body
 
 		var path = sankey.link();
 
-		BASE.load( opts, function(opts) {
+		BASE.Load( opts, recs => {
 
-			var energy = opts.data;
+			var energy = recs;
 			
 			sankey
 				.nodes(energy.nodes)
