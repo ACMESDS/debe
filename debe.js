@@ -108,7 +108,7 @@ var
 		issues: "openv.issues"
 	},
 
-	blog: {
+	blogContext: {
 		d: docify,
 		doc: docify,
 		
@@ -428,14 +428,14 @@ catch (err) {
 						FLEX.sendMail({
 							subject: `${dog.site.nick} resource warning`,
 							to: dog.site.pocs.admin,
-							body: `Please add more VMs to ${dog.site.nick} or ` + "shed load".tag("a",{href:dog.site.urls.worker+"/queues.view"})
+							body: `Please add more VMs to ${dog.site.nick} or ` + "shed load".tag(dog.site.urls.worker+"/queues.view")
 						});
 
 					if ( disk > dog.max.disk ) 
 						FLEX.sendMail({
 							subject: `${dog.site.nick} resource warning`,
 							to: dog.site.pocs.admin,
-							body: `Please add more disk space to ${dog.site.nick} or ` + "shed load".tag("a",{href:dog.site.urls.worker+"/queues.view"})
+							body: `Please add more disk space to ${dog.site.nick} or ` + "shed load".tag(dog.site.urls.worker+"/queues.view")
 						});
 
 					sql.release();
@@ -560,8 +560,8 @@ catch (err) {
 						site = DEBE.site,
 						url = site.urls.worker,
 						paths = {
-							moreinfo: "here".tag("a", {href: url + "/files.view"}),
-							admin: "totem resource manages".tag("a", {href: url + "/request.view"})
+							moreinfo: "here".tag(url + "/files.view"),
+							admin: "totem resource manages".tag(url + "/request.view")
 						},
 						notice = `
 Please note that ${site.nick} has moved your sample ${file.Name} to long term storage.  This sample 
@@ -862,7 +862,7 @@ source ./maint.sh expand ${name} ;
 													if ( file.endsWith(".html") ) {
 														var msg = file.replace(".html","");
 														sql.query( "UPDATE app.news SET ? WHERE ?", [{
-																Message: file.replace(".html","").tag("a",{href: dog.newsPath.substr(1)+`/${name}/index.html`})
+																Message: file.replace(".html","").tag(dog.newsPath.substr(1)+`/${name}/index.html`)
 															}, {
 																ID: entry.insertId
 															}
@@ -1027,7 +1027,7 @@ mv '${msg}'_files index_files ;
 					"exe", "stat"];
 
 			uses.forEach( (use,n) => {
-				uses[n] = use.tag("a",{href: "/"+table+"."+use});
+				uses[n] = use.tag( "/"+table+"."+use );
 			});
 			
 			req.sql.query("DESCRIBE ??.??", [group,table], function (err, stats) {
@@ -1037,7 +1037,7 @@ mv '${msg}'_files index_files ;
 				
 				else {
 					stats.forEach( (stat,n) => {
-						stats[n] = stat.Field.tag("a",{href: "/"+table+"?_index="+stat.Field});
+						stats[n] = stat.Field.tag( "/"+table+"?_index="+stat.Field );
 					});
 					
 					res(`
@@ -1571,7 +1571,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		/**
 		@method tag
 		*/
-			return tags ? src.tag(el,tags) : src.tag("a",{href:el});
+			return src.tag(el,tags);
 		},
 		
 		hover: function (ti,fn) {
@@ -1599,10 +1599,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		pretty: err => {
 			return "".tag("img",{src:"/stash/reject.jpg",width:40,height:60})
 				+ (err+"").replace(/\n/g,"<br>").replace(process.cwd(),"").replace("Error:","")
-				+ ". "
-				+ "Issues".tag("a",{href: "/issues.view"}) + " || "
-				+ "Home".tag("a",{href:"/home.view"}) + " || "
-				+ "API".tag("a",{href:"/api.view"});
+				+ ". " + [
+					"Issues".tag( "/issues.view" ),
+					"Home".tag( "/home.view" ),
+					"API".tag( "/api.view" )
+				].join(" || ");
 		},
 		noPartner: new Error( "endservice missing or did not respond with transition partner" ),
 		noAttribute: new Error( "undefined engine attribute" ),
@@ -1844,9 +1845,9 @@ Totem (req,res)-endpoint to create/return public-private certs
 					paths = DEBE.paths,
 					site = DEBE.site,
 					master = site.urls.master,
-					FF = "Firefox".tag("a",{href:master+"/stash/firefox.zip"}),
-					Putty = "Putty".tag("a",{href:master+"/stash/putty.zip"}),
-					Cert = "Cert".tag("a",{href:`${master}/cert/${owner}`});
+					FF = "Firefox".tag( master+"/stash/firefox.zip" ),
+					Putty = "Putty".tag( master+"/stash/putty.zip" ),
+					Cert = "Cert".tag( master+"/cert/${owner}" );
 					
 				res( function () {
 					return {
@@ -1861,7 +1862,7 @@ Totem (req,res)-endpoint to create/return public-private certs
 					cc: name,
 					subject: `${DEBE.site.Nick} account request`,
 					html: 
-`Greetings from ${site.Nick.tag("a",{href:master})}-
+`Greetings from ${site.Nick.tag(master)}-
 
 Please create an AWS EC2 account for ${owner} using attached cert.
 
@@ -2121,14 +2122,10 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 								name: req.table,
 								task: query.Name || query.ID,
 								notes: [
-										req.table.tag("?",{ID:query.ID}).tag("a", {href:"/" + req.table + ".run"}), 
-										((profile.Credit>0) ? "funded" : "unfunded").tag("a",{href:req.url}),
-										"RTP".tag("a", {
-											href:`/rtpsqd.view?task=${query.Name}`
-										}),
-										"PMR brief".tag("a", {
-											href:`/briefs.view?options=${query.Name}`
-										})
+										req.table.tag("?",{ID:query.ID}).tag( "/" + req.table + ".run" ), 
+										((profile.Credit>0) ? "funded" : "unfunded").tag( req.url ),
+										"RTP".tag( `/rtpsqd.view?task=${query.Name}` ),
+										"PMR brief".tag( `/briefs.view?options=${query.Name}`)
 								].join(" || "),
 								pipe: pipe,
 								path: filename,
@@ -3279,7 +3276,8 @@ Initialize DEBE on startup.
 		var 
 			blockidx = 0;
 		
-		Copy(DEBE.blog, new Object(ctx));
+		//Copy(DEBE.blogContext, new Object(ctx));
+		Copy(DEBE.blogContext, ctx);
 		
 		this.Xescape( [], (blocks,html) => // excape code blocks
 		html.Xscript( ctx, (ctx,html) => // expand scripts 
@@ -3348,13 +3346,13 @@ Initialize DEBE on startup.
 						Path: "/tag/"+product
 					}, (pub, sql) => {
 						if (pub) {
-							cb( `${rec.topic}=>${req.client}`.tag("a",{href:"/tags.view"}) );
+							cb( `${rec.topic}=>${req.client}`.tag( "/tags.view" ) );
 							sql.query("INSERT INTO app.tags SET ? ON DUPLICATE KEY UPDATE Views=Views+1", {
 								Viewed: pub._Published,
 								Target: pub._Partner,
 								Topic: topic,
 								License: pub._License,
-								Message: "get view".tag("a",{href:"/decode.html".tag("?",{Target:pub._Partner,License:pub._License,Topic:topic})})
+								Message: "get view".tag( "/decode.html".tag("?",{Target:pub._Partner,License:pub._License,Topic:topic}))
 							});
 						}
 					});
@@ -3406,7 +3404,7 @@ Initialize DEBE on startup.
 							cb( opt.tag("font",{color:color}) );
 
 						else
-							cb( opt.tag("a",{href:srcPath}) );
+							cb( opt.tag( srcPath ) );
 				
 					else 
 					if ( (keys.starts ? now>=new Date(keys.starts) : true) && 
@@ -3416,7 +3414,7 @@ Initialize DEBE on startup.
 					}
 
 					else
-						cb( opt.tag("a", {href:"/tags.view"}) );
+						cb( opt.tag( "/tags.view" ) );
 						
 				else {
 					var
@@ -3659,16 +3657,30 @@ append layout_body
 	*/
 		var 
 			sql = req.sql,
+			flags = req.flags,
+			site = DEBE.site,
+			url = site.urls.master,
 			recs = this;
 
 		var
 			fetchBlog = function( rec, cb ) {
 				if ( md = rec[key] + "" ) 
-					md.Xblog(req, ds.tag("?", { name: 
-							(rec.Pipe.charAt(0) == "{") 
-								? rec.Name + "-%"	// pipe defines a monte-carlo cross product so get them all
-								: rec.Name	// pipe defines a simple path
-						}), {}, {}, rec, true, html => cb(html) );
+					md.Xblog(req, ds.tag("?", { 	// tag ds with source record selector
+						name: (rec.Pipe.charAt(0) == "{") 
+							? rec.Name + "-%"	// pipe defines a monte-carlo cross product so get them all
+							: rec.Name	// pipe defines a simple path
+					}), {}, {}, rec, true, html => cb( 
+						flags.kiss		
+							? html 	// keep if simple
+							: html + [	// add by-line
+								site.title.tag( `${url}/treefan.view?src=info&w=4000&h=600` ),
+								"schema".tag( `${url}/treefan.view?src=${ds}&name=${rec.Name}&w=4000&h=600` ),
+								"run".tag( `${url}/${ds}.exe?Name=${rec.Name}` ),
+								"edit".tag( `${url}/${ds}.view` ),
+								"publish".tag( `${url}/${ds}.pub` ),
+								"tou".tag( `${url}/${ds}.tou` )
+							].join(" ")
+					 ) );
 				
 				else
 					cb(md);
@@ -3753,7 +3765,7 @@ append layout_body
 							nodePath = path + nodeName,
 							node = {
 								name: nodeName,
-								doc: nodePath.tag("a",{href:cb(nodePath)}),
+								doc: nodePath.tag( cb(nodePath) ),
 								size: 20,
 								children: nodeify( val || 0,  nodePath, cb )
 							};
@@ -3805,7 +3817,7 @@ append layout_body
 					node = { 
 						name: nodeName,
 						size: 50,
-						doc: nodePath.tag("a",{href:cb(nodePath)}),
+						doc: nodePath.tag( cb(nodePath) ),
 						children: nodeify( store[0] || 0, nodePath, cb )
 					};
 				
@@ -4109,7 +4121,7 @@ append layout_body
 		
 		else
 			return users.length 
-				? (users.length+"").tag("a", {href:"mailto:"+users.join(";").tag("?", tags)})
+				? (users.length+"").tag( "mailto:"+users.join(";").tag("?", tags) )
 				: "none" ;
 	}
 	
@@ -4295,16 +4307,9 @@ switch ( process.argv[2] ) { // unit tests
 								client = file.Client,
 								added = file.Added,
 								site = DEBE.site,
-								port = name.tag("a",{href:"/files.view"}),
+								port = name.tag( "/files.view" ),
 								url = site.urls.worker,
-								metrics = "metrics".tag("a", {href:url+"/airspace.view"}),
-									/* [
-										"quality".tag("a",{href:url+"/airspace.view?options=quality"}),
-										"clumping".tag("a",{href:url+"/airspace.view?options=clumping"}),
-										"loitering".tag("a",{href:url+"/airspace.view?options=loitering"}),
-										"corridors".tag("a",{href:url+"/airspace.view?options=corridors"}),
-										"patterns".tag("a",{href:url+"/airspace.view?options=patterns"})
-									].join(", "), */
+								metrics = "metrics".tag( url+"/airspace.view" ),
 								poc = site.distro.d;
 
 							sql.forFirst(  // credit client for upload
@@ -4318,7 +4323,7 @@ switch ( process.argv[2] ) { // unit tests
 								if ( prof ) {
 									var 					
 										group = prof.Group,
-										revised = "revised".tag("a", {href:`/files.view?ID=${file.ID}`} ),
+										revised = "revised".tag( `/files.view?ID=${file.ID}` ),
 										notes = `
 Thank you ${client} for your sample deposited to ${port} on ${now}.  If your 
 sample passes initial quality assessments, additional ${metrics} will become available.  Unless

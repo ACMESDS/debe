@@ -621,6 +621,8 @@ Array.prototype.Extend = function (con) {
 	@return {String} tagged results
 	*/
 
+		if (!at) { at = {href: el}; el = "a"; }
+
 		if ( el == "?" || el == "&" ) {  // tag a url
 			var rtn = this;
 
