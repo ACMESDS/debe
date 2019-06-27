@@ -2005,8 +2005,10 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 		req.query = ctx;   // let plugin mixin its own keys
 		Log("prime pipe", pipe);
 		Copy(ctx,data);
-		for ( var key in pipe )	// add pipe keys to engine ctx
-			ctx[key] = data[key] = pipe[key].parseJS( data );
+		Each(pipe, (key,val) => { // add pipe keys to engine ctx
+			if ( isString(val) )
+				ctx[key] = data[key] = val.parseJS( data );
+		});
 			
 		ATOM.select(req, ctx => {  // run plugin
 			
@@ -2113,7 +2115,9 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 							pipe = {},
 							filename = Pipe.parseURL(pipe,{},{},{}),
 							fileparts = filename.split("."),
+							filenode = fileparts[0] || "",
 							filetype = fileparts[1] || "",
+							fileflexed = FLEX.select[filenode.substr(1)] ? true : false,
 							autoname = `${ctx.Host}.${ctx.Name}`,
 							fetcher = DEBE.fetcher,
 							job = { // job descriptor for regulator
@@ -2131,14 +2135,14 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 										"PMR brief".tag( `/briefs.view?options=${query.Name}`)
 								].join(" || "),
 								pipe: pipe,
-								path: filename,
+								path: Pipe,
 								//script: Pipe.substr(filename.length+1),
 								ctx: ctx
 							};
 
 						//Log(req.client, profile.QoS, profile.Credit, req.table, query);
 
-						if (filename) {  // update file change watchers 
+						if ( !fileflexed ) {  // update file change watchers 
 							sql.query( "DELETE FROM openv.watches WHERE File != ? AND Run = ?", [filename, autoname] );
 
 							sql.query( "INSERT INTO openv.watches SET ?", {  // associate file with plugin

@@ -109,11 +109,12 @@ The following context keys are accepted:
 	*/
 		function train(x, y, cb) {  
 			
-			if (false) Log({
+			/*
+			Log({
 				train: use, 
 				dims: [x.length, y ? y.length : 0],
 				solve: solve
-			});
+			});  */
 
 			if ( !y || (x.length == y.length) ) {
 				$( 
@@ -140,7 +141,7 @@ The following context keys are accepted:
 			function saver( cls, x, y, x0, cb ) {
 				if ( y && keep ) {
 					$( 
-						`u = shuffle(x,y,keep);  y0 = is(x0) ? ${use}_predict(cls, x0) : null; `,
+						`u = shuffle(x,y,keep);  y0 = isDefined(x0) ? ${use}_predict(cls, x0) : null; `,
 
 						Copy( ctx, {	// revise $ context
 							x: x,
