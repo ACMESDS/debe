@@ -2,6 +2,11 @@ extends layout
 append layout_parms
 	- check = false
 append layout_body
+	script.
+		alert("test");
+		alert("#{urls.master}");
+		alert("#{JSON.stringify(projs)}");
+
 	p this is a test and only a test
 	:markdown
 		### (U) here is some markdown

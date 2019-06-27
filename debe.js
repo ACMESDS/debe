@@ -1509,6 +1509,9 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	Each skin has its own {key: "SQL DB.TABLE" || "/URL?QUERY", ... } spec.
 	*/
 	context: { //< site context extenders
+		test3: {  // context keys for swag.view
+			projs: "select * from openv.milestones"
+		}
 		/*
 		swag: {  // context keys for swag.view
 			projs: "select * from openv.milestones"
@@ -2479,7 +2482,7 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 		urls = site.urls,
 		query = req.query,
 		routers = DEBE.byActionTable.select,
-		dsname = req.table , 
+		dsname = req.table,
 		ctx = Copy(site, {  //< default site context to render skin
 			table: req.table,
 			dataset: req.table,
@@ -2509,7 +2512,7 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 		
 		if ( dsreq = DEBE.context[ds] ) // render in ds context
 			sql.serialize( dsreq, ctx, cb );
-					
+		
 		else  // render in default site context
 			cb( ctx );
 	}
@@ -2526,6 +2529,7 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 		Render Jade file at path this to res( err || html ) in a new context created for this request.  
 		**/
 			try {
+				Log("render", file);
 				res( JADE.renderFile( file, ctx ) );  
 			}
 			catch (err) {
@@ -3673,6 +3677,7 @@ append layout_body
 						flags.kiss		
 							? html 	// keep if simple
 							: html + [	// add by-line
+								"<br>",
 								site.title.tag( `${url}/treefan.view?src=info&w=4000&h=600` ),
 								"schema".tag( `${url}/treefan.view?src=${ds}&name=${rec.Name}&w=4000&h=600` ),
 								"run".tag( `${url}/${ds}.exe?Name=${rec.Name}` ),
@@ -3809,28 +3814,38 @@ append layout_body
 				}
 
 			else	// at an array node
-			if ( isArray(store) ) {
+			if ( isArray(store) && isObject( store0 = store[0] || 0 ) ) {
 				var 
 					N = store.length,
 					nodeName = "[" + (N ? (N==1) ? "0" : `0:${N-1}` : "") + "]",
 					nodePath = (path || "") + nodeName,
 					node = { 
 						name: nodeName,
-						size: 50,
+						size: 10,
 						doc: nodePath.tag( cb(nodePath) ),
-						children: nodeify( store[0] || 0, nodePath, cb )
+						children: nodeify( store0, nodePath, cb )
 					};
 				
 				return [node];
 			}
 
 			else	// at a leaf node
+			if (expandLeaf)
+				return [{
+					name: JSON.stringify(store),
+					size: 10,
+					doc: "",
+					children: []
+				}];
+			
+			else
 				return [];
-
 		}	
 		
+		var expandLeaf = true;
+		
 		return nodeify( Copy(this[0] || {}, {} ), null, path => {
-			return src+"&test:=" + path;
+			return src+"&get:=" + path;
 		});
 	},
 	
