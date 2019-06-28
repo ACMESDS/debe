@@ -4059,9 +4059,9 @@ append layout_body
 						if (head) {
 							var row = "";
 							Each(heads, function (key,val) {
-								row += key.tag("th");
+								row += key.tag("th", {});
 							});
-							rtn += row.tag("tr");
+							rtn += row.tag("tr", {});
 							head = false;
 						}
 
@@ -4072,11 +4072,11 @@ append layout_body
 									? table(val)
 									: (val+"").tag("td", intro ? {class:"intro"} : {});
 							else
-								row += (val+"").tag("td");
+								row += (val+"").tag("td", {});
 
 							intro = false;
 						});
-						rtn += row.tag("tr");
+						rtn += row.tag("tr", {});
 					});
 
 					return rtn.tag("table",{border:1}); //.tag("div",{style:"overflow-x:auto"});
@@ -4088,7 +4088,7 @@ append layout_body
 						if (val)
 							rtn += isArray(val)
 								? table(val)
-								: (key.tag("td") + JSON.stringify(val).tag("td")).tag("tr");
+								: (key.tag("td", {}) + JSON.stringify(val).tag("td", {})).tag("tr", {});
 					});
 
 					return rtn.tag("table");

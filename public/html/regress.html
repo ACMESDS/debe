@@ -1,110 +1,49 @@
 <html><head>
-<meta http-equiv="content-type" content="text/html; charset=windows-1252"></head><body><table border="1"></table><table border="1"><tbody><tr><th>n</th><th>d</th><th>p</th><th>m</th></tr><tr><td>test3</td><td>[](/shares/x_${Method}.jpg?w=500&amp;h=50) <br>
-[](/shares/face1.jpg?w=200&amp;h=200) [](/shares/regress_${Name}.jpg?w=200&amp;h=200)
-<br>
+<meta http-equiv="content-type" content="text/html; charset=windows-1252"></head><body><table border="1"></table><table border="1"><tbody><tr><th>p</th><th>d</th><th>n</th></tr><tr><td>/stores/digits.json?x=data&amp;y=target</td><td>[](/shares/x_${Method}.jpg?w=500&amp;h=50)<br></td><td>digitTest</td></tr><tr><td>/stores/face1.jpg?mc=img.resize(256,256).greyscale().sym({x:'RGB',y:'L'},
+ {cols:Channels, rows: Samples}, {x:0, y: 0} ).symmetries</td><td>[](/shares/x_${Method}.jpg?w=500&amp;h=50)<br>
+[](/stores/face1.jpg) [](/shares/regress_faceComplete.jpg) <br>
+$$ ( \\vec{x} , y) $$ pairs from the training face were paired over its 
+vertical symmetry axis and ${Save_ols.cls[0].name} regressed (in 
+${Save_ols.cls[0].inputs} L / RGB inputs) to produce the 
+\\vec{\\beta}_1,\\beta_0 := #Save_ols.cls[128].weights for channel 0 
+(${Keep} samples of which are  shown below) 
+[](/plot.view?x=Save_train$.x[$chan]&amp;y=Save_train$.y[$chan]&amp;min=0,0&amp;max=256,256&amp;w=600&amp;h=400)</td><td>faceComplete</td></tr><tr><td>[object Object]</td><td>[](/shares/x_${Method}.jpg?w=500&amp;h=50)<br>
+[](/stores/face1.jpg?w=200&amp;h=200) 
+[](/shares/regress_${Name}.jpg?w=200&amp;h=200)
 In this example ${Save_ols.cls[0].name} was used to regress the $$ 
 (\\vec{x},y) $$ pairs formed over the (lower,upper) image to produce 
 intercept-slope coefficients for each channel (column) in the reference 
 face shown. Here \\vec{\\beta_1},\\beta_0 := #Save_ols.cls[0].weights 
-coefficients were computed for the first (left most) channel.
-
-</td><td>[object Object]</td><td>ols</td></tr><tr><td>test1</td><td>[hello
- there](r) and [here's to you](green)  [test me](/shares/a1.jpg) or 
-right here [](/shares/a1.jpg?w=200&amp;h=200)  \\vec{\\beta} := 
-#Save_lrm.cls[0].classifiers.get("$.weights")
-
-as shown 
-[here](/plot.view?w=200&amp;h=200&amp;x=Save_train$.x&amp;y=Save_train$.y)
- or below 
-[](/plot.view?w=200&amp;h=200&amp;x=Save_train$.x&amp;y=Save_train$.y) 
-or raw news [](/news.html) with keep = ${Keep}
-</td><td>/stores/iris.json?u=data.sampler(Samples)&amp;x=u.dice(0,Channels)&amp;y=u.dice(3,1)</td><td>lrm</td></tr><tr><td>test2</td><td>[](/shares/x_${Method}.jpg?w=500&amp;h=50) <br>
-[](/shares/face1.jpg?w=200&amp;h=200) [](/shares/regress_${Name}.jpg?w=200&amp;h=200)
-<br>
-In this example ${Save_ols.cls[0].name} was used to regress the $$ 
-(\\vec{x},y) $$ pairs formed over the (lower,upper) image to produce 
-intercept-slope coefficients for each channel (column) in the reference 
-face shown. Here \\vec{\\beta_1},\\beta_0 := #Save_ols.cls[0].weights 
-coefficients were computed for the first (left most) channel (see fig 
-below).
-
-[](/plot.view?w=600&amp;h=400&amp;x=Save_train$.x[$chan]&amp;y=Save_train$.y[$chan]&amp;min=0,0&amp;max=255,255)
-</td><td>/shares/face1.jpg?mc=img.resize(256,256).sym({x:'RGB',y:'L'}, {rows: Samples , cols:Channels} ).symmetries</td><td>ols</td></tr><tr><td>test4</td><td>[hello
- there](r) and [here's to you](green)  [test me](/shares/a1.jpg) or 
-right here [](/shares/a1.jpg?w=200&amp;h=200)  \\vec{\\beta} := 
-#Save_lrm.cls[0].classifiers.get("$.weights")
-
-as shown 
-[here](/plot.view?w=200&amp;h=200&amp;x=Save_train$.x&amp;y=Save_train$.y)
- or below 
-[](/plot.view?w=200&amp;h=200&amp;x=Save_train$.x&amp;y=Save_train$.y) 
-or raw news [](/news.html) with keep = ${Keep}
-</td><td>/stores/iris.json?un=data.sampler(Samples).pick({r:0,g:1,b:2})</td><td>som</td></tr><tr><td>test5</td><td>[hello
- there](r) and [here's to you](green)  [test me](/shares/a1.jpg) or 
-right here [](/shares/a1.jpg?w=200&amp;h=200)  \\vec{\\beta} := 
-#Save_lrm.cls[0].classifiers.get("$.weights")
-
-as shown 
-[here](/plot.view?w=200&amp;h=200&amp;x=Save_train$.x&amp;y=Save_train$.y)
- or below 
-[](/plot.view?w=200&amp;h=200&amp;x=Save_train$.x&amp;y=Save_train$.y) 
-or raw news [](/news.html) with keep = ${Keep}
-</td><td>/stores/iris.json?u=data.sampler(Samples)&amp;x=u.dice(0,Channels)&amp;y=u.dice(3,1)</td><td>svm</td></tr><tr><td>test3-0</td><td>[](/shares/x_${Method}.jpg?w=500&amp;h=50) <br>
-[](/shares/face1.jpg?w=200&amp;h=200) [](/shares/regress_${Name}.jpg?w=200&amp;h=200)
-<br>
-In this example ${Save_ols.cls[0].name} was used to regress the $$ 
-(\\vec{x},y) $$ pairs formed over the (lower,upper) image to produce 
-intercept-slope coefficients for each channel (column) in the reference 
-face shown. Here \\vec{\\beta_1},\\beta_0 := #Save_ols.cls[0].weights 
-coefficients were computed for the first (left most) channel.
-
-</td><td>/shares/face1.jpg?mc=img.resize(256,256).greyscale().sym({x:'RGB',y:'L'}, {rows: Samples, cols:Channels} ).symmetries</td><td>ols</td></tr><tr><td>test3-1</td><td>[](/shares/x_${Method}.jpg?w=500&amp;h=50) <br>
-[](/shares/face1.jpg?w=200&amp;h=200) [](/shares/regress_${Name}.jpg?w=200&amp;h=200)
-<br>
-In this example ${Save_ols.cls[0].name} was used to regress the $$ 
-(\\vec{x},y) $$ pairs formed over the (lower,upper) image to produce 
-intercept-slope coefficients for each channel (column) in the reference 
-face shown. Here \\vec{\\beta_1},\\beta_0 := #Save_ols.cls[0].weights 
-coefficients were computed for the first (left most) channel.
-
-</td><td>/shares/face1.jpg?mc=img.resize(256,256).greyscale().sym({x:'RGB',y:'L'}, {rows: Samples, cols:Channels} ).symmetries</td><td>ols</td></tr><tr><td>test3-2</td><td>[](/shares/x_${Method}.jpg?w=500&amp;h=50) <br>
-[](/shares/face1.jpg?w=200&amp;h=200) [](/shares/regress_${Name}.jpg?w=200&amp;h=200)
-<br>
-In this example ${Save_ols.cls[0].name} was used to regress the $$ 
-(\\vec{x},y) $$ pairs formed over the (lower,upper) image to produce 
-intercept-slope coefficients for each channel (column) in the reference 
-face shown. Here \\vec{\\beta_1},\\beta_0 := #Save_ols.cls[0].weights 
-coefficients were computed for the first (left most) channel.
-
-</td><td>/shares/face1.jpg?mc=img.resize(256,256).greyscale().sym({x:'RGB',y:'L'}, {rows: Samples, cols:Channels} ).symmetries</td><td>ols</td></tr><tr><td>test3-3</td><td>[](/shares/x_${Method}.jpg?w=500&amp;h=50) <br>
-[](/shares/face1.jpg?w=200&amp;h=200) [](/shares/regress_${Name}.jpg?w=200&amp;h=200)
-<br>
-In this example ${Save_ols.cls[0].name} was used to regress the $$ 
-(\\vec{x},y) $$ pairs formed over the (lower,upper) image to produce 
-intercept-slope coefficients for each channel (column) in the reference 
-face shown. Here \\vec{\\beta_1},\\beta_0 := #Save_ols.cls[0].weights 
-coefficients were computed for the first (left most) channel.
-
-</td><td>/shares/face1.jpg?mc=img.resize(256,256).greyscale().sym({x:'RGB',y:'L'}, {rows: Samples, cols:Channels} ).symmetries</td><td>ols</td></tr><tr><td>test2a</td><td>[](/shares/x_${Method}.jpg?w=500&amp;h=50) <br>
-[](/shares/face1.jpg?w=200&amp;h=200) [](/shares/regress_${Name}.jpg?w=200&amp;h=200)
-<br>
+coefficients were computed for the first (left most) channel. </td><td>test3</td></tr><tr><td>/stores/face1.jpg?mc=img.resize(256,256).sym({x:'RGB',y:'L'}, {rows: Samples , cols:Channels} ).symmetries</td><td>[](/shares/x_${Method}.jpg?w=500&amp;h=50)<br>
+[](/stores/face1.jpg?w=200&amp;h=200) <br>
+[](/shares/regress_${Name}.jpg?w=200&amp;h=200)
 In this example ${Save_ols.cls[0].name} was used to regress the $$ 
 (\\vec{x},y) $$ pairs formed over the (lower,upper) image to produce 
 intercept-slope coefficients for each channel (column) in the reference 
 face shown. Here \\vec{\\beta_1},\\beta_0 := #Save_ols.cls[0].weights 
 coefficients were computed for the first (left most) channel (see fig 
-below).
-
+below). 
 [](/plot.view?w=600&amp;h=400&amp;x=Save_train$.x[$chan]&amp;y=Save_train$.y[$chan]&amp;min=0,0&amp;max=255,255)
-</td><td>/shares/face1.jpg?mc=img.resize(256,256).greyscale().sym({x:'RGB',y:'L'}, {rows: Samples , cols:Channels} ).symmetries</td><td>ols</td></tr><tr><td>test2b</td><td>[](/shares/x_${Method}.jpg?w=500&amp;h=50) <br>
-[](/shares/face1.jpg?w=200&amp;h=200) [](/shares/regress_${Name}.jpg?w=200&amp;h=200)
+ 
+
 <br>
-In this example ${Save_ols.cls[0].name} was used to regress the $$ 
-(\\vec{x},y) $$ pairs formed over the (lower,upper) image to produce 
-intercept-slope coefficients for each channel (column) in the reference 
-face shown. Here \\vec{\\beta_1},\\beta_0 := #Save_ols.cls[0].weights 
-coefficients were computed for the first (left most) channel (see fig 
-below).
-
-[](/plot.view?w=600&amp;h=400&amp;x=Save_train$.x[$chan]&amp;y=Save_train$.y[$chan]&amp;min=0,0&amp;max=255,255)
-</td><td>/shares/face1.jpg?mc=img.resize(256,256).greyscale().sym({x:'L',y:'L'}, {rows: Samples , cols:Channels} ).symmetries</td><td>ols</td></tr></tbody></table></body></html>
+[schema](/treefan.view?w=1000&amp;h=600)
+</td><td>test2</td></tr><tr><td>/gen.json?N=100&amp;beta=[-2.5,[-10,10]]&amp;seed=someseed&amp;x=x.data.slice(0,Samples)&amp;y=y.data.slice(0,Samples)</td><td>[](/shares/x_${Method}.jpg?w=500&amp;h=50)<br>
+\\vec{\\beta}|y=0,\\vec{\\beta}|y=1 := 
+#Save_lrm.cls[0].classifiers.get("$.weights") with keep = ${Keep} 
+[](/plot.view?w=500&amp;h=500&amp;x=Save_train$.x[$chan]&amp;y=Save_train$.y[$chan]&amp;min=-1,-1&amp;max=1,1)
+</td><td>test1</td></tr><tr><td>/stores/iris.json?un=data.slice(0,Samples).get({keys: {r:0,g:1,b:2}})</td><td>[](/shares/x_${Method}.jpg?w=500&amp;h=50)<br>
+[hello there](r) and [here's to you](green) [test me](/shares/a1.jpg) or
+ right here [](/shares/a1.jpg?w=200&amp;h=200) \\vec{\\beta} := 
+#Save_lrm.cls[0].classifiers.get("$.weights") as shown 
+[here](/plot.view?w=200&amp;h=200&amp;x=Save_train$.x&amp;y=Save_train$.y)
+ or below 
+[](/plot.view?w=200&amp;h=200&amp;x=Save_train$.x&amp;y=Save_train$.y) 
+or raw news [](/news.html) with keep = ${Keep} </td><td>test4</td></tr><tr><td>/stores/iris.json?u=data.slice(0,Samples)&amp;x=u.get({start: 0, len:Channels})&amp;y=u.get({start:3,len:1})</td><td>[](/shares/x_${Method}.jpg?w=500&amp;h=50)<br>
+[hello there](r) and [here's to you](green) [test me](/shares/a1.jpg) or
+ right here [](/shares/a1.jpg?w=200&amp;h=200) \\vec{\\beta} := 
+#Save_lrm.cls[0].classifiers.get("$.weights") as shown 
+[here](/plot.view?w=200&amp;h=200&amp;x=Save_train$.x&amp;y=Save_train$.y)
+ or below 
+[](/plot.view?w=200&amp;h=200&amp;x=Save_train$.x&amp;y=Save_train$.y) 
+or raw news [](/news.html) with keep = ${Keep} </td><td>test5</td></tr><tr><td>/stores/raftest.json?x=data.get({start:0, len:Channels})&amp;y=data.get({start:Channels,len:1})</td><td>null</td><td>test6</td></tr></tbody></table></body></html>
