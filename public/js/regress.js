@@ -140,6 +140,37 @@ The following context keys are accepted:
 			
 			function saver( cls, x, y, x0, cb ) {
 				if ( y && keep ) {
+					var 
+						idx = x.shuffle(keep, true),
+						x = x.Get(idx),
+						y = y.Get(idx);
+					
+					if (x0) 
+						$( `y0 = ${use}_predict(cls, x0)`, {
+							x0: x0, 
+							cls: cls
+						}, ctx => 	cb({		// return sampled and predicted data
+							sample: {
+								x: x,
+								y: y,
+								x0: x0,
+								y0: ctx.y0._data
+							},
+							cls: cls
+						}) );
+						  
+					else
+						cb({		// return sampled and predicted data
+							sample: {
+								x: x,
+								y: y,
+								x0: [],
+								y0: []
+							},
+							cls: cls
+						})
+					
+					/*
 					$( 
 						`u = shuffle(x,y,keep);  y0 = isDefined(x0) ? ${use}_predict(cls, x0) : null; `,
 
@@ -160,7 +191,7 @@ The following context keys are accepted:
 							},
 							cls: cls
 						})
-					);
+					); */
 				}
 
 				else 

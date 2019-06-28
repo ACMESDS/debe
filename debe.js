@@ -2004,10 +2004,10 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 	function pipePlugin( data, pipe, ctx, cb ) { // prime plugin with pipe and run in context ctx
 		req.query = ctx;   // let plugin mixin its own keys
 		Log("prime pipe", pipe);
-		Copy(ctx,data);
+		Copy(ctx, data);
 		Each(pipe, (key,val) => { // add pipe keys to engine ctx
 			if ( isString(val) )
-				ctx[key] = data[key] = val.parseJS( data );
+				ctx[key] = data[key] = val.parseJS(data, (val,err) => { Log(">>pipe error", err ); return []; }  );
 		});
 			
 		ATOM.select(req, ctx => {  // run plugin
@@ -2044,7 +2044,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 		}
 	}
 	
-	function smartCopy(ctx) {
+	function pipeCopy(ctx) {
 		var 
 			rtn = {Pipe: '"' + ctx.Pipe.path + '"' },
 			skip = {Host: 1, ID: 1, Pipe: 1};
@@ -2090,7 +2090,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 			
 	else
 	if ("ID" in query || "Name" in query)  // execute plugin
-		FLEX.runPlugin(req, function (ctx) {  // run engine using requested usecase via the job regulator 
+		FLEX.runPlugin(req, ctx => {  // run engine using requested usecase via the job regulator 
 
 			//Log("run ctx", ctx);
 
@@ -2108,18 +2108,18 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 				ctx.Host = host;
 
 				switch ( Pipe.constructor ) {
-					case String: // pipe contains a source path
+					case String: // query contains a source path
 
 						var
 							chipper = HACK.chipVoxels,
-							pipe = {},
-							filename = Pipe.parseURL(pipe,{},{},{}),
-							fileparts = filename.split("."),
-							filenode = fileparts[0] || "",
-							filetype = fileparts[1] || "",
-							fileflexed = FLEX.select[filenode.substr(1)] ? true : false,
-							autoname = `${ctx.Host}.${ctx.Name}`,
 							fetcher = DEBE.fetcher,
+							pipeQuery = {},
+							pipePath = Pipe.parseURL(pipeQuery,{},{},{}),
+							parts = pipePath.split("."),
+							pipeName = parts[0] || "",
+							pipeType = parts[1] || "",
+							isFlexed = FLEX.select[pipeName.substr(1)] ? true : false,
+							pipeRun = `${ctx.Host}.${ctx.Name}`,
 							job = { // job descriptor for regulator
 								qos: 1, //profile.QoS, 
 								priority: 0,
@@ -2127,54 +2127,52 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 								class: "plugin",
 								credit: 100, // profile.Credit,
 								name: req.table,
-								task: query.Name || query.ID,
+								task: pipeQuery.Name || pipeQuery.ID,
 								notes: [
-										req.table.tag("?",{ID:query.ID}).tag( "/" + req.table + ".run" ), 
+										req.table.tag("?",{ID:pipeQuery.ID}).tag( "/" + req.table + ".run" ), 
 										((profile.Credit>0) ? "funded" : "unfunded").tag( req.url ),
-										"RTP".tag( `/rtpsqd.view?task=${query.Name}` ),
-										"PMR brief".tag( `/briefs.view?options=${query.Name}`)
+										"RTP".tag( `/rtpsqd.view?task=${pipeQuery.Name}` ),
+										"PMR brief".tag( `/briefs.view?options=${pipeQuery.Name}`)
 								].join(" || "),
-								pipe: pipe,
-								path: Pipe,
-								//script: Pipe.substr(filename.length+1),
+								query: pipeQuery,
+								url: Pipe,
+								path: pipePath,
 								ctx: ctx
 							};
 
-						//Log(req.client, profile.QoS, profile.Credit, req.table, query);
-
-						if ( !fileflexed ) {  // update file change watchers 
-							sql.query( "DELETE FROM openv.watches WHERE File != ? AND Run = ?", [filename, autoname] );
+						if ( !isFlexed ) {  // update file change watchers 
+							sql.query( "DELETE FROM openv.watches WHERE File != ? AND Run = ?", [pipePath, pipeRun] );
 
 							sql.query( "INSERT INTO openv.watches SET ?", {  // associate file with plugin
-								File: filename,
-								Run: autoname
+								File: pipePath,
+								Run: pipeRun
 							}, (err,info) => {
 
 								if ( !err )
-									if ( filename.charAt(0) == "/" )
-										dogAutoruns( filename );
+									if ( pipePath.charAt(0) == "/" )
+										dogAutoruns( pipePath );
 							});
 						}
 						
-						switch (filetype) {  // file types determine workflow
-							case "jpg":		// run jpg scripting pipe
+						switch (pipeType) {  // file types determine workflow
+							case "jpg":		// run jpg scripting query
 								sql.insertJob( job, job => { 
 									var
 										ctx = job.ctx,		// recover job context
-										pipe = job.pipe,
+										query = job.query,
 										path = job.path,
 										data = {},
 										firstKey = "";
 
-									for (var key in pipe)  // first key is special scripting-with-callback key
+									for (var key in query)  // first key is special scripting-with-callback key
 										if ( !firstKey ) {
 											firstKey = key;
 
-											`read( path, img => cb( ${pipe[key]} ) )`
+											`read( path, img => cb( ${query[key]} ) )`
 											.parseJS( Copy(ctx, { // define parse context
 												//Log: console.log,
 
-												read: (path,cb) => {	// read and forward jpg to callback
+												read: (url,cb) => {	// read and forward jpg to callback
 													$.IMP.read( "."+ path )
 													.then( img => { 
 														Log("read", path, img.bitmap.height, img.bitmap.width);
@@ -2189,8 +2187,8 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 
 												cb: rtn => {
 													data[firstKey] = rtn;
-													pipe[firstKey] = firstKey;
-													pipePlugin( data, pipe, ctx, ctx => saveEvents(ctx.Save, ctx) );
+													query[firstKey] = firstKey;
+													pipePlugin( data, query, ctx, ctx => saveEvents(ctx.Save, ctx) );
 												}
 											}) );
 										}  
@@ -2200,12 +2198,10 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 							case "json":	// send raw json data to the plugin
 								sql.insertJob( job, job => { 
 									var
-										ctx = job.ctx,		// recover job context
-										path = job.path,
-										pipe = job.pipe;
+										ctx = job.ctx;		// recover job context
 
-									fetcher( path, null, info => {	// fetch events and route them to plugin
-										pipePlugin( info.parseJSON( {} ), pipe, ctx, ctx => saveEvents(ctx.Save, ctx) );
+									fetcher( job.url, null, info => {	// fetch events and route them to plugin
+										pipePlugin( info.parseJSON( {} ), job.query, ctx, ctx => saveEvents(ctx.Save, ctx) );
 									});
 								});
 								break;
@@ -2217,13 +2213,13 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 								break;
 								
 							default: 	// stream indexed events or chips through supervisor 
-								sql.forEach( TRACE, "SELECT * FROM app.files WHERE Name LIKE ? ", filename , file => {		// regulate requested file(s)
+								sql.forEach( TRACE, "SELECT * FROM app.files WHERE Name LIKE ? ", pipePath , file => {		// regulate requested file(s)
 
 									function chipFile( file , ctx ) { 
 
 										//Log( "chip file>>>", file );
 										ctx.File = file;
-										chipper(sql, pipe, voxctx => {  // get voxel context for each voxel being chipped
+										chipper(sql, query, voxctx => {  // get voxel context for each voxel being chipped
 
 											job.ctx = Copy( ctx, voxctx );
 
@@ -2261,7 +2257,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 																				ctx.Case = "v"+ctx.Voxel.ID;
 																				Trace( `STARTING voxel${ctx.Voxel.ID}` , sql );
 
-																				pipePlugin( {}, ctx, (ctx) => {
+																				pipePlugin( {}, ctx, ctx => {
 																					supervisor.end( ctx.Save || [], (evstore) => {
 																						saveEvents(evstore, ctx);
 																					});
@@ -2273,11 +2269,11 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 																	supercb(null);
 															},  
 
-															N: pipe.actors || file._Ingest_Actors,  // ensemble size
-															keys: pipe.keys || file.Stats_stateKeys,	// event keys
-															symbols: pipe.symbols || file.Stats_stateSymbols || file._Ingest_States,	// state symbols
-															steps: pipe.steps || file._Ingest_Steps, // process steps
-															batch: pipe.batch || 0,  // steps to next supervised learning event 
+															N: query.actors || file._Ingest_Actors,  // ensemble size
+															keys: query.keys || file.Stats_stateKeys,	// event keys
+															symbols: query.symbols || file.Stats_stateSymbols || file._Ingest_States,	// state symbols
+															steps: query.steps || file._Ingest_Steps, // process steps
+															batch: query.batch || 0,  // steps to next supervised learning event 
 															//trP: {states: file._Ingest_States}, // trans probs
 															trP: {},	// transition probs
 															filter: function (str, ev) {  // filter output events
@@ -2291,7 +2287,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 															}  
 														});
 
-													supervisor.pipe( stats => { // pipe supervisor to this callback
+													supervisor.query( stats => { // query supervisor to this callback
 														Trace( `PIPED voxel${ctx.Voxel.ID}` , sql );
 													}); 
 												}												
@@ -2305,24 +2301,24 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 										CP.exec("", function () {  // revise to add a script to cp from lts and unzip
 											Trace("RESTORING "+file.Name);
 											sql.query("UPDATE app.files SET _State_Archived=false WHERE ?", {ID: file.ID});
-											chipFile(file, pipe);
+											chipFile(file, query);
 										});
 
 									else
-										chipFile(file, pipe);
+										chipFile(file, query);
 								});
 						}
 						break;
 
-					case Array:  // pipe contains event list
+					case Array:  // query contains event list
 						ctx.Events = Pipe;
-						pipePlugin( {}, ctx, (ctx) => saveEvents(ctx.Save, ctx) );
+						pipePlugin( {}, ctx, ctx => saveEvents(ctx.Save, ctx) );
 						break;
 
-					case Object:  // monte-carlo pipe
+					case Object:  // monte-carlo query
 						var 
 							keys = [], 
-							runCtx = smartCopy(ctx), 
+							runCtx = pipeCopy(ctx), 
 							jobs = [], inserts = 0,
 							fetcher = DEBE.fetcher;
 						
@@ -2344,7 +2340,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 							});
 						});
 						break;
-				}
+				}				
 			}
 					
 			else	// unpiped (e.g. event generation) engines never participate in a supervised workflow
@@ -4281,9 +4277,7 @@ function exeAutorun(sql,name,path) {
 					exePath = `/${pluginName}.exe?Name=${caseName}`;
 
 				Log("autorun", link,exePath);
-				fetcher( exePath, null, (rtn) => {
-					Log("autorun", rtn);
-				});
+				fetcher( exePath, null, rtn => Log("autorun", rtn) );
 			});
 	});
 
