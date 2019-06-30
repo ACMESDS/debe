@@ -118,16 +118,16 @@ The following context keys are accepted:
 
 			if ( !y || (x.length == y.length) ) {
 				$( 
-					`cls = ${use}_train( x, y, solve, save ); `, 
+					`cls = ${use}_train( x, y, solve ); `, 
 
 					Copy(ctx, {
 						x: x,
 						y: y,
-						save: cb,
 						solve: solve
 					}), 
 					
 				  	ctx => {  // regressor trained
+						cb( ctx.cls );
 					}
 				);
 			}
@@ -307,8 +307,11 @@ The following context keys are accepted:
 				knn: $.KNN.load,
 				pls: $.PLS.load,
 				som: $.SOM.load,
+				nab: $.NAB.load,
 				raf: (model) => model,
 				dtr: (model) => model,
+				lda: (model) => model,
+				qda: (model) => model,
 				ols: ctx.ols_degree ? $.SPR.load : $.MLR.load
 			},
 			loader = loaders[use],

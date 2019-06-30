@@ -1,5 +1,5 @@
 module.exports = {
-	usecase: {
+	keys: {
 		Mixes: "json",
 		Refs: "json",
 		Description: "mediumtext"

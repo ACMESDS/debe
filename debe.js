@@ -2245,7 +2245,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 																//Log("learning ctx", ctx);
 
 																if ( evs = ctx.Events ) 
-																	evs.feed( "t", function (evs) {  // get supervisor evs until null; then save supervisor computed events
+																	evs.get( "t", evs => {  // get supervisor evs until null; then save supervisor computed events
 																		Trace( evs ? `SUPERVISING voxel${ctx.Voxel.ID} events ${evs.length}` : `SUPERVISED voxel${ctx.Voxel.ID}` , sql );
 
 																		if (evs) // feed supervisor
