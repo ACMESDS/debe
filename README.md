@@ -15,7 +15,7 @@ DEBE uses [TOTEM endpoints](https://github.com/acmesds/totem):
 	PUT /NODE ?? NODE ...
 	DELETE /NODE ?? NODE ...
 
-to access its NODEs.  A NODE references a dataset, plugin, file or <a href="mailto:bdj@comcast.net?subject=test.me">command</a>:
+to access its NODEs.  A NODE references a dataset, plugin, file or command:
 
 	DATASET.TYPE ? QUERY
 	PLUGIN.TYPE ? QUERY
