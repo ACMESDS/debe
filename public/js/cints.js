@@ -1,5 +1,5 @@
 module.exports = {  // learn hidden coherence parameters of a Markov process
-	keys: {
+	_keys: {
 		lma: "json comment '[init] initial estimate of coherence intervals for levenberg-marquardt alg' ",
 		lfa: "json comment '[init] initial estimate for linear factor alg [use at your own risk]' ",
 		bfs: "json comment '[start,end,step] initial estimate for brute force search' ",
@@ -31,7 +31,7 @@ module.exports = {  // learn hidden coherence parameters of a Markov process
 		var
 			flow = ctx.Flow;
 		
-		Log("cints ctx T,N", ctx);
+		Log("cints flow", flow);
 		
 		ctx.Save = $.coherenceIntervals({  // define solver parms
 			H: flow.F,		// count frequencies

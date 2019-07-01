@@ -9,6 +9,8 @@ by: ${by}
 
 register: ${register}
 
+email test: ${request("click here/some test")}
+
 input: ${input}
 
 query a,b,c: $ {a}, $ {b}, $ {c}

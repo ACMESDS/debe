@@ -466,8 +466,9 @@ append site_body
 					"/DATASET.TYPE?QUERY"  
 					{ "path": "/DATASET.TYPE?QUERY", "KEY": [VALUE, ...] , ... "norun": true }
 					
-				where the { ... } form generates usecases over the specified context KEYs, and where
-				the DATASET.TYPE form selects the TYPE-defined workflow.   
+				The 2nd-form generates usecases over the specified context KEYs.  The 1st-form selects the
+				workflow based on TYPE = json || jpg || stream || CASE using the TYPE-specific [QUERY filter keys](/api.view) 
+				and TYPE-specific [supervisor context keys](/api.view).
 				
 				## The { ... } pipe
 				
@@ -477,6 +478,8 @@ append site_body
 				## The DATASET.json pipe
 				
 				## The DATASET.jpg pipe
+				
+				## The DATASET.stream pipe
 
 				## The DATASET.CASE pipe
 				

@@ -3757,7 +3757,7 @@ append layout_body
 			fetchBlog = function( rec, cb ) {
 				if ( md = rec[key] + "" ) 
 					md.Xblog(req, ds.tag("?", { 	// tag ds with source record selector
-						name: (rec.Pipe.charAt(0) == "{") 
+						name: ( (rec.Pipe||"").charAt(0) == "{" ) 
 							? rec.Name + "-%"	// pipe defines a monte-carlo cross product so get them all
 							: rec.Name	// pipe defines a simple path
 					}), {}, {}, rec, true, html => cb( 
@@ -4204,27 +4204,6 @@ append layout_body
 		}
 
 		return  table( this );
-	},
-	
-	function mailify( tags, def ) {
-		var users = [];
-		this.forEach( (user) => {
-			if (user.indexOf("@")>=0) 
-				users.push(user);
-		});
-	
-		tags = tags || {};
-		tags.subject = tags.subject || "request for information";
-		
-		if (def)
-			return users.length 
-				? "mailto:"+users.join(";").tag("?", tags)
-				: def ;
-		
-		else
-			return users.length 
-				? (users.length+"").tag( "mailto:"+users.join(";").tag("?", tags) )
-				: "none" ;
 	}
 	
 ].Extend(Array);
