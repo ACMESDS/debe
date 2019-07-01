@@ -2005,9 +2005,10 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 		req.query = ctx;   // let plugin mixin its own keys
 		Log("prime pipe", pipe);
 		Copy(ctx, data);
+		ctx.Data = data;
 		Each(pipe, (key,val) => { // add pipe keys to engine ctx
 			if ( isString(val) )
-				ctx[key] = data[key] = val.parseJS(data, (val,err) => { Log(">>pipe error", err ); return []; }  );
+				ctx[key] = data[key] = val.parseJS(data, (val,err) => val  );
 		});
 			
 		ATOM.select(req, ctx => {  // run plugin
@@ -2117,7 +2118,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 							pipePath = Pipe.parseURL(pipeQuery,{},{},{}),
 							parts = pipePath.split("."),
 							pipeName = parts[0] || "",
-							pipeType = parts[1] || "",
+							pipeType = parts.pop() || "",
 							isFlexed = FLEX.select[pipeName.substr(1)] ? true : false,
 							pipeRun = `${ctx.Host}.${ctx.Name}`,
 							job = { // job descriptor for regulator
@@ -2155,53 +2156,72 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 						}
 						
 						switch (pipeType) {  // file types determine workflow
+							case "stream": 	// load data from streamed file
+								sql.insertJob( job, job => { 
+									
+									function fetch(path, cb) {
+										FS.createReadStream("."+path,"utf8").get( "", evs => cb({evs: evs} ) );
+									}
+									
+									fetch( job.path , evs => {	// fetch and route events to plugin
+										pipePlugin( evs, job.query, job.ctx, ctx => saveEvents(ctx.Save, ctx) );
+									});
+								});
+								break;
+								
 							case "jpg":		// run jpg scripting query
 								sql.insertJob( job, job => { 
-									var
-										ctx = job.ctx,		// recover job context
-										query = job.query,
-										path = job.path,
-										data = {},
-										firstKey = "";
+									
+									function fetch( path, ctx, query, cb) {
+										var
+											data = {},
+											firstKey = "";
 
-									for (var key in query)  // first key is special scripting-with-callback key
-										if ( !firstKey ) {
-											firstKey = key;
+										for (var key in query)  // first key is special scripting-with-callback key
+											if ( !firstKey ) {
+												firstKey = key;
 
-											`read( path, img => cb( ${query[key]} ) )`
-											.parseJS( Copy(ctx, { // define parse context
-												//Log: console.log,
+												`read( path, img => cb( ${query[key]} ) )`
+												.parseJS( Copy(ctx, { // define parse context
+													//Log: console.log,
 
-												read: (url,cb) => {	// read and forward jpg to callback
-													$.IMP.read( "."+ path )
-													.then( img => { 
-														Log("read", path, img.bitmap.height, img.bitmap.width);
-														img.readPath = path;
-														if (cb) cb( img); 
-														return img; 
-													} )
-													.catch( err => Log(err) );
-												},
+													read: (url,cb) => {	// read and forward jpg to callback
+														$.IMP.read( "."+ path )
+														.then( img => { 
+															Log("read", path, img.bitmap.height, img.bitmap.width);
+															img.readPath = path;
+															if (cb) cb( img); 
+															return img; 
+														} )
+														.catch( err => Log(err) );
+													},
 
-												path: path,
+													path: path,
 
-												cb: rtn => {
-													data[firstKey] = rtn;
-													query[firstKey] = firstKey;
-													pipePlugin( data, query, ctx, ctx => saveEvents(ctx.Save, ctx) );
-												}
-											}) );
-										}  
+													cb: rtn => {
+														data[firstKey] = rtn;
+														query[firstKey] = firstKey;
+														cb( data );
+													}
+												}) );
+											}  
+									}
+									
+									fetch( job.path, job.ctx, job.query, evs => {
+										pipePlugin( evs, job.query, job.ctx, ctx => saveEvents(ctx.Save, ctx) );
+									});
 								});	
 								break;							
 								
 							case "json":	// send raw json data to the plugin
 								sql.insertJob( job, job => { 
-									var
-										ctx = job.ctx;		// recover job context
-
-									fetcher( job.url, null, info => {	// fetch events and route them to plugin
-										pipePlugin( info.parseJSON( {} ), job.query, ctx, ctx => saveEvents(ctx.Save, ctx) );
+									
+									function fetch(path, cb) {
+										fetcher( path, null, info => cb( info.parseJSON( {} ) ) );
+									}
+									
+									fetch( job.url, evs => {	// fetch and route events to plugin
+										pipePlugin( evs, job.query, job.ctx, ctx => saveEvents(ctx.Save, ctx) );
 									});
 								});
 								break;
@@ -2339,6 +2359,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 										});
 							});
 						});
+						
 						break;
 				}				
 			}
@@ -2403,7 +2424,7 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 	var
 		host = ctx.Host,
 		client = "guest",
-		fileName = `${ctx.Host}.${ctx.Name}`;
+		fileName = `${ctx.Host}.${ctx.Name}.stream`;
 	
 	//Log("saving", evs);
 	
@@ -3230,7 +3251,73 @@ Initialize DEBE on startup.
 } 
 
 //====================== Extend objects
-	
+
+[
+	function get( idx, cb ) {
+		function pipe(filter, src, cb) {  
+			var 
+				ingested = 0,
+				evs = [],
+				sink = new STREAM.Writable({
+					objectMode: true,
+					write: function (rec,en,cb) {
+
+						function cache(ev) {
+							ingested++;
+							evs.push( ev );
+						}
+
+						if (filter)   // filter the record if filter provided
+							filter(rec, cache);
+
+						else  // no filter so just cache the record
+							cache(rec);
+
+						cb(null);  // signal no errors
+					}
+				});
+		
+			sink
+			.on("finish", function () {
+				cb( evs );
+			})
+			.on("error", function (err) {
+				Log("Pipe failed", err);
+			});
+		
+			src.pipe(sink);  // start the ingest
+		}
+		
+		function filter(buf, cb) {
+			buf.split("\n").forEach( rec => {
+				if (rec) 
+					try {
+						if ( data = JSON.parse(rec) )
+							switch (data.constructor.name) {
+								case "Array": 
+									data.forEach( rec => cb(rec) );
+									break;
+									
+								case "Object":
+									cb( data );
+									break;
+									
+								default: 
+									cb( {t: data} );
+							}
+					}
+					
+					catch (err) {
+						var vals = rec.split(",");
+						cb( { x: parseFloat(vals[0]), y: parseFloat(vals[1]), z: parseFloat(vals[2]), t: parseFloat(vals[3]), n: parseInt(vals[4]), u: parseInt(vals[5]) } );
+					}
+			});	
+		}
+		
+		pipe(filter, this, cb);
+	}
+].Extend(STREAM);
+
 [  // string prototypes
 	// string serializers 
 	
