@@ -4,6 +4,9 @@
 # test2
 [](/plot.view?src=regress&name=test2&x=Save_ols$.cls[0].weights&y=Save_ols$.cls[0].weights&w=600&h=400)
 
+# fetch test
+As of ${now} ${fetch("status")}
+
 # test urls
 urls: ${JSON.stringify( urls )}
 
@@ -14,14 +17,19 @@ a  code block test:
 	test1
 	test2
 
+followed by another:
+
+	wow
+	way cool !!
+	[should be ignored](/nogo.com)
+
 now: ${now}
 
 by: ${by}
 
-register: ${register}
+# spoofed input
+${register} ${input({a:"test",b:"yay"})}
 
 email test: ${request("click here/some test")}
-
-input: ${input}
 
 query a,b,c: $ {a}, $ {b}, $ {c}

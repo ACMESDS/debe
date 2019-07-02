@@ -109,6 +109,7 @@ var
 	},
 
 	blogContext: {
+		
 		d: docify,
 		doc: docify,
 		
@@ -1539,11 +1540,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		/**
 		@class DEBE.SiteSkinning
 		*/
-		xlink: function (label, url) {
-			Log("xlink", label, url);
-			return label.tag( url );
-		},
-		
 		classif: {
 			level: "",
 			purpose: "",
@@ -3399,13 +3395,15 @@ append layout_body
 		//Copy(DEBE.blogContext, new Object(ctx));
 		Copy(DEBE.blogContext, ctx);
 		
-		this.Xescape( [], (blocks,html) => // excape code blocks
+		this.Xescape( [], (blocks,html) => // escape code blocks
+		html.Xbreaks( html => // force new lines
+		html.Xsection( html => // expand section headers
 		html.Xscript( ctx, (ctx,html) => // expand scripts 
 		html.Xkeys( ctx, html => // expand js keys
 		html.Xgen(ctx, html => // expand generators
 		html.Xtex( html => // expand TeX
 		html.Xlink( req, ds, viaBrowser, html => { // expand links
-			
+
 			if ( viaBrowser )
 				html = 	html.replace(/href=(.*?)\>/g, (str,ref) => { // smart links to follow <a href=REF>A</a> links
 					var q = (ref.charAt(0) == "'") ? '"' : "'";
@@ -3417,7 +3415,11 @@ append layout_body
 					return blocks[ blockidx++ ].tag("code",{}).tag("pre",{});
 				}) );
 			
-		}))))));
+		}))))))));
+	},
+	
+	function Xbreaks( cb ) {
+		cb( this.replace( /  \n/g, "<br>" ) );
 	},
 	
 	function Xescape( blocks, cb ) { // escapes code blocks then callsback cb(blocks, html)
@@ -3429,7 +3431,7 @@ append layout_body
 				blocks.push( rec.arg2 );
 				cb( rec.arg1 + ":" + "@block");
 			},
-			pattern = /(.*)\:\n\n((\t.*\n)+)\n/g ;
+			pattern = /(.*)\:\n\n((\t.*\n)+)\n/gm ;
 				// /\n(.*)\:\n\n((.|\n)*)\n\n/g ;	// define escaped code block
 		
 		html.serialize( fetchBlock, pattern, key, (html, fails) => {  
@@ -3517,15 +3519,15 @@ append layout_body
 					now = new Date(),
 					srcPath = urlPath.tag( "?", Copy({src:dsPath}, keys) );
 
-				Log("link", [dsPath, srcPath, urlPath], keys, [opt, url]);
+				// Log("link", [dsPath, srcPath, urlPath], keys, [opt, url]);
 
 				if (opt)
 					if (urlPath) 
 						if ( color = colors[urlPath.toLowerCase()] )		// [ TEXT ]( COLOR )
 							cb( opt.tag("font",{color:color}) );
 
-						else
-							cb( opt.tag( srcPath ) );
+						else		// [ TEXT ]( URL )
+							cb( opt.tag( url ) );
 				
 					else 
 					if ( (keys.starts ? now>=new Date(keys.starts) : true) && 
@@ -3633,7 +3635,7 @@ append layout_body
 					format: "inline-TeX",  
 					//html: true,
 					mml: true
-				}, (d) => cb( d.mml || "" ) );
+				}, d => cb( d.mml || "" ) );
 			},
 			fetchTeX = function ( rec, cb ) {	// callsback cb with expanded TeX tag
 				//Log("math",rec);
@@ -3642,7 +3644,7 @@ append layout_body
 					format: "TeX",  
 					//html: true,
 					mml: true
-				}, (d) => cb( d.mml || "" ) );
+				}, d => cb( d.mml || "" ) );
 			},
 			fetchAscii = function ( rec, cb ) { // callsback cb with expanded AsciiMath tag
 				//Log("math",rec);
@@ -3651,7 +3653,7 @@ append layout_body
 					format: "AsciiMath",  // TeX, inline-TeX, AsciiMath, MathML
 					//html: true,
 					mml: true
-				}, (d) => cb( d.mml || "" ) );
+				}, d => cb( d.mml || "" ) );
 			},
 			pattern = {  // define tag patterns
 				ascii: /a\$\$([\$!]*)\$\$/g,	// a$$ ascii math $$
@@ -3668,12 +3670,14 @@ append layout_body
 		}); 
 	},
 	
-	function Xparms(product, cb) {		// expands <!---parms KEY=VAL&...---> tags then callbacks cb( final input-scripted html )
+	function Xparms(goto, cb) {		// expands <!---parms KEY=VAL&...---> tags then callbacks cb( final input-scripted html )
 		var
 			pattern = /<!---parms ([^>]*)?--->/g;
 		
 		cb( this.replace(pattern, (str, parms) => {
 					
+			Log("spoof parms", parms);
+			
 			var 
 				inputs = [],
 				keys = [];
@@ -3687,6 +3691,7 @@ append layout_body
 				return "";
 			});
 
+			// this litle marvel does the trick
 			return `
 <script>
 	String.prototype.tag = ${"".tag}
@@ -3694,14 +3699,14 @@ append layout_body
 		var parms = {};
 		[${keys}].forEach( (key) => parms[key] = document.getElementById("parms."+key).value );
 
-		window.open( "/${product}".tag("?", parms) );
+		window.open( "/${goto}".tag("?", parms) );
 	}
 </script>
 <form onsubmit="submitForm()">
 	${inputs.join("")}
 	<button id="parms.submit" type="submit" value="submit">submit</button>
-</form>
-` ;
+</form>` ;
+
 		}) );
 	},
 	
@@ -3710,6 +3715,7 @@ append layout_body
 			key = "@fetch",
 			fetcher = DEBE.fetcher,
 			fetchSite = function ( rec, cb ) {  // callsback cb with expanded fetch-tag 
+				//Log(">>xfetch", rec.arg1);
 				fetcher( rec.arg1, null, cb );
 			},
 			pattern = /<!---fetch ([^>]*)?--->/g;
@@ -3717,6 +3723,18 @@ append layout_body
 		this.serialize( fetchSite, pattern, key, (html,fails) => cb(html) );
 	},
 
+	function Xsection( cb ) { // expand "##.... header" 
+		var
+			key = "@sec",
+			fetchSection = function (rec, cb) {
+				//Log(">>>header", rec.ID, rec.arg1, rec.arg0.length-rec.arg1.length-2 );
+				cb( rec.arg1.tag( "h"+(rec.arg0.length-rec.arg1.length-2), {} ) );
+			},
+			pattern = /^\#* (.*)\n/gm;
+		
+		this.serialize( fetchSection, pattern, key, (html,fails) => cb(html) );
+	},
+	
 	function Xskin( ctx, proxy, cb ) { // return a skin via a proxy site
 
 		var 
@@ -3739,14 +3757,8 @@ append layout_body
 		}
 	},
 	
-	function Xspoof( ctx, proxy, product, cb ) {
-		this
-			.Xlink( null, "regress", false, html =>
-				html.Xfetch( html => 
-					html.Xskin( ctx, proxy, html => 
-						html.Xparms( product, html =>
-							cb(html) 
-				))));		
+	function Xspoof( goto, cb ) {	// expands the !---fetch and !---parms html comments to spoof input to a goto site
+		this.Xfetch( html => html.Xparms( goto, html => cb(html) ));
 	}
 											
 ].Extend(String);
