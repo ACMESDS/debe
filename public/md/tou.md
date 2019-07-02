@@ -1,10 +1,21 @@
+# test1
 [my link](/junk.txt)
-[](/plot.view?src=regress&id=1&x=Save_ols$.cls[0].weights&y=Save_ols$.cls[0].weights)
 
+# test2
+[](/plot.view?src=regress&name=test2&x=Save_ols$.cls[0].weights&y=Save_ols$.cls[0].weights&w=600&h=400)
+
+# test urls
 urls: ${JSON.stringify( urls )}
-	
+
+a link: [TEST](test test test)
+
+a  code block test:
+
+	test1
+	test2
+
 now: ${now}
-	
+
 by: ${by}
 
 register: ${register}

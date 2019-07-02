@@ -1,7 +1,30 @@
-extends base
-append base_body
+extends layout
+append layout_parms
+	- math = true
+	- highlight = "zenburn"
+append layout_body
+
+	- test = xlink("mylink", "/master.com")
 
 	:markdown
-		Some default stuff myReadme[view](http://localhost:8080/test.view) [push](http
+		Some default [stuff](http://localhost:8080/test.view) and !{test} completes this test.
+		And $$ \beta = 10 + #{urls.master} $$
 		
-	block test_body
+		Now for some code:
+		
+			x + 1
+			y - 2
+
+		wow
+		
+	:markdown
+		# test1
+		<a href='/junk.txt?src=' >my link</a>
+
+		# test2
+		<iframe src='/plot.view?src=&id=1&x=Save_ols$.cls[0].weights&y=Save_ols$.cls[0].weights' width='100' height='100' ></iframe>	
+		
+		# test urls
+		urls: {"loopback":"https://localhost:8443/genpr.js?endservice=https://localhost:8443/genpr.users","license":"https://localhost:8443/genpr.js?endservice=","product":"https://localhost:8443/genpr","status":"https://localhost:8443/genpr.status","md":"https://localhost:8443/genpr.md","suitors":"https://localhost:8443/genpr.suitors","Totem":"https://localhost:8443","totem":"http://localhost:8080","run":"https://localhost:8443/genpr.run","tou":"https://localhost:8443/genpr.tou","pub":"https://localhost:8443/genpr.pub","repo":"undefinedgenpr","repofiles":"undefinedgenpr/raw/master","relinfo":"http://localhost:8080/releases.html?product=genpr.js"}
+
+		a link: <a href='test test test?src=' >TEST</a>

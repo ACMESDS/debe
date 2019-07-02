@@ -1508,7 +1508,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	Defines site context keys to load skinning context before a skin is rendered.
 	Each skin has its own {key: "SQL DB.TABLE" || "/URL?QUERY", ... } spec.
 	*/
-	context: { //< site context extenders
+	primeSkin: { //< site context extenders
 		test3: {  // context keys for swag.view
 			projs: "select * from openv.milestones"
 		}
@@ -1539,7 +1539,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		/**
 		@class DEBE.SiteSkinning
 		*/
-
+		xlink: function (label, url) {
+			Log("xlink", label, url);
+			return label.tag( url );
+		},
+		
 		classif: {
 			level: "",
 			purpose: "",
@@ -1666,7 +1670,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				exe: "text/html",
 				js: "text/plain",
 				py: "text/plain",
-				ma: "text/plain"
+				ma: "text/plain",
+				tou: "text/html"
 			}			
 		},
 		
@@ -2500,6 +2505,7 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 		paths = DEBE.paths,
 		site = DEBE.site,  
 		error = DEBE.errors,
+		primeSkin = DEBE.primeSkin,
 		urls = site.urls,
 		query = req.query,
 		routers = DEBE.byActionTable.select,
@@ -2531,14 +2537,14 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 		
 	function dsContext(ds, cb) { // callback cb(ctx) with skinning context ctx
 		
-		if ( dsreq = DEBE.context[ds] ) // render in ds context
+		if ( dsreq = primeSkin[ds] ) // render in ds context
 			sql.serialize( dsreq, ctx, cb );
 		
 		else  // render in default site context
 			cb( ctx );
 	}
 	
-	dsContext(dsname, function (ctx) {  // get skinning context for this skin
+	dsContext(dsname, ctx => {  // get skinning context for this skin
 
 		/**
 		@class DEBE.Utilities.Skinning
@@ -2550,7 +2556,6 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 		Render Jade file at path this to res( err || html ) in a new context created for this request.  
 		**/
 			try {
-				Log("render", file);
 				res( JADE.renderFile( file, ctx ) );  
 			}
 			catch (err) {
@@ -2670,7 +2675,7 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 				res( JADE.compile(jade, ctx) (ctx) );
 			}
 			catch (err) {
-				return res( err );
+				res( err );
 			}
 		}
 
@@ -3319,8 +3324,32 @@ Initialize DEBE on startup.
 ].Extend(STREAM);
 
 [  // string prototypes
-	// string serializers 
 	
+	// string serializers 
+	/*
+	function Xblog(req, ds, cache, ctx, rec, viaBrowser, cb) {
+		var
+			jade = `extends layout
+append layout_parms
+	- math = true
+	- highlight = "zenburn"
+append layout_body
+	:markdown
+		`  + this
+		.replace(/^\n* /g, "" )  //<<<<<<
+		.replace(/\n/g,"\n\t\t");
+		
+		try {
+			var ctx = {filename: DEBE.paths.jadePath, query: {} };	
+			Log("jade", ctx, jade);
+			cb( JADE.compile(jade, ctx) (ctx) );
+		}
+		catch (err) {
+			Log(err);
+			cb( err+"" );
+		}		
+	},
+	*/
 	function Xblog(req, ds, cache, ctx, rec, viaBrowser, cb) {
 	/**
 	@member String
@@ -3385,7 +3414,7 @@ Initialize DEBE on startup.
 
 			cb( html.replace(/@block/g, str => {  // backsub escaped blocks
 					//Log(`unblock[${blockidx}]`, blocks[ blockidx].tag("code",{}) );
-					return blocks[ blockidx++ ].tag("code",{});
+					return blocks[ blockidx++ ].tag("code",{}).tag("pre",{});
 				}) );
 			
 		}))))));
@@ -3396,9 +3425,9 @@ Initialize DEBE on startup.
 			key = "@esc",
 			html = this,
 			fetchBlock = function ( rec, cb ) {	// callsback cb with block placeholder
-				//Log(`block[${blocks.length}] `, rec.url );
-				blocks.push( rec.opt );
-				cb( rec.url + ":" + "@block");
+				//Log(`block[${blocks.length}] `, rec.arg1 );
+				blocks.push( rec.arg2 );
+				cb( rec.arg1 + ":" + "@block");
 			},
 			pattern = /(.*)\:\n\n((\t.*\n)+)\n/g ;
 				// /\n(.*)\:\n\n((.|\n)*)\n\n/g ;	// define escaped code block
@@ -3414,7 +3443,7 @@ Initialize DEBE on startup.
 	
 	function Xlink( req, ds, viaBrowser, cb ) {  // expands [LINK](URL) tags then callsback cb( final html )
 		/*
-		req = null to disable topic expand
+		req = null to disable topic expansions
 		ds = dataset?query default url path
 		viaBrowser = true to enable produce html compatible with browser
 		*/
@@ -3455,13 +3484,14 @@ Initialize DEBE on startup.
 			fetchSite = function ( rec, cb ) {  // callback cb with expanded [](URL) markdown
 				//Log("solicit", rec, viaBrowser);
 				if (viaBrowser) 
-					cb( "".tag("iframe", {src:rec.opt}) );
+					cb( "".tag("iframe", {src:rec.arg2}) );
 				
 				else
-					fetcher( rec.opt, null, html => cb );
+					fetcher( rec.arg2, null, html => cb );
 			},
 			
 			fetchLink = function ( rec, cb ) {  // expand [LINK](URL) markdown
+				
 				var
 					colors = {
 						r: "red", 
@@ -3478,8 +3508,8 @@ Initialize DEBE on startup.
 						black: "black"
 					},						
 					keys = {},
-					opt = rec.url,  // swap meaning of url,opt - kludge
-					url = rec.opt,
+					opt = rec.arg1,
+					url = rec.arg2,
 					dsPath = ds.parseURL(keys,{},{},{}),
 					urlPath = url.parseURL(keys,{},{},{}),
 					w = keys.w || 100,
@@ -3487,11 +3517,11 @@ Initialize DEBE on startup.
 					now = new Date(),
 					srcPath = urlPath.tag( "?", Copy({src:dsPath}, keys) );
 
-				//Log("tag",rec, dsPath, keys, srcPath);
+				Log("link", [dsPath, srcPath, urlPath], keys, [opt, url]);
 
 				if (opt)
 					if (urlPath) 
-						if ( color = colors[urlPath.toLowerCase()] )		// [ COLOR ]( TEXT )
+						if ( color = colors[urlPath.toLowerCase()] )		// [ TEXT ]( COLOR )
 							cb( opt.tag("font",{color:color}) );
 
 						else
@@ -3599,7 +3629,7 @@ Initialize DEBE on startup.
 			fetchInTeX = function ( rec, cb ) {  // callsback cb with expanded inline TeX tag
 				//Log("math",rec);
 				fetcher({
-					math: rec.url,
+					math: rec.arg1,
 					format: "inline-TeX",  
 					//html: true,
 					mml: true
@@ -3608,7 +3638,7 @@ Initialize DEBE on startup.
 			fetchTeX = function ( rec, cb ) {	// callsback cb with expanded TeX tag
 				//Log("math",rec);
 				fetcher({
-					math: rec.url,
+					math: rec.arg1,
 					format: "TeX",  
 					//html: true,
 					mml: true
@@ -3617,7 +3647,7 @@ Initialize DEBE on startup.
 			fetchAscii = function ( rec, cb ) { // callsback cb with expanded AsciiMath tag
 				//Log("math",rec);
 				fetcher({
-					math: rec.url,
+					math: rec.arg1,
 					format: "AsciiMath",  // TeX, inline-TeX, AsciiMath, MathML
 					//html: true,
 					mml: true
@@ -3680,14 +3710,14 @@ Initialize DEBE on startup.
 			key = "@fetch",
 			fetcher = DEBE.fetcher,
 			fetchSite = function ( rec, cb ) {  // callsback cb with expanded fetch-tag 
-				fetcher( rec.url, null, cb );
+				fetcher( rec.arg1, null, cb );
 			},
 			pattern = /<!---fetch ([^>]*)?--->/g;
 			
 		this.serialize( fetchSite, pattern, key, (html,fails) => cb(html) );
 	},
 
-	function Xjade( ctx, proxy, product, cb ) { // returns product's ToU via a proxy site
+	function Xskin( ctx, proxy, cb ) { // return a skin via a proxy site
 
 		var 
 			url = URL.parse(proxy || ""),
@@ -3696,25 +3726,27 @@ Initialize DEBE on startup.
 			header = proxy 
 				? `img(src="/shares/images/${host}.jpg", width="100%", height="15%")`
 				: "p",
-			jade = `:markdown
-	` + md.replace(/\n/g,"\n\t");
-			/*jade = `extends layout
-append layout_parms
-	- math = false
-append layout_body
-	${header}
-	:markdown
-		`  + md.replace(/\n/g,"\n\t\t");*/
+			jade = ":markdown\n\t" + md.replace(/^\n*/,"").replace(/\n/g,"\n\t");
 
-		//Log(jade);
 		ctx.filename = DEBE.paths.jadePath;
 		
 		try {
-			JADE.compile(jade, ctx) (ctx).Xparms(product, cb );
+			cb( JADE.compile(jade, ctx) (ctx) );
 		}
 		catch (err) {
+			// Log(err);
 			cb( err+"" );
 		}
+	},
+	
+	function Xspoof( ctx, proxy, product, cb ) {
+		this
+			.Xlink( null, "regress", false, html =>
+				html.Xfetch( html => 
+					html.Xskin( ctx, proxy, html => 
+						html.Xparms( product, html =>
+							cb(html) 
+				))));		
 	}
 											
 ].Extend(String);
