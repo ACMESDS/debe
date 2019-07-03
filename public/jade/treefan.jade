@@ -15,7 +15,7 @@ append base_help
 			h = drawing height
 			debug = level of debugging alerts
 			node,children,value,size,parent = key names
-			
+
 append base_head
 
 	style.
@@ -51,7 +51,7 @@ append base_head
 			PARENT: "#{query.parent}" || "parent",
 			SIZE: "#{query.size}" || "size"	
 		};
-										
+
 		const {NODE, CHILDREN, VALUE, SIZE, PARENT} = opts;
 
 append base_body
@@ -63,11 +63,13 @@ append base_body
 			h = (opts.h || 500) - m[0] - m[2],
 			i = 0,
 			root = null,
-			docWindow = null; /*window.open(
-				"",
-				"_blank",
-				"left=50px,top=50px,width=50,height=50,location=0,menubar=0,status=0,titlebar=0,toolbar=0"
-		); */
+			docWindow = null; 
+			/*
+			window.open(
+					"",
+					"_blank",
+					"left=50px,top=50px,width=50,height=50,location=0,menubar=0,status=0,titlebar=0,toolbar=0"
+			); */
 
 		const {isString,Load} = BASE;
 
@@ -81,6 +83,12 @@ append base_body
 
 			view = d3.select("body"),
 			msg = "p".d3tag(view, {text: "root"}),
+			url = "#{url}".replace("/treefan",""),
+			title = "p".d3tag(view,	{ html: [
+						"treemap".tag( "/treemap"+url ),
+						"force".tag( "/force"+url )
+					].join(" || ")
+				} ),
 			
 			vis = d3.select("#content")
 				.append("svg:svg")

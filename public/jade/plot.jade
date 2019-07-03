@@ -297,8 +297,6 @@ append base_body
 					.append("g")
 					.attr("transform", "translate(" + margin.left + "," + margin.top + ")"),
 				
-					title = svg.append("p").text(opts.title),
-				
 					xscale = d3.scale.linear()
 					.domain( hard ? hard.x : [0,1])
 					.range([0, width]),

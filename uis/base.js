@@ -521,7 +521,8 @@ Array.prototype.Extend = function (con) {
 			//alert("tag "+key+" " + attrs[key]);
 			switch (key) {
 				case "text":
-					el.text( attrs[key] ); 
+				case "html":
+					el[key]( attrs[key] ); 
 					break;
 				case "xstyle":  // seems to crash so x-ed out
 					el.style( attrs[key]); 
@@ -626,7 +627,7 @@ Array.prototype.Extend = function (con) {
 		if ( el == "?" || el == "&" ) {  // tag a url
 			var rtn = this;
 
-			Each(at, (key,val) => {
+			BASE.Each(at, (key,val) => {
 				rtn += el + key + "=" + ( (typeof val == "string") ? val : JSON.stringify(val) ); 
 				el = "&";
 			});
@@ -637,7 +638,7 @@ Array.prototype.Extend = function (con) {
 		else {  // tag html
 			var rtn = "<"+el+" ";
 
-			Each( at, (key,val) => rtn += key + "='" + val + "' " );
+			BASE.Each( at, (key,val) => rtn += key + "='" + val + "' " );
 
 			switch (el) {
 				case "embed":

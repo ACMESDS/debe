@@ -42,18 +42,24 @@ append base_head
 
 	script.
 		var opts = {
-			ds: "/!{query.src}.tree?ID=#{query.id}&_sort=#{query.pivots}",
+			ds: "#{query.pivots}"
+				? "/!{query.src}.tree?name=#{query.name}&_sort=#{query.pivots}"
+				: "#{query.name}"
+							? "/!{query.src}.schema?name=#{query.name}"
+							: "/!{query.src}",
+
 			w: parseInt("#{query.w}") || 200,
 			h: parseInt("#{query.h}") || 200,
 			debug: parseInt("#{query.debug}"),
-			NAME: "#{query.name}" || "name",
+										
+			NODE: "#{query.node}" || "name",
 			CHILDREN: "#{query.children}" || "children",
 			VALUE: "#{query.value}" || "value",
 			PARENT: "#{query.parent}" || "parent",
 			SIZE: "#{query.size}" || "size"										
 		};
 		
-		const {NAME, CHILDREN, VALUE, SIZE, PARENT} = opts;
+		const {NODE, CHILDREN, VALUE, SIZE, PARENT} = opts;
 
 append base_body
 
@@ -70,6 +76,15 @@ append base_body
 				.sticky(true)
 				.value(function(d) { return d.size; }),
 				
+			view = d3.select("body"),
+			msg = "p".d3tag(view, {text: "details: "}),
+			url = "#{url}".replace("/treemap",""),
+			title = "p".d3tag(view,	{ html: [
+						"treefan".tag( "/treefan"+url ),
+						"force".tag( "/force"+url )
+					].join(" || ")
+				} ),
+					
 			div = d3.select("#content").append("div")
 				.style("position", "relative")
 				.style("width", (width + margin.left + margin.right) + "px")
@@ -87,8 +102,8 @@ append base_body
 					.enter().append("div")
 					.attr("class", "node")
 					.call(position)
-					.style("background", function(d) { return d[CHILDREN] ? color(d[NAME]) : null; })
-					.text(function(d) { return d[CHILDREN] ? null : d[NAME]; })
+					.style("background", function(d) { return d[CHILDREN] ? color(d[NODE]) : null; })
+					.text(function(d) { return d[CHILDREN] ? null : d[NODE]; })
 					.on("click", click);
 
 			d3.selectAll("input").on("change", function change() {

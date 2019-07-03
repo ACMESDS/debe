@@ -1627,6 +1627,10 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	
 	"paths.": {  //< paths to things
 		//default: "home.view",
+		home: 
+			"Totem".tag("/treefan.view?src=info&w=1000&h=600") 
+			+ ": protecting the warfighter from bad data",
+		
 		jadePath: "./public/jade/ref.jade",	// jade reference path for includes, exports, appends
 		
 		engine: "SELECT * FROM app.engines WHERE least(?,1) LIMIT 1",
@@ -1678,8 +1682,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		}
 	},
 	
-	"paths.url.home": "/treefan.view?src=info&w=1000&h=600",	
-		
 	/**
 	@cfg {Boolean}
 	@member DEBE
@@ -3676,7 +3678,7 @@ append layout_body
 		
 		cb( this.replace(pattern, (str, parms) => {
 					
-			Log("spoof parms", parms);
+			//Log(">>>Xparms", parms);
 			
 			var 
 				inputs = [],
@@ -3715,7 +3717,7 @@ append layout_body
 			key = "@fetch",
 			fetcher = DEBE.fetcher,
 			fetchSite = function ( rec, cb ) {  // callsback cb with expanded fetch-tag 
-				//Log(">>xfetch", rec.arg1);
+				//Log(">>>>Xfetch", rec.arg1);
 				fetcher( rec.arg1, null, cb );
 			},
 			pattern = /<!---fetch ([^>]*)?--->/g;
@@ -3948,7 +3950,7 @@ append layout_body
 			if ( isArray(store) && isObject( store0 = store[0] || 0 ) ) {
 				var 
 					N = store.length,
-					nodeName = "[" + (N ? (N==1) ? "0" : `0:${N-1}` : "") + "]",
+					nodeName = "[" + N + "]",
 					nodePath = (path || "") + nodeName,
 					node = { 
 						name: nodeName,
@@ -3963,7 +3965,7 @@ append layout_body
 			else	// at a leaf node
 			if (expandLeaf)
 				return [{
-					name: JSON.stringify(store),
+					name: (store.length || 0) + " elements",
 					size: 10,
 					doc: "",
 					children: []
