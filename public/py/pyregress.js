@@ -1,5 +1,5 @@
 module.exports = {  // regression
-	_addkeys: {
+	_keys: {
 		Samples: "int(11) default 1 comment 'number of training samples taken at random from supplied dataset' ",
 		Channels: "int(11) default 1 comment 'number of training channels takens consecutively from supplied dataset' ",
 		Method: "varchar(16) default 'ols' comment 'regression technique to USE = lrm | svm | pls | knn	| ols | ...' ",
@@ -153,7 +153,7 @@ def pyregress(ctx):
 				setattr(cls, key, val)
 		return cls
 	#
-	def copy(src, tar):	# copy source hash src to a target hash tar
+	def Copy(src, tar):	# Copy source hash src to a target hash tar
 		for key in src:
 			tar[key] = src[key]
 		return tar
@@ -161,15 +161,16 @@ def pyregress(ctx):
 	print "******************** pyregress ******************"
 	#from sklearn.datasets import load_iris
 	#x, y = load_iris(return_X_y=True)
-	#print "x",x, "y",y
 	x = NP.array( ctx['x'] ) if 'x' in ctx else None
-	y = NP.reshape( NP.array( ctx['y'] ), (len(x),) ) if 'y' in ctx else None
+	y = NP.array( ctx['y'] )) if 'y' in ctx else None
+	#y = NP.reshape( NP.array( ctx['y'] ), (len(x),) ) if 'y' in ctx else None
+	#print "x",x, "y",y
 	keep = int( ctx['Keep'] )
 	use = ctx['Method'].lower()
 	USE = use.upper()
 	hyperUse = 'hyper_' + use
 	model = ctx['Save_lrm']
-	maker = {
+	loaders = {
 		'lrm': LRM,
 		'ols': OLS,
 		'eln': ELN,
@@ -183,7 +184,7 @@ def pyregress(ctx):
 		'pls': PLS,
 		'svm': SVM
 	}
-	make = maker[use] if use in maker else None
+	loader = loaders[use] if use in loaders else None
 	solve = ctx[hyperUse] if hyperUse in ctx else None
 	if not solve:
 		solve = {}
@@ -194,10 +195,10 @@ def pyregress(ctx):
 	#		solve[ key[len(use)+1:].replace("#","_") ] = ctx[key]
 	#print "solve",use,solve,keep
 	#
-	if make:
+	if loader:
 		if y != None:		# requesting a training
-			print "x",x.shape,"y",y.shape, make
-			cls = deserialize( solve, make() )
+			print "x",x.shape,"y",y.shape, loader
+			cls = deserialize( solve, loader() )
 			(x0,y0) = shuffle(x.tolist(),y.tolist(),keep)
 			ctx['Save'] = {
 				'Save_'+use: serialize( cls.fit(x,y), {} ),
@@ -209,7 +210,7 @@ def pyregress(ctx):
 			}
 		else:		# requesting a prediction
 			if model != None:
-				cls = deserialize( copy(model, solve), make() )
+				cls = deserialize( Copy(model, solve), loader() )
 				ctx['Save'] = {'Save_predict': cls.predict(x).tolist() }
 			else:
 				ctx['Save'] = {}

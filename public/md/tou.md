@@ -5,7 +5,9 @@
 [](/plot.view?src=regress&name=test2&x=Save_ols$.cls[0].weights&y=Save_ols$.cls[0].weights&w=600&h=400)
 
 # fetch test
-As of ${now} ${fetch("status")}
+As of ${now} transition status [](/${name}.status) done
+
+potential suitors include [](/${name}.suitors) thanks
 
 # test urls
 urls: ${JSON.stringify( urls )}
@@ -22,8 +24,6 @@ followed by another:
 	wow
 	way cool !!
 	[should be ignored](/nogo.com)
-
-now: ${now}
 
 by: ${by}
 

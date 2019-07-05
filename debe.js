@@ -121,13 +121,14 @@ var
 		">": (lhs,rhs,ctx) => ctx.toTag(lhs,rhs,ctx),			// [post](url) 
 		"<": (lhs,rhs,ctx) => {												// add context value or generator
 			
-			if ( rhs.split(",").length > 1)
+			if ( rhs.split(",").length > 1) {
 				eval(`
 try {
 	ctx[lhs] = (lhs,rhs,ctx) => ctx.toTag( ${rhs} );
 }
 catch (err) {
 } `);
+			}
 			
 			else
 				ctx[lhs] = rhs.parseEMAC( ctx );
@@ -190,7 +191,7 @@ catch (err) {
 						
 					case "[":
 					case "{":
-						return arg.JSONparse({});
+						return arg.parseJSON({});
 						
 					default:
 						var keys = arg.split(",");
@@ -1431,6 +1432,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		agent: sysAgent,
 		//help: sysHelp,
 		alert: sysAlert,
+		restart: sysRestart,
 		//ping: sysPing,
 		ingest: sysIngest,
 		decode: sysDecode,
@@ -2583,7 +2585,7 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 			
 			switch (fields.constructor) {
 				case Array:
-					fields.forEach( function (field,n) {
+					fields.forEach( (field,n) => {
 						var 
 							key = field.Field, 
 							type = field.Type.split("(")[0];
@@ -2611,14 +2613,14 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 					break;
 					
 				case String:
-					fields.split(",").forEach( (field) => {
+					fields.split(",").forEach( field => {
 						if ( field != "ID") cols.push( field );
 					});	
 					break;
 					
 				case Object:
 				default:
-					Each(fields, function (field) {
+					Each(fields, field => {
 						if (field != "ID") cols.push( field );
 					});	
 			}
@@ -2833,6 +2835,28 @@ Chapter 2
 service maintenance endpoints
 */
 
+function sysRestart(req,res) {
+	var
+		query = req.query,
+		delay = 10,
+		pocs = DEBE.site.pocs || {},
+		msg = query.msg = `System updating in ${delay} seconds`;
+	
+	if ( req.client == pocs.admin ) {
+		Log(req.client, DEBE.site.pocs);
+
+		sysAlert(req,res);
+
+		setTimeout( function () {
+			Trace("RESTART ON " + now());
+			process.exit();
+		}, delay*1e3);
+	}
+	
+	else
+		res("This endpoint reserved for " + "system admin".tag( "mailto:" + pocs.admin ) );
+}
+
 function sysIngest(req,res) {
 /**
 @method sysIngest
@@ -2875,6 +2899,12 @@ Totem (req,res)-endpoint to ingest a source into the sql database
 }
 
 function sysDecode(req,res) {
+/**
+@method sysDecoder
+Return release information about requested license.
+@param {Object} req Totem request
+@param {Function} res Totem response
+*/
 	var
 		sql = req.sql,
 		query = req.query;
@@ -2895,7 +2925,7 @@ function sysDecode(req,res) {
 
 function sysAgent(req,res) {
 /**
-@method sysAlert
+@method sysAgent
 Totem (req,res)-endpoint to send notice to outsource jobs to agents.
 @param {Object} req Totem request
 @param {Function} res Totem response
@@ -3000,10 +3030,21 @@ Totem (req,res)-endpoint to send notice to all clients
 @param {Object} req Totem request
 @param {Function} res Totem response
 */
-	if (IO = DEBE.IO)
-		IO.sockets.emit("alert",{msg: req.query.msg || "system alert", to: "all", from: DEBE.site.title});
-			
-	res("Broadcasting alert");
+	var 
+		query = req.query,
+		pocs = DEBE.site.pocs || {},
+		msg = query.msg;
+	
+	if ( req.client == pocs.admin ) {
+		if (IO = DEBE.IO)
+			IO.sockets.emit("alert",{msg: msg || "system alert", to: "all", from: DEBE.site.title});
+
+		Trace("ALERTING "+msg);
+		res("Broadcasting alert");
+	}
+	
+	else 
+		res("This endpoint reserved for " + "system admin".tag( "mailto:" + pocs.admin ) );
 }
 
 function sysStop(req,res) {
@@ -3491,62 +3532,52 @@ append layout_body
 					cb( "".tag("iframe", {src:rec.arg2}) );
 				
 				else
-					fetcher( rec.arg2, null, html => cb );
+					fetcher( rec.arg2, null, cb );
 			},
 			
 			fetchLink = function ( rec, cb ) {  // expand [LINK](URL) markdown
 				
 				var
-					colors = {
-						r: "red", 
-						b: "blue",
-						g: "green",
-						y: "yellow",
-						o: "orange",
-						k: "black",
-						red: "red",
-						blue: "blue",
-						green: "green",
-						yellow: "yellow",
-						orange: "orange",
-						black: "black"
-					},						
-					keys = {},
 					opt = rec.arg1,
-					url = rec.arg2,
-					dsPath = ds.parseURL(keys,{},{},{}),
-					urlPath = url.parseURL(keys,{},{},{}),
-					w = keys.w || 100,
-					h = keys.h || 100,
-					now = new Date(),
-					srcPath = urlPath.tag( "?", Copy({src:dsPath}, keys) );
+					url = rec.arg2;
 
-				// Log("link", [dsPath, srcPath, urlPath], keys, [opt, url]);
+				if (opt)	//	[ LABEL ] ( URL )
+					cb( opt.tag( url ) );
 
-				if (opt)
-					if (urlPath) 
-						if ( color = colors[urlPath.toLowerCase()] )		// [ TEXT ]( COLOR )
-							cb( opt.tag("font",{color:color}) );
-
-						else		// [ TEXT ]( URL )
-							cb( opt.tag( url ) );
-				
-					else 
-					if ( (keys.starts ? now>=new Date(keys.starts) : true) && 
-						 (keys.ends ? now<=new Date(keys.ends) : true) ) {
-						rec.topic = opt;
-						fetchTopic( rec, cb );
-					}
-
-					else
-						cb( opt.tag( "/tags.view" ) );
-						
-				else {
+				else {	// [ ] ( URL )
 					var
+						colors = {
+							r: "red", 
+							b: "blue",
+							g: "green",
+							y: "yellow",
+							o: "orange",
+							k: "black",
+							red: "red",
+							blue: "blue",
+							green: "green",
+							yellow: "yellow",
+							orange: "orange",
+							black: "black"
+						},						
+						keys = {},
+						dsPath = ds.parseURL(keys,{},{},{}),
+						urlPath = url.parseURL(keys,{},{},{}),
+						
+						w = keys.w || 100,
+						h = keys.h || 100,
+						
+						now = new Date(),
+
 						urlParts = urlPath.split("."),
 						urlName = urlParts[0],
-						urlType = urlParts[1];
+						urlType = urlParts[1],
+						
+						srcPath = urlPath.tag( "?", Copy({src:dsPath}, keys) );
+
 					
+				// Log("link", [dsPath, srcPath, urlPath], keys, [opt, url]);
+
 					switch (urlType) {  //  [](PATH.TYPE?w=W&h=H)
 						case "jpg":  
 						case "png":
@@ -3554,18 +3585,37 @@ append layout_body
 							break;
 
 						case "view": 
-							cb( "".tag("iframe", { src:srcPath, width:w, height:h }) );
+							if ( viaBrowser )
+								cb( "".tag("iframe", { src:srcPath, width:w, height:h }) );
+							
+							else
+								cb( urlPath.tag( url ) );
+							
 							break;
 
-						case "":
-							cb( "".tag("iframe", { src:`${opt}.view${srcPath}`, width:w, height:h }) );
-							break;
+						default: 
+							if ( viaBrowser )
+								cb( "".tag("iframe", { src:srcPath, width:w, height:h }) );
+
+							else
+								fetchSite(rec, cb);
+
+							/*
+							if ( color = colors[urlPath.toLowerCase()] )		// [ TEXT ]( COLOR )
+								cb( opt.tag("font",{color:color}) );
+							*/
+							/*
+							else		// [ TEXT ]( URL )
+							if ( (keys.starts ? now>=new Date(keys.starts) : true) && 
+								 (keys.ends ? now<=new Date(keys.ends) : true) ) {
+								rec.topic = opt;
+								fetchTopic( rec, cb );
+							}
+
+							else
+								cb( opt.tag( "/tags.view" ) );
+							*/
 							
-						case "html":
-						case "txt":
-						case "json":
-						default:  // [](URL)
-							fetchSite(rec, cb);
 							break;
 					}
 				}
@@ -3684,8 +3734,8 @@ append layout_body
 				inputs = [],
 				keys = [];
 
-			parms.split("&").forEach( (parm) => {
-				parm.replace(/([^=]*)?=(.*)?/, (str, key, val) => {
+			parms.split("&").forEach( (parm) => {  // each collect parm (key=value) needs an input
+				parm.replace(/([^=]*)?=(.*)?/, (str, key, val) => {		// key=value
 					inputs.push( `${key}: <input id="parms.${key}" type="text" value="${val}" autofocus >` );
 					keys.push( '"' + key + '"' );
 					return "";
@@ -3693,7 +3743,7 @@ append layout_body
 				return "";
 			});
 
-			// this litle marvel does the trick
+			// this litle marvel submits all inputs to the goto service
 			return `
 <script>
 	String.prototype.tag = ${"".tag}
@@ -3757,12 +3807,8 @@ append layout_body
 			// Log(err);
 			cb( err+"" );
 		}
-	},
-	
-	function Xspoof( goto, cb ) {	// expands the !---fetch and !---parms html comments to spoof input to a goto site
-		this.Xfetch( html => html.Xparms( goto, html => cb(html) ));
 	}
-											
+	
 ].Extend(String);
 
 [  // array prototypes
