@@ -374,16 +374,31 @@ catch (err) {
 				disk: 200
 			},
 			get: {
-				threads:  function (sql, cb) {
-					sql.query("show session status like 'Thread%'", {}, (err, stats) => {
+				sqlutil: "show session status like 'Thread%'",
+				diskutil: "SELECT table_schema AS DB, "
+					 + "SUM(data_length + index_length) / 1024 / 1024 / 1024 AS GB FROM information_schema.TABLES "
+					 + "GROUP BY table_schema",
+				
+				jobs: "SELECT count(ID) AS Total FROM app.queues "
+			}
+		}, function dogSystem(dog) {
+			
+			var 
+				pocs = DEBE.site.pocs || {},
+				get = dog.get;
+			
+			dog.thread( sql => {
+				
+				function sqldb(cb) {
+					sql.query(get.sqlutil, {}, (err, stats) => {
 						cb({
 							running: stats[2].Value,
 							connected: stats[1].Value
 						});
 					});
-				},
+				}
 				
-				cpu: function (sql, cb) {				// compute average cpu utilization
+				function cpu(cb) {				// compute average cpu utilization
 					var avgUtil = 0;
 					var cpus = OS.cpus();
 
@@ -393,29 +408,31 @@ catch (err) {
 						avgUtil += busy / (busy + idle);
 					});
 					cb(avgUtil / cpus.length);
-				},
+				}
 				
-				disk: function (sql, cb) {
-					sql.query(
-						"SELECT table_schema AS DB, "
-					 + "SUM(data_length + index_length) / 1024 / 1024 / 1024 AS GB FROM information_schema.TABLES "
-					 + "GROUP BY table_schema", {}, (err, stats) => {
-						
-						var GB = 0;
+				function disk(cb) {
+					sql.query(get.diskutil, {}, (err, stats) => {						
+						var totGB = 0;
 						stats.forEach( (stat) => {
-							GB += stat.GB;
+							totGB += stat.GB;
 						});
-						cb( GB );
+						cb( totGB );
 					});
 				}
-			}
-		}, function dogSystem(dog) {
-			
-			dog.thread( sql => {
-				dog.get.threads( sql, (threads) => {
-				dog.get.cpu( sql, (cpu) => {
-				dog.get.disk( sql, (disk) => {
-								
+				
+				function jobs(cb) {
+					sql.query(get.jobs, (err, jobs) => {
+						cb({
+							total: jobs.Total
+						});
+					});
+				}
+				
+				sqldb( threads => {
+				cpu( cpu => {
+				disk( disk => {
+				jobs( jobs => {
+
 					sql.query("INSERT INTO openv.syslogs SET ?", {
 						t: new Date(),		 					// start time
 						Action: "watch", 				// db action
@@ -423,24 +440,26 @@ catch (err) {
 						connectedThreads: threads.connected,
 						cpuUtil: cpu,
 						diskUtil: disk,
-						Module: TRACE
+						Module: TRACE,
+						totalJobs: jobs.total
 					});
 
 					if ( cpu > dog.max.cpu )
 						FLEX.sendMail({
 							subject: `${dog.site.nick} resource warning`,
-							to: dog.site.pocs.admin,
+							to: pocs.admin,
 							body: `Please add more VMs to ${dog.site.nick} or ` + "shed load".tag(dog.site.urls.worker+"/queues.view")
 						});
 
 					if ( disk > dog.max.disk ) 
 						FLEX.sendMail({
 							subject: `${dog.site.nick} resource warning`,
-							to: dog.site.pocs.admin,
+							to: pocs.admin,
 							body: `Please add more disk space to ${dog.site.nick} or ` + "shed load".tag(dog.site.urls.worker+"/queues.view")
 						});
 
 					sql.release();
+				});
 				});
 				});
 				});
@@ -677,7 +696,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 				});
 
 			if ( stuck = dog.get.stuck )
-				dog.thread( (sql) => {
+				dog.thread( sql => {
 					sql.query(stuck, [], (err, info) => {
 
 						Each(queues, (rate, queue) => {  // save collected queuing charges to profiles
@@ -689,7 +708,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 									sql.query(
 										"UPDATE openv.profiles SET Charge=Charge+?,Credit=greatest(0,Credit-?) WHERE ?" , 
 										 [ charge.bill, charge.bill, {Client:client} ], 
-									 	(err) => {
+									 	err => {
 											if (err)
 												Trace("Job charge failed "+err);
 									});
@@ -717,7 +736,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 				});
 		}),
 			
-		xdogSystem: Copy({  // legacy
+		_dogSystem: Copy({  // legacy
 			//cycle: 100,
 			get: {
 				engs: "SELECT count(ID) AS Count FROM app.engines WHERE Enabled",
@@ -2472,7 +2491,7 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 							HACK.ingestList( sql, evs, fileID, function (aoi) {
 								Log("INGESTED",aoi);
 								
-								DEBE.thread( (sql) => {	// autorun plugins linked to this ingest
+								DEBE.thread( sql => {	// autorun plugins linked to this ingest
 									exeAutorun(sql,"", `.${ctx.Host}.${ctx.Name}` );
 									sql.release();
 								});
