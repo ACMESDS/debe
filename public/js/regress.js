@@ -1,8 +1,8 @@
 module.exports = {  // regressors
-	modkeys: {
+	_addkeys: {
 		Samples: "int(11) default 1 comment 'number of training samples taken at random from supplied dataset' ",
 		Channels: "int(11) default 1 comment 'number of training channels takens consecutively from supplied dataset' ",
-		Method: "varchar(16) default 'ols' comment 'regression technique to USE = lrm | svm | pls | knn	| ols | ... ",
+		Method: "varchar(16) default 'ols' comment 'regression technique to USE = lrm | svm | pls | knn	| ols | ...' ",
 		Keep: "int(11) default 0 comment 'number of regression pairs to retain after training' ",
 
 		hyper_lrm: `json comment '
@@ -44,7 +44,7 @@ lambda_2: float [1e-6] inverse scale parameter (rate parameter) for the Gamma di
 ' `,
 		
 		hyper_som: `json comment '
-iterations: int >= 1 [10] Number of iterations over the training set for the training phase. The total number of training steps will be iterations * trainingSet.length.
+iterations: int >= 1 [10] Number of iterations over the training set for the training phase. The total number of training steps will be iterations x trainingSet.length.
 learningRate: float>=0 [0.1] Multiplication coefficient for the learning algorithm.
 method: [random | ...] Iteration method of the learning algorithm (default: random)
 ' `,
@@ -79,8 +79,8 @@ The following context keys are accepted:
 	x = [...], y = [...]				// training mode
 	x = [...]							// predict mode
 	xy = { x: [...] , y: [...} } 		// training mode
-	mc = { x: [ [...]...], y: [ [...]...], x0: [ [...]...] } 	// multichannel training mode 
-	un = [...] 							// unsupervised training mode
+	multi = { x: [ [...]...], y: [ [...]...], x0: [ [...]...] } 	// multichannel training mode 
+	unsup = [...] 							// unsupervised training mode
 
 ' `,
 		
@@ -104,8 +104,8 @@ The following context keys are accepted:
 		x = [...], y = [...]				// training mode
 		x = [...]							// predict mode
 		xy = { x: [...] , y: [...} } 		// training mode
-		mc = { x: [ [...]...], y: [ [...]...], x0: [ [...]...] } 	// training mode multichannel
-		un = [...] 							// unsupervised training mode
+		multi = { x: [ [...]...], y: [ [...]...], x0: [ [...]...] } 	// training mode multichannel
+		unsup = [...] 							// unsupervised training mode
 	*/
 		function train(x, y, cb) {  
 			
@@ -142,8 +142,10 @@ The following context keys are accepted:
 				if ( y && keep ) {
 					var 
 						idx = x.shuffle(keep, true),
-						x = x.Get(idx),
-						y = y.Get(idx);
+						x = x.indexor(idx),
+						y = y.indexor(idx);
+					
+					//Log("reg keep", keep, idx.length, x.length, y.length);
 					
 					if (x0) 
 						$( `y0 = ${use}_predict(cls, x0)`, {
@@ -276,9 +278,9 @@ The following context keys are accepted:
 
 		function sender(info) {
 			if (info) saver(info,0);
-			if (mc) save.push({ 
+			if (multi) save.push({ 
 				at: "jpg", 
-				input: mc.input, 
+				input: multi.input, 
 				save: savePath,
 				index: n0,
 				values: saveValues
@@ -291,10 +293,10 @@ The following context keys are accepted:
 			x = ctx.x || null,
 			y = ctx.y || null,
 			xy = ctx.xy || null,
-			mc = ctx.mc || null,
+			multi = ctx.multi || null,
 			x0 = ctx.x0 || null,
 			n0 = ctx.n0 || null,
-			un = ctx.un || null,
+			unsup = ctx.unsup || null,
 			keep = ctx.Keep,
 			save = ctx.Save = [],
 			savePath = `/shares/${ctx.Host}_${ctx.Name}.jpg`,
@@ -322,7 +324,7 @@ The following context keys are accepted:
 			solve: solve,
 			keep: keep,
 			use: use,
-			canTrain: ((x && y) || xy || mc || un) ? true : false,
+			canTrain: ((x && y) || xy || multi || unsup) ? true : false,
 			canPredict: x ? true : false,
 			loader: loader ? true : false,
 			model: model ? true : false
@@ -337,14 +339,14 @@ The following context keys are accepted:
 				trainer( xy.x, xy.y, x0, info => sender(info) );
 
 			else
-			if ( mc ) { // in xy multichannel training mode
-				n0 = mc.n0 || null;
-				trainers( mc.x, mc.y, mc.x0, () => sender() );
+			if ( multi ) { // in xy multichannel training mode
+				n0 = multi.n0 || null;
+				trainers( multi.x, multi.y, multi.x0, () => sender() );
 			}
 
 			else
-			if (un) // in unsupervised training mode
-				trainer( un, null, x0, info => sender(info) );
+			if (unsup) // in unsupervised training mode
+				trainer( unsup, null, x0, info => sender(info) );
 
 			else
 			if ( x ) // in prediction mode
@@ -359,7 +361,7 @@ The following context keys are accepted:
 					res( new Error("regressor never trained") );
 					
 			else
-				res( new Error("missing x||y||xy||mc||un to regressor") );
+				res( new Error("missing x||y||xy||multi||unsup to regressor") );
 		
 		else
 			res( new Error("invalid regression method") );

@@ -2035,8 +2035,10 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 				ctx[key] = data[key] = val.parseJS(data, (val,err) => val  );
 		});
 			
+		//Log(">>req", req.table, req.type, req.query.Name);
 		ATOM.select(req, ctx => {  // run plugin
 			
+			//Log(">>atom", ctx);
 			if ( ctx )
 				if ( isError(ctx)  )
 					Log(`${ctx.Host} ` + ctx);
@@ -2179,6 +2181,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 							});
 						}
 						
+						//Log(">>pipe", pipeType, pipeQuery, pipeRun);
 						switch (pipeType) {  // file types determine workflow
 							case "stream": 	// load data from streamed file
 								sql.insertJob( job, job => { 
@@ -2241,10 +2244,12 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 								sql.insertJob( job, job => { 
 									
 									function fetch(path, cb) {
+										// Log(">>fetch", path);
 										fetcher( path, null, info => cb( info.parseJSON( {} ) ) );
 									}
 									
 									fetch( job.url, evs => {	// fetch and route events to plugin
+										// Log(">>evs", evs);
 										pipePlugin( evs, job.query, job.ctx, ctx => saveEvents(ctx.Save, ctx) );
 									});
 								});
@@ -3494,7 +3499,6 @@ append layout_body
 				cb( rec.arg1 + ":" + "@block");
 			},
 			pattern = /(.*)\:\n\n((\t.*\n)+)\n/gm ;
-				// /\n(.*)\:\n\n((.|\n)*)\n\n/g ;	// define escaped code block
 		
 		html.serialize( fetchBlock, pattern, key, (html, fails) => {  
 			cb( blocks, html);
@@ -3694,6 +3698,7 @@ append layout_body
 		}) );
 	},
 	
+	/*
 	function Xtex( cb ) {  // expands X$$ MATH $$ tags then callbacks cb( final html )
 		var 
 			key = "@tex",
@@ -3738,6 +3743,55 @@ append layout_body
 			cb(html);
 		});
 		});
+		}); 
+	}, */
+	
+	function Xtex( cb ) {  // expands X$$ MATH $$ tags then callbacks cb( final html )
+		var 
+			key = "@tex",
+			html = this,
+			fetcher = JAX.typeset,
+			fetchTeX = function ( rec, cb ) {	// callsback cb with expanded TeX tag
+				//Log("math",rec);
+				switch (rec.arg1) {
+					case "n":
+						fetcher({
+							math: rec.arg2,
+							format: "TeX",  
+							//html: true,
+							mml: true
+						}, d => cb( d.mml || "" ) );
+						break;
+					case "a":
+						fetcher({
+							math: rec.arg2,
+							format: "AsciiMath",
+							//html: true,
+							mml: true
+						}, d => cb( d.mml || "" ) );
+						break;
+					case "m":
+						fetcher({
+							math: rec.arg2,
+							format: "MathML", 
+							//html: true,
+							mml: true
+						}, d => cb( d.mml || "" ) );
+						break;
+					case " ":
+					default:
+						fetcher({
+							math: rec.arg2,
+							format: "inline-TeX",  
+							//html: true,
+							mml: true
+						}, d => cb( " " + d.mml || "" ) );
+				}
+			},
+			pattern = /(.?)\$\$([^\$]*)\$\$/g;
+			
+		html.serialize( fetchTeX, pattern, key, (html,fails) => { 
+			cb(html);
 		}); 
 	},
 	
