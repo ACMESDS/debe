@@ -1,5 +1,5 @@
 module.exports = {
-	usecase: {
+	keys: {
 		Symbols: "json",
 		Steps: "int(11) default 0",
 		lma: "json",
