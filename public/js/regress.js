@@ -112,7 +112,7 @@ The following context keys are accepted:
 			/*
 			Log({
 				train: use, 
-				dims: [x.length, y ? y.length : 0],
+				xy_dims: [x.length, y ? y.length : 0],
 				solve: solve
 			});  */
 
@@ -139,13 +139,13 @@ The following context keys are accepted:
 		function trainer(x,y,x0,cb) {
 			
 			function saver( cls, x, y, x0, cb ) {
-				if ( y && keep ) {
+				if ( x0 && keep ) {
 					var 
 						idx = x.shuffle(keep, true),
 						x = x.indexor(idx),
 						y = y.indexor(idx);
-					
-					//Log("reg keep", keep, idx.length, x.length, y.length);
+
+					//Log("reg keep", keep, idx.length, x.length, y.length, x0.length);
 					
 					if (x0) 
 						$( `y0 = ${use}_predict(cls, x0)`, {
@@ -156,10 +156,10 @@ The following context keys are accepted:
 								x: x,
 								y: y,
 								x0: x0,
-								y0: ctx.y0._data
+								y0: ctx.y0
 							},
 							cls: cls
-						}) );
+						}));
 						  
 					else
 						cb({		// return sampled and predicted data
