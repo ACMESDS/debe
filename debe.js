@@ -294,12 +294,12 @@ catch (err) {
 				to: pocs.admin,
 				subject: site.title + " started", 
 				body: "Just FYI"
-			});
+			}, sql );
 		
 		sql.query(
 			"SELECT File FROM openv.watches WHERE substr(File,1,1) = '/' GROUP BY File",
 			[] )
-		.on("result", (link) => {
+		.on("result", link => {
 			dogAutoruns( link.File );
 		});		
 	},
@@ -449,14 +449,14 @@ catch (err) {
 							subject: `${dog.site.nick} resource warning`,
 							to: pocs.admin,
 							body: `Please add more VMs to ${dog.site.nick} or ` + "shed load".tag(dog.site.urls.worker+"/queues.view")
-						});
+						}, sql );
 
 					if ( disk > dog.max.disk ) 
 						FLEX.sendMail({
 							subject: `${dog.site.nick} resource warning`,
 							to: pocs.admin,
 							body: `Please add more disk space to ${dog.site.nick} or ` + "shed load".tag(dog.site.urls.worker+"/queues.view")
-						});
+						}, sql );
 
 					sql.release();
 				});
@@ -602,7 +602,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 						to: file.client,
 						subject: `TOTEM archived ${file.Name}`,
 						body: notice
-					}, sql);
+					}, sql );
 				});
 			
 			if (dog.get.finished)
@@ -674,7 +674,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 						to: job.Client,
 						subject: "Totem update",
 						body: job.Notes
-					});
+					}, sql );
 				});
 			
 			if ( unbilled = dog.get.unbilled )
@@ -736,6 +736,37 @@ Further information about this file is available ${paths.moreinfo}. `;
 				});
 		}),
 			
+		dogEmail: Copy({
+			get: {
+				toRemove: "DELETE FROM app.email WHERE Remove",
+				toSend: "SELECT `to`,subject,body FROM app.email WHERE Send"
+			},
+			cycle: 300
+		}, function dogEmail(dog) {
+			
+			function send(opts) {
+				if ( email = FLEX.mailer.TX.TRAN ) {
+					opts.from = "totem@noreply.gov";
+					opts.alternatives = [{
+						contentType: 'text/html; charset="ISO-59-1"',
+						contents: ""
+					}];
+
+					email.sendMail(opts, err => Trace(`MAIL ${opts.to} re:${opts.subject} ` + (err||"ok") ) );
+				}
+			}
+			
+			dog.thread( sql => {
+				var get = dog.get;
+				sql.query( get.toRemove );
+				sql.query( get.toSend )
+				.on( "result", rec => {
+					send(rec);
+					sql.query("DELETE FROM app.email WHERE ?", {ID:rec.ID});
+				});
+			});
+		}),
+		
 		_dogSystem: Copy({  // legacy
 			//cycle: 100,
 			get: {
