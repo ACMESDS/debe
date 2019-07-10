@@ -116,10 +116,11 @@ var
 		digits: 2,  // precision to show values in [JSON || #DOC || TEX] OP= [JSON || #DOC || TEX] expansions
 		
 		":" : (lhs,rhs,ctx) => ctx.toEqn("", lhs,rhs,ctx), 		// inline TeX
-		"|" : (lhs,rhs,ctx) => ctx.toEqn("a", lhs,rhs,ctx),		// Ascii Match
-		";" : (lhs,rhs,ctx) => ctx.toEqn("n", lhs,rhs,ctx),		// break TeX
-		">": (lhs,rhs,ctx) => ctx.toTag(lhs,rhs,ctx),			// [post](url) 
-		"<": (lhs,rhs,ctx) => {												// add context value or generator
+		
+		// "|" : (lhs,rhs,ctx) => ctx.toEqn("a", lhs,rhs,ctx),		// Ascii Match
+		// ";" : (lhs,rhs,ctx) => ctx.toEqn("n", lhs,rhs,ctx),		// break TeX
+		// ">": (lhs,rhs,ctx) => ctx.toTag(lhs,rhs,ctx),			// [post](url) 
+		/* "<": (lhs,rhs,ctx) => {												// add context value or generator
 			
 			if ( rhs.split(",").length > 1) {
 				eval(`
@@ -133,8 +134,8 @@ catch (err) {
 			else
 				ctx[lhs] = rhs.parseEMAC( ctx );
 			
-			return "";
-		},
+			return ""; 
+		},  */
 		
 		toEqn: (pre,lhs,rhs,ctx) => {		// expand [JSON || #DOC || TEX] OP= [JSON || #DOC || TEX] 
 
@@ -4348,7 +4349,7 @@ append layout_body
 							head = false;
 						}
 
-						var row = "", intro = "";
+						var row = "", intro = true;
 						Each(heads, function (key,val) {
 							if (val = rec[key])
 								row += isArray(val)

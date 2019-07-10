@@ -1,5 +1,5 @@
 module.exports = {
-	usecase: {
+	keys: {
 		chipPixels: "int(11)",
 		chipFeatures: "float",
 		featureLength: "float",

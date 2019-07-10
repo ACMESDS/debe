@@ -33,3 +33,7 @@ ${register} ${input({a:"test",b:"yay"})}
 email test: ${request("click here/some test")}
 
 query a,b,c: $ {a}, $ {b}, $ {c}
+
+# Lets make an interface
+
+Here ${interface()}
