@@ -115,12 +115,13 @@ var
 		
 		digits: 2,  // precision to show values in [JSON || #DOC || TEX] OP= [JSON || #DOC || TEX] expansions
 		
-		":" : (lhs,rhs,ctx) => ctx.toEqn("", lhs,rhs,ctx), 		// inline TeX
+		":=" : (lhs,rhs,ctx) => ctx.toEqn( "", lhs, rhs, ctx), 		// inline TeX
 		
-		// "|" : (lhs,rhs,ctx) => ctx.toEqn("a", lhs,rhs,ctx),		// Ascii Match
-		// ";" : (lhs,rhs,ctx) => ctx.toEqn("n", lhs,rhs,ctx),		// break TeX
-		// ">": (lhs,rhs,ctx) => ctx.toTag(lhs,rhs,ctx),			// [post](url) 
-		/* "<": (lhs,rhs,ctx) => {												// add context value or generator
+		/*
+		"|=" : (lhs,rhs,ctx) => ctx.toEqn("a", lhs,rhs,ctx),		// Ascii Match
+		";=" : (lhs,rhs,ctx) => ctx.toEqn("n", lhs,rhs,ctx),		// break TeX
+		">=": (lhs,rhs,ctx) => ctx.toTag(lhs,rhs,ctx),			// [post](url) 
+		"<=": (lhs,rhs,ctx) => {												// add context value or generator
 			
 			if ( rhs.split(",").length > 1) {
 				eval(`
@@ -204,24 +205,24 @@ catch (err) {
 		},
 			
 		toTag: (lhs,rhs,ctx) => {
-				var
-					lKeys = lhs.split(","),
-					rKeys = rhs.split(","),
-					base = lKeys[0] + "$.",
-					skin = rKeys[0],
-					args = (rKeys[3] || "").replace(/;/g,","),
-					opts = {
-						w: rKeys[1],
-						h: rKeys[2],
-						x: lKeys[1] ? base + lKeys[1] : "",
-						y: lKeys[2] ? base + lKeys[2] : "",
-						r: lKeys[3] ? base + lKeys[3] : ""
-					};
+			var
+				lKeys = lhs.split(","),
+				rKeys = rhs.split(","),
+				base = lKeys[0] + "$.",
+				skin = rKeys[0],
+				args = (rKeys[3] || "").replace(/;/g,","),
+				opts = {
+					w: rKeys[1],
+					h: rKeys[2],
+					x: lKeys[1] ? base + lKeys[1] : "",
+					y: lKeys[2] ? base + lKeys[2] : "",
+					r: lKeys[3] ? base + lKeys[3] : ""
+				};
 
-				for (var key in opts) if ( !opts[key] ) delete opts[key];
+			for (var key in opts) if ( !opts[key] ) delete opts[key];
 
-				//Log( base, view, "[post](/" + (skin+".view").tag("?",opts)+args + ")" );
-				return "[post](/" + `${skin}.view`.tag("?",opts)+args + ")";
+			//Log( base, view, "[post](/" + (skin+".view").tag("?",opts)+args + ")" );
+			return "[post](/" + `${skin}.view`.tag("?",opts)+args + ")";
 		}
 	},
 		
@@ -3713,20 +3714,14 @@ append layout_body
 	function Xgen( ctx, cb ) {  // expands LHS OP= RHS tags
 
 		var 
-			pattern = /(\S*) ([^ ]*)= (\S*)/g;  // defines LHS OP= RHS tag
+			pattern = /(\S*) ([^ ]?)= (\S*)/g;  // defines LHS OP= RHS tag
 		
 		cb( this.replace(pattern, (str,lhs,op,rhs) => {
 			//Log([lhs,rhs,op]);
-			if ( op )
-				if ( blogOp = ctx[op] ) 
-					if ( isFunction(blogOp ) )
-						return blogOp(lhs,rhs,ctx);
-					else
-						return `invalid lhs ${op}= rhs markdown`;
-				else
-					return `invalid lhs ${op}= rhs markdown`;
+			if ( blogOp = ctx[op+"="] ) 
+				return blogOp(lhs,rhs,ctx);
 			else
-				return `${lhs} = ${rhs}`;
+				return `${lhs} ${op}= ${rhs}`;
 		}) );
 	},
 	
