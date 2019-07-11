@@ -59,6 +59,7 @@ var
 	JADE = require('jade'),				//< using jade as the skinner
 	
 	// totem modules		
+	EAT = require("./ingesters"),	
 	ATOM = require("atomic"), 
 	FLEX = require("flex"),
 	TOTEM = require("totem"),
@@ -201,7 +202,7 @@ catch (err) {
 				}
 			}
 			
-			return pre + "$$" + toTeX( lhs.parseJSON(toDoc) ) + " = " + toTeX( rhs.parseJSON(toDoc) ) + " $$";
+			return pre + "$$ " + toTeX( lhs.parseJSON(toDoc) ) + " = " + toTeX( rhs.parseJSON(toDoc) ) + " $$";
 		},
 			
 		toTag: (lhs,rhs,ctx) => {
@@ -230,61 +231,6 @@ catch (err) {
 		
 	//plugins: $.libs,
 		
-	ingester: function ingester( opts, query, cb ) {
-		function ingestEvents(data, cb){
-			var evs = [];
-			if (recs = opts.get ? data[opts.get] : data) {
-				Log("ingest recs", recs.length);
-				recs.forEach( function (rec, idx) {
-					if (ev = opts.ev) 
-						if ( isString(ev) ) {
-							var 
-								ctx = VM.createContext({rec: rec, query: query, evs: evs}),
-								reader = `evs.push( (${opts.ev})(rec, evs.length) );` ;
-
-							VM.runInContext( reader, ctx );
-						}
-
-						else
-							evs.push( ev(rec, evs.length) );
-
-					else
-						evs.push( rec );
-				});
-			}
-			cb(evs);
-		}
-		
-		var fetcher = DEBE.fetcher;
-		
-		try {
-			if (url = opts.url)
-				switch (url.constructor) {
-					case String:
-						fetcher( url.tag("?", query), opts.put, function (data) {
-							if ( data = data.parseJSON( ) ) 
-								ingestEvents(data, cb);
-						});
-						break;
-						
-					case Function:
-						url( function (data) {
-							ingestEvents(data, cb );
-						});
-						break;
-						
-					default:
-						ingestEvents(url, cb);
-				}
-		}
-		
-		catch(err) {
-			Log("INGESTER",err);
-		}
-	},
-		
-	onIngest: require("./ingesters"),
-
 	onStartup: sql => {
 		var
 			site = DEBE.site,
@@ -512,7 +458,7 @@ catch (err) {
 		dogFiles: Copy({
 			get: {
 				ungraded: "SELECT ID,Name FROM app.files WHERE _State_graded IS null AND _Ingest_Time>PoP_End AND Enabled",
-				unread: "SELECT ID,Ring, st_centroid(ring) as Anchor, _Ingest_Time,PoP_advanceDays,PoP_durationDays,_Ingest_sampleTime,Name FROM app.files WHERE _Ingest_Time>=PoP_Start AND _Ingest_Time<=PoP_End AND Enabled",
+				toingest: "SELECT ID,Ring, st_centroid(ring) as Anchor, _Ingest_Time,PoP_advanceDays,PoP_durationDays,_Ingest_sampleTime,Name FROM app.files WHERE _Ingest_Time>=PoP_Start AND _Ingest_Time<=PoP_End AND Enabled AND position('.ingest' IN Name)",
 				//finished: "SELECT ID,Name FROM app.files WHERE _Ingest_Time>PoP_End",
 				expired: "SELECT ID,Name FROM app.files WHERE PoP_Expires AND now() > PoP_Expires AND Enabled"
 				//retired: "SELECT files.ID,files.Name,files.Client,count(events.id) AS evCount FROM app.events LEFT JOIN app.files ON events.fileID = files.id "
@@ -532,10 +478,11 @@ catch (err) {
 			
 			var 
 				urls = DEBE.site.urls,
+				get = dog.get,
 				fetcher = DEBE.fetcher;
 
 			/*
-			dog.forEach(dog.trace, dog.get.ungraded, [], function (file, sql) {
+			dog.forEach(dog.trace, get.ungraded, [], function (file, sql) {
 				Trace("GRADE "+file.Name);
 
 				DEBE.gradeIngest( sql, file, function (stats) {
@@ -569,14 +516,14 @@ catch (err) {
 			});
 			*/
 			
-			if (dog.get.expired)
-				dog.forEach(dog.trace, dog.get.expired, [], function (file, sql) { 
+			if (get.expired)
+				dog.forEach(dog.trace, get.expired, [], (file, sql) => { 
 					Trace("EXPIRE "+file.Name);
 					sql.query("DELETE FROM app.events WHERE ?", {fileID: file.ID});
 				});
 			
-			if (dog.get.retired)
-				dog.forEach(dog.trace, dog.get.retired, dog.maxage, function (file, sql) {
+			if (get.retired)
+				dog.forEach(dog.trace, get.retired, dog.maxage, (file, sql) => {
 					Trace("RETIRE "+file.Name);
 
 					var 
@@ -607,24 +554,23 @@ Further information about this file is available ${paths.moreinfo}. `;
 					}, sql );
 				});
 			
-			if (dog.get.finished)
-				dog.forEach(dog.trace, dog.get.finished, [], function (file, sql) {
+			if (get.finished)
+				dog.forEach(dog.trace, get.finished, [], (file, sql) => {
 					Trace("FINISHED "+file.Name);
 					//sql.query("UPDATE app.files SET _State_ingested=1 WHERE ?",{ID:file.ID});
 				});
 			
-			if (dog.get.unread)
-				dog.forEach(dog.trace, dog.get.unread, [], function (file, sql) {
-					Trace("INGEST "+file.Name);
+			if (get.toingest)
+				dog.forEach(dog.trace, get.toingest, [], (file, sql) => {
 					var
 						zero = {x:0, y:0},
 						ring = file.Ring || [[ zero, zero, zero, zero, zero]],
 						anchor = file.Anchor || zero,
 						from = new Date(file._Ingest_Time),
 						to = from.addDays(file.PoP_durationDays),
-						path = urls.master + file.Name;
+						ingester = "/ingest";
 
-					fetcher( path.tag("&", {
+					fetcher( ingester.tag("?", {	// fetch all events ingested by this /plugin.usecase or 
 						fileID: file.ID,
 						from: from.toLocaleDateString("en-US"),
 						to: to.toLocaleDateString("en-US"),
@@ -633,11 +579,10 @@ Further information about this file is available ${paths.moreinfo}. `;
 						radius: HACK.ringRadius(ring),
 						ring: ring,
 						durationDays: file.PoP_durationDays
-					}), null, function (msg) {
+					}), null, msg => {
 						Log("INGEST", msg);
 					});
 
-					if (1)
 					sql.query(
 						"UPDATE app.files SET _Ingest_Time=date_add(_Ingest_Time, interval PoP_advanceDays day), Revs=Revs+1 WHERE ?", 
 						{ ID: file.ID }
@@ -662,14 +607,15 @@ Further information about this file is available ${paths.moreinfo}. `;
 			cycle: 300
 		}, function dogJobs(dog) {
 			var
+				get = dog.get,
 				queues = DEBE.queues,
 				fetcher = DEBE.fetcher;
 			
-			if ( pigs = dog.get.pigs )
+			if ( pigs = get.pigs )
 				dog.forEach(dog.trace, pigs, [], function (pigs) {
 				});
 			
-			if ( unmailed = dog.get.unmailed ) 
+			if ( unmailed = get.unmailed ) 
 				dog.forEach(dog.trace, unmailed, [], function (job, sql) {
 					sql.query("UPDATE app.queues SET Finished=1 WHERE ?", {ID: job.ID});
 					sendMail({
@@ -679,7 +625,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 					}, sql );
 				});
 			
-			if ( unbilled = dog.get.unbilled )
+			if ( unbilled = get.unbilled )
 				dog.forEach(dog.trace, unbilled, [], function (job, sql) {
 					//Trace(`BILLING ${job} FOR ${job.Client}`, sql);
 					sql.query( "UPDATE openv.profiles SET Charge=Charge+? WHERE ?", [ 
@@ -689,7 +635,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 					sql.query( "UPDATE app.queues SET Billed=1 WHERE ?", {ID: job.ID})
 				});
 
-			if ( unfunded = dog.get.unfunded )
+			if ( unfunded = get.unfunded )
 				dog.forEach(dog.trace, unfunded, [dog.max.age], function (job, sql) {
 					//Trace("KILLING ",job);
 					sql.query(
@@ -697,7 +643,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 					);
 				});
 
-			if ( stuck = dog.get.stuck )
+			if ( stuck = get.stuck )
 				dog.thread( sql => {
 					sql.query(stuck, [], (err, info) => {
 
@@ -725,7 +671,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 					});	
 				});
 			
-			if ( outsourced = dog.get.outsourced )
+			if ( outsourced = get.outsourced )
 				dog.forEach( dog.trace, outsourced, [], function (job, sql) {
 					sql.query(
 						"UPDATE app.queues SET ?,Age=Age+Work,Departed=Date_Add(Departed,interval Work day) WHERE ?", [
@@ -2523,10 +2469,10 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 					}
 
 					if ( ctx.Ingest )  // ingest remaining events
-						DEBE.getFile( client, fileName, function (fileID, sql) {
+						DEBE.getFile( client, fileName, (fileID, sql) => {
 							sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
 
-							HACK.ingestList( sql, evs, fileID, function (aoi) {
+							HACK.ingestList( sql, evs, fileID, aoi => {
 								Log("INGESTED",aoi);
 								
 								DEBE.thread( sql => {	// autorun plugins linked to this ingest
@@ -2922,33 +2868,60 @@ Totem (req,res)-endpoint to ingest a source into the sql database
 @param {Function} res Totem response
 */
 	
+	function ingester( opts, query, cb ) {
+		try {
+			if (url = opts.url)
+				switch (url.constructor.name) {
+					case "String":
+						DEBE.fetcher( url.tag("?", query), opts.put, data => {
+							if ( evs = data.parseJSON( [ ] ) ) 
+								cb( opts.get ? evs.get(opts.get) : evs );
+						});
+						break;
+						
+					case "Function":
+						url( evs => cb( opts.get ? evs.get(opts.get) : evs ) );
+						break;
+						
+					case "Array":
+						cb( opts.get ? url.get(opts.get) : url );
+						break;
+				}
+		}
+		
+		catch(err) {
+			Log("INGEST FAILED",err);
+		}
+	}		
+	
 	var 
 		sql = req.sql,
 		query = req.query,
 		body = req.body,
 		src = query.src,
+		ingester = DEBE.ingester,
 		fileID = query.fileID;
 	
 	Log("INGEST", query, body);
-	res("ingesting");
+	res("ingesting events");
 
 	if (fileID) {
 		//sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
 		
-		if ( onIngest = DEBE.onIngest[src] )   // use builtin ingester
-			DEBE.ingester( onIngest, query, function (evs) {
-				HACK.ingestList( sql, evs, fileID, function (aoi) {
-					Log("INGEST aoi", aoi);
+		if ( opts = EAT[src] )   // use builtin src ingester (event eater)
+			ingester( opts, query, evs => {
+				HACK.ingestList( sql, evs, fileID, aoi => {
+					Log("INGEST AOI", aoi);
 				});
 			});
 
 		else  // use custom ingester
 			sql.query("SELECT _Ingest_Script FROM app.files WHERE ? AND _Ingest_Script", {ID: fileID})
-			.on("results", function (file) {
-				if ( onIngest = JSON.parse(file._Ingest_Script) ) 
-					DEBE.ingester( onIngest, query, function (evs) {
-						HACK.ingestList( sql, evs, fileID, function (aoi) {
-							Log("INGEST aoi", aoi);
+			.on("results", file => {
+				if ( opts = JSON.parse(file._Ingest_Script) ) 
+					ingester( opts, query, evs => {
+						HACK.ingestList( sql, evs, fileID, aoi => {
+							Log("INGEST AOI", aoi);	
 						});
 					});
 			});
@@ -3422,30 +3395,6 @@ Initialize DEBE on startup.
 [  // string prototypes
 	
 	// string serializers 
-	/*
-	function Xblog(req, ds, cache, ctx, rec, viaBrowser, cb) {
-		var
-			jade = `extends layout
-append layout_parms
-	- math = true
-	- highlight = "zenburn"
-append layout_body
-	:markdown
-		`  + this
-		.replace(/^\n* /g, "" )  //<<<<<<
-		.replace(/\n/g,"\n\t\t");
-		
-		try {
-			var ctx = {filename: DEBE.paths.jadePath, query: {} };	
-			Log("jade", ctx, jade);
-			cb( JADE.compile(jade, ctx) (ctx) );
-		}
-		catch (err) {
-			Log(err);
-			cb( err+"" );
-		}		
-	},
-	*/
 	function Xblog(req, ds, cache, ctx, rec, viaBrowser, cb) {
 	/**
 	@member String
@@ -3492,7 +3441,6 @@ append layout_body
 		var 
 			blockidx = 0;
 		
-		//Copy(DEBE.blogContext, new Object(ctx));
 		Copy(DEBE.blogContext, ctx);
 		
 		this.Xescape( [], (blocks,html) => // escape code blocks
@@ -3714,14 +3662,14 @@ append layout_body
 	function Xgen( ctx, cb ) {  // expands LHS OP= RHS tags
 
 		var 
-			pattern = /(\S*) ([^ ]?)= (\S*)/g;  // defines LHS OP= RHS tag
+			pattern = /(\S*) := (\S*)/g;  // defines LHS OP= RHS tag
 		
-		cb( this.replace(pattern, (str,lhs,op,rhs) => {
-			//Log([lhs,rhs,op]);
-			if ( blogOp = ctx[op+"="] ) 
+		cb( this.replace(pattern, (str,lhs,rhs) => {
+			//Log([":=", lhs, rhs]);
+			if ( blogOp = ctx[":="] ) 
 				return blogOp(lhs,rhs,ctx);
 			else
-				return `${lhs} ${op}= ${rhs}`;
+				return `undefined := blog`;
 		}) );
 	},
 	
@@ -3916,19 +3864,20 @@ append layout_body
 		return this.splitify("_").joinify();
 	},
 	
-	function clone() {
 	/*
+	function clone() {
+	/ *
 	@member Array
 	@method clone
 	Return a cloned copy of this records
-	*/
+	* /
 
 		var recs = this, copyRecs = [];
-		recs.forEach( function (rec) {  // clone ds recs
+		recs.forEach( rec => {  // clone ds recs
 			copyRecs.push( new Object(rec) );
 		});
 		return recs;
-	},
+	},  */
 
 	function blogify( req, key, ds, cb ) {
 	/*
@@ -4185,27 +4134,6 @@ append layout_body
 
 		return tar;
 	},
-
-	/*
-	function sample( cb ) {
-	/ *
-	@member sample
-	@method Array
-	@param {Function} cb callback(rec) returns record results to append
-	Samples a record list:
-		[ {x:"a"}, {x:"b"} ].sample( (rec) => rec.x=="a" )
-	
-	returning a record list:	
-		[ {x:"a"} ]
-		
-	using the callback cb(rec) which returns true/false to retain/drop an item.
-	* /
-		var rtns = [];
-		this.forEach( function (rec) {
-			rtns.push( cb(rec) );
-		});
-		return rtns;
-	},  */
 
 	function joinify(cb) {
 	/*
