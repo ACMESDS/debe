@@ -1747,7 +1747,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		//Log("ingest file", filePath, fileName, fileID);
 		
-		HACK.ingestFile(sql, filePath, fileID, function (aoi) {			
+		HACK.ingestFile(sql, filePath, fileID, aoi => {			
 			Log("INGESTED", aoi);
 		});
 	},
@@ -2117,7 +2117,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 					case String: // query contains a source path
 
 						var
-							chipper = HACK.chipVoxels,
+							chipVoxels = HACK.chipVoxels,
 							fetcher = DEBE.fetcher,
 							pipeQuery = {},
 							pipePath = Pipe.parseURL(pipeQuery,{},{},{}),
@@ -2247,21 +2247,17 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 
 										//Log( "chip file>>>", file );
 										ctx.File = file;
-										chipper(sql, query, voxctx => {  // get voxel context for each voxel being chipped
+										chipVoxels(sql, pipeQuery, file, voxctx => {  // get context for each voxel being chipped
 
 											job.ctx = Copy( ctx, voxctx );
 
 											sql.insertJob( job, (job, sql) => {  // put voxel into job regulation queue
-												if (chip = voxctx.chip) {  // place chips into chip supervisor
-													var
-														ctx = job.ctx, // recover job context
-														chip = ctx.Chip;
-
-													$.supervisedROC(  chip, {}, H0 => {
+												if (chips = voxctx.chips) {  // place chips into chip supervisor
+													$.supervisedROC(  chips, {}, H0 => {
 													});
 												}
 
-												else {	// run event file thru event supervisor
+												else {	// run voxelized events thru event supervisor
 													var
 														ctx = job.ctx, // recover job context
 														file = ctx.File,
@@ -2272,9 +2268,11 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 
 																//Log("learning ctx", ctx);
 
-																if ( evs = ctx.Events ) 
-																	evs.get( "t", evs => {  // get supervisor evs until null; then save supervisor computed events
-																		Trace( evs ? `SUPERVISING voxel${ctx.Voxel.ID} events ${evs.length}` : `SUPERVISED voxel${ctx.Voxel.ID}` , sql );
+																if ( evs = ctx.Events ) 	// have events for supervisor
+																	evs.get( "t", evs => {  // route events thru supervisor, run plugin, then save supervisor logs
+																		Trace( evs 
+																			  ? `SUPERVISING voxel${ctx.Voxel.ID} events ${evs.length}` 
+																			  : `SUPERVISED voxel${ctx.Voxel.ID}` );
 
 																		if (evs) // feed supervisor
 																			supercb(evs);
@@ -2285,15 +2283,15 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 																				ctx.Case = "v"+ctx.Voxel.ID;
 																				Trace( `STARTING voxel${ctx.Voxel.ID}` , sql );
 
-																				pipePlugin( {}, ctx, ctx => {
-																					supervisor.end( ctx.Save || [], (evstore) => {
-																						saveEvents(evstore, ctx);
+																				pipePlugin( {}, ctx, ctx => {	// run plugin then save supervisor logs
+																					supervisor.end( ctx.Save || [], logs => {
+																						saveEvents(logs, ctx);
 																					});
 																				});
 																			});	
 																	});
 
-																else	// terminate supervisor
+																else	// no events so terminate supervisor
 																	supercb(null);
 															},  
 
@@ -2315,7 +2313,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 															}  
 														});
 
-													supervisor.query( stats => { // query supervisor to this callback
+													supervisor.pipe( stats => { // pipe supervisor to this callback
 														Trace( `PIPED voxel${ctx.Voxel.ID}` , sql );
 													}); 
 												}												
@@ -2326,14 +2324,14 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 									["stateKeys", "stateSymbols"].parseJSON(file);
 
 									if (file._State_Archived) 
-										CP.exec("", function () {  // revise to add a script to cp from lts and unzip
+										CP.exec("", function () {  //<< fix: add script to copy and unzip from S3 buckets
 											Trace("RESTORING "+file.Name);
 											sql.query("UPDATE app.files SET _State_Archived=false WHERE ?", {ID: file.ID});
-											chipFile(file, query);
+											chipFile(file, pipeQuery);
 										});
 
 									else
-										chipFile(file, query);
+										chipFile(file, pipeQuery);
 								});
 						}
 						break;
@@ -2475,7 +2473,7 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 							HACK.ingestList( sql, evs, fileID, aoi => {
 								Log("INGESTED",aoi);
 								
-								DEBE.thread( sql => {	// autorun plugins linked to this ingest
+								DEBE.thread( sql => {	// run plugins that were linked to this ingest
 									exeAutorun(sql,"", `.${ctx.Host}.${ctx.Name}` );
 									sql.release();
 								});
@@ -2911,7 +2909,7 @@ Totem (req,res)-endpoint to ingest a source into the sql database
 		if ( opts = EAT[src] )   // use builtin src ingester (event eater)
 			ingester( opts, query, evs => {
 				HACK.ingestList( sql, evs, fileID, aoi => {
-					Log("INGEST AOI", aoi);
+					Log("INGESTED", aoi);
 				});
 			});
 
@@ -2921,7 +2919,7 @@ Totem (req,res)-endpoint to ingest a source into the sql database
 				if ( opts = JSON.parse(file._Ingest_Script) ) 
 					ingester( opts, query, evs => {
 						HACK.ingestList( sql, evs, fileID, aoi => {
-							Log("INGEST AOI", aoi);	
+							Log("INGESTED", aoi);	
 						});
 					});
 			});
