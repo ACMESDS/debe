@@ -2247,20 +2247,28 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 
 										//Log( "chip file>>>", file );
 										ctx.File = file;
-										chipVoxels(sql, pipeQuery, file, voxctx => {  // get context for each voxel being chipped
+										getVoxels(sql, pipeQuery, file, voxel => {  // process voxels over queried aoi
 
-											job.ctx = Copy( ctx, voxctx );
+											job.ctx = Copy( ctx, voxel );
 
 											sql.insertJob( job, (job, sql) => {  // put voxel into job regulation queue
-												if (chips = voxctx.chips) {  // place chips into chip supervisor
-													$.supervisedROC(  chips, {}, H0 => {
+												var
+													ctx = job.ctx, 		 // recover job context
+													file = ctx.File,
+													chips = ctx.Chips,
+													evs = ctx.Events;
+												
+												if (chips)   // place chips into chip supervisor
+													chips.get( "path", function image(img, cb) {
+														ctx.Image = img;
+														pipePlugin( {}, ctx, ctx => {	
+															cb( ctx.Image );
+															//		saveEvents(logs, ctx);
+														});
 													});
-												}
 
-												else {	// run voxelized events thru event supervisor
+												if (evs) {		// run voxelized events thru event supervisor
 													var
-														ctx = job.ctx, // recover job context
-														file = ctx.File,
 														supervisor = new RAN({ 	// learning supervisor
 															learn: function (supercb) {  // event getter callsback supercb(evs) or supercb(null,onEnd) at end
 																var 
@@ -2268,31 +2276,27 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 
 																//Log("learning ctx", ctx);
 
-																if ( evs = ctx.Events ) 	// have events for supervisor
-																	evs.get( "t", evs => {  // route events thru supervisor, run plugin, then save supervisor logs
-																		Trace( evs 
-																			  ? `SUPERVISING voxel${ctx.Voxel.ID} events ${evs.length}` 
-																			  : `SUPERVISED voxel${ctx.Voxel.ID}` );
+																evs.get( "t", evs => {  // route events thru supervisor, run plugin, then save supervisor logs
+																	Trace( evs 
+																		  ? `SUPERVISING voxel${ctx.Voxel.ID} events ${evs.length}` 
+																		  : `SUPERVISED voxel${ctx.Voxel.ID}` );
 
-																		if (evs) // feed supervisor
-																			supercb(evs);
+																	if (evs) // feed supervisor
+																		supercb(evs);
 
-																		else // terminate supervisor and start engine
-																			supercb(null, function onEnd( flow ) {  // attach supervisor flow context
-																				ctx.Flow = flow; 
-																				ctx.Case = "v"+ctx.Voxel.ID;
-																				Trace( `STARTING voxel${ctx.Voxel.ID}` , sql );
+																	else // terminate supervisor and start engine
+																		supercb(null, function onEnd( flow ) {  // attach supervisor flow context
+																			ctx.Flow = flow; 
+																			ctx.Case = "v"+ctx.Voxel.ID;
+																			Trace( `STARTING voxel${ctx.Voxel.ID}` , sql );
 
-																				pipePlugin( {}, ctx, ctx => {	// run plugin then save supervisor logs
-																					supervisor.end( ctx.Save || [], logs => {
-																						saveEvents(logs, ctx);
-																					});
+																			pipePlugin( {}, ctx, ctx => {	// run plugin then save supervisor logs
+																				supervisor.end( ctx.Save || [], logs => {
+																					saveEvents(logs, ctx);
 																				});
-																			});	
-																	});
-
-																else	// no events so terminate supervisor
-																	supercb(null);
+																			});
+																		});	
+																});
 															},  
 
 															N: query.actors || file._Ingest_Actors,  // ensemble size
