@@ -11,7 +11,9 @@ module.exports = {
 	
 	engine: function aois(ctx,res) {
 		res(ctx);
-		HACK.voxelizeAOI(SQL, ctx);
+		$.thread( sql => {
+			HACK.voxelizeAOI(sql, ctx);
+		});
 	}	
 
 }
