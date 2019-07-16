@@ -2358,7 +2358,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 						
 						pipeCross( 0 , keys, Pipe, {}, setCtx => {
 							jobs.push( Copy(setCtx, { Name: `${ctx.Name}-${jobs.length}` }) );
-						})
+						});
 						
 						jobs.forEach( job => {
 							sql.query( `INSERT INTO app.${host} SET ?`, Copy(job, runCtx), err => {
