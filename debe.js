@@ -2474,12 +2474,15 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 						DEBE.getFile( client, fileName, (fileID, sql) => {
 							sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
 
-							HACK.ingestList( sql, evs, fileID, aoi => {
-								Log("INGESTED",aoi);
-								
-								DEBE.thread( sql => {	// run plugins that were linked to this ingest
-									exeAutorun(sql,"", `.${ctx.Host}.${ctx.Name}` );
-									sql.release();
+							sql.query("SELECT Class FROM app.files WHERE ?", {ID: fileID})
+							.on("result", file=> {
+								HACK.ingestList( sql, evs, fileID, file.Class, aoi => {
+									Log("INGESTED",aoi);
+
+									DEBE.thread( sql => {	// run plugins that were linked to this ingest
+										exeAutorun(sql,"", `.${ctx.Host}.${ctx.Name}` );
+										sql.release();
+									});
 								});
 							});
 						});
@@ -2910,23 +2913,26 @@ Totem (req,res)-endpoint to ingest a source into the sql database
 	if (fileID) {
 		//sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
 		
-		if ( opts = EAT[src] )   // use builtin src ingester (event eater)
-			ingester( opts, query, evs => {
-				HACK.ingestList( sql, evs, fileID, aoi => {
-					Log("INGESTED", aoi);
-				});
-			});
-
-		else  // use custom ingester
-			sql.query("SELECT _Ingest_Script FROM app.files WHERE ? AND _Ingest_Script", {ID: fileID})
-			.on("results", file => {
-				if ( opts = JSON.parse(file._Ingest_Script) ) 
-					ingester( opts, query, evs => {
-						HACK.ingestList( sql, evs, fileID, aoi => {
-							Log("INGESTED", aoi);	
-						});
+		sql.query("SELECT Class FROM app.files WHERE ?", {ID: fileID})
+		.on("result", file => {
+			if ( opts = EAT[src] )   // use builtin src ingester (event eater)
+				ingester( opts, query, evs => {
+					HACK.ingestList( sql, evs, fileID, file.Class, aoi => {
+						Log("INGESTED", aoi);
 					});
-			});
+				});
+
+			else  // use custom ingester
+				sql.query("SELECT _Ingest_Script FROM app.files WHERE ? AND _Ingest_Script", {ID: fileID})
+				.on("results", file => {
+					if ( opts = JSON.parse(file._Ingest_Script) ) 
+						ingester( opts, query, evs => {
+							HACK.ingestList( sql, evs, fileID, file.Class, aoi => {
+								Log("INGESTED", aoi);	
+							});
+						});
+				});
+		});
 	}
 }
 
@@ -3270,7 +3276,8 @@ Initialize DEBE on startup.
 		
 		$.config({
 			thread: DEBE.thread,
-			tasker: DEBE.tasker
+			tasker: DEBE.tasker,
+			fetcher: DEBE.fetcher
 		});
 		
 		ATOM.config({
@@ -4499,7 +4506,7 @@ switch ( process.argv[2] ) { // unit tests
 					sql.forFirst(  // get client for registered file
 						"UPLOAD",
 						"SELECT ID,Client,Added FROM app.files WHERE least(?) LIMIT 1", 
-						{Name: name}, function (file) {
+						{Name: name}, file => {
 
 						if (file) {  // ingest only registered file
 							var 
