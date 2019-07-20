@@ -2010,7 +2010,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 		Copy(ctx, data);
 		ctx.Data = data;
 		Each(pipe, (key,val) => { // add pipe keys to engine ctx
-			if ( isString(val) )
+			if ( val && isString(val) )
 				ctx[key] = data[key] = val.parseJS(data, (val,err) => val  );
 		});
 			
@@ -2117,14 +2117,14 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 					case String: // query contains a source path
 
 						var
-							chipVoxels = HACK.chipVoxels,
+							getVoxels = HACK.getVoxels,
 							fetcher = DEBE.fetcher,
 							pipeQuery = {},
 							pipePath = Pipe.parseURL(pipeQuery,{},{},{}),
-							parts = pipePath.split("."),
+							parts = pipePath.substr(1).split("."),
 							pipeName = parts[0] || "",
 							pipeType = parts.pop() || "",
-							isFlexed = FLEX.select[pipeName.substr(1)] ? true : false,
+							isFlexed = FLEX.select[pipeName] ? true : false,
 							pipeRun = `${ctx.Host}.${ctx.Name}`,
 							job = { // job descriptor for regulator
 								qos: 1, //profile.QoS, 
@@ -2160,16 +2160,15 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 							});
 						}
 						
-						//Log(">>pipe", pipeType, pipeQuery, pipeRun);
+						Log(">>pipe", pipePath, pipeType, pipeQuery, pipeRun);
 						switch (pipeType) {  // file types determine workflow
 							case "stream": 	// load data from streamed file
 								sql.insertJob( job, job => { 
-									
-									function fetch(path, cb) {
-										FS.createReadStream("."+path,"utf8").get( "", evs => cb({evs: evs} ) );
+									function getEvents(job, cb) {
+										FS.createReadStream("."+job.path,"utf8").get( "", evs => cb( {evs: evs}, job ) );
 									}
 									
-									fetch( job.path , evs => {	// fetch and route events to plugin
+									getEvents( job, (evs,job) => {	// fetch and route events to plugin
 										pipePlugin( evs, job.query, job.ctx, ctx => saveEvents(ctx.Save, ctx) );
 									});
 								});
@@ -2177,9 +2176,11 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 								
 							case "jpg":		// run jpg scripting query
 								sql.insertJob( job, job => { 
-									
-									function fetch( path, ctx, query, cb) {
+									function getEvents( job, cb) {
 										var
+											path = job.path,
+											ctx = job.ctx,
+											query = job.query,
 											data = {},
 											firstKey = "";
 
@@ -2196,7 +2197,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 														.then( img => { 
 															Log("read", path, img.bitmap.height, img.bitmap.width);
 															img.readPath = path;
-															if (cb) cb( img); 
+															cb(img); 
 															return img; 
 														} )
 														.catch( err => Log(err) );
@@ -2207,13 +2208,13 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 													cb: rtn => {
 														data[firstKey] = rtn;
 														query[firstKey] = firstKey;
-														cb( data );
+														cb( data, job );
 													}
 												}) );
 											}  
 									}
 									
-									fetch( job.path, job.ctx, job.query, evs => {
+									getEvents( job, (evs,job) => {
 										pipePlugin( evs, job.query, job.ctx, ctx => saveEvents(ctx.Save, ctx) );
 									});
 								});	
@@ -2221,14 +2222,13 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 								
 							case "json":	// send raw json data to the plugin
 								sql.insertJob( job, job => { 
-									
-									function fetch(path, cb) {
+									function getEvents(job, cb) {
 										// Log(">>fetch", path);
-										fetcher( path, null, info => cb( info.parseJSON( {} ) ) );
+										fetcher( job.url, null, info => cb( info.parseJSON( {} ), job ) );
 									}
 									
-									fetch( job.url, evs => {	// fetch and route events to plugin
-										// Log(">>evs", evs);
+									getEvents( job, (evs,job) => {	// fetch and route events to plugin
+										//Log(">>evs", job);
 										pipePlugin( evs, job.query, job.ctx, ctx => saveEvents(ctx.Save, ctx) );
 									});
 								});
@@ -2240,34 +2240,43 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 							case "": // no source
 								break;
 								
-							default: 	// stream indexed events or chips through supervisor 
-								sql.forEach( TRACE, "SELECT * FROM app.files WHERE Name LIKE ? ", pipePath , file => {		// regulate requested file(s)
-
-									function chipFile( file , ctx ) { 
-
+							case "aoi": 	// stream indexed events or chips through supervisor 
+								//sql.forEach( TRACE, "SELECT * FROM app.files WHERE ? ", {Name:pipePath} , file => {		// regulate requested file(s)
+								DEBE.getFile( job.client, pipePath, file => {
+									function chipFile( file, job ) { 
 										//Log( "chip file>>>", file );
+										var ctx = job.ctx;
+										
 										ctx.File = file;
-										getVoxels(sql, pipeQuery, file, voxel => {  // process voxels over queried aoi
-
-											job.ctx = Copy( ctx, voxel );
+										getVoxels(sql, pipeQuery, file, meta => {  // process voxels over queried aoi
+											ctx.meta = meta;
 
 											sql.insertJob( job, (job, sql) => {  // put voxel into job regulation queue
+												function getImage(chips, job, cb) {
+													chips.get( "wms", function image(img) {
+														//Log("wms recover job", job.ctx.Method);
+														cb(img, job);
+													});
+												}
+									
 												var
 													ctx = job.ctx, 		 // recover job context
-													file = ctx.File,
-													chips = ctx.Chips,
-													evs = ctx.Events;
+													meta = ctx.meta,
+													file = meta.File,
+													chips = meta.Chips,
+													evs = meta.Events;
 												
+												//Log(">>>chips", chips);
 												if (chips)   // place chips into chip supervisor
-													chips.get( "path", function image(img, cb) {
+													getImage( chips, job, (img,job) => {
+														var ctx = job.ctx;
+														//Log(">>>chip ctx", ctx);
 														ctx.Image = img;
-														pipePlugin( {}, ctx, ctx => {	
-															cb( ctx.Image );
-															//		saveEvents(logs, ctx);
-														});
+														pipePlugin( [], {}, ctx, ctx => saveEvents(ctx.Save, ctx) );
 													});
 
-												if (evs) {		// run voxelized events thru event supervisor
+												else
+												if ( evs) {		// run voxelized events thru event supervisor
 													var
 														supervisor = new RAN({ 	// learning supervisor
 															learn: function (supercb) {  // event getter callsback supercb(evs) or supercb(null,onEnd) at end
@@ -2324,18 +2333,22 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 											});	
 										});
 									}
+									
+									function restoreFile( file, job, cb ) {
+										CP.exec("", () => {  //<< fix: add script to copy and unzip from S3 buckets
+											Trace("RESTORING "+file.Name);
+											sql.query("UPDATE app.files SET _State_Archived=false WHERE ?", {ID: file.ID});
+											cb(file,job);
+										});
+									}										
 
 									["stateKeys", "stateSymbols"].parseJSON(file);
 
 									if (file._State_Archived) 
-										CP.exec("", function () {  //<< fix: add script to copy and unzip from S3 buckets
-											Trace("RESTORING "+file.Name);
-											sql.query("UPDATE app.files SET _State_Archived=false WHERE ?", {ID: file.ID});
-											chipFile(file, pipeQuery);
-										});
+										restoreFile( file, job, (file, job) => chipFile(file, job) );
 
 									else
-										chipFile(file, pipeQuery);
+										chipFile( file, job );
 								});
 						}
 						break;
@@ -2471,18 +2484,15 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 					}
 
 					if ( ctx.Ingest )  // ingest remaining events
-						DEBE.getFile( client, fileName, (fileID, sql) => {
-							sql.query("DELETE FROM app.events WHERE ?", {fileID: fileID});
+						DEBE.getFile( client, fileName, file => {
+							sql.query("DELETE FROM app.events WHERE ?", {fileID: file.ID});
 
-							sql.query("SELECT Class FROM app.files WHERE ?", {ID: fileID})
-							.on("result", file=> {
-								HACK.ingestList( sql, evs, fileID, file.Class, aoi => {
-									Log("INGESTED",aoi);
+							HACK.ingestList( sql, evs, file.ID, file.Class, aoi => {
+								Log("INGESTED",aoi);
 
-									DEBE.thread( sql => {	// run plugins that were linked to this ingest
-										exeAutorun(sql,"", `.${ctx.Host}.${ctx.Name}` );
-										sql.release();
-									});
+								DEBE.thread( sql => {	// run plugins that were linked to this ingest
+									exeAutorun(sql,"", `.${ctx.Host}.${ctx.Name}` );
+									sql.release();
 								});
 							});
 						});
@@ -3271,7 +3281,8 @@ Initialize DEBE on startup.
 		HACK.config({
 			//source: "",
 			taskPlugin: null,
-			thread: DEBE.thread
+			thread: DEBE.thread,
+			fetcher: DEBE.fetcher
 		});
 		
 		$.config({
@@ -4544,7 +4555,7 @@ assessments from our worldwide reporting system, please contact ${poc}.
 											PoP_Expires: exit
 										}, {ID: file.ID}
 									], err => {
-										DEBE.ingestFile(sql, path, name, file.ID, function (aoi) {
+										DEBE.ingestFile(sql, path, name, file.ID, aoi => {
 											//Trace( `CREDIT ${client}` );
 
 											sql.query("UPDATE app.profiles SET Credit=Credit+? WHERE Client=?", [aoi.snr, client]);

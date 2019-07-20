@@ -288,6 +288,7 @@ The following context keys are accepted:
 			res(ctx);
 		}
 		
+		//Log("!!!!regress", ctx);
 		var
 			stats = ctx.Stats,
 			x = ctx.x || null,
