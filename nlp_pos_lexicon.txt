@@ -1,0 +1,1 @@
+../reader/node_modules/natural/lib/natural/brill_pos_tagger/data/English/lexicon_from_posjs.json

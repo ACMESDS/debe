@@ -24,6 +24,7 @@
 @requires man
 @requires randpr
 @requires enum
+@required reader
 
 Required env vars: none
 
@@ -59,6 +60,7 @@ var
 	JADE = require('jade'),				//< using jade as the skinner
 	
 	// totem modules		
+	READ = require("reader"),
 	EAT = require("./ingesters"),	
 	ATOM = require("atomic"), 
 	FLEX = require("flex"),
@@ -2033,7 +2035,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 		});
 	}
 	
-	function pipeCross( depth, keys, forCtx, setCtx, cb ){	// enumerate over forCtx keys will callback cb(setCtx)
+	function crossParms( depth, keys, forCtx, setCtx, cb ){	// cross forCtx keys with callback cb(setCtx)
 		if ( depth == keys.length ) 
 			cb( setCtx );
 		
@@ -2045,7 +2047,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 			if (values)
 				values.forEach( value => {
 					setCtx[ key ] = value;
-					pipeCross( depth+1, keys, forCtx, setCtx, cb );
+					crossParms( depth+1, keys, forCtx, setCtx, cb );
 				});
 		}
 	}
@@ -2108,7 +2110,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 				res( ctx );
 			
 			else
-			if ( Pipe = ctx.Pipe )  { // intercept pipe for supervised and regulated workflow
+			if ( Pipe = ctx.Pipe )  { // intercept workflow pipe
 				res("Piped");
 
 				ctx.Host = host;
@@ -2235,13 +2237,22 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 								break;
 
 							case "txt": // NLP training
+							case "xls":
+							case "html":
+							case "odt":
+							case "odp":
+							case "ods":
+							case "pdf":
+							case "xml":
+								READ.reader(sql, pipePath, nlp => {
+									Log("reader", nlp);
+								});
 								break;
 								
 							case "": // no source
 								break;
 								
 							case "aoi": 	// stream indexed events or chips through supervisor 
-								//sql.forEach( TRACE, "SELECT * FROM app.files WHERE ? ", {Name:pipePath} , file => {		// regulate requested file(s)
 								DEBE.getFile( job.client, pipePath, file => {
 									function chipFile( file, job ) { 
 										//Log( "chip file>>>", file );
@@ -2358,7 +2369,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 						pipePlugin( {}, ctx, ctx => saveEvents(ctx.Save, ctx) );
 						break;
 
-					case Object:  // monte-carlo query
+					case Object:  // cross parms in query for monte-carlo
 						var 
 							keys = [], 
 							runCtx = pipeCopy(ctx), 
@@ -2369,7 +2380,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 						
 						sql.query( `DELETE FROM app.${host} WHERE Name LIKE '${ctx.Name}-%' ` );
 						
-						pipeCross( 0 , keys, Pipe, {}, setCtx => {
+						crossParms( 0 , keys, Pipe, {}, setCtx => {
 							jobs.push( Copy(setCtx, { Name: `${ctx.Name}-${jobs.length}` }) );
 						});
 						
