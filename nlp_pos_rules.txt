@@ -1,1 +1,1 @@
-../reader/node_modules/natural/lib/natural/brill_pos_tagger/data/English/tr_from_posjs.txt
+../reader/nlp_pos_rules.txt

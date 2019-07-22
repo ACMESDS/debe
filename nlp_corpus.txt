@@ -1,6 +1,1 @@
-window bit is a fine operating system 
-i would like circular polarized beam please
-this algorithm still highly experimental
-need more hyperspectral data
-my dog has fleas
-are bad news
+../reader/nlp_corpus.txt
