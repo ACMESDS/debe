@@ -25,6 +25,7 @@
     "markdown": "^0.5.0",
     "marked": "^0.6.2",
     "mathjax-node": "^2.1.1",
+    "neo4j": "^2.0.0-RC2",
     "officegen": "^0.4.8",
     "optimist": "^0.6.1",
     "request": "^2.88.0",

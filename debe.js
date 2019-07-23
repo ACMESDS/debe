@@ -16,6 +16,7 @@
 @requires optimist
 @requires tokml
 @requires mathjax-node
+@requires neo4j
 
 @requires flex
 @requires totem
@@ -24,7 +25,6 @@
 @requires man
 @requires randpr
 @requires enum
-@required reader
 
 Required env vars: none
 
@@ -42,6 +42,8 @@ var
 	TRACE = "D>",
 	WINDOWS = process.platform == 'win32',		//< Is Windows platform
 
+	FLEX = require("flex"),			//< db flexer required before others due to nlp module issue
+	
 	// NodeJS modules
 	CP = require("child_process"), 		//< Child process threads
 	CLUSTER = require("cluster"), 		//< Support for multiple cores
@@ -52,6 +54,7 @@ var
 	CRYPTO = require("crypto"), 	//< to hash names
 	
 	// 3rd party modules
+	NEO = require("neo4j"),			// light-weight graph database
 	ODOC = require("officegen"), 	//< office doc generator
 	LANG = require('i18n-abide'), 		//< I18 language translator
 	ARGP = require('optimist'),			//< Command line argument processor
@@ -60,10 +63,8 @@ var
 	JADE = require('jade'),				//< using jade as the skinner
 	
 	// totem modules		
-	READ = require("reader"),
 	EAT = require("./ingesters"),	
 	ATOM = require("atomic"), 
-	FLEX = require("flex"),
 	TOTEM = require("totem"),
 	$ = require("man"),
 	RAN = require("randpr"),
@@ -2244,8 +2245,39 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 							case "ods":
 							case "pdf":
 							case "xml":
-								READ.reader(sql, pipePath, nlp => {
-									Log("reader", nlp);
+								FLEX.reader(sql, pipePath, nlp => {
+									Log("reader", nlp, DEBE.neodb );
+									
+									if ( neodb = DEBE.neodb ) {
+										Each( nlp.ids.actors, (actor,idx) => {	// create nodes
+											//Log("neo add",actor,idx);
+											neodb.cypher({
+												query: "CREATE (a:Actor { Name: {name}, ID: {id} } )",
+												params: {
+													name: actor,
+													id: idx
+												}
+											}, (err,results) => {
+												Log("neo node", err, results);
+											});
+										});
+										
+										nlp.dag.adj.forEach( bag => {	// create edges
+											bag.dictionary.forEach( edge => {
+												Log(edge);
+												neodb.cypher({
+													query: "MATCH (a:Actor),(b:Actor) WHERE a.ID = {srcID} AND b.ID = {endID} CREATE (a)-[r:RELATED]->(b) RETURN r",
+													params: {
+														srcID: edge.start,
+														endID: edge.end,
+														weight: edge.weight
+													}
+												}, (err,results) => {
+													Log("neo edge", err, results);
+												});
+											});
+										});
+									}
 								});
 								break;
 								
@@ -4599,6 +4631,26 @@ assessments from our worldwide reporting system, please contact ${poc}.
 
 			}
 		}, err => {
+
+			var neodb = DEBE.neodb = new NEO.GraphDatabase('http://root:NGA@localhost:7474');
+ 
+			Log("neodb", neodb);
+			neodb.cypher({
+				query: 'MATCH (u:User {email: {email}}) RETURN u',
+				params: {
+					email: 'alice@example.com',
+				},
+				}, function (err, results) {
+					if (err) throw err;
+					var result = results[0];
+					if (!result) {
+						console.log('neodb test returned no records.');
+					} else {
+						var user = result['u'];
+						console.log("neodb test", JSON.stringify(user, null, 4));
+					}
+				});
+
 		Trace( err || 
 `Yowzers - this does everything but eat!  An encrypted service, a database, a jade UI for clients,
 usecase-engine plugins, file-upload watchers, and watch dogs that monitor system resources (jobs, files, 
