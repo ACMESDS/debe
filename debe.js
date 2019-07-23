@@ -2245,11 +2245,11 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 							case "ods":
 							case "pdf":
 							case "xml":
-								FLEX.reader(sql, pipePath, nlp => {
-									Log("reader", nlp, DEBE.neodb );
+								FLEX.reader(sql, pipePath, metrics => {
+									Log("reader", metrics );
 									
 									if ( neodb = DEBE.neodb ) {
-										Each( nlp.ids.actors, (actor,idx) => {	// create nodes
+										Each( metrics.ids.actors, (actor,idx) => {	// create nodes
 											//Log("neo add",actor,idx);
 											neodb.cypher({
 												query: "CREATE (a:Actor { Name: {name}, ID: {id} } )",
@@ -2262,7 +2262,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 											});
 										});
 										
-										nlp.dag.adj.forEach( bag => {	// create edges
+										metrics.dag.adj.forEach( bag => {	// create edges
 											bag.dictionary.forEach( edge => {
 												Log(edge);
 												neodb.cypher({
@@ -2278,6 +2278,14 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 											});
 										});
 									}
+									
+									sql.query("DELETE FROM docs WHERE ?", {name: pipePath});
+									sql.query("INSERT INTO docs SET ? ", {
+										links: metrics.links,
+										sentiment: metrics.sentiment,
+										relevance: metrics.relevance,
+										actors: metrics.actors
+									});
 								});
 								break;
 								
@@ -4632,22 +4640,23 @@ assessments from our worldwide reporting system, please contact ${poc}.
 			}
 		}, err => {
 
-			var neodb = DEBE.neodb = new NEO.GraphDatabase('http://root:NGA@localhost:7474');
+			var neodb = DEBE.neodb = null; //new NEO.GraphDatabase('http://root:NGA@localhost:7474');
  
-			Log("neodb", neodb);
-			neodb.cypher({
-				query: 'MATCH (u:User {email: {email}}) RETURN u',
-				params: {
-					email: 'alice@example.com',
-				},
-				}, function (err, results) {
+			if (neodb)
+				neodb.cypher({
+					query: 'MATCH (u:User {email: {email}}) RETURN u',
+					params: {
+						email: 'alice@example.com',
+					},
+					}, function (err, results) {
 					if (err) throw err;
 					var result = results[0];
 					if (!result) {
-						console.log('neodb test returned no records.');
-					} else {
+						Log('neodb test returned no records.');
+					} 
+					else {
 						var user = result['u'];
-						console.log("neodb test", JSON.stringify(user, null, 4));
+						Log("neodb test", JSON.stringify(user, null, 4));
 					}
 				});
 
