@@ -43,7 +43,9 @@ var
 	TRACE = "D>",
 	WINDOWS = process.platform == 'win32',		//< Is Windows platform
 
-	FLEX = require("flex"),			//< db flexer required before others due to nlp module issue
+	// totem bindings required before others due to dependent module issues
+	READ = require("reader"),
+	FLEX = require("flex"),
 	
 	// NodeJS modules
 	CP = require("child_process"), 		//< Child process threads
@@ -67,10 +69,9 @@ var
 	EAT = require("./ingesters"),	
 	ATOM = require("atomic"), 
 	TOTEM = require("totem"),
-	READ = require("reader"),
 	$ = require("man"),
 	RAN = require("randpr"),
-	HACK = require("geohack");
+	GEO = require("geohack");
 
 const { Copy,Each,Log,isObject,isString,isFunction,isError,isArray } = require("enum");
 
@@ -581,7 +582,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 						to: to.toLocaleDateString("en-US"),
 						lat: anchor.x,
 						lon: anchor.y,
-						radius: HACK.ringRadius(ring),
+						radius: GEO.ringRadius(ring),
 						ring: ring,
 						durationDays: file.PoP_durationDays
 					}), null, msg => {
@@ -1752,7 +1753,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		//Log("ingest file", filePath, fileName, fileID);
 		
-		HACK.ingestFile(sql, filePath, fileID, aoi => {			
+		GEO.ingestFile(sql, filePath, fileID, aoi => {			
 			Log("INGESTED", aoi);
 		});
 	},
@@ -2122,7 +2123,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 					case String: // query contains a source path
 
 						var
-							getVoxels = HACK.getVoxels,
+							getVoxels = GEO.getVoxels,
 							fetcher = DEBE.fetcher,
 							pipeQuery = {},
 							pipePath = Pipe.parseURL(pipeQuery,{},{},{}),
@@ -2251,7 +2252,15 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 								case "pdf":
 								case "xml":
 									sql.insertJob( job, job => { 
-										function getText( job, cb) {
+										function getDoc( job, cb) {
+											
+											function readFile(path,cb) {	// read and forward doc to callback
+												DEBE.thread( sql => {
+													READ.readFile( sql, "."+path, doc => cb(doc) );
+													sql.release();
+												});
+											}
+											
 											var
 												path = job.path,
 												ctx = job.ctx,
@@ -2263,37 +2272,63 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 												if ( !firstKey ) {
 													firstKey = key;
 
-													`read( path, img => cb( ${query[key]} ) )`
+													`read( path, doc => cb( ${query[key]} ) )`
 													.parseJS( Copy(ctx, { // define parse context
-														//Log: console.log,
-
-														read: (url,cb) => {	// read and forward jpg to callback
-															$.IMP.read( "."+ path )
-															.then( img => { 
-																Log("read", path, img.bitmap.height, img.bitmap.width);
-																img.readPath = path;
-																cb(img); 
-																return img; 
-															} )
-															.catch( err => Log(err) );
-														},
+														read: readFile,
 
 														path: path,
 
 														cb: rtn => {
 															data[firstKey] = rtn;
 															query[firstKey] = firstKey;
+															Log("cb doc", data);
 															cb( data, job );
 														}
 													}) );
 												}  
+											
+											if ( !firstKey ) readFile(path, doc => cb( {Doc:doc}, job) );
 										}
 
-										getText( job, (text,job) => {
-											pipePlugin( {text:text}, job.query, job.ctx, ctx => saveEvents(ctx.Save, ctx) );
+										getDoc( job, (data,job) => {
+											pipePlugin( data, job.query, job.ctx, ctx => {
+												saveEvents(ctx.Save, ctx);
+												
+												if ( neodb = null ) {  //DEBE.neodb
+													Each( metrics.ids.actors, (actor,idx) => {	// create nodes
+														//Log("neo add",actor,idx);
+														neodb.cypher({
+															query: "CREATE (a:Actor { Name: {name}, ID: {id} } )",
+															params: {
+																name: actor,
+																id: idx
+															}
+														}, (err,results) => {
+															Log("neo node", err, results);
+														});
+													});
+
+													metrics.dag.adj.forEach( bag => {	// create edges
+														bag.dictionary.forEach( edge => {
+															Log(edge);
+															neodb.cypher({
+																query: "MATCH (a:Actor),(b:Actor) WHERE a.ID = {srcID} AND b.ID = {endID} CREATE (a)-[r:RELATED]->(b) RETURN r",
+																params: {
+																	srcID: edge.start,
+																	endID: edge.end,
+																	weight: edge.weight
+																}
+															}, (err,results) => {
+																Log("neo edge", err, results);
+															});
+														});
+													});												
+												}
+											});
 										});
 
-										FLEX.reader(sql, pipePath, metrics => {
+										/*
+										READ.readFile(sql, pipePath, metrics => {
 											Log("reader", metrics );
 
 											if ( neodb = DEBE.neodb ) {
@@ -2339,7 +2374,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 												topic: metrics.topic,
 												level: metrics.level
 											}, err => Log("ins doc", err) );
-										});
+										});  */
 									});
 									break;
 
@@ -2359,7 +2394,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 											getVoxels(sql, pipeQuery, file, meta => {  // process voxels over queried aoi
 												ctx.meta = meta;
 
-												sql.insertJob( job, (job, sql) => {  // put voxel into job regulation queue
+												sql.insertJob( job, job => {  // put voxel into job regulation queue
 													function getImage(chips, job, cb) {
 														chips.get( "wms", function image(img) {
 															//Log("wms recover job", job.ctx.Method);
@@ -2405,7 +2440,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 																			supercb(null, function onEnd( flow ) {  // attach supervisor flow context
 																				ctx.Flow = flow; 
 																				ctx.Case = "v"+ctx.Voxel.ID;
-																				Trace( `STARTING voxel${ctx.Voxel.ID}` , sql );
+																				Trace( `STARTING voxel${ctx.Voxel.ID}` );
 
 																				pipePlugin( {}, ctx, ctx => {	// run plugin then save supervisor logs
 																					supervisor.end( ctx.Save || [], logs => {
@@ -2435,7 +2470,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 															});
 
 														supervisor.pipe( stats => { // pipe supervisor to this callback
-															Trace( `PIPED voxel${ctx.Voxel.ID}` , sql );
+															Trace( `PIPED voxel${ctx.Voxel.ID}` );
 														}); 
 													}												
 												});	
@@ -2445,8 +2480,11 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 										function restoreFile( file, job, cb ) {
 											CP.exec("", () => {  //<< fix: add script to copy and unzip from S3 buckets
 												Trace("RESTORING "+file.Name);
-												sql.query("UPDATE app.files SET _State_Archived=false WHERE ?", {ID: file.ID});
 												cb(file,job);
+												DEBE.thread( sql => {
+													sql.query("UPDATE app.files SET _State_Archived=false WHERE ?", {ID: file.ID});
+													sql.release();
+												});
 											});
 										}										
 
@@ -2598,7 +2636,7 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 						DEBE.getFile( client, fileName, file => {
 							sql.query("DELETE FROM app.events WHERE ?", {fileID: file.ID});
 
-							HACK.ingestList( sql, evs, file.ID, file.Class, aoi => {
+							GEO.ingestList( sql, evs, file.ID, file.Class, aoi => {
 								Log("INGESTED",aoi);
 
 								DEBE.thread( sql => {	// run plugins that were linked to this ingest
@@ -3038,7 +3076,7 @@ Totem (req,res)-endpoint to ingest a source into the sql database
 		.on("result", file => {
 			if ( opts = EAT[src] )   // use builtin src ingester (event eater)
 				ingester( opts, query, evs => {
-					HACK.ingestList( sql, evs, fileID, file.Class, aoi => {
+					GEO.ingestList( sql, evs, fileID, file.Class, aoi => {
 						Log("INGESTED", aoi);
 					});
 				});
@@ -3048,7 +3086,7 @@ Totem (req,res)-endpoint to ingest a source into the sql database
 				.on("results", file => {
 					if ( opts = JSON.parse(file._Ingest_Script) ) 
 						ingester( opts, query, evs => {
-							HACK.ingestList( sql, evs, fileID, file.Class, aoi => {
+							GEO.ingestList( sql, evs, fileID, file.Class, aoi => {
 								Log("INGESTED", aoi);	
 							});
 						});
@@ -3382,14 +3420,11 @@ Initialize DEBE on startup.
 			fetcher: DEBE.fetcher,
 			indexer: DEBE.indexFile,
 			createCert: DEBE.createCert,
-			
 			diag: DEBE.diag,
-			
 			site: DEBE.site						// Site parameters
-
 		});
 
-		HACK.config({
+		GEO.config({
 			//source: "",
 			taskPlugin: null,
 			thread: DEBE.thread,
@@ -3408,11 +3443,13 @@ Initialize DEBE on startup.
 			//watchFile: DEBE.watchFile,
 			plugins: Copy({   // share selected FLEX and other modules with engines
 				// MAIL: FLEX.sendMail,
-				RAN: require("randpr"),
-				$: $
-				/*TASK: {
-					shard: DEBE.tasker
-				}, */
+				//RAN: require("randpr"),
+				$: $,
+				$READ: READ,
+				$GEO: GEO,
+				$TASK: DEBE.tasker,
+				$SQL: DEBE.thread,
+				$NEO: DEBE.neodb ? DEBE.neodb.cypher : null
 			}, $ )
 		});
 		

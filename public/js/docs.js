@@ -14,7 +14,7 @@ The following context keys are accepted:
 		_sentiment: "float default 0 comment 'sentiment score over entire doc corpus' ",
 		_agreement: "float default 0 comment 'topic claffiier agreement over entire doc corpus' ",
 		_weight: "float default 0 comment 'topic weight over entire doc corpus' ",		
-		
+		_stats: "json comment ' [ [ {term,prob}, ... ]] by topics and terms' ",
 		Override: "float default 0 comment 'Regression prediction override' ",
 		Method: "varchar(64) comment 'NLP method' ",
 		Description: "mediumtext"
@@ -43,20 +43,51 @@ The following context keys are accepted:
 		var 
 			use = ctx.Method || "anlp",
 			nlps = {
-				anlp: $.READ.anlpDoc,
-				snlp: $.READ.snlpDoc
+				anlp: $READ.anlpDoc,
+				snlp: $READ.snlpDoc,
+				lda: $READ.ldaDoc
 			},
 			nlp = nlps[use];
 		
 		if ( nlp ) 			
-			$.thread( sql => {
-				nlp(ctx.Doc, metrics => {
-					Log(metrics);
-					var save = {};
-					Each( metrics, (key,val) => save["_"+key] = val );
-					sql.query("UPDATE app.docs WHERE ? SET ?", [ {Name: ctx.Name}, save ]);
-					res(ctx);
-				});
+			$SQL( sql => {
+				
+				if ( use == "lda" ) 
+					nlp( ctx.Data.Doc || "", ctx.Topics, ctx.Terms, nlp => {
+						sql.query("UPDATE app.docs SET ? WHERE ?", [{
+							_stats: JSON.stringify(nlp) 
+						}, {Name: ctx.Name}] );
+					});
+				
+				else
+					nlp( ctx.Data.Doc || "", nlp => {
+						//Log(nlp);
+
+						switch (use) {
+							case "snlp":
+								sql.query("UPDATE app.docs SET ? WHERE ?", [{
+									_stats: JSON.stringify(nlp) 
+								}, {Name: ctx.Name}] );
+
+								break;
+
+							case "anlp":
+								sql.query("UPDATE app.docs SET ? WHERE ?", [{
+									_actors: nlp.actors,
+									_links: nlp.links,
+									_topic: nlp.topic,
+									_level: nlp.level,
+									_relevance: nlp.relevance,
+									_sentiment: nlp.sentiment,
+									_agreement: nlp.agreement,
+									_weight: nlp.weight				
+								}, {Name: ctx.Name}] );
+								break;
+						}
+					});
+					
+				res(ctx);
+				sql.release();
 			});
 					 
 		else

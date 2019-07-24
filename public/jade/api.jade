@@ -1102,91 +1102,16 @@ append site_body
 					function with the current **tau** workflow events and the **parm** set to the 
 					corresponding "ports" hash.					
 
-					# matrix manipulator
+					# Library and plugin access
 					
-					All js-plugins have access to the $( ... ) matrix manipulator providing: matlab-like matrix manipulators, 
-					light weight image processing, symbolic algebra, dsp, machine learning, regression, expectation-
-					maximization methods, neural and bayseian networks, data i/o, task sharding, and special functions.
-					Use $( ... ) as follows:
+					js-plugins have access to various libraries --
+					[$ matrix manipulator](https://sc.appdev.proj.coe.ic.gov://acmesds/man), 
+					[$GEO chipper](https://sc.appdev.proj.coe.ic.gov://acmesds/geohack), 
+					[$READ language parser](https://sc.appdev.proj.coe.ic.gov://acmesds/reader),
+					[$TASK task sharding](https://sc.appdev.proj.coe.ic.gov://acmesds/totem),
+					[$SQL mysql threader](https://sc.appdev.proj.coe.ic.gov://acmesds/totem),
+					[$NEO neo4j cypher](https://sc.appdev.proj.coe.ic.gov://acmesds/debe) -- as well as to other plugins via $.plugin(ctx,cb).
 					
-						$( "matlab script", ctx, (ctx) => {   // eval script into context ctx with callback(ctx)
-							...
-						} );
-
-						$( "matlab script", ctx );   // eval script into context ctx
-
-						var A = $( "matlab expression" );  // eval expression and return resulting matrix
-
-						$( N, (n,A) => A[n] = ... );  // define vector A of N elements
-
-						$( [M,N, ... ], (n,m, ... A) => A[m][n] ... = ... );	// define M x N matrrix
-
-						$( {		//  import functions
-							somefn: function (args) { ... },
-							:
-							:
-						} );
-
-						$.somefn( args ); // use imported function
-
-						$( "somefn(args)", ctx );  // use imported function
-
-						$( {  		// execute a simple task sharder
-								keys: "i,j,k",  	// e.g. array indecies
-								i: [0,1,2,3],  		// domain of index i
-								j: [4,8],				// domain of index j
-								k: [0],					// domain of index k
-								qos: 0,				// regulation time in ms if not zero
-								local: false, 		// enable to run task local, i.e. w/o workers and nodes
-								workers: 4, 		// limit number of workers (aka cores) per node
-								nodes: 3 			// limit number of nodes (ala locales) in the cluster
-							}, 
-
-							// here, a simple task that returns a message 
-							($) => "my result is " + (i + j*k) + " from " + $.worker + " on "  + $.node,
-
-							// here, a simple callback that displays the task results
-							(msg) => console.log(msg) 
-						);
-
-						$({  // example that defines a more complex tasker 
-							mytask:   // define a mytestfn to be sharded 
-								($) => "my result is " + (i + j*k) + " from " + $.worker + " on "  + $.node,
-
-							mysharder:  // simple a task sharding interface
-								( iList, jList ) => {  
-								$({  		// distribute t/o TOTEM cloud
-										keys: "i,j",  	// e.g. array indecies
-										i: iList,
-										j: jList,
-										k: [10,20],
-										qos: 0,				// regulation time in ms if not zero
-										local: false, 		// enable to run task local, i.e. w/o workers and nodes
-										workers: 4, 		// limit number of workers/cores per node
-										nodes: 3 			// limit number of nodes/locales in the cluster
-									}, 
-
-									// here, a simple task that returns a message 
-									$.mytask,
-
-									// here, a simple callback that displays the task results
-									(msg) => console.log(msg) 
-								);
-							}
-						});
-
-						$("mysharder( [1:100], [50:200] )");  // execute the sharder
-						
-						evs.$ || "query".$ ( "group" || "all", (evs) => {  // thread events evs = [ev, ev, ...] to callback(evs || null) 
-						
-							if (evs)   // there are ingested events
-
-							else 	// events exhausted so
-						
-						} );  
-
-						evs.$( ctx, (evs) => { ... } );		// save aggregated events to context ctx with callback(unsaved events)
-
 	#accordion.Machines
 		:markdown
 			All engines rely on a machine MAC = opencv | python | ... as implemented under

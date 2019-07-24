@@ -1,5 +1,5 @@
 module.exports = {
-	keys: {
+	_keys: {
 		Name: "varchar(64)",
 		chipPixels: "int(11)",
 		chipFeatures: "float",
@@ -14,7 +14,7 @@ module.exports = {
 	
 	engine: function aois(ctx,res) {
 		res(ctx);
-		$.voxelize(ctx);
+		$GEO.voxelize(ctx);
 	}	
 
 }
