@@ -2279,13 +2279,18 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 										});
 									}
 									
-									sql.query("DELETE FROM docs WHERE ?", {name: pipePath});
-									sql.query("INSERT INTO docs SET ? ", {
+									sql.query("DELETE FROM app.docs WHERE ?", {name: pipePath});
+									sql.query("INSERT INTO app.docs SET ? ", {
+										name: pipePath,
 										links: metrics.links,
 										sentiment: metrics.sentiment,
 										relevance: metrics.relevance,
-										actors: metrics.actors
-									});
+										actors: metrics.actors,
+										agreement: metrics.agreement,
+										weight: metrics.weight,
+										topic: metrics.topic,
+										level: metrics.level
+									}, err => Log("ins doc", err) );
 								});
 								break;
 								
