@@ -14,7 +14,10 @@ module.exports = {
 	
 	engine: function aois(ctx,res) {
 		res(ctx);
-		$GEO.voxelize(ctx);
+		$SQL( sql => {
+			$GEO.voxelizeAOI(sql,ctx);
+			sql.release();
+		});
 	}	
 
 }
