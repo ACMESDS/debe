@@ -2115,10 +2115,9 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 			
 			else
 			if ( Pipe = ctx.Pipe )  { // intercept workflow pipe
-				res("Piped");
-
 				ctx.Host = host;
-
+				var err = null;
+				
 				switch ( Pipe.constructor ) {
 					case String: // query contains a source path
 
@@ -2324,59 +2323,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 												}
 											});
 										});
-
-										/*
-										READ.readFile(sql, pipePath, metrics => {
-											Log("reader", metrics );
-
-											if ( neodb = DEBE.neodb ) {
-												Each( metrics.ids.actors, (actor,idx) => {	// create nodes
-													//Log("neo add",actor,idx);
-													neodb.cypher({
-														query: "CREATE (a:Actor { Name: {name}, ID: {id} } )",
-														params: {
-															name: actor,
-															id: idx
-														}
-													}, (err,results) => {
-														Log("neo node", err, results);
-													});
-												});
-
-												metrics.dag.adj.forEach( bag => {	// create edges
-													bag.dictionary.forEach( edge => {
-														Log(edge);
-														neodb.cypher({
-															query: "MATCH (a:Actor),(b:Actor) WHERE a.ID = {srcID} AND b.ID = {endID} CREATE (a)-[r:RELATED]->(b) RETURN r",
-															params: {
-																srcID: edge.start,
-																endID: edge.end,
-																weight: edge.weight
-															}
-														}, (err,results) => {
-															Log("neo edge", err, results);
-														});
-													});
-												});
-											}
-
-											sql.query("DELETE FROM app.docs WHERE ?", {name: pipePath});
-											sql.query("INSERT INTO app.docs SET ? ", {
-												name: pipePath,
-												links: metrics.links,
-												sentiment: metrics.sentiment,
-												relevance: metrics.relevance,
-												actors: metrics.actors,
-												agreement: metrics.agreement,
-												weight: metrics.weight,
-												topic: metrics.topic,
-												level: metrics.level
-											}, err => Log("ins doc", err) );
-										});  */
 									});
-									break;
-
-								case "": // no source
 									break;
 
 								case "db": 	// database source
@@ -2388,6 +2335,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 									});
 									break;
 
+								case "": // no source
 								case "aoi": 	// stream indexed events or chips through supervisor 
 									DEBE.getFile( job.client, pipePath, file => {
 										function chipFile( file, job ) { 
@@ -2500,9 +2448,13 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 										else
 											chipFile( file, job );
 									});
+									
+								default:
+									err = new Error( "bad pipe" );
 							}
 						
 						else { // reserved
+							err = new Error( "bad pipe" );
 						}
 						break;
 
@@ -2537,7 +2489,9 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 						});
 						
 						break;
-				}				
+				}
+				
+				res( err || "Piped");
 			}
 					
 			else	// unpiped (e.g. event generation) engines never participate in a supervised workflow

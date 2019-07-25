@@ -93,28 +93,8 @@ body
 				highlight = code styling theme zenburn | ...
 				capture = switch to add screen capture button
 				math = switch to add mathjax plugin
-				&inline = "/SRC &w=W &h=H" to inline a classified SRC
 
 		block layout_help
-
-	else
-	if query.inline
-		img(src=query.inline,width="80%",height="80%")
-		//
-			#content(
-				icons=icons,
-				start=start,
-				client=client,
-				source=table,
-				location=navigator.totem.location,
-				query=JSON.stringify(query),
-				title=banner)
-
-				inline(src=query.inline,w="90%",h="90%",a="Classif",g="Edit",s="rd")
-
-			script(src="/uis/base.js")
-			script.
-				BASE.start();
 
 	else
 		//- The capture plugin allows clients to capture their web canvas.

@@ -1,0 +1,28 @@
+//- UNCLASSIFIED
+
+extends site
+append site_parms
+	- view = "Min"
+	- parms = {Min:"Min",search:"search",brief:"brief",capture:"capture",chat:"chat",news:"news","news print":"print"}
+append site_body
+
+	- task = query.task || ""
+	case query.options || "Min"
+		when "Min"
+			#folder.Top(left)
+				#grid.Docs(
+					path="/docs.db",
+					wrap, page=100,
+					cols="Name.t,Pipe.j,Method.t,Description.h,Override.n,Topics.i,Terms.i,Scores(_actors.i..shortoff,_links.i..shortoff,_topic.i..shortoff,_relevance.i..shortoff,_sentiment.i..shortoff,_agreement.i..shortoff,_weight.i..shortoff)")
+					
+				#grid.Rules(
+					path="/nlprules.db?Task=#{task}",
+					wrap, page=100,
+					cols="Usecase.h,Index.t")
+
+				#grid.Regression(
+					path="/regress.db?Name=#{task}%",
+					wrap, page=100,
+					cols="Name.t,Pipe.j,Method.t,Description.h")
+				
+//- UNCLASSIFIED

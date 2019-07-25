@@ -704,7 +704,7 @@ function DS(anchor) {
 			case "data":
 			case "find":				// regular store
 
-				var Store = This.Store = DBstore( name, url, Fields, {
+				var Store = This.Store = DBstore( name, path, Fields, {
 					autoLoad	: isResolved,
 					//autoSync	: false,  	// disabled forces use of update to sync changes
 					//buffered	: false, 	// used with paging and verticalScroller but EXTJS BUG
@@ -733,7 +733,7 @@ function DS(anchor) {
 			case "content":
 			case "form": 				// provide store for excess form records
 
-				var Store = This.Store = DBstore( name, url, Fields, {
+				var Store = This.Store = DBstore( name, path, Fields, {
 					data	: [],
 					autoLoad: isResolved 
 				});
@@ -796,7 +796,7 @@ function DS(anchor) {
 				if (isResolved) Store.load();
 				
 				if (This.refresh) 
-					setInterval(function () {
+					setInterval( function () {
 						Store.load();
 					}, This.refresh*1000 );
 				
@@ -1922,7 +1922,7 @@ function DS(anchor) {
 					}
 				}] 
 			: []
-		})
+		});
 
 	var Links = this.Links = {};
 		
@@ -1930,10 +1930,8 @@ function DS(anchor) {
 	if (!url || url.indexOf("undefined")>=0) url = "/undefined.db";
 	//alert(name+":"+path+"->"+url);
 	
-	for (var master in Links) {
-		var masterDS = DSLIST[master];
-
-		if (masterDS) {
+	for (var master in Links) 
+		if ( masterDS = DSLIST[master] ) {
 			masterDS.Slaves[name] = This;
 
 			if (! masterDS.Widget.kiss) {  
@@ -1963,7 +1961,6 @@ function DS(anchor) {
 				}
 			});
 		}
-	}
 	
 	// initialize the store
 	if (sync) 
@@ -1982,7 +1979,7 @@ function DS(anchor) {
 	
 	else
 	if (name && path) {
-		if ( DSLIST[name])
+		if ( DSLIST[name] )
 			alert(`widget "${name}" already used`);
 		
 		else {

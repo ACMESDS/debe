@@ -50,27 +50,56 @@ The following context keys are accepted:
 				
 				else
 					nlp( ctx.Data.Doc || "", nlp => {
+						
+						function saveStats(sql, nlp) {
+							sql.query("UPDATE app.docs SET ? WHERE ?", [{
+								_stats: JSON.stringify(nlp),
+								_actors: nlp.actors,
+								_links: nlp.links,
+								_topic: nlp.topic,
+								_level: nlp.level,
+								_relevance: nlp.relevance,
+								_sentiment: nlp.sentiment,
+								_agreement: nlp.agreement,
+								_weight: nlp.weight	
+							}, {Name: ctx.Name}] );
+
+							nlp.ants.forEach( ant => {
+								sql.query(
+									"INSERT INTO app.nlpindex SET ? ON DUPLICATE KEY UPDATE " +
+									"Hits=Hits+?, Weight=Weight+?, Relevance=Relevance+?, Agreement=Agreement+?, Sentiment=Sentiment+?", [{
+										Source: ant,
+										Target: nlp.target,
+										Link: nlp.link,
+										Hits: 1,
+										Weight: nlp.weight,
+										Relevance: nlp.relevance,
+										Agreement: nlp.agreement,
+										Sentiment: nlp.sentiment
+									}, 1, nlp.weight, nlp.relevance, nlp.agreement, nlp.sentiment
+								]);
+							});
+						}
+						
 						//Log(nlp);
 
 						switch (use) {
 							case "snlp":
-								sql.query("UPDATE app.docs SET ? WHERE ?", [{
-									_stats: JSON.stringify(nlp) 
-								}, {Name: ctx.Name}] );
-
+								saveStats(sql, {
+									ants:
+									target:
+									actors:
+									links:
+									topic:
+									level:
+									relevance:
+									agreement:
+									weight
+								});
 								break;
 
 							case "anlp":
-								sql.query("UPDATE app.docs SET ? WHERE ?", [{
-									_actors: nlp.actors,
-									_links: nlp.links,
-									_topic: nlp.topic,
-									_level: nlp.level,
-									_relevance: nlp.relevance,
-									_sentiment: nlp.sentiment,
-									_agreement: nlp.agreement,
-									_weight: nlp.weight				
-								}, {Name: ctx.Name}] );
+								saveStats(sql, nlp);
 								break;
 						}
 					});
