@@ -49,59 +49,38 @@ The following context keys are accepted:
 					});
 				
 				else
-					nlp( ctx.Data.Doc || "", nlp => {
-						
-						function saveStats(sql, nlp) {
-							sql.query("UPDATE app.docs SET ? WHERE ?", [{
-								_stats: JSON.stringify(nlp),
-								_actors: nlp.actors,
-								_links: nlp.links,
-								_topic: nlp.topic,
-								_level: nlp.level,
-								_relevance: nlp.relevance,
-								_sentiment: nlp.sentiment,
-								_agreement: nlp.agreement,
-								_weight: nlp.weight	
-							}, {Name: ctx.Name}] );
+					nlp( ctx.Data.Doc || "", (nlp,raw) => {
+						//Log(raw);
 
-							nlp.ants.forEach( ant => {
-								sql.query(
-									"INSERT INTO app.nlpindex SET ? ON DUPLICATE KEY UPDATE " +
-									"Hits=Hits+?, Weight=Weight+?, Relevance=Relevance+?, Agreement=Agreement+?, Sentiment=Sentiment+?", [{
-										Source: ant,
-										Target: nlp.target,
-										Link: nlp.link,
-										Hits: 1,
-										Weight: nlp.weight,
-										Relevance: nlp.relevance,
-										Agreement: nlp.agreement,
-										Sentiment: nlp.sentiment
-									}, 1, nlp.weight, nlp.relevance, nlp.agreement, nlp.sentiment
-								]);
-							});
-						}
-						
-						//Log(nlp);
+						sql.query("UPDATE app.docs SET ? WHERE ?", [{
+							_stats: JSON.stringify(raw),
+							_actors: nlp.actors.length,
+							_links: nlp.links.length,
+							_topic: nlp.topic,
+							_level: nlp.level,
+							_relevance: nlp.relevance,
+							_sentiment: nlp.sentiment,
+							_agreement: nlp.agreement,
+							_weight: nlp.weight	
+						}, {Name: ctx.Name}], err => Log("upd", err) );
 
-						switch (use) {
-							case "snlp":
-								saveStats(sql, {
-									ants:
-									target:
-									actors:
-									links:
-									topic:
-									level:
-									relevance:
-									agreement:
-									weight
-								});
-								break;
-
-							case "anlp":
-								saveStats(sql, nlp);
-								break;
-						}
+						var target = nlp.actors.pop();
+						nlp.actors.forEach( act => {
+							sql.query(
+								"INSERT INTO app.nlpindex SET ? ON DUPLICATE KEY UPDATE " +
+								"Hits=Hits+?, Weight=Weight+?, Relevance=Relevance+?, Agreement=Agreement+?, Sentiment=Sentiment+?", [{
+									Source: act,
+									Target: target,
+									Link: nlp.links[0],
+									Task: "drugs",
+									Hits: 1,
+									Weight: nlp.weight,
+									Relevance: nlp.relevance,
+									Agreement: nlp.agreement,
+									Sentiment: nlp.sentiment
+								}, 1, nlp.weight, nlp.relevance, nlp.agreement, nlp.sentiment
+							], err => Log("nlpadd", err) );
+						});
 					});
 					
 				res(ctx);
