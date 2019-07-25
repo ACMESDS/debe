@@ -254,7 +254,7 @@ catch (err) {
 			"SELECT File FROM openv.watches WHERE substr(File,1,1) = '/' GROUP BY File",
 			[] )
 		.on("result", link => {
-			dogAutoruns( link.File );
+			setAutorun( link.File );
 		});		
 	},
 		
@@ -2161,8 +2161,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 							}, (err,info) => {
 
 								if ( !err )
-									if ( pipePath.charAt(0) == "/" )
-										dogAutoruns( pipePath );
+									setAutorun( pipePath );
 							});
 						}
 						
@@ -2185,7 +2184,19 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 								case "png":
 								case "jpg":		// run image scripting query
 									sql.insertJob( job, job => { 
-										function getEvents( job, cb) {
+										function getImage( job, cb) {
+											
+											function readFile(path,cb) {	// read and forward jpg to callback
+												$.IMP.read( "."+ path )
+												.then( img => { 
+													Log("read", path, img.bitmap.height, img.bitmap.width);
+													img.readPath = path;
+													cb(img); 
+													return img; 
+												} )
+												.catch( err => Log(err) );
+											}
+
 											var
 												path = job.path,
 												ctx = job.ctx,
@@ -2199,21 +2210,8 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 
 													`read( path, img => cb( ${query[key]} ) )`
 													.parseJS( Copy(ctx, { // define parse context
-														//Log: console.log,
-
-														read: (url,cb) => {	// read and forward jpg to callback
-															$.IMP.read( "."+ path )
-															.then( img => { 
-																Log("read", path, img.bitmap.height, img.bitmap.width);
-																img.readPath = path;
-																cb(img); 
-																return img; 
-															} )
-															.catch( err => Log(err) );
-														},
-
+														read: readFile,
 														path: path,
-
 														cb: rtn => {
 															data[firstKey] = rtn;
 															query[firstKey] = firstKey;
@@ -2221,10 +2219,12 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 														}
 													}) );
 												}  
+											
+											if ( !firstKey ) readFile(path, img => cb( {Image:img}, job) );
 										}
 
-										getEvents( job, (evs,job) => {
-											pipePlugin( evs, job.query, job.ctx, ctx => saveEvents(ctx.Save, ctx) );
+										getImage( job, (data,job) => {
+											pipePlugin( data, job.query, job.ctx, ctx => saveEvents(ctx.Save, ctx) );
 										});
 									});	
 									break;							
@@ -2275,9 +2275,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 													`read( path, doc => cb( ${query[key]} ) )`
 													.parseJS( Copy(ctx, { // define parse context
 														read: readFile,
-
 														path: path,
-
 														cb: rtn => {
 															data[firstKey] = rtn;
 															query[firstKey] = firstKey;
@@ -2382,6 +2380,12 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 									break;
 
 								case "db": 	// database source
+									sql.query( "SELECT * FROM app.??", pipeName, (err,recs) => {
+										if (!err)
+											pipePlugin( {recs:recs}, pipeQuery, ctx, ctx => {
+												saveEvents(ctx.Save, ctx);
+											});
+									});
 									break;
 
 								case "aoi": 	// stream indexed events or chips through supervisor 
@@ -4637,7 +4641,7 @@ function exeAutorun(sql,name,path) {
 
 }
 
-function dogAutoruns(path) {
+function setAutorun(path) {
 	DEBE.watchFile( "."+path, exeAutorun );
 }
 

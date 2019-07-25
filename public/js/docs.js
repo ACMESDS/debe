@@ -22,23 +22,12 @@ The following context keys are accepted:
 	
 	engine: function docs(ctx, res) {  
 	/* 
-	NLP of docs where:
+	NLP of documents where:
 
-		Method: regression technique to USE = lrm | svm | pls | knn	| ols | ...
-		Save_USE: training model for specified Method 
-		hyper_USE: solver parameter for specified Method 
-		Save_jpg: jpg generation parameters
-		Samples: number of training samples taken at random from supplied dataset
-		Channels: number of training channels takens consecutively from supplied dataset
-		Keep:  number of regression pairs to retain after training
-		
-	given x,y data presented as:
-	
-		x = [...], y = [...]				// training mode
-		x = [...]							// predict mode
-		xy = { x: [...] , y: [...} } 		// training mode
-		multi = { x: [ [...]...], y: [ [...]...], x0: [ [...]...] } 	// training mode multichannel
-		unsup = [...] 							// unsupervised training mode
+		Topics: number of topics for ld Method
+		Terms: number of terms for lda Method
+		Method: lda || anlp || snlp for Latent, Homebrew, and Stanford nlp
+		Data.Doc document to parse
 	*/
 		var 
 			use = ctx.Method || "anlp",
