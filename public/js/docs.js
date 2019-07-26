@@ -64,22 +64,24 @@ The following context keys are accepted:
 							_weight: nlp.weight	
 						}, {Name: ctx.Name}], err => Log("upd", err) );
 
-						var target = nlp.actors.pop();
-						nlp.actors.forEach( act => {
+						nlp.actors.forEach( actor => {
 							sql.query(
-								"INSERT INTO app.nlpindex SET ? ON DUPLICATE KEY UPDATE " +
-								"Hits=Hits+?, Weight=Weight+?, Relevance=Relevance+?, Agreement=Agreement+?, Sentiment=Sentiment+?", [{
-									Source: act,
+								"INSERT INTO app.nlpactors SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1",
+								{ Name: actor }
+							);
+						});
+									
+						var target = nlp.actors.pop();
+						nlp.actors.forEach( source => {
+							sql.query(
+								"INSERT INTO app.nlpindex SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1",
+								{
+									Source: source,
 									Target: target,
 									Link: nlp.links[0],
 									Task: "drugs",
-									Hits: 1,
-									Weight: nlp.weight,
-									Relevance: nlp.relevance,
-									Agreement: nlp.agreement,
-									Sentiment: nlp.sentiment
-								}, 1, nlp.weight, nlp.relevance, nlp.agreement, nlp.sentiment
-							], err => Log("nlpadd", err) );
+									Hits: 1
+								}, err => Log("nlpadd", err) );
 						});
 					});
 					

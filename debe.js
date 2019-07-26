@@ -77,10 +77,281 @@ const { Copy,Each,Log,isObject,isString,isFunction,isError,isArray } = require("
 
 var										// shortcuts and globals
 	Thread = TOTEM.thread;
-	
+
+function pipeStream(sql, job,cb) { // pipe data from streamed file
+	sql.insertJob( job, job => { 
+		function getEvents(job, cb) {
+			FS.createReadStream("."+job.path,"utf8").get( "", evs => cb( {evs: evs}, job ) );
+		}
+
+		getEvents( job, (evs,job) => cb(evs,job) );
+		/*{	// fetch and route events to plugin
+			pipePlugin( evs, job.query, job.ctx, ctx => saveEvents(ctx.Save, ctx) );
+		});  */
+	});
+}
+
+function pipeImage(sql,job,cb) {   // run image scripting pipe
+	sql.insertJob( job, job => { 
+		function getImage( job, cb) {
+
+			function readFile(path,cb) {	// read and forward jpg to callback
+				$.IMP.read( "."+ path )
+				.then( img => { 
+					Log("read", path, img.bitmap.height, img.bitmap.width);
+					img.readPath = path;
+					cb(img); 
+					return img; 
+				} )
+				.catch( err => Log(err) );
+			}
+
+			var
+				path = job.path,
+				ctx = job.ctx,
+				query = job.query,
+				data = {},
+				firstKey = "";
+
+			for (var key in query)  // first key is special scripting-with-callback key
+				if ( !firstKey ) {
+					firstKey = key;
+
+					`read( path, img => cb( ${query[key]} ) )`
+					.parseJS( Copy(ctx, { // define parse context
+						read: readFile,
+						path: path,
+						cb: rtn => {
+							data[firstKey] = rtn;
+							query[firstKey] = firstKey;
+							cb( data, job );
+						}
+					}) );
+				}  
+
+			if ( !firstKey ) readFile(path, img => cb( {Image:img}, job) );
+		}
+
+		getImage( job, (data,job) => cb(data,job) );
+		/*{
+			pipePlugin( data, job.query, job.ctx, ctx => saveEvents(ctx.Save, ctx) );
+		}); */
+	});	
+}
+
+function pipeJson(sql,job,cb) { // send raw json data to the plugin
+	sql.insertJob( job, job => { 
+		function getEvents(job, cb) {
+			// Log(">>fetch", path);
+			fetcher( job.url, null, info => cb( info.parseJSON( {} ), job ) );
+		}
+
+		getEvents( job, (evs,job) => cb(evs,job) );
+		/*{	// fetch and route events to plugin
+			//Log(">>evs", job);
+			pipePlugin( evs, job.query, job.ctx, ctx => saveEvents(ctx.Save, ctx) );
+		}); */
+	});
+}
+
+function pipeDoc(sql,job,cb) { // nlp pipe
+	sql.insertJob( job, job => { 
+		function getDoc( job, cb) {
+
+			function readFile(path,cb) {	// read and forward doc to callback
+				DEBE.thread( sql => {
+					READ.readFile( sql, "."+path, doc => cb(doc) );
+					sql.release();
+				});
+			}
+
+			var
+				path = job.path,
+				ctx = job.ctx,
+				query = job.query,
+				data = {},
+				firstKey = "";
+
+			for (var key in query)  // first key is special scripting-with-callback key
+				if ( !firstKey ) {
+					firstKey = key;
+
+					`read( path, doc => cb( ${query[key]} ) )`
+					.parseJS( Copy(ctx, { // define parse context
+						read: readFile,
+						path: path,
+						cb: rtn => {
+							data[firstKey] = rtn;
+							query[firstKey] = firstKey;
+							cb( data, job );
+						}
+					}) );
+				}  
+
+			if ( !firstKey ) readFile(path, doc => cb( {Doc:doc}, job) );
+		}
+
+		getDoc( job, (data,job) => cb(data,job) );
+		/* {
+			pipePlugin( data, job.query, job.ctx, ctx => saveEvents(ctx.Save, ctx) );
+		}); */
+	});
+}
+
+function pipeDB(sql,job,cb) {  // pipe database source
+	sql.query( "SELECT * FROM app.??", job.class, (err,recs) => {
+		if (!err) cb( {recs:recs}, job );
+			/*
+			pipePlugin( {recs:recs}, pipeQuery, ctx, ctx => {
+				saveEvents(ctx.Save, ctx);
+			}); */
+	});
+}
+
+function pipeAOI(sql,job,cb) {
+// stream indexed events or chips through supervisor 
+	DEBE.getFile( job.client, job.path, file => {
+		function chipFile( file, job ) { 
+			//Log( "chip file>>>", file );
+			var ctx = job.ctx;
+
+			ctx.File = file;
+			getVoxels(sql, pipeQuery, file, meta => {  // process voxels over queried aoi
+				ctx.meta = meta;
+
+				sql.insertJob( job, job => {  // put voxel into job regulation queue
+					function getImage(chips, job, cb) {
+						chips.get( "wms", function image(img) {
+							//Log("wms recover job", job.ctx.Method);
+							cb(img, job);
+						});
+					}
+
+					var
+						ctx = job.ctx, 		 // recover job context
+						meta = ctx.meta,
+						file = meta.File,
+						chips = meta.Chips,
+						evs = meta.Events;
+
+					//Log(">>>chips", chips);
+					if (chips)   // place chips into chip supervisor
+						getImage( chips, job, (img,job) => {
+							var ctx = job.ctx;
+							//Log(">>>chip ctx", ctx);
+							ctx.Image = img;
+							cb( [], job );
+							// pipePlugin( [], {}, ctx, ctx => saveEvents(ctx.Save, ctx) );
+						});
+
+					else
+					if (evs) {		// run voxelized events thru event supervisor
+						var
+							supervisor = new RAN({ 	// learning supervisor
+								learn: function (supercb) {  // event getter callsback supercb(evs) or supercb(null,onEnd) at end
+									var 
+										supervisor = this;
+
+									//Log("learning ctx", ctx);
+
+									evs.get( "t", evs => {  // route events thru supervisor, run plugin, then save supervisor logs
+										Trace( evs 
+											  ? `SUPERVISING voxel${ctx.Voxel.ID} events ${evs.length}` 
+											  : `SUPERVISED voxel${ctx.Voxel.ID}` );
+
+										if (evs) // feed supervisor
+											supercb(evs);
+
+										else // terminate supervisor and start engine
+											supercb(null, function onEnd( flow ) {  // attach supervisor flow context
+												ctx.Flow = flow; 
+												ctx.Case = "v"+ctx.Voxel.ID;
+												Trace( `STARTING voxel${ctx.Voxel.ID}` );
+
+												cb( {}, job, ctx => {
+													supervisor.end( ctx.Save || [], logs => {
+														saveEvents(logs, ctx);
+													});
+												});
+												/*
+												pipePlugin( {}, ctx, ctx => {	// run plugin then save supervisor logs
+													supervisor.end( ctx.Save || [], logs => {
+														saveEvents(logs, ctx);
+													});
+												});  */
+											});	
+									});
+								},  
+
+								N: query.actors || file._Ingest_Actors,  // ensemble size
+								keys: query.keys || file.Stats_stateKeys,	// event keys
+								symbols: query.symbols || file.Stats_stateSymbols || file._Ingest_States,	// state symbols
+								steps: query.steps || file._Ingest_Steps, // process steps
+								batch: query.batch || 0,  // steps to next supervised learning event 
+								//trP: {states: file._Ingest_States}, // trans probs
+								trP: {},	// transition probs
+								filter: function (str, ev) {  // filter output events
+									switch ( ev.at ) {
+										case "batch":
+											//Log("filter", ev);
+										case "config":
+										case "end":
+											str.push(ev);
+									}
+								}  
+							});
+
+						supervisor.pipe( stats => { // pipe supervisor to this callback
+							Trace( `PIPED voxel${ctx.Voxel.ID}` );
+						}); 
+					}
+				});	
+			});
+		}
+
+		function restoreFile( file, job, cb ) {
+			CP.exec("", () => {  //<< fix: add script to copy and unzip from S3 buckets
+				Trace("RESTORING "+file.Name);
+				cb(file,job);
+				DEBE.thread( sql => {
+					sql.query("UPDATE app.files SET _State_Archived=false WHERE ?", {ID: file.ID});
+					sql.release();
+				});
+			});
+		}										
+
+		["stateKeys", "stateSymbols"].parseJSON(file);
+
+		if (file._State_Archived) 
+			restoreFile( file, job, (file, job) => chipFile(file, job) );
+
+		else
+			chipFile( file, job );
+	});
+}
+
 var
 	DEBE = module.exports = Copy({
 	
+	pipeJob: {		//  pipe job by pipe path type
+		stream: pipeStream,
+		nitf: pipeImage,
+		png: pipeImage,
+		jpg: pipeImage,
+		json: pipeJson,
+		txt: pipeDoc,
+		xls: pipeDoc,
+		html: pipeDoc,
+		odt: pipeDoc,
+		odp: pipeDoc,
+		ods: pipeDoc,
+		pdf: pipeDoc,
+		xml: pipeDoc,
+		db: pipeDB,
+		"": pipeAOI,
+		aoi: pipeAOI
+	},
+		
 	super: {
 		"brian.d.james@coe.ic.gov": 1
 	},
@@ -752,6 +1023,78 @@ Further information about this file is available ${paths.moreinfo}. `;
 				});
 		}),
 			
+		dogGraph: Copy({
+			cycle: 10
+		}, function (dog) {
+				var actors = 0, nodes = 0;
+				Log("update graph");
+				if ( neodb = DEBE.neodb ) 						
+					dog.thread( sql => {
+						sql.query( "SELECT * FROM app.nlpactors" )
+						.on("result", actor => {
+							actors++;
+							neodb.cypher({
+								query: "CREATE (a:Actor {Name:{name}, ID:{id}})",
+								params: {
+									name: actor.Name,
+									id: actor.ID
+								}
+							}, err => {	
+								if (++nodes == actors) // all actors have been created so connect them
+									sql.query( "SELECT * FROM app.nlpedges" )
+									.on("result", rel => {
+										neodb.cypher({
+											query: "MATCH (a:Actor),(b:Actor) WHERE a.Name = {source} AND b.Name = {target} CREATE (a)-[r:RELATED]->(b)",
+											params: {
+												source: rel.Source,
+												target: rel.Target,
+												weight: rel.Weight
+											}
+										}, err => Log("add edge") );
+									})
+									.on("end", () => {
+										sql.query( "DELETE FROM app.nlpedges" );
+									});								
+							});
+						})
+						.on("end", () => {
+							sql.query( "DELETE FROM app.nlpactors" );
+						});
+						
+						sql.release();
+					});
+					/*
+					Each( metrics.ids.actors, (actor,idx) => {	// create nodes
+						//Log("neo add",actor,idx);
+						neodb.cypher({
+							query: "CREATE (a:Actor { Name: {name}, ID: {id} } )",
+							params: {
+								name: actor,
+								id: idx
+							}
+						}, (err,results) => {
+							Log("neo node", err, results);
+						});
+					});
+
+					metrics.dag.adj.forEach( bag => {	// create edges
+						bag.dictionary.forEach( edge => {
+							Log(edge);
+							neodb.cypher({
+								query: "MATCH (a:Actor),(b:Actor) WHERE a.ID = {srcID} AND b.ID = {endID} CREATE (a)-[r:RELATED]->(b) RETURN r",
+								params: {
+									srcID: edge.start,
+									endID: edge.end,
+									weight: edge.weight
+								}
+							}, (err,results) => {
+								Log("neo edge", err, results);
+							});
+						});
+					});												
+					*/
+		}),
+			
 		dogClients: Copy({
 			//cycle: 100000,
 			get: {
@@ -799,7 +1142,6 @@ Further information about this file is available ${paths.moreinfo}. `;
 			maxAge: 1,
 			newsPath: "./news"
 		}, function dogNews(dog) {
-			
 			dog.thread( sql => {
 				sql.query( dog.get.toRemove, dog.maxAge)
 				.on("result", news => {
@@ -2135,7 +2477,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 								qos: 1, //profile.QoS, 
 								priority: 0,
 								client: req.client,
-								class: "plugin",
+								class: pipeName,
 								credit: 100, // profile.Credit,
 								name: req.table,
 								task: pipeQuery.Name || pipeQuery.ID,
@@ -2166,292 +2508,18 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 						
 						Log(">>pipe", pipePath, pipeType, pipeQuery, pipeRun);
 						if ( pipePath.charAt(0) == "/" ) 
-							switch (pipeType) {  // file types determine workflow
-								case "stream": 	// load data from streamed file
-									sql.insertJob( job, job => { 
-										function getEvents(job, cb) {
-											FS.createReadStream("."+job.path,"utf8").get( "", evs => cb( {evs: evs}, job ) );
-										}
-
-										getEvents( job, (evs,job) => {	// fetch and route events to plugin
-											pipePlugin( evs, job.query, job.ctx, ctx => saveEvents(ctx.Save, ctx) );
-										});
-									});
-									break;
-
-								case "nitf":
-								case "png":
-								case "jpg":		// run image scripting query
-									sql.insertJob( job, job => { 
-										function getImage( job, cb) {
-											
-											function readFile(path,cb) {	// read and forward jpg to callback
-												$.IMP.read( "."+ path )
-												.then( img => { 
-													Log("read", path, img.bitmap.height, img.bitmap.width);
-													img.readPath = path;
-													cb(img); 
-													return img; 
-												} )
-												.catch( err => Log(err) );
-											}
-
-											var
-												path = job.path,
-												ctx = job.ctx,
-												query = job.query,
-												data = {},
-												firstKey = "";
-
-											for (var key in query)  // first key is special scripting-with-callback key
-												if ( !firstKey ) {
-													firstKey = key;
-
-													`read( path, img => cb( ${query[key]} ) )`
-													.parseJS( Copy(ctx, { // define parse context
-														read: readFile,
-														path: path,
-														cb: rtn => {
-															data[firstKey] = rtn;
-															query[firstKey] = firstKey;
-															cb( data, job );
-														}
-													}) );
-												}  
-											
-											if ( !firstKey ) readFile(path, img => cb( {Image:img}, job) );
-										}
-
-										getImage( job, (data,job) => {
-											pipePlugin( data, job.query, job.ctx, ctx => saveEvents(ctx.Save, ctx) );
-										});
-									});	
-									break;							
-
-								case "json":	// send raw json data to the plugin
-									sql.insertJob( job, job => { 
-										function getEvents(job, cb) {
-											// Log(">>fetch", path);
-											fetcher( job.url, null, info => cb( info.parseJSON( {} ), job ) );
-										}
-
-										getEvents( job, (evs,job) => {	// fetch and route events to plugin
-											//Log(">>evs", job);
-											pipePlugin( evs, job.query, job.ctx, ctx => saveEvents(ctx.Save, ctx) );
-										});
-									});
-									break;
-
-								case "txt": // NLP training
-								case "xls":
-								case "html":
-								case "odt":
-								case "odp":
-								case "ods":
-								case "pdf":
-								case "xml":
-									sql.insertJob( job, job => { 
-										function getDoc( job, cb) {
-											
-											function readFile(path,cb) {	// read and forward doc to callback
-												DEBE.thread( sql => {
-													READ.readFile( sql, "."+path, doc => cb(doc) );
-													sql.release();
-												});
-											}
-											
-											var
-												path = job.path,
-												ctx = job.ctx,
-												query = job.query,
-												data = {},
-												firstKey = "";
-
-											for (var key in query)  // first key is special scripting-with-callback key
-												if ( !firstKey ) {
-													firstKey = key;
-
-													`read( path, doc => cb( ${query[key]} ) )`
-													.parseJS( Copy(ctx, { // define parse context
-														read: readFile,
-														path: path,
-														cb: rtn => {
-															data[firstKey] = rtn;
-															query[firstKey] = firstKey;
-															Log("cb doc", data);
-															cb( data, job );
-														}
-													}) );
-												}  
-											
-											if ( !firstKey ) readFile(path, doc => cb( {Doc:doc}, job) );
-										}
-
-										getDoc( job, (data,job) => {
-											pipePlugin( data, job.query, job.ctx, ctx => {
-												saveEvents(ctx.Save, ctx);
-												
-												if ( neodb = null ) {  //DEBE.neodb
-													Each( metrics.ids.actors, (actor,idx) => {	// create nodes
-														//Log("neo add",actor,idx);
-														neodb.cypher({
-															query: "CREATE (a:Actor { Name: {name}, ID: {id} } )",
-															params: {
-																name: actor,
-																id: idx
-															}
-														}, (err,results) => {
-															Log("neo node", err, results);
-														});
-													});
-
-													metrics.dag.adj.forEach( bag => {	// create edges
-														bag.dictionary.forEach( edge => {
-															Log(edge);
-															neodb.cypher({
-																query: "MATCH (a:Actor),(b:Actor) WHERE a.ID = {srcID} AND b.ID = {endID} CREATE (a)-[r:RELATED]->(b) RETURN r",
-																params: {
-																	srcID: edge.start,
-																	endID: edge.end,
-																	weight: edge.weight
-																}
-															}, (err,results) => {
-																Log("neo edge", err, results);
-															});
-														});
-													});												
-												}
-											});
-										});
-									});
-									break;
-
-								case "db": 	// database source
-									sql.query( "SELECT * FROM app.??", pipeName, (err,recs) => {
-										if (!err)
-											pipePlugin( {recs:recs}, pipeQuery, ctx, ctx => {
-												saveEvents(ctx.Save, ctx);
-											});
-									});
-									break;
-
-								case "": // no source
-								case "aoi": 	// stream indexed events or chips through supervisor 
-									DEBE.getFile( job.client, pipePath, file => {
-										function chipFile( file, job ) { 
-											//Log( "chip file>>>", file );
-											var ctx = job.ctx;
-
-											ctx.File = file;
-											getVoxels(sql, pipeQuery, file, meta => {  // process voxels over queried aoi
-												ctx.meta = meta;
-
-												sql.insertJob( job, job => {  // put voxel into job regulation queue
-													function getImage(chips, job, cb) {
-														chips.get( "wms", function image(img) {
-															//Log("wms recover job", job.ctx.Method);
-															cb(img, job);
-														});
-													}
-
-													var
-														ctx = job.ctx, 		 // recover job context
-														meta = ctx.meta,
-														file = meta.File,
-														chips = meta.Chips,
-														evs = meta.Events;
-
-													//Log(">>>chips", chips);
-													if (chips)   // place chips into chip supervisor
-														getImage( chips, job, (img,job) => {
-															var ctx = job.ctx;
-															//Log(">>>chip ctx", ctx);
-															ctx.Image = img;
-															pipePlugin( [], {}, ctx, ctx => saveEvents(ctx.Save, ctx) );
-														});
-
-													else
-													if ( evs) {		// run voxelized events thru event supervisor
-														var
-															supervisor = new RAN({ 	// learning supervisor
-																learn: function (supercb) {  // event getter callsback supercb(evs) or supercb(null,onEnd) at end
-																	var 
-																		supervisor = this;
-
-																	//Log("learning ctx", ctx);
-
-																	evs.get( "t", evs => {  // route events thru supervisor, run plugin, then save supervisor logs
-																		Trace( evs 
-																			  ? `SUPERVISING voxel${ctx.Voxel.ID} events ${evs.length}` 
-																			  : `SUPERVISED voxel${ctx.Voxel.ID}` );
-
-																		if (evs) // feed supervisor
-																			supercb(evs);
-
-																		else // terminate supervisor and start engine
-																			supercb(null, function onEnd( flow ) {  // attach supervisor flow context
-																				ctx.Flow = flow; 
-																				ctx.Case = "v"+ctx.Voxel.ID;
-																				Trace( `STARTING voxel${ctx.Voxel.ID}` );
-
-																				pipePlugin( {}, ctx, ctx => {	// run plugin then save supervisor logs
-																					supervisor.end( ctx.Save || [], logs => {
-																						saveEvents(logs, ctx);
-																					});
-																				});
-																			});	
-																	});
-																},  
-
-																N: query.actors || file._Ingest_Actors,  // ensemble size
-																keys: query.keys || file.Stats_stateKeys,	// event keys
-																symbols: query.symbols || file.Stats_stateSymbols || file._Ingest_States,	// state symbols
-																steps: query.steps || file._Ingest_Steps, // process steps
-																batch: query.batch || 0,  // steps to next supervised learning event 
-																//trP: {states: file._Ingest_States}, // trans probs
-																trP: {},	// transition probs
-																filter: function (str, ev) {  // filter output events
-																	switch ( ev.at ) {
-																		case "batch":
-																			//Log("filter", ev);
-																		case "config":
-																		case "end":
-																			str.push(ev);
-																	}
-																}  
-															});
-
-														supervisor.pipe( stats => { // pipe supervisor to this callback
-															Trace( `PIPED voxel${ctx.Voxel.ID}` );
-														}); 
-													}												
-												});	
-											});
-										}
-
-										function restoreFile( file, job, cb ) {
-											CP.exec("", () => {  //<< fix: add script to copy and unzip from S3 buckets
-												Trace("RESTORING "+file.Name);
-												cb(file,job);
-												DEBE.thread( sql => {
-													sql.query("UPDATE app.files SET _State_Archived=false WHERE ?", {ID: file.ID});
-													sql.release();
-												});
-											});
-										}										
-
-										["stateKeys", "stateSymbols"].parseJSON(file);
-
-										if (file._State_Archived) 
-											restoreFile( file, job, (file, job) => chipFile(file, job) );
-
+							if ( pipeJob = DEBE.pipeJob[pipeType] )
+								pipeJob( sql, job, (data,job,savecb) => {   // place in a workflow
+									pipePlugin( data, job.query, job.ctx, ctx => {
+										if ( savecb ) 
+											savecb(ctx);
 										else
-											chipFile( file, job );
+											saveEvents(ctx.Save, ctx);
 									});
-									
-								default:
-									err = new Error( "bad pipe" );
-							}
+								});
+						
+							else
+								err = new Error( "bad pipe" );
 						
 						else { // reserved
 							err = new Error( "bad pipe" );
@@ -3258,7 +3326,6 @@ Initialize DEBE on startup.
 				translation_type: "json"
 				//locale_on_url: true
 			}));
-
 
 		if (cb) cb();
 	}
@@ -4695,15 +4762,15 @@ assessments from our worldwide reporting system, please contact ${poc}.
 			}
 		}, err => {
 
-			var neodb = DEBE.neodb = null; //new NEO.GraphDatabase('http://root:NGA@localhost:7474');
+			var neodb = DEBE.neodb = new NEO.GraphDatabase('http://root:NGA@localhost:7474');
  
-			if (neodb)
+			if (neodb) {
 				neodb.cypher({
 					query: 'MATCH (u:User {email: {email}}) RETURN u',
 					params: {
 						email: 'alice@example.com',
 					},
-					}, function (err, results) {
+				}, (err, results) => {
 					if (err) throw err;
 					var result = results[0];
 					if (!result) {
@@ -4714,6 +4781,11 @@ assessments from our worldwide reporting system, please contact ${poc}.
 						Log("neodb test", JSON.stringify(user, null, 4));
 					}
 				});
+				
+				neodb.cypher({
+					query: "MATCH (n) DETACH DELETE n"
+				}, err => Log( err || "Graph db cleared" ) );  
+			}			
 
 		Trace( err || 
 `Yowzers - this does everything but eat!  An encrypted service, a database, a jade UI for clients,
