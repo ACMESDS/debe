@@ -62,26 +62,25 @@ The following context keys are accepted:
 							_sentiment: nlp.sentiment,
 							_agreement: nlp.agreement,
 							_weight: nlp.weight	
-						}, {Name: ctx.Name}], err => Log("upd", err) );
+						}, {Name: ctx.Name}], err => Log("nlpdoc", err) );
 
 						nlp.actors.forEach( actor => {
 							sql.query(
 								"INSERT INTO app.nlpactors SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1",
-								{ Name: actor }
-							);
+								{ Name: actor }, err => Log("nlpactor", err) );
 						});
 									
 						var target = nlp.actors.pop();
 						nlp.actors.forEach( source => {
 							sql.query(
-								"INSERT INTO app.nlpindex SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1",
+								"INSERT INTO app.nlpedges SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1",
 								{
 									Source: source,
 									Target: target,
 									Link: nlp.links[0],
 									Task: "drugs",
 									Hits: 1
-								}, err => Log("nlpadd", err) );
+								}, err => Log("nlpedge", err) );
 						});
 					});
 					

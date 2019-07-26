@@ -53,7 +53,7 @@ var
 	STREAM = require("stream"), 		//< pipe streaming
 	FS = require("fs"), 				//< filesystem and uploads
 	OS = require("os"), 		//< system utilizations for watch dogs
-	URL = require("url"),		//< data fetcher url parser
+	URL = require("url"),		//< data getSite url parser
 	CRYPTO = require("crypto"), 	//< to hash names
 	
 	// 3rd party modules
@@ -70,265 +70,15 @@ var
 	ATOM = require("atomic"), 
 	TOTEM = require("totem"),
 	$ = require("man"),
-	RAN = require("randpr"),
-	GEO = require("geohack");
+	GEO = require("geohack"),
+	ENUM = require("enum"),
+	PIPE = require("./pipes");
 
-const { Copy,Each,Log,isObject,isString,isFunction,isError,isArray } = require("enum");
+const { Copy,Each,Log,isObject,isString,isFunction,isError,isArray } = ENUM;
+const { pipeStream, pipeImage, pipeJson, pipeDoc, pipeDB, pipeAOI } = PIPE;
 
 var										// shortcuts and globals
 	Thread = TOTEM.thread;
-
-function pipeStream(sql, job,cb) { // pipe data from streamed file
-	sql.insertJob( job, job => { 
-		function getEvents(job, cb) {
-			FS.createReadStream("."+job.path,"utf8").get( "", evs => cb( {evs: evs}, job ) );
-		}
-
-		getEvents( job, (evs,job) => cb(evs,job) );
-		/*{	// fetch and route events to plugin
-			pipePlugin( evs, job.query, job.ctx, ctx => saveEvents(ctx.Save, ctx) );
-		});  */
-	});
-}
-
-function pipeImage(sql,job,cb) {   // run image scripting pipe
-	sql.insertJob( job, job => { 
-		function getImage( job, cb) {
-
-			function readFile(path,cb) {	// read and forward jpg to callback
-				$.IMP.read( "."+ path )
-				.then( img => { 
-					Log("read", path, img.bitmap.height, img.bitmap.width);
-					img.readPath = path;
-					cb(img); 
-					return img; 
-				} )
-				.catch( err => Log(err) );
-			}
-
-			var
-				path = job.path,
-				ctx = job.ctx,
-				query = job.query,
-				data = {},
-				firstKey = "";
-
-			for (var key in query)  // first key is special scripting-with-callback key
-				if ( !firstKey ) {
-					firstKey = key;
-
-					`read( path, img => cb( ${query[key]} ) )`
-					.parseJS( Copy(ctx, { // define parse context
-						read: readFile,
-						path: path,
-						cb: rtn => {
-							data[firstKey] = rtn;
-							query[firstKey] = firstKey;
-							cb( data, job );
-						}
-					}) );
-				}  
-
-			if ( !firstKey ) readFile(path, img => cb( {Image:img}, job) );
-		}
-
-		getImage( job, (data,job) => cb(data,job) );
-		/*{
-			pipePlugin( data, job.query, job.ctx, ctx => saveEvents(ctx.Save, ctx) );
-		}); */
-	});	
-}
-
-function pipeJson(sql,job,cb) { // send raw json data to the plugin
-	sql.insertJob( job, job => { 
-		function getEvents(job, cb) {
-			// Log(">>fetch", path);
-			fetcher( job.url, null, info => cb( info.parseJSON( {} ), job ) );
-		}
-
-		getEvents( job, (evs,job) => cb(evs,job) );
-		/*{	// fetch and route events to plugin
-			//Log(">>evs", job);
-			pipePlugin( evs, job.query, job.ctx, ctx => saveEvents(ctx.Save, ctx) );
-		}); */
-	});
-}
-
-function pipeDoc(sql,job,cb) { // nlp pipe
-	sql.insertJob( job, job => { 
-		function getDoc( job, cb) {
-
-			function readFile(path,cb) {	// read and forward doc to callback
-				DEBE.thread( sql => {
-					READ.readFile( sql, "."+path, doc => cb(doc) );
-					sql.release();
-				});
-			}
-
-			var
-				path = job.path,
-				ctx = job.ctx,
-				query = job.query,
-				data = {},
-				firstKey = "";
-
-			for (var key in query)  // first key is special scripting-with-callback key
-				if ( !firstKey ) {
-					firstKey = key;
-
-					`read( path, doc => cb( ${query[key]} ) )`
-					.parseJS( Copy(ctx, { // define parse context
-						read: readFile,
-						path: path,
-						cb: rtn => {
-							data[firstKey] = rtn;
-							query[firstKey] = firstKey;
-							cb( data, job );
-						}
-					}) );
-				}  
-
-			if ( !firstKey ) readFile(path, doc => cb( {Doc:doc}, job) );
-		}
-
-		getDoc( job, (data,job) => cb(data,job) );
-		/* {
-			pipePlugin( data, job.query, job.ctx, ctx => saveEvents(ctx.Save, ctx) );
-		}); */
-	});
-}
-
-function pipeDB(sql,job,cb) {  // pipe database source
-	sql.query( "SELECT * FROM app.??", job.class, (err,recs) => {
-		if (!err) cb( {recs:recs}, job );
-			/*
-			pipePlugin( {recs:recs}, pipeQuery, ctx, ctx => {
-				saveEvents(ctx.Save, ctx);
-			}); */
-	});
-}
-
-function pipeAOI(sql,job,cb) {
-// stream indexed events or chips through supervisor 
-	DEBE.getFile( job.client, job.path, file => {
-		function chipFile( file, job ) { 
-			//Log( "chip file>>>", file );
-			var ctx = job.ctx;
-
-			ctx.File = file;
-			getVoxels(sql, pipeQuery, file, meta => {  // process voxels over queried aoi
-				ctx.meta = meta;
-
-				sql.insertJob( job, job => {  // put voxel into job regulation queue
-					function getImage(chips, job, cb) {
-						chips.get( "wms", function image(img) {
-							//Log("wms recover job", job.ctx.Method);
-							cb(img, job);
-						});
-					}
-
-					var
-						ctx = job.ctx, 		 // recover job context
-						meta = ctx.meta,
-						file = meta.File,
-						chips = meta.Chips,
-						evs = meta.Events;
-
-					//Log(">>>chips", chips);
-					if (chips)   // place chips into chip supervisor
-						getImage( chips, job, (img,job) => {
-							var ctx = job.ctx;
-							//Log(">>>chip ctx", ctx);
-							ctx.Image = img;
-							cb( [], job );
-							// pipePlugin( [], {}, ctx, ctx => saveEvents(ctx.Save, ctx) );
-						});
-
-					else
-					if (evs) {		// run voxelized events thru event supervisor
-						var
-							supervisor = new RAN({ 	// learning supervisor
-								learn: function (supercb) {  // event getter callsback supercb(evs) or supercb(null,onEnd) at end
-									var 
-										supervisor = this;
-
-									//Log("learning ctx", ctx);
-
-									evs.get( "t", evs => {  // route events thru supervisor, run plugin, then save supervisor logs
-										Trace( evs 
-											  ? `SUPERVISING voxel${ctx.Voxel.ID} events ${evs.length}` 
-											  : `SUPERVISED voxel${ctx.Voxel.ID}` );
-
-										if (evs) // feed supervisor
-											supercb(evs);
-
-										else // terminate supervisor and start engine
-											supercb(null, function onEnd( flow ) {  // attach supervisor flow context
-												ctx.Flow = flow; 
-												ctx.Case = "v"+ctx.Voxel.ID;
-												Trace( `STARTING voxel${ctx.Voxel.ID}` );
-
-												cb( {}, job, ctx => {
-													supervisor.end( ctx.Save || [], logs => {
-														saveEvents(logs, ctx);
-													});
-												});
-												/*
-												pipePlugin( {}, ctx, ctx => {	// run plugin then save supervisor logs
-													supervisor.end( ctx.Save || [], logs => {
-														saveEvents(logs, ctx);
-													});
-												});  */
-											});	
-									});
-								},  
-
-								N: query.actors || file._Ingest_Actors,  // ensemble size
-								keys: query.keys || file.Stats_stateKeys,	// event keys
-								symbols: query.symbols || file.Stats_stateSymbols || file._Ingest_States,	// state symbols
-								steps: query.steps || file._Ingest_Steps, // process steps
-								batch: query.batch || 0,  // steps to next supervised learning event 
-								//trP: {states: file._Ingest_States}, // trans probs
-								trP: {},	// transition probs
-								filter: function (str, ev) {  // filter output events
-									switch ( ev.at ) {
-										case "batch":
-											//Log("filter", ev);
-										case "config":
-										case "end":
-											str.push(ev);
-									}
-								}  
-							});
-
-						supervisor.pipe( stats => { // pipe supervisor to this callback
-							Trace( `PIPED voxel${ctx.Voxel.ID}` );
-						}); 
-					}
-				});	
-			});
-		}
-
-		function restoreFile( file, job, cb ) {
-			CP.exec("", () => {  //<< fix: add script to copy and unzip from S3 buckets
-				Trace("RESTORING "+file.Name);
-				cb(file,job);
-				DEBE.thread( sql => {
-					sql.query("UPDATE app.files SET _State_Archived=false WHERE ?", {ID: file.ID});
-					sql.release();
-				});
-			});
-		}										
-
-		["stateKeys", "stateSymbols"].parseJSON(file);
-
-		if (file._State_Archived) 
-			restoreFile( file, job, (file, job) => chipFile(file, job) );
-
-		else
-			chipFile( file, job );
-	});
-}
 
 var
 	DEBE = module.exports = Copy({
@@ -756,7 +506,7 @@ catch (err) {
 			var 
 				urls = DEBE.site.urls,
 				get = dog.get,
-				fetcher = DEBE.fetcher;
+				getSite = DEBE.getSite;
 
 			/*
 			dog.forEach(dog.trace, get.ungraded, [], function (file, sql) {
@@ -847,7 +597,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 						to = from.addDays(file.PoP_durationDays),
 						ingester = "/ingest";
 
-					fetcher( ingester.tag("?", {	// fetch all events ingested by this /plugin.usecase or 
+					getSite( ingester.tag("?", {	// fetch all events ingested by this /plugin.usecase or 
 						fileID: file.ID,
 						from: from.toLocaleDateString("en-US"),
 						to: to.toLocaleDateString("en-US"),
@@ -886,7 +636,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 			var
 				get = dog.get,
 				queues = DEBE.queues,
-				fetcher = DEBE.fetcher;
+				getSite = DEBE.getSite;
 			
 			if ( pigs = get.pigs )
 				dog.forEach(dog.trace, pigs, [], function (pigs) {
@@ -955,7 +705,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 						{ID:job.ID}
 					] );
 					
-					fetcher( job.Notes, null, function (rtn) {
+					getSite( job.Notes, null, function (rtn) {
 						Log("dog job run "+msg);
 					});
 				});
@@ -1152,7 +902,7 @@ rm -RIf ${news.Name}*
 `	);
 				});
 
-				DEBE.indexFile( dog.newsPath, files => {
+				DEBE.getIndex( dog.newsPath, files => {
 					files.forEach( file => {
 						if ( file.endsWith(".html" ) ) {
 							var 
@@ -1205,7 +955,7 @@ cd ${dog.newsPath} ;
 source ./maint.sh expand ${name} ;
 `, 
 										err => {
-											DEBE.indexFile( `${dog.newsPath}/${name}`, files => {
+											DEBE.getIndex( `${dog.newsPath}/${name}`, files => {
 												files.forEach( file => {
 													if ( file.endsWith(".html") ) {
 														var msg = file.replace(".html","");
@@ -2464,14 +2214,14 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 					case String: // query contains a source path
 
 						var
-							getVoxels = GEO.getVoxels,
-							fetcher = DEBE.fetcher,
+							getSite = DEBE.getSite,
 							pipeQuery = {},
 							pipePath = Pipe.parseURL(pipeQuery,{},{},{}),
 							parts = pipePath.substr(1).split("."),
 							pipeName = parts[0] || "",
 							pipeType = parts.pop() || "",
 							isFlexed = FLEX.select[pipeName] ? true : false,
+							isDB = pipeType == "db",
 							pipeRun = `${ctx.Host}.${ctx.Name}`,
 							job = { // job descriptor for regulator
 								qos: 1, //profile.QoS, 
@@ -2480,7 +2230,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 								class: pipeName,
 								credit: 100, // profile.Credit,
 								name: req.table,
-								task: pipeQuery.Name || pipeQuery.ID,
+								task: pipeQuery.Name,
 								notes: [
 										req.table.tag("?",{ID:pipeQuery.ID}).tag( "/" + req.table + ".run" ), 
 										((profile.Credit>0) ? "funded" : "unfunded").tag( req.url ),
@@ -2488,12 +2238,12 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 										"PMR brief".tag( `/briefs.view?options=${pipeQuery.Name}`)
 								].join(" || "),
 								query: pipeQuery,
-								url: Pipe,
+								//url: Pipe,
 								path: pipePath,
 								ctx: ctx
 							};
 
-						if ( !isFlexed ) {  // update file change watchers 
+						if ( !isFlexed && !isDB ) {  // update file change watchers 
 							sql.query( "DELETE FROM openv.watches WHERE File != ? AND Run = ?", [pipePath, pipeRun] );
 
 							sql.query( "INSERT INTO openv.watches SET ?", {  // associate file with plugin
@@ -2512,7 +2262,9 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 								pipeJob( sql, job, (data,job,savecb) => {   // place in a workflow
 									pipePlugin( data, job.query, job.ctx, ctx => {
 										if ( savecb ) 
-											savecb(ctx);
+											savecb(ctx, ctx => {
+												saveEvents(ctx.Save, ctx);
+											});
 										else
 											saveEvents(ctx.Save, ctx);
 									});
@@ -2536,7 +2288,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 							keys = [], 
 							runCtx = pipeCopy(ctx), 
 							jobs = [], inserts = 0,
-							fetcher = DEBE.fetcher;
+							getSite = DEBE.getSite;
 						
 						for (var key in Pipe)  if ( key in ctx ) keys.push( key );
 						
@@ -2551,7 +2303,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 								if ( ++inserts == jobs.length )
 									if ( !Pipe.norun )
 										jobs.forEach( job => {
-											fetcher( `/${host}.exe?Name=${job.Name}`, null, info => {} );
+											getSite( `/${host}.exe?Name=${job.Name}`, null, info => {} );
 										});
 							});
 						});
@@ -3063,7 +2815,7 @@ Totem (req,res)-endpoint to ingest a source into the sql database
 			if (url = opts.url)
 				switch (url.constructor.name) {
 					case "String":
-						DEBE.fetcher( url.tag("?", query), opts.put, data => {
+						DEBE.getSite( url.tag("?", query), opts.put, data => {
 							if ( evs = data.parseJSON( [ ] ) ) 
 								cb( opts.get ? evs.get(opts.get) : evs );
 						});
@@ -3442,8 +3194,8 @@ Initialize DEBE on startup.
 			thread: Thread,
 			//emitter: DEBE.IO ? DEBE.IO.sockets.emit : null,
 			skinner: JADE,
-			fetcher: DEBE.fetcher,
-			indexer: DEBE.indexFile,
+			getSite: DEBE.getSite,
+			getIndex: DEBE.getIndex,
 			createCert: DEBE.createCert,
 			diag: DEBE.diag,
 			site: DEBE.site						// Site parameters
@@ -3453,13 +3205,13 @@ Initialize DEBE on startup.
 			//source: "",
 			taskPlugin: null,
 			thread: DEBE.thread,
-			fetcher: DEBE.fetcher
+			getSite: DEBE.getSite
 		});
 		
 		$.config({
 			thread: DEBE.thread,
-			tasker: DEBE.tasker,
-			fetcher: DEBE.fetcher
+			runTask: DEBE.runTask,
+			getSite: DEBE.getSite
 		});
 		
 		ATOM.config({
@@ -3472,7 +3224,7 @@ Initialize DEBE on startup.
 				$: $,
 				$READ: READ,
 				$GEO: GEO,
-				$TASK: DEBE.tasker,
+				$TASK: DEBE.runTask,
 				$SQL: DEBE.thread,
 				$NEO: DEBE.neodb ? DEBE.neodb.cypher : null
 			}, $ )
@@ -3492,7 +3244,7 @@ Initialize DEBE on startup.
 		var path = DEBE.paths.jades;
 
 		if (false)
-		DEBE.indexFile( path, (files) => {  // publish new engines
+		DEBE.getIndex( path, (files) => {  // publish new engines
 			var ignore = {".": true, "_": true};
 			files.forEach( (file) => {
 				if ( !ignore[file.charAt(0)] )
@@ -3692,7 +3444,7 @@ Initialize DEBE on startup.
 		var 
 			key = "@tag",
 			html = this,
-			fetcher = DEBE.fetcher,
+			getSite = DEBE.getSite,
 			fetchTopic = function ( rec, cb) {  // callback cb with expanded [TOPIC]() markdown
 				var 
 					secret = "",
@@ -3729,7 +3481,7 @@ Initialize DEBE on startup.
 					cb( "".tag("iframe", {src:rec.arg2}) );
 				
 				else
-					fetcher( rec.arg2, null, cb );
+					getSite( rec.arg2, null, cb );
 			},
 			
 			fetchLink = function ( rec, cb ) {  // expand [LINK](URL) markdown
@@ -3871,10 +3623,10 @@ Initialize DEBE on startup.
 		var 
 			key = "@tex",
 			html = this,
-			fetcher = JAX.typeset,
+			getSite = JAX.typeset,
 			fetchInTeX = function ( rec, cb ) {  // callsback cb with expanded inline TeX tag
 				//Log("math",rec);
-				fetcher({
+				getSite({
 					math: rec.arg1,
 					format: "inline-TeX",  
 					//html: true,
@@ -3883,7 +3635,7 @@ Initialize DEBE on startup.
 			},
 			fetchTeX = function ( rec, cb ) {	// callsback cb with expanded TeX tag
 				//Log("math",rec);
-				fetcher({
+				getSite({
 					math: rec.arg1,
 					format: "TeX",  
 					//html: true,
@@ -3892,7 +3644,7 @@ Initialize DEBE on startup.
 			},
 			fetchAscii = function ( rec, cb ) { // callsback cb with expanded AsciiMath tag
 				//Log("math",rec);
-				fetcher({
+				getSite({
 					math: rec.arg1,
 					format: "AsciiMath",  // TeX, inline-TeX, AsciiMath, MathML
 					//html: true,
@@ -3918,12 +3670,12 @@ Initialize DEBE on startup.
 		var 
 			key = "@tex",
 			html = this,
-			fetcher = JAX.typeset,
+			getSite = JAX.typeset,
 			fetchTeX = function ( rec, cb ) {	// callsback cb with expanded TeX tag
 				//Log("math",rec);
 				switch (rec.arg1) {
 					case "n":
-						fetcher({
+						getSite({
 							math: rec.arg2,
 							format: "TeX",  
 							//html: true,
@@ -3931,7 +3683,7 @@ Initialize DEBE on startup.
 						}, d => cb( d.mml || "" ) );
 						break;
 					case "a":
-						fetcher({
+						getSite({
 							math: rec.arg2,
 							format: "AsciiMath",
 							//html: true,
@@ -3939,7 +3691,7 @@ Initialize DEBE on startup.
 						}, d => cb( d.mml || "" ) );
 						break;
 					case "m":
-						fetcher({
+						getSite({
 							math: rec.arg2,
 							format: "MathML", 
 							//html: true,
@@ -3948,7 +3700,7 @@ Initialize DEBE on startup.
 						break;
 					case " ":
 					default:
-						fetcher({
+						getSite({
 							math: rec.arg2,
 							format: "inline-TeX",  
 							//html: true,
@@ -4006,10 +3758,10 @@ Initialize DEBE on startup.
 	function Xfetch( cb ) {  // expands <!---fetch URL---> tags then callsback cb( final url-fetched html )
 		var 
 			key = "@fetch",
-			fetcher = DEBE.fetcher,
+			getSite = DEBE.getSite,
 			fetchSite = function ( rec, cb ) {  // callsback cb with expanded fetch-tag 
 				//Log(">>>>Xfetch", rec.arg1);
-				fetcher( rec.arg1, null, cb );
+				getSite( rec.arg1, null, cb );
 			},
 			pattern = /<!---fetch ([^>]*)?--->/g;
 			
@@ -4638,7 +4390,7 @@ function exeAutorun(sql,name,path) {
 	.on("result", (file) => {
 
 		var 
-			fetcher = DEBE.fetcher,
+			getSite = DEBE.getSite,
 			now = new Date(),
 			startOk = now >= file.PoP_Start || !file.PoP_Start,
 			endOk = now <= file.PoP_End || !file.PoP_End,
@@ -4656,7 +4408,7 @@ function exeAutorun(sql,name,path) {
 					exePath = `/${pluginName}.exe?Name=${caseName}`;
 
 				Log("autorun", link,exePath);
-				fetcher( exePath, null, rtn => Log("autorun", rtn) );
+				getSite( exePath, null, rtn => Log("autorun", rtn) );
 			});
 	});
 

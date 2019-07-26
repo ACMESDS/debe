@@ -1322,6 +1322,7 @@ function DS(anchor) {
 				case 'longtext':
 					Blogs.push( fKey );
 				
+				case 'j':
 				case 'json':
 					return  {
 						xtype: 	"",
