@@ -77,7 +77,7 @@ The following context keys are accepted:
 								{
 									Source: source,
 									Target: target,
-									Link: nlp.links[0],
+									Link: nlp.topic,
 									Task: "drugs",
 									Hits: 1
 								}, err => Log("nlpedge", err) );
