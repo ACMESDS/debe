@@ -792,13 +792,13 @@ Further information about this file is available ${paths.moreinfo}. `;
 							}, err => {	
 								if (++nodes == actors) // all actors have been created so connect them
 									sql.query( "SELECT * FROM app.nlpedges" )
-									.on("result", rel => {
+									.on("result", edge => {
 										neodb.cypher({
-											query: "MATCH (a:Actor),(b:Actor) WHERE a.Name = {source} AND b.Name = {target} CREATE (a)-[r:RELATED]->(b)",
+											query: `MATCH (a:Actor),(b:Actor) WHERE a.Name = {source} AND b.Name = {target} CREATE (a)-[r:${edge.Link}]->(b)`,
 											params: {
-												source: rel.Source,
-												target: rel.Target,
-												weight: rel.Weight
+												source: edge.Source,
+												target: edge.Target,
+												weight: edge.Weight
 											}
 										}, err => Log("add edge") );
 									})
@@ -2265,6 +2265,30 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 											savecb(ctx, ctx => {
 												saveEvents(ctx.Save, ctx);
 											});
+										else
+										if ( nlp = ctx.NLP ) {
+											nlp.actors.forEach( actor => {
+												sql.query(
+													"INSERT INTO app.nlpactors SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1",
+													{ Name: actor }, err => Log("nlpactor", err) );
+											});
+
+											var target = nlp.actors.pop();
+											nlp.actors.forEach( source => {
+												Each( nlp.topics, topic => {
+													if ( topic != "dnc" ) 
+														sql.query(
+															"INSERT INTO app.nlpedges SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1",
+															{
+																Source: source,
+																Target: target,
+																Link: topic,
+																Task: "drugs",		//< needs to be fixed to refer to host usecase prefix
+																Hits: 1
+															}, err => Log("nlpedge", err) );
+												});
+											});
+										}
 										else
 											saveEvents(ctx.Save, ctx);
 									});

@@ -8,7 +8,7 @@ The following context keys are accepted:
 ' `,
 		_actors: "int(11) default 0 comment 'number of actors over entire doc corpus' ",
 		_links: "int(11) default 0 comment 'number of actor links disocvered over entire doc corpus' ",
-		_topic: "varchar(64) default 0 comment 'topic/intent having the largest level score over entire doc corpus' ",
+		_topics: "varchar(64) default 0 comment 'number of relevant topics/intents ' ",
 		_level: "float default 0 comment 'greated topic score woverithin entire doc corpus' ",
 		_relevance: "int(11) default 0 comment 'relevancing score over entire doc corpus' ",
 		_sentiment: "float default 0 comment 'sentiment score over entire doc corpus' ",
@@ -46,6 +46,9 @@ The following context keys are accepted:
 						sql.query("UPDATE app.docs SET ? WHERE ?", [{
 							_stats: JSON.stringify(nlp) 
 						}, {Name: ctx.Name}] );
+						
+						ctx.NLP = null;
+						res(ctx);
 					});
 				
 				else
@@ -56,7 +59,7 @@ The following context keys are accepted:
 							_stats: JSON.stringify(raw),
 							_actors: nlp.actors.length,
 							_links: nlp.links.length,
-							_topic: nlp.topic,
+							_topics: nlp.topics.length,
 							_level: nlp.level,
 							_relevance: nlp.relevance,
 							_sentiment: nlp.sentiment,
@@ -64,27 +67,10 @@ The following context keys are accepted:
 							_weight: nlp.weight	
 						}, {Name: ctx.Name}], err => Log("nlpdoc", err) );
 
-						nlp.actors.forEach( actor => {
-							sql.query(
-								"INSERT INTO app.nlpactors SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1",
-								{ Name: actor }, err => Log("nlpactor", err) );
-						});
-									
-						var target = nlp.actors.pop();
-						nlp.actors.forEach( source => {
-							sql.query(
-								"INSERT INTO app.nlpedges SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1",
-								{
-									Source: source,
-									Target: target,
-									Link: nlp.topic,
-									Task: "drugs",
-									Hits: 1
-								}, err => Log("nlpedge", err) );
-						});
+						ctx.NLP = nlp;
+						res(ctx);
 					});
 					
-				res(ctx);
 				sql.release();
 			});
 					 
