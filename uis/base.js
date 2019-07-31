@@ -173,6 +173,7 @@ var BASE = {
 		def.type = "range";
 		
 		opts.ds.replace(/\$(\w+)/g, (str,key) => {
+			alert("key "+key);
 			var 
 				id = "_"+key,
 				widget = widgets[key] || ( widgets[key] = def );
@@ -216,7 +217,8 @@ var BASE = {
 				});
 			}
 		});
-					
+		
+		// v4+ d3.json( opts.ds.replace(/\$\w+/g, "0") ).then(loader); 
 		d3.json( opts.ds.replace(/\$\w+/g, "0") , loader); 
 
 	},

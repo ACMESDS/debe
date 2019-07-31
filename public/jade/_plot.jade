@@ -1,0 +1,320 @@
+// UNCLASSIFIED 
+
+extends base
+append base_parms
+	- tech = "d3"
+
+append base_help
+	:markdown
+		 Produce d3 scatter plot:  
+
+			src = source dataset returning record list
+			id = record id (default all records)
+			x = dataset key
+			y = dataset key
+			w = drawing width
+			h = drawing height
+			debug = enable debugging alerts
+			line = color,color, ... line color
+			marker = style,style, ... line markers
+			label = X,Y labels
+			min = X,Y axis minimums
+			max = X,Y axis maximums
+			extra = [[x,y], ... ] data to append to plots
+			details = show xy locations
+
+append base_head
+
+	style.
+		body { font: 18px sans-serif; }
+
+		.axis path, .axis line {
+			fill: none;
+			stroke: #777;
+			shape-rendering: crispEdges;
+		}
+
+		.marker { stroke: #000; }
+		
+		.legend { }
+
+		.text {}
+	
+	script.
+		var opts = {  // define plot options
+			ds: "/!{query.src}?ID=#{query.id}&x:=#{query.x}&y:=#{query.y}",
+			w: parseInt("#{query.w}" || "0"),
+			h: parseInt("#{query.h}" || "0"),
+			debug: "#{query.debug}",
+			marker: ( "#{query.marker}" || "circle" ).option(),
+			line: ( "#{query.line}" || "black" ).option(),
+			label: ( "#{query.label}" || "x,y" ).option(),
+			min: "#{query.min}".split(","),
+			max: "#{query.max}".split(","),
+			extra: "#{query.extra}".option(),
+			details: "#{query.details}"
+		};
+				 
+append base_body
+
+	script(src="/clients/d3/d3.v3.min.js")
+
+	script.
+		function click(d) {
+
+			if (details = d[2] ) {
+				var isView = details.constructor == String;
+
+				var doc = window.open(
+					isView ? d.details : "",
+					"_blank",
+					"left="+d.x+"px,"
+					+ "top="+d.y[nplot]+"px,"
+					+ "width=50,height=50,location=0,menubar=0,status=0,titlebar=0,toolbar=0");
+
+				if ( !isView )
+					doc.document.write(JSON.stringify( details ));
+			}
+		}
+
+		const {isArray} = BASE;
+		
+		var 
+			margin = {top: 20, right: 20, bottom: 30, left: 40},
+			width = (opts.w || 800) - margin.left - margin.right,
+			height = (opts.h || 400) - margin.top - margin.bottom,
+
+			vis = d3.select("#content"),
+
+			svg = vis.append("svg")
+			.attr("width", width + margin.left + margin.right)
+			.attr("height", height + margin.top + margin.bottom)
+			.append("g")
+			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+		BASE.load( opts, (recs) => {
+			var 
+				markerStyles = opts.marker || [],
+				markerDef = markerStyles[0],
+				lineStyles = opts.line || [],
+				lineDef = lineStyles[0];
+			
+			recs.forEach( (rec) => {
+				function reduce(x, cb) {
+					if ( x0 = x[0] ) 
+						if ( isArray(x0) )
+							if ( x0.length == 1 ) {
+								var 
+									N = x.length,
+									x1 = new Array(N);
+								
+									for (var n=0; n<N; n++) x1[n] = x0[0];
+									reduce( x1, cb);
+							}
+						
+							else
+								reduce( x0, cb );
+						
+						else
+							cb(x);
+						
+					else
+						cb(x);
+				}
+							
+				var
+					x = rec.x || [],
+					y = rec.y || [],
+					x0 = x[0] || 0,
+					y0 = y[0] || 0,
+					xs = isArray( x0 ) ? x : null,
+					ys = isArray( y0 ) ? y : null,
+					dims = xs ? x0.length : 2,
+					plots = ys ? y0.length : 1,
+					min = opts.min,
+					max = opts.max,
+					hard = min[0] ? { x: [parseFloat(min[0]), parseFloat(max[0])], y: [parseFloat(min[1]), parseFloat(max[1])] } : null;
+
+				alert(plots);
+				alert("xdims:" + size(x));
+				alert("ydims:" + size(y));
+				for (var nplot=0; nplot<plots; nplot++) {
+					var
+						xy = [],
+						y0 = ys ? ys[nplot] : y;
+
+					if (false)	{	// cluster plots
+						alert("clus");
+						x.forEach( (x,n) => {
+							xy.push( { x: x[n][0], y: x[n][1], f: y0[n] } );
+						});	
+					}
+					else		{ // regression plots
+						alert("reg");
+						x.forEach( (x,n) => {
+							xy.push( { x: x[n][0], y: y[n][0], f: 0 } );
+						});	
+					}
+
+					if ( extra = opts.extra )	// append extra xy data
+						for (var N=extra.length, n=0; n<N; n++)
+							xy.push( {x: extra[n], y: extra[n] } ); 
+
+					if ( !nplot ) {  // setup axes on first source
+						//if (opts.debug) alert(opts.debug+"xy"+JSON.stringify(xy));
+
+						var	// define data scalers
+							xa = d3.scale.linear()
+							.domain([0,1])
+							.range([0, width]),
+
+							ya = d3.scale.linear()
+							.domain([0,1])
+							.range([height, 0]),
+
+							color = d3.scale.category10();
+
+						// auto scale axis based on data or options
+
+						if ( hard ) {
+							xa.domain( hard.x );
+							ya.domain( hard.y );
+						}
+						else {
+							xa.domain(d3.extent(xy, (d) => d.x )).nice();
+							ya.domain(d3.extent(xy, (d) => d.y )).nice();
+						}
+
+						var // define axes
+							xAxis = d3.svg.axis()
+							.scale(xa)
+							.orient("bottom"),
+
+							yAxis = d3.svg.axis()
+							.scale(ya)
+							.orient("left"),
+
+							xaxis = svg
+							.append("g")
+							.attr("class", "x axis")
+							.attr("transform", "translate(0," + height + ")")
+							.call(xAxis)
+							.append("text")
+							.attr("class", "label")
+							.attr("x", width)
+							.attr("y", -45)
+							.attr("dy", "1em")
+							.style("text-anchor", "end")
+							.text( opts.label[0] ),
+
+							yaxis = svg
+							.append("g")
+							.attr("class", "y axis")
+							.call(yAxis)
+							.append("text")
+							.attr("class", "label")
+							.attr("transform", "rotate(-90)")
+							.attr("y", 20)
+							.attr("dy", "1em")
+							.style("text-anchor", "end")
+							.text( opts.label[1] );
+
+						/*
+						svg
+						.append('path')
+						.attr('d', line([[opts.min[0],opts.min[1]],[opts.max[0],opts.min[1]]]))
+						.attr('stroke', "black")
+						.attr('stroke-width', 2)
+						.attr('fill', 'none');
+
+						svg
+						.append('path')
+						.attr('d', line([[opts.min[0],opts.min[0]],[opts.min[0],opts.max[1]]]))
+						.attr('stroke', "black")
+						.attr('stroke-width', 2)
+						.attr('fill', 'none');
+						*/
+
+						/*
+						if (opts.ref.length) 
+							svg
+							.append('path')
+							.attr('d', line(opts.ref))
+							.attr('stroke', "black")
+							.attr('stroke-width', 2)
+							.attr('fill', 'none');
+
+						if (opts.name) {   // add legend
+							var legend = svg
+							.selectAll(".legend")
+							.data(color.domain())
+							.enter()
+							.append("g")
+							.attr("class", "legend")
+							.attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+							for (var m=0,M=opts.name.length; m<M; m++) {
+								svg
+								.append("rect")
+								.attr("x", width - 18)
+								.attr("width", 25)
+								.attr("height", 25)
+								.style("fill", opts.line[m] || "black");
+
+								svg
+								.append("text")
+								.attr("x", width - 24)
+								.attr("y", 9)
+								.attr("dy", ".35em")
+								.style("text-anchor", "end")
+								.text(opts.name[m]);
+							}
+						}*/
+					}
+
+					if ( style = markerStyles[nplot] || markerDef ) {  // add markers
+						svg
+						.selectAll(".marker")
+						.data(xy)
+						.enter()
+						.append( style )
+						.attr("class", "marker")
+						.attr("r", 3.5)
+						.attr("cx", (d) => xa(d.x) )
+						.attr("cy", (d) => ya(d.y) )
+						.on("click", click)
+						.style("fill", (d) => color( d.f ) );
+					}
+
+					if ( style = lineStyles[nplot] || lineDef ) if ( !xs ) { // add lines
+
+						var line = d3.svg.line()
+						.x( (d) => xa(d.x) )
+						.y( (d) => ya(d.y) )
+						.interpolate('linear');
+
+						svg
+						.append('path')
+						.attr('d', line(xy))
+						.attr('stroke', style )
+						.attr('stroke-width', 2)
+						.attr('fill', 'none');
+					}
+
+					if ( details = opts.details ) {  // add label details
+						svg
+						.selectAll(".text")
+						.data(xy)
+						.enter()
+						.append("text")
+						.text( (d) => details+":"+d.x.toFixed(2)+" , "+d.y.toFixed(2) )
+						.attr("x", (d) => xa(d.x) )
+						.attr("y", (d) => ya(d.y) )
+						.attr("dy", ".35em")
+						.attr("font-family", "sans-serif")
+						.attr("font-size", "11px")
+						.attr("fill", "red"); 
+					}
+				}
+			});
+		});
