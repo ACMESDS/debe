@@ -1,111 +1,139 @@
-// UNCLASSIFIED
+//- UNCLASSIFIED
 
 extends base
 append base_parms
 	- tech = "d3"
-	- map = "world"
 
 append base_help
 	:markdown
-		Provides a map chart:
+		Display tree-map chart using parameters:
 
-			src = path to map data [ {Name, Info, Code, ...}, ...]
-			debug = debugging level
-			node,children,value,size,parent,code,info = key names
+			src = source url returning tree [ { node: "...", size: N, doc: "", nodes: [ {...}, ... ] }, ... ]
+			name = "name" || "name%..." || "" of source record(s)
+			pivots = "key,key,..." || "" source record grouping keys
+			w = drawing width
+			h = drawing height
+			debug = level of debugging alerts
+			node,nodes,value,size,parent,doc = tree keys
 
 append base_head
+
 	style.
-		div {
-			width: 500px;
-			height: 300px;
+		body {
+		  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+		  margin: auto;
+		  position: relative;
+		  width: 960px;
+		}
+
+		form {
+		  position: absolute;
+		  right: 10px;
+		  top: 10px;
+		}
+
+		.node {
+		  border: solid 1px white;
+		  font: 10px sans-serif;
+		  line-height: 12px;
+		  overflow: hidden;
+		  position: absolute;
+		  text-indent: 2px;
 		}
 
 	script.
 		var opts = {
-			ds: "/!{query.src}",
-			raw: true,
+			ds: "#{query.pivots}"
+				? "/!{query.src}.tree?name=#{query[NAME]}&_sort=#{query.pivots}"
+				: "#{query[NAME]}"
+							? "/!{query.src}.schema?name=#{query[NAME]}"
+							: "/!{query.src}",
+
 			w: parseInt("#{query.w}") || 200,
 			h: parseInt("#{query.h}") || 200,
 			debug: parseInt("#{query.debug}"),
-			INFO: "#{query.details}" || "Info",
-			CODE: "#{query.fill}" || "Code",
-			NODE: "#{query.node}" || "Name",
-			CHILDREN: "#{query.children}" || "children",
+			NODE: "#{query.node}" || "name",
+			NODES: "#{query.nodes}" || "nodes",
 			VALUE: "#{query.value}" || "value",
 			PARENT: "#{query.parent}" || "parent",
-			SIZE: "#{query.size}" || "size"										
+			SIZE: "#{query.size}" || "size",
+			DOC: "#{query.doc}" || "doc"
 		};
 		
-		const {NODE, CODE, INFO} = opts;
+		const {NODE, NODES, VALUE, SIZE, PARENT, DOC} = opts;
+		const {isString,Load} = BASE;
 
 append base_body
 
 	script.
-		//var map = new Datamap({element: document.getElementById('content')});
+		var
+			margin = {top: 40, right: 10, bottom: 10, left: 10},
+			width = (opts.w || 1200) - margin.left - margin.right,
+			height = (opts.h || 500) - margin.top - margin.bottom,
 
-		ds.json("/ctries", init => {
-			var cmap = {}, vmap = [];
-			init.forEach( function (ctry) {
-				cmap[ctry[NODE].toUpperCase()] = {
-					fillKey: ctry[CODE].toUpperCase(),
-					info: ctry[INFO]
-				}
-			});
-
-			BASE.Load(opts, recs => {
-				
-				recs.forEach( function (rec) {
-					vmap.push({
-						name: rec.Source,
-						radius: rec.Radius,
-						longitude: rec.Location.x,
-						latitude: rec.Location.y,
-						fillKey: "VOXEL"
-					});	
-				});
-				
-				var map = new Datamap({
-					//responsive: true,
+			color = d3.scaleOrdinal(d3.schemeCategory10),
+			format = d3.format(",d"),
+											 
+			view = d3.select("body"),
+			msg = "p".d3tag(view, {text: "details: "}),
+			url = "#{url}".replace("/treemap",""),
+			title = "p".d3tag(view,	{ html: [
+						"treefan".tag( "/treefan"+url ),
+						"force".tag( "/force"+url )
+					].join(" || ")
+				} ),
 					
-					//bubbles: vmap,
-					
-					element: document.getElementById('content'),
+			treemap = d3.treemap()
+					.tile(d3.treemapSquarify)
+					.size([width, height])
+					.padding(1)
+					.round(true);
 
-					geographyConfig: {
-						popupTemplate: function (geo,data) {
-							return [
-								geo ? geo.properties.name : "",
-								data ? data.info : "nada"
-							].join("<br>").tag("div",{class:"hoverinfo"});
-						}
-					},
-					
-					fills: {
-						HIGH: '#afafaf',
-						LOW: '#123456',
-						MEDIUM: 'blue',
-						VOXEL: 'red', //'rgb(1,0,0)',
-						defaultFill: 'green'
-					},
+			function chart(data) {
+			  const root = d3.hierarchy(data)
+					.sum(d => d.value)
+					.sort((a, b) => b.value - a.value);
 
-					data: cmap
-				});
+			  const svg = d3.create("svg")
+				  .attr("viewBox", [0, 0, width, height])
+				  .style("font", "10px sans-serif");
 
-				map.bubbles(vmap, {
-					popupTemplate: function (geo,data) {
-						return [
-							//geo ? geo.properties.name : "",
-							data ? JSON.stringify(data) : "nada"
-						].join("<br>").tag("div",{class:"hoverinfo"});
-					}});
+			 console.log("leaves",root.leaves());
 				
-				map.legend();
-				
-				d3.select(window).on("resize", function () {
-					map.resize();
-				});
-				
-			});
-		});	
+			  const leaf = svg.selectAll("g")
+				.data(root.leaves())
+				.join("g")
+				  .attr("transform", d => `translate(${d.x0},${d.y0})`);
 
+			  leaf.append("title")
+				  .text(d => `${d.ancestors().reverse().map(d => d.data.name).join("/")}\n${format(d.value)}`);
+
+			  leaf.append("rect")
+				  //.attr("id", d => (d.leafUid = DOM.uid("leaf")).id)
+				  .attr("fill", d => { while (d.depth > 1) d = d.parent; return color(d.data.name); })
+				  .attr("fill-opacity", 0.6)
+				  .attr("width", d => d.x1 - d.x0)
+				  .attr("height", d => d.y1 - d.y0);
+
+			  leaf.append("clipPath")
+				//.attr("id", d => (d.clipUid = DOM.uid("clip")).id)
+				.append("use")
+				//.attr("xlink:href", d => d.leafUid.href);
+
+			  leaf.append("text")
+				//.attr("clip-path", d => d.clipUid)
+				.selectAll("tspan")
+				.data(d => d.data.name.split(/(?=[A-Z][^A-Z])/g).concat(format(d.value)))
+				.join("tspan")
+				.attr("x", 3)
+				.attr("y", (d, i, nodes) => `${(i === nodes.length - 1) * 0.3 + 1.1 + i * 0.9}em`)
+				.attr("fill-opacity", (d, i, nodes) => i === nodes.length - 1 ? 0.7 : null)
+				.text(d => d);
+
+			  return svg.node();
+			}
+
+			Load( opts, data => chart(data) );
+		
 // UNCLASSIFIED
+		

@@ -1,0 +1,111 @@
+// UNCLASSIFIED
+
+extends base
+append base_parms
+	- tech = "d3"
+	- map = "world"
+
+append base_help
+	:markdown
+		Provides a map chart:
+
+			src = path to map data [ {Name, Info, Code, ...}, ...]
+			debug = debugging level
+			node,children,value,size,parent,code,info = key names
+
+append base_head
+	style.
+		div {
+			width: 500px;
+			height: 300px;
+		}
+
+	script.
+		var opts = {
+			ds: "/!{query.src}",
+			raw: true,
+			w: parseInt("#{query.w}") || 200,
+			h: parseInt("#{query.h}") || 200,
+			debug: parseInt("#{query.debug}"),
+			INFO: "#{query.details}" || "Info",
+			CODE: "#{query.fill}" || "Code",
+			NODE: "#{query.node}" || "Name",
+			CHILDREN: "#{query.children}" || "children",
+			VALUE: "#{query.value}" || "value",
+			PARENT: "#{query.parent}" || "parent",
+			SIZE: "#{query.size}" || "size"										
+		};
+		
+		const {NODE, CODE, INFO} = opts;
+
+append base_body
+
+	script.
+		//var map = new Datamap({element: document.getElementById('content')});
+
+		ds.json("/ctries", init => {
+			var cmap = {}, vmap = [];
+			init.forEach( function (ctry) {
+				cmap[ctry[NODE].toUpperCase()] = {
+					fillKey: ctry[CODE].toUpperCase(),
+					info: ctry[INFO]
+				}
+			});
+
+			BASE.Load(opts, recs => {
+				
+				recs.forEach( function (rec) {
+					vmap.push({
+						name: rec.Source,
+						radius: rec.Radius,
+						longitude: rec.Location.x,
+						latitude: rec.Location.y,
+						fillKey: "VOXEL"
+					});	
+				});
+				
+				var map = new Datamap({
+					//responsive: true,
+					
+					//bubbles: vmap,
+					
+					element: document.getElementById('content'),
+
+					geographyConfig: {
+						popupTemplate: function (geo,data) {
+							return [
+								geo ? geo.properties.name : "",
+								data ? data.info : "nada"
+							].join("<br>").tag("div",{class:"hoverinfo"});
+						}
+					},
+					
+					fills: {
+						HIGH: '#afafaf',
+						LOW: '#123456',
+						MEDIUM: 'blue',
+						VOXEL: 'red', //'rgb(1,0,0)',
+						defaultFill: 'green'
+					},
+
+					data: cmap
+				});
+
+				map.bubbles(vmap, {
+					popupTemplate: function (geo,data) {
+						return [
+							//geo ? geo.properties.name : "",
+							data ? JSON.stringify(data) : "nada"
+						].join("<br>").tag("div",{class:"hoverinfo"});
+					}});
+				
+				map.legend();
+				
+				d3.select(window).on("resize", function () {
+					map.resize();
+				});
+				
+			});
+		});	
+
+// UNCLASSIFIED

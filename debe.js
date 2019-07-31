@@ -1166,7 +1166,7 @@ Usage: ${uses.join(", ")}  `);
 				res([{
 					name: "root", 
 					size: 1, 
-					children: recs.treeify( 0, recs.length, 0, sorts.split(",") )
+					nodes: recs.treeify( 0, recs.length, 0, sorts.split(",") )
 				}]);
 			
 			else
@@ -3969,7 +3969,7 @@ Initialize DEBE on startup.
 								name: nodeName,
 								doc: nodePath.tag( cb(nodePath) ),
 								size: 20,
-								children: nodeify( val || 0,  nodePath, cb )
+								nodes: nodeify( val || 0,  nodePath, cb )
 							};
 						
 						nodes.push(node);
@@ -4006,7 +4006,7 @@ Initialize DEBE on startup.
 					return [{
 						name: root,
 						size: 10,
-						children : nodeify( subs, root, cb )
+						nodes : nodeify( subs, root, cb )
 					}];
 				}
 
@@ -4020,7 +4020,7 @@ Initialize DEBE on startup.
 						name: nodeName,
 						size: 10,
 						doc: nodePath.tag( cb(nodePath) ),
-						children: nodeify( store0, nodePath, cb )
+						nodes: nodeify( store0, nodePath, cb )
 					};
 				
 				return [node];
@@ -4032,7 +4032,7 @@ Initialize DEBE on startup.
 					name: (store.length || 0) + " elements",
 					size: 10,
 					doc: "",
-					children: []
+					nodes: []
 				}];
 			
 			else
@@ -4055,7 +4055,7 @@ Initialize DEBE on startup.
 	@param [Number] level current depth (0 on first call)
 	@param [Array] keys pivot keys
 	@param [String] wt key name that contains leaf weight (defaults to "size")
-	Return a tree = {name,weight,children: tree} from records having been sorted on keys=[key,...]
+	Return a tree = {name,weight,nodes} from records having been sorted on keys=[key,...]
 	*/
 		var	
 			recs = this,
@@ -4077,7 +4077,7 @@ Initialize DEBE on startup.
 					var node = {
 						name: key+" "+ref, 
 						size: wt ? parseInt(rec[wt] || "0") : len,
-						children: recs.treeify(pos,len,level+1,keys,wt)
+						nodes: recs.treeify(pos,len,level+1,keys,wt)
 					};
 
 					tar.push( node );

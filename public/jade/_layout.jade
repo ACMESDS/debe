@@ -1,0 +1,141 @@
+//- UNCLASSIFIED
+
+block layout_parms
+	- banner = "" // site banner
+	- start = "content" // div name to start content or "" to disable
+	- highlight = ""	// code styling theme zenburn | ... or "" to disable
+	- capture = false // to add screen capture button
+	- math = false // enable mathjax plugin
+	- check = false // enable brower checking
+
+html(lang="en")
+	head
+		meta(http-equiv="Content-Type",content="text/html; charset=utf-8;")
+
+		//- Tell IE to use the latest, best version (or Chrome Frame if pre-IE11).
+		meta(http-equiv="X-UA-Compatible", content="IE=Edge,chrome=1")
+
+		//- Make the application on mobile take up the full browser screen and disable user scaling.
+		meta(name="viewport", content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no")
+
+		//-	Check browser compatibility. Requires javascript and JSON. Invalid browsers will crash or ignore startup scripts.
+		if check
+			title #{nick}-#{table}
+			noscript
+				p Please enable Javascript and Cookies to access #{title}.
+
+			if ! JSON.parse
+				script(src="/clients/json/json2.js")
+
+			//- Add global ajax method to navigator.ajax
+			script(src="/uis/ajax.js")
+
+			//- Add global link follower method to navigator.follow
+			script(src="/uis/follow.js")
+
+			//- Add client probe info to navigator.totem
+			script(src="/uis/probe.js")
+
+			//-
+				Install socketio to communicate with clients.  This interface is establihed when the server does a require('socket.io'), 
+				ths createing end endpoint at urls.socketio (typically /socket.io/socket.io.js) on which the client can source -- via 
+				a <script src="/socket.io/socket.io.js"> tag -- its io() method.  Note: have been unable to get socket.io 2.x working
+				so reverting to socket.io 1.5.0.
+
+			script.
+				var io = null;
+
+			if sockets
+				script(src=urls.socketio)
+
+		//- Load mathjax preprocessor if needed
+		if math
+			script(src="/clients/mathjax/MathJax.js?config=default")
+			script.
+				MathJax.Hub.Queue(["Typeset",MathJax.Hub]);
+				MathJax.Hub.Config({
+					extensions: ["tex2jax.js"],
+					jax: ["input/TeX","output/HTML-CSS"],
+					tex2jax: {inlineMath: [["$","$"],["\\(","\\)"]]}
+				});
+
+		//- Code formatting
+		if highlight
+			link(rel='stylesheet',href='/clients/reveal/lib/css/#{highlight}.css')
+
+			style.
+				code  {
+					font-family: consolas, courier, monospace;
+					font-size: 1em;
+					line-height: 1.2em;
+					white-space: pre;
+					background-color: #acf; /* any colour's okay */
+					color: #000; /* likewise */
+					border: 1px solid #666;
+					-moz-border-radius: 0.5em;
+					-webkit-border-radius: 0.5em;
+					border-radius: 0.5em; /* just in case */
+					padding: 25px;
+					margin: 1.2em 1em;
+					width: 100%;
+					float: left;
+				}
+
+		block layout_head
+
+body
+	if "help" in query
+		:markdown
+			Layout provides a foundational framework with parameters:
+
+				banner = site banner
+				start = div name to start content
+				highlight = code styling theme zenburn | ...
+				capture = switch to add screen capture button
+				math = switch to add mathjax plugin
+				&inline = "/SRC &w=W &h=H" to inline a classified SRC
+
+		block layout_help
+
+	else
+	if query.inline
+		img(src=query.inline,width="80%",height="80%")
+		//
+			#content(
+				icons=icons,
+				start=start,
+				client=client,
+				source=table,
+				location=navigator.totem.location,
+				query=JSON.stringify(query),
+				title=banner)
+
+				inline(src=query.inline,w="90%",h="90%",a="Classif",g="Edit",s="rd")
+
+			script(src="/uis/base.js")
+			script.
+				BASE.start();
+
+	else
+		//- The capture plugin allows clients to capture their web canvas.
+		if capture 
+			script(src="/clients/html2canvas/dist/html2canvas.min.js")
+			script(src="/clients/screen2canvas/capture.js")
+
+		else
+			script.
+				var 
+					html2canvas = null;
+
+		if (start)
+			#content.layout(
+				icons=icons,
+				start=start,
+				client=client,
+				source=table,
+				query=JSON.stringify(query),
+				title=banner)
+
+				block layout_body
+
+//- UNCLASSIFIED

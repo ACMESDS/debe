@@ -218,8 +218,10 @@ var BASE = {
 			}
 		});
 		
-		// v4+ d3.json( opts.ds.replace(/\$\w+/g, "0") ).then(loader); 
-		d3.json( opts.ds.replace(/\$\w+/g, "0") , loader); 
+		// v5+ 
+		d3.json( opts.ds.replace(/\$\w+/g, "0") ).then(loader); 
+		// v4-
+		// d3.json( opts.ds.replace(/\$\w+/g, "0") , loader); 
 
 	},
 	
