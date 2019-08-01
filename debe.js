@@ -1726,7 +1726,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	"paths.": {  //< paths to things
 		//default: "home.view",
 		home: 
-			"Totem".tag("/treefan.view?src=info&w=1000&h=600") 
+			"Totem".tag("/fan.view?src=info&w=1000&h=600") 
 			+ ": protecting the warfighter from bad data",
 		
 		jadePath: "./public/jade/ref.jade",	// jade reference path for includes, exports, appends

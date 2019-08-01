@@ -8,10 +8,10 @@ append base_help
 	:markdown
 		 Produce d3 scatter plot:  
 
-			src = source dataset = [ {Name, x,y, ...}, ... ]
-			name = "filter" on dataset.Name
-			x = x-source = key || store$key
-			y = y-source = key || store$key
+			src = source dataset returning a list of records
+			name = "name" || "name%" of source record(s)
+			x = source x-key = store$key
+			y = source y-key = store$key
 			w = drawing width
 			h = drawing height
 			debug = level send debugging alerts
@@ -28,41 +28,16 @@ append base_help
 append base_head
 
 	style.
-		.line {
-			fill: none;
-			stroke: #ffab00;
-			stroke-width: 3;
-		}
-
-		.overlay {
-		  fill: none;
-		  pointer-events: all;
-		}
-
-		.dot {
-			fill: #ffab00;
-			stroke: #fff;
-		}
-
-		.focus circle {
-			fill: none;
-			stroke: steelblue;
-		}
-		
 		body { font: 18px sans-serif; }
 
 		.axis path, .axis line {
-		  fill: none;
-		  stroke: #000;
-		  shape-rendering: crispEdges;
-		}
-
-		.axis text {
-		  font: 10px sans-serif;
+			fill: none;
+			stroke: #777;
+			shape-rendering: crispEdges;
 		}
 
 		.marker { stroke: #000; }
-
+		
 		.legend { }
 
 		.text {}
@@ -322,24 +297,28 @@ append base_body
 					.append("g")
 					.attr("transform", "translate(" + margin.left + "," + margin.top + ")"),
 				
-					xscale = d3.scaleLinear()
+					xscale = d3.scale.linear()
 					.domain( hard ? hard.x : [0,1])
 					.range([0, width]),
 
-					yscale = d3.scaleLinear()
+					yscale = d3.scale.linear()
 					.domain( hard ? hard.y : [0,1])
 					.range([height, 0]),
 
 					colors = 10,
-					color = d3.scaleOrdinal( d3.schemeCategory10 ),
+					color = d3.scale.category10(),
 					
 				// need to fix this so when !hard scans over all x,y data to set domains
 				//		xscale.domain(d3.extent(xy, d => d.x )).nice();
 				//		yscale.domain(d3.extent(xy, d => d.y )).nice();
 
-					xAxis = d3.axisBottom(xscale),
+					xAxis = d3.svg.axis()
+					.scale(xscale)
+					.orient("bottom"),
 
-					yAxis = d3.axisLeft(yscale),
+					yAxis = d3.svg.axis()
+					.scale(yscale)
+					.orient("left"),
 
 					xaxis = svg
 					.append("g")

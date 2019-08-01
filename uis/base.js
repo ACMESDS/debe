@@ -173,7 +173,6 @@ var BASE = {
 		def.type = "range";
 		
 		opts.ds.replace(/\$(\w+)/g, (str,key) => {
-			alert("key "+key);
 			var 
 				id = "_"+key,
 				widget = widgets[key] || ( widgets[key] = def );
@@ -203,8 +202,9 @@ var BASE = {
 				Log( `new ${key} id = ${id} type = ${widget.type}` );
 
 				if (input) input.on("change", () => {
+					//Log(input);
 					var 
-						el = input[0][0],		// dom is a major Kludge!
+						el = input._groups[0][0], //v3 use input[0][0],		// dom is a major Kludge!
 						value = el.value,
 						id = el.id,
 						key = id.substr(1),
@@ -213,15 +213,14 @@ var BASE = {
 
 					//Log(input[0][0]);
 					Log(`adjust ${key}=${value} ds=${opts.ds} -> ${ds}`);
-					d3.json( ds , loader );
+					//v3 d3.json( ds , loader );
+					d3.json( ds ).then(loader);
 				});
 			}
 		});
 		
-		// v5+ 
 		d3.json( opts.ds.replace(/\$\w+/g, "0") ).then(loader); 
-		// v4-
-		// d3.json( opts.ds.replace(/\$\w+/g, "0") , loader); 
+		//v3 d3.json( opts.ds.replace(/\$\w+/g, "0") , loader); 
 
 	},
 	
@@ -266,7 +265,7 @@ var BASE = {
 		//var file = files[0]; for (var n in file) alert(n+"="+file[n]);
 		//alert(JSON.stringify(Files));
 			
-			BASE.syncReq("POST", "/uploads.db", function (res) {
+			BASE.request( false, "POST", "/uploads.db", function (res) {
 				alert(res);
 			}, {
 				//name: file.name,
@@ -278,7 +277,7 @@ var BASE = {
 			});		
 	},
 	
-	syncReq: function( method, url, cb , body) {
+	request: function( async, method, url, cb , body) {
 
 		var req = ((window.XMLHttpRequest)  			// get a request handle
 				? new XMLHttpRequest()
@@ -294,7 +293,7 @@ var BASE = {
 			}
 		};
 		
-		req.open(method, url, false); // start request
+		req.open(method, url, async); 		// start request
 		if (body)
 			req.send(JSON.stringify(body));  							// end request
 		else
@@ -374,7 +373,7 @@ var BASE = {
 		
 		cb( req, function test(url) {  // provide callback this prompt tester
 
-			BASE.syncReq( "GET", url,  function (res) {
+			BASE.request( false, "GET", url,  function (res) {
 				
 				switch (res) {
 					case "pass":
@@ -442,8 +441,7 @@ var BASE = {
 		//if ( anchor.getAttribute("guard") != (opts.GUARD || "") )
 		//	return alert(`${BASE.alert} skin is password protected `+[anchor.getAttribute("guard"),opts.GUARD] );
 		
-		// Retain session parameters
-		
+		// Retain session parameters		
 
 		BASE.bodyAnchor = window.document.getElementsByTagName("body")[0];
 		BASE.parser.QUERY = anchor.getAttribute("query"); 
@@ -1171,11 +1169,11 @@ function WIDGET (Anchor) {
 /**
 * @method status
 */
-	// Set dom.disable_window_status_change = false in FF about:config to get window.status to work
-	if (this.trace)
-		//window.status = oper+" "+this.name+" "+(msg||"");
-		console.log(oper+" "+this.name+" "+(msg||""));
-}
+		// Set dom.disable_window_status_change = false in FF about:config to get window.status to work
+		if (this.trace)
+			//window.status = oper+" "+this.name+" "+(msg||"");
+			console.log(oper+" "+this.name+" "+(msg||""));
+	}
 ].Extend(WIDGET);
 
 // UNCLASSIFIED
