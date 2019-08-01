@@ -40,7 +40,6 @@ The following context keys are accepted:
 		
 		if ( nlp ) 			
 			$SQL( sql => {
-				
 				if ( use == "lda" ) 
 					nlp( ctx.Data.Doc || "", ctx.Topics, ctx.Terms, nlp => {
 						sql.query("UPDATE app.docs SET ? WHERE ?", [{
@@ -59,7 +58,7 @@ The following context keys are accepted:
 							_stats: JSON.stringify(raw),
 							_actors: nlp.actors.length,
 							_links: nlp.links.length,
-							_topics: nlp.topics.length,
+							_topics: Object.keys(nlp.topics).length,
 							_level: nlp.level,
 							_relevance: nlp.relevance,
 							_sentiment: nlp.sentiment,

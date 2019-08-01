@@ -13,7 +13,7 @@ append site_body
 				#grid.Docs(
 					path="/docs.db",
 					wrap, page=100,
-					cols="Name.t,Pipe.j,Method.t,Description.h,Override.n,Topics.i,Terms.i,Scores(_actors.i..shortoff,_links.i..shortoff,_topic.i..shortoff,_relevance.i..shortoff,_sentiment.i..shortoff,_agreement.i..shortoff,_weight.i..shortoff)")
+					cols="Name.t,Pipe.j,Method.t,Description.h,Override.n,Topics.i,Terms.i,Scores(_actors.i..shortoff,_links.i..shortoff,_topics.i..shortoff,_relevance.n..shortoff,_sentiment.n..shortoff,_agreement.n..shortoff,_weight.n..shortoff)")
 					
 				#grid.Rules(
 					path="/nlprules.db?Task=#{task}",
