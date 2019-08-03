@@ -774,7 +774,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 		}),
 			
 		dogGraph: Copy({
-			cycle: 10
+			cycle: 1000
 		}, function (dog) {
 				var actors = 0, nodes = 0;
 				Log("update graph");

@@ -6,9 +6,9 @@ append base_parms
 	
 append base_help
 	:markdown
-		Display tree-fan chart using parameters:
+		Display d3 tree-fan chart using parameters:
 
-			src = source url returning tree [ { node: "...", size: N, doc: "", nodes: [ {...}, ... ] }, ... ]
+			src = source url returning [ { name: "...", size: N, doc: "", nodes: [ {...}, ... ] }, ... ]
 			name = "name" || "name%..." || "" of source record(s)
 			pivots = "key,key,..." || "" source record grouping keys
 			w = drawing width
@@ -55,7 +55,7 @@ append base_head
 		};
 
 		const {NODE, NODES, VALUE, SIZE, PARENT, DOC} = opts;
-		const {isString,Load} = BASE;
+		const {isArray,isString,Load} = BASE;
 										
 append base_body
 
@@ -67,12 +67,13 @@ append base_body
 			height = 500 - margin.top - margin.bottom;
 
 		var 
-			view = d3.select("body"),
-			msg = "p".d3tag(view, {text: "root"}),
-			url = "#{url}".replace("/treefan",""),
-			title = "p".d3tag(view,	{ html: [
-						"treemap".tag( "/treemap"+url ),
-						"force".tag( "/force"+url )
+			body = d3.select("body"),
+			msg = "p".d3tag(body, {text: "root"}),
+			url = "#{url}".replace("/fan",""),
+			title = "p".d3tag(body,	{ html: [
+						"map".tag( "/map"+url ),
+						"force".tag( "/force"+url ),
+						"cpack".tag( "/cpack"+url )
 					].join(" || ")
 				});
 
@@ -85,16 +86,16 @@ append base_body
 		  	.append("g")
 			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-		var i = 0,
+		var
 			duration = 750,
 			root;
 
 		// declares a tree layout and assigns the size
-		var treemap = d3.tree().size([height, width]);
+		var treefan = d3.tree().size([height, width]);
 
-		Load( opts, recs => {
+		Load( opts, data => {
 			// Assigns parent, children, height, depth
-			root = d3.hierarchy( recs[0] || {}, function(d) { return d[NODES]; });
+			root = d3.hierarchy( isArray(data) ? data[0] : data, d => d[NODES] );
 			root.x0 = height / 2;
 			root.y0 = 0;
 
@@ -115,47 +116,60 @@ append base_body
 		function update(source) {
 
 		  // Assigns the x and y position for the nodes
-		  var treeData = treemap(root);
+		  var treeData = treefan(root);
 
 		  // Compute the new tree layout.
 		  var nodes = treeData.descendants(),
 			  links = treeData.descendants().slice(1);
 
 		  // Normalize for fixed-depth.
-		  nodes.forEach(function(d){ d.y = d.depth * 180});
+		  nodes.forEach( d => d.y = d.depth * 180 );
 
 		  // ****************** Nodes section ***************************
 
 		  // Update the nodes...
-		  var node = svg.selectAll('g.node')
-			  .data(nodes, function(d) {return d.id || (d.id = ++i); });
+		  var 
+		  		id = 0,
+		  		node = svg.selectAll('g.node')
+			  		.data(nodes, d => d.id || (d.id = ++id) );
 
 		  // Enter any new modes at the parent's previous position.
 		  var nodeEnter = node.enter().append('g')
-			  .attr('class', 'node')
-			  .attr("transform", function(d) {
-				return "translate(" + source.y0 + "," + source.x0 + ")";
-			})
-			.on('click', click);
+			.attr('class', 'node')
+			.attr("transform", d => "translate(" + source.y0 + "," + source.x0 + ")" )
+			.on('click', d => {		// Toggle children on click.
+				function details(doc) { // dump nods details
+					if ( isString(doc) ) 
+						msg.html( doc );
+
+					else
+						msg.text( JSON.stringify( doc ) );
+				}
+
+				if ( d.children ) {
+					d._children = d.children;
+					d.children = null;
+				}
+				else {
+					d.children = d._children;
+					d._children = null;
+				}
+				update(d);
+				if ( doc = d.data[DOC]) details( doc ); 
+			});
 
 		  // Add Circle for the nodes
 		  nodeEnter.append('circle')
 			  .attr('class', 'node')
 			  .attr('r', 5)
-			  .style("fill", function(d) {
-				  return d._children ? "lightsteelblue" : "#fff";
-			  });
+			  .style("fill", d => d._children ? "lightsteelblue" : "#fff" );
 
 		  // Add labels for the nodes
 		  nodeEnter.append('text')
 			  .attr("dy", ".35em")
-			  .attr("x", function(d) {
-				  return d.children || d._children ? -13 : 13;
-			  })
-			  .attr("text-anchor", function(d) {
-				  return d.children || d._children ? "end" : "start";
-			  })
-			  .text(function(d) { return d.data[NODE]; });
+			  .attr("x", d => d.children || d._children ? -13 : 13 )
+			  .attr("text-anchor", d  => d.children || d._children ? "end" : "start" )
+			  .text( d => d.data[NODE] );
 
 		  // UPDATE
 		  var nodeUpdate = nodeEnter.merge(node);
@@ -170,18 +184,13 @@ append base_body
 		  // Update the node attributes and style
 		  nodeUpdate.select('circle.node')
 			.attr('r', 5)
-			.style("fill", function(d) {
-				return d._children ? "lightsteelblue" : "red"; //"#fff";
-			})
+			.style("fill", d => d._children ? "lightsteelblue" : "red" )
 			.attr('cursor', 'pointer');
-
 
 		  // Remove any exiting nodes
 		  var nodeExit = node.exit().transition()
 			  .duration(duration)
-			  .attr("transform", function(d) {
-				  return "translate(" + source.y + "," + source.x + ")";
-			  })
+			  .attr("transform", d => "translate(" + source.y + "," + source.x + ")" )
 			  .remove();
 
 		  // On exit reduce the node circles size to 0
@@ -196,14 +205,14 @@ append base_body
 
 		  // Update the links...
 		  var link = svg.selectAll('path.link')
-			  .data(links, function(d) { return d.id; });
+			  .data(links, d => d.id );
 
 		  // Enter any new links at the parent's previous position.
 		  var linkEnter = link.enter().insert('path', "g")
 			  .attr("class", "link")
-			  .attr('d', function(d){
-				var o = {x: source.x0, y: source.y0}
-				return diagonal(o, o)
+			  .attr('d', d => {
+				var o = {x: source.x0, y: source.y0};
+				return diagonal(o, o);
 			  });
 
 		  // UPDATE
@@ -212,50 +221,29 @@ append base_body
 		  // Transition back to the parent element position
 		  linkUpdate.transition()
 			  .duration(duration)
-			  .attr('d', function(d){ return diagonal(d, d.parent) });
+			  .attr('d', d => diagonal(d, d.parent) );
 
 		  // Remove any exiting links
 		  var linkExit = link.exit().transition()
 			  .duration(duration)
-			  .attr('d', function(d) {
-				var o = {x: source.x, y: source.y}
-				return diagonal(o, o)
+			  .attr('d', d => {
+				var o = {x: source.x, y: source.y};
+				return diagonal(o, o);
 			  })
 			  .remove();
 
-		  nodes.forEach(function(d){		// Store the old positions for transition.
+		  nodes.forEach( d => {		// Store the old positions for transition.
 			d.x0 = d.x;
 			d.y0 = d.y;
 		  });
 
 		  function diagonal(s, d) {	// Creates a curved (diagonal) path from parent to the child nodes
-			path = `M ${s.y} ${s.x}
+			return `M ${s.y} ${s.x}
 					C ${(s.y + d.y) / 2} ${s.x},
 					  ${(s.y + d.y) / 2} ${d.x},
-					  ${d.y} ${d.x}`
-
-			return path
+					  ${d.y} ${d.x}`;
 		  }
 
-		  function click(d) {		// Toggle children on click.
-			function details(doc) { // dump nods details
-				if ( isString(doc) ) 
-					msg.html( doc );
-
-				else
-					msg.text( JSON.stringify( doc ) );
-			}
-
-			if ( d.children ) {
-				d._children = d.children;
-				d.children = null;
-			  } else {
-				d.children = d._children;
-				d._children = null;
-			  }
-			update(d);
-			if ( doc = d.data[DOC]) details( doc ); 
-		  }
 		}
 
 //- UNCLASSIFIED

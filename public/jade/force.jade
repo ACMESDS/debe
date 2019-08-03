@@ -8,14 +8,14 @@ append base_help
 	:markdown
 		Display d3 force graph:
 
-			src = source url returning [ { name: "...", size: N, children: [ {...}, ... ] }, ... ]
+			src = source url returning [ { name: "...", size: N, nodes: [ {...}, ... ] }, ... ]
 			pivots = key,key,...
 			w = drawing width
 			h = drawing height
 			debug = debugging level
-			node,children,value,size,parent = key names
+			node,nodes,value,size,parent = key names
 
-		Graph nodes are sized to node.weight + length(node[CHILDREN]).
+		Graph nodes are sized to node.weight + length(node[NODES]).
 
 append base_head
 	style.
@@ -42,73 +42,82 @@ append base_head
 			h: parseInt("#{query.h}") || 200,
 			debug: parseInt("#{query.debug}"),
 			NODE: "#{query.node}" || "name",
-			CHILDREN: "#{query.children}" || "children",
+			NODES: "#{query.nodes}" || "nodes",
 			VALUE: "#{query.value}" || "value",
 			PARENT: "#{query.parent}" || "parent",
 			SIZE: "#{query.size}" || "size"										
 		};
 
-		const {NODE, CHILDREN, VALUE, SIZE, PARENT} = opts;
-
+		const {NODE, NODES, VALUE, SIZE, PARENT} = opts;
+		const {isArray,Load} = BASE;
+										
 append base_body
 
 	script.
 		function update() {
 			var 
-				nodes = flatten(root),
-				links = d3.layout.tree().links(nodes);
+				graph = flatten(root),
+				nodes = graph.nodes,
+				links = graph.links; 
 
-			//alert(JSON.stringify(nodes));
+			//Log("nodes", nodes);
+			var sim = d3.forceSimulation( nodes )
+				.on("tick", () => {
+					xlink
+						.attr("x1", d => d.source.x )
+						.attr("y1", d => d.source.y )
+						.attr("x2", d => d.target.x )
+						.attr("y2", d => d.target.y );
 
+					xnode
+						.attr("cx", d => d.x )
+						.attr("cy", d => d.y );
+				})
+				.force( "charge", d3.forceManyBody().strength( d => d._children ? -d[SIZE] / 100 : -30 ))
+				.force( "link", d3.forceLink( links ).distance( d => d.target._children ? 80 : 30 ))
+				.force( "center", d3.forceCenter() );
+										
 			// Restart the force layout.
-			force
+			/*sim
 				.nodes(nodes)
 				.links(links)
-				.start();
+				.start();  */
 
 			// Update the links
-			link = vis.selectAll("line.link")
-				.data(links, function(d) { return d.target.id; });
-
+			var	xlink = vis.selectAll("line.link")
+				.data(links, d => d.target.id );
+ 
 			// Enter any new links.
-			link.enter().insert("line", ".node")
+			xlink.enter().insert("line", ".node")
 				.attr("class", "link")
-				.attr("x1", function(d) { return d.source.x; })
-				.attr("y1", function(d) { return d.source.y; })
-				.attr("x2", function(d) { return d.target.x; })
-				.attr("y2", function(d) { return d.target.y; });
+				.attr("x1", d => d.source.x )
+				.attr("y1", d => d.source.y )
+				.attr("x2", d => d.target.x )
+				.attr("y2", d => d.target.y );
 
 			// Exit any old links.
-			link.exit().remove();
+			xlink.exit().remove();
 
 			// Update the nodes
-			node = vis.selectAll("circle.node")
-				.data(nodes, function(d) { return d.id; })
+			var xnode = vis.selectAll("circle.node")
+				.data(nodes, d => d.id )
 				.style("fill", color);
 
-			node.transition()
-				.attr("r", function(d) { 
-					return d[SIZE];
-					// return d[CHILDREN] ? (d[SIZE]||1)*d[CHILDREN].length : 10; //d[SIZE] ? Math.sqrt(d[SIZE]) / 10 : 10; 					
-					// 	return 5; 
-					//	return d[CHILDREN] ? 14.5 : d[SIZE] ? Math.sqrt(d[SIZE]) / 1 : 200; 
-				});
+			xnode.transition()
+				.attr("r", d => 5 );
 
 			// Enter any new nodes.
-			node.enter().append("circle")
+			xnode.enter().append("circle")
 				.attr("class", "node")
-				.attr("cx", function(d) { return d.x; })
-				.attr("cy", function(d) { return d.y; })
-				.attr("r", function(d) { 
-					return d[SIZE];
-					//return d[CHILDREN] ? (d[SIZE]||1)*d[CHILDREN].length : d[SIZE] ? Math.sqrt(d[SIZE]) / 10 : 2; 
-				})
+				.attr("cx", d => d.x )
+				.attr("cy", d => d.y )
+				.attr("r", d => 2 )
 				.style("fill", color)
-				.on("click", click)
-				.call(force.drag);
+				.on("click", click);
+				//.call(force.drag);
 
 			// Exit any old nodes.
-			node.exit().remove();
+			xnode.exit().remove();
 		}
 
 		function details(d) {
@@ -128,7 +137,7 @@ append base_body
 
 			/*var add = d3.select("body")
 				.append("iframe")
-				.attr("src", "/home.view")
+				.attr("src", "/home.body")
 				.attr("width",100)
 				.attr("height",100);*/
 
@@ -146,56 +155,49 @@ append base_body
 			alert("hello! ");
 		}
 
-		function tick() {
-			link.attr("x1", function(d) { return d.source.x; })
-				.attr("y1", function(d) { return d.source.y; })
-				.attr("x2", function(d) { return d.target.x; })
-				.attr("y2", function(d) { return d.target.y; });
-
-			node.attr("cx", function(d) { return d.x; })
-				.attr("cy", function(d) { return d.y; });
-		}
-
 		// Color leaf nodes orange, and packages white or blue.
 		function color(d) {
-			return d._children ? "#3182bd" : d[CHILDREN] ? "#c6dbef" : "#fd8d3c";
+			return d._children ? "#3182bd" : d[NODES] ? "#c6dbef" : "#fd8d3c";
 		}
 
 		// Toggle children on click.
 		function click(d) {
-			if (d[CHILDREN]) {
-				d._children = d[CHILDREN];
-				d[CHILDREN] = null;
+			if (d[NODES]) {
+				d._children = d[NODES];
+				d[NODES] = null;
 			} else {
-				d[CHILDREN] = d._children;
+				d[NODES] = d._children;
 				d._children = null;
 			}
 
 			if (d.doc) details(d);
 			update();
 		}
-
-		// Returns a list of all nodes under the root.
-		function flatten(root) {
-			var nodes = [], i = 0;
+		
+		function flatten(root) {	// Returns a list of all nodes under the root.
+			var nodes = [], links = [], id = 0;
 
 			function recurse(node) {
-				var size = 0;
-
-				if (children = node[CHILDREN]) 
-					children.forEach( node => size += children.reduce( function(weight, node) { 
-						return weight + recurse(node); 
-					}, 0) ); 
-
-				if (!node.id) node.id = ++i;
+				if (!node.id) node.id = ++id;
 
 				nodes.push(node);
-				node[SIZE] = 2;
-				return size;
+				
+				return node[SIZE] = (children = node[NODES]) 
+					? children.reduce( (weight, child) => {
+						links.push({
+							source: node,
+							target: child
+						});						
+						return weight + recurse(child);
+					}, 2)
+					:  2;
 			}
 
 			root[SIZE] = recurse(root);
-			return nodes;
+			return {
+				nodes: nodes,
+				links: links
+			};
 		}
 
 		var	
@@ -205,19 +207,14 @@ append base_body
 			link,
 			root;
 
-		var force = d3.layout.force()
-			.on("tick", tick)
-			.charge(function(d) { return d._children ? -d[SIZE] / 100 : -30; })
-			.linkDistance(function(d) { return d.target._children ? 80 : 30; })
-			.size([width, height]);
-
 		var 
-			view = d3.select("body"),
-			msg = "p".d3tag(view, {text: "details: "}),
+			body = d3.select("body"),
+			msg = "p".d3tag(body, {text: "details: "}),
 			url = "#{url}".replace("/force",""),
-			title = "p".d3tag(view,	{ html: [
-						"treefan".tag( "/treefan"+url ),
-						"treemap".tag( "/treemap"+url )
+			title = "p".d3tag(body,	{ html: [
+						"fan".tag( "/fan"+url ),
+						"map".tag( "/map"+url ),
+						"cpack".tag( "/cpack"+url )				
 					].join(" || ")
 				} ),
 		
@@ -225,13 +222,13 @@ append base_body
 				.attr("width", width)
 				.attr("height", height);
 
-		BASE.Load( opts, recs => {
-			root = recs[0] || {};
-			console.log( root );
+		Load( opts, data => {
+			root = isArray(data) ? data[0] : data;
 			root.fixed = true;
 			root.x = width / 2;
 			root.y = height / 2;
+			
 			update();
-		} );
+		});
 
 //- UNCLASSIFIED
