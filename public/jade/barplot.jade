@@ -1,0 +1,221 @@
+// UNCLASSIFIED 
+
+extends base
+append base_parms
+	- tech = "d3"
+
+append base_help
+	:markdown
+		 Produce d3 scatter plot:  
+
+			src = source dataset = [ {Name, x,y, ...}, ... ]
+			name = "filter" on dataset.Name
+			x = x-source = key || store$key
+			y = y-source = key || store$key
+			w = drawing width
+			h = drawing height
+			debug = level send debugging alerts
+			grid = X,Y axes grid
+			line = color,color, ... line color
+			marker = style,style, ... line markers
+			label = X,Y labels
+			min = X,Y axis minimums
+			max = X,Y axis maximums
+			index = X,Y indexors = $key
+			extra = [[x,y], ... ] data to append to plots
+			details = show xy locations
+			chan = widget "min:max:step" on x,y channels
+
+append base_head
+	//-
+		style.
+		.line {
+			fill: none;
+			stroke: #ffab00;
+			stroke-width: 3;
+		}
+
+		.overlay {
+		  fill: none;
+		  pointer-events: all;
+		}
+
+		.dot {
+			fill: #ffab00;
+			stroke: #fff;
+		}
+
+		.focus circle {
+			fill: none;
+			stroke: steelblue;
+		}
+		
+		body { font: 18px sans-serif; }
+
+		.axis path, .axis line {
+		  fill: none;
+		  stroke: #000;
+		  shape-rendering: crispEdges;
+		}
+
+		.axis text {
+		  font: 10px sans-serif;
+		}
+
+		.marker { stroke: #000; }
+
+		.legend { }
+
+		.text {}
+
+	script.
+		var 
+			opts = {  // define plot options
+				ds: 
+					"!{query.src}"
+						? "!{query.src}?name=#{query.name}&x:=#{query.x}&y:=#{query.y}&case:=name"
+						:  "/stores/bumps.json",
+				dims: {
+					margin: {top: 20, right: 90, bottom: 30, left: 90},
+					width: parseInt("#{query.w}") || 1200,
+					height: parseInt("#{query.h}") || 500
+				},
+				debug: parseInt("#{query.debug}"),
+				grid: ("#{query.grid}" || "1,1").split(","),
+				/*
+				marker: ( "#{query.marker}" || "circle" ).option(),
+				line: ( "#{query.line}" || "black" ).option(),
+				label: ( "#{query.label}" || "x,y" ).option(),
+				min: ("#{query.min}" || "0,0").split(","),
+				max: ("#{query.max}" || "1,1").split(","),
+				extra: "#{query.extra}".option(),
+				details: "#{query.details}",
+				index: "#{query.index}".option(),
+				keys: ("#{query.keys}" || "x,y,details").option(),
+				*/
+				url: "#{url}",
+				family: "plot,barplot",
+				widgets: {
+					//chan: ("#{query.chan}" || "0:255:1").option()
+				}
+			};
+
+		const {NODE, NODES, VALUE, SIZE, PARENT, DOC} = opts;
+		const {isString,isArray,Load} = BASE;
+
+append base_body
+	script.
+		Load( opts, (data,svg) => {
+			var 
+				width = svg.attr("width"),
+				height = svg.attr("height"),			
+				margin = opts.dims.margin;
+				/*
+					svg = svg.append("g")
+							.attr("transform", "translate(" + margin.left + "," + margin.top + ")"),
+							*/
+		
+			var
+				xAxis = svg => svg.append("g")
+						.attr("transform", `translate(0,${height - margin.bottom})`)
+						.call(d3.axisBottom(x).tickSizeOuter(0).tickFormat(() => ""));
+
+			var			
+				yz = data,
+				m = yz[0].length,	// number of samples in each category
+				n = yz.length,		// number of categories
+				xz = d3.range(m),  // the x-values shared by all series				
+				
+				y01z = d3.stack()
+						.keys(d3.range(n))
+						(d3.transpose(yz)) // stacked yz
+						.map((data, i) => data.map(([y0, y1]) => [y0, y1, i])),
+				
+				yMax = d3.max(yz, y => d3.max(y)),
+				
+				y1Max = d3.max(y01z, y => d3.max(y, d => d[1])),
+				
+				x = d3.scaleBand()
+						.domain(xz)
+						.rangeRound([margin.left, width - margin.right])
+						.padding(0.08),
+
+				y = d3.scaleLinear()
+						.domain([0, y1Max])
+						.range([height - margin.bottom, margin.top]),
+				
+				z = d3.scaleSequential(d3.interpolateBlues)
+						.domain([-0.5 * n, 1.5 * n]);
+			
+			// chart
+			var rect = svg.selectAll("g")
+					.data(y01z)
+					.enter().append("g")
+						.attr("fill", (d, i) => z(i))
+						.selectAll("rect")
+						.data(d => d)
+						.join("rect")
+						.attr("x", (d, i) => x(i))
+						.attr("y", height - margin.bottom)
+						.attr("width", x.bandwidth())
+						.attr("height", 0);
+
+			svg.append("g")
+					.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+		
+			svg.append("g")
+					.call(xAxis);
+		
+			update("stacked");
+		
+			// controls
+			var
+				body = d3.select("body"),
+				input = "select".d3tag(body, { value: "stacked", id:"_layout"} );
+
+			["stacked", "grouped"]
+			.forEach( (arg,n) => input.insert("option").attr( "value", arg ).text( arg ) );
+
+			input.on( "change", () => {
+				var 
+					el = input._groups[0][0], //v3 use input[0][0],		// dom is a major Kludge!
+					value = el.value,
+					id = el.id;
+				
+				update(value);				
+			});
+
+			function transitionGrouped() {
+				y.domain([0, yMax]);
+
+				rect.transition()
+						.duration(500)
+						.delay((d, i) => i * 20)
+						.attr("x", (d, i) => x(i) + x.bandwidth() / n * d[2])
+						.attr("width", x.bandwidth() / n)
+						.transition()
+						.attr("y", d => y(d[1] - d[0]))
+						.attr("height", d => y(0) - y(d[1] - d[0]));
+			}
+
+			function transitionStacked() {
+				y.domain([0, y1Max]);
+
+				rect.transition()
+						.duration(500)
+						.delay((d, i) => i * 20)
+						.attr("y", d => y(d[1]))
+						.attr("height", d => y(d[0]) - y(d[1]))
+						.transition()
+						.attr("x", (d, i) => x(i))
+						.attr("width", x.bandwidth());
+			}
+
+			function update(layout) {
+				if (layout === "stacked") 
+					transitionStacked();
+				
+				else 
+					transitionGrouped();
+			}		
+		});

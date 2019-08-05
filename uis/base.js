@@ -195,7 +195,7 @@ var BASE = {
 				url = opts.url || "",
 				family = (opts.family || "").split(",");
 			
-			url.replace( /\/(.*).view(.*)/, (str,view,query) => {
+			url.replace( /\/(.*).view\?(.*)/, (str,view,query) => {
 				family.forEach( (fam,n) => family[n] = fam.tag( `/${fam}.view?${query}` ) );
 			});
 

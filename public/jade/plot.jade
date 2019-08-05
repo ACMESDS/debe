@@ -74,7 +74,7 @@ append base_head
 				ds: 
 					"!{query.src}"
 						? "!{query.src}?name=#{query.name}&x:=#{query.x}&y:=#{query.y}&case:=name"
-						:  "regress?name=test2&x:=Save_train$.x[$chan]&y:=Save_train$.y[$chan]&case:=name",
+						:  "/regress?name=test2&x:=Save_train$.x[$chan]&y:=Save_train$.y[$chan]&case:=name",
 				dims: {
 					margin: {top: 20, right: 90, bottom: 30, left: 90},
 					width: parseInt("#{query.w}") || 1200,
@@ -91,6 +91,10 @@ append base_head
 				details: "#{query.details}",
 				index: "#{query.index}".option(),
 				keys: ("#{query.keys}" || "x,y,details").option(),
+
+				url: "#{url}",
+				family: "plot,barplot",
+
 				widgets: {
 					chan: ("#{query.chan}" || "0:255:1").option()
 				}
@@ -103,9 +107,9 @@ append base_body
 	script.
 		Load( opts, (recs,svg) => {
 			var 
-				margin = opts.dims.margin,
 				width = svg.attr("width"),
 				height = svg.attr("height"),			
+				margin = opts.dims.margin,
 				svg = svg.append("g")
 						.attr("transform", "translate(" + margin.left + "," + margin.top + ")"),
 				

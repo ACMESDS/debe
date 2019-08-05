@@ -2680,6 +2680,7 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 			Enabled: 1
 		}, eng => {
 
+			Log("engine", paths.engine, eng);
 			if (eng)  // render view with this jade engine
 				renderJade( eng.Code || "", ctx );
 

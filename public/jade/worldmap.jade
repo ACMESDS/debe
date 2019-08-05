@@ -1,0 +1,90 @@
+//- UNCLASSIFIED
+
+extends base
+append base_parms
+	- tech = "d3"
+
+append base_help
+	:markdown
+		Display d3 tree-map chart using parameters:
+
+			src = source url returning tree [ { name: "...", size: N, doc: "", nodes: [ {...}, ... ] }, ... ]
+			name = "name" || "name%..." || "" of source record(s)
+			pivots = "key,key,..." || "" source record grouping keys
+			w = drawing width
+			h = drawing height
+			debug = level of debugging alerts
+			node,nodes,value,size,parent,doc = tree keys
+
+append base_head
+	style.
+		.states :hover {
+			fill: red;
+		}
+
+		.state-borders {
+			fill: none;
+			stroke: #fff;
+			stroke-width: 0.5px;
+			stroke-linejoin: round;
+			stroke-linecap: round;
+			pointer-events: none;
+		}
+
+	script.
+		var opts = {
+			ds: "#{query.pivots}"
+				? "!{query.src}.tree?name=#{query[NAME]}&_sort=#{query.pivots}"
+				: "#{query[NAME]}"
+							? "!{query.src}.schema?name=#{query[NAME]}"
+							: "!{query.src}" || "/stores/worldatlas.json",
+
+			url: "#{url}",
+			family: "usmap,worldmap",
+
+			dims: {
+				margin: {top: 20, right: 90, bottom: 30, left: 90},
+				width: parseInt("#{query.w}") || 1200,
+				height: parseInt("#{query.h}") || 500
+			},
+			debug: parseInt("#{query.debug}"),
+
+			NODE: "#{query.node}" || "name",
+			NODES: "#{query.nodes}" || "children",
+			VALUE: "#{query.value}" || "value",
+			PARENT: "#{query.parent}" || "parent",
+			SIZE: "#{query.size}" || "size",
+			DOC: "#{query.doc}" || "doc"
+		};
+		
+		const {NODE, NODES, VALUE, SIZE, PARENT, DOC} = opts;
+
+append base_body
+	div(id="container")
+	script(src="/clients/topo/topojson.js")
+	script.
+		const {isString,isArray,Load} = BASE;
+		alert("topo", document.topology);
+		Load( opts, (data,svg) => {
+			var
+				width = svg.attr("width"),
+				height = svg.attr("height");
+
+			var 
+				//context = d3.select("canvas").node().getContext("2d"),
+				canvas = d3.select('#container')
+						.append('canvas')
+						.attr('width', width)
+						.attr('height', height),
+
+				context = canvas.node().getContext('2d'),
+
+				path = d3.geoPath(d3.geoOrthographic(), context);
+
+			alert("paths");
+			context.beginPath();
+			path(topojson.mesh(data));
+			context.stroke();
+		});
+		
+// UNCLASSIFIED
