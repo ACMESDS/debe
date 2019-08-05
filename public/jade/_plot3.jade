@@ -1,0 +1,352 @@
+// UNCLASSIFIED 
+
+extends base
+append base_parms
+	- tech = "d3"
+
+append base_help
+	:markdown
+		 Produce d3 scatter plot:  
+
+			src = source dataset returning a list of records
+			name = "name" || "name%" of source record(s)
+			x = source x-key = store$key
+			y = source y-key = store$key
+			w = drawing width
+			h = drawing height
+			debug = level send debugging alerts
+			line = color,color, ... line color
+			marker = style,style, ... line markers
+			label = X,Y labels
+			min = X,Y axis minimums
+			max = X,Y axis maximums
+			index = X,Y indexors = $key
+			extra = [[x,y], ... ] data to append to plots
+			details = show xy locations
+			chan = widget "min:max:step" on x,y channels
+
+append base_head
+
+	style.
+		body { font: 18px sans-serif; }
+
+		.axis path, .axis line {
+			fill: none;
+			stroke: #777;
+			shape-rendering: crispEdges;
+		}
+
+		.marker { stroke: #000; }
+		
+		.legend { }
+
+		.text {}
+
+	script.
+		var 
+			opts = {  // define plot options
+				ds: "/!{query.src}?name=#{query.name}&x:=#{query.x}&y:=#{query.y}&case:=name",
+				w: parseInt("#{query.w}") || 200,
+				h: parseInt("#{query.h}") || 200,
+				debug: parseInt("#{query.debug}"),
+				marker: ( "#{query.marker}" || "circle" ).option(),
+				line: ( "#{query.line}" || "black" ).option(),
+				label: ( "#{query.label}" || "x,y" ).option(),
+				min: "#{query.min}".split(","),
+				max: "#{query.max}".split(","),
+				extra: "#{query.extra}".option(),
+				details: "#{query.details}",
+				index: "#{query.index}".option(),
+				keys: ("#{query.keys}" || "x,y,details").option(),
+				widgets: {
+					chan: ("#{query.chan}" || "0:255:1").option()
+				}
+			};
+
+append base_body
+
+	// script(src="/clients/d3/d3.v3.min.js")
+
+	script.
+		function click(d) {
+
+			if (details = d[2] ) {
+				var isView = details.constructor == String;
+
+				var doc = window.open(
+					isView ? d[2] : "",
+					"_blank",
+					"left="+d.x+"px,"
+					+ "top="+d.y[plots]+"px,"
+					+ "width=50,height=50,location=0,menubar=0,status=0,titlebar=0,toolbar=0");
+
+				if ( !isView )
+					doc.document.write(JSON.stringify( details ));
+			}
+		}
+
+		const {Load} = BASE;
+
+		var 
+			margin = {top: 20, right: 80, bottom: 30, left: 50},
+			width = (opts.w || 800) - margin.left - margin.right,
+			height = (opts.h || 400) - margin.top - margin.bottom,
+
+			view = d3.select("#content");
+			
+		Load( opts, recs => {
+			var 
+				markerStyles = opts.marker || [],
+				markerDef = markerStyles[0],
+				lineStyles = opts.line || [],
+				lineDef = lineStyles[0],
+				xIndex = opts.index[0],
+				yIndex = opts.index[1];
+			
+			recs.forEach( rec => {
+				function xyplot(x,y,cb) {
+
+					function index(pair) {
+						if (xIndex) pair.x = xIndex.parseEval(pair.x);
+						if (yIndex) pair.y = yIndex.parseEval(pair.y);
+						return pair;
+					}
+					
+					var
+						x0 = x[0] || 0,
+						y0 = y[0] || 0,
+						Nx = x0.length || 0,
+						Ny = y0.length || 0,
+						mode = ((Nx <= 1) ? Nx : "n") + "x" + ((Ny <= 1) ? Ny : "n");
+							
+					Log(`switch [${Nx}x${Ny}] -> ${mode} in ${x.length}x${y.length} `);
+					
+					switch ( mode ) {
+						case "nxn":
+							for ( var n=0; n<Nx; n++ ) xyplot( x[n], y[n], cb );
+							return;
+							
+						case "nx1":		// cluster plot
+							var xy = [];
+							x.forEach( (xn,n) => {
+								xy.push( index({ x: xn[0], y: xn[1], f: y[n][0] }) );	// d3 assigns y to 1 of 10 fill categories
+							});	
+							break;
+							
+						case "nx0":		// cluster plot
+							var xy = [];
+							x.forEach( (xn,n) => {
+								xy.push( index({ x: xn[0], y: xn[1], f: y[n] }) );
+							});	
+							break;
+							
+						case "1x1": // regression plot
+							var xy = [];
+							x.forEach( (xn,n) => {
+								xy.push( index({ x: x[n][0], y: y[n][0], f: 0 }) );
+							});	
+							break;
+							
+						case "0x0": // regression plot
+							var xy = [];
+							x.forEach( (xn,n) => {
+								xy.push( index({ x: x[n], y: y[n], f: 0 }) );
+							});	
+							break;
+
+						case "1x0": // regression plot
+							var xy = [];
+							x.forEach( (xn,n) => {
+								xy.push( index({ x: x[n][0], y: y[n], f: 0 }) );
+							});	
+							break;
+
+						case "0x1": // regression plot
+							var xy = [];
+							x.forEach( (xn,n) => {
+								xy.push( index({ x: x[n], y: y[n][0], f: 0 }) );
+							});	
+							break;							
+					}
+					
+					if ( extra = opts.extra )	// append extra xy data
+						for (var N=extra.length, n=0; n<N; n++)
+							xy.push( {x: extra[n], y: extra[n] } ); 
+
+					// Log( JSON.stringify(xy) );
+
+					if ( !plots ) {  // setup axes on first source
+						/*
+						svg
+						.append('path')
+						.attr('d', line([[opts.min[0],opts.min[1]],[opts.max[0],opts.min[1]]]))
+						.attr('stroke', "black")
+						.attr('stroke-width', 2)
+						.attr('fill', 'none');
+
+						svg
+						.append('path')
+						.attr('d', line([[opts.min[0],opts.min[0]],[opts.min[0],opts.max[1]]]))
+						.attr('stroke', "black")
+						.attr('stroke-width', 2)
+						.attr('fill', 'none');
+						*/
+
+						/*
+						if (opts.ref.length) 
+							svg
+							.append('path')
+							.attr('d', line(opts.ref))
+							.attr('stroke', "black")
+							.attr('stroke-width', 2)
+							.attr('fill', 'none');
+
+						if (opts.name) {   // add legend
+							var legend = svg
+							.selectAll(".legend")
+							.data(color.domain())
+							.enter()
+							.append("g")
+							.attr("class", "legend")
+							.attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+							for (var m=0,M=opts.name.length; m<M; m++) {
+								svg
+								.append("rect")
+								.attr("x", width - 18)
+								.attr("width", 25)
+								.attr("height", 25)
+								.style("fill", opts.line[m] || "black");
+
+								svg
+								.append("text")
+								.attr("x", width - 24)
+								.attr("y", 9)
+								.attr("dy", ".35em")
+								.style("text-anchor", "end")
+								.text(opts.name[m]);
+							}
+						}*/
+					}
+
+					if ( style = markerStyles[plots] || markerDef ) {  // add markers
+						svg
+						.append("g")
+						.selectAll( style )
+						.data(xy)
+						.enter()
+							.append( style )
+							.attr("class", "marker")
+							.attr("r", 3.5)
+							.attr("cx", d => xscale(d.x) )  
+							.attr("cy", d => yscale(d.y) )
+							.on("click", click)
+							.style("fill", d => color( d.f ) );
+					}
+
+					if ( style = lineStyles[plots] || lineDef ) if ( false ) { // add lines
+
+						var line = d3.svg.line()
+						.x( d => xscale(d.x) )
+						.y( d => yscale(d.y) )
+						.interpolate('linear');
+
+						svg
+						.append('path')
+						.attr('d', line(xy))
+						.attr('stroke', style )
+						.attr('stroke-width', 2)
+						.attr('fill', 'none');
+					}
+
+					if ( details = opts.details ) {  // add label details
+						svg
+						.selectAll(".text")
+						.data(xy)
+						.enter()
+						.append("text")
+						.text( d => details+":"+d.x.toFixed(2)+" , "+d.y.toFixed(2) )
+						.attr("x", d => xscale(d.x) )
+						.attr("y", d => yscale(d.y) )
+						.attr("dy", ".35em")
+						.attr("font-family", "sans-serif")
+						.attr("font-size", "11px")
+						.attr("fill", "red"); 
+					}
+
+					cb( ++plots );
+				}
+			
+				if (opts.debug > 2) alert( "case: "+rec.case );
+				
+				var
+					x = rec.x || [],
+					y = rec.y || [],
+					min = opts.min,
+					max = opts.max,
+					plots = 0,
+					hard = min[0] ? { x: [parseFloat(min[0]), parseFloat(max[0])], y: [parseFloat(min[1]), parseFloat(max[1])] } : null;
+
+				d3.select("svg").remove();
+				
+				var	
+					svg = view
+					.append("svg")
+					.attr("width", width + margin.left + margin.right)
+					.attr("height", height + margin.top + margin.bottom)
+					.append("g")
+					.attr("transform", "translate(" + margin.left + "," + margin.top + ")"),
+				
+					xscale = d3.scale.linear()
+					.domain( hard ? hard.x : [0,1])
+					.range([0, width]),
+
+					yscale = d3.scale.linear()
+					.domain( hard ? hard.y : [0,1])
+					.range([height, 0]),
+
+					colors = 10,
+					color = d3.scale.category10(),
+					
+				// need to fix this so when !hard scans over all x,y data to set domains
+				//		xscale.domain(d3.extent(xy, d => d.x )).nice();
+				//		yscale.domain(d3.extent(xy, d => d.y )).nice();
+
+					xAxis = d3.svg.axis()
+					.scale(xscale)
+					.orient("bottom"),
+
+					yAxis = d3.svg.axis()
+					.scale(yscale)
+					.orient("left"),
+
+					xaxis = svg
+					.append("g")
+					.attr("class", "x axis")
+					.attr("transform", "translate(0," + height + ")")
+					.call(xAxis)
+					.append("text")
+					.attr("class", "label")
+					.attr("x", width)
+					.attr("y", -45)
+					.attr("dy", "1em")
+					.style("text-anchor", "end")
+					.text( opts.label[0] ),
+
+					yaxis = svg
+					.append("g")
+					.attr("class", "y axis")
+					.call(yAxis)
+					.append("text")
+					.attr("class", "label")
+					.attr("transform", "rotate(-90)")
+					.attr("y", 20)
+					.attr("dy", "1em")
+					.style("text-anchor", "end")
+					.text( opts.label[1] );
+
+				color.domain( d3.range(0,colors) );
+				
+				xyplot(x, y, plots => {} );
+			});
+		});

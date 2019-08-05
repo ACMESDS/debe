@@ -1,0 +1,232 @@
+//- UNCLASSIFIED
+
+extends base
+append base_parms
+	- tech = "d3"
+
+append base_help
+	:markdown
+		Display d3 chordal chart using parameters:
+
+			src = source url returning trades [ { name: "x.y.z ...", size: N, doc: "", imports: [ "x.y.z ...", ... ]
+			name = "name" || "name%..." || "" of source record(s)
+			pivots = "key,key,..." || "" source record grouping keys
+			w = drawing width
+			h = drawing height
+			debug = level of debugging alerts
+			node,nodes,value,size,parent,doc = tree keys
+
+append base_head
+	style.
+		.group text {
+			font: 11px sans-serif;
+			pointer-events: none;
+		}
+		.group path {
+			stroke: #000;
+		}
+		path.chord {
+			stroke-width: .75;
+			fill-opacity: .75;
+		}
+		.group-tick line {
+			stroke: #000;
+		}
+		.ribbons {
+			fill-opacity: 0.67;
+		}																						  
+		body {
+			font-family: 'Open Sans', sans-serif;
+			font-size: 12px;
+			font-weight: 400;
+			background-color: #fff;
+			width: 960px;
+			height: 700px;
+			margin-top: 10px;
+		}
+
+	script.
+		var opts = {
+			ds: "#{query.pivots}"
+				? "!{query.src}.tree?name=#{query[NAME]}&_sort=#{query.pivots}"
+				: "#{query[NAME]}"
+							? "!{query.src}.schema?name=#{query[NAME]}"
+							: "!{query.src}" || "/stores/trades.json",
+
+			w: parseInt("#{query.w}") || 200,
+			h: parseInt("#{query.h}") || 200,
+			debug: parseInt("#{query.debug}"),
+			NODE: "#{query.node}" || "name",
+			NODES: "#{query.nodes}" || "children",
+			VALUE: "#{query.value}" || "value",
+			PARENT: "#{query.parent}" || "parent",
+			SIZE: "#{query.size}" || "size",
+			DOC: "#{query.doc}" || "doc"
+		};
+
+		const {NODE, NODES, VALUE, SIZE, PARENT, DOC} = opts;
+		const {isArray,isString,Load} = BASE;
+
+append base_body
+	script.
+		// Chart dimensions.
+		var
+			margin = {top: 20, right: 90, bottom: 30, left: 90},
+			width = (opts.w || 1200) - margin.left - margin.right,
+			height = (opts.h || 500) - margin.top - margin.bottom,
+																								 
+			r1 = Math.min(width, height) / 2 - 4,
+			r0 = r1 - 20,
+			format = d3.format(",.3r");
+
+		// Square matrices, asynchronously loaded; credits is the transpose of debits.
+		var 
+			debits = [],
+			credits = [];
+
+		// The chord layout, for computing the angles of chords and groups.
+		var 
+			layout = d3.chord()
+				.sortGroups(d3.descending)
+				.sortSubgroups(d3.descending)
+				.sortChords(d3.descending)
+				.padAngle(.04);
+
+		// The color scale, for different categories of "worrisome" risk.
+		var 
+			color = d3.scaleOrdinal()
+					.domain([0, 1, 2])
+					.range(["#DB704D", "#D2D0C6", "#ECD08D", "#F8EDD3"]);
+
+		// The arc generator, for the groups.
+		var arc = d3.arc()
+					.innerRadius(r0)
+					.outerRadius(r1);
+
+		// The chord generator (quadratic Bézier), for the chords.
+		var chord = d3.chord()
+					.padAngle(.04)
+					.sortSubgroups(d3.descending)
+					.sortChords(d3.descending);
+
+		// Load our data file…
+		Load( opts, data => {
+			var 
+				countries = {},
+				array = [],
+				data = isArray(data) ? data : [data],
+				n = 0;
+
+			//alert(JSON.stringify(data));
+			// Compute a unique id for each country.
+			data.forEach(function(d) {
+				d.creditor = country(d.creditor);
+				d.debtor = country(d.debtor);
+				d.debtor.risk = d.risk;
+				d.valueOf = value; // convert object to number implicitly
+			});
+
+			// Initialize a square matrix of debits and credits.
+			for (var i = 0; i < n; i++) {
+				debits[i] = [];
+				credits[i] = [];
+				for (var j = 0; j < n; j++) {
+					debits[i][j] = 0;
+					credits[i][j] = 0;
+				}
+			}
+
+			// Populate the matrices, and stash a map from id to country.
+			data.forEach(function(d) {
+				debits[d.creditor.id][d.debtor.id] = d;
+				credits[d.debtor.id][d.creditor.id] = d;
+				array[d.creditor.id] = d.creditor;
+				array[d.debtor.id] = d.debtor;
+			});
+
+			Log(debits, credits);
+			// Add an SVG element for each diagram, and translate the origin to the center.
+			var 
+				body = d3.select("body"),
+				
+				svg = body.append("svg")
+						.attr("width", width)
+						.attr("height", height)
+						.style("font", "10px sans-serif")
+						.append("g")	
+						.attr("transform", `translate(${width / 2},${width / 2})`);	
+
+				/*.selectAll("div")
+				.enter().append("div")
+				.style("display", "inline-block")
+				.style("width", w + "px")
+				.style("height", h + "px")
+				.append("svg:svg")
+				.attr("width", w)
+				.attr("height", h)
+				.append("svg:g")
+				.attr("transform", "translate(" + w / 2 + "," + h / 2 + ")" );
+				*/
+
+			//svg.data([debits, credits]);
+			Log("mat",debits,credits);
+			// For each diagram…
+			[debits, credits].forEach(function(matrix, j) {
+				Log("insvg", matrix);
+				var svg = d3.select(this);
+
+				// Compute the chord layout.
+				layout(matrix);
+
+				// Add chords.
+				svg.selectAll("path.chord")
+					.data(layout.chords)
+					.enter().append("svg:path")
+					.attr("class", "chord")
+					.style("fill", function(d) { return color(d.source[VALUE].risk); })
+					.style("stroke", function(d) { return d3.rgb(color(d.source[VALUE].risk)).darker(); })
+					.attr("d", chord)
+					.append("svg:title")
+					.text(function(d) { return d.source[VALUE].debtor[NODE] + " owes " + d.source[VALUE].creditor[NODE] + " $" + format(d.source[VALUE]) + "B."; });
+
+				// Add groups.
+				var g = svg.selectAll("g.group")
+					.data(layout.groups)
+					.enter().append("svg:g")
+					.attr("class", "group");
+
+				// Add the group arc.
+				g.append("svg:path")
+					.style("fill", function(d) { return color(array[d.index].risk); })
+					.attr("id", function(d, i) { return "group" + d.index + "-" + j; })
+					.attr("d", arc)
+					.append("svg:title")
+					.text(function(d) { return array[d.index][NODE] + " " + (j ? "owes" : "is owed") + " $" + format(d[VALUE]) + "B."; });
+
+				// Add the group label (but only for large groups, where it will fit).
+				// An alternative labeling mechanism would be nice for the small groups.
+				g.append("svg:text")
+					.attr("x", 6)
+					.attr("dy", 15)
+					.filter(function(d) { return d[VALUE] > 110; })
+					.append("svg:textPath")
+					.attr("xlink:href", function(d) { return "#group" + d.index + "-" + j; })
+					.text(function(d) { return array[d.index][NODE]; });
+			});
+
+			alert("done+");
+			// Memoize the specified country, computing a unique id.
+			function country(d) {
+				return countries[d] || (countries[d] = {
+					name: d,
+					id: n++
+					});
+			}
+
+			// Converts a debit object to its primitive numeric value.
+			function value() {
+				return +this.amount;
+			}
+		});
+
+// UNCLASSIFIED
