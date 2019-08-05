@@ -8,7 +8,7 @@ append base_help
 	:markdown
 		Display d3 circle-pack chart using parameters:
 
-			src = source url returning [ { name: "...", size: N, doc: "", nodes: [ {...}, ... ] }, ... ]
+			src = source url returning tree [ { name: "...", size: N, doc: "", nodes: [ {...}, ... ] }, ... ]
 			name = "name" || "name%..." || "" of source record(s)
 			pivots = "key,key,..." || "" source record grouping keys
 			w = drawing width
@@ -17,9 +17,6 @@ append base_help
 			node,nodes,value,size,parent,doc = tree keys
 
 append base_head
-
-	svg(width="960",height="960")
-
 	style.
 		.node {
 			cursor: pointer;
@@ -49,16 +46,23 @@ append base_head
 	script.
 		var opts = {
 			ds: "#{query.pivots}"
-				? "/!{query.src}.tree?name=#{query[NAME]}&_sort=#{query.pivots}"
+				? "!{query.src}.tree?name=#{query[NAME]}&_sort=#{query.pivots}"
 				: "#{query[NAME]}"
-							? "/!{query.src}.schema?name=#{query[NAME]}"
-							: "/!{query.src}",
+							? "!{query.src}.schema?name=#{query[NAME]}"
+							: "!{query.src}" || "/stores/flare.json",
 
-			w: parseInt("#{query.w}") || 200,
-			h: parseInt("#{query.h}") || 200,
+			url: "#{url}",
+			family: "fan,map,cpack,force,burst",
+
+			dims: {
+				margin: {top: 20, right: 90, bottom: 30, left: 90},
+				width: parseInt("#{query.w}") || 1200,
+				height: parseInt("#{query.h}") || 500
+			},
 			debug: parseInt("#{query.debug}"),
+
 			NODE: "#{query.node}" || "name",
-			NODES: "#{query.nodes}" || "nodes",
+			NODES: "#{query.nodes}" || "children",
 			VALUE: "#{query.value}" || "value",
 			PARENT: "#{query.parent}" || "parent",
 			SIZE: "#{query.size}" || "size",
@@ -69,31 +73,19 @@ append base_head
 		const {isArray,isString,Load} = BASE;
 
 append base_body
-
 	script.
+		Load( opts, (data,svg) => {
+			
 		var
-			w = opts.w || 1200,
-			h = opts.h || 500;
+			width = svg.attr("width"),
+			height = svg.attr("height"),
+			margin = opts.dims.margin.left,
+			diameter = width,
+			radius = diameter / 2,
+			g = svg.append("g")
+					.attr("transform", "translate(" + radius + "," + radius + ")");
 
 		var 
-			body = d3.select("body"),
-			msg = "p".d3tag(body, {text: "root"}),
-			url = "#{url}".replace("/fan",""),
-			title = "p".d3tag(body,	{ html: [
-						"map".tag( "/map"+url ),
-						"force".tag( "/force"+url ),
-						"fan".tag( "/fan"+url )
-					].join(" || ")
-				});
-
-		var
-			svg = d3.select("svg"),
-			margin = 20,
-			diameter = svg.attr("width"),
-			g = svg.append("g").attr("transform", "translate(" + diameter / 2 + "," + diameter / 2 + ")");
-
-		var 
-			root,
 			format = d3.format(",d"),
 			color = d3.scaleSequential([8, 0], d3.interpolateMagma);
 			/*
@@ -104,12 +96,11 @@ append base_body
 		var 
 			pack = d3.pack()
 				.size([diameter - margin, diameter - margin])
-				.padding(2);
-
-		Load( opts, data => {
-			root = d3.hierarchy( isArray(data) ? data[0] : data, d => d[NODES] )
+				.padding(2),
+			
+			root = d3.hierarchy( data[0], d => d[NODES] )
 				.sum(d => d[SIZE] )
-				.sort(function(a, b) { return b.value - a.value; });
+				.sort( (a, b) => b[SIZE] - a[SIZE] );
 
 			var 
 				focus = root,
@@ -121,21 +112,21 @@ append base_body
 				circle = g.selectAll("circle")
 					.data(nodes)
 					.enter().append("circle")
-					.attr("class", d => d.parent ? d.children ? "node" : "node node--leaf" : "node node--root" )
-					.style("fill", d => d.children ? color(d.depth) : null )
-					.on("click", d => { 
-						if (focus !== d) zoom(d);
-						d3.event.stopPropagation();
-					});
+						.attr("class", d => d.parent ? d.children ? "node" : "node node--leaf" : "node node--root" )
+						.style("fill", d => d.children ? color(d.depth) : null )
+						.on("click", d => { 
+							if (focus !== d) zoom(d);
+							d3.event.stopPropagation();
+						});
 
 			var 
 				text = g.selectAll("text")
 					.data(nodes)
 					.enter().append("text")
-					.attr("class", "label")
-					.style("fill-opacity", d => d.parent === root ? 1 : 0 )
-					.style("display", d => d.parent === root ? "inline" : "none" )
-					.text( d => d.data[NODE] );
+						.attr("class", "label")
+						.style("fill-opacity", d => d.parent === root ? 1 : 0 )
+						.style("display", d => d.parent === root ? "inline" : "none" )
+						.text( d => d.data[NODE] );
 
 			var 
 				node = g.selectAll("circle,text");

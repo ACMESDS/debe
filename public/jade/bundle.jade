@@ -8,7 +8,7 @@ append base_help
 	:markdown
 		Display d3 circle-pack chart using parameters:
 
-			src = source url returning [ { name: "x.y.z ...", size: N, doc: "", imports: [ "x.y.z ...", ... ]
+			src = source url returning trades [ { name: "x.y.z ...", size: N, doc: "", imports: [ "x.y.z ...", ... ]
 			name = "name" || "name%..." || "" of source record(s)
 			pivots = "key,key,..." || "" source record grouping keys
 			w = drawing width
@@ -34,14 +34,21 @@ append base_head
 			ds: "#{query.pivots}"
 				? "/!{query.src}.tree?name=#{query[NAME]}&_sort=#{query.pivots}"
 				: "#{query[NAME]}"
-							? "/!{query.src}.schema?name=#{query[NAME]}"
-							: "/!{query.src}",
+							? "!{query.src}.schema?name=#{query[NAME]}"
+							: "!{query.src}" || "/stores/trades.json",
 
-			w: parseInt("#{query.w}") || 200,
-			h: parseInt("#{query.h}") || 200,
+ 			url: "#{url}",
+			family: "chords,bundle",
+
+			dims: {
+				margin: {top: 20, right: 90, bottom: 30, left: 90},
+				width: parseInt("#{query.w}") || 1200,
+				height: parseInt("#{query.h}") || 500
+			},
 			debug: parseInt("#{query.debug}"),
+
 			NODE: "#{query.node}" || "name",
-			NODES: "#{query.nodes}" || "nodes",
+			NODES: "#{query.nodes}" || "children",
 			VALUE: "#{query.value}" || "value",
 			PARENT: "#{query.parent}" || "parent",
 			SIZE: "#{query.size}" || "size",
@@ -52,66 +59,54 @@ append base_head
 		const {isArray,isString,Load} = BASE;
 
 append base_body
-
 	script.
-		var
-			w = opts.w || 1200,
-			h = opts.h || 500;
+		Load( opts, (data,svg) => {
+			var
+				width = svg.attr("width"),
+				height = svg.attr("height"),
+				diameter = width,
+				radius = diameter / 2,
+				innerRadius = radius - 120;
 
-		var 
-			diameter = 960,
-			radius = diameter / 2,
-			innerRadius = radius - 120;
+			var
+				svg = svg  //.append("svg")
+						.append("g")
+						.attr( "transform", "translate(" + radius + "," + radius + ")" );
 
-		var 
-			cluster = d3.cluster()
-			.size([360, innerRadius]),
+			var 
+				cluster = d3.cluster()
+						.size([360, innerRadius]),
 
-			line = d3.radialLine()
-			.curve(d3.curveBundle.beta(0.85))
-			.radius(function(d) { return d.y; })
-			.angle(function(d) { return d.x / 180 * Math.PI; });
+				line = d3.radialLine()
+						.curve(d3.curveBundle.beta(0.85))
+						.radius(function(d) { return d.y; })
+						.angle(function(d) { return d.x / 180 * Math.PI; });
 
-		var 
-			svg = d3.select("body").append("svg")
-			.attr("width", diameter)
-			.attr("height", diameter)
-		    .append("g")
-			.attr( "transform", "translate(" + radius + "," + radius + ")" );
+			var 
+				root = packageHierarchy( data )
+						.sum(function(d) { return d[SIZE]; });
 
-		var 
-			link = svg.append("g").selectAll(".link"),
-			node = svg.append("g").selectAll(".node");
-
-		var 
-			body = d3.select("body"),
-			msg = "p".d3tag(body, {text: "root"}),
-			url = "#{url}".replace("/fan",""),
-			title = "p".d3tag(body,	{ html: [
-					].join(" || ")
-				});
-
-		Load( opts, data => {
-			var root = packageHierarchy( isArray(data) ? data : [data] )
-				  .sum(function(d) { return d.size; });
+			var 
+				link = svg.append("g").selectAll(".link"),
+				node = svg.append("g").selectAll(".node");
 
 			cluster(root);
 
 			link = link
-			.data(packageImports(root.leaves()))
-			.enter().append("path")
-			.each(function(d) { d.source = d[0], d.target = d[d.length - 1]; })
-			.attr("class", "link")
-			.attr("d", line);
+					.data(packageImports(root.leaves()))
+					.enter().append("path")
+						.each(function(d) { d.source = d[0], d.target = d[d.length - 1]; })
+						.attr("class", "link")
+						.attr("d", line);
 
 			 node = node
-			.data(root.leaves())
-			.enter().append("text")
-			.attr("class", "node")
-			.attr("dy", "0.31em")
-			.attr("transform", function(d) { return "rotate(" + (d.x - 90) + ")translate(" + (d.y + 8) + ",0)" + (d.x < 180 ? "" : "rotate(180)"); })
-			.attr("text-anchor", function(d) { return d.x < 180 ? "start" : "end"; })
-			.text(function(d) { return d.data.key; });			
+					.data(root.leaves())
+					.enter().append("text")
+						.attr("class", "node")
+						.attr("dy", "0.31em")
+						.attr("transform", function(d) { return "rotate(" + (d.x - 90) + ")translate(" + (d.y + 8) + ",0)" + (d.x < 180 ? "" : "rotate(180)"); })
+						.attr("text-anchor", function(d) { return d.x < 180 ? "start" : "end"; })
+						.text(function(d) { return d.data.key; });			
 		});
 
 		// Lazily construct the package hierarchy from class names.

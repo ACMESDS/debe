@@ -2273,10 +2273,36 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 													{ Name: actor }, err => Log("nlpactor", err) );
 											});
 
-											var target = nlp.actors.pop();
-											nlp.actors.forEach( source => {
-												Each( nlp.topics, topic => {
-													if ( topic != "dnc" ) 
+											var 
+												actors = nlp.actors,
+												topics = nlp.topics, 
+												target = actors.pop(), 
+												greedy = false;
+											
+											if ( greedy )
+												actors.forEach( source => {
+													Each( topics, topic => {
+														if ( topic != "dnc" ) 
+															sql.query(
+																"INSERT INTO app.nlpedges SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1",
+																{
+																	Source: source,
+																	Target: target,
+																	Link: topic,
+																	Task: "drugs",		//< needs to be fixed to refer to host usecase prefix
+																	Hits: 1
+																}, err => Log("nlpedge", err) );
+													});
+												});
+											
+											else {
+												var
+													keys = Object.keys(topics),
+													keys = keys.sort( (a,b) => keys[b] - keys[a] ),
+													topic = topics[ keys[0] || "" ] || "dnc";
+												
+												if ( topic != "dnc" ) 
+													actors.forEach( source => {
 														sql.query(
 															"INSERT INTO app.nlpedges SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1",
 															{
@@ -2286,8 +2312,8 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 																Task: "drugs",		//< needs to be fixed to refer to host usecase prefix
 																Hits: 1
 															}, err => Log("nlpedge", err) );
-												});
-											});
+													});
+											}
 										}
 										else
 											saveEvents(ctx.Save, ctx);
@@ -4547,14 +4573,19 @@ assessments from our worldwide reporting system, please contact ${poc}.
 						email: 'alice@example.com',
 					},
 				}, (err, results) => {
-					if (err) throw err;
-					var result = results[0];
-					if (!result) {
-						Log('neodb test returned no records.');
-					} 
+					if (err) {
+						Trace( err );
+						DEBE.neodb = null;
+					}
 					else {
-						var user = result['u'];
-						Log("neodb test", JSON.stringify(user, null, 4));
+						var result = results[0];
+						if (!result) {
+							Log('neodb test returned no records.');
+						} 
+						else {
+							var user = result['u'];
+							Log("neodb test", JSON.stringify(user, null, 4));
+						}
 					}
 				});
 				

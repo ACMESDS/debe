@@ -2,6 +2,18 @@ extends layout
 append layout_parms
 	- check = false
 append layout_body
-	p this is a test
+	script.
+		alert("test");
+		alert("#{urls.master}");
+		alert("#{JSON.stringify(projs)}");
+
+	p this is a test and only a test
 	:markdown
-		we are done
+		### (U) here is some markdown
+
+		enter some code:
+
+			x = f(y)
+
+		das all
+	

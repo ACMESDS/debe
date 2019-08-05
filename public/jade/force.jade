@@ -8,7 +8,7 @@ append base_help
 	:markdown
 		Display d3 force graph:
 
-			src = source url returning [ { name: "...", size: N, nodes: [ {...}, ... ] }, ... ]
+			src = source url returning tree [ { name: "...", size: N, nodes: [ {...}, ... ] }, ... ]
 			pivots = key,key,...
 			w = drawing width
 			h = drawing height
@@ -33,16 +33,23 @@ append base_head
 	script.
 		var opts = {
 			ds: "#{query.pivots}"
-				? "/!{query.src}.tree?name=#{query.name}&_sort=#{query.pivots}"
+				? "!{query.src}.tree?name=#{query.name}&_sort=#{query.pivots}"
 				: "#{query.name}"
-							? "/!{query.src}.schema?name=#{query.name}"
-							: "/!{query.src}",
+							? "!{query.src}.schema?name=#{query.name}"
+							: "!{query.src}" || "/stores/flare.json",
 
-			w: parseInt("#{query.w}") || 200,
-			h: parseInt("#{query.h}") || 200,
+			url: "#{url}",
+			family: "fan,map,cpack,force,burst",
+
+			dims: {
+				margin: {top: 20, right: 90, bottom: 30, left: 90},
+				width: parseInt("#{query.w}") || 1200,
+				height: parseInt("#{query.h}") || 500
+			},
 			debug: parseInt("#{query.debug}"),
+			
 			NODE: "#{query.node}" || "name",
-			NODES: "#{query.nodes}" || "nodes",
+			NODES: "#{query.nodes}" || "children",
 			VALUE: "#{query.value}" || "value",
 			PARENT: "#{query.parent}" || "parent",
 			SIZE: "#{query.size}" || "size"										
@@ -52,178 +59,152 @@ append base_head
 		const {isArray,Load} = BASE;
 										
 append base_body
-
 	script.
-		function update() {
-			var 
-				graph = flatten(root),
-				nodes = graph.nodes,
-				links = graph.links; 
+		Load( opts, (data,svg) => {
+			function update() {
+				function flatten(root) {	// Returns a list of all nodes under the root.
+					var nodes = [], links = [], id = 0;
 
-			//Log("nodes", nodes);
-			var sim = d3.forceSimulation( nodes )
-				.on("tick", () => {
-					xlink
-						.attr("x1", d => d.source.x )
-						.attr("y1", d => d.source.y )
-						.attr("x2", d => d.target.x )
-						.attr("y2", d => d.target.y );
+					function recurse(node) {
+						if (!node.id) node.id = ++id;
 
-					xnode
-						.attr("cx", d => d.x )
-						.attr("cy", d => d.y );
-				})
-				.force( "charge", d3.forceManyBody().strength( d => d._children ? -d[SIZE] / 100 : -30 ))
-				.force( "link", d3.forceLink( links ).distance( d => d.target._children ? 80 : 30 ))
-				.force( "center", d3.forceCenter() );
-										
-			// Restart the force layout.
-			/*sim
-				.nodes(nodes)
-				.links(links)
-				.start();  */
+						nodes.push(node);
 
-			// Update the links
-			var	xlink = vis.selectAll("line.link")
-				.data(links, d => d.target.id );
- 
-			// Enter any new links.
-			xlink.enter().insert("line", ".node")
-				.attr("class", "link")
-				.attr("x1", d => d.source.x )
-				.attr("y1", d => d.source.y )
-				.attr("x2", d => d.target.x )
-				.attr("y2", d => d.target.y );
+						return node[SIZE] = (children = node[NODES]) 
+							? children.reduce( (weight, child) => {
+								links.push({
+									source: node,
+									target: child
+								});						
+								return weight + recurse(child);
+							}, 2)
+							:  2;
+					}
 
-			// Exit any old links.
-			xlink.exit().remove();
+					root[SIZE] = recurse(root);
+					return {
+						nodes: nodes,
+						links: links
+					};
+				}
 
-			// Update the nodes
-			var xnode = vis.selectAll("circle.node")
-				.data(nodes, d => d.id )
-				.style("fill", color);
+				function details(d) {
+					var isView = d.doc.constructor == String;
 
-			xnode.transition()
-				.attr("r", d => 5 );
+					var doc = window.open(
+						isView ? d.doc : "",
+						"_blank",
+						"left="+d.x+"px,"
+						+ "top="+d.y+"px,"
+						+ "width=50,height=50,location=0,menubar=0,status=0,titlebar=0,toolbar=0");
 
-			// Enter any new nodes.
-			xnode.enter().append("circle")
-				.attr("class", "node")
-				.attr("cx", d => d.x )
-				.attr("cy", d => d.y )
-				.attr("r", d => 2 )
-				.style("fill", color)
-				.on("click", click);
-				//.call(force.drag);
+					if ( !isView )
+						doc.document.write(JSON.stringify( d.doc ));
 
-			// Exit any old nodes.
-			xnode.exit().remove();
-		}
+					//var g = d3.select(this); // the node
 
-		function details(d) {
-			var isView = d.doc.constructor == String;
+					/*var add = d3.select("body")
+						.append("iframe")
+						.attr("src", "/home.body")
+						.attr("width",100)
+						.attr("height",100);*/
 
-			var doc = window.open(
-				isView ? d.doc : "",
-				"_blank",
-				"left="+d.x+"px,"
-				+ "top="+d.y+"px,"
-				+ "width=50,height=50,location=0,menubar=0,status=0,titlebar=0,toolbar=0");
+					/*var div = d3.select("body")
+							.append("div")
+							.attr("pointer-events","none")
+							.attr("class","tooltip")
+							.style("opacity",1)
+							.html("hello<br>there")
+							.style("left", (d.x+50))
+							.style("top", (d.y));*/
+				}
 
-			if ( !isView )
-				doc.document.write(JSON.stringify( d.doc ));
+				// Color leaf nodes orange, and packages white or blue.
+				function color(d) {
+					return d._children ? "#3182bd" : d[NODES] ? "#c6dbef" : "#fd8d3c";
+				}
 
-			//var g = d3.select(this); // the node
+				var 
+					graph = flatten(root),
+					nodes = graph.nodes,
+					links = graph.links; 
 
-			/*var add = d3.select("body")
-				.append("iframe")
-				.attr("src", "/home.body")
-				.attr("width",100)
-				.attr("height",100);*/
+				//Log("nodes", nodes);
+				var sim = d3.forceSimulation( nodes )
+					.on("tick", () => {
+						xlink
+							.attr("x1", d => d.source.x )
+							.attr("y1", d => d.source.y )
+							.attr("x2", d => d.target.x )
+							.attr("y2", d => d.target.y );
 
-			/*var div = d3.select("body")
-					.append("div")
-					.attr("pointer-events","none")
-					.attr("class","tooltip")
-					.style("opacity",1)
-					.html("hello<br>there")
-					.style("left", (d.x+50))
-					.style("top", (d.y));*/
-		}
+						xnode
+							.attr("cx", d => d.x )
+							.attr("cy", d => d.y );
+					})
+					.force( "charge", d3.forceManyBody().strength( d => d._children ? -d[SIZE] / 100 : -30 ))
+					.force( "link", d3.forceLink( links ).distance( d => d.target._children ? 80 : 30 ))
+					.force( "center", d3.forceCenter() );
 
-		function bang() {
-			alert("hello! ");
-		}
+				// Restart the force layout.
+				/*sim
+					.nodes(nodes)
+					.links(links)
+					.start();  */
 
-		// Color leaf nodes orange, and packages white or blue.
-		function color(d) {
-			return d._children ? "#3182bd" : d[NODES] ? "#c6dbef" : "#fd8d3c";
-		}
+				// Update the links
+				var	xlink = svg.selectAll("line.link")
+					.data(links, d => d.target.id );
 
-		// Toggle children on click.
-		function click(d) {
-			if (d[NODES]) {
-				d._children = d[NODES];
-				d[NODES] = null;
-			} else {
-				d[NODES] = d._children;
-				d._children = null;
+				// Enter any new links.
+				xlink.enter().insert("line", ".node")
+					.attr("class", "link")
+					.attr("x1", d => d.source.x )
+					.attr("y1", d => d.source.y )
+					.attr("x2", d => d.target.x )
+					.attr("y2", d => d.target.y );
+
+				// Exit any old links.
+				xlink.exit().remove();
+
+				// Update the nodes
+				var xnode = svg.selectAll("circle.node")
+					.data(nodes, d => d.id )
+					.style("fill", color);
+
+				xnode.transition()
+					.attr("r", d => 5 );
+
+				// Enter any new nodes.
+				xnode.enter().append("circle")
+					.attr("class", "node")
+					.attr("cx", d => d.x )
+					.attr("cy", d => d.y )
+					.attr("r", d => 2 )
+					.style("fill", color)
+					.on("click", d => {		// Toggle children on click.
+						if (d[NODES]) {
+							d._children = d[NODES];
+							d[NODES] = null;
+						} else {
+							d[NODES] = d._children;
+							d._children = null;
+						}
+
+						if (d.doc) details(d);
+						update();
+					});
+					//.call(force.drag);
+
+				// Exit any old nodes.
+				xnode.exit().remove();
 			}
 
-			if (d.doc) details(d);
-			update();
-		}
-		
-		function flatten(root) {	// Returns a list of all nodes under the root.
-			var nodes = [], links = [], id = 0;
+			var
+				width = svg.attr("width"),
+				height = svg.attr("height"),			
+				root = data[0];				
 
-			function recurse(node) {
-				if (!node.id) node.id = ++id;
-
-				nodes.push(node);
-				
-				return node[SIZE] = (children = node[NODES]) 
-					? children.reduce( (weight, child) => {
-						links.push({
-							source: node,
-							target: child
-						});						
-						return weight + recurse(child);
-					}, 2)
-					:  2;
-			}
-
-			root[SIZE] = recurse(root);
-			return {
-				nodes: nodes,
-				links: links
-			};
-		}
-
-		var	
-			width = opts.w || 1200,
-			height = opts.h || 500,
-			node,
-			link,
-			root;
-
-		var 
-			body = d3.select("body"),
-			msg = "p".d3tag(body, {text: "details: "}),
-			url = "#{url}".replace("/force",""),
-			title = "p".d3tag(body,	{ html: [
-						"fan".tag( "/fan"+url ),
-						"map".tag( "/map"+url ),
-						"cpack".tag( "/cpack"+url )				
-					].join(" || ")
-				} ),
-		
-			vis = d3.select("#content").append("svg")
-				.attr("width", width)
-				.attr("height", height);
-
-		Load( opts, data => {
-			root = isArray(data) ? data[0] : data;
 			root.fixed = true;
 			root.x = width / 2;
 			root.y = height / 2;

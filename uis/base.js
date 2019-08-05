@@ -141,87 +141,123 @@ var BASE = {
 	Load: function (opts, cb) {		
 	/**
 	@method BASE.Load
-	Callback cb(recs) with records recs loaded from path 
+	Callback cb(recs, svg) with a d3 svg dom target, and the records recs = [rec, ...] that
+	were loaded from the source path 
 	
-		opts.ds = "/src?x:=STORE$.x[$WIDGET]&y:=STORE$.y[$WIDGET]..." 
+		opts.ds = "/src?x:=STORE$.x[$KEY]&y:=STORE$.y[$KEY]..." 
 	
-	where optional source-control WIDGETs are defined by
+	as updated by optional KEY dom-inputs:
 	
-		opts.WIDGET = [ ARG, ... ].TYPE 
+		opts.KEY = [ ARG, ... ].TYPE   ||  function F( ... )
 		
-	where TYPE = range | list | select | ... specifies the ui widget that controls
-	source reloading.
+	where TYPE = range | list | select | ... specifies the type of dom input (with 
+	ARGs = [min,max,...] ), or it used F("make",key) to make the dom input and 
+	F("update",ds,val) to return an updated opts.ds source path given the input's 
+	present value.
 	
 	The global d3 must be available.
 	
 	@param {Object} opts source loading options {ds: "/path", ... }
 	@param {Function} cb callback(recs)
 	*/
-		function loader (recs) {
-			if (opts.debug>1) alert("recs"+JSON.stringify(recs));
+		function loadData( path, opts ) {
+			
+			//v3 d3.json( path , loader );
+			//alert( path );
+			d3.json( path ).then( recs => {
+				if (opts.debug>1) alert("recs"+JSON.stringify(recs));
 
-			if ( recs ) cb(recs);
+				if ( recs ) cb( isArray(recs) ? recs : [recs] , opts.svg );
+			});
 		}
 		
-		if (opts.debug) alert( "opts: "+JSON.stringify(opts) ); 
-
-		var 
-			view = d3.select("body"),
-			widgets = opts.widgets || {},
-			def = "0:100:1".split(":");
-		
-		def.type = "range";
-		
-		opts.ds.replace(/\$(\w+)/g, (str,key) => {
-			var 
-				id = "_"+key,
-				widget = widgets[key] || ( widgets[key] = def );
+		if (d3) {
+			if (opts.debug) alert( "opts: "+JSON.stringify(opts) ); 
 			
-			if ( !widget.created ) {
-				widget.created = true;
+			d3.select("svg").remove();
+			
+			var 
+				isFunction = BASE.isFunction,
+				body = d3.select("body"),
+				dims = opts.dims || { margin: null },
+				margin = dims.margin || {top: 20, right: 90, bottom: 30, left: 90},
+				svg = opts.svg = body.append("svg") 
+								.attr('width', (opts.width || 1200) - margin.left - margin.right )
+								.attr('height', (opts.height || 500) - margin.top - margin.bottom ),
+								//.append("g")
+								//.attr("transform", "translate(" + opts.dims.margin.left + "," + opts.dims.margin.top + ")"),
 				
-				switch (widget.type) {
-					case "range":
-						var input = "input".d3tag(view, {type: "number", min: widget[0], max: widget[1], step: widget[2], value: widget[0], id:id} );
-						break;
-						
-					case "select":
-						var input = "select".d3tag(view, { value: widget[0], id:id} );
-						
-						widget.forEach( (arg,n) => input.insert("option").attr( "value", arg ).text( arg ) );
-						break;
-						
-					case "list":
-						var input = "input".d3tag(view, {type: "text", value: widget[0], id:id} );
-						break;
-						
-					default:
-						var input = null;
+				widgets = opts.widgets || {},
+				def = "0:100:1".split(":");
+
+			var 
+				body = d3.select("body"),
+				url = opts.url || "",
+				family = (opts.family || "").split(",");
+			
+			url.replace( /\/(.*).view(.*)/, (str,view,query) => {
+				family.forEach( (fam,n) => family[n] = fam.tag( `/${fam}.view?${query}` ) );
+			});
+
+			"p".d3tag(body,	{ html: family.join(" || ")	} );
+
+			def.type = "range";
+
+			opts.ds.replace(/\$(\w+)/g, (str,key) => {
+				var 
+					id = "_"+key,
+					widget = widgets[key] || ( widgets[key] = def );
+
+				if ( !widget.created ) {
+					widget.created = true;
+
+					if ( isFunction(widget) ) 
+						var input = widget("make",key);
+					
+					else
+						switch (widget.type) {
+							case "range":
+								var input = "input".d3tag(body, {type: "number", min: widget[0], max: widget[1], step: widget[2], value: widget[0], id:id} );
+								break;
+
+							case "select":
+								var input = "select".d3tag(body, { value: widget[0], id:id} );
+
+								widget.forEach( (arg,n) => input.insert("option").attr( "value", arg ).text( arg ) );
+								break;
+
+							case "list":
+								var input = "input".d3tag(body, {type: "text", value: widget[0], id:id} );
+								break;
+
+							default:
+								var input = null;
+						}
+
+					Log( `make widget ${key} id = ${id} type = ${widget.type}` );
+
+					if (input) input.on("change", () => {
+						//Log(input);
+						var 
+							el = input._groups[0][0], //v3 use input[0][0],		// dom is a major Kludge!
+							value = el.value,
+							id = el.id,
+							key = id.substr(1),
+							reg = new RegExp( `\\$${key}` , "g" ),
+							path = isFunction(widget) ? widget("update", opts.ds,value) : opts.ds.replace( reg, value );
+
+						//Log(input[0][0]);
+						Log(`adjust ${key}=${value} ${opts.ds} -> ${path}`);
+						loadData( path, opts );
+					});
 				}
-				
-				Log( `new ${key} id = ${id} type = ${widget.type}` );
+			});
 
-				if (input) input.on("change", () => {
-					//Log(input);
-					var 
-						el = input._groups[0][0], //v3 use input[0][0],		// dom is a major Kludge!
-						value = el.value,
-						id = el.id,
-						key = id.substr(1),
-						reg = new RegExp( `\\$${key}` , "g" ),
-						ds = opts.ds.replace( reg, value );
+			loadData( opts.ds.replace(/\$\w+/g, "0"), opts );
+		}
 
-					//Log(input[0][0]);
-					Log(`adjust ${key}=${value} ds=${opts.ds} -> ${ds}`);
-					//v3 d3.json( ds , loader );
-					d3.json( ds ).then(loader);
-				});
-			}
-		});
-		
-		d3.json( opts.ds.replace(/\$\w+/g, "0") ).then(loader); 
-		//v3 d3.json( opts.ds.replace(/\$\w+/g, "0") , loader); 
-
+		else 
+			alert("BASE.Load needs d3");
 	},
 	
 	alert: "Skinning error: ",

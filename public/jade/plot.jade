@@ -15,6 +15,7 @@ append base_help
 			w = drawing width
 			h = drawing height
 			debug = level send debugging alerts
+			grid = X,Y axes grid
 			line = color,color, ... line color
 			marker = style,style, ... line markers
 			label = X,Y labels
@@ -70,15 +71,22 @@ append base_head
 	script.
 		var 
 			opts = {  // define plot options
-				ds: "/!{query.src}?name=#{query.name}&x:=#{query.x}&y:=#{query.y}&case:=name",
-				w: parseInt("#{query.w}") || 200,
-				h: parseInt("#{query.h}") || 200,
+				ds: 
+					"!{query.src}"
+						? "!{query.src}?name=#{query.name}&x:=#{query.x}&y:=#{query.y}&case:=name"
+						:  "regress?name=test2&x:=Save_train$.x[$chan]&y:=Save_train$.y[$chan]&case:=name",
+				dims: {
+					margin: {top: 20, right: 90, bottom: 30, left: 90},
+					width: parseInt("#{query.w}") || 1200,
+					height: parseInt("#{query.h}") || 500
+				},
 				debug: parseInt("#{query.debug}"),
+				grid: ("#{query.grid}" || "1,1").split(","),
 				marker: ( "#{query.marker}" || "circle" ).option(),
 				line: ( "#{query.line}" || "black" ).option(),
 				label: ( "#{query.label}" || "x,y" ).option(),
-				min: "#{query.min}".split(","),
-				max: "#{query.max}".split(","),
+				min: ("#{query.min}" || "0,0").split(","),
+				max: ("#{query.max}" || "1,1").split(","),
 				extra: "#{query.extra}".option(),
 				details: "#{query.details}",
 				index: "#{query.index}".option(),
@@ -88,37 +96,20 @@ append base_head
 				}
 			};
 
+		const {NODE, NODES, VALUE, SIZE, PARENT, DOC} = opts;
+		const {isString,isArray,Load} = BASE;
+
 append base_body
-
 	script.
-		function click(d) {
-
-			if (details = d[2] ) {
-				var isView = details.constructor == String;
-
-				var doc = window.open(
-					isView ? d[2] : "",
-					"_blank",
-					"left="+d.x+"px,"
-					+ "top="+d.y[plots]+"px,"
-					+ "width=50,height=50,location=0,menubar=0,status=0,titlebar=0,toolbar=0");
-
-				if ( !isView )
-					doc.document.write(JSON.stringify( details ));
-			}
-		}
-
-		const {Load} = BASE;
-
-		var 
-			margin = {top: 20, right: 80, bottom: 30, left: 50},
-			width = (opts.w || 800) - margin.left - margin.right,
-			height = (opts.h || 400) - margin.top - margin.bottom,
-
-			view = d3.select("#content");
-			
-		Load( opts, recs => {
+		Load( opts, (recs,svg) => {
 			var 
+				margin = opts.dims.margin,
+				width = svg.attr("width"),
+				height = svg.attr("height"),			
+				svg = svg.append("g")
+						.attr("transform", "translate(" + margin.left + "," + margin.top + ")"),
+				
+				body = d3.select("body"),
 				markerStyles = opts.marker || [],
 				markerDef = markerStyles[0],
 				lineStyles = opts.line || [],
@@ -214,7 +205,6 @@ append base_body
 						.attr('stroke-width', 2)
 						.attr('fill', 'none');
 						*/
-
 						/*
 						if (opts.ref.length) 
 							svg
@@ -253,48 +243,60 @@ append base_body
 					}
 
 					if ( style = markerStyles[plots] || markerDef ) {  // add markers
-						svg
-						.append("g")
-						.selectAll( style )
-						.data(xy)
-						.enter()
-							.append( style )
-							.attr("class", "marker")
-							.attr("r", 3.5)
-							.attr("cx", d => xscale(d.x) )  
-							.attr("cy", d => yscale(d.y) )
-							.on("click", click)
-							.style("fill", d => color( d.f ) );
+						svg.append("g")
+								.selectAll( style )
+								.data(xy)
+								.enter()
+									.append( style )
+									.attr("class", "marker")
+									.attr("r", 3.5)
+									.attr("cx", d => xscale(d.x) )  
+									.attr("cy", d => yscale(d.y) )
+									.on("click", d => {
+										if (details = d[2] ) {
+											var isView = details.constructor == String;
+
+											var doc = window.open(
+												isView ? d[2] : "",
+												"_blank",
+												"left="+d.x+"px,"
+												+ "top="+d.y[plots]+"px,"
+												+ "width=50,height=50,location=0,menubar=0,status=0,titlebar=0,toolbar=0");
+
+											if ( !isView )
+												doc.document.write(JSON.stringify( details ));
+										}
+									})
+									.style("fill", d => color( d.f ) );
 					}
 
 					if ( style = lineStyles[plots] || lineDef ) if ( false ) { // add lines
 
-						var line = d3.svg.line()
-						.x( d => xscale(d.x) )
-						.y( d => yscale(d.y) )
-						.interpolate('linear');
+						var line = d3.line()
+								.x( d => xscale(d.x) )
+								.y( d => yscale(d.y) )
+								.interpolate('linear');
 
 						svg
-						.append('path')
-						.attr('d', line(xy))
-						.attr('stroke', style )
-						.attr('stroke-width', 2)
-						.attr('fill', 'none');
+								.append('path')
+								.attr('d', line(xy))
+								.attr('stroke', style )
+								.attr('stroke-width', 2)
+								.attr('fill', 'none');
 					}
 
 					if ( details = opts.details ) {  // add label details
-						svg
-						.selectAll(".text")
-						.data(xy)
-						.enter()
-						.append("text")
-						.text( d => details+":"+d.x.toFixed(2)+" , "+d.y.toFixed(2) )
-						.attr("x", d => xscale(d.x) )
-						.attr("y", d => yscale(d.y) )
-						.attr("dy", ".35em")
-						.attr("font-family", "sans-serif")
-						.attr("font-size", "11px")
-						.attr("fill", "red"); 
+						svg.selectAll(".text")
+								.data(xy)
+								.enter()
+										.append("text")
+										.text( d => details+":"+d.x.toFixed(2)+" , "+d.y.toFixed(2) )
+										.attr("x", d => xscale(d.x) )
+										.attr("y", d => yscale(d.y) )
+										.attr("dy", ".35em")
+										.attr("font-family", "sans-serif")
+										.attr("font-size", "11px")
+										.attr("fill", "red"); 
 					}
 
 					cb( ++plots );
@@ -310,23 +312,16 @@ append base_body
 					plots = 0,
 					hard = min[0] ? { x: [parseFloat(min[0]), parseFloat(max[0])], y: [parseFloat(min[1]), parseFloat(max[1])] } : null;
 
-				d3.select("svg").remove();
+				//d3.select("svg").remove();
 				
-				var	
-					svg = view
-					.append("svg")
-					.attr("width", width + margin.left + margin.right)
-					.attr("height", height + margin.top + margin.bottom)
-					.append("g")
-					.attr("transform", "translate(" + margin.left + "," + margin.top + ")"),
-				
+				var
 					xscale = d3.scaleLinear()
-					.domain( hard ? hard.x : [0,1])
-					.range([0, width]),
+							.domain( hard ? hard.x : [0,1])
+							.range([0, width]),
 
 					yscale = d3.scaleLinear()
-					.domain( hard ? hard.y : [0,1])
-					.range([height, 0]),
+							.domain( hard ? hard.y : [0,1])
+							.range([height, 0]),
 
 					colors = 10,
 					color = d3.scaleOrdinal( d3.schemeCategory10 ),
@@ -336,34 +331,36 @@ append base_body
 				//		yscale.domain(d3.extent(xy, d => d.y )).nice();
 
 					xAxis = d3.axisBottom(xscale),
+					yAxis = d3.axisLeft(yscale);
+				
+				for (var n=0, N=parseInt(opts.grid[0] || "1"), del=height/N, off=(N==1) ? height/2 : 0; n<N; n++, off+=del) {
+					svg.append("g")
+							.attr("class", "x axis")
+							.attr("transform", "translate(0," + off + ")")
+							.call(xAxis)
+							.append("text")
+							.attr("class", "label")
+							.attr("x", width)
+							.attr("y", -45)
+							.attr("dy", "1em")
+							.style("text-anchor", "end")
+							.text( opts.label[0] );
+				}
 
-					yAxis = d3.axisLeft(yscale),
-
-					xaxis = svg
-					.append("g")
-					.attr("class", "x axis")
-					.attr("transform", "translate(0," + height + ")")
-					.call(xAxis)
-					.append("text")
-					.attr("class", "label")
-					.attr("x", width)
-					.attr("y", -45)
-					.attr("dy", "1em")
-					.style("text-anchor", "end")
-					.text( opts.label[0] ),
-
-					yaxis = svg
-					.append("g")
-					.attr("class", "y axis")
-					.call(yAxis)
-					.append("text")
-					.attr("class", "label")
-					.attr("transform", "rotate(-90)")
-					.attr("y", 20)
-					.attr("dy", "1em")
-					.style("text-anchor", "end")
-					.text( opts.label[1] );
-
+				for (var n=0, N=parseInt(opts.grid[1] || "1"), del=width/N, off=(N==1) ? width/2 : 0; n<N; n++, off+=del) {
+					svg.append("g")
+							.attr("class", "y axis")
+							.attr("transform", "translate(" + off + ",0)")
+							.call(yAxis)
+							.append("text")
+							.attr("class", "label")
+							.attr("transform", "rotate(-90)")
+							.attr("y", 20)
+							.attr("dy", "1em")
+							.style("text-anchor", "end")
+							.text( opts.label[1] );
+				}
+				
 				color.domain( d3.range(0,colors) );
 				
 				xyplot(x, y, plots => {} );
