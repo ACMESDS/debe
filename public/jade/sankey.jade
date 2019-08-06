@@ -66,7 +66,7 @@ append base_body
 			function partition(data) {
 				alert( `sankey${align[0].toUpperCase()}${align.slice(1)}` );
 				var sankey = d3.sankey()
-						.nodeAlign(d3[`sankey${align[0].toUpperCase()}${align.slice(1)}`])
+						//.nodeAlign(d3[`sankey${align[0].toUpperCase()}${align.slice(1)}`])
 						.nodeWidth(15)
 						.nodePadding(10)
 						.extent([[1, 5], [width - 1, height - 5]]);
@@ -89,7 +89,7 @@ append base_body
 			
 			svg.attr("viewBox", [0, 0, width, height]);
 			
-			const {nodes, links} = partition(data);
+			const {nodes, links} = partition(data[0]);
 
 			Log( nodes, links );
 			

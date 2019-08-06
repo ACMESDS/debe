@@ -6,9 +6,9 @@ append base_parms
 
 append base_help
 	:markdown
-		Display d3 tree-map chart using parameters:
+		Display d3 world map chart using parameters:
 
-			src = source url returning tree [ { name: "...", size: N, doc: "", nodes: [ {...}, ... ] }, ... ]
+			src = source url returning map [ { name: "...", code: "", doc: "", lat: N, lon: N, ... }, ... ]
 			name = "name" || "name%..." || "" of source record(s)
 			pivots = "key,key,..." || "" source record grouping keys
 			w = drawing width
@@ -37,10 +37,10 @@ append base_head
 				? "!{query.src}.tree?name=#{query[NAME]}&_sort=#{query.pivots}"
 				: "#{query[NAME]}"
 							? "!{query.src}.schema?name=#{query[NAME]}"
-							: "!{query.src}" || "/stores/worldatlas.json",
+							: "!{query.src}" || "mapdata.json",
 
 			url: "#{url}",
-			family: "usmap,worldmap",
+			family: "usmap,usmap",
 
 			dims: {
 				margin: {top: 20, right: 90, bottom: 30, left: 90},
@@ -58,33 +58,142 @@ append base_head
 		};
 		
 		const {NODE, NODES, VALUE, SIZE, PARENT, DOC} = opts;
+		const {isString,isArray,Load} = BASE;
 
 append base_body
 	div(id="container")
-	script(src="/clients/topo/topojson.js")
+	div(class="map",id="basic")
+	script(src="/clients/topojson.js")
+	script(src="/clients/datamaps.world.js")
 	script.
-		const {isString,isArray,Load} = BASE;
-		alert("topo", document.topology);
-		Load( opts, (data,svg) => {
-			var
-				width = svg.attr("width"),
-				height = svg.attr("height");
+		Log("d3",d3.ver,d3.version);
+		d3.json( "/stores/worldatlas.json" ).then( world => {		// country outlines
 
+			// map controls
+			var
+				maps = {
+					stereographic: d3.geoStereographic,
+					orthographic: d3.geoOrthographic,
+					azEqArea: d3.geoAzimuthalEqualArea,
+					azEqDistance: d3.geoAzimuthalEquidistance,
+					gnomonic: d3.geoGnomonic,
+					eqEarth:  d3.geoEqualEarth,
+					conicConformal: d3.geoConicConformal
+				},
+
+				body = d3.select("body"),
+				input = "select".d3tag(body, { value: "stereographic", id:"_layout"} );
+
+			Object.keys(maps)
+			.forEach( (arg,n) => input.insert("option").attr( "value", arg ).text( arg ) );
+
+			input.on( "change", () => {
+				var 
+					el = input._groups[0][0], //v3 use input[0][0],		// dom is a major Kludge!
+					value = el.value,
+					id = el.id;
+
+				update(value);				
+			});
+			/*
 			var 
 				//context = d3.select("canvas").node().getContext("2d"),
 				canvas = d3.select('#container')
 						.append('canvas')
-						.attr('width', width)
-						.attr('height', height),
+						.attr('width', opts.dims.width)
+						.attr('height', opts.dims.height),
 
-				context = canvas.node().getContext('2d'),
+				context = canvas.node().getContext('2d');
 
-				path = d3.geoPath(d3.geoOrthographic(), context);
+			update( "stereographic" );
+			*/
+			function update(layout) {
+				//canvas.remove();
+				var path = d3.geoPath( maps[layout](), context );
+						//d3.geoPath(d3.geoOrthographic(), context);
+						// d3.geoPath(d3.geoStereographic(), context);
 
-			alert("paths");
-			context.beginPath();
-			path(topojson.mesh(data));
-			context.stroke();
+				context.beginPath();
+				path(topojson.mesh(world));
+				context.stroke();
+			}
+
+			d3.json( "/mapdata.json" ).then( maps => {	// country base data
+				var cmap = {};
+				maps.forEach( map => {
+					cmap[map.name.toUpperCase()] = {
+						fillKey: map.code.toUpperCase(),
+						info: map.doc
+					}
+				});
+
+				Log(cmap);
+
+				Load( opts, (evs,svg) => {		// country event data
+					var vmap = [];
+					
+					if (false)
+					evs.forEach( ev => {
+						vmap.push({
+							name: ev.Source,
+							radius: ev.Radius,
+							longitude: ev.Location.x,
+							latitude: ev.Location.y,
+							fillKey: "VOXEL"
+						});	
+					});
+					
+					var
+						width = svg.attr("width"),
+						height = svg.attr("height");
+					
+					if ( true ) {
+						var
+							map = new Datamap({
+								//responsive: true,
+
+								//bubbles: vmap,
+
+								element: document.getElementById('basic')
+								/*
+								geographyConfig: {
+									popupTemplate: function (geo,data) {
+										return [
+											geo ? geo.properties.name : "",
+											data ? data.info : "nada"
+										].join("<br>").tag("div",{class:"hoverinfo"});
+									}
+								},
+
+								fills: {
+									HIGH: '#afafaf',
+									LOW: '#123456',
+									MEDIUM: 'blue',
+									VOXEL: 'red', //'rgb(1,0,0)',
+									defaultFill: 'green'
+								},
+
+								data: cmap
+								*/
+							});
+						/*
+						map.bubbles(vmap, {
+							popupTemplate: function (geo,data) {
+								return [
+									//geo ? geo.properties.name : "",
+									data ? JSON.stringify(data) : "nada"
+								].join("<br>").tag("div",{class:"hoverinfo"});
+							}});
+
+						map.legend();
+
+						d3.select(window).on("resize", function () {
+						map.resize();
+					});	
+						*/
+					}
+				});
+			});
 		});
-		
+
 // UNCLASSIFIED

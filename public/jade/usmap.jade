@@ -6,9 +6,9 @@ append base_parms
 
 append base_help
 	:markdown
-		Display d3 tree-map chart using parameters:
+		Display d3 us map chart using parameters:
 
-			src = source url returning tree [ { name: "...", size: N, doc: "", nodes: [ {...}, ... ] }, ... ]
+			src = source url returning map [ { name: "...", code: "", doc: "", lat: N, lon: N, ... }, ... ]
 			name = "name" || "name%..." || "" of source record(s)
 			pivots = "key,key,..." || "" source record grouping keys
 			w = drawing width
@@ -17,41 +17,32 @@ append base_help
 			node,nodes,value,size,parent,doc = tree keys
 
 append base_head
-
 	style.
-		body {
-		  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-		  margin: auto;
-		  position: relative;
-		  width: 960px;
+		.states :hover {
+			fill: red;
 		}
 
-		form {
-		  position: absolute;
-		  right: 10px;
-		  top: 10px;
+		.state-borders {
+			fill: none;
+			stroke: #fff;
+			stroke-width: 1px;
+			stroke-linejoin: round;
+			stroke-linecap: round;
+			pointer-events: none;
 		}
 
-		.node {
-		  border: solid 1px white;
-		  font: 10px sans-serif;
-		  line-height: 12px;
-		  overflow: hidden;
-		  position: absolute;
-		  text-indent: 2px;
+		.state-counties {
+			stroke-width: 0.5px;
+			stroke: #aaa;
 		}
-
-		svg {
-			font: 10px sans-serif;
-		}
-
+											
 	script.
 		var opts = {
 			ds: "#{query.pivots}"
 				? "!{query.src}.tree?name=#{query[NAME]}&_sort=#{query.pivots}"
 				: "#{query[NAME]}"
 							? "!{query.src}.schema?name=#{query[NAME]}"
-							: "!{query.src}" || "/stores/usatlas.json",
+							: "!{query.src}" || "/mapdata.json",
 
 			url: "#{url}",
 			family: "usmap,worldmap",
@@ -75,125 +66,31 @@ append base_head
 		const {isString,isArray,Load} = BASE;
 
 append base_body
+	script(src="/clients/topojson.js")
 	script.
-			Load( opts, (data,sg) => {
+		d3.json( "/stores/usatlas.json" ).then( us => {
+			Load( opts, (data,svg) => {
 				var
 					width = svg.attr("width"),
 					height = svg.attr("height"),
-					color = d3.scaleOrdinal(d3.schemeCategory10),
-					format = d3.format(",d");
-											 
-				svg  //  = body.append("svg")
-					.style("position", "relative")
-					.style("width", (width + margin.left + margin.right) + "px")
-					.style("height", (height + margin.top + margin.bottom) + "px")
-					.style("left", margin.left + "px")
-					.style("top", margin.top + "px");
+					path = d3.geoPath();
 
-					/*
-					d3.create("svg")
-					  .attr("viewBox", [0, 0, width, height])
-					  .style("font", "10px sans-serif"),  */
+				svg.append("g")
+						.attr("class", "states")
+						.selectAll("path")
+						.data(topojson.feature(us, us.objects.states).features)
+						.enter().append("path")
+							.attr("d", path);
 
-				treemap = d3.treemap()
-					.tile(d3.treemapSquarify)
-					.size([width, height])
-					.padding(1)
-					.round(true);
-
-				var 
-					root = d3.hierarchy( data[0] , d => d[NODES] )
-						.sum(d => d.value)
-						.sort((a, b) => b.value - a.value),
-
-					tree = treemap(root);
-					
-					/*
-					leaf = svg.selectAll("g")
-						.data( tree.leaves() )
-						.join("g")
-						.attr("transform", d => {
-							//Log("trans", d);
-							//return `translate(${d.x0},${d.y0})`;
-						}),
-					*/
-					/*
-					node = svg.datum(root).selectAll(".node")
-						.data( tree.leaves() )
-						.enter().append("svg")
-						.attr("class", "node")
-						.style("left", d => d.x0 + "px")
-						.style("top", d => d.y0 + "px")
-						.style("width", d => Math.max(0, d.x1 - d.x0 - 1) + "px")
-						.style("height", d => Math.max(0, d.y1 - d.y0  - 1) + "px")
-						.style("background", d => color(d.parent.data.name))
-						.text( d => d.data.name );
-					*/
-
-				var
-					cell = svg.selectAll("g")
-						.data( root.leaves() )
-						.enter().append("g")
-							.attr("transform", function(d) { return "translate(" + d.x0 + "," + d.y0 + ")"; });
-
-				cell.append("rect")
-						.attr("id", function(d) { return d.data.id; })
-						.attr("width", function(d) { return d.x1 - d.x0; })
-						.attr("height", function(d) { return d.y1 - d.y0; })
-						.attr("fill", function(d) { return color(d.parent.data.id); });
-
-				cell.append("clipPath")
-						.attr("id", function(d) { return "clip-" + d.data.id; })
-						.append("use")
-						.attr("xlink:href", function(d) { return "#" + d.data.id; });
-
-				cell.append("text")
-						.attr("clip-path", function(d) { return "url(#clip-" + d.data.id + ")"; })
-						.selectAll("tspan")
-						.data(function(d) { return d.data.name.split(/(?=[A-Z][^A-Z])/g); })
-						.enter().append("tspan")
-							.attr("x", 4)
-							.attr("y", function(d, i) { return 13 + i * 10; })
-							.text(function(d) { return d; });
-
-			  	cell.append("title")
-						.text(function(d) { return d.data.id + "\n" + format(d.value); });
-
-				//Log( root, "leaves", root.leaves());
-				alert("done!");
-				/*
-			  	leaf.append("title")
-				  .text(d => `${d.ancestors().reverse().map(d => d.data.name).join("/")}\n${format(d.value)}`);
-
-			 	leaf.append("rect")
-				  //.attr("id", d => (d.leafUid = DOM.uid("leaf")).id)
-				  .attr("fill", d => { 
-				  		while (d.depth > 1) d = d.parent; 
-				  		return color(d.data.name); 
-			  		})
-				  .attr("fill-opacity", 0.6)
-				  .attr("width", d => d.x1 - d.x0)
-				  .attr("height", d => d.y1 - d.y0);
-				*/
-				/*
-				  leaf.append("clipPath")
-					//.attr("id", d => (d.clipUid = DOM.uid("clip")).id)
-					.append("use")
-					//.attr("xlink:href", d => d.leafUid.href);
-
-				  leaf.append("text")
-					//.attr("clip-path", d => d.clipUid)
-					.selectAll("tspan")
-					.data(d => d.data.name.split(/(?=[A-Z][^A-Z])/g).concat(format(d.value)))
-					.join("tspan")
-					.attr("x", 3)
-					.attr("y", (d, i, nodes) => `${(i === nodes.length - 1) * 0.3 + 1.1 + i * 0.9}em`)
-					.attr("fill-opacity", (d, i, nodes) => i === nodes.length - 1 ? 0.7 : null)
-					.text(d => d);
-				*/
-				
-				//return svg.node();
+				svg.append("path")
+						.attr("class", "state-borders")
+						.attr("d", path(topojson.mesh(us, us.objects.states, (a, b) => a !== b )));
+											
+				svg.append("path")
+						.attr("class", "state-counties")
+						.attr("d", path(topojson.mesh(us, us.objects.counties, (a, b) => a !== b && (a.id / 1000 | 0) === (b.id / 1000 | 0))) );
 			});
-		
+		});
+
 // UNCLASSIFIED
 		
