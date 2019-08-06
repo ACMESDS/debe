@@ -34,19 +34,16 @@ append base_head
 			ds: "#{query.pivots}"
 				? "/!{query.src}.tree?name=#{query[NAME]}&_sort=#{query.pivots}"
 				: "#{query[NAME]}"
-							? "!{query.src}.schema?name=#{query[NAME]}"
-							: "!{query.src}" || "/stores/trades.json",
-
- 			url: "#{url}",
-			family: "chords,bundle",
-
+					? "!{query.src}.schema?name=#{query[NAME]}"
+					: "!{query.src}" || "/stores/trades.json",
 			dims: {
 				margin: {top: 20, right: 90, bottom: 30, left: 90},
 				width: parseInt("#{query.w}") || 1200,
 				height: parseInt("#{query.h}") || 500
 			},
+			url: "#{url}",
+			family: "chords,bundle",																								 
 			debug: parseInt("#{query.debug}"),
-
 			NODE: "#{query.node}" || "name",
 			NODES: "#{query.nodes}" || "children",
 			VALUE: "#{query.value}" || "value",
@@ -56,11 +53,11 @@ append base_head
 		};
 
 		const {NODE, NODES, VALUE, SIZE, PARENT, DOC} = opts;
-		const {isArray,isString,Load} = BASE;
+		const {isArray,isString,d3json} = BASE;
 
 append base_body
 	script.
-		Load( opts, (data,svg) => {
+		d3json( opts, (data,svg) => {
 			var
 				width = svg.attr("width"),
 				height = svg.attr("height"),

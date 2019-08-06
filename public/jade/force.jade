@@ -56,11 +56,11 @@ append base_head
 		};
 
 		const {NODE, NODES, VALUE, SIZE, PARENT} = opts;
-		const {isArray,Load} = BASE;
+		const {isArray,d3json} = BASE;
 										
 append base_body
 	script.
-		Load( opts, (data,svg) => {
+		d3json( opts, (data,svg) => {
 			function update() {
 				function flatten(root) {	// Returns a list of all nodes under the root.
 					var nodes = [], links = [], id = 0;
@@ -202,8 +202,10 @@ append base_body
 
 			var
 				width = svg.attr("width"),
-				height = svg.attr("height"),			
+				height = svg.attr("height"),
 				root = data[0];				
+
+			svg.attr("transform", "translate(" + width/2 + "," + height/2 + ")");
 
 			root.fixed = true;
 			root.x = width / 2;

@@ -105,7 +105,7 @@ append base_head
 		};
 
 		const {NODE, NODES, VALUE, SIZE, PARENT, DOC} = opts;
-		const {isArray,isString,Load} = BASE;
+		const {isArray,isString,d3json} = BASE;
 
 append base_body
 	script.
@@ -137,7 +137,7 @@ append base_body
 						(root);
 		}
 		
-		Load( opts, (data,svg) => {
+		d3json( opts, (data,svg) => {
 			var
 				/*
 					var width = 500 creates a variable set to 500; it does not actually set the width of anything, yet. Below we'll apply this variable to the <svg> element's width attribute. We could set width directly (<svg width=500>). But we'll use this values a few times. If we coded it directly, we'd then need to change each occurrences every time. Mistakes will happen.
@@ -149,7 +149,7 @@ append base_body
 				*/	
 				width = svg.attr("width"),
 				height = svg.attr("height"),
-				radius = width / 6;
+				radius = width / 20; //Math.round(Math.sqrt( width**2  ));
 			
 			var 
 				/*

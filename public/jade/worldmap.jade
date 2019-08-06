@@ -58,16 +58,15 @@ append base_head
 		};
 		
 		const {NODE, NODES, VALUE, SIZE, PARENT, DOC} = opts;
-		const {isString,isArray,Load} = BASE;
+		const {isString,isArray,d3json} = BASE;
 
 append base_body
 	div(id="container")
 	div(class="map",id="basic")
-	script(src="/clients/topojson.js")
-	script(src="/clients/datamaps.world.js")
+	script(src="/clients/topojson.min.js")
+	script(src="/clients/datamaps/datamaps.world.min.js")
 	script.
-		Log("d3",d3.ver,d3.version);
-		d3.json( "/stores/worldatlas.json" ).then( world => {		// country outlines
+		d3json( "/stores/worldatlas.json" , world => {		// country outlines
 
 			// map controls
 			var
@@ -114,11 +113,11 @@ append base_body
 						// d3.geoPath(d3.geoStereographic(), context);
 
 				context.beginPath();
-				path(topojson.mesh(world));
+				path(topojson.mesh( world[0] ));
 				context.stroke();
 			}
 
-			d3.json( "/mapdata.json" ).then( maps => {	// country base data
+			d3json( "/mapdata.json" , maps => {	// country base data
 				var cmap = {};
 				maps.forEach( map => {
 					cmap[map.name.toUpperCase()] = {
@@ -129,7 +128,7 @@ append base_body
 
 				Log(cmap);
 
-				Load( opts, (evs,svg) => {		// country event data
+				d3json( opts, (evs,svg) => {		// country event data
 					var vmap = [];
 					
 					if (false)
