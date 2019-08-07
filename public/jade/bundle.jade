@@ -42,7 +42,7 @@ append base_head
 				height: parseInt("#{query.h}") || 500
 			},
 			url: "#{url}",
-			family: "chords,bundle",																								 
+			family: "chords,bundle",
 			debug: parseInt("#{query.debug}"),
 			NODE: "#{query.node}" || "name",
 			NODES: "#{query.nodes}" || "children",
@@ -65,11 +65,10 @@ append base_body
 				radius = diameter / 2,
 				innerRadius = radius - 120;
 
-			var
-				svg = svg  //.append("svg")
-						.append("g")
-						.attr( "transform", "translate(" + radius + "," + radius + ")" );
-
+			svg = svg  //.append("svg")
+					.append("g")
+					.attr( "transform", "translate(" + radius + "," + radius + ")" );
+																								 
 			var 
 				cluster = d3.cluster()
 						.size([360, innerRadius]),
