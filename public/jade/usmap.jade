@@ -63,17 +63,20 @@ append base_head
 		};
 		
 		const {NODE, NODES, VALUE, SIZE, PARENT, DOC} = opts;
-		const {isString,isArray,Load} = BASE;
+		const {isString,isArray,d3json} = BASE;
 
 append base_body
-	script(src="/clients/topojson.js")
+	script(src="/clients/topojson.min.js")
 	script.
-		d3.json( "/stores/usatlas.json" ).then( us => {
-			Load( opts, (data,svg) => {
+		// https://observablehq.com/@d3/u-s-map-canvas
+		// https://bl.ocks.org/mbostock/1073373
+		d3json( "/stores/usatlas.json" , usatlas => {
+			d3json( opts, (data,svg) => {
 				var
 					width = svg.attr("width"),
 					height = svg.attr("height"),
-					path = d3.geoPath();
+					path = d3.geoPath(),
+					us = usatlas[0];
 
 				svg.append("g")
 						.attr("class", "states")

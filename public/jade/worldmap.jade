@@ -2,7 +2,7 @@
 
 extends base
 append base_parms
-	- tech = "d3"
+	- tech = "d3" // d3 || d3v3
 
 append base_help
 	:markdown
@@ -65,58 +65,32 @@ append base_body
 	div(class="map",id="basic")
 	script(src="/clients/topojson.min.js")
 	script(src="/clients/datamaps/datamaps.world.min.js")
+											
+	// http://bl.ocks.org/micahstubbs/8e15870eb432a21f0bc4d3d527b2d14f
+	// https://d3js.org/topojson.v3.min.js
+	// https://unpkg.com/world-atlas@1.1.4/world/110m.json
+	// https://unpkg.com/us-atlas@1.0.2/us/10m.json	
+	// https://observablehq.com/@d3/bubble-map
 	script.
-		d3json( "/stores/worldatlas.json" , world => {		// country outlines
+		var		// map projection controls
+			projs = {
+				stereographic: d3.geoStereographic,
+				orthographic: d3.geoOrthographic,
+				azEqArea: d3.geoAzimuthalEqualArea,
+				azEqDistance: d3.geoAzimuthalEquidistance,
+				gnomonic: d3.geoGnomonic,
+				eqEarth:  d3.geoEqualEarth,
+				conicConformal: d3.geoConicConformal
+			},
 
-			// map controls
-			var
-				maps = {
-					stereographic: d3.geoStereographic,
-					orthographic: d3.geoOrthographic,
-					azEqArea: d3.geoAzimuthalEqualArea,
-					azEqDistance: d3.geoAzimuthalEquidistance,
-					gnomonic: d3.geoGnomonic,
-					eqEarth:  d3.geoEqualEarth,
-					conicConformal: d3.geoConicConformal
-				},
+			body = d3.select("body"),
+			
+			input = "select".d3tag(body, { value: "stereographic", id:"_layout"} );
 
-				body = d3.select("body"),
-				input = "select".d3tag(body, { value: "stereographic", id:"_layout"} );
+		Object.keys(projs)
+		.forEach( (proj,n) => input.insert("option").attr( "value", proj ).text( proj ) );
 
-			Object.keys(maps)
-			.forEach( (arg,n) => input.insert("option").attr( "value", arg ).text( arg ) );
-
-			input.on( "change", () => {
-				var 
-					el = input._groups[0][0], //v3 use input[0][0],		// dom is a major Kludge!
-					value = el.value,
-					id = el.id;
-
-				update(value);				
-			});
-			/*
-			var 
-				//context = d3.select("canvas").node().getContext("2d"),
-				canvas = d3.select('#container')
-						.append('canvas')
-						.attr('width', opts.dims.width)
-						.attr('height', opts.dims.height),
-
-				context = canvas.node().getContext('2d');
-
-			update( "stereographic" );
-			*/
-			function update(layout) {
-				//canvas.remove();
-				var path = d3.geoPath( maps[layout](), context );
-						//d3.geoPath(d3.geoOrthographic(), context);
-						// d3.geoPath(d3.geoStereographic(), context);
-
-				context.beginPath();
-				path(topojson.mesh( world[0] ));
-				context.stroke();
-			}
-
+		if ( d3.version.startsWith("3.") ) // use datamaps
 			d3json( "/mapdata.json" , maps => {	// country base data
 				var cmap = {};
 				maps.forEach( map => {
@@ -128,9 +102,13 @@ append base_body
 
 				Log(cmap);
 
-				d3json( opts, (evs,svg) => {		// country event data
+				d3json( opts, (evs,svg) => {		// event data
+					var
+						width = svg.attr("width"),
+						height = svg.attr("height");
+
 					var vmap = [];
-					
+
 					if (false)
 					evs.forEach( ev => {
 						vmap.push({
@@ -141,40 +119,35 @@ append base_body
 							fillKey: "VOXEL"
 						});	
 					});
-					
+
 					var
-						width = svg.attr("width"),
-						height = svg.attr("height");
-					
-					if ( true ) {
-						var
-							map = new Datamap({
-								//responsive: true,
+						map = new Datamap({
+							//responsive: true,
 
-								//bubbles: vmap,
+							//bubbles: vmap,
 
-								element: document.getElementById('basic')
-								/*
-								geographyConfig: {
-									popupTemplate: function (geo,data) {
-										return [
-											geo ? geo.properties.name : "",
-											data ? data.info : "nada"
-										].join("<br>").tag("div",{class:"hoverinfo"});
-									}
-								},
+							element: document.getElementById('basic')
+							/*
+							geographyConfig: {
+								popupTemplate: function (geo,data) {
+									return [
+										geo ? geo.properties.name : "",
+										data ? data.info : "nada"
+									].join("<br>").tag("div",{class:"hoverinfo"});
+								}
+							},
 
-								fills: {
-									HIGH: '#afafaf',
-									LOW: '#123456',
-									MEDIUM: 'blue',
-									VOXEL: 'red', //'rgb(1,0,0)',
-									defaultFill: 'green'
-								},
+							fills: {
+								HIGH: '#afafaf',
+								LOW: '#123456',
+								MEDIUM: 'blue',
+								VOXEL: 'red', //'rgb(1,0,0)',
+								defaultFill: 'green'
+							},
 
-								data: cmap
-								*/
-							});
+							data: cmap
+							*/
+						});
 						/*
 						map.bubbles(vmap, {
 							popupTemplate: function (geo,data) {
@@ -190,9 +163,71 @@ append base_body
 						map.resize();
 					});	
 						*/
-					}
 				});
 			});
-		});
+
+		else 
+			d3json( "/stores/worldatlas.json" , worldatlas => {		// country outlines
+				function update(layout) {
+					//canvas.remove();
+					var path = d3.geoPath( projs[layout](), context );
+
+					context.beginPath();
+					path(topojson.mesh( world ));
+					context.stroke();
+				}
+				input.on( "change", () => {
+					var 
+						el = input._groups[0][0], //v3 use input[0][0],		// dom is a major Kludge!
+						value = el.value,
+						id = el.id;
+
+					update(value);				
+				});
+
+				var 
+					world = worldatlas[0],
+					//context = d3.select("canvas").node().getContext("2d"),
+					canvas = d3.select('#container')
+							.append('canvas')
+							.attr('width', opts.dims.width)
+							.attr('height', opts.dims.height),
+
+					context = canvas.node().getContext('2d');
+
+				//Log("can", canvas, context, d3.select('#container'));
+				update( "stereographic" );
+
+				d3json( "/mapdata.json" , maps => {	// country base data
+					var cmap = {};
+					maps.forEach( map => {
+						cmap[map.name.toUpperCase()] = {
+							fillKey: map.code.toUpperCase(),
+							info: map.doc
+						}
+					});
+
+					Log(cmap);
+
+					d3json( opts, (evs,svg) => {		// country event data
+						var
+							width = svg.attr("width"),
+							height = svg.attr("height");
+
+						var vmap = [];
+
+						if (false)
+						evs.forEach( ev => {
+							vmap.push({
+								name: ev.Source,
+								radius: ev.Radius,
+								longitude: ev.Location.x,
+								latitude: ev.Location.y,
+								fillKey: "VOXEL"
+							});	
+						});
+					});
+				});
+			});
 
 // UNCLASSIFIED

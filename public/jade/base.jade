@@ -97,6 +97,7 @@ append layout_head
 		when "flow"
 			include base_flow
 		when "d3"
+		when "d3v3"
 			include base_d3
 
 	//- Load underlying tech
@@ -120,11 +121,16 @@ append layout_head
 			script(src="/clients/joint/joint.shapes.pn.min.js")
 			script(src="/clients/joint/joint.shapes.erd.min.js")
 
+		when "d3v3"
+			script(src="/uis/base.js")
+			script(src="/clients/d3v3.min.js")
+
 		when "d3"
 			script(src="/uis/base.js")
 			script(src="/clients/d3.min.js")
 			
-			case map
+			//- legacy
+				case map
 				when "world"
 					script(src="/clients/maps/topojson.min.js")
 					script(src="/clients/maps/datamaps.world.min.js")

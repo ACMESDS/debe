@@ -48,10 +48,11 @@ append base_head
 		};
 
 		const {NODE, NODES, VALUE, SIZE, PARENT, DOC} = opts;
-		const {isString,isArray,Load} = BASE;
+		const {isString,isArray,d3json} = BASE;
 
 append base_body
 	script.
+		// https://observablehq.com/@d3/sankey-diagram
 		function color(name) {
 			const color = d3.scaleOrdinal(d3.schemeCategory10);
 			return name => color(name.replace(/ .*/, ""));
@@ -62,7 +63,7 @@ append base_body
 			return d => `${f(d)} TWh`;
 		}
 
-		Load( opts, (data,svg) => {
+		d3json( opts, (data,svg) => {
 			function partition(data) {
 				alert( `sankey${align[0].toUpperCase()}${align.slice(1)}` );
 				var sankey = d3.sankey()
