@@ -4638,9 +4638,9 @@ clients, users, system health, etc).`
 		var DEBE = require("../debe").config({
 		}, err => {
 			DEBE.thread( sql => {
-			READ.readers.xls( sql, "./stores/test.xlsx", recs => {
+				READ.readers.xls( sql, "./stores/test.xlsx", recs => {
+				});
 			});
-			
 		});
 		break;
 		

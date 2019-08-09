@@ -120,10 +120,11 @@ var PIPE = module.exports = {
 	},
 
 	pipeDoc: function(sql,job,cb) { // nlp pipe
-		function sumScores(scores, metrics) {
+		function sumScores(metrics) {
 			var 
 				entities = metrics.entities,
 				count = metrics.count,
+				scores = metrics.scores,
 				ids = metrics.ids,
 				topics = metrics.topics;
 				//dag = metrics.dag;
@@ -160,127 +161,18 @@ var PIPE = module.exports = {
 						ids.links[link] = count.links++;
 						metrics.links.push(link);
 					}
-				});	
-
+				});
 			}); 
 
 		}
 
-		function ldaDoc(doc, topics, terms, cb) {	// laten dirichlet doc analysis
-			var docs = doc.replace(/\n/gm,"").match( /[^\.!\?]+[\.!\?]+/g );
-			cb( LDA( docs , topics||2, terms||2 ) );
-		}
-
-		function anlpDoc(frag, scores) {	// homebrew NER
-
-			var 
-				rubric = READ.spellRubric,
-				classif = READ.classif,
-				paths = READ.paths,
-				checker = READ.checker, 
-				analyzer = READ.analyzer,
-				tokenizer = READ.tokenizer,
-				stemmer = READ.stemmer,
-				rules = READ.rules,
-				lexicon = READ.lexicon,
-				tagger = READ.tagger,
-
-				dag = metrics.dag,
-				freqs = metrics.freqs,
-				scores = metrics.scores,
-				topics = metrics.topics;
-
-			var 
-				tokens = tokenizer.tokenize(frag),
-				sentiment = analyzer.getSentiment(tokens),
-				tags = tagger.tag(tokens).taggedWords,
-				stems = [],
-				relevance = "",
-				links = [],
-				actor = "",
-				actors = [],
-				classifs = [],
-				agreement = 0,
-				weight = 0;
-
-			classif.forEach( (cls,n) => classifs[n] = cls.getClassifications(frag) );
-			tokens.forEach( token => stems.push( stemmer(token) ) );
-			//stems.forEach( stem => relevance += checker.isCorrect(stem) ? "y" : "n" );
-			tags.forEach( (tag,n) => tags[n] = tag.tag );
-
-			tags.forEach( (tag,n) => { 
-				if ( tag.startsWith("?") || tag.startsWith("NN") ) actor += tokens[n];
-				else {
-					if ( actor ) { actors.push( actor ); actor = ""; }
-					if ( tag.startsWith("VB") ) links.push( tokens[n] ); 
-				}
-			});
-			if ( actor ) actors.push( actor ); 
-
-			var ref = classifs[0][0];
-			classifs.forEach( classif => { 
-				if ( classif[0].label == ref.label ) agreement++; 
-				weight += classif[0].value;
-			});
-
-			if ( ref.label in topics ) topics[ref.label] += ref.value; else topics[ref.label] = ref.value;
-
-			//Log(frag, sentiment);
-			scores.push({
-				pos: tags.join(";"),
-				frag: frag,
-				classifs: classifs,
-				tokens: tokens,
-				agreement: agreement / classifs.length,
-				weight: weight,
-				stems: stems,
-				sentiment: sentiment,
-				links: links,
-				actors: actors,
-				relevance: 0
-			});
-		}
-
-		function snlpDoc(frag,cb) {	// stanford NER
-			var 
-				stanford = READ.stanford,
-				entities = metrics.entities,
-				count = metrics.count,
-				ids = metrics.ids,
-				topics = metrics.topics,
-				//dag = metrics.dag,		
-				scores = [], 
-				nlps = [],
-				done = 0;
-
-				frags.forEach( frag => {
-					( async() => {
-						var nlp = await stanford.process("en", frag);
-						nlps.push( nlp );
-						var actors = []; nlp.entities.forEach( ent => actors.push( ent.utteranceText ) );
-						if ( nlp.intent in topics ) topics[nlp.intent] += nlp.score; else topics[nlp.intent] = nlp.score;
-
-						cb({
-							classifs: [{value: nlp.score, label: nlp.intent}],
-							sentiment: nlp.sentiment.score,
-							relevance: 0,
-							agreement: 1,
-							links: ["related"], // nlp.actions ?
-							actors: actors,
-							weight: 1
-						});
-					}) ();
-				});
-
-				if ( !frags.length ) cb(metrics, scores);
-		}
-		
 		var
-			methods = [anlpDoc, snlpDoc],
+			nlps = READ.nlps,
+			methods = [nlps.soa],
 			metrics = {
 				// dag: new ANLP.EdgeWeightedDigraph(),
-				freqs: new ANLP.TfIdf(),
-				entities: new ANLP.Trie(false),
+				freqs: READ.docFreqs,
+				entities: READ.docTrie,
 				count: {
 					links: 0,
 					actors: 0
@@ -306,7 +198,6 @@ var PIPE = module.exports = {
 			function getDoc( job, cb) {
 
 				function readFile(path,cb) {	// read and forward doc to callback
-					
 					READ.readFile( "."+path, rec => {
 						if (rec) {
 							var 
@@ -316,15 +207,16 @@ var PIPE = module.exports = {
 							docs.forEach( doc => {
 								if (doc) {
 									freqs.addDocument(doc);									
-									methods.forEach( nlp => nlp( doc , score => {
+									methods.forEach( nlp => nlp( doc , metrics, score => {
 										scores.push( score );
 										if ( ++scored == docs.length ) {
 											["DTO", "DTO cash"].forEach( find => {
 												freqs.tfidfs( find, (n,score) => scores[n].relevance += score );
 											});
 
-											sumScores( scores, metrics );	
-											cb(metrics, scores);
+											sumScores( metrics );	
+											Log(">>>>docparsed", scored, docs.length, metrics);
+											cb( {Doc: rec.doc, Metrics: metrics} );
 										}
 									}) );
 								}
@@ -335,7 +227,7 @@ var PIPE = module.exports = {
 						}
 						
 						else
-							cb( sum );
+							Log("no more recs");
 					});
 				}
 
@@ -354,15 +246,15 @@ var PIPE = module.exports = {
 						.parseJS( Copy(ctx, { // define parse context
 							read: readFile,
 							path: path,
-							cb: rtn => {
-								data[firstKey] = rtn;
+							cb: stats => {
+								data[firstKey] = stats;
 								query[firstKey] = firstKey;
 								cb( data, job );
 							}
 						}) );
 					}  
 
-				if ( !firstKey ) readFile(path, doc => cb( {Doc:doc}, job) );
+				if ( !firstKey ) readFile(path, (doc,metrics) => cb( {Doc: doc, Metrics: metrics}, job) );
 			}
 
 			getDoc( job, (data,job) => cb(data,job) );

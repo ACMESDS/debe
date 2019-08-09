@@ -69,7 +69,7 @@ append base_body
 				.data(links)
 				.enter()
 					.append("line")
-					.style("stroke", "#aaa")
+					.style("stroke", "#aaa");
 
 			// Initialize the nodes
 			var node = svg
@@ -78,7 +78,7 @@ append base_body
 				.enter()
 					.append("circle")
 					.attr("r", 20)
-					.style("fill", "#69b3a2")
+					.style("fill", "#69b3a2");
 			
 			// Let's list the force we wanna apply on the network
 			nodes.forEach( (node,id) => { nodes[id].id = id; } );
