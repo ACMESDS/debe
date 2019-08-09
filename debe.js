@@ -4595,12 +4595,12 @@ assessments from our worldwide reporting system, please contact ${poc}.
 				}, err => Log( err || "Graph db cleared" ) );  
 			}			
 
-		Trace( err || 
+			Trace( err || 
 `Yowzers - this does everything but eat!  An encrypted service, a database, a jade UI for clients,
 usecase-engine plugins, file-upload watchers, and watch dogs that monitor system resources (jobs, files, 
 clients, users, system health, etc).` 
-		);
-	});
+			);
+		});
 		break;
 		
 	case "D2":
@@ -4631,6 +4631,16 @@ clients, users, system health, etc).`
 		var DEBE = require("../debe").config({
 		}, err => {
 			Trace( err || "Stateful network flow manger started" );
+		});
+		break;
+		
+	case "D4":
+		var DEBE = require("../debe").config({
+		}, err => {
+			DEBE.thread( sql => {
+			READ.readers.xls( sql, "./stores/test.xlsx", recs => {
+			});
+			
 		});
 		break;
 		
