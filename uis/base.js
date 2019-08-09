@@ -138,7 +138,7 @@ var BASE = {
 		return keys.length==0;
 	},
 	
-	d3json: function (opts, cb) {		
+	d3json: function (opts, cb) {
 	/**
 	@method BASE.Load
 	Callback cb(recs, svg) with a d3 svg dom target, and the records recs = [rec, ...] that
@@ -199,6 +199,9 @@ var BASE = {
 					svg = opts.svg = body.append("svg") 
 									.attr('width', (dims.width || 1200) - margin.left - margin.right )
 									.attr('height', (dims.height || 500) - margin.top - margin.bottom ),
+									//.append("g")
+									//	.attr("transform", dims.transform ? dims.transform.parseEMAC(dims) : ""),
+				
 									//.append("g")
 									//.attr("transform", "translate(" + opts.dims.margin.left + "," + opts.dims.margin.top + ")"),
 
