@@ -88,8 +88,8 @@ append site_body
 						"DATASET.TYPE?QUERY"  
 						{ "path": "DATASET.TYPE?QUERY", "KEY": [VALUE, ...] , ... "norun": true }
 
-					where the { ... } form generates usecases over the specified context KEYs, and where
-					TYPE = json || jpg || CASE selects the workflow.  CASE workflows accept QUERY filters:
+					The {...} pipe generates usecases over the permuted context KEYs.  The "..." pipe selects the workflow based 
+					on TYPE = json || jpg || stream || txt || aoi || db using TYPE-specific [QUERY keys](/api.view).
 				
 						group = "KEY, ..."  
 						where = { KEY: VALUE, ...}  

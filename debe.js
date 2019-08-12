@@ -2113,6 +2113,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 		});
 			
 		//Log(">>req", req.table, req.type, req.query.Name);
+		//Log("pipe ctx", ctx);
 		ATOM.select(req, ctx => {  // run plugin
 			
 			//Log(">>atom", ctx);
@@ -2127,7 +2128,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 				}
 			
 			else
-				Log("lost engine contxt");
+				Log("lost engine context");
 		});
 	}
 	
@@ -2267,7 +2268,8 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 											});
 										else
 										if ( nlp = ctx.NLP ) {
-											nlp.actors.forEach( actor => {
+											Log("NLP save>>>>>>>>>>>>>>", nlp);
+											Each( nlp.actors, (actor,type) => {
 												sql.query(
 													"INSERT INTO app.nlpactors SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1",
 													{ Name: actor }, err => Log("nlpactor", err) );
@@ -2280,8 +2282,8 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 												greedy = false;
 											
 											if ( greedy )
-												actors.forEach( source => {
-													Each( topics, topic => {
+												Each(actors, (source,type) => {
+													Each( topics, (topic,type) => {
 														if ( topic != "dnc" ) 
 															sql.query(
 																"INSERT INTO app.nlpedges SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1",

@@ -29,7 +29,8 @@ The following context keys are accepted:
 		Method: lda || anlp || snlp for Latent, Homebrew, and Stanford nlp
 		Data.Doc document to parse
 	*/
-		Log("docs", ctx);
+		Log("docs", ctx.Data);
+		ctx.NLP = ctx.Data.metrics;
 		res(ctx);
 		/*
 		var 
@@ -80,5 +81,5 @@ The following context keys are accepted:
 			res( new Error("invalid nlp method") );
 	}
 	*/
-
+	}
 }

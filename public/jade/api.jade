@@ -466,26 +466,25 @@ append site_body
 					"/DATASET.TYPE?QUERY"  
 					{ "path": "/DATASET.TYPE?QUERY", "KEY": [VALUE, ...] , ... "norun": true }
 					
-				The 2nd-form generates usecases over the specified context KEYs.  The 1st-form selects the
-				workflow based on TYPE = json || jpg || stream || txt || aoi || db using the TYPE-specific [QUERY keys](/api.view) 
-				and TYPE-specific [supervisor context keys](/api.view).
+				The {...} pipe generates usecases over the permuted context KEYs.  The "..." pipe selects the workflow based 
+				on TYPE = json || jpg || stream || txt || aoi || db using TYPE-specific [QUERY keys](/api.view).
 				
 				## The { ... } pipe
 				
 				This pipe will generate and run (unless *norun* specified) the usecases defined
 				by crossing the values of the specified context KEYs.
 				
-				## The DATASET.json pipe
+				## The "/DATASET.json" pipe
 				
-				## The DATASET.jpg pipe
+				## The "/DATASET.jpg" pipe
 				
-				## The DATASET.stream pipe
+				## The "/DATASET.stream" pipe
 
-				## The DATASET.db pipe
+				## The "/DATASET.db" pipe
 				
-				## The DATASET.txt pipe
+				## The "/DATASET.txt" pipe
 				
-				## The DATASET.aoi pipe
+				## The "/DATASET.aoi" pipe
 				
 				This pipe sources events ingested by the specified use-CASE of the specified 
 				DATASET plugin.  This pipe accepts the QUERY keys:

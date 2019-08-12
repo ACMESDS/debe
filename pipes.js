@@ -44,7 +44,7 @@ var
 	$ = require("man"),
 	RAN = require("randpr");
 
-const { Copy,Each,Log,isObject,isString,isFunction,isError,isArray } = ENUM;
+const { Copy,Each,Log,isObject,isString,isFunction,isError,isArray,isEmpty } = ENUM;
 const { getVoxels } = GEO;
 const { getFile, getSite, thread } = TOTEM;
 
@@ -104,18 +104,18 @@ var PIPE = module.exports = {
 				if ( !firstKey ) readFile(path, img => cb( {Image:img}, job) );
 			}
 
-			getImage( job, (data,job) => cb(data,job) );
+			getImage( job, (img,job) => cb(img,job) );
 		});	
 	},
 
 	pipeJson: function(sql,job,cb) { // send raw json data to the plugin
 		sql.insertJob( job, job => { 
-			function getEvents(job, cb) {
+			function getData(job, cb) {
 				// Log(">>fetch", path);
 				getSite( job.path, null, info => cb( info.parseJSON( {} ), job ) );
 			}
 
-			getEvents( job, (evs,job) => cb(evs,job) );
+			getData( job, (data,job) => cb(data,job) );
 		});
 	},
 
@@ -148,46 +148,29 @@ var PIPE = module.exports = {
 				metrics.relevance += score.relevance;
 				metrics.weight += score.weight;
 				metrics.agreement += score.agreement;
-
-				score.actors.forEach( actor => {
-					if ( !entities.addString( "Actor:"+actor ) ) {
-						ids.actors[actor] = count.actors++;
-						metrics.actors.push(actor);
-					}
-				});
-
-				score.links.forEach( link => {
-					if ( !entities.addString( "Link:"+link ) ) {
-						ids.links[link] = count.links++;
-						metrics.links.push(link);
-					}
-				});
 			}); 
-
 		}
 
 		var
 			nlps = READ.nlps,
-			methods = [nlps.soa],
+			methods = [nlps.max],
 			metrics = {
 				// dag: new ANLP.EdgeWeightedDigraph(),
 				freqs: READ.docFreqs,
-				entities: READ.docTrie,
-				count: {
-					links: 0,
+				entity: {
+					topics: new READ.docTrie(false),
+					actors: new READ.docTrie(false)
+				},					
+				ids: {
+					topics: 0,
 					actors: 0
 				},
-				ids: {
-					links: {},
-					actors: {}
-				},
-				actors: [],
-				links: [],			
+				topics: {},
+				actors: {},
 				sentiment: 0,
 				relevance: 0,
 				agreement: 0,
 				weight: 0,
-				topics: {},
 				scores: [],
 				level: 0
 			},
@@ -197,35 +180,40 @@ var PIPE = module.exports = {
 		sql.insertJob( job, job => { 
 			function getDoc( job, cb) {
 
-				function readFile(path,cb) {	// read and forward doc to callback
+				function readFile(path,cb) {	// read file at path with callback cb( {docs, metrics} )
 					READ.readFile( "."+path, rec => {
 						if (rec) {
 							var 
 								docs = (rec.doc||"").replace(/\n/g,"").match( /[^\.!\?]+[\.!\?]+/g ) || [],
 								scored = 0;
-							
+
 							docs.forEach( doc => {
 								if (doc) {
 									freqs.addDocument(doc);									
 									methods.forEach( nlp => nlp( doc , metrics, score => {
 										scores.push( score );
 										if ( ++scored == docs.length ) {
-											["DTO", "DTO cash"].forEach( find => {
-												freqs.tfidfs( find, (n,score) => scores[n].relevance += score );
+											["DTO", "DTO cash"].forEach( word => {
+												freqs.tfidfs( word, (n,freq) => {
+													if ( score = scores[n] ) score.relevance += freq;
+												});
 											});
 
 											sumScores( metrics );	
-											Log(">>>>docparsed", scored, docs.length, metrics);
-											cb( {Doc: rec.doc, Metrics: metrics} );
+											cb( {docs: docs, metrics: metrics} );
 										}
+
+										else
+										if (scored > docs.length) // no dcos
+											cb( {docs: docs, metrics: metrics} );
 									}) );
 								}
-								
+
 								else 
 									scored++;
 							});
 						}
-						
+
 						else
 							Log("no more recs");
 					});
@@ -254,17 +242,21 @@ var PIPE = module.exports = {
 						}) );
 					}  
 
-				if ( !firstKey ) readFile(path, (doc,metrics) => cb( {Doc: doc, Metrics: metrics}, job) );
+				if ( !firstKey ) readFile(path, doc => cb( doc, job) );
 			}
 
-			getDoc( job, (data,job) => cb(data,job) );
+			getDoc( job, (doc,job) => cb(doc,job) );
 		});
 	},
 
 	pipeDB: function(sql,job,cb) {  // pipe database source
-		sql.query( "SELECT * FROM app.??", job.class, (err,recs) => {
-			if (!err) cb( {data:recs}, job );
-		});
+		sql.query( isEmpty(job.query)
+				? "SELECT * FROM app.??"
+				: "SELECT * FROM app.?? WHERE least(?,1)", [job.class, job.query] )
+		
+		.on( "result", rec => cb( {rec: rec}, job ) )
+		
+		.on( "error", err => Log("supervisor", err) );
 	},
 
 	pipeAOI: function(sql,job,cb) {	// stream indexed events or chips through supervisor 
