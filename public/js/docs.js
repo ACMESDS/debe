@@ -29,9 +29,26 @@ The following context keys are accepted:
 		Method: lda || anlp || snlp for Latent, Homebrew, and Stanford nlp
 		Data.Doc document to parse
 	*/
-		Log("docs", ctx.Data);
-		ctx.NLP = ctx.Data.metrics;
+		var nlp = ctx.NLP = ctx.Data.metrics;
 		res(ctx);
+
+		if (nlp)
+			$SQL( sql => {
+				sql.query("UPDATE app.docs SET ? WHERE ?", [{
+					_stats: JSON.stringify(nlp.lda || null),
+					_actors: Object.keys(nlp.actors).length,
+					//_links: Object.keys(nlp.links.length,
+					_topics: Object.keys(nlp.topics).length,
+					//_level: nlp.level,
+					_relevance: nlp.relevance,
+					_sentiment: nlp.sentiment,
+					_agreement: nlp.agreement,
+					_weight: nlp.weight	
+				}, {Name: ctx.Name}], err => Log("doc save", err) );
+
+				sql.release();
+			});
+		
 		/*
 		var 
 			use = ctx.Method || "anlp",

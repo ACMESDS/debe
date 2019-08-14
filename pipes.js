@@ -53,7 +53,7 @@ var PIPE = module.exports = {
 		Copy( opts || {}, PIPE );
 	},
 	
-	pipeStream: function(sql, job,cb) { // pipe data from streamed file
+	pipeStream: function(sql, job,cb) { // pipe streamed file
 		sql.insertJob( job, job => { 
 			function getEvents(job, cb) {
 				FS.createReadStream("."+job.path,"utf8").get( "", evs => cb( {evs: evs}, job ) );
@@ -63,7 +63,7 @@ var PIPE = module.exports = {
 		});
 	},
 
-	pipeImage: function(sql,job,cb) {   // run image scripting pipe
+	pipeImage: function(sql,job,cb) {   // pipe image 
 		sql.insertJob( job, job => { 
 			function getImage( job, cb) {
 
@@ -108,7 +108,7 @@ var PIPE = module.exports = {
 		});	
 	},
 
-	pipeJson: function(sql,job,cb) { // send raw json data to the plugin
+	pipeJson: function(sql,job,cb) { // pipe json data 
 		sql.insertJob( job, job => { 
 			function getData(job, cb) {
 				// Log(">>fetch", path);
@@ -119,7 +119,7 @@ var PIPE = module.exports = {
 		});
 	},
 
-	pipeDoc: function(sql,job,cb) { // nlp pipe
+	pipeDoc: function(sql,job,cb) { // pipe nlp docs 
 		function sumScores(metrics) {
 			var 
 				entities = metrics.entities,
@@ -130,23 +130,8 @@ var PIPE = module.exports = {
 				//dag = metrics.dag;
 
 			scores.forEach( score => {
-				/*
-				if ( targetid = ids.actors[score.actors[score.actors.length-1]] )
-					score.ants.forEach( ant => {
-						dag.add( ids.actors[ant], targetid, score.sentiment );
-					});  */
-
-				/*
-				if ( score.level > metrics.level ) {
-					metrics.level = score.level;
-					metrics.topic = score.topic;
-				}  */
-
 				metrics.sentiment += score.sentiment;
-				//for (var n=0,rel=score.relevance,N=rel.length; n<N; n++)  if (rel.charAt(n) == "y") metrics.relevance++;
-
 				metrics.relevance += score.relevance;
-				metrics.weight += score.weight;
 				metrics.agreement += score.agreement;
 			}); 
 		}
@@ -170,7 +155,6 @@ var PIPE = module.exports = {
 				sentiment: 0,
 				relevance: 0,
 				agreement: 0,
-				weight: 0,
 				scores: [],
 				level: 0
 			},
@@ -178,45 +162,56 @@ var PIPE = module.exports = {
 			freqs = metrics.freqs;
 
 		sql.insertJob( job, job => { 
-			function getDoc( job, cb) {
+			function getDoc( job, cb ) {
 
 				function readFile(path,cb) {	// read file at path with callback cb( {docs, metrics} )
-					READ.readFile( "."+path, rec => {
-						if (rec) {
-							var 
-								docs = (rec.doc||"").replace(/\n/g,"").match( /[^\.!\?]+[\.!\?]+/g ) || [],
-								scored = 0;
+					
+					function scoreDoc( doc ) {
+						var 
+							docs = doc.replace(/\n/g,"").match( /[^\.!\?]+[\.!\?]+/g ) || [],
+							scored = 0;
 
-							docs.forEach( doc => {
-								if (doc) {
-									freqs.addDocument(doc);									
-									methods.forEach( nlp => nlp( doc , metrics, score => {
-										scores.push( score );
-										if ( ++scored == docs.length ) {
-											["DTO", "DTO cash"].forEach( word => {
-												freqs.tfidfs( word, (n,freq) => {
-													if ( score = scores[n] ) score.relevance += freq;
-												});
+						docs.forEach( doc => {
+							if (doc) {
+								freqs.addDocument(doc);									
+								methods.forEach( nlp => nlp( doc , metrics, score => {
+									scores.push( score );
+									if ( ++scored == docs.length ) {
+										["DTO", "DTO cash"].forEach( word => {
+											freqs.tfidfs( word, (n,freq) => {
+												if ( score = scores[n] ) score.relevance += freq;
 											});
+										});
 
-											sumScores( metrics );	
-											cb( {docs: docs, metrics: metrics} );
-										}
+										sumScores( metrics );	
+										cb( {docs: docs, metrics: metrics} );
+									}
 
-										else
-										if (scored > docs.length) // no dcos
-											cb( {docs: docs, metrics: metrics} );
-									}) );
-								}
+									else
+									if (scored > docs.length) // no dcos
+										cb( {docs: docs, metrics: metrics} );
+								}) );
+							}
+
+							else 
+								scored++;
+						});
+					}
+
+					if ( path.startsWith("/") )	// doc at specified file path
+						READ.readFile( "."+path, rec => {
+							if (rec) 
+								if ( rec.doc ) scoreDoc( rec.doc );
 
 								else 
-									scored++;
-							});
-						}
+									Log("ignore empty doc");
 
-						else
-							Log("no more recs");
-					});
+							else
+								Log("no more docs");
+						});
+					
+					else // doc is the path
+						scoreDoc( path );
 				}
 
 				var
@@ -242,10 +237,10 @@ var PIPE = module.exports = {
 						}) );
 					}  
 
-				if ( !firstKey ) readFile(path, doc => cb( doc, job) );
+				if ( !firstKey ) readFile(path, doc => cb( doc, job ) );
 			}
 
-			getDoc( job, (doc,job) => cb(doc,job) );
+			getDoc( job, (doc,job) => cb( doc, job ) );
 		});
 	},
 

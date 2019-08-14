@@ -98,7 +98,7 @@ var
 		pdf: pipeDoc,
 		xml: pipeDoc,
 		db: pipeDB,
-		"": pipeAOI,
+		"": pipeDB,
 		aoi: pipeAOI
 	},
 		
@@ -774,7 +774,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 		}),
 			
 		dogGraph: Copy({
-			cycle: 1000
+			cycle: 100
 		}, function (dog) {
 				var actors = 0, nodes = 0;
 				Log("update graph");
@@ -790,9 +790,11 @@ Further information about this file is available ${paths.moreinfo}. `;
 									id: actor.ID
 								}
 							}, err => {	
-								if (++nodes == actors) // all actors have been created so connect them
+								Log("add actor", err);
+								if (++nodes >= actors) // all actors have been created so connect them
 									sql.query( "SELECT * FROM app.nlpedges" )
 									.on("result", edge => {
+										//Log(edge);
 										neodb.cypher({
 											query: `MATCH (a:Actor),(b:Actor) WHERE a.Name = {source} AND b.Name = {target} CREATE (a)-[r:${edge.Link}]->(b)`,
 											params: {
@@ -800,7 +802,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 												target: edge.Target,
 												weight: edge.Weight
 											}
-										}, err => Log("add edge") );
+										}, err => Log("add edge", err) );
 									})
 									.on("end", () => {
 										sql.query( "DELETE FROM app.nlpedges" );
@@ -2164,7 +2166,28 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 		return rtn;
 	}
 	
+	/*
+	function pipeSave( ctx, cb ) {
+		
+		DEBE.thread( sql => {
+			if ( cb ) // workflow provided a callback to update the context
+				cb(ctx, ctx => {
+					saveEvents(sql, ctx.Save, ctx);
+				});
+
+			else
+			if ( nlp = ctx.NLP )  // save NLP context
+				saveNLP( sql, nlp );
+
+			else	// save event processing context
+				saveEvents(sql, ctx.Save, ctx);
+			
+			sql.release();
+		});
+	} */
+	
 	var
+		ok = "ok",
 		now = new Date(),
 		sql = req.sql,
 		client = req.client,
@@ -2215,15 +2238,9 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 					case String: // query contains a source path
 
 						var
-							getSite = DEBE.getSite,
+							sqlThread = DEBE.thread,
 							pipeQuery = {},
 							pipePath = Pipe.parseURL(pipeQuery,{},{},{}),
-							parts = pipePath.substr(1).split("."),
-							pipeName = parts[0] || "",
-							pipeType = parts.pop() || "",
-							isFlexed = FLEX.select[pipeName] ? true : false,
-							isDB = pipeType == "db",
-							pipeRun = `${ctx.Host}.${ctx.Name}`,
 							job = { // job descriptor for regulator
 								qos: 1, //profile.QoS, 
 								priority: 0,
@@ -2243,96 +2260,67 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 								path: pipePath,
 								ctx: ctx
 							};
-
-						if ( !isFlexed && !isDB ) {  // update file change watchers 
-							sql.query( "DELETE FROM openv.watches WHERE File != ? AND Run = ?", [pipePath, pipeRun] );
-
-							sql.query( "INSERT INTO openv.watches SET ?", {  // associate file with plugin
-								File: pipePath,
-								Run: pipeRun
-							}, (err,info) => {
-
-								if ( !err )
-									setAutorun( pipePath );
-							});
-						}
 						
-						Log(">>pipe", pipePath, pipeType, pipeQuery, pipeRun);
-						if ( pipePath.charAt(0) == "/" ) 
-							if ( pipeJob = DEBE.pipeJob[pipeType] )
-								pipeJob( sql, job, (data,job,savecb) => {   // place in a workflow
-									pipePlugin( data, job.query, job.ctx, ctx => {
-										if ( savecb ) 
-											savecb(ctx, ctx => {
-												saveEvents(ctx.Save, ctx);
-											});
-										else
-										if ( nlp = ctx.NLP ) {
-											Log("NLP save>>>>>>>>>>>>>>", nlp);
-											Each( nlp.actors, (actor,type) => {
-												sql.query(
-													"INSERT INTO app.nlpactors SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1",
-													{ Name: actor }, err => Log("nlpactor", err) );
-											});
+						if ( pipePath.startsWith("/") ) {	// pipe file
+							var
+								pipeRun = `${ctx.Host}.${ctx.Name}`,
+							
+								parts = pipePath.substr(1).split("."),
+								pipeName = parts[0] || "",
+								pipeType = parts.pop() || "",
+								
+								isFlexed = FLEX.select[pipeName] ? true : false,
+								isDB = pipeType == "db";
+							
+							Log(">>pipe", pipePath, pipeType, pipeQuery, pipeRun);
 
-											var 
-												actors = nlp.actors,
-												topics = nlp.topics, 
-												target = actors.pop(), 
-												greedy = false;
-											
-											if ( greedy )
-												Each(actors, (source,type) => {
-													Each( topics, (topic,type) => {
-														if ( topic != "dnc" ) 
-															sql.query(
-																"INSERT INTO app.nlpedges SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1",
-																{
-																	Source: source,
-																	Target: target,
-																	Link: topic,
-																	Task: "drugs",		//< needs to be fixed to refer to host usecase prefix
-																	Hits: 1
-																}, err => Log("nlpedge", err) );
-													});
-												});
-											
-											else {
-												var
-													keys = Object.keys(topics),
-													keys = keys.sort( (a,b) => keys[b] - keys[a] ),
-													topic = topics[ keys[0] || "" ] || "dnc";
-												
-												if ( topic != "dnc" ) 
-													actors.forEach( source => {
-														sql.query(
-															"INSERT INTO app.nlpedges SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1",
-															{
-																Source: source,
-																Target: target,
-																Link: topic,
-																Task: "drugs",		//< needs to be fixed to refer to host usecase prefix
-																Hits: 1
-															}, err => Log("nlpedge", err) );
-													});
-											}
-										}
-										else
-											saveEvents(ctx.Save, ctx);
+							if ( !isFlexed && !isDB ) {  // setup plugin autorun only when pipe references a file
+								sql.query( "DELETE FROM openv.watches WHERE File != ? AND Run = ?", [pipePath, pipeRun] );
+
+								sql.query( "INSERT INTO openv.watches SET ?", {  // associate file with plugin
+									File: pipePath,
+									Run: pipeRun
+								}, (err,info) => {
+									if ( !err )
+										setAutorun( pipePath );
+								});
+							}
+							
+							if ( pipeJob = DEBE.pipeJob[pipeType] )	// derive workflow from pipe type
+								pipeJob( sql, job, (data,job) => {   // place job in its workflow
+									pipePlugin( data, job.query, job.ctx, ctx => {	// start the job
+										if ( NLP = ctx.NLP )
+											sqlThread( sql => {
+												saveNLP(sql, NLP);
+												sql.release();
+											});
+										//pipeSave( ctx, savecb );	// save results
 									});
 								});
 						
 							else
-								err = new Error( "bad pipe" );
-						
-						else { // reserved
-							err = new Error( "bad pipe" );
+								err = new Error( "bad pipe type" );
 						}
+						
+						else
+							pipeDoc( sql, job, (data,job) => {   // place job in its workflow
+								pipePlugin( data, job.query, job.ctx, ctx => {	// start the job
+									if ( NLP = ctx.NLP )
+										sqlThread( sql => {
+											saveNLP(sql, NLP);
+											sql.release();
+										});
+									//pipeSave( ctx, savecb );	// save results
+								});
+							});
+							
 						break;
 
 					case Array:  // query contains event list
 						ctx.Events = Pipe;
-						pipePlugin( {}, ctx, ctx => saveEvents(ctx.Save, ctx) );
+						pipePlugin( {}, ctx, ctx => {
+							if ( Save = ctx.Save ) saveEvents(sql, Save, ctx);
+						});
 						break;
 
 					case Object:  // cross parms in query for monte-carlo
@@ -2363,11 +2351,15 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 						break;
 				}
 				
-				res( err || "Piped");
+				res( err || ok );
 			}
 					
 			else	// unpiped (e.g. event generation) engines never participate in a supervised workflow
-				res( saveEvents( ctx.Save, ctx ) || "ok" );
+			if (Save = ctx.Save )
+				res( saveEvents( sql, Save, ctx ) ||  ok );
+			
+			else
+				res( ok );
 			
 		});
 		
@@ -2415,7 +2407,68 @@ function sendDoc(req, res) {
 	}
 }
 
-function saveEvents(evs, ctx) {
+function saveNLP(sql, nlp) {	// save NLP context to plugin usecase
+	//Log("NLP save>>>>>>>>>>>>>>", nlp);
+	var 
+		actors = nlp.actors,
+		topics = nlp.topics, 
+		greedy = false;
+
+	Each( actors, (actor,info) => {
+		sql.query(
+			"INSERT INTO app.nlpactors SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1",
+			{ Name: actor, Type: info.type }, err => Log("save actor", err) );
+	});
+
+	if ( greedy )
+		Each(actors, source => {
+			Each(actors, target => {
+				if ( source != target )
+					Each( topics, (topic,info) => {
+						if ( topic != "dnc" ) 
+							sql.query(
+								"INSERT INTO app.nlpedges SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1, Weight=Weight+?",
+								[{
+									Source: source,
+									Target: target,
+									Link: topic,
+									Weight: info.weight,
+									Task: "drugs",		//< needs to be fixed to refer to host usecase prefix
+									Hits: 1
+								}, info.weight], err => Log("save edge", err) );
+					});
+			});
+		});
+
+	else {
+		var
+			keys = Object.keys(topics),
+			keys = keys.sort( (a,b) => topics[b].weight - topics[a].weight ),
+			topic = keys[0] || "dnc",
+			info = topics[topic];
+
+		//Log("nlpedges", keys, topic, info );
+
+		if ( topic != "dnc" ) 
+			Each(actors, source => {
+				Each(actors, target => {
+					if ( source != target )
+						sql.query(
+							"INSERT INTO app.nlpedges SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1, Weight=Weight+?",
+							[{
+								Source: source,
+								Target: target,
+								Link: topic,
+								Weight: info.weight,
+								Task: "drugs",		//< needs to be fixed to refer to host usecase prefix
+								Hits: 1
+							}, info.weight], err => Log("save edge", err) );
+				});
+			});
+	}
+}
+			
+function saveEvents(sql, evs, ctx) {	// save event context to plugin usecase
 /**
 Aggregate and save events evs = [ev, ...] || { } || Error under direction of the supplied context 
 ctx = { Save: { ... }, Ingest: true||false, Export: true||false, ... }.  Stashify is used to 
@@ -2430,57 +2483,53 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 	
 	//Log("saving", evs);
 	
-	if (evs)
-		switch (evs.constructor.name) {
-			case "Error": 
-				return evs+"";
+	switch (evs.constructor.name) {
+		case "Error": 
+			return evs+"";
 
-			case "Object":  // keys in the plugin context are used to create the stash
-				evs.ID = ctx.ID;
-				evs.Host = ctx.Host;
-				return "".save( evs, (evs,sql) => {
-					//Log("save ctx done");
-				});
-				break;
-				
-			case "Array":
-				return Array.from(evs).save( ctx, (evs,sql) => {  // save events and callback with remaining unsaved evs
+		case "Object":  // keys in the plugin context are used to create the stash
+			evs.ID = ctx.ID;
+			evs.Host = ctx.Host;
+			return "".save( sql, evs, evs => {
+				//Log("save ctx done");
+			});
+			break;
 
-					if ( ctx.Export ) {   // export remaining events to filename
-						var
-							evidx = 0,
-							srcStream = new STREAM.Readable({    // establish source stream for export pipe
-								objectMode: false,
-								read: function () {  // read event source
-									if ( ev = evs[evidx++] )  // still have an event
-										this.push( JSON.stringify(ev)+"\n" );
-									else 		// signal events exhausted
-										this.push( null );
-								}
-							});
+		case "Array":
+			return Array.from(evs).save( sql, ctx, evs => {  // save events and callback with remaining unsaved evs
 
-						DEBE.uploadFile( "", srcStream, `./stores/${fileName}` );
-					}
-
-					if ( ctx.Ingest )  // ingest remaining events
-						DEBE.getFile( client, fileName, file => {
-							sql.query("DELETE FROM app.events WHERE ?", {fileID: file.ID});
-
-							GEO.ingestList( sql, evs, file.ID, file.Class, aoi => {
-								Log("INGESTED",aoi);
-
-								DEBE.thread( sql => {	// run plugins that were linked to this ingest
-									exeAutorun(sql,"", `.${ctx.Host}.${ctx.Name}` );
-									sql.release();
-								});
-							});
+				if ( ctx.Export ) {   // export remaining events to filename
+					var
+						evidx = 0,
+						srcStream = new STREAM.Readable({    // establish source stream for export pipe
+							objectMode: false,
+							read: function () {  // read event source
+								if ( ev = evs[evidx++] )  // still have an event
+									this.push( JSON.stringify(ev)+"\n" );
+								else 		// signal events exhausted
+									this.push( null );
+							}
 						});
 
-				}); 
-		}
-	
-	else
-		return null;
+					DEBE.uploadFile( "", srcStream, `./stores/${fileName}` );
+				}
+
+				if ( ctx.Ingest )  // ingest remaining events
+					DEBE.getFile( client, fileName, file => {
+						sql.query("DELETE FROM app.events WHERE ?", {fileID: file.ID});
+
+						GEO.ingestList( sql, evs, file.ID, file.Class, aoi => {
+							Log("INGESTED",aoi);
+
+							DEBE.thread( sql => {	// run plugins that were linked to this ingest
+								exeAutorun(sql,"", `.${ctx.Host}.${ctx.Name}` );
+								sql.release();
+							});
+						});
+					});
+
+			}); 
+	}
 	
 }
 
@@ -3031,8 +3080,8 @@ Totem (req,res)-endpoint to send notice to outsource jobs to agents.
 				sql.query("DELETE FROM openv.agents WHERE ?", {ID: agent.ID});
 				
 				if ( evs = JSON.parse(agent.script) )
-					FLEX.getContext(sql, "app."+Thread.plugin, {ID: Thread.case}, function (ctx) {
-						res( saveEvents( evs, ctx ) );
+					FLEX.getContext(sql, "app."+Thread.plugin, {ID: Thread.case}, ctx => {
+						res( saveEvents( sql, evs, ctx ) );
 					});
 				
 				else
@@ -4552,7 +4601,6 @@ assessments from our worldwide reporting system, please contact ${poc}.
 						}
 					});
 				}
-				
 				/*
 				"./public/js/": function (sql,name,ev) {
 					// run FLEX.publish on the engine
@@ -4563,7 +4611,6 @@ assessments from our worldwide reporting system, please contact ${poc}.
 					// run FLEX.publish on the engine
 					sql.release();
 				} */
-
 			}
 		}, err => {
 
@@ -4629,7 +4676,6 @@ clients, users, system health, etc).`
 		/**
 		@method D3
 		*/
-		
 		var DEBE = require("../debe").config({
 		}, err => {
 			Trace( err || "Stateful network flow manger started" );
@@ -4640,7 +4686,12 @@ clients, users, system health, etc).`
 		var DEBE = require("../debe").config({
 		}, err => {
 			DEBE.thread( sql => {
-				READ.readers.xls( sql, "./stores/test.xlsx", recs => {
+				READ.readers.xls( "./stores/test.xlsx", rec => {
+					if (rec) 
+						sql.query("INSERT INTO app.docs SET ?", {
+							Name: rec.reportID,
+							Pipe: JSON.stringify( rec.doc )
+						}, err => Log("add doc", err) );
 				});
 			});
 		});
