@@ -2647,10 +2647,10 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 								doc = escape(field.Comment).replace(/\./g, "%2E").replace(/\_/g,"%5F"),
 								qual = "short";
 							
-							if ( key.indexOf("Save") == 0) qual += "hideoff" ;
+							if ( key.startsWith("Save") ) qual += "hideoff" ;
 							
 							else
-							if ( key.charAt(0) == "_" ) qual += "off";
+							if ( key.startsWith("_" ) ) qual += "off";
 							
 							//Log(key,qual);
 							cols.push( key + "." + type + "." + doc + "." + qual );
@@ -4210,7 +4210,7 @@ Initialize DEBE on startup.
 				try {
 					rtn.push( cb 
 						? cb( key, list ) 
-						: key + "(" + list.joinify() + ")" 
+						: (key || "ro") + "(" + list.joinify() + ")" 
 					);
 				}
 				catch (err) {
@@ -4683,15 +4683,39 @@ clients, users, system health, etc).`
 		break;
 		
 	case "D4":
+		function readFile(sql, path, cb) {
+			READ.readers.xls( "./stores/test.xls", rec => {
+				if ( rec ) 
+					cb(rec,sql);
+				else
+					Log("done");
+			});
+		}
+			
 		var DEBE = require("../debe").config({
 		}, err => {
 			DEBE.thread( sql => {
-				READ.readers.xls( "./stores/test.xlsx", rec => {
-					if (rec) 
+				var recs = 0, now = new Date();
+				readFile( sql, "./stores/test.xls", (rec,sql) => {
+					if ( ++recs<5 ) {
+						var 
+							doc = (rec.doc || rec.Doc || rec.report || rec.Report || "")
+									.replace( /\n/g, " ")
+									.replace( /\&\#10;/g, " "),
+							
+							docs = doc				
+									.match( /(.*)TEXT:(.*)COMMENTS:(.*)/ ) || [ "". "", doc, ""],
+							
+							text = "";
+						
+						docs[2].replace( /\.  /g, "\n").replace( /^[0-9 ]*\. \(.*\) (.*)/gm, (str,txt) => text += txt + ".  " );
+
 						sql.query("INSERT INTO app.docs SET ?", {
-							Name: rec.reportID,
-							Pipe: JSON.stringify( rec.doc )
-						}, err => Log("add doc", err) );
+							Reported: rec.reported || rec.Reported || now,
+							Name: rec.reportID || ("tbd-"+recs),
+							Pipe: JSON.stringify( text )
+						}, err => Log("add", err) );
+					}
 				});
 			});
 		});
