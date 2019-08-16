@@ -43,7 +43,7 @@ export XLATE=$HERE/node_modules/i18n-abide/examples/express3/i18n	# I18N transla
 export PATH=$PATH:$NODE/bin
 
 # Jade views
-export VIEW_PASS="a password"
+#export VIEW_PASS="a password"
 
 # MYSQL
 #export MYSQL=$BASE/mysql
@@ -51,5 +51,7 @@ export VIEW_PASS="a password"
 
 export PATH=/opt/cmake:$PATH 			# latest cmake
 export PATH=$BASE/oxygen/bin:$PATH    # doxygen code documenter
+
+export NEO4J="http://root:NGA@localhost:7474"
 
 # UNCLASSIFIED when IP addresses and passwords are undefined

@@ -258,7 +258,7 @@ catch (err) {
 		
 	//plugins: $.libs,
 		
-	onStartup: sql => {
+	onStartup: function (sql) {
 		var
 			site = DEBE.site,
 			pocs = site.pocs,
@@ -271,12 +271,44 @@ catch (err) {
 				body: "Just FYI"
 			}, sql );
 		
-		sql.query(
-			"SELECT File FROM openv.watches WHERE substr(File,1,1) = '/' GROUP BY File",
-			[] )
+		sql.query( "SELECT File FROM openv.watches WHERE substr(File,1,1) = '/' GROUP BY File", [] )
 		.on("result", link => {
 			setAutorun( link.File );
-		});		
+		});	
+		
+		if (neodb = DEBE.neodb) {
+			if (false) // test connection
+				neodb.cypher({
+					query: 'MATCH (u:User {email: {email}}) RETURN u',
+					params: {
+						email: 'alice@example.com',
+					},
+				}, (err, results) => {
+					if (err) {
+						Trace( err );
+						DEBE.neodb = null;
+					}
+					else {
+						var result = results[0];
+						if (!result) {
+							Log('neodb test returned no records.');
+						} 
+						else {
+							var user = result['u'];
+							Log("neodb test", JSON.stringify(user, null, 4));
+						}
+					}
+				});
+
+			// clear graph database
+			sql.query("DELETE FROM nlpactors");
+			sql.query("DELETE FROM nlpedges");
+			
+			neodb.cypher({
+				query: "MATCH (n) DETACH DELETE n"
+			}, err => Trace( err || "CLEARED GRAPH DB" ) );  
+		}			
+		
 	},
 		
 	onUpdate: function (sql,ds,body) { // update change journal 
@@ -3341,6 +3373,8 @@ Initialize DEBE on startup.
 		});
 		JAX.start();
 		
+		DEBE.neodb = ENV.NEO4J ? new NEO.GraphDatabase(ENV.NEO4J) : null;
+		
 		DEBE.onStartup(sql);
 
 		var path = DEBE.paths.jades;
@@ -4614,36 +4648,6 @@ assessments from our worldwide reporting system, please contact ${poc}.
 			}
 		}, err => {
 
-			var neodb = DEBE.neodb = new NEO.GraphDatabase('http://root:NGA@localhost:7474');
- 
-			if (neodb) {
-				neodb.cypher({
-					query: 'MATCH (u:User {email: {email}}) RETURN u',
-					params: {
-						email: 'alice@example.com',
-					},
-				}, (err, results) => {
-					if (err) {
-						Trace( err );
-						DEBE.neodb = null;
-					}
-					else {
-						var result = results[0];
-						if (!result) {
-							Log('neodb test returned no records.');
-						} 
-						else {
-							var user = result['u'];
-							Log("neodb test", JSON.stringify(user, null, 4));
-						}
-					}
-				});
-				
-				neodb.cypher({
-					query: "MATCH (n) DETACH DELETE n"
-				}, err => Log( err || "Graph db cleared" ) );  
-			}			
-
 			Trace( err || 
 `Yowzers - this does everything but eat!  An encrypted service, a database, a jade UI for clients,
 usecase-engine plugins, file-upload watchers, and watch dogs that monitor system resources (jobs, files, 
@@ -4684,11 +4688,15 @@ clients, users, system health, etc).`
 		
 	case "D4":
 		function readFile(sql, path, cb) {
-			READ.readers.xls( "./stores/test.xls", rec => {
-				if ( rec ) 
+			sql.beginBulk();
+			READ.readers.xls( "./stores/test.xls", rec => { 
+				if (rec) 
 					cb(rec,sql);
-				else
-					Log("done");
+				
+				else {
+					sql.endBulk();
+					sql.release();
+				}
 			});
 		}
 			
@@ -4702,12 +4710,12 @@ clients, users, system health, etc).`
 							doc = (rec.doc || rec.Doc || rec.report || rec.Report || "")
 									.replace( /\n/g, " ")
 									.replace( /\&\#10;/g, " "),
-							
+
 							docs = doc				
-									.match( /(.*)TEXT:(.*)COMMENTS:(.*)/ ) || [ "". "", doc, ""],
-							
+									.match( /(.*)TEXT:(.*)COMMENTS:(.*)/ ) || [ "", "", doc, ""],
+
 							text = "";
-						
+
 						docs[2].replace( /\.  /g, "\n").replace( /^[0-9 ]*\. \(.*\) (.*)/gm, (str,txt) => text += txt + ".  " );
 
 						sql.query("INSERT INTO app.docs SET ?", {
