@@ -2543,6 +2543,7 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 							}
 						});
 
+					Trace("EXPORT "+fileName);
 					DEBE.uploadFile( "", srcStream, `./stores/${fileName}` );
 				}
 
@@ -2559,7 +2560,6 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 							});
 						});
 					});
-
 			}); 
 	}
 	

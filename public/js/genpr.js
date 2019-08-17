@@ -10,7 +10,8 @@ module.exports = {  // generate a random process with specified parameters
 		type_Gauss: "json comment 'Gauss proccess with specified {mean,coints,dim,model,mineig}' ",
 		type_Gillespie: "json comment 'Gillespie-Dobbs process with specified number of {states}' ",
 		type_Ornstein: "json comment 'Ornstein-Ulenbeck process with specified {theta, a = sigma/sqrt(2 theta)}' ",
-		
+		type_Mix: "json comment 'Gaussian mix with specified {mu,sigma} at each ensemble position",
+	
 		Nyquist: "float default 1 comment 'process over-sampling factor' ",
 		Steps: "int(11) default 0 comment 'number of process steps' ",
 		Batch: "int(11) default 0 comment 'steps to next supervised learning' ",
@@ -31,6 +32,7 @@ module.exports = {  // generate a random process with specified parameters
 			type_Gauss  // gaussian process [mean count, coherence intervals]
 			type_Bayes  // bayes process equlib probs
 			type_Ornstein   // ornstein process theta with parameter a = sigma / sqrt(2*theta)
+			type_Mix // gaussian mixxing with parmeters {mu[0:N-1], sigma[0:N-1]}
 			Nyquist // oversampling factor
 			Steps // process steps
 			emProbs 	// mixing/emission/observation parms
@@ -61,6 +63,7 @@ module.exports = {  // generate a random process with specified parameters
 			gauss: ctx.type_Gauss, // {mean, coints,dim,model,mineig}
 			bayes: ctx.type_Bayes, // equlib probs
 			ornstein: ctx.type_Ornstein,   // {theta,  a = sigma / sqrt(2*theta)}
+			mix: ctx.type_Mix, // {mu,sigma}
 			
 			dt: 1/ctx.Nyquist, // oversampling factor
 			steps: ctx.Steps, // process steps
@@ -134,6 +137,7 @@ module.exports = {  // generate a random process with specified parameters
 		
 		$.gen( opts, evs => {
 			ctx.Save = evs;
+			Log(evs.length*evs[0].length," events generated");
 			res( ctx );
 		});
 

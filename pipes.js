@@ -56,7 +56,16 @@ var PIPE = module.exports = {
 	pipeStream: function(sql, job,cb) { // pipe streamed file
 		sql.insertJob( job, job => { 
 			function getEvents(job, cb) {
-				FS.createReadStream("."+job.path,"utf8").get( "", evs => cb( {evs: evs}, job ) );
+				FS.open( "."+job.path, "r", (err, fd) => {
+					if (err) 
+						Log("pipe stream", err);
+					
+					else 
+						FS.createReadStream( "", {fd:fd, encoding: "utf8"}).get( "", evs => {
+							Log("evs",evs);
+							cb( {evs: evs}, job );
+						});
+				});
 			}
 
 			getEvents( job, (evs,job) => cb(evs,job) );
@@ -75,7 +84,7 @@ var PIPE = module.exports = {
 						cb(img); 
 						return img; 
 					} )
-					.catch( err => Log(err) );
+					.catch( err => Log("pipe image", err) );
 				}
 
 				var
@@ -251,7 +260,7 @@ var PIPE = module.exports = {
 		
 		.on( "result", rec => cb( {rec: rec}, job ) )
 		
-		.on( "error", err => Log("supervisor", err) );
+		.on( "error", err => Log("pipe db", err) );
 	},
 
 	pipeAOI: function(sql,job,cb) {	// stream indexed events or chips through supervisor 

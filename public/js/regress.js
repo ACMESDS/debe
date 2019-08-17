@@ -315,13 +315,16 @@ The following context keys are accepted:
 				dtr: (model) => model,
 				lda: (model) => model,
 				qda: (model) => model,
+				qda: (model) => model,
 				ols: ctx.ols_degree ? $.SPR.load : $.MLR.load
 			},
 			loader = loaders[use],
 			model = ctx[ `Save_${use}` ], 
-			solve = ctx[`hyper_${use}` ] || {};
+			solve = ctx[ `hyper_${use}` ] || {};
 		
 		Log({
+			y: y,
+			x: x.length,
 			solve: solve,
 			keep: keep,
 			use: use,
