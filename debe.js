@@ -2139,11 +2139,13 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 	function pipePlugin( data, pipe, ctx, cb ) { // prime plugin with pipe and run in context ctx
 		req.query = ctx;   // let plugin mixin its own keys
 		Log("prime pipe", pipe);
-		Copy(ctx, data);
-		ctx.Data = data;
+		//Copy(ctx, data);
+		Copy(data, ctx);
+		//ctx.Data = data;
 		Each(pipe, (key,val) => { // add pipe keys to engine ctx
 			if ( val && isString(val) )
-				ctx[key] = data[key] = val.parseJS(data, (val,err) => val  );
+				//ctx[key] = data[key] = val.parseJS(data, (val,err) => val  );
+				ctx[key] = val.parseJS(ctx, (val,err) => val  );
 		});
 			
 		//Log(">>req", req.table, req.type, req.query.Name);
@@ -2158,6 +2160,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 				else {	// remove pipe keys from ctx
 					Log("clear pipe", pipe);
 					for (var key in pipe) delete ctx[key];
+					for (var key in data) delete ctx[key];
 					cb(ctx);
 				}
 			
@@ -2320,14 +2323,18 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 							
 							if ( pipeJob = DEBE.pipeJob[pipeType] )	// derive workflow from pipe type
 								pipeJob( sql, job, (data,job) => {   // place job in its workflow
-									pipePlugin( data, job.query, job.ctx, ctx => {	// start the job
-										if ( NLP = ctx.NLP )
-											sqlThread( sql => {
-												saveNLP(sql, NLP);
-												sql.release();
-											});
-										//pipeSave( ctx, savecb );	// save results
-									});
+									if (data)
+										pipePlugin( data, job.query, job.ctx, ctx => {	// start the job
+											if ( NLP = ctx.NLP )
+												sqlThread( sql => {
+													saveNLP(sql, NLP);
+													sql.release();
+												});
+											//pipeSave( ctx, savecb );	// save results
+										});
+									
+									else
+										Log("pipe failed");
 								});
 						
 							else
@@ -2335,7 +2342,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 						}
 						
 						else
-							pipeDoc( sql, job, (data,job) => {   // place job in its workflow
+							pipeDoc( sql, job, (data,job) => {   // place job in doc workflow
 								pipePlugin( data, job.query, job.ctx, ctx => {	// start the job
 									if ( NLP = ctx.NLP )
 										sqlThread( sql => {

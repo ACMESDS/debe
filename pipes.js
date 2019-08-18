@@ -6,6 +6,7 @@
 @requires reader
 @requires man
 @requires totem
+@requires stream
 @requires geohack
 
 Provide a (stream, image, etc) PIPE(sql,job,cb) for DEBE plugins.   Each PIPE will callback 
@@ -42,6 +43,7 @@ var
 	TOTEM = require("totem"),
 	ENUM = require("enum"),
 	$ = require("man"),
+	STREAM = require("stream"),
 	RAN = require("randpr");
 
 const { Copy,Each,Log,isObject,isString,isFunction,isError,isArray,isEmpty } = ENUM;
@@ -58,17 +60,42 @@ var PIPE = module.exports = {
 			function getEvents(job, cb) {
 				FS.open( "."+job.path, "r", (err, fd) => {
 					if (err) 
-						Log("pipe stream", err);
+						cb(null);
 					
-					else 
-						FS.createReadStream( "", {fd:fd, encoding: "utf8"}).get( "", evs => {
-							Log("evs",evs);
-							cb( {evs: evs}, job );
-						});
+					else {
+						var 
+							evs = [],
+							rem = "",
+							src = FS.createReadStream( "", { fd:fd, encoding: "utf8" }),
+							sink = new STREAM.Writable({
+								objectMode: true,
+								write: function (recs,en,cb) {
+									(rem+recs).split("\n").forEach( rec => {
+										if (rec)
+											try {
+												evs.push( JSON.parse(rec) );
+											}
+											catch (err) {
+												rem = rec;
+											}
+									});
+									cb(null);  // signal no errors
+								}
+							});
+		
+						sink
+							.on("finish", () => {
+								Log("pipe streamed", evs.length);
+								cb( evs, job );
+							})
+							.on("error", err => cb(null) );
+		
+						src.pipe(sink);  // start the ingest
+					}
 				});
 			}
 
-			getEvents( job, (evs,job) => cb(evs,job) );
+			getEvents( job, (evs,job) => cb(evs ? {Events:evs} : null , job) );
 		});
 	},
 
@@ -84,7 +111,7 @@ var PIPE = module.exports = {
 						cb(img); 
 						return img; 
 					} )
-					.catch( err => Log("pipe image", err) );
+					.catch( err => cb(null) );
 				}
 
 				var
@@ -98,37 +125,42 @@ var PIPE = module.exports = {
 					if ( !firstKey ) {
 						firstKey = key;
 
-						`read( path, img => cb( ${query[key]} ) )`
+						`read( path, img => img ? cb( ${query[key]} ) : cb( null ) )`
 						.parseJS( Copy(ctx, { // define parse context
 							read: readFile,
 							path: path,
-							cb: rtn => {
-								data[firstKey] = rtn;
-								query[firstKey] = firstKey;
-								cb( data, job );
+							cb: calc => {
+								if (calc) {	// read worked
+									data[firstKey] = calc;
+									query[firstKey] = firstKey;
+									cb( data, job );
+								}
+								
+								else	// failed read
+									cb( null );
 							}
 						}) );
 					}  
 
-				if ( !firstKey ) readFile(path, img => cb( {Image:img}, job) );
+				if ( !firstKey ) readFile(path, img => cb( img, job) );
 			}
 
-			getImage( job, (img,job) => cb(img,job) );
+			getImage( job, (img,job) => cb(img ? {Image:img} : null , job) );
 		});	
 	},
 
-	pipeJson: function(sql,job,cb) { // pipe json data 
+	pipeJson: function(sql,job,cb) { // pipe json data with callback cb(json,job) || cb(null)
 		sql.insertJob( job, job => { 
 			function getData(job, cb) {
 				// Log(">>fetch", path);
-				getSite( job.path, null, info => cb( info.parseJSON( {} ), job ) );
+				getSite( job.path, null, info => cb( info.parseJSON( null ), job ) );
 			}
 
-			getData( job, (data,job) => cb(data,job) );
+			getData( job, (data,job) => cb(data ? {Data:data} : null , job) );
 		});
 	},
 
-	pipeDoc: function(sql,job,cb) { // pipe nlp docs 
+	pipeDoc: function(sql,job,cb) { // pipe nlp docs with callback cb(doc,job) || cb(null)
 		function sumScores(metrics) {
 			var 
 				entities = metrics.entities,
@@ -171,11 +203,11 @@ var PIPE = module.exports = {
 			freqs = metrics.freqs;
 
 		sql.insertJob( job, job => { 
-			function getDoc( job, cb ) {
+			function getStats( job, cb ) {
 
 				function readFile(path,cb) {	// read file at path with callback cb( {docs, metrics} )
 					
-					function scoreDoc( doc ) {
+					function scoreDoc( doc, cb ) {
 						var 
 							docs = doc.replace(/\n/g,"").match( /[^\.!\?]+[\.!\?]+/g ) || [],
 							scored = 0;
@@ -193,12 +225,12 @@ var PIPE = module.exports = {
 										});
 
 										sumScores( metrics );	
-										cb( {docs: docs, metrics: metrics} );
+										cb( {Dos: doc, Metrics: metrics} );
 									}
 
 									else
 									if (scored > docs.length) // no dcos
-										cb( {docs: docs, metrics: metrics} );
+										cb( {Doc: doc, Metrics: metrics} );
 								}) );
 							}
 
@@ -210,7 +242,7 @@ var PIPE = module.exports = {
 					if ( path.startsWith("/") )	// doc at specified file path
 						READ.readFile( "."+path, rec => {
 							if (rec) 
-								if ( rec.doc ) scoreDoc( rec.doc );
+								if ( rec.doc ) scoreDoc( rec.doc, cb );
 
 								else 
 									Log("ignore empty doc");
@@ -220,7 +252,7 @@ var PIPE = module.exports = {
 						});
 					
 					else // doc is the path
-						scoreDoc( path );
+						scoreDoc( path, cb );
 				}
 
 				var
@@ -234,14 +266,19 @@ var PIPE = module.exports = {
 					if ( !firstKey ) {
 						firstKey = key;
 
-						`read( path, doc => cb( ${query[key]} ) )`
+						`read( path, doc => doc ? cb( ${query[key]} ) : cb( null ) )`
 						.parseJS( Copy(ctx, { // define parse context
 							read: readFile,
 							path: path,
 							cb: stats => {
-								data[firstKey] = stats;
-								query[firstKey] = firstKey;
-								cb( data, job );
+								if (stats) { // read worked
+									data[firstKey] = stats;
+									query[firstKey] = firstKey;
+									cb( data, job );
+								}
+								
+								else	// read failed
+									cb( null );
 							}
 						}) );
 					}  
@@ -249,18 +286,18 @@ var PIPE = module.exports = {
 				if ( !firstKey ) readFile(path, doc => cb( doc, job ) );
 			}
 
-			getDoc( job, (doc,job) => cb( doc, job ) );
+			getStats( job, (stats, job) => cb( stats, job ) );
 		});
 	},
 
-	pipeDB: function(sql,job,cb) {  // pipe database source
+	pipeDB: function(sql,job,cb) {  // pipe database source with callback cb(rec,job) || cb(null)
 		sql.query( isEmpty(job.query)
 				? "SELECT * FROM app.??"
 				: "SELECT * FROM app.?? WHERE least(?,1)", [job.class, job.query] )
 		
-		.on( "result", rec => cb( {rec: rec}, job ) )
+		.on( "result", rec => cb( {Rec: rec}, job ) )
 		
-		.on( "error", err => Log("pipe db", err) );
+		.on( "error", err => cb(null) );
 	},
 
 	pipeAOI: function(sql,job,cb) {	// stream indexed events or chips through supervisor 

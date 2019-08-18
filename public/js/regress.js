@@ -120,11 +120,16 @@ The following context keys are accepted:
 				$( 
 					`cls = ${use}_train( x, y, solve ); `, 
 
-					Copy(ctx, {
+					/*Copy(ctx, {
 						x: x,
 						y: y,
 						solve: solve
-					}), 
+					}), */
+					{
+						x: x,
+						y: y,
+						solve: solve
+					},
 					
 				  	ctx => {  // regressor trained
 						cb( ctx.cls );
@@ -354,6 +359,10 @@ The following context keys are accepted:
 
 			else
 			if ( x ) // in prediction mode
+				if ( use=="qda" )
+					trainer( x, y, x0, info => sender(info) );
+				
+				else
 				if ( model ) 
 					if ( model.length )	{	// multichannel predictions
 					}
