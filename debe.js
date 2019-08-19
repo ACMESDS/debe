@@ -2135,39 +2135,96 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 @param {Object} req http request
 @param {Function} res Totem response callback
 */	
+	function pipePlugin( get, sql, job, cb ) { // prime plugin with query and run in context ctx
+
+		function pipe(get, sql, job, cb) {
+			var 
+				ctx = job.ctx,
+				query = job.query,
+				error = null;
+
+			Log(">pipe opened", job.path);
+			get(sql, job, data => {
+				if (data) {
+					Copy(data,ctx);
+					Each(query, (key,exp) => {
+						data[key] = ctx[key] = exp.parseJSS( ctx, err => error = err );
+					});
+
+					cb( error ? null : ctx, () => {
+						Log(">pipe closed");
+						for (key in data) delete ctx[key];
+					});
+				}
+
+				else
+					cb(null);
+			});
+		}
+		
+		sql.insertJob( job, job => { 
+			pipe(get, sql, job, (ctx,close) => {
+				if (ctx) {
+					req.query = ctx;   // let plugin mixin its own keys		
+					ATOM.select(req, ctx => {  // run plugin
+						//Log(">>atom", ctx);
+						if ( ctx )
+							if ( isError(ctx)  )
+								Log(`>pipe ${ctx.Host} ` + ctx);
+
+							else 
+								cb( ctx, sql );
+
+						if (close) close();
+					});
+				}
+
+				else
+					Log(">pipe failed");
+			});
+		});
+	}
 	
-	function pipePlugin( data, pipe, ctx, cb ) { // prime plugin with pipe and run in context ctx
+	/*
+	function pipePlugin( data, query, ctx, cb ) { // prime plugin with query and run in context ctx
 		req.query = ctx;   // let plugin mixin its own keys
-		Log("prime pipe", pipe);
+		Log("prime pipe", query);
 		//Copy(ctx, data);
 		Copy(data, ctx);
 		//ctx.Data = data;
-		Each(pipe, (key,val) => { // add pipe keys to engine ctx
+		var badPipe = null;
+		Each(query, (key,val) => { // add pipe keys to engine ctx
+			Log(key,val);
 			if ( val && isString(val) )
 				//ctx[key] = data[key] = val.parseJS(data, (val,err) => val  );
-				ctx[key] = val.parseJS(ctx, (val,err) => val  );
+				ctx[key] = val.parseJS(ctx, (val,err) => badPipe = err );
 		});
 			
 		//Log(">>req", req.table, req.type, req.query.Name);
 		//Log("pipe ctx", ctx);
-		ATOM.select(req, ctx => {  // run plugin
-			
-			//Log(">>atom", ctx);
-			if ( ctx )
-				if ( isError(ctx)  )
-					Log(`${ctx.Host} ` + ctx);
+		if (badPipe)
+			Log("pipe failed", badPipe);
+		
+		else
+			ATOM.select(req, ctx => {  // run plugin
 
-				else {	// remove pipe keys from ctx
-					Log("clear pipe", pipe);
-					for (var key in pipe) delete ctx[key];
-					for (var key in data) delete ctx[key];
-					cb(ctx);
-				}
-			
-			else
-				Log("lost engine context");
-		});
+				//Log(">>atom", ctx);
+				if ( ctx )
+					if ( isError(ctx)  )
+						Log(`${ctx.Host} ` + ctx);
+
+					else {	// remove pipe keys from ctx
+						Log("clear pipe", pipe);
+						for (var key in query) delete ctx[key];
+						for (var key in data) delete ctx[key];
+						cb(ctx);
+					}
+
+				else
+					Log("lost engine context");
+			});
 	}
+	*/
 	
 	function crossParms( depth, keys, forCtx, setCtx, cb ){	// cross forCtx keys with callback cb(setCtx)
 		if ( depth == keys.length ) 
@@ -2307,7 +2364,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 								isFlexed = FLEX.select[pipeName] ? true : false,
 								isDB = pipeType == "db";
 							
-							Log(">>pipe", pipePath, pipeType, pipeQuery, pipeRun);
+							Log(">>pipe", pipePath);
 
 							if ( !isFlexed && !isDB ) {  // setup plugin autorun only when pipe references a file
 								sql.query( "DELETE FROM openv.watches WHERE File != ? AND Run = ?", [pipePath, pipeRun] );
@@ -2322,35 +2379,33 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 							}
 							
 							if ( pipeJob = DEBE.pipeJob[pipeType] )	// derive workflow from pipe type
-								pipeJob( sql, job, (data,job) => {   // place job in its workflow
-									if (data)
-										pipePlugin( data, job.query, job.ctx, ctx => {	// start the job
-											if ( NLP = ctx.NLP )
-												sqlThread( sql => {
-													saveNLP(sql, NLP);
-													sql.release();
-												});
-											//pipeSave( ctx, savecb );	// save results
-										});
-									
+								pipePlugin( pipeJob, sql, job, (ctx,sql) => {
+									if (ctx)
+										if ( NLP = ctx.NLP ) 
+											saveNLP(sql, NLP);
+
+										else {
+										}
+
 									else
 										Log("pipe failed");
 								});
-						
+							
 							else
 								err = new Error( "bad pipe type" );
 						}
 						
 						else
-							pipeDoc( sql, job, (data,job) => {   // place job in doc workflow
-								pipePlugin( data, job.query, job.ctx, ctx => {	// start the job
-									if ( NLP = ctx.NLP )
-										sqlThread( sql => {
-											saveNLP(sql, NLP);
-											sql.release();
-										});
-									//pipeSave( ctx, savecb );	// save results
-								});
+							pipePlugin(pipeDoc, sql, job, (ctx,sql) => {   // place job in doc workflow
+								if (ctx)
+									if ( NLP = ctx.NLP ) 
+										saveNLP(sql, NLP);
+
+									else {
+									}
+
+								else
+									Log("pipe failed");
 							});
 							
 						break;

@@ -29,7 +29,7 @@ The following context keys are accepted:
 		Method: lda || anlp || snlp for Latent, Homebrew, and Stanford nlp
 		Data.Doc document to parse
 	*/
-		var nlp = ctx.NLP = ctx.Data.metrics;
+		var nlp = ctx.NLP = ctx.Metrics;
 		res(ctx);
 
 		if (nlp)

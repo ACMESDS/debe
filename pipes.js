@@ -55,111 +55,152 @@ var PIPE = module.exports = {
 		Copy( opts || {}, PIPE );
 	},
 	
-	pipeStream: function(sql, job,cb) { // pipe streamed file
-		sql.insertJob( job, job => { 
-			function getEvents(job, cb) {
-				FS.open( "."+job.path, "r", (err, fd) => {
-					if (err) 
-						cb(null);
-					
-					else {
-						var 
-							evs = [],
-							rem = "",
-							src = FS.createReadStream( "", { fd:fd, encoding: "utf8" }),
-							sink = new STREAM.Writable({
-								objectMode: true,
-								write: function (recs,en,cb) {
-									(rem+recs).split("\n").forEach( rec => {
-										if (rec)
-											try {
-												evs.push( JSON.parse(rec) );
-											}
-											catch (err) {
-												rem = rec;
-											}
-									});
-									cb(null);  // signal no errors
-								}
+	pipeStream: function(sql, job, cb) {
+		FS.open( "."+job.path, "r", (err, fd) => {
+			if (err) 
+				cb(null);
+
+			else {
+				var 
+					evs = [],
+					rem = "",
+					src = FS.createReadStream( "", { fd:fd, encoding: "utf8" }),
+					sink = new STREAM.Writable({
+						objectMode: true,
+						write: function (recs,en,cb) {
+							(rem+recs).split("\n").forEach( rec => {
+								if (rec)
+									try {
+										evs.push( JSON.parse(rec) );
+									}
+									catch (err) {
+										rem = rec;
+									}
 							});
-		
-						sink
-							.on("finish", () => {
-								Log("pipe streamed", evs.length);
-								cb( evs, job );
-							})
-							.on("error", err => cb(null) );
-		
-						src.pipe(sink);  // start the ingest
-					}
-				});
+							cb(null);  // signal no errors
+						}
+					});
+
+				sink
+					.on("finish", () => {
+						Log(">pipe streamed", evs.length);
+						cb( {Events: evs} );
+					})
+					.on("error", err => cb(null) );
+
+				src.pipe(sink);  // start the pipe
 			}
-
-			getEvents( job, (evs,job) => cb(evs ? {Events:evs} : null , job) );
-		});
+		});		
 	},
+	
+	pipeImage: function (sql, job, cb) {
+		$.IMP.read( "."+ job.path )
+			.then( img => { 
+				Log(">pipe image", img.bitmap.height, img.bitmap.width);
+				img.readPath = path;
+				cb( {Image:img} ); 
+				return img; 
+			} )
+			.catch( err => cb(null) );	
+	},
+	
+	pipeJson: function(sql, job, cb) { // pipe json data with callback cb(json,job) || cb(null)
+		getSite( job.path, null, info => cb( {Data: info.parseJSON( null )} ) );
+	},
+	
+	pipeDoc: function(sql, job, cb) { // pipe nlp docs with callback cb(doc,job) || cb(null)
+		function sumScores(metrics) {
+			var 
+				entities = metrics.entities,
+				count = metrics.count,
+				scores = metrics.scores,
+				ids = metrics.ids,
+				topics = metrics.topics;
+				//dag = metrics.dag;
 
-	pipeImage: function(sql,job,cb) {   // pipe image 
-		sql.insertJob( job, job => { 
-			function getImage( job, cb) {
+			scores.forEach( score => {
+				metrics.sentiment += score.sentiment;
+				metrics.relevance += score.relevance;
+				metrics.agreement += score.agreement;
+			}); 
+		}
 
-				function readFile(path,cb) {	// read and forward jpg to callback
-					$.IMP.read( "."+ path )
-					.then( img => { 
-						Log("read", path, img.bitmap.height, img.bitmap.width);
-						img.readPath = path;
-						cb(img); 
-						return img; 
-					} )
-					.catch( err => cb(null) );
+		function scoreDoc( doc, cb ) {	// callback cb(metrics)
+			var 
+				docs = doc.replace(/\n/g,"").match( /[^\.!\?]+[\.!\?]+/g ) || [],
+				scored = 0;
+
+			docs.forEach( doc => {
+				if (doc) {
+					freqs.addDocument(doc);									
+					methods.forEach( nlp => nlp( doc , metrics, score => {
+						scores.push( score );
+						if ( ++scored == docs.length ) {
+							["DTO", "DTO cash"].forEach( word => {
+								freqs.tfidfs( word, (n,freq) => {
+									if ( score = scores[n] ) score.relevance += freq;
+								});
+							});
+
+							sumScores( metrics );	
+							cb( metrics );
+						}
+
+						else
+						if (scored > docs.length) // no dcos
+							cb( metrics );
+					}) );
 				}
 
-				var
-					path = job.path,
-					ctx = job.ctx,
-					query = job.query,
-					data = {},
-					firstKey = "";
+				else 
+					scored++;
+			});
+		}
 
-				for (var key in query)  // first key is special scripting-with-callback key
-					if ( !firstKey ) {
-						firstKey = key;
+		var
+			path = job.path,
+			nlps = READ.nlps,
+			methods = [nlps.max],
+			metrics = {
+				// dag: new ANLP.EdgeWeightedDigraph(),
+				freqs: READ.docFreqs,
+				entity: {
+					topics: new READ.docTrie(false),
+					actors: new READ.docTrie(false)
+				},					
+				ids: {
+					topics: 0,
+					actors: 0
+				},
+				topics: {},
+				actors: {},
+				sentiment: 0,
+				relevance: 0,
+				agreement: 0,
+				scores: [],
+				level: 0
+			},
+			scores = metrics.scores,
+			freqs = metrics.freqs;
+		
+		if ( path.startsWith("/") )	// doc at specified file path
+			READ.readFile( "."+path, rec => {
+				if (rec) 
+					if ( rec.doc ) 
+						scoreDoc( rec.doc, metrics => cb({Data:rec.doc, Metrics: metrics}) );
 
-						`read( path, img => img ? cb( ${query[key]} ) : cb( null ) )`
-						.parseJS( Copy(ctx, { // define parse context
-							read: readFile,
-							path: path,
-							cb: calc => {
-								if (calc) {	// read worked
-									data[firstKey] = calc;
-									query[firstKey] = firstKey;
-									cb( data, job );
-								}
-								
-								else	// failed read
-									cb( null );
-							}
-						}) );
-					}  
+					else 
+						Log(">pipe skipped empty doc");
 
-				if ( !firstKey ) readFile(path, img => cb( img, job) );
-			}
+				else
+					Log(">pipe read all docs");
+			});
 
-			getImage( job, (img,job) => cb(img ? {Image:img} : null , job) );
-		});	
+		else // doc is the path
+			scoreDoc( path, metrics => cb({Doc:path, Metrics:metrics}) );
 	},
-
-	pipeJson: function(sql,job,cb) { // pipe json data with callback cb(json,job) || cb(null)
-		sql.insertJob( job, job => { 
-			function getData(job, cb) {
-				// Log(">>fetch", path);
-				getSite( job.path, null, info => cb( info.parseJSON( null ), job ) );
-			}
-
-			getData( job, (data,job) => cb(data ? {Data:data} : null , job) );
-		});
-	},
-
+	
+	/*
 	pipeDoc: function(sql,job,cb) { // pipe nlp docs with callback cb(doc,job) || cb(null)
 		function sumScores(metrics) {
 			var 
@@ -203,7 +244,7 @@ var PIPE = module.exports = {
 			freqs = metrics.freqs;
 
 		sql.insertJob( job, job => { 
-			function getStats( job, cb ) {
+			function getDoc( job, cb ) {
 
 				function readFile(path,cb) {	// read file at path with callback cb( {docs, metrics} )
 					
@@ -225,7 +266,7 @@ var PIPE = module.exports = {
 										});
 
 										sumScores( metrics );	
-										cb( {Dos: doc, Metrics: metrics} );
+										cb( {Doc: doc, Metrics: metrics} );
 									}
 
 									else
@@ -245,10 +286,10 @@ var PIPE = module.exports = {
 								if ( rec.doc ) scoreDoc( rec.doc, cb );
 
 								else 
-									Log("ignore empty doc");
+									Log("pipe ignored empty doc");
 
 							else
-								Log("no more docs");
+								Log("pipe read all docs");
 						});
 					
 					else // doc is the path
@@ -266,15 +307,15 @@ var PIPE = module.exports = {
 					if ( !firstKey ) {
 						firstKey = key;
 
-						`read( path, doc => doc ? cb( ${query[key]} ) : cb( null ) )`
+						`read( path, Doc => Doc ? cb( ${query[key]} ) : cb( null ) )`
 						.parseJS( Copy(ctx, { // define parse context
 							read: readFile,
 							path: path,
-							cb: stats => {
-								if (stats) { // read worked
-									data[firstKey] = stats;
+							cb: doc => {
+								if (doc) { // read worked
+									data[firstKey] = doc;
 									query[firstKey] = firstKey;
-									cb( data, job );
+									cb( doc, job );
 								}
 								
 								else	// read failed
@@ -286,21 +327,23 @@ var PIPE = module.exports = {
 				if ( !firstKey ) readFile(path, doc => cb( doc, job ) );
 			}
 
-			getStats( job, (stats, job) => cb( stats, job ) );
+			getDoc( job, (doc, job) => cb( doc, job ) );
 		});
 	},
-
-	pipeDB: function(sql,job,cb) {  // pipe database source with callback cb(rec,job) || cb(null)
+	*/
+	
+	pipeDB: function(sql, job, cb) {  // pipe database source with callback cb(rec,job) || cb(null)
+		var parts = job.path.substr(1).split(".");
+		
 		sql.query( isEmpty(job.query)
 				? "SELECT * FROM app.??"
-				: "SELECT * FROM app.?? WHERE least(?,1)", [job.class, job.query] )
+				: "SELECT * FROM app.?? WHERE least(?,1)", [parts[0], job.query] )
 		
-		.on( "result", rec => cb( {Rec: rec}, job ) )
-		
-		.on( "error", err => cb(null) );
+			.on( "result", rec => cb( {Rec: rec} ) )
+			.on( "error", err => cb(null) );
 	},
-
-	pipeAOI: function(sql,job,cb) {	// stream indexed events or chips through supervisor 
+	
+	pipeAOI: function(sql, job, cb) {	// stream indexed events or chips through supervisor 
 		getFile( job.client, job.path, file => {
 			function chipFile( file, job ) { 
 				//Log( "chip file>>>", file );

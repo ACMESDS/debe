@@ -328,8 +328,8 @@ The following context keys are accepted:
 			solve = ctx[ `hyper_${use}` ] || {};
 		
 		Log({
-			y: y,
-			x: x.length,
+			//y: y,
+			//x: x.length,
 			solve: solve,
 			keep: keep,
 			use: use,
@@ -338,8 +338,7 @@ The following context keys are accepted:
 			loader: loader ? true : false,
 			model: model ? true : false
 		});
-		
-		if ( loader)
+		if ( loader )
 			if ( x && y ) // in x,y single channel training mode 
 				trainer( x, y, x0, info => sender(info) );
 			
@@ -359,10 +358,6 @@ The following context keys are accepted:
 
 			else
 			if ( x ) // in prediction mode
-				if ( use=="qda" )
-					trainer( x, y, x0, info => sender(info) );
-				
-				else
 				if ( model ) 
 					if ( model.length )	{	// multichannel predictions
 					}
