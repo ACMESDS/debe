@@ -2144,22 +2144,28 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 				error = null;
 
 			Log(">pipe opened", job.path);
-			get(sql, job, data => {
-				if (data) {
-					Copy(data,ctx);
-					Each(query, (key,exp) => {
-						data[key] = ctx[key] = exp.parseJSS( ctx, err => error = err );
-					});
+			if ( get )
+				get(sql, job, data => {
+					if (data) {
+						Copy(data,ctx);
+						Each(query, (key,exp) => {
+							data[key] = ctx[key] = exp.parseJS( ctx, err => error = err );
+						});
 
-					cb( error ? null : ctx, () => {
-						Log(">pipe closed");
-						for (key in data) delete ctx[key];
-					});
-				}
+						cb( error ? null : ctx, () => {
+							Log(">pipe closed");
+							for (key in data) delete ctx[key];
+						});
+					}
 
-				else
-					cb(null);
-			});
+					else
+						cb(null);
+				});
+			
+			else
+				cb( ctx, () => {
+					Log(">pipe closed");
+				});
 		}
 		
 		sql.insertJob( job, job => { 
@@ -2184,47 +2190,6 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 			});
 		});
 	}
-	
-	/*
-	function pipePlugin( data, query, ctx, cb ) { // prime plugin with query and run in context ctx
-		req.query = ctx;   // let plugin mixin its own keys
-		Log("prime pipe", query);
-		//Copy(ctx, data);
-		Copy(data, ctx);
-		//ctx.Data = data;
-		var badPipe = null;
-		Each(query, (key,val) => { // add pipe keys to engine ctx
-			Log(key,val);
-			if ( val && isString(val) )
-				//ctx[key] = data[key] = val.parseJS(data, (val,err) => val  );
-				ctx[key] = val.parseJS(ctx, (val,err) => badPipe = err );
-		});
-			
-		//Log(">>req", req.table, req.type, req.query.Name);
-		//Log("pipe ctx", ctx);
-		if (badPipe)
-			Log("pipe failed", badPipe);
-		
-		else
-			ATOM.select(req, ctx => {  // run plugin
-
-				//Log(">>atom", ctx);
-				if ( ctx )
-					if ( isError(ctx)  )
-						Log(`${ctx.Host} ` + ctx);
-
-					else {	// remove pipe keys from ctx
-						Log("clear pipe", pipe);
-						for (var key in query) delete ctx[key];
-						for (var key in data) delete ctx[key];
-						cb(ctx);
-					}
-
-				else
-					Log("lost engine context");
-			});
-	}
-	*/
 	
 	function crossParms( depth, keys, forCtx, setCtx, cb ){	// cross forCtx keys with callback cb(setCtx)
 		if ( depth == keys.length ) 
@@ -2330,7 +2295,6 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 					case String: // query contains a source path
 
 						var
-							sqlThread = DEBE.thread,
 							pipeQuery = {},
 							pipePath = Pipe.parseURL(pipeQuery,{},{},{}),
 							job = { // job descriptor for regulator
@@ -2364,8 +2328,6 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 								isFlexed = FLEX.select[pipeName] ? true : false,
 								isDB = pipeType == "db";
 							
-							Log(">>pipe", pipePath);
-
 							if ( !isFlexed && !isDB ) {  // setup plugin autorun only when pipe references a file
 								sql.query( "DELETE FROM openv.watches WHERE File != ? AND Run = ?", [pipePath, pipeRun] );
 
@@ -2392,7 +2354,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 								});
 							
 							else
-								err = new Error( "bad pipe type" );
+								err = new Error( ">pipe has bad type" );
 						}
 						
 						else
@@ -2412,7 +2374,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 
 					case Array:  // query contains event list
 						ctx.Events = Pipe;
-						pipePlugin( {}, ctx, ctx => {
+						pipePlugin( null, sql, job, (ctx,sql) => {
 							if ( Save = ctx.Save ) saveEvents(sql, Save, ctx);
 						});
 						break;
