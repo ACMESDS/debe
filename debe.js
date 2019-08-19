@@ -2223,26 +2223,6 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 		return rtn;
 	}
 	
-	/*
-	function pipeSave( ctx, cb ) {
-		
-		DEBE.thread( sql => {
-			if ( cb ) // workflow provided a callback to update the context
-				cb(ctx, ctx => {
-					saveEvents(sql, ctx.Save, ctx);
-				});
-
-			else
-			if ( nlp = ctx.NLP )  // save NLP context
-				saveNLP( sql, nlp );
-
-			else	// save event processing context
-				saveEvents(sql, ctx.Save, ctx);
-			
-			sql.release();
-		});
-	} */
-	
 	var
 		ok = "ok",
 		now = new Date(),
@@ -2353,14 +2333,10 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 							if ( pipeJob = DEBE.pipeJob[pipeType] )	// derive workflow from pipe type
 								pipePlugin( pipeJob, sql, job, (ctx,sql) => {
 									if (ctx)
-										if ( NLP = ctx.NLP ) 
-											saveNLP(sql, NLP);
-
-										else {
-										}
+										saveContext(sql, ctx);
 
 									else
-										Trace( new Error("pipe lost context - bad expression") );
+										Trace( new Error("pipe lost context") );
 								});
 							
 							else 
@@ -2370,14 +2346,10 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 						else
 							pipePlugin(pipeDoc, sql, job, (ctx,sql) => {   // place job in doc workflow
 								if (ctx)
-									if ( NLP = ctx.NLP ) 
-										saveNLP(sql, NLP);
-
-									else {
-									}
+									saveContext(sql, ctx);
 
 								else
-									Trace( new Error("pipe lost context - bad expression") );
+									Trace( new Error("pipe lost context") );
 							});
 							
 						break;
@@ -2385,7 +2357,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 					case Array:  // query contains event list
 						ctx.Events = Pipe;
 						pipePlugin( null, sql, job, (ctx,sql) => {
-							if ( Save = ctx.Save ) saveEvents(sql, Save, ctx);
+							saveContext(sql, ctx);
 						});
 						break;
 
@@ -2427,11 +2399,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 			}
 					
 			else	// unpiped (e.g. event generation) engines never participate in a supervised workflow
-			if (Save = ctx.Save )
-				res( saveEvents( sql, Save, ctx ) ||  ok );
-			
-			else
-				res( ok );
+			res( saveContext( sql, ctx ) ||  ok );
 			
 		});
 		
@@ -2479,25 +2447,61 @@ function sendDoc(req, res) {
 	}
 }
 
-function saveNLP(sql, nlp) {	// save NLP context to plugin usecase
-	//Log("NLP save>>>>>>>>>>>>>>", nlp);
-	var 
-		actors = nlp.actors,
-		topics = nlp.topics, 
-		greedy = false;
+function saveContext(sql, ctx) {	// save event context to plugin usecase
+/**
+Aggregate and save events evs = [ev, ...] || { } || Error under direction of the supplied context 
+ctx = { Save: { ... }, Ingest: true||false, Export: true||false, ... }.  Stashify is used to 
+aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev = 
+{ at: KEY, A: a1, B: b1, ... } || { x: x1, y: y1 } are saved in Save_KEY = 
+{A: [a1, a2,  ...], B: [b1, b2, ...], ...} iff Save_KEY is in the supplied ctx.  
+*/
+	
+	function saveNLP(sql, nlp) {	// save NLP context to plugin usecase
+		//Log("NLP save>>>>>>>>>>>>>>", nlp);
+		var 
+			actors = nlp.actors,
+			topics = nlp.topics, 
+			greedy = false;
 
-	Each( actors, (actor,info) => {
-		sql.query(
-			"INSERT INTO app.nlpactors SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1",
-			{ Name: actor, Type: info.type }, err => Log("save actor", err) );
-	});
+		Each( actors, (actor,info) => {
+			sql.query(
+				"INSERT INTO app.nlpactors SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1",
+				{ Name: actor, Type: info.type }, err => Log("save actor", err) );
+		});
 
-	if ( greedy )
-		Each(actors, source => {
-			Each(actors, target => {
-				if ( source != target )
-					Each( topics, (topic,info) => {
-						if ( topic != "dnc" ) 
+		if ( greedy )
+			Each(actors, source => {
+				Each(actors, target => {
+					if ( source != target )
+						Each( topics, (topic,info) => {
+							if ( topic != "dnc" ) 
+								sql.query(
+									"INSERT INTO app.nlpedges SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1, Weight=Weight+?",
+									[{
+										Source: source,
+										Target: target,
+										Link: topic,
+										Weight: info.weight,
+										Task: "drugs",		//< needs to be fixed to refer to host usecase prefix
+										Hits: 1
+									}, info.weight], err => Log("save edge", err) );
+						});
+				});
+			});
+
+		else {
+			var
+				keys = Object.keys(topics),
+				keys = keys.sort( (a,b) => topics[b].weight - topics[a].weight ),
+				topic = keys[0] || "dnc",
+				info = topics[topic];
+
+			//Log("nlpedges", keys, topic, info );
+
+			if ( topic != "dnc" ) 
+				Each(actors, source => {
+					Each(actors, target => {
+						if ( source != target )
 							sql.query(
 								"INSERT INTO app.nlpedges SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1, Weight=Weight+?",
 								[{
@@ -2509,99 +2513,71 @@ function saveNLP(sql, nlp) {	// save NLP context to plugin usecase
 									Hits: 1
 								}, info.weight], err => Log("save edge", err) );
 					});
-			});
-		});
-
-	else {
-		var
-			keys = Object.keys(topics),
-			keys = keys.sort( (a,b) => topics[b].weight - topics[a].weight ),
-			topic = keys[0] || "dnc",
-			info = topics[topic];
-
-		//Log("nlpedges", keys, topic, info );
-
-		if ( topic != "dnc" ) 
-			Each(actors, source => {
-				Each(actors, target => {
-					if ( source != target )
-						sql.query(
-							"INSERT INTO app.nlpedges SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1, Weight=Weight+?",
-							[{
-								Source: source,
-								Target: target,
-								Link: topic,
-								Weight: info.weight,
-								Task: "drugs",		//< needs to be fixed to refer to host usecase prefix
-								Hits: 1
-							}, info.weight], err => Log("save edge", err) );
 				});
-			});
+		}
 	}
-}
-			
-function saveEvents(sql, evs, ctx) {	// save event context to plugin usecase
-/**
-Aggregate and save events evs = [ev, ...] || { } || Error under direction of the supplied context 
-ctx = { Save: { ... }, Ingest: true||false, Export: true||false, ... }.  Stashify is used to 
-aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev = 
-{ at: KEY, A: a1, B: b1, ... } || { x: x1, y: y1 } are saved in Save_KEY = 
-{A: [a1, a2,  ...], B: [b1, b2, ...], ...} iff Save_KEY is in the supplied ctx.  
-*/
+		
 	var
 		host = ctx.Host,
 		client = "guest",
 		fileName = `${ctx.Host}.${ctx.Name}.stream`;
 	
 	//Log("saving", evs);
+
+	if ( Save = ctx.Save_NLP ) 
+		saveNLP(sql, Save);
 	
-	switch (evs.constructor.name) {
-		case "Error": 
-			return evs+"";
+	if ( Save = ctx.Save )
+		switch (Save.constructor.name) {
+			case "Error": 
+				return Save+"";
 
-		case "Object":  // keys in the plugin context are used to create the stash
-			evs.ID = ctx.ID;
-			evs.Host = ctx.Host;
-			return "".save( sql, evs, evs => {
-				//Log("save ctx done");
-			});
-			break;
+			case "Object":  // keys in the plugin context are used to create the stash
+				Save.ID = ctx.ID;
+				Save.Host = ctx.Host;
+				return "".save( sql, Save, evs => {
+					//Log("save ctx done");
+				});
+				break;
 
-		case "Array":
-			return Array.from(evs).save( sql, ctx, evs => {  // save events and callback with remaining unsaved evs
+			case "Array":
+				return Array.from(Save).save( sql, ctx, evs => {  // save events and callback with remaining unsaved evs
 
-				if ( ctx.Export ) {   // export remaining events to filename
-					var
-						evidx = 0,
-						srcStream = new STREAM.Readable({    // establish source stream for export pipe
-							objectMode: false,
-							read: function () {  // read event source
-								if ( ev = evs[evidx++] )  // still have an event
-									this.push( JSON.stringify(ev)+"\n" );
-								else 		// signal events exhausted
-									this.push( null );
-							}
-						});
+					if ( ctx.Export ) {   // export remaining events to filename
+						var
+							evidx = 0,
+							srcStream = new STREAM.Readable({    // establish source stream for export pipe
+								objectMode: false,
+								read: function () {  // read event source
+									if ( ev = evs[evidx++] )  // still have an event
+										this.push( JSON.stringify(ev)+"\n" );
+									else 		// signal events exhausted
+										this.push( null );
+								}
+							});
 
-					Trace("EXPORT "+fileName);
-					DEBE.uploadFile( "", srcStream, `./stores/${fileName}` );
-				}
+						Trace("EXPORT "+fileName);
+						DEBE.uploadFile( "", srcStream, `./stores/${fileName}` );
+					}
 
-				if ( ctx.Ingest )  // ingest remaining events
-					DEBE.getFile( client, fileName, file => {
-						sql.query("DELETE FROM app.events WHERE ?", {fileID: file.ID});
+					if ( ctx.Ingest )  // ingest remaining events
+						DEBE.getFile( client, fileName, file => {
+							sql.query("DELETE FROM app.events WHERE ?", {fileID: file.ID});
 
-						GEO.ingestList( sql, evs, file.ID, file.Class, aoi => {
-							Log("INGESTED",aoi);
+							GEO.ingestList( sql, evs, file.ID, file.Class, aoi => {
+								Log("INGESTED",aoi);
 
-							DEBE.thread( sql => {	// run plugins that were linked to this ingest
-								exeAutorun(sql,"", `.${ctx.Host}.${ctx.Name}` );
-								sql.release();
+								DEBE.thread( sql => {	// run plugins that were linked to this ingest
+									exeAutorun(sql,"", `.${ctx.Host}.${ctx.Name}` );
+									sql.release();
+								});
 							});
 						});
-					});
-			}); 
-	}
+				}); 
+		}
+	
+	else
+		return null;
 	
 }
 
@@ -3153,7 +3129,8 @@ Totem (req,res)-endpoint to send notice to outsource jobs to agents.
 				
 				if ( evs = JSON.parse(agent.script) )
 					FLEX.getContext(sql, "app."+Thread.plugin, {ID: Thread.case}, ctx => {
-						res( saveEvents( sql, evs, ctx ) );
+						ctx.Save = evs;
+						res( saveContext( sql, ctx ) );
 					});
 				
 				else
@@ -4028,8 +4005,8 @@ Initialize DEBE on startup.
 							? html 	// keep if simple
 							: html + [	// add by-line
 								"<br>",
-								site.title.tag( `${url}/treefan.view?src=info&w=4000&h=600` ),
-								"schema".tag( `${url}/treefan.view?src=${ds}&name=${rec.Name}&w=4000&h=600` ),
+								site.title.tag( `${url}/fan.view?src=info&w=4000&h=600` ),
+								"schema".tag( `${url}/fan.view?src=${ds}&name=${rec.Name}&w=4000&h=600` ),
 								"run".tag( `${url}/${ds}.exe?Name=${rec.Name}` ),
 								"edit".tag( `${url}/${ds}.view` ),
 								"publish".tag( `${url}/${ds}.pub` ),

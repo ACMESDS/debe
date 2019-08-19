@@ -54,6 +54,10 @@ latentVectors: int >=[1] Number of latent vectors
 tolerance: float>= [0] tolerance
 ' `,
 
+		hyper_qda: `json comment '
+mixes: int >=[1] Number of gaussian mixes
+' `,
+		
 		hyper_svm: `json comment '' `,
 		hyper_raf: `json comment '' `,
 				
@@ -68,6 +72,7 @@ tolerance: float>= [0] tolerance
 		Save_som: "json comment 'som model' ",
 		Save_ols: "json comment 'ols model' ",
 		Save_las: "json comment 'lasso model' ",
+		Save_qda: "json comment 'gaussian mixing model' ",
 
 		Save_predict: "json comment 'predictions stash' ",
 		Save_train: "json comment 'training stash' ",
@@ -120,11 +125,6 @@ The following context keys are accepted:
 				$( 
 					`cls = ${use}_train( x, y, solve ); `, 
 
-					/*Copy(ctx, {
-						x: x,
-						y: y,
-						solve: solve
-					}), */
 					{
 						x: x,
 						y: y,
@@ -277,6 +277,7 @@ The following context keys are accepted:
 		
 		function saver(info,idx) {
 			save.push({ at: "train", chan: idx, x: info.sample.x, y: info.sample.y });
+			//Log("save", use, info.cls);
 			save.push({ at: use, chan: idx, cls: info.cls });
 			saveValues.push( info.sample.y0 );
 		}
