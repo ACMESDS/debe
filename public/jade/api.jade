@@ -463,17 +463,26 @@ append site_body
 
 				# Place a plugin into a supervised workflow using the *Pipe*:
 				
-					"/DATASET.TYPE?QUERY"  
+					"/DATASET.TYPE?KEY=EXPRESSION ..."  
+					{ "path": "/DATASET.TYPE?QUERY", "$": "$-SCRIPT" }
 					{ "path": "/DATASET.TYPE?QUERY", "KEY": [VALUE, ...] , ... "norun": true }
 					
-				The {...} pipe generates usecases over the permuted context KEYs.  The "..." pipe selects the workflow based 
-				on TYPE = json || jpg || stream || txt || aoi || db using TYPE-specific [QUERY keys](/api.view).
+				The "/..." [source pipe](/api.view) selects the TYPE-specific workflow based on the specified TYPE = json || jpg || stream || txt || aoi || db where
+				the TYPE-specific $ EXPRESSION references json data || GIMP image || event list || document text || db record.  Compatible 
+				types include jpg | png | nitf and txt | doc | pdf | xls.
+
+				The {...} [enumeration pipe](/api.view) generates usecases over the permuted context KEYs.  
 				
-				## The { ... } pipe
+				The {...} [scripting pipe](/api.view) utilizes the [matlab-like scripting](https://sc.appdev.proj.coe.ic.gov://acmesds/man) to post-process 
+				selected KEYs.
+				
+				## The { ... } enumeration pipe
 				
 				This pipe will generate and run (unless *norun* specified) the usecases defined
 				by crossing the values of the specified context KEYs.
 				
+				## The { ... } scripting pipe
+
 				## The "/DATASET.json" pipe
 				
 				## The "/DATASET.jpg" pipe
@@ -984,7 +993,7 @@ append site_body
 
 					will log *Htest* data at the service console, then return *Save* to the plugin's context.  The
 					plugin can store data in any CTX key, but the *Save* member interfaces with the plugin
-					workflow (see Plugins).  Python engines are also provided SYS, JSON, IMP and CAFFE (if 
+					workflow (see Plugins).  Python engines are also provided SYS, JSON, JIMP and CAFFE (if 
 					on GPU VMs) libs, as well as the SQL0 (read) and SQL1 (write) cursors.
 					
 					This [stateful python engine](/pydemo2.exe) can be used in a workflow to 
@@ -1107,12 +1116,13 @@ append site_body
 
 					# Library and plugin access
 					
-					js-plugins have access to various libraries --
+					js-plugins may directly access various libraries -- via
 					[$ matrix manipulator](https://sc.appdev.proj.coe.ic.gov://acmesds/man), 
 					[$GEO chipper](https://sc.appdev.proj.coe.ic.gov://acmesds/geohack), 
-					[$READ language parser](https://sc.appdev.proj.coe.ic.gov://acmesds/reader),
+					[$NLP language parser](https://sc.appdev.proj.coe.ic.gov://acmesds/reader),
 					[$TASK task sharding](https://sc.appdev.proj.coe.ic.gov://acmesds/totem),
 					[$SQL mysql threader](https://sc.appdev.proj.coe.ic.gov://acmesds/totem),
+					[$JIMP image manipulator](https://sc.appdev.proj.coe.ic.gov://acmesds/man), 
 					[$NEO neo4j cypher](https://sc.appdev.proj.coe.ic.gov://acmesds/debe) -- as well as to other plugins via $.plugin(ctx,cb).
 					
 	#accordion.Machines

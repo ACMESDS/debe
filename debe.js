@@ -2149,7 +2149,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 					if (data) {
 						Copy(data,ctx);
 						Each(query, (key,exp) => {
-							data[key] = ctx[key] = exp.parseJS( ctx, err => error = err );
+							data[key] = ctx[key] = exp.parseJS( ctx, err => { Log(`>pipe fault ${key}=${exp}`); error = err; } );
 						});
 
 						cb( error ? null : ctx, () => {
@@ -2324,7 +2324,17 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 								parts = pipePath.substr(1).split("."),
 								pipeName = parts[0] || "",
 								pipeType = parts.pop() || "",
+								pipeJob = DEBE.pipeJob[pipeType];
+							
+							if ( !pipeJob ) {
+								pipePath = job.path = `/stores/${pipeType}.${pipeName}.stream`;
+								parts = pipePath.substr(1).split(".");
+								pipeName = parts[0] || "";
+								pipeType = parts.pop() || "";
+								pipeJob = DEBE.pipeJob[pipeType];
+							}
 								
+							var
 								isFlexed = FLEX.select[pipeName] ? true : false,
 								isDB = pipeType == "db";
 							
@@ -2350,11 +2360,11 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 										}
 
 									else
-										Log("pipe failed");
+										Trace( new Error("pipe lost context - bad expression") );
 								});
 							
-							else
-								err = new Error( ">pipe has bad type" );
+							else 
+								err = new Error("pipe bad type");
 						}
 						
 						else
@@ -2367,7 +2377,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 									}
 
 								else
-									Log("pipe failed");
+									Trace( new Error("pipe lost context - bad expression") );
 							});
 							
 						break;
@@ -2379,30 +2389,36 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 						});
 						break;
 
-					case Object:  // cross parms in query for monte-carlo
-						var 
-							keys = [], 
-							runCtx = pipeCopy(ctx), 
-							jobs = [], inserts = 0,
-							getSite = DEBE.getSite;
-						
-						for (var key in Pipe)  if ( key in ctx ) keys.push( key );
-						
-						sql.query( `DELETE FROM app.${host} WHERE Name LIKE '${ctx.Name}-%' ` );
-						
-						crossParms( 0 , keys, Pipe, {}, setCtx => {
-							jobs.push( Copy(setCtx, { Name: `${ctx.Name}-${jobs.length}` }) );
-						});
-						
-						jobs.forEach( job => {
-							sql.query( `INSERT INTO app.${host} SET ?`, Copy(job, runCtx), err => {
-								if ( ++inserts == jobs.length )
-									if ( !Pipe.norun )
-										jobs.forEach( job => {
-											getSite( `/${host}.exe?Name=${job.Name}`, null, info => {} );
-										});
+					case Object:  
+						if (Pipe.$) { // $-scripting pipe
+							err = new Error("scripting pipe tbd");
+						}
+							
+						else { // usecase enumeration pipe
+							var 
+								keys = [], 
+								runCtx = pipeCopy(ctx), 
+								jobs = [], inserts = 0,
+								getSite = DEBE.getSite;
+
+							for (var key in Pipe)  if ( key in ctx ) keys.push( key );
+
+							sql.query( `DELETE FROM app.${host} WHERE Name LIKE '${ctx.Name}-%' ` );
+
+							crossParms( 0 , keys, Pipe, {}, setCtx => {
+								jobs.push( Copy(setCtx, { Name: `${ctx.Name}-${jobs.length}` }) );
 							});
-						});
+
+							jobs.forEach( job => {
+								sql.query( `INSERT INTO app.${host} SET ?`, Copy(job, runCtx), err => {
+									if ( ++inserts == jobs.length )
+										if ( !Pipe.norun )
+											jobs.forEach( job => {
+												getSite( `/${host}.exe?Name=${job.Name}`, null, info => {} );
+											});
+								});
+							});
+						}
 						
 						break;
 				}
@@ -3380,10 +3396,11 @@ Initialize DEBE on startup.
 				// MAIL: FLEX.sendMail,
 				//RAN: require("randpr"),
 				$: $,
-				$READ: READ,
+				$NLP: READ,
 				$GEO: GEO,
 				$TASK: DEBE.runTask,
 				$SQL: DEBE.thread,
+				$JIMP: $.JIMP,
 				$NEO: DEBE.neodb ? DEBE.neodb.cypher : null
 			}, $ )
 		});

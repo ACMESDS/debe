@@ -83,46 +83,13 @@ append site_body
 					> *Save_rem* collects remaining unaggregated events  
 					> *Save_jpg* generates jpg from {at: "jpg": prime: "name", save: "name", index: [...], values: [...] } event  
 
-					Place a DATASET into a supervised workflow using the *Pipe*:
-
-						"DATASET.TYPE?QUERY"  
-						{ "path": "DATASET.TYPE?QUERY", "KEY": [VALUE, ...] , ... "norun": true }
-
-					The {...} pipe generates usecases over the permuted context KEYs.  The "..." pipe selects the workflow based 
-					on TYPE = json || jpg || stream || txt || aoi || db using TYPE-specific [QUERY keys](/api.view).
+					The "/..." [source pipe](/api.view) selects the TYPE-specific workflow based on the specified TYPE = json || jpg || stream || txt || aoi || db where
+					the TYPE-specific $ EXPRESSION references json data || GIMP image || event list || document text || db record.  Compatible 
+					types include jpg | png | nitf and txt | doc | pdf | xls.  The {...} [enumeration pipe](/api.view) generates usecases over the permuted 
+					context KEYs.  The {...} [scripting pipe](/api.view) utilizes the [matlab-like scripting](https://sc.appdev.proj.coe.ic.gov://acmesds/man) to 
+					post-process selected KEYs.
 				
-						group = "KEY, ..."  
-						where = { KEY: VALUE, ...}  
-						order = "KEY, ..."  
-						limit = NUMBER  
-						aoi = "NAME" || [ [lat,lon], ... ]  
-						batch = NUMBER  // 0 disables  
-						symbols = [ NUMBER, ... ]  
-						keys = [ "KEY", ... ]  
-						steps = NUMBER   // overrides file defaults  
-						actors = NUMBER  // overrides file defaults
-
-					and provide additional context keys:
-
-						Host name of plugin  
-						File context during a piped-workflow  
-						Voxel context during a piped-workflow  
-						Sensor context for current voxel  
-						Chip  context with filepath for first jpeg collected in current voxel  
-						Flux solar flux at earth's surface for current voxel  
-						Events associated with current voxel  
-						Flow context of workflow supervisor  
-						Stats context shared with all plugins
-
-					where *Flow* contains the supervisors':   
-					> *F* where F[k] = frequency of count k  
-					> *T*  observation time [1/Hz]  
-					> *J* where J[n] = number of jumps taken by n'th process at time T  
-					> *N ensemble size  
-					> *trP*	 where trP[n,m] = estimated state transition (from,to) probs at time T  
-					> *store* event store at time T
-
-					Plugin header colors reflect [status](/projects.view): <font color="green">completed</font>, <font color="blue">policed</font>, <font color="orange">funded</font>, <font color="red">unfunded</font>.
+					Plugin header colors reflect [project status](/projects.view): <font color="green">completed</font>, <font color="blue">policed</font>, <font color="orange">funded</font>, <font color="red">unfunded</font>.
 	
 			#form.Engine(
 				path="/engines.db?Name=#{ds}",

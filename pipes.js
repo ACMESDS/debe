@@ -84,7 +84,7 @@ var PIPE = module.exports = {
 				sink
 					.on("finish", () => {
 						Log(">pipe streamed", evs.length);
-						cb( {Events: evs} );
+						cb( {$: evs} );
 					})
 					.on("error", err => cb(null) );
 
@@ -94,18 +94,18 @@ var PIPE = module.exports = {
 	},
 	
 	pipeImage: function (sql, job, cb) {
-		$.IMP.read( "."+ job.path )
+		$.JIMP.read( "."+ job.path )
 			.then( img => { 
 				Log(">pipe image", img.bitmap.height, img.bitmap.width);
 				img.readPath = path;
-				cb( {Image:img} ); 
+				cb( {$:img} ); 
 				return img; 
 			} )
 			.catch( err => cb(null) );	
 	},
 	
 	pipeJson: function(sql, job, cb) { // pipe json data with callback cb(json,job) || cb(null)
-		getSite( job.path, null, info => cb( {Data: info.parseJSON( null )} ) );
+		getSite( job.path, null, info => cb( {$: info.parseJSON( null )} ) );
 	},
 	
 	pipeDoc: function(sql, job, cb) { // pipe nlp docs with callback cb(doc,job) || cb(null)
@@ -187,7 +187,7 @@ var PIPE = module.exports = {
 			READ.readFile( "."+path, rec => {
 				if (rec) 
 					if ( rec.doc ) 
-						scoreDoc( rec.doc, metrics => cb({Data:rec.doc, Metrics: metrics}) );
+						scoreDoc( rec.doc, metrics => cb({$:rec.doc, $$:metrics}) );
 
 					else 
 						Log(">pipe skipped empty doc");
@@ -197,7 +197,7 @@ var PIPE = module.exports = {
 			});
 
 		else // doc is the path
-			scoreDoc( path, metrics => cb({Doc:path, Metrics:metrics}) );
+			scoreDoc( path, metrics => cb({$:path, $$:metrics}) );
 	},
 	
 	/*
