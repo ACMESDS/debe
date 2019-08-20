@@ -8,14 +8,14 @@ append base_help
 	:markdown
 		Display d3 force graph:
 
-			src = source url returning tree [ { name: "...", size: N, nodes: [ {...}, ... ] }, ... ]
+			src = source url returning tree [ { name: "...", size: N, children: [ {...}, ... ] }, ... ]
 			pivots = key,key,...
 			w = drawing width
 			h = drawing height
 			debug = debugging level
-			node,nodes,value,size,parent = key names
+			node,children,value,size,parent = key names
 
-		Graph nodes are sized to node.weight + length(node[NODES]).
+		Graph nodes are sized to node.weight + length(node[CHILDREN]).
 
 append base_head
 	style.
@@ -49,13 +49,13 @@ append base_head
 			debug: parseInt("#{query.debug}"),
 			
 			NODE: "#{query.node}" || "name",
-			NODES: "#{query.nodes}" || "children",
+			CHILDREN: "#{query.children}" || "children",
 			VALUE: "#{query.value}" || "value",
 			PARENT: "#{query.parent}" || "parent",
 			SIZE: "#{query.size}" || "size"										
 		};
 
-		const {NODE, NODES, VALUE, SIZE, PARENT} = opts;
+		const {NODE, CHILDREN, VALUE, SIZE, PARENT} = opts;
 		const {isArray,d3json} = BASE;
 										
 append base_body
@@ -70,7 +70,7 @@ append base_body
 
 						nodes.push(node);
 
-						return node[SIZE] = (children = node[NODES]) 
+						return node[SIZE] = (children = node[CHILDREN]) 
 							? children.reduce( (weight, child) => {
 								links.push({
 									source: node,
@@ -121,7 +121,7 @@ append base_body
 
 				// Color leaf nodes orange, and packages white or blue.
 				function color(d) {
-					return d._children ? "#3182bd" : d[NODES] ? "#c6dbef" : "#fd8d3c";
+					return d._children ? "#3182bd" : d[CHILDREN] ? "#c6dbef" : "#fd8d3c";
 				}
 
 				var 
@@ -183,11 +183,11 @@ append base_body
 					.attr("r", d => 2 )
 					.style("fill", color)
 					.on("click", d => {		// Toggle children on click.
-						if (d[NODES]) {
-							d._children = d[NODES];
-							d[NODES] = null;
+						if (d[CHILDREN]) {
+							d._children = d[CHILDREN];
+							d[CHILDREN] = null;
 						} else {
-							d[NODES] = d._children;
+							d[CHILDREN] = d._children;
 							d._children = null;
 						}
 

@@ -8,13 +8,13 @@ append base_help
 	:markdown
 		Display d3 circle-pack chart using parameters:
 
-			src = source url returning tree [ { name: "...", size: N, doc: "", nodes: [ {...}, ... ] }, ... ]
+			src = source url returning tree [ { name: "...", size: N, doc: "", children: [ {...}, ... ] }, ... ]
 			name = "name" || "name%..." || "" of source record(s)
 			pivots = "key,key,..." || "" source record grouping keys
 			w = drawing width
 			h = drawing height
 			debug = level of debugging alerts
-			node,nodes,value,size,parent,doc = tree keys
+			node,children,value,size,parent,doc = tree keys
 
 append base_head
 	style.
@@ -46,9 +46,9 @@ append base_head
 	script.
 		var opts = {
 			ds: "#{query.pivots}"
-				? "!{query.src}.tree?name=#{query[NAME]}&_sort=#{query.pivots}"
-				: "#{query[NAME]}"
-							? "!{query.src}.schema?name=#{query[NAME]}"
+				? "!{query.src}.tree?name=#{query.name}&_sort=#{query.pivots}"
+				: "#{query.name}"
+							? "!{query.src}.schema?name=#{query.name}"
 							: "!{query.src}" || "/stores/flare.json",
 
 			url: "#{url}",
@@ -62,14 +62,14 @@ append base_head
 			debug: parseInt("#{query.debug}"),
 
 			NODE: "#{query.node}" || "name",
-			NODES: "#{query.nodes}" || "children",
+			CHILDREN: "#{query.children}" || "children",
 			VALUE: "#{query.value}" || "value",
 			PARENT: "#{query.parent}" || "parent",
 			SIZE: "#{query.size}" || "size",
 			DOC: "#{query.doc}" || "doc"
 		};
 
-		const {NODE, NODES, VALUE, SIZE, PARENT, DOC} = opts;
+		const {NODE, CHILDREN, VALUE, SIZE, PARENT, DOC} = opts;
 		const {isArray,isString,d3json} = BASE;
 
 append base_body
@@ -98,7 +98,7 @@ append base_body
 				.size([diameter - margin, diameter - margin])
 				.padding(2),
 			
-			root = d3.hierarchy( data[0], d => d[NODES] )
+			root = d3.hierarchy( data[0], d => d[CHILDREN] )
 				.sum(d => d[SIZE] )
 				.sort( (a, b) => b[SIZE] - a[SIZE] );
 

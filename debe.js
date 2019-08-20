@@ -4099,7 +4099,7 @@ Initialize DEBE on startup.
 								name: nodeName,
 								doc: nodePath.tag( cb(nodePath) ),
 								size: 20,
-								nodes: nodeify( val || 0,  nodePath, cb )
+								children: nodeify( val || 0,  nodePath, cb )
 							};
 						
 						nodes.push(node);
@@ -4136,12 +4136,12 @@ Initialize DEBE on startup.
 					return [{
 						name: root,
 						size: 10,
-						nodes : nodeify( subs, root, cb )
+						children : nodeify( subs, root, cb )
 					}];
 				}
 
 			else	// at an array node
-			if ( isArray(store) && isObject( store0 = store[0] || 0 ) ) {
+			if ( isArray(store) ) {  // && isObject( store0 = store[0] )
 				var 
 					N = store.length,
 					nodeName = "[" + N + "]",
@@ -4150,7 +4150,7 @@ Initialize DEBE on startup.
 						name: nodeName,
 						size: 10,
 						doc: nodePath.tag( cb(nodePath) ),
-						nodes: nodeify( store0, nodePath, cb )
+						children: store[0] ? nodeify( store[0], nodePath, cb ) : null
 					};
 				
 				return [node];
@@ -4162,7 +4162,7 @@ Initialize DEBE on startup.
 					name: (store.length || 0) + " elements",
 					size: 10,
 					doc: "",
-					nodes: []
+					children: []
 				}];
 			
 			else
@@ -4207,7 +4207,7 @@ Initialize DEBE on startup.
 					var node = {
 						name: key+" "+ref, 
 						size: wt ? parseInt(rec[wt] || "0") : len,
-						nodes: recs.treeify(pos,len,level+1,keys,wt)
+						children: recs.treeify(pos,len,level+1,keys,wt)
 					};
 
 					tar.push( node );

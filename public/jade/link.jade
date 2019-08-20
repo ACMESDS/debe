@@ -8,13 +8,13 @@ append base_help
 	:markdown
 		Display d3 tree-fan chart using parameters:
 
-			src = source url returning tree [ { name: "...", size: N, doc: "", nodes: [ {...}, ... ] }, ... ]
+			src = source url returning tree [ { name: "...", size: N, doc: "", children: [ {...}, ... ] }, ... ]
 			name = "name" || "name%..." || "" of source record(s)
 			pivots = "key,key,..." || "" source record grouping keys
 			w = drawing width
 			h = drawing height
 			debug = level of debugging alerts
-			node,nodes,value,size,parent,doc = tree keys
+			node,children,value,size,parent,doc = tree keys
 
 append base_head
 
@@ -54,21 +54,21 @@ append base_head
 			debug: parseInt("#{query.debug}"),
 
 			NODE: "#{query.node}" || "name",
-			NODES: "#{query.nodes}" || "children",
+			CHILDREN: "#{query.children}" || "children",
 			VALUE: "#{query.value}" || "value",
 			PARENT: "#{query.parent}" || "parent",
 			SIZE: "#{query.size}" || "size",
 			DOC: "#{query.doc}" || "doc"
 		};
 
-		const {NODE, NODES, VALUE, SIZE, PARENT, DOC} = opts;
+		const {NODE, CHILDREN, VALUE, SIZE, PARENT, DOC} = opts;
 		const {isArray,isString,d3json} = BASE;
 										
 append base_body
 	script.
 		d3json( opts, (data,svg) => {			
 			function tree(data) {
-				var root = d3.hierarchy(data, d => d[NODES] );
+				var root = d3.hierarchy(data, d => d[CHILDREN] );
 
 				root.dx = 10;
 				root.dy = width / (root.height + 1);
