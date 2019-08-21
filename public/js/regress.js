@@ -144,15 +144,15 @@ The following context keys are accepted:
 		function trainer(x,y,x0,cb) {
 			
 			function saver( cls, x, y, x0, cb ) {
-				if ( x0 && keep ) {
+				if ( keep ) {
 					var 
 						idx = x.shuffle(keep, true),
 						x = x.indexor(idx),
-						y = y.indexor(idx);
+						y = y ? y.indexor(idx) : null;
 
-					//Log("reg keep", keep, idx.length, x.length, y.length, x0.length);
+					Log("reg keep", keep, cls.length, idx.length, x.length);
 					
-					if (x0) 
+					if ( x0 = x0 || x ) 
 						$( `y0 = ${use}_predict(cls, x0)`, {
 							x0: x0, 
 							cls: cls
@@ -165,7 +165,7 @@ The following context keys are accepted:
 							},
 							cls: cls
 						}));
-						  
+					
 					else
 						cb({		// return sampled and predicted data
 							sample: {
@@ -175,8 +175,8 @@ The following context keys are accepted:
 								y0: []
 							},
 							cls: cls
-						})
-					
+						}); 
+
 					/*
 					$( 
 						`u = shuffle(x,y,keep);  y0 = isDefined(x0) ? ${use}_predict(cls, x0) : null; `,
@@ -339,6 +339,7 @@ The following context keys are accepted:
 			loader: loader ? true : false,
 			model: model ? true : false
 		});
+
 		if ( loader )
 			if ( x && y ) // in x,y single channel training mode 
 				trainer( x, y, x0, info => sender(info) );
