@@ -153,7 +153,8 @@ The following context keys are accepted:
 					Log("reg keep", keep, cls.length, idx.length, x.length);
 					
 					if ( x0 = x0 || x ) 
-						$( `y0 = ${use}_predict(cls, x0)`, {
+						$( `y0 = ${use}_predict(cls, x0, solve)`, {
+							solve: solve,
 							x0: x0, 
 							cls: cls
 						}, ctx => 	cb({		// return sampled and predicted data
@@ -237,9 +238,10 @@ The following context keys are accepted:
 			});
 
 			$(
-				`y = ${use}_predict( cls, x );`, 
+				`y = ${use}_predict( cls, x, solve );`, 
 				
 				Copy(ctx, {
+					solve: solve,
 					x: x,
 					cls: cls
 				}), 
