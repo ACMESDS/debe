@@ -4191,14 +4191,14 @@ Initialize DEBE on startup.
 			recs = this,
 			key = keys[level],
 			len = 0,
+			rec = recs[idx] || {},
 			pos = idx, end = idx+kids,
 			tar = [];
 
 //Log([level,keys,ref,idx]);
 
 		if (key)
-			for (var ref = recs[idx][key]; pos < end; ) {
-				var rec = recs[idx];
+			for (var ref = rec[key]; pos < end; ) {
 				var stop = (idx==end) ? true : (rec[key] != ref);
 
 				if ( stop ) {
