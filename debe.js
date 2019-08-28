@@ -1714,7 +1714,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		@method hover
 		Title ti fileName fn
 		*/
-			if (fn.charAt(0) != "/") fn = "/shares/hover/"+fn;
+			if ( ! fn.startsWith("/") ) fn = "/shares/hover/"+fn;
 			return ti.tag("p",{class:"sm"}) 
 				+ (
 					   "".tag("img",{src:fn+".jpg"})
@@ -3553,7 +3553,7 @@ Initialize DEBE on startup.
 
 			if ( viaBrowser )
 				html = 	html.replace(/href=(.*?)\>/g, (str,ref) => { // smart links to follow <a href=REF>A</a> links
-					var q = (ref.charAt(0) == "'") ? '"' : "'";
+					var q = (ref.startsWith( "'" )) ? '"' : "'";
 					return `href=${q}javascript:navigator.follow(${ref},BASE.user.client,BASE.user.source)${q}>`;
 				});
 
@@ -3997,7 +3997,7 @@ Initialize DEBE on startup.
 			fetchBlog = function( rec, cb ) {
 				if ( md = rec[key] + "" ) 
 					md.Xblog(req, ds.tag("?", { 	// tag ds with source record selector
-						name: ( (rec.Pipe||"").charAt(0) == "{" ) 
+						name: ( (rec.Pipe||"").startsWith("{") ) 
 							? rec.Name + "-%"	// pipe defines a monte-carlo cross product so get them all
 							: rec.Name	// pipe defines a simple path
 					}), {}, {}, rec, true, html => cb( 
@@ -4316,9 +4316,9 @@ Initialize DEBE on startup.
 					break;
 				
 				default:
-					if ( link.charAt(0) != "/" ) {
+					if ( ! link.startsWith("/") ) {
 						link = "/" + link;
-						if ( link.indexOf(".") < 0 ) link += ".view";
+						if ( ! link.startsWith(".") ) link += ".view";
 					}
 					rtn.push( label.link( link ) );
 			}
