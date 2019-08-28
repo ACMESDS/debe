@@ -2200,17 +2200,24 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 				key = keys[depth],
 				values = forCtx[ key ];
 			
-			if (values)
-				values.forEach( value => {
-					setCtx[ key ] = value;
+			Log("x", key, values);
+			if (values) 
+				if ( values.forEach )
+					values.forEach( value => {
+						setCtx[ key ] = value;
+						crossParms( depth+1, keys, forCtx, setCtx, cb );
+					});
+			
+				else {
+					setCtx[ key ] = values;
 					crossParms( depth+1, keys, forCtx, setCtx, cb );
-				});
+				}
 		}
 	}
 	
 	function pipeCopy(ctx) {
 		var 
-			rtn = {Pipe: '"' + ctx.Pipe.path + '"' },
+			rtn = {Pipe: '"' + ctx.Pipe.Path + '"' },
 			skip = {Host: 1, ID: 1, Pipe: 1};
 		
 		for (var key in  ctx) 
@@ -2368,26 +2375,41 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 							
 						else { // usecase enumeration pipe
 							var 
-								keys = [], 
-								runCtx = pipeCopy(ctx), 
+								runCtx = Copy(ctx, {}), 
 								jobs = [], inserts = 0,
 								getSite = DEBE.getSite;
 
-							for (var key in Pipe)  if ( key in ctx ) keys.push( key );
+							// purge DNC keys from the run context 
+							delete runCtx.ID;
+							delete runCtx.Host;
+							delete runCtx.Name;
+							delete runCtx.Pipe;
+							for (var key in runCtx) if ( key.startsWith("Save_") ) delete runCtx[key];
+							
+							sql.getTypes( `app.${host}`, {Type:"json"}, {}, jsons => {
+								sql.query( `DELETE FROM app.${host} WHERE Name LIKE '${ctx.Name}-%' ` );
 
-							sql.query( `DELETE FROM app.${host} WHERE Name LIKE '${ctx.Name}-%' ` );
+								crossParms( 0 , Object.keys(Pipe), Pipe, {}, setCtx => {	// enumerate keys to provide a setCtx key-context for each enumeration
+									//Log("set", setCtx);
+									var job = Copy(setCtx, Copy(runCtx, new Object({ Name: `${ctx.Name}-${jobs.length}` })), "." );	// define the job context
+									Each( job, (key,val) => {	// stringify json keys and drop those not in the plugin context
+										if ( !(key in ctx) ) delete job[key];		
+										else
+										if ( key in jsons ) job[key] = val ? JSON.stringify(val ) : val;	
+									});
+									
+									jobs.push( job );
+									//Log("set", setCtx, job );
+								});
 
-							crossParms( 0 , keys, Pipe, {}, setCtx => {
-								jobs.push( Copy(setCtx, { Name: `${ctx.Name}-${jobs.length}` }) );
-							});
-
-							jobs.forEach( job => {
-								sql.query( `INSERT INTO app.${host} SET ?`, Copy(job, runCtx), err => {
-									if ( ++inserts == jobs.length )
-										if ( !Pipe.norun )
+								jobs.forEach( job => {
+									sql.query( `INSERT INTO app.${host} SET ?`, job, err => {
+										if ( ++inserts == jobs.length )  // run usecases after they are all created
 											jobs.forEach( job => {
-												getSite( `/${host}.exe?Name=${job.Name}`, null, info => {} );
+												if (job.Pipe)
+													getSite( `/${host}.exe?Name=${job.Name}`, null, info => {} );
 											});
+									});
 								});
 							});
 						}

@@ -463,24 +463,21 @@ append site_body
 
 				# Place a plugin into a supervised workflow using the *Pipe*:
 				
-					"/DATASET.TYPE?KEY=EXPRESSION ..."  
-					{ "path": "/DATASET.TYPE?QUERY", "$": "$-SCRIPT" }
-					{ "path": "/DATASET.TYPE?QUERY", "KEY": [VALUE, ...] , ... "norun": true }
+					"/DATASET.TYPE?KEY=$.EXPRESSION ..."  
+					{ "$": "SCRIPT" }
+					{ "KEY": [VALUE, ...] , ... }
 					
-				The "/..." [source pipe](/api.view) selects the TYPE-specific workflow based on the specified TYPE = json || jpg || stream || txt || aoi || db where
-				the TYPE-specific $ EXPRESSION references json data || GIMP image || event list || document text || db record.  Compatible 
-				types include jpg | png | nitf and txt | doc | pdf | xls.
-
-				The {...} [enumeration pipe](/api.view) generates usecases over the permuted context KEYs.  
-				
-				The {...} [scripting pipe](/api.view) utilizes the [matlab-like scripting](https://sc.appdev.proj.coe.ic.gov://acmesds/man) to post-process 
-				selected KEYs.
+				The "/DATASET.TYPE" [source pipe](/api.view) selects the TYPE-specific workflow based on TYPE = json || [ jpg | png | nitf ] || stream || [ txt | doc | pdf | xls ] || aoi || db 
+				where $ references the TYPE-specific json data || GIMP image || event list || document text || db record.  The {KEY: [VALUE, ...]} [enumeration pipe](/api.view) 
+				generates usecases over permuted context KEYs.  The {$: "SCRIPT"} [scripting pipe](/api.view) utilizes the [matlab-like scripting](https://sc.appdev.proj.coe.ic.gov://acmesds/man) 
+				to post-process selected KEYs.
 				
 				## The { ... } enumeration pipe
 				
-				This pipe will generate and run (unless *norun* specified) the usecases defined
-				by crossing the values of the specified context KEYs.
-				
+				This enumeration pipe will generate and run all usecases defined by crossing the values of the specified context KEYs.  KEYs
+				not in the plugin context are dropped.  The Pipe.Pipe KEY, typically a simply "path", can also be another enumeration pipe.  
+				KEYs name "KEY.SUBKEY ..." can be used to set the SUBKEYs of a KEY json store.
+
 				## The { ... } scripting pipe
 
 				## The "/DATASET.json" pipe

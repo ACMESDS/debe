@@ -83,11 +83,16 @@ append site_body
 					> *Save_rem* collects remaining unaggregated events  
 					> *Save_jpg* generates jpg from {at: "jpg": prime: "name", save: "name", index: [...], values: [...] } event  
 
-					The "/..." [source pipe](/api.view) selects the TYPE-specific workflow based on the specified TYPE = json || jpg || stream || txt || aoi || db where
-					the TYPE-specific $ EXPRESSION references json data || GIMP image || event list || document text || db record.  Compatible 
-					types include jpg | png | nitf and txt | doc | pdf | xls.  The {...} [enumeration pipe](/api.view) generates usecases over the permuted 
-					context KEYs.  The {...} [scripting pipe](/api.view) utilizes the [matlab-like scripting](https://sc.appdev.proj.coe.ic.gov://acmesds/man) to 
-					post-process selected KEYs.
+				Your plugin is placed into a supervised workflow using the *Pipe*:
+
+					"/DATASET.TYPE?KEY=$.EXPRESSION ..."  
+					{ "$": "SCRIPT" }
+					{ "KEY": [VALUE, ...] , ... }
+					
+				The "/DATASET.TYPE" [source pipe](/api.view) selects the TYPE-specific workflow based on TYPE = json || [ jpg | png | nitf ] || stream || [ txt | doc | pdf | xls ] || aoi || db 
+				where $ references the TYPE-specific json data || GIMP image || event list || document text || db record.  The {KEY: [VALUE, ...]} [enumeration pipe](/api.view) 
+				generates usecases over permuted context KEYs.  The {$: "SCRIPT"} [scripting pipe](/api.view) utilizes the [matlab-like scripting](https://sc.appdev.proj.coe.ic.gov://acmesds/man) 
+				to post-process selected KEYs.
 				
 					Plugin header colors reflect [project status](/projects.view): <font color="green">completed</font>, <font color="blue">policed</font>, <font color="orange">funded</font>, <font color="red">unfunded</font>.
 	
