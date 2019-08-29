@@ -137,7 +137,7 @@ append base_body
 						Ny = y0.length || 0,
 						mode = ((Nx <= 1) ? Nx : "n") + "x" + ((Ny <= 1) ? Ny : "n");
 							
-					Log(`switch [${Nx}x${Ny}] -> ${mode} in ${x.length}x${y.length} `);
+					Log(`switch [${Nx}x${Ny}]`);
 					
 					switch ( mode ) {
 						case "nxn":
@@ -167,9 +167,7 @@ append base_body
 							
 						case "0x0": // regression plot
 							var xy = [];
-							x.forEach( (xn,n) => {
-								xy.push( index({ x: x[n], y: y[n], f: 0 }) );
-							});	
+							xy.push( { x: x, y: y, f: 0 } );
 							break;
 
 						case "1x0": // regression plot

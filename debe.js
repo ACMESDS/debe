@@ -2200,7 +2200,6 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 				key = keys[depth],
 				values = forCtx[ key ];
 			
-			Log("x", key, values);
 			if (values) 
 				if ( values.forEach )
 					values.forEach( value => {
@@ -2215,6 +2214,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 		}
 	}
 	
+	/*
 	function pipeCopy(ctx) {
 		var 
 			rtn = {Pipe: '"' + ctx.Pipe.Path + '"' },
@@ -2228,7 +2228,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 				rtn[key] = ctx[key];
 		
 		return rtn;
-	}
+	}*/
 	
 	var
 		ok = "ok",

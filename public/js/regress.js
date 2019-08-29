@@ -279,7 +279,7 @@ The following context keys are accepted:
 		
 		function saver(info,idx) {
 			save.push({ at: "train", chan: idx, x: info.sample.x, y: info.sample.y });
-			Log("save", use, info.cls);
+			//Log("save", use, info.cls);
 			save.push({ at: use, chan: idx, cls: info.cls });
 			saveValues.push( info.sample.y0 );
 		}
