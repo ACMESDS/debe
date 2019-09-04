@@ -3663,9 +3663,14 @@ Initialize DEBE on startup.
 			fetchLink = function ( rec, cb ) {  // expand [LINK](URL) markdown
 				
 				var
-					opt = rec.arg1,
-					url = rec.arg2;
+					op = rec.arg1,
+					opt = rec.arg2,
+					url = rec.arg3;
 
+				if (op) 	// OP [ LABEL] (URL )
+					cb( `${op}[${opt}](${url})` );
+				
+				else
 				if (opt)	//	[ LABEL ] ( URL )
 					cb( opt.tag( url ) );
 
@@ -3689,14 +3694,21 @@ Initialize DEBE on startup.
 						dsPath = ds.parseURL(keys,{},{},{}),
 						urlPath = url.parseURL(keys,{},{},{}),
 						
-						w = keys.w || 100,
-						h = keys.h || 100,
+						w = keys.w || 200,
+						h = keys.h || 200,
 						
 						now = new Date(),
 
+						/*
 						urlParts = urlPath.split("."),
 						urlName = urlParts[0],
 						urlType = urlParts[1],
+						*/
+						x = urlPath.replace(/(.*)\.(.*)/, (str,L,R) => {
+							urlName = L;
+							urlType = R;
+							return "#";
+						}),
 						
 						srcPath = urlPath.tag( "?", Copy({src:dsPath}, keys) );
 
@@ -3746,7 +3758,7 @@ Initialize DEBE on startup.
 				}
 			},
 			
-			pattern = /\[([^\[\]]*)\]\(([^\)]*)\)/g ;
+			pattern = /(.?)\[([^\[\]]*)\]\(([^\)]*)\)/g ;
 		
 		html.serialize( fetchLink, pattern, key, html => {    
 			cb(html);
