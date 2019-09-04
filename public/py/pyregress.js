@@ -125,15 +125,18 @@ def pyregress(ctx):
 	def shuffle(x,y,N): 	# return N random samples of (x,y)
 		def sortKey(d):
 			return d['val']
+
 		xy = []
 		for n in range(0,N):
 			xy.append({'idx': n, 'val': NP.random.uniform()})
+
 		xy.sort(key = sortKey)
 		x0 = []
 		y0 = []
 		for n in range(0,N):
 			x0.append( x[ xy[n]['idx'] ] )
 			y0.append( y[ xy[n]['idx'] ] )
+
 		return (x0,y0)
 	#
 	def serialize(cls, mod):		# serialize classification class cls into a model dictionary mod
@@ -142,27 +145,30 @@ def pyregress(ctx):
 				mod[key] = val.tolist()
 			else:
 				mod[key] = val
+
 		return mod
 	#
-	def deserialize(mod, cls):	# deserialize a model dictionary mod into a classification class cls
+	def deserialize(mod, cls): # deserialize a model dictionary mod into a classification class cls
 		for key in mod:
 			val = mod[key]
 			if type(val) is list:
 				setattr(cls, key, NP.array(val))
 			else:
 				setattr(cls, key, val)
+
 		return cls
 	#
 	def Copy(src, tar):	# Copy source hash src to a target hash tar
 		for key in src:
 			tar[key] = src[key]
+
 		return tar
 	#
 	print "******************** pyregress ******************"
 	#from sklearn.datasets import load_iris
 	#x, y = load_iris(return_X_y=True)
 	x = NP.array( ctx['x'] ) if 'x' in ctx else None
-	y = NP.array( ctx['y'] )) if 'y' in ctx else None
+	y = NP.array( ctx['y'] ) if 'y' in ctx else None
 	#y = NP.reshape( NP.array( ctx['y'] ), (len(x),) ) if 'y' in ctx else None
 	#print "x",x, "y",y
 	keep = int( ctx['Keep'] )
@@ -188,13 +194,13 @@ def pyregress(ctx):
 	solve = ctx[hyperUse] if hyperUse in ctx else None
 	if not solve:
 		solve = {}
+
 	print hyperUse, solve
 	#solve = {}
 	#for key in ctx:
 	#	if key.find(use+"_") == 0:
 	#		solve[ key[len(use)+1:].replace("#","_") ] = ctx[key]
 	#print "solve",use,solve,keep
-	#
 	if loader:
 		if y != None:		# requesting a training
 			print "x",x.shape,"y",y.shape, loader
