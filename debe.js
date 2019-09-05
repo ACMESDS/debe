@@ -306,7 +306,7 @@ catch (err) {
 			
 			neodb.cypher({
 				query: "MATCH (n) DETACH DELETE n"
-			}, err => Trace( err || "CLEARED GRAPH DB" ) );  
+			}, err => Trace( err || "CLEAR GRAPH DB" ) );  
 		}			
 		
 	},
@@ -3699,11 +3699,6 @@ Initialize DEBE on startup.
 						
 						now = new Date(),
 
-						/*
-						urlParts = urlPath.split("."),
-						urlName = urlParts[0],
-						urlType = urlParts[1],
-						*/
 						x = urlPath.replace(/(.*)\.(.*)/, (str,L,R) => {
 							urlName = L;
 							urlType = R;
@@ -3713,7 +3708,7 @@ Initialize DEBE on startup.
 						srcPath = urlPath.tag( "?", Copy({src:dsPath}, keys) );
 
 					
-				// Log("link", [dsPath, srcPath, urlPath], keys, [opt, url]);
+					// Log("link", [dsPath, srcPath, urlPath], keys, [opt, url]);
 
 					switch (urlType) {  //  [](PATH.TYPE?w=W&h=H)
 						case "jpg":  
