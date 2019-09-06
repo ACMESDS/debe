@@ -3654,10 +3654,10 @@ Initialize DEBE on startup.
 			fetchSite = function ( rec, cb ) {  // callback cb with expanded [](URL) markdown
 				//Log("solicit", rec, viaBrowser);
 				if (viaBrowser) 
-					cb( "".tag("iframe", {src:rec.arg2}) );
+					cb( "".tag("iframe", {src:rec.arg3}) );
 				
 				else
-					getSite( rec.arg2, null, cb );
+					getSite( rec.arg3, null, cb );
 			},
 			
 			fetchLink = function ( rec, cb ) {  // expand [LINK](URL) markdown
@@ -3753,7 +3753,7 @@ Initialize DEBE on startup.
 				}
 			},
 			
-			pattern = /(.?)\[([^\[\]]*)\]\(([^\)]*)\)/g ;
+			pattern = /(\!?)\[([^\[\]]*)\]\(([^\)]*)\)/g ;
 		
 		html.serialize( fetchLink, pattern, key, html => {    
 			cb(html);
