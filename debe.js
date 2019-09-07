@@ -3551,13 +3551,14 @@ Initialize DEBE on startup.
 	@param {Function} cb callback(markdown html)
 	*/
 		
-		for (var key in rec)  // parse json stores
+		for (var key in rec)  { // parse json stores
 			try { 
 				ctx[key] = JSON.parse( rec[key] ); 
 			} 
 			catch (err) { 
 				ctx[key] = rec[key]; 
 			}
+		}
 	
 		var 
 			blockidx = 0;
@@ -3613,7 +3614,7 @@ Initialize DEBE on startup.
 	
 	function Xlink( req, ds, viaBrowser, cb ) {  // expands [LINK](URL) tags then callsback cb( final html )
 		/*
-		req = null to disable topic expansions
+		req = http request or null to disable smart hash tags (content tracking)
 		ds = dataset?query default url path
 		viaBrowser = true to enable produce html compatible with browser
 		*/
@@ -3621,13 +3622,13 @@ Initialize DEBE on startup.
 			key = "@tag",
 			html = this,
 			getSite = DEBE.getSite,
-			fetchTopic = function ( rec, cb) {  // callback cb with expanded [TOPIC]() markdown
+			fetchTrack = function ( rec, cb) {  // callback cb with expanded [TOPIC]() markdown
 				var 
 					secret = "",
 					topic = rec.topic,
 					product = topic+".html";
 
-				if (req)
+				if (req)		// content tracking enabled
 					FLEX.licenseCode( req.sql, html, {  // register this html with the client
 						_Partner: req.client,
 						_EndService: "",  // leave empty so lincersor wont validate by connecting to service
@@ -3647,7 +3648,7 @@ Initialize DEBE on startup.
 						}
 					});
 				
-				else
+				else	// content tracking disabled
 					cb( "");
 			},
 			
@@ -3741,7 +3742,7 @@ Initialize DEBE on startup.
 							if ( (keys.starts ? now>=new Date(keys.starts) : true) && 
 								 (keys.ends ? now<=new Date(keys.ends) : true) ) {
 								rec.topic = opt;
-								fetchTopic( rec, cb );
+								fetchTrack( rec, cb );
 							}
 
 							else
