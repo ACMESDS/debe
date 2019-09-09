@@ -352,6 +352,22 @@ var
 		}) 
 	},
 	
+	ACTIONS = {
+		insert: "plus", 
+		delete: "minus", 
+		update: "pin", 
+		select: "restore", 
+		execute: "gear", 
+		capture: "unpin",
+		help: "help",
+		print: "print",
+		refresh: "refresh",
+		delta: "toggle",
+		blog: "right",
+		import: "up",
+		export: "down"
+	},
+	
 	CHARTS = {  			// allowed charts
 		bar:"cartesian",
 		bar3d:"cartesian",
@@ -2143,7 +2159,7 @@ Ext.onReady( function () {
 				dims:"1200,600",title:"",page:"",plugins:"cXF",hover:"",
 				//guard:"",
 				dock:"head",sync:"",
-				head:"Status,Execute,|,Select,Insert,Update,|,Delete,|,Blog,Print,Refresh,Delta,Help",
+				head:"Status,Execute,|,Select,Insert,Update,|,Delete,|,Blog,|,Print,Refresh,Export,Import,Delta,|,Help",
 				menu: "",
 				update:"",select:"",execute:"",delete:""},
 			PARMS : {
@@ -2546,7 +2562,7 @@ WIDGET.prototype.menuTools = function () {
 		
 		return {
 			itemId: label,
-			type: actionSign[label],
+			type: ACTIONS[label],
 			icon: "/clients/icons/actions/"+label+".png",
 			//text: label,
 			// EXTJS bug - fails in some versions of Chrome
@@ -2605,20 +2621,6 @@ WIDGET.prototype.menuTools = function () {
 		agent = "",
 		nada = { xtype: "component", width: 10}, //{ xtype: "tbseparator" },
 		roles = this.roles = ROLES[this.Data.dataset] || DEFAULT.ROLES;
-
-	var actionSign = {
-		insert: "plus", 
-		delete: "minus", 
-		update: "pin", 
-		select: "restore", 
-		execute: "gear", 
-		capture: "unpin",
-		help: "help",
-		print: "print",
-		refresh: "refresh",
-		delta: "toggle",
-		blog: "right"
-	};
 
 	// define widget help text
 	var help = (this.HTML || "") + "<br>" + roles.Special;
@@ -3211,6 +3213,40 @@ WIDGET.prototype.menuTools = function () {
 						}
 						});
 
+					case "export":
+						return action( key, roles, {
+
+							onAction: function (Data,Status) {
+								Ext.Ajax.request({
+									url : Data.Store.getProxy().url.replace(".db",".export"),
+									method: "GET",
+									success: function (res) {
+										Status(res.responseText);
+									},
+									failure: function (res) {
+										Status(STATUS.FAULT);
+									}
+								});
+							}
+						});
+						
+					case "import":
+						return action( key, roles, {
+
+							onAction: function (Data,Status) {
+								Ext.Ajax.request({
+									url : Data.Store.getProxy().url.replace(".db",".import"),
+									method: "GET",
+									success: function (res) {
+										Status(res.responseText);
+									},
+									failure: function (res) {
+										Status(STATUS.FAULT);
+									}
+								});
+							}
+						});
+						
 					case "$stores": 		// reserved file uploaders
 					case "$uploads":
 
@@ -3252,7 +3288,8 @@ WIDGET.prototype.menuTools = function () {
 							}
 						});
 
-					case "$$uploads":  // legacy
+					/*
+					case "$uploads":  // legacy
 
 						var Uploader = Ext.create("Ext.form.Panel", {
 							//layout	: "hbox", 		// EXTJS BUG -- ignored
@@ -3289,7 +3326,8 @@ WIDGET.prototype.menuTools = function () {
 
 						});
 						return Uploader;
-										  
+					*/
+						
 					case "summary":
 
 						return combo( tok, function (val) {

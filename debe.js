@@ -1607,6 +1607,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		me: sharePlugin,
 		jade: sharePlugin,
 		get: sharePlugin,
+		export: sharePlugin,
+		import: sharePlugin,
 		
 		// skins
 		view: renderSkin,
