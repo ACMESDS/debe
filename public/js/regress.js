@@ -150,14 +150,14 @@ The following context keys are accepted:
 						x = x.indexor(idx),
 						y = y ? y.indexor(idx) : null;
 
-					Log("reg keep", keep, cls.length, idx.length, x.length);
+					Log("keep", keep, idx.length, x.length);
 					
 					if ( x0 = x0 || x ) 
 						$( `y0 = ${use}_predict(cls, x0, solve)`, {
 							solve: solve,
 							x0: x0, 
 							cls: cls
-						}, ctx => 	cb({		// return sampled and predicted data
+						}, ctx => cb({		// return sampled and predicted data
 							sample: {
 								x: x,
 								y: y,

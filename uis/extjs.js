@@ -3165,7 +3165,7 @@ WIDGET.prototype.menuTools = function () {
 
 							onSelect: function (Recs, Data, Status) {
 								Recs.forEach( Rec => {
-									var parms = {ID: Rec.getId()};
+									var parms = {ID: Rec.getId(), Name: Rec.get("Name") };
 									
 									Ext.Ajax.request({
 										url : Data.Store.getProxy().url.replace(".db",".exe")+agent,

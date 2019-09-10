@@ -10,7 +10,6 @@ module.exports = {  // generate a random process with specified parameters
 		type_Gauss: "json comment 'Gauss proccess with specified {mean,coints,dim,model,mineig}' ",
 		type_Gillespie: "json comment 'Gillespie-Dobbs process with specified number of {states}' ",
 		type_Ornstein: "json comment 'Ornstein-Ulenbeck process with specified {theta, a = sigma/sqrt(2 theta)}' ",
-		type_Mix: "json comment 'Gaussian mix with specified {mu,sigma} at each ensemble position",
 	
 		Nyquist: "float default 1 comment 'process over-sampling factor' ",
 		Steps: "int(11) default 0 comment 'number of process steps' ",
@@ -54,6 +53,8 @@ module.exports = {  // generate a random process with specified parameters
 			return x;
 		}  */
 
+		//Log("genpr", ctx);
+		
 		var opts = { // supervisor config 
 			N: ctx.Members,  // ensemble size
 			symbols: ctx.Symbols,  // state symbols
@@ -63,7 +64,6 @@ module.exports = {  // generate a random process with specified parameters
 			gauss: ctx.type_Gauss, // {mean, coints,dim,model,mineig}
 			bayes: ctx.type_Bayes, // equlib probs
 			ornstein: ctx.type_Ornstein,   // {theta,  a = sigma / sqrt(2*theta)}
-			mix: ctx.type_Mix, // {mu,sigma}
 			
 			dt: 1/ctx.Nyquist, // oversampling factor
 			steps: ctx.Steps, // process steps
@@ -137,7 +137,7 @@ module.exports = {  // generate a random process with specified parameters
 		
 		$.gen( opts, evs => {
 			ctx.Save = evs;
-			Log(evs.length*evs[0].length," events generated");
+			Log( evs.length ? evs.length*evs[0].length : "no", " events generated");
 			res( ctx );
 		});
 

@@ -2244,6 +2244,8 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 		query = req.query,
 		host = table;
 
+	if ( query.Name ) delete query.ID;
+	
 	//Log("exe", query );
 	if ( days = parseInt(query.days||"0") +parseInt(query.hours||"0")/24 ) {
 		res("queueing polled job");
@@ -2423,7 +2425,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 			}
 					
 			else	// unpiped (e.g. event generation) engines never participate in a supervised workflow
-			res( saveContext( sql, ctx ) ||  ok );
+				res( saveContext( sql, ctx ) ||  ok );
 			
 		});
 		
