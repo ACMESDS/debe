@@ -746,7 +746,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 		dogEmail: Copy({
 			get: {
 				toRemove: "DELETE FROM app.email WHERE Remove",
-				toSend: "SELECT `to`,subject,body FROM app.email WHERE Send"
+				toSend: "SELECT `to`,subject,body FROM app.email WHERE Send AND !Sent"
 			},
 			cycle: 300
 		}, function dogEmail(dog) {
@@ -769,7 +769,8 @@ Further information about this file is available ${paths.moreinfo}. `;
 				sql.query( get.toSend )
 				.on( "result", rec => {
 					send(rec);
-					sql.query("DELETE FROM app.email WHERE ?", {ID:rec.ID});
+					//sql.query("DELETE FROM app.email WHERE ?", {ID:rec.ID});
+					sql.query("UPDATE app.email SET Send=0,Sent=1 WHERE ?", {ID:rec.ID});
 				});
 			});
 		}),
@@ -1644,8 +1645,9 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	Each skin has its own {key: "SQL DB.TABLE" || "/URL?QUERY", ... } spec.
 	*/
 	primeSkin: { //< site context extenders
-		test3: {  // context keys for swag.view
-			projs: "select * from openv.milestones"
+		rtp: {  // context keys for swag.view
+			projs: "select * from openv.milestones order by SeqNum,Num",
+			faqs: "select * from openv.faqs where least(?) order by SeqNum"
 		}
 		/*
 		swag: {  // context keys for swag.view
@@ -2657,8 +2659,8 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 		
 	function dsContext(ds, cb) { // callback cb(ctx) with skinning context ctx
 		
-		if ( dsreq = primeSkin[ds] ) // render in ds context
-			sql.serialize( dsreq, ctx, cb );
+		if ( extctx = primeSkin[ds] ) // if there is a ctx extender, render in ds context
+			sql.serialize( extctx, {Task: ds}, ctx, cb );
 		
 		else  // render in default site context
 			cb( ctx );
