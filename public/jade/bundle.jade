@@ -53,11 +53,11 @@ append base_head
 		};
 
 		const {NODE, NODES, VALUE, SIZE, PARENT, DOC} = opts;
-		const {isArray,isString,d3json} = BASE;
+		const {isArray,isString,Fetch,Log} = BASE;
 
 append base_body
 	script.
-		d3json( opts, (data,svg) => {
+		Fetch( opts, (data,svg) => {
 			var
 				width = svg.attr("width"),
 				height = svg.attr("height"),

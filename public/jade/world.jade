@@ -41,7 +41,7 @@ append base_head
 		
 		const {NODE, CODE, INFO} = opts;
 		//const {NODE, NODES, VALUE, SIZE, PARENT, DOC} = opts;
-		const {isString,isArray,Load} = BASE;
+		const {isString,isArray,Fetch,Log} = BASE;
 
 append base_body
 	script.
@@ -55,7 +55,7 @@ append base_body
 				}
 			});
 
-			Load(opts, recs => {
+			Fetch(opts, recs => {
 				
 				recs.forEach( function (rec) {
 					vmap.push({

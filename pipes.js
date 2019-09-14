@@ -105,7 +105,8 @@ var PIPE = module.exports = {
 	},
 	
 	pipeJson: function(sql, job, cb) { // pipe json data with callback cb(json,job) || cb(null)
-		getSite( job.path, null, info => cb( {$: info.parseJSON( null )} ) );
+		//Log(">pipe json", job.path.tag("?", job.query) );
+		getSite( job.path.tag("?", job.query), null, info => cb( {$: info.parseJSON( null )} ) );
 	},
 	
 	pipeDoc: function(sql, job, cb) { // pipe nlp docs with callback cb(doc,job) || cb(null)

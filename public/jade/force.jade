@@ -56,11 +56,11 @@ append base_head
 		};
 
 		const {NODE, CHILDREN, VALUE, SIZE, PARENT} = opts;
-		const {isArray,d3json} = BASE;
+		const {isArray,Fetch} = BASE;
 										
 append base_body
 	script.
-		d3json( opts, (data,svg) => {
+		Fetch( opts, (data,svg) => {
 			function update() {
 				function flatten(root) {	// Returns a list of all nodes under the root.
 					var nodes = [], links = [], id = 0;

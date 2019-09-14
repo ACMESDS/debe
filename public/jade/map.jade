@@ -71,12 +71,12 @@ append base_head
 		};
 		
 		const {NODE, NODES, VALUE, SIZE, PARENT, DOC} = opts;
-		const {isString,isArray,d3json} = BASE;
+		const {isString,isArray,Fetch,Log} = BASE;
 
 append base_body
 	script.
 		// https://observablehq.com/@d3/treemap
-		d3json( opts, (data,sg) => {
+		Fetch( opts, (data,sg) => {
 			var
 				width = svg.attr("width"),
 				height = svg.attr("height"),

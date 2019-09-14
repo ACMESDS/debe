@@ -58,7 +58,7 @@ append base_head
 		};
 		
 		const {NODE, NODES, VALUE, SIZE, PARENT, DOC} = opts;
-		const {isString,isArray,d3json} = BASE;
+		const {isString,isArray,Fetch,Log} = BASE;
 
 append base_body
 	div(id="container")
@@ -91,7 +91,7 @@ append base_body
 		.forEach( (proj,n) => input.insert("option").attr( "value", proj ).text( proj ) );
 
 		if ( d3.version.startsWith("3.") ) // use datamaps
-			d3json( "/mapdata.json" , maps => {	// country base data
+			Fetch( "/mapdata.json" , maps => {	// country base data
 				var cmap = {};
 				maps.forEach( map => {
 					cmap[map.name.toUpperCase()] = {
@@ -102,7 +102,7 @@ append base_body
 
 				Log(cmap);
 
-				d3json( opts, (evs,svg) => {		// event data
+				Fetch( opts, (evs,svg) => {		// event data
 					var
 						width = svg.attr("width"),
 						height = svg.attr("height");
@@ -167,7 +167,7 @@ append base_body
 			});
 
 		else 
-			d3json( "/stores/worldatlas.json" , worldatlas => {		// country outlines
+			Fetch( "/stores/worldatlas.json" , worldatlas => {		// country outlines
 				function update(layout) {
 					//canvas.remove();
 					var path = d3.geoPath( projs[layout](), context );
@@ -198,7 +198,7 @@ append base_body
 				//Log("can", canvas, context, d3.select('#container'));
 				update( "stereographic" );
 
-				d3json( "/mapdata.json" , maps => {	// country base data
+				Fetch( "/mapdata.json" , maps => {	// country base data
 					var cmap = {};
 					maps.forEach( map => {
 						cmap[map.name.toUpperCase()] = {
@@ -209,7 +209,7 @@ append base_body
 
 					Log(cmap);
 
-					d3json( opts, (evs,svg) => {		// country event data
+					Fetch( opts, (evs,svg) => {		// country event data
 						var
 							width = svg.attr("width"),
 							height = svg.attr("height");

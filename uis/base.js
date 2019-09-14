@@ -10,8 +10,6 @@
  * See the BASE.start() method for further information.
  * */
 
-var Log = console.log;
-
 var BASE = {
 	
 	Log: console.log,
@@ -138,9 +136,28 @@ var BASE = {
 		return keys.length==0;
 	},
 	
-	d3json: function (opts, cb) {
+	Ajax: function ( method, async, url, cb , body, kill ) {
+		var req = ((window.XMLHttpRequest)  			// get a request handle
+				? new XMLHttpRequest()
+				: new ActiveXObject("Microsoft.XMLHTTP"));
+
+		req.onreadystatechange = function() { 				// Set the callback
+			if (req.readyState==4 && req.status==200) 	// Service completed 
+				if (cb) 			// pass response to callback
+					if ( cb( req.responseText ) ) 	// test callback returned status
+						if (kill) kill();  // kill the document if cb returns true
+		};
+
+		req.open(method, url, async); // start request
+		if (body)
+			req.send(JSON.stringify(body));  	// end request
+		else
+			req.send();  // end request
+	},
+	
+	Fetch: function (opts, cb) {
 	/**
-	@method BASE.Load
+	@method BASE.Fetch
 	Callback cb(recs, svg) with a d3 svg dom target, and the records recs = [rec, ...] that
 	were loaded from the source path 
 	
@@ -160,33 +177,50 @@ var BASE = {
 	@param {Object} opts source loading options {ds: "/path", ... }
 	@param {Function} cb callback(recs)
 	*/
-		function loadData( path, opts ) {
+		const {Log, Ajax} = BASE;
+
+		function fetchData( path, opts ) {
+			/* 
+				Two problems with d3.json (cvs, etc): 
+					(1) Its version dependent.  v4+ use new promise structure. But worse
+					(2) d3.json() fails when fecthing on a https thread
+				Thus we use ajax instead.
+			*/
 			
-			if ( d3.version.startsWith("3.") )
-				d3.json( path, (err, recs) => {
-					if (err) 
-						alert( err+"" );
-					
-					else {					
+			if (false) 	// use d3 to fetch
+				if ( d3.version.startsWith("3.") )	// older v3
+					d3.json( path, (err, recs) => {
+						if (err) 
+							alert( err+"" );
+
+						else {					
+							if (opts.debug>1) alert("recs"+JSON.stringify(recs));
+
+							if ( recs ) cb( isArray(recs) ? recs : [recs] , opts.svg );
+						}
+					});
+
+				else
+				if (false)	// newer v4+
+					d3.json( path ).then( recs => {
 						if (opts.debug>1) alert("recs"+JSON.stringify(recs));
 
 						if ( recs ) cb( isArray(recs) ? recs : [recs] , opts.svg );
-					}
-				});
+					});
 			
 			else
-				d3.json( path ).then( recs => {
-					if (opts.debug>1) alert("recs"+JSON.stringify(recs));
+				Ajax("GET", true, path, recs => {
+					if (opts.debug>1) alert("recs"+recs);
 
-					if ( recs ) cb( isArray(recs) ? recs : [recs] , opts.svg );
+					if ( recs = JSON.parse(recs) ) cb( isArray(recs) ? recs : [recs] , opts.svg );
 				});
 		}
 		
 		if (d3) 
 			if ( BASE.isString(opts) ) 
-				loadData( opts, {} );
+				fetchData( opts, {} );
 		
-			else {			
+			else {
 				if (opts.debug) alert( "opts: "+JSON.stringify(opts) ); 
 
 				d3.select("svg").remove();
@@ -266,12 +300,12 @@ var BASE = {
 
 							//Log(input[0][0]);
 							Log(`adjust ${key}=${value} ${opts.ds} -> ${path}`);
-							loadData( path, opts );
+							fetchData( path, opts );
 						});
 					}
 				});
 
-				loadData( opts.ds.replace(/\$\w+/g, "0"), opts );
+				fetchData( opts.ds.replace(/\$\w+/g, "0"), opts );
 			}
 
 		else 

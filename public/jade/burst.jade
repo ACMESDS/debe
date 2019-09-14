@@ -105,7 +105,7 @@ append base_head
 		};
 
 		const {NODE, CHILDREN, VALUE, SIZE, PARENT, DOC} = opts;
-		const {isArray,isString,d3json} = BASE;
+		const {isArray,isString,Fetch,Log} = BASE;
 
 append base_body
 	script.
@@ -137,7 +137,7 @@ append base_body
 						(root);
 		}
 		
-		d3json( opts, (data,svg) => {
+		Fetch( opts, (data,svg) => {
 			var
 				/*
 					var width = 500 creates a variable set to 500; it does not actually set the width of anything, yet. Below we'll apply this variable to the <svg> element's width attribute. We could set width directly (<svg width=500>). But we'll use this values a few times. If we coded it directly, we'd then need to change each occurrences every time. Mistakes will happen.

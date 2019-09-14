@@ -158,7 +158,7 @@ append base_body
 			.on("mousemove", mousemove)
 			.on("mouseup", mouseup);
 
-		BASE.Load( opts, recs => {
+		BASE.Fetch( opts, recs => {
 			var nodes = cluster.nodes(recs);
 
 			var link = vis.selectAll("path.link")

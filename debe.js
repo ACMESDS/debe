@@ -102,23 +102,28 @@ var
 		aoi: pipeAOI
 	},
 		
-	super: {
-		"brian.d.james@coe.ic.gov": 1
-	},
-		
 	reroute: {  //< sql.acces routes to provide secure access to db
-		engines: function (ctx) { // protect engines that are not registered to requesting client
+		"app.engines": function (ctx) { // protect engines that are not registered to requesting client
 			//Log("<<<", ctx);
-			if ( !DEBE.super[ ctx.client.toLowerCase() ] ) {
-				ctx.index["Nrel:"] = "count(releases._License)";
-				ctx.index[ctx.from+".*:"] = "";
-				ctx.join = `LEFT JOIN ${ctx.db}.releases ON (releases._Product = concat(engines.name,'.',engines.type)) AND releases._Partner='${ctx.client}'`;
-				ctx.where["releases.id:"] = "";
-				//Log(">>>", ctx);
-			}
-			return ctx.db+"."+ctx.from;
+			if ( DEBE.site.pocs.overlord.indexOf(ctx.client.toLowerCase()) >= 0 ) // allow access
+				if ( false ) { // via licensed copy
+					ctx.index["Nrel:"] = "count(releases._License)";
+					ctx.index[ctx.from+".*:"] = "";
+					ctx.join = `LEFT JOIN ${ctx.db}.releases ON (releases._Product = concat(engines.name,'.',engines.type)) AND releases._Partner='${ctx.client}'`;
+					ctx.where["releases.id:"] = "";
+					return "app.engines";
+					//Log(">>>", ctx);
+				}
+				
+				else 
+					return "app.engines";
+				
+			else
+				return "block.engines";
 		},
 		
+		"openv.masters": "block.masters"
+		/*
 		syslogs: "openv.syslogs",
 		masters: "block.masters",
 		roles: "openv.roles",
@@ -133,7 +138,7 @@ var
 		journal: "openv.journal",
 		hawks: "openv.hawks",
 		attrs: "openv.attrs",
-		issues: "openv.issues"
+		issues: "openv.issues"  */
 	},
 
 	blogContext: {
@@ -1098,7 +1103,7 @@ mv '${msg}'_files index_files ;
 		
 		blog: function (recs,req,res) {  //< renders dataset records
 			if (key = req.flags.blog)
-				recs.blogify( req, key, req.table, res );
+				recs.blogify( req, key, "/"+req.table, res );
 			else
 				res(recs);
 		}
@@ -1807,7 +1812,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				js: "text/plain",
 				py: "text/plain",
 				ma: "text/plain",
-				tou: "text/html"
+				tou: "text/html",
+				db: "application/json"
 			}			
 		},
 		
@@ -2144,19 +2150,21 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 		function pipe(get, sql, job, cb) {
 			var 
 				ctx = job.ctx,
-				query = job.query,
-				error = null;
-
+				query = job.query;
+			
 			Log(">pipe opened", job.path);
 			if ( get )
 				get(sql, job, data => {
 					if (data) {
 						Copy(data,ctx);
 						Each(query, (key,exp) => {
-							data[key] = ctx[key] = exp.parseJS( ctx, err => { Log(`>pipe fault ${key}=${exp}`); error = err; } );
+							//Log(">pipe",key,exp);
+							data[key] = ctx[key] = isString(exp)
+								? exp.parseJS( ctx, err => Log(`>pipe skip ${key}=${exp}`) )
+								: exp;
 						});
 
-						cb( error ? null : ctx, () => {
+						cb( ctx, () => {
 							Log(">pipe closed");
 							for (key in data) delete ctx[key];
 						});
@@ -2190,7 +2198,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 				}
 
 				else
-					Log(">pipe failed");
+					Log(">pipe halted");
 			});
 		});
 	}
@@ -2217,22 +2225,6 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 				}
 		}
 	}
-	
-	/*
-	function pipeCopy(ctx) {
-		var 
-			rtn = {Pipe: '"' + ctx.Pipe.Path + '"' },
-			skip = {Host: 1, ID: 1, Pipe: 1};
-		
-		for (var key in  ctx) 
-			if ( (key in skip) || key.startsWith("Save_") ) {
-			}
-		
-			else
-				rtn[key] = ctx[key];
-		
-		return rtn;
-	}*/
 	
 	var
 		ok = "ok",
@@ -2314,19 +2306,17 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 							var
 								pipeRun = `${ctx.Host}.${ctx.Name}`,
 							
-								parts = pipePath.substr(1).split("."),
-								pipeName = parts[0] || "",
-								pipeType = parts.pop() || "",
+								[x,pipeName,pipeType] = pipePath.substr(1).match(/(.*)\.(.*)/) || ["", pipePath, "json"],
 								pipeJob = DEBE.pipeJob[pipeType];
 							
 							if ( !pipeJob ) {
 								pipePath = job.path = `/stores/${pipeType}.${pipeName}.stream`;
-								parts = pipePath.substr(1).split(".");
-								pipeName = parts[0] || "";
-								pipeType = parts.pop() || "";
+								[x,pipeName,pipeType] = pipePath.substr(1).match(/(.*)\.(.*)/) || ["", pipePath, "json"],
 								pipeJob = DEBE.pipeJob[pipeType];
 							}
 								
+							//Log(">pipe", pipePath, pipeName, pipeType);
+														
 							var
 								isFlexed = FLEX.select[pipeName] ? true : false,
 								isDB = pipeType == "db";
@@ -2392,7 +2382,7 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 							delete runCtx.Pipe;
 							for (var key in runCtx) if ( key.startsWith("Save_") ) delete runCtx[key];
 							
-							sql.getTypes( `app.${host}`, {Type:"json"}, {}, jsons => {
+							sql.getFields( `app.${host}`, {Type:"json"}, {}, jsons => {
 								sql.query( `DELETE FROM app.${host} WHERE Name LIKE '${ctx.Name}-%' ` );
 
 								crossParms( 0 , Object.keys(Pipe), Pipe, {}, setCtx => {	// enumerate keys to provide a setCtx key-context for each enumeration
@@ -3724,8 +3714,8 @@ Initialize DEBE on startup.
 							break;
 
 						case "view": 
-							if ( viaBrowser )
-								cb( "".tag("iframe", { src:srcPath, width:w, height:h }) );
+							if ( viaBrowser ) 
+								cb( "".tag("iframe", { src: srcPath, width:w, height:h }) );
 							
 							else
 								cb( urlPath.tag( url ) );

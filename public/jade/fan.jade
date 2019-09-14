@@ -62,11 +62,11 @@ append base_head
 		};
 
 		const {NODE, CHILDREN, VALUE, SIZE, PARENT, DOC} = opts;
-		const {isArray,isString,d3json} = BASE;
+		const {isArray,isString,Fetch,Log} = BASE;
 										
 append base_body
 	script.
-		d3json( opts, (data,svg) => {			
+		Fetch( opts, (data,svg) => {			
 			function collapse(d) {	// Collapse the node and all it's children
 			  if(d.children) {
 				d._children = d.children

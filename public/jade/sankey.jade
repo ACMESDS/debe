@@ -48,7 +48,7 @@ append base_head
 		};
 
 		const {NODE, NODES, VALUE, SIZE, PARENT, DOC} = opts;
-		const {isString,isArray,d3json} = BASE;
+		const {isString,isArray,Fetch,Log} = BASE;
 
 append base_body
 	script(src="/clients/d3-addons/d3-arrary.min.js")
@@ -69,7 +69,7 @@ append base_body
 			return d => `${f(d)} TWh`;
 		}
 
-		d3json( opts, (data,svg) => {
+		Fetch( opts, (data,svg) => {
 			/*
 			const svg = d3.create("svg")
 					.attr("viewBox", [0, 0, width, height]);

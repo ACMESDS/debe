@@ -94,7 +94,7 @@ The following context keys are accepted:
 	
 	engine: function regress(ctx, res) {  
 	/* 
-	Train regressor where:
+	Train regressor and/or predict with a trained regressor where:
 
 		Method: regression technique to USE = lrm | svm | pls | knn	| ols | ...
 		Save_USE: training model for specified Method 
@@ -279,12 +279,13 @@ The following context keys are accepted:
 		
 		function saver(info,idx) {
 			save.push({ at: "train", chan: idx, x: info.sample.x, y: info.sample.y });
-			//Log("save", use, info.cls);
-			save.push({ at: use, chan: idx, cls: info.cls });
+			//Log("reg save", use, idx, info.cls.export ? true : false);
+			save.push({ at: use, chan: idx, cls: info.cls.export ? info.cls.export() : info.cls });
 			saveValues.push( info.sample.y0 );
 		}
 
 		function sender(info) {
+			//Log("reg send", info);
 			if (info) saver(info,0);
 			if (multi) save.push({ 
 				at: "jpg", 

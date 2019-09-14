@@ -63,15 +63,15 @@ append base_head
 		};
 		
 		const {NODE, NODES, VALUE, SIZE, PARENT, DOC} = opts;
-		const {isString,isArray,d3json} = BASE;
+		const {isString,isArray,Fetch,Log} = BASE;
 
 append base_body
 	script(src="/clients/topojson.min.js")
 	script.
 		// https://observablehq.com/@d3/u-s-map-canvas
 		// https://bl.ocks.org/mbostock/1073373
-		d3json( "/stores/usatlas.json" , usatlas => {
-			d3json( opts, (data,svg) => {
+		Fetch( "/stores/usatlas.json" , usatlas => {
+			Fetch( opts, (data,svg) => {
 				var
 					width = svg.attr("width"),
 					height = svg.attr("height"),
