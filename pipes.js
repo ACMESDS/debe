@@ -35,26 +35,24 @@ The pipe job contains:
 		ctx: {...} plugin context keys
 */
 
+const { Copy,Each,Log,isObject,isString,isFunction,isError,isArray,isEmpty } = require("enum");
+const { getVoxels } = require("geohack");
+
 var
 	READ = require("reader"),
 	FS = require("fs"),
 	CP = require("child_process"), 	
-	GEO = require("geohack"),
-	TOTEM = require("totem"),
-	ENUM = require("enum"),
 	$ = require("man"),
 	STREAM = require("stream"),
 	RAN = require("randpr");
 
-const { Copy,Each,Log,isObject,isString,isFunction,isError,isArray,isEmpty } = ENUM;
-const { getVoxels } = GEO;
-const { getFile, getSite, thread } = TOTEM;
+function Trace(msg,sql) {
+	"pipe>".trace(msg,sql);
+}
 
-var PIPE = module.exports = {
-	config: function(opts) {
-		Copy( opts || {}, PIPE );
-	},
-	
+var PIPE = module.exports = opts => Copy(opts || {}, PIPE, ".");
+
+Copy({
 	pipeStream: function(sql, job, cb) {
 		FS.open( "."+job.path, "r", (err, fd) => {
 			if (err) 
@@ -456,6 +454,8 @@ var PIPE = module.exports = {
 				chipFile( file, job );
 		});
 	}
-}
+}, PIPE);
+
+const { getFile, getSite, thread } = require("totem");
 
 // UNCLASSIFIED

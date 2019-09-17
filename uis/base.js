@@ -186,7 +186,6 @@ var BASE = {
 					(2) d3.json() fails when fecthing on a https thread
 				Thus we use ajax instead.
 			*/
-			
 			if (false) 	// use d3 to fetch
 				if ( d3.version.startsWith("3.") )	// older v3
 					d3.json( path, (err, recs) => {
@@ -200,15 +199,14 @@ var BASE = {
 						}
 					});
 
-				else
-				if (false)	// newer v4+
+				else // newer v4+
 					d3.json( path ).then( recs => {
 						if (opts.debug>1) alert("recs"+JSON.stringify(recs));
 
 						if ( recs ) cb( isArray(recs) ? recs : [recs] , opts.svg );
 					});
 			
-			else
+			else 
 				Ajax("GET", true, path, recs => {
 					if (opts.debug>1) alert("recs"+recs);
 

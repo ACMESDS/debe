@@ -40,7 +40,6 @@ Required app.datasets:
 var 									
 	// globals
 	ENV = process.env,
-	TRACE = "D>",
 	WINDOWS = process.platform == 'win32',		//< Is Windows platform
 
 	// totem bindings required before others due to dependent module issues
@@ -62,8 +61,6 @@ var
 	LANG = require('i18n-abide'), 		//< I18 language translator
 	ARGP = require('optimist'),			//< Command line argument processor
 	TOKML = require("tokml"), 			//< geojson to kml convertor
-	JAX = require("mathjax-node"),   //< servde side mathjax parser
-	JADE = require('jade'),				//< using jade as the skinner
 	
 	// totem modules		
 	EAT = require("./ingesters"),	
@@ -72,17 +69,252 @@ var
 	$ = require("man"),
 	GEO = require("geohack"),
 	ENUM = require("enum"),
-	PIPE = require("./pipes");
+	PIPE = require("./pipes"),
+	BLOG = require("./blogs"),
+	SKIN = require("./skins");
 
 const { Copy,Each,Log,isObject,isString,isFunction,isError,isArray } = ENUM;
 const { pipeStream, pipeImage, pipeJson, pipeDoc, pipeDB, pipeAOI } = PIPE;
-
-var										// shortcuts and globals
-	Thread = TOTEM.thread;
+const { renderSkin } = SKIN;
+const { sqlThread } = TOTEM;
 
 var
-	DEBE = module.exports = Copy({
-	
+	DEBE = module.exports = (opts,cb) => {
+	/**
+	@method Initialize
+	@member DEBE
+	Initialize DEBE on startup.
+	*/
+		//Copy(opts,TOTEM, ".");
+		
+		function initSES(cb) {
+		/**
+		 * @method initSES
+		 * @private
+		 * @member DEBE
+		 * Initialize the session environment
+		 */
+
+			Trace(`INIT SESSIONS`);
+
+			/*
+			Each( CRUDE, function (n,routes) { // Map engine CRUD to DEBE workers
+				DEBE.byTable[n] = ATOM[n];
+			});	
+			*/
+
+			/*
+			The i18n simply provides an industry standard framework for translating native -> foreign
+			phrases (defined my pot->po files under XLATE folder).  These pot->po translations are 
+			not free.  Wordpress, for example, provides a service that allows websites to register
+			for their services that crowd source translations from supplied pot files to their
+			delivered po files.
+			*/
+
+			if (path = DEBE.paths.mime.xlate) 
+				EXAPP.use(LANG.abide({
+					supported_languages: ['en', 'de', 'fr'],
+					default_lang: 'en',
+					translation_directory: path,
+					translation_type: "json"
+					//locale_on_url: true
+				}));
+
+			if (cb) cb();
+		}
+
+		function initENV(cb) {
+		/**
+		 * @method initENV
+		 * @private
+		 * @member DEBE
+		 * Initialize the runtime environment
+		 */
+
+			Trace(`INIT ENVIRONMENT`);
+
+			var 
+				site = DEBE.site,
+
+				args = ARGP
+				.usage("$0 [options]")
+
+				.default('spawn',DEBE.isSpawned)
+				.boolean('spawn')
+				.describe('spawn','internal hyper-threading option')
+				.check(function (argv) {
+					DEBE.isSpawned = argv.spawn;
+				})
+
+				.default('blind',DEBE.blindTesting)
+				.boolean('blind')
+				.describe('blind','internal testing flag')  
+				.check(function (argv) {
+					DEBE.blindTesting = argv.blind;
+				})
+
+				.default('dump',false)
+				.boolean('dump')
+				.describe('dump','display derived site parameters')  
+				.check(function (argv) {
+					//Log(site);
+				})
+
+				/*
+				.default('start',DEBE.site.Name)
+				.describe('start','service to start')  
+				.check(function (argv) {
+					DEBE.site.Name = argv.start;
+				})
+				* */
+
+				.boolean('version')
+				.describe('version','display current version')
+				.check(function(argv) {
+					if (argv.version) 
+						Trace(DEBE.site);
+				})
+
+				/*
+				.default('echo',DEBE.FLAGS.DEBUG)
+				.boolean('echo')
+				.describe('echo','echo adjusted http request parameters')
+				.check(function(argv) {
+					DEBE.FLAGS.DEBUG = argv.echo;
+				})*/
+
+				.boolean('help')
+				.describe('help','display usage help')
+				.check(function(argv) {
+					if (argv.help) {
+						Trace( ARGP.help() );
+
+						Trace("Available services:");
+						sql.query("SELECT * FROM openv.apps WHERE ?",{Enabled:1})
+						.on("result", function (app) {
+							Trace(app.Name+" v"+app.Ver+" url="+app.Host+":"+app.Port+" db="+app.DB+" nick="+app.Nick+" sockted="+(app.Sockets?"yes":"no")+" cores="+app.Cores+" pki="+app.PKI);
+						})
+						.on("error", err => {
+							Trace(err);
+						})
+						.on("end", function () {
+							process.exit();
+						});
+					}
+				})
+				.argv;
+
+			if (cb) cb();
+
+		}
+
+		function initSQL(cb) {
+		/**
+		 * @method initSQL
+		 * @private
+		 * @member DEBE
+		 * Initialize the FLEX and ATOM interfaces
+		 */
+
+			Trace("INIT CRUDE");
+			for ( crude in {select:1,delete:1,insert:1,update:1,execute:1} ) {
+				//DEBE[crude] = FLEX[crude].ds;
+				DEBE.byActionTable[crude] = FLEX[crude];
+			}
+
+			if (cb) cb();	
+		}
+
+		TOTEM(opts, err => {
+			Trace("DEBE STARTED");
+			if (err)
+				Trace("CANT INITIALIZE");
+			
+			else
+				initENV( function () {  // init the global environment
+				initSES( function () {	// init session handelling
+				initSQL( function () {	// init the sql interface
+
+					Trace("INIT MODULES");
+
+					FLEX({ 
+						thread: sqlThread,
+						//emitter: DEBE.IO ? DEBE.IO.sockets.emit : null,
+						//skinner: JADE,
+						getSite: DEBE.getSite,
+						getIndex: DEBE.getIndex,
+						createCert: DEBE.createCert,
+						diag: DEBE.diag,
+						site: DEBE.site						// Site parameters
+					});
+
+					GEO.config({
+						//source: "",
+						taskPlugin: null,
+						thread: DEBE.thread,
+						getSite: DEBE.getSite
+					});
+
+					$.config({
+						thread: sqlThread,
+						runTask: DEBE.runTask,
+						getSite: DEBE.getSite
+					});
+
+					ATOM.config({
+						thread: sqlThread,
+						cores: DEBE.cores,
+						//watchFile: DEBE.watchFile,
+						plugins: Copy({   // share selected FLEX and other modules with engines
+							// MAIL: FLEX.sendMail,
+							//RAN: require("randpr"),
+							$: $,
+							$NLP: READ,
+							$GEO: GEO,
+							$TASK: DEBE.runTask,
+							$SQL: DEBE.thread,
+							$JIMP: $.JIMP,
+							$NEO: DEBE.neodb ? DEBE.neodb.cypher : null
+						}, $ )
+					});
+
+					DEBE.neodb = ENV.NEO4J ? new NEO.GraphDatabase(ENV.NEO4J) : null;
+
+					DEBE.onStartup(sql);
+
+					var path = DEBE.paths.jades;
+
+					if (false)
+					DEBE.getIndex( path, (files) => {  // publish new engines
+						var ignore = {".": true, "_": true};
+						files.forEach( (file) => {
+							if ( !ignore[file.charAt(0)] )
+								try {
+									Trace("PUBLISHING "+file);
+
+									sql.query( "REPLACE INTO app.engines SET ?", {
+										Name: file.replace(".jade",""),
+										Code: FS.readFileSync( path+file, "utf-8"),
+										Type: "jade",
+										Enabled: 0
+									});
+								}
+								catch (err) {
+									//Trace(err);
+								}
+						});
+
+						sql.release();
+					});
+
+				}); }); }); 
+		});
+		
+		Copy(TOTEM, DEBE);
+		return DEBE;
+	};
+
+Copy({
 	pipeJob: {		//  pipe job by pipe path type
 		stream: pipeStream,
 		nitf: pipeImage,
@@ -259,7 +491,7 @@ catch (err) {
 		}
 	},
 		
-	init: Initialize,
+	//init: Initialize,
 		
 	//plugins: $.libs,
 		
@@ -386,7 +618,7 @@ catch (err) {
 				disk: 200
 			},
 			get: {
-				sqlutil: "show session status like 'Thread%'",
+				sqlutil: "show session status like 'sqlThread%'",
 				diskutil: "SELECT table_schema AS DB, "
 					 + "SUM(data_length + index_length) / 1024 / 1024 / 1024 AS GB FROM information_schema.TABLES "
 					 + "GROUP BY table_schema",
@@ -452,7 +684,7 @@ catch (err) {
 						connectedThreads: threads.connected,
 						cpuUtil: cpu,
 						diskUtil: disk,
-						Module: TRACE,
+						Module: "D>",
 						totalJobs: jobs.total
 					});
 
@@ -1102,6 +1334,7 @@ mv '${msg}'_files index_files ;
 		},
 		
 		blog: function (recs,req,res) {  //< renders dataset records
+			
 			if (key = req.flags.blog)
 				recs.blogify( req, key, "/"+req.table, res );
 			else
@@ -1772,8 +2005,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			"Totem".tag("/fan.view?src=info&w=1000&h=600") 
 			+ ": protecting the warfighter from bad data",
 		
-		jadePath: "./public/jade/ref.jade",	// jade reference path for includes, exports, appends
-		
 		engine: "SELECT * FROM app.engines WHERE least(?,1) LIMIT 1",
 		jades: "./public/jade/",		// path to default view skins
 		
@@ -1900,7 +2131,10 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	Enable for double-blind testing 
 	*/
 	blindTesting : false		//< Enable for double-blind testing (eg make FLEX susceptible to sql injection attacks)
-}, TOTEM, ".");
+}, DEBE, ".");
+
+Log(">>>>>>>>", DEBE.getSite);
+return;
 
 /**
 @class DEBE.Utilities.SOAP
@@ -1918,7 +2152,7 @@ could/should be revised to support more generic peer-to-peer bySOAP interfaces.
 @param {Object} res HTTP response
 @param {Function} proxy Name of APP proxy function to handle this session.
 */
-	Thread( sql => {
+	sqlThread( sql => {
 		req.addListener("data", function (data) {
 			XML2JS.parseString(data.toString(), function (err,json) {  // hydra specific parse
 
@@ -2600,226 +2834,6 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 }
 
 /**
-@class DEBE.End_Points.Skinning
-*/
-
-function renderSkin(req,res) {
-/**
-@method renderSkin
-@member DEBE
-Totem (req,res)-endpoint to render req.table using its associated jade engine. 
-@param {Object} req Totem request
-@param {Function} res Totem response
-*/
-	var 
-		sql = req.sql,
-		query = req.query,
-		paths = DEBE.paths,
-		site = DEBE.site,  
-		error = DEBE.errors,
-		primeSkin = DEBE.primeSkin,
-		urls = site.urls,
-		query = req.query,
-		routers = DEBE.byActionTable.select,
-		dsname = req.table,
-		ctx = Copy(site, {  //< default site context to render skin
-			table: req.table,
-			dataset: req.table,
-			type: req.type,
-			//parts: req.parts,
-			action: req.action,
-			//org: req.org,
-			client: req.client,
-			flags: req.flags,
-			query: req.query,
-			joined: req.joined,
-			profile: req.profile,
-			group: req.group,
-			//search: req.search,
-			session: req.session,
-			/*
-			util: {
-				cpu: (cpuavgutil() * 100).toFixed(0), // (req.log.Util*100).toFixed(0),
-				disk: ((req.profile.useDisk / req.profile.maxDisk)*100).toFixed(0)
-			},*/
-			started: DEBE.started,
-			filename: DEBE.paths.jadePath,  // jade compile requires
-			url: req.url
-		});
-		
-	function dsContext(ds, cb) { // callback cb(ctx) with skinning context ctx
-		
-		if ( extctx = primeSkin[ds] ) // if there is a ctx extender, render in ds context
-			sql.serialize( extctx, {Task: ds}, ctx, cb );
-		
-		else  // render in default site context
-			cb( ctx );
-	}
-	
-	dsContext(dsname, ctx => {  // get skinning context for this skin
-
-		/**
-		@class DEBE.Utilities.Skinning
-		*/
-		function renderFile( file, ctx ) { 
-		/**
-		@private
-		@method renderFile
-		Render Jade file at path this to res( err || html ) in a new context created for this request.  
-		**/
-			try {
-				res( JADE.renderFile( file, ctx ) );  
-			}
-			catch (err) {
-				res(  err );
-			}
-		}
-
-		function renderPlugin( fields, ctx ) { // render using plugin skin
-		/**
-		@private
-		@method renderPlugin
-		Render Jade file at path this to res( err || html ) in a new context created for this request.  
-		**/
-			
-			Copy({
-				mode: req.type,
-				page: query.page,
-				dims: query.dims || "100%,100%",
-				ds: dsname
-			}, query);
-			
-			//Log([query, req.search]);
-			
-			var
-				cols = [],
-				drops = { id:1, odbcstamp: 1};
-			
-			switch (fields.constructor) {
-				case Array:
-					fields.forEach( (field,n) => {
-						var 
-							key = field.Field, 
-							type = field.Type.split("(")[0];
-							//group = key.split("_");
-						
-						if ( key.toLowerCase() in drops ) {		// drop
-						}
-						else
-						if ( type == "geometry") {		// drop
-						}
-						else {		// take
-							var
-								doc = escape(field.Comment).replace(/\./g, "%2E").replace(/\_/g,"%5F"),
-								qual = "short";
-							
-							if ( key.startsWith("Save") ) qual += "hideoff" ;
-							
-							else
-							if ( key.startsWith("_" ) ) qual += "off";
-							
-							//Log(key,qual);
-							cols.push( key + "." + type + "." + doc + "." + qual );
-						}
-					});
-					break;
-					
-				case String:
-					fields.split(",").forEach( field => {
-						if ( field != "ID") cols.push( field );
-					});	
-					break;
-					
-				case Object:
-				default:
-					Each(fields, field => {
-						if (field != "ID") cols.push( field );
-					});	
-			}
-				
-			query.cols = cols.groupify();
-			/*if ( query.mode == "gbrief" ) // better to add this to site.context.plugin
-				sql.query("SELECT * FROM ??.??", [req.group, query.ds], function (err,recs) {
-					if (err)
-						res( DEBE.errors.badSkin );
-					
-					else {
-						recs.each( function (n,rec) {
-							delete rec.ID;
-						});
-
-						query.data = recs;
-						pluginPath.render(req, res);
-					}
-				});
-
-			else	*/
-			
-			renderFile( paths.jades+"plugin.jade", ctx );
-		}		
-		
-		function renderTable( ds, ctx ) {
-		/**
-		@private
-		@method renderPlugin
-		Render table at path this to res( err || html ) in a new context created for this request.  
-		**/			
-			sql.query( 
-				"SHOW FULL COLUMNS FROM ??", 
-				sql.reroute( ds ), 
-				function (err,fields) {
-				
-				if (err) // render jade file
-					renderFile( paths.jades+ds+".jade", ctx );
-
-				else // render plugin
-					renderPlugin( fields, ctx );
-			});	
-		}
-		
-		function renderJade( jade, ctx ) { 
-		/**
-		@private
-		@method renderJade
-		Render Jade string this to res( err || html ) in a new context created for this request. 
-		**/
-			try {
-				res( JADE.compile(jade, ctx) (ctx) );
-			}
-			catch (err) {
-				res( err );
-			}
-		}
-
-		sql.forFirst("", paths.engine, { // Try a jade engine
-			Name: req.table,
-			Type: "jade",
-			Enabled: 1
-		}, eng => {
-
-			Log("engine", paths.engine, eng);
-			if (eng)  // render view with this jade engine
-				renderJade( eng.Code || "", ctx );
-
-			else
-			if ( route = routers[dsname] )   // render ds returned by an engine 
-				route(req, recs => { 
-					//Log({eng:recs, ds:req.table});
-					if (recs)
-						renderPlugin( recs[0] || {}, ctx );
-
-					else
-						renderTable( dsname , ctx );
-				});	
-
-			else  // render a table
-				renderTable( dsname , ctx );
-
-		});
-	});
-}
-
-/**
 @class DEBE.Utilities.Doc_Generation
 */
 function genDoc(recs,req,res) {
@@ -3133,11 +3147,11 @@ Totem (req,res)-endpoint to send notice to outsource jobs to agents.
 	else
 	if ( thread = query.save ) {
 		var 
-			Thread = thread.split("."),
-			Thread = {
-				case: Thread.pop(),
-				plugin: Thread.pop(),
-				client: Thread.pop()
+			sqlThread = thread.split("."),
+			sqlThread = {
+				case: sqlThread.pop(),
+				plugin: sqlThread.pop(),
+				client: sqlThread.pop()
 			};
 		
 		sql.forFirst("agent", "SELECT * FROM openv.agents WHERE ? LIMIT 1", {queue: thread}, function (agent) {
@@ -3146,7 +3160,7 @@ Totem (req,res)-endpoint to send notice to outsource jobs to agents.
 				sql.query("DELETE FROM openv.agents WHERE ?", {ID: agent.ID});
 				
 				if ( evs = JSON.parse(agent.script) )
-					FLEX.getContext(sql, "app."+Thread.plugin, {ID: Thread.case}, ctx => {
+					FLEX.getContext(sql, "app."+sqlThread.plugin, {ID: sqlThread.case}, ctx => {
 						ctx.Save = evs;
 						res( saveContext( sql, ctx ) );
 					});
@@ -3204,242 +3218,6 @@ Totem (req,res)-endpoint to send emergency message to all clients then halt tote
 	res("Server stopped");
 	process.exit();
 }
-
-/**
-@class DEBE.Utilities.Startup_and_Initialization
-*/
-function Initialize (sql) {
-/**
-@method Initialize
-@member DEBE
-Initialize DEBE on startup.
-*/
-		
-	function initSES(cb) {
-	/**
-	 * @method initSES
-	 * @private
-	 * @member DEBE
-	 * Initialize the session environment
-	 */
-
-		Trace(`INIT SESSIONS`);
-
-		/*
-		Each( CRUDE, function (n,routes) { // Map engine CRUD to DEBE workers
-			DEBE.byTable[n] = ATOM[n];
-		});	
-		*/
-		
-		/*
-		The i18n simply provides an industry standard framework for translating native -> foreign
-		phrases (defined my pot->po files under XLATE folder).  These pot->po translations are 
-		not free.  Wordpress, for example, provides a service that allows websites to register
-		for their services that crowd source translations from supplied pot files to their
-		delivered po files.
-		*/
-		
-		if (path = DEBE.paths.mime.xlate) 
-			EXAPP.use(LANG.abide({
-				supported_languages: ['en', 'de', 'fr'],
-				default_lang: 'en',
-				translation_directory: path,
-				translation_type: "json"
-				//locale_on_url: true
-			}));
-
-		if (cb) cb();
-	}
-
-	function initENV(cb) {
-	/**
-	 * @method initENV
-	 * @private
-	 * @member DEBE
-	 * Initialize the runtime environment
-	 */
-
-		Trace(`INIT ENVIRONMENT`);
-
-		var 
-			site = DEBE.site,
-		
-			args = ARGP
-			.usage("$0 [options]")
-
-			.default('spawn',DEBE.isSpawned)
-			.boolean('spawn')
-			.describe('spawn','internal hyper-threading option')
-			.check(function (argv) {
-				DEBE.isSpawned = argv.spawn;
-			})
-
-			.default('blind',DEBE.blindTesting)
-			.boolean('blind')
-			.describe('blind','internal testing flag')  
-			.check(function (argv) {
-				DEBE.blindTesting = argv.blind;
-			})
-
-			.default('dump',false)
-			.boolean('dump')
-			.describe('dump','display derived site parameters')  
-			.check(function (argv) {
-				//Log(site);
-			})
-		
-			/*
-			.default('start',DEBE.site.Name)
-			.describe('start','service to start')  
-			.check(function (argv) {
-				DEBE.site.Name = argv.start;
-			})
-			* */
-
-			.boolean('version')
-			.describe('version','display current version')
-			.check(function(argv) {
-				if (argv.version) 
-					Trace(DEBE.site);
-			})
-
-			/*
-			.default('echo',DEBE.FLAGS.DEBUG)
-			.boolean('echo')
-			.describe('echo','echo adjusted http request parameters')
-			.check(function(argv) {
-				DEBE.FLAGS.DEBUG = argv.echo;
-			})*/
-
-			.boolean('help')
-			.describe('help','display usage help')
-			.check(function(argv) {
-				if (argv.help) {
-					Trace( ARGP.help() );
-
-					Trace("Available services:");
-					sql.query("SELECT * FROM openv.apps WHERE ?",{Enabled:1})
-					.on("result", function (app) {
-						Trace(app.Name+" v"+app.Ver+" url="+app.Host+":"+app.Port+" db="+app.DB+" nick="+app.Nick+" sockted="+(app.Sockets?"yes":"no")+" cores="+app.Cores+" pki="+app.PKI);
-					})
-					.on("error", err => {
-						Trace(err);
-					})
-					.on("end", function () {
-						process.exit();
-					});
-				}
-			})
-			.argv;
-
-		if (cb) cb();
-
-	}
-
-	function initSQL(cb) {
-	/**
-	 * @method initSQL
-	 * @private
-	 * @member DEBE
-	 * Initialize the FLEX and ATOM interfaces
-	 */
-
-		Trace("INIT CRUDE");
-		for ( crude in {select:1,delete:1,insert:1,update:1,execute:1} ) {
-			//DEBE[crude] = FLEX[crude].ds;
-			DEBE.byActionTable[crude] = FLEX[crude];
-		}
-
-		if (cb) cb();	
-	}
-	
-	initENV( function () {  // init the global environment
-	initSES( function () {	// init session handelling
-	initSQL( function () {	// init the sql interface
-
-		Trace("INIT MODULES");
-
-		FLEX.config({ 
-			thread: Thread,
-			//emitter: DEBE.IO ? DEBE.IO.sockets.emit : null,
-			skinner: JADE,
-			getSite: DEBE.getSite,
-			getIndex: DEBE.getIndex,
-			createCert: DEBE.createCert,
-			diag: DEBE.diag,
-			site: DEBE.site						// Site parameters
-		});
-
-		GEO.config({
-			//source: "",
-			taskPlugin: null,
-			thread: DEBE.thread,
-			getSite: DEBE.getSite
-		});
-		
-		$.config({
-			thread: DEBE.thread,
-			runTask: DEBE.runTask,
-			getSite: DEBE.getSite
-		});
-		
-		ATOM.config({
-			thread: DEBE.thread,
-			cores: DEBE.cores,
-			//watchFile: DEBE.watchFile,
-			plugins: Copy({   // share selected FLEX and other modules with engines
-				// MAIL: FLEX.sendMail,
-				//RAN: require("randpr"),
-				$: $,
-				$NLP: READ,
-				$GEO: GEO,
-				$TASK: DEBE.runTask,
-				$SQL: DEBE.thread,
-				$JIMP: $.JIMP,
-				$NEO: DEBE.neodb ? DEBE.neodb.cypher : null
-			}, $ )
-		});
-		
-		JAX.config({
-			MathJax: {
-				tex2jax: {
-					//displayMath: [["$$","$$"]]
-				}
-			}
-		});
-		JAX.start();
-		
-		DEBE.neodb = ENV.NEO4J ? new NEO.GraphDatabase(ENV.NEO4J) : null;
-		
-		DEBE.onStartup(sql);
-
-		var path = DEBE.paths.jades;
-
-		if (false)
-		DEBE.getIndex( path, (files) => {  // publish new engines
-			var ignore = {".": true, "_": true};
-			files.forEach( (file) => {
-				if ( !ignore[file.charAt(0)] )
-					try {
-						Trace("PUBLISHING "+file);
-
-						sql.query( "REPLACE INTO app.engines SET ?", {
-							Name: file.replace(".jade",""),
-							Code: FS.readFileSync( path+file, "utf-8"),
-							Type: "jade",
-							Enabled: 0
-						});
-					}
-					catch (err) {
-						//Trace(err);
-					}
-			});
-
-			sql.release();
-		});
-		
-	}); }); }); 
-} 
 
 //====================== Extend objects
 
@@ -3509,481 +3287,6 @@ Initialize DEBE on startup.
 	}
 ].Extend(STREAM);
 
-[  // string prototypes
-	
-	// string serializers 
-	function Xblog(req, ds, cache, ctx, rec, viaBrowser, cb) {
-	/**
-	@member String
-	Expands markdown of the form:
-		
-		[ TEXT ] ( PATH.TYPE ? w=WIDTH & h=HEIGHT & x=KEY$INDEX & y=KEY$INDEX ... )  
-		[ TEXT ] ( COLOR )  
-		[ TOPIC ] ( ? starts=DATE & ends=DATE )  
-		$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$  
-		[JS || #JS || TeX] OP= [JS || #JS || TeX]  
-		$ { KEY } || $ { JS } || $ {doc( JS , "INDEX" )}  
-		KEY,X,Y >= SKIN,WIDTH,HEIGHT,OPTS  
-		KEY <= VALUE || OP <= EXPR(lhs),EXPR(rhs)  
-		
-	using the supplifed cache to get/put KEY values, as well as block-escaping:
-				
-		HEADER:
-
-			BLOCK
-
-	and markdown scripting:
-
-		MARKDOWN
-		script:
-		MATLAB EMULATION SCRIPT
-		
-	@param {Object} req Totem request
-	@param {String} ds default dataset in [post](URL) markdown
-	@param {Object} cache hash for cacheing markdown variables
-	@param {Object} ctx hash holding markdown variables
-	@param {Obect} rec record hash for markdown variables
-	@param {Boolean} viaBrowser true to render markdown to browser
-	@param {Function} cb callback(markdown html)
-	*/
-		
-		for (var key in rec)  { // parse json stores
-			try { 
-				ctx[key] = JSON.parse( rec[key] ); 
-			} 
-			catch (err) { 
-				ctx[key] = rec[key]; 
-			}
-		}
-	
-		var 
-			blockidx = 0;
-		
-		Copy(DEBE.blogContext, ctx);
-		
-		this.Xescape( [], (blocks,html) => // escape code blocks
-		html.Xbreaks( html => // force new lines
-		html.Xsection( html => // expand section headers
-		html.Xscript( ctx, (ctx,html) => // expand scripts 
-		html.Xkeys( ctx, html => // expand js keys
-		html.Xgen(ctx, html => // expand generators
-		html.Xtex( html => // expand TeX
-		html.Xlink( req, ds, viaBrowser, html => { // expand links
-
-			if ( viaBrowser )
-				html = 	html.replace(/href=(.*?)\>/g, (str,ref) => { // smart links to follow <a href=REF>A</a> links
-					var q = (ref.startsWith( "'" )) ? '"' : "'";
-					return `href=${q}javascript:navigator.follow(${ref},BASE.user.client,BASE.user.source)${q}>`;
-				});
-
-			cb( html.replace(/@block/g, str => {  // backsub escaped blocks
-					//Log(`unblock[${blockidx}]`, blocks[ blockidx].tag("code",{}) );
-					return blocks[ blockidx++ ].tag("code",{}).tag("pre",{});
-				}) );
-			
-		}))))))));
-	},
-	
-	function Xbreaks( cb ) {
-		cb( this.replace( /  \n/g, "<br>" ) );
-	},
-	
-	function Xescape( blocks, cb ) { // escapes code blocks then callsback cb(blocks, html)
-		var 
-			key = "@esc",
-			html = this,
-			fetchBlock = function ( rec, cb ) {	// callsback cb with block placeholder
-				//Log(`block[${blocks.length}] `, rec.arg1 );
-				blocks.push( rec.arg2 );
-				cb( rec.arg1 + ":" + "@block");
-			},
-			pattern = /(.*)\:\n\n((\t.*\n)+)\n/gm ;
-		
-		html.serialize( fetchBlock, pattern, key, (html, fails) => {  
-			cb( blocks, html);
-		}); 		
-	},
-	
-	function Xdummy(cb) {  // for debugging with callback(this)
-		cb(this);
-	},
-	
-	function Xlink( req, ds, viaBrowser, cb ) {  // expands [LINK](URL) tags then callsback cb( final html )
-		/*
-		req = http request or null to disable smart hash tags (content tracking)
-		ds = dataset?query default url path
-		viaBrowser = true to enable produce html compatible with browser
-		*/
-		var 
-			key = "@tag",
-			html = this,
-			getSite = DEBE.getSite,
-			fetchTrack = function ( rec, cb) {  // callback cb with expanded [TOPIC]() markdown
-				var 
-					secret = "",
-					topic = rec.topic,
-					product = topic+".html";
-
-				if (req)		// content tracking enabled
-					FLEX.licenseCode( req.sql, html, {  // register this html with the client
-						_Partner: req.client,
-						_EndService: "",  // leave empty so lincersor wont validate by connecting to service
-						_Published: new Date(),
-						_Product: product,
-						Path: "/tag/"+product
-					}, (pub, sql) => {
-						if (pub) {
-							cb( `${rec.topic}=>${req.client}`.tag( "/tags.view" ) );
-							sql.query("INSERT INTO app.tags SET ? ON DUPLICATE KEY UPDATE Views=Views+1", {
-								Viewed: pub._Published,
-								Target: pub._Partner,
-								Topic: topic,
-								License: pub._License,
-								Message: "get view".tag( "/decode.html".tag("?",{Target:pub._Partner,License:pub._License,Topic:topic}))
-							});
-						}
-					});
-				
-				else	// content tracking disabled
-					cb( "");
-			},
-			
-			fetchSite = function ( rec, cb ) {  // callback cb with expanded [](URL) markdown
-				//Log("solicit", rec, viaBrowser);
-				if (viaBrowser) 
-					cb( "".tag("iframe", {src:rec.arg3}) );
-				
-				else
-					getSite( rec.arg3, null, cb );
-			},
-			
-			fetchLink = function ( rec, cb ) {  // expand [LINK](URL) markdown
-				
-				var
-					op = rec.arg1,
-					opt = rec.arg2,
-					url = rec.arg3;
-
-				if (op) 	// OP [ LABEL] (URL )
-					cb( `${op}[${opt}](${url})` );
-				
-				else
-				if (opt)	//	[ LABEL ] ( URL )
-					cb( opt.tag( url ) );
-
-				else {	// [ ] ( URL )
-					var
-						colors = {
-							r: "red", 
-							b: "blue",
-							g: "green",
-							y: "yellow",
-							o: "orange",
-							k: "black",
-							red: "red",
-							blue: "blue",
-							green: "green",
-							yellow: "yellow",
-							orange: "orange",
-							black: "black"
-						},						
-						keys = {},
-						dsPath = ds.parseURL(keys,{},{},{}),
-						urlPath = url.parseURL(keys,{},{},{}),
-						
-						w = keys.w || 200,
-						h = keys.h || 200,
-						
-						now = new Date(),
-
-						x = urlPath.replace(/(.*)\.(.*)/, (str,L,R) => {
-							urlName = L;
-							urlType = R;
-							return "#";
-						}),
-						
-						srcPath = urlPath.tag( "?", Copy({src:dsPath}, keys) );
-
-					
-					// Log("link", [dsPath, srcPath, urlPath], keys, [opt, url]);
-
-					switch (urlType) {  //  [](PATH.TYPE?w=W&h=H)
-						case "jpg":  
-						case "png":
-							cb( "".tag("img", { src:`${url}?killcache=${new Date()}`, width:w, height:h }) );
-							break;
-
-						case "view": 
-							if ( viaBrowser ) 
-								cb( "".tag("iframe", { src: srcPath, width:w, height:h }) );
-							
-							else
-								cb( urlPath.tag( url ) );
-							
-							break;
-
-						default: 
-							if ( viaBrowser )
-								cb( "".tag("iframe", { src:srcPath, width:w, height:h }) );
-
-							else
-								fetchSite(rec, cb);
-
-							/*
-							if ( color = colors[urlPath.toLowerCase()] )		// [ TEXT ]( COLOR )
-								cb( opt.tag("font",{color:color}) );
-							*/
-							/*
-							else		// [ TEXT ]( URL )
-							if ( (keys.starts ? now>=new Date(keys.starts) : true) && 
-								 (keys.ends ? now<=new Date(keys.ends) : true) ) {
-								rec.topic = opt;
-								fetchTrack( rec, cb );
-							}
-
-							else
-								cb( opt.tag( "/tags.view" ) );
-							*/
-							
-							break;
-					}
-				}
-			},
-			
-			pattern = /(\!?)\[([^\[\]]*)\]\(([^\)]*)\)/g ;
-		
-		html.serialize( fetchLink, pattern, key, html => {    
-			cb(html);
-		}); 
-	},
-	
-	function Xscript( ctx, cb ) {  // expands scripting tags then callsback cb(vmctx, final markdown)
-		var 
-			script = "",
-			pattern = /script:\n((.|\n)*)/g,  // defines MARKDOWN\nscript:\SCRIPT tag pattern
-			run = this.replace( pattern , (str, xscript) => {
-				script = xscript;
-				return "";
-			});
-		
-		if ( script )
-			try {
-				$( script, ctx, (vmctx) => {
-					cb( vmctx , run);
-				});
-			}
-			catch (err) {
-				cb( ctx, err+"");
-			}
-		
-		else 
-			cb(ctx, run);
-	},
-		
-	function Xkeys( ctx, cb ) {  // expand js keys ${script} || ${keys}
-		cb( this.parseEMAC(ctx) );
-	},
-	
-	function Xgen( ctx, cb ) {  // expands LHS OP= RHS tags
-
-		var 
-			pattern = /(\S*) := (\S*)/g;  // defines LHS OP= RHS tag
-		
-		cb( this.replace(pattern, (str,lhs,rhs) => {
-			//Log([":=", lhs, rhs]);
-			if ( blogOp = ctx[":="] ) 
-				return blogOp(lhs,rhs,ctx);
-			else
-				return `undefined := blog`;
-		}) );
-	},
-	
-	/*
-	function Xtex( cb ) {  // expands X$$ MATH $$ tags then callbacks cb( final html )
-		var 
-			key = "@tex",
-			html = this,
-			getSite = JAX.typeset,
-			fetchInTeX = function ( rec, cb ) {  // callsback cb with expanded inline TeX tag
-				//Log("math",rec);
-				getSite({
-					math: rec.arg1,
-					format: "inline-TeX",  
-					//html: true,
-					mml: true
-				}, d => cb( d.mml || "" ) );
-			},
-			fetchTeX = function ( rec, cb ) {	// callsback cb with expanded TeX tag
-				//Log("math",rec);
-				getSite({
-					math: rec.arg1,
-					format: "TeX",  
-					//html: true,
-					mml: true
-				}, d => cb( d.mml || "" ) );
-			},
-			fetchAscii = function ( rec, cb ) { // callsback cb with expanded AsciiMath tag
-				//Log("math",rec);
-				getSite({
-					math: rec.arg1,
-					format: "AsciiMath",  // TeX, inline-TeX, AsciiMath, MathML
-					//html: true,
-					mml: true
-				}, d => cb( d.mml || "" ) );
-			},
-			pattern = {  // define tag patterns
-				ascii: /a\$\$([\$!]*)\$\$/g,	// a$$ ascii math $$
-				tex: /n\$\$([^\$]*?)\$\$/g,		// n$$ new line TeX $$
-				intex: /\$\$([^\$]*?)\$\$/g		// $$ inline Tex $$
-			};
-			
-		html.serialize( fetchAscii, pattern.ascii, key, (html,fails) => { 
-		html.serialize( fetchTeX, pattern.tex, key,  (html,fails) => { 
-		html.serialize( fetchInTeX, pattern.intex, key, (html,fails) => {  
-			cb(html);
-		});
-		});
-		}); 
-	}, */
-	
-	function Xtex( cb ) {  // expands X$$ MATH $$ tags then callbacks cb( final html )
-		var 
-			key = "@tex",
-			html = this,
-			getSite = JAX.typeset,
-			fetchTeX = function ( rec, cb ) {	// callsback cb with expanded TeX tag
-				//Log("math",rec);
-				switch (rec.arg1) {
-					case "n":
-						getSite({
-							math: rec.arg2,
-							format: "TeX",  
-							//html: true,
-							mml: true
-						}, d => cb( d.mml || "" ) );
-						break;
-					case "a":
-						getSite({
-							math: rec.arg2,
-							format: "AsciiMath",
-							//html: true,
-							mml: true
-						}, d => cb( d.mml || "" ) );
-						break;
-					case "m":
-						getSite({
-							math: rec.arg2,
-							format: "MathML", 
-							//html: true,
-							mml: true
-						}, d => cb( d.mml || "" ) );
-						break;
-					case " ":
-					default:
-						getSite({
-							math: rec.arg2,
-							format: "inline-TeX",  
-							//html: true,
-							mml: true
-						}, d => cb( " " + d.mml || "" ) );
-				}
-			},
-			pattern = /(.?)\$\$([^\$]*)\$\$/g;
-			
-		html.serialize( fetchTeX, pattern, key, (html,fails) => { 
-			cb(html);
-		}); 
-	},
-	
-	function Xparms(goto, cb) {		// expands <!---parms KEY=VAL&...---> tags then callbacks cb( final input-scripted html )
-		var
-			pattern = /<!---parms ([^>]*)?--->/g;
-		
-		cb( this.replace(pattern, (str, parms) => {
-					
-			//Log(">>>Xparms", parms);
-			
-			var 
-				inputs = [],
-				keys = [];
-
-			parms.split("&").forEach( (parm) => {  // each collect parm (key=value) needs an input
-				parm.replace(/([^=]*)?=(.*)?/, (str, key, val) => {		// key=value
-					inputs.push( `${key}: <input id="parms.${key}" type="text" value="${val}" autofocus >` );
-					keys.push( '"' + key + '"' );
-					return "";
-				});
-				return "";
-			});
-
-			// this litle marvel submits all inputs to the goto service
-			return `
-<script>
-	String.prototype.tag = ${"".tag}
-	function submitForm() {
-		var parms = {};
-		[${keys}].forEach( (key) => parms[key] = document.getElementById("parms."+key).value );
-
-		window.open( "/${goto}".tag("?", parms) );
-	}
-</script>
-<form onsubmit="submitForm()">
-	${inputs.join("")}
-	<button id="parms.submit" type="submit" value="submit">submit</button>
-</form>` ;
-
-		}) );
-	},
-	
-	function Xfetch( cb ) {  // expands <!---fetch URL---> tags then callsback cb( final url-fetched html )
-		var 
-			key = "@fetch",
-			getSite = DEBE.getSite,
-			fetchSite = function ( rec, cb ) {  // callsback cb with expanded fetch-tag 
-				//Log(">>>>Xfetch", rec.arg1);
-				getSite( rec.arg1, null, cb );
-			},
-			pattern = /<!---fetch ([^>]*)?--->/g;
-			
-		this.serialize( fetchSite, pattern, key, (html,fails) => cb(html) );
-	},
-
-	function Xsection( cb ) { // expand "##.... header" 
-		var
-			key = "@sec",
-			fetchSection = function (rec, cb) {
-				//Log(">>>header", rec.ID, rec.arg1, rec.arg0.length-rec.arg1.length-2 );
-				cb( rec.arg1.tag( "h"+(rec.arg0.length-rec.arg1.length-2), {} ) );
-			},
-			pattern = /^\#* (.*)\n/gm;
-		
-		this.serialize( fetchSection, pattern, key, (html,fails) => cb(html) );
-	},
-	
-	function Xskin( ctx, proxy, cb ) { // return a skin via a proxy site
-
-		var 
-			url = URL.parse(proxy || ""),
-			host = proxy ? url.host.split(".")[0] : null,
-			md = this, //proxy ? this : this.replace(/\*\*Owner\*\*/g,`**Owner** (${req.client})`),
-			header = proxy 
-				? `img(src="/shares/images/${host}.jpg", width="100%", height="15%")`
-				: "p",
-			jade = ":markdown\n\t" + md.replace(/^\n*/,"").replace(/\n/g,"\n\t");
-
-		ctx.filename = DEBE.paths.jadePath;
-		
-		try {
-			cb( JADE.compile(jade, ctx) (ctx) );
-		}
-		catch (err) {
-			// Log(err);
-			cb( err+"" );
-		}
-	}
-	
-].Extend(String);
-
 [  // array prototypes
 	function groupify() {
 		return this.splitify("_").joinify();
@@ -4021,6 +3324,8 @@ Initialize DEBE on startup.
 
 		var
 			fetchBlog = function( rec, cb ) {
+				
+				Log("blogging", rec);
 				if ( md = rec[key] + "" ) 
 					md.Xblog(req, ds.tag("?", { 	// tag ds with source record selector
 						name: ( (rec.Pipe||"").startsWith("{") ) 
@@ -4599,7 +3904,7 @@ function setAutorun(path) {
 }
 
 function Trace(msg,sql) {	// execution tracing
-	TRACE.trace(msg,sql);
+	"D>".trace(msg,sql);
 }
 
 /**
@@ -4615,7 +3920,7 @@ switch ( process.argv[2] ) { // unit tests
 		/**
 		@method D1
 		*/
-		var DEBE = require("../debe").config({
+		var D1 = DEBE({
 			onFile: {
 				"./uploads/": function (sql, name, path) {  // watch changes to a file				
 
@@ -4704,14 +4009,14 @@ clients, users, system health, etc).`
 		/**
 		@method D1
 		*/
-		var DEBE = require("../debe").config({
+		var D2 = DEBE({
 			riddles: 10,
 			"byTable.": {
 				wfs: function (req,res) {
 					res("here i go again");
 
-					TOTEM.fetchers.http(ENV.WFS_TEST, function (data) {
-						console.log(data);
+					TOTEM.getSite(ENV.WFS_TEST, function (data) {
+						Log(data);
 					});
 				}
 			}
@@ -4724,7 +4029,7 @@ clients, users, system health, etc).`
 		/**
 		@method D3
 		*/
-		var DEBE = require("../debe").config({
+		var D3 = DEBE({
 		}, err => {
 			Trace( err || "Stateful network flow manger started" );
 		});
@@ -4744,9 +4049,9 @@ clients, users, system health, etc).`
 			});
 		}
 			
-		var DEBE = require("../debe").config({
+		var D4 = DEBE({
 		}, err => {
-			DEBE.thread( sql => {
+			DEBE.sqlThread( sql => {
 				var recs = 0, now = new Date();
 				readFile( sql, "./stores/test.xls", (rec,sql) => {
 					if ( ++recs<5 ) {
