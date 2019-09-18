@@ -465,7 +465,10 @@ catch (err) {
 		 * Initialize the FLEX and ATOM interfaces
 		 */
 
-			["select", "delete", "insert", "update", "execute"].forEach( crud => DEBE.byActionTable[crud] = FLEX[crud] );
+			["select", "delete", "insert", "update", "execute"].forEach( crud => {
+				var x = DEBE.byActionTable[crud] = FLEX[crud];
+				Log(">>>init", crud, x ? true : false);
+			});
 
 			if (cb) cb();	
 		}
@@ -1789,7 +1792,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 	},
 
-	// endpoint configuration
+	// endpoint routers
 		
 	"byArea.": { //< routers for endpoints at /AREA/file ...
 	},
@@ -4390,9 +4393,6 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 
 	dsContext(dsname, ctx => {  // get skinning context for this skin
 
-		/**
-		@class DEBE.Utilities.Skinning
-		*/
 		function renderFile( file, ctx ) { 
 		/**
 		@private
@@ -4487,6 +4487,8 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 
 			else	*/
 
+			Log(">> rend plugin", paths.jades+"plugin.jade" );
+			
 			renderFile( paths.jades+"plugin.jade", ctx );
 		}		
 
@@ -4529,7 +4531,7 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 			Enabled: 1
 		}, eng => {
 
-			Log("engine", paths.engine, eng);
+			Log("engine", paths.engine, eng, dsname, routers[dsname] );
 			if (eng)  // render view with this jade engine
 				renderJade( eng.Code || "", ctx );
 
