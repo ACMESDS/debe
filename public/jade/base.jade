@@ -2,46 +2,48 @@
 extends layout
 append layout_help
 	:markdown
-		Base extends the layout framework to provide a base framework with parameters:
+		Extends the layout framework to provide a tech-specific skinning framework with base parameters:
+
+			// technology
+			tech = "nada"  // nada | extjs | jquery | dojo | reveal | voxel | scene | three | cesium | joint | d3 | flow | ...
 
 			// exjs
-			carousel = switch
-			charting = switch
-			theme = crisp | neptune | aria | gray | ...
+			carousel = false
+			charting = false
+			codeEdit = true
+			jsonEdit = true
+			theme = "crisp"  // crisp | neptune | aria | gray | ...
 			// jquery
-			grid = DataTable | w2UI | jqgrid | ... 
-			image = Darkroom | Camen | Vide | Fabric | ...
-			pivot = Isotope | elFinder | apy-X | ...
-			themer = switch
-			password = switch
+			grid = "DataTable" // DataTable | w2UI | jqgrid | ... 
+			image = "Darkroom" // Darkroom | Camen | Vide | Fabric | ...
+			pivot = "Isotope"	// Isotope | elFinder | apy-X | ...
+			themer = false
+			password = false
 			// reveal
-			highlight = zenburn | ...
-			more = { KEY: "/DO.view", ... }
-			help = "hover help"
+			highlight = "zenburn"	
+			more = {}
 			// voxel
-			game = cubeland | ... 
+			game = "cubeland"	// cubeland | ... 
 			// three
-			effect = AnaglyphEffect | ... 
+			effect = "" //  AnaglyphEffect | ... 
 			// cesium
-			src = query.src
-			host = {use: "HOST", HOST: "https://DOMAIN", ... }
+			source = path to cesium source file
+			host = {use:"swagdev", geohub: "https://sigma0.ilabs.ic.gov:8083", me: "localhost:8083", win: "http://200.100.50.101:8083", aws: "http://172.31.76.130:8083",local:"http://localhost:8083",swaggpu:"http://swag-gpu-01.ec2.internal:8083", swagws:"http://swag-ws-02.ec2.internal:8083", swagdev: "http://localhost:8083"}
 			width = 750
 			height = 500
 			// d3
 			map = ""
-			// add doc edit/open links to posts
-			opens = switch
-			// technology to render content
-			tech = extjs | jquery | dojo | reveal | voxel | scene | three | cesium | joint | d3 | flow | ...
+			// doc
+			opens = true
 
 append layout_parms
-	- banner = query.holdoff ? "" : banner
-	- start = "content" // skin rendering starts here
-	- check = true // browser checks
-	- math = false // enable for mathjax
-	- highlight = "zenburn" // for code block highlighting in markdown
-	
+	- banner = query.holdoff ? "" : banner	// site banner or "" to disable
+	- math = false // switch to enable mathjax
+	- highlight = "zenburn" // style for code block highlighting in markdown
+
 	block base_parms
+		// base skinning technology
+		- tech = "nada"  // nada | extjs | jquery | dojo | reveal | voxel | scene | three | cesium | joint | d3 | flow | ...
 		// exjs
 		- carousel = false
 		- charting = false
@@ -57,13 +59,12 @@ append layout_parms
 		// reveal
 		- highlight = "zenburn"	
 		- more = {}
-		- help = "can I get some help here?"
 		// voxel
 		- game = "cubeland"	// cubeland | ... 
 		// three
 		- effect = "" //  AnaglyphEffect | ... 
 		// cesium
-		- src = query.src
+		- source = query.source
 		- host = {use:"swagdev", geohub: "https://sigma0.ilabs.ic.gov:8083", me: "localhost:8083", win: "http://200.100.50.101:8083", aws: "http://172.31.76.130:8083",local:"http://localhost:8083",swaggpu:"http://swag-gpu-01.ec2.internal:8083", swagws:"http://swag-ws-02.ec2.internal:8083", swagdev: "http://localhost:8083"}
 		- width = 750
 		- height = 500
@@ -71,14 +72,12 @@ append layout_parms
 		- map = ""
 		// doc
 		- opens = true
-		// technology
-		- tech = "nada"  // nada | extjs | jquery | dojo | reveal | voxel | scene | three | cesium | joint | d3 | flow | ...
 
 append layout_head
 	- locale = query.locale || "en"  // en | fr | de | ...
-	- holdoff = query.holdoff  // name to holdoff loading via button, or skin,skin, ... to hold loading via accordion
-	- theme = query.theme
-	
+	- theme = query.theme || "" // name of css theme
+	- holdoff = query.holdoff  || "" // name of loading-holdoff button or loading-holdoff "skin,skin, ..." accordion list
+
 	case tech
 		when "three"
 			include base_three
@@ -319,7 +318,7 @@ append layout_body
 
 	if holdoff
 		- holds = holdoff.split(",")
-		
+
 		if holds.length > 1
 			#accordion.Load
 				each hold in holds
@@ -327,11 +326,7 @@ append layout_body
 
 		else
 			#post(class=holdoff,path=url.replace('holdoff='+holdoff, ''),refresh,dims="98%,98%")
-	
-	else
-	if "help" in query
-		block base_help
-		
+
 	else
 		case tech
 			when "nada"
@@ -350,7 +345,7 @@ append layout_body
 				block base_body
 
 			when "cesium"
-				iframe(src="#{hosts[host]}/geonode/cesium.html?src=#{src}",width="#{width}",height="#{height}")
+				iframe(src="#{hosts[host]}/geonode/cesium.html?src=#{source}",width="#{width}",height="#{height}")
 				block base_body
 
 			when "three"

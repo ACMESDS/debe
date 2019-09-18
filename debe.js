@@ -62,6 +62,7 @@ var
 	ARGP = require('optimist'),			//< Command line argument processor
 	TOKML = require("tokml"), 			//< geojson to kml convertor
 	JAX = require("mathjax-node"),   //< servde side mathjax parser
+	JADE = require('jade'),				//< using jade as the skinner	
 	
 	// totem modules		
 	EAT = require("./ingesters"),	
@@ -531,8 +532,8 @@ catch (err) {
 
 			DEBE.onStartup();
 
-			if ( path = DEBE.paths.jades )
-				DEBE.getIndex( path, (files) => {  // publish new engines
+			if ( jades = DEBE.paths.jades & "" )
+				DEBE.getIndex( jades, files => {  // publish new engines
 					var ignore = {".": true, "_": true};
 					files.forEach( (file) => {
 						if ( !ignore[file.charAt(0)] )
@@ -2004,8 +2005,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		gohome: "Totem".tag("/fan.view?src=info&w=1000&h=600")  + ": protecting the warfighter from bad data",
 		
 		engine: "SELECT * FROM app.engines WHERE least(?,1) LIMIT 1",
-		jades: "", // "./public/jade/",		// path to default view skins
-		jadePath: "./public/jade/ref.jade",	// jade reference path for includes, exports, appends
+		jades: "./public/jade/",		// path to default view skins
+		jadeRef: "./public/jade/ref.jade",	// jade reference path for includes, exports, appends
 		
 		mime: {
 			/*
@@ -4354,7 +4355,6 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 		error = DEBE.errors,
 		primeSkin = DEBE.primeSkin,
 		urls = site.urls,
-		query = req.query,
 		routers = DEBE.byActionTable.select,
 		dsname = req.table,
 		ctx = Copy(site, {  //< default site context to render skin
@@ -4369,7 +4369,7 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 			query: req.query,
 			joined: req.joined,
 			profile: req.profile,
-			group: req.group,
+			//group: req.group,
 			//search: req.search,
 			session: req.session,
 			/*
@@ -4378,7 +4378,7 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 				disk: ((req.profile.useDisk / req.profile.maxDisk)*100).toFixed(0)
 			},*/
 			started: DEBE.started,
-			filename: DEBE.paths.jadePath,  // jade compile requires
+			filename: DEBE.paths.jadeRef,  // jade compile requires
 			url: req.url
 		});
 
@@ -4403,6 +4403,7 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 				res( JADE.renderFile( file, ctx ) );  
 			}
 			catch (err) {
+				Log("render err", err);
 				res(  err );
 			}
 		}
@@ -4487,8 +4488,6 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 
 			else	*/
 
-			Log(">> rend plugin", paths.jades+"plugin.jade" );
-			
 			renderFile( paths.jades+"plugin.jade", ctx );
 		}		
 
@@ -4531,7 +4530,6 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 			Enabled: 1
 		}, eng => {
 
-			Log("engine", paths.engine, eng, dsname, routers[dsname] );
 			if (eng)  // render view with this jade engine
 				renderJade( eng.Code || "", ctx );
 
@@ -4975,7 +4973,7 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 				: "p",
 			jade = ":markdown\n\t" + md.replace(/^\n*/,"").replace(/\n/g,"\n\t");
 
-		ctx.filename = DEBE.paths.jadePath;
+		ctx.filename = DEBE.paths.jadeRef;
 		
 		try {
 			cb( JADE.compile(jade, ctx) (ctx) );

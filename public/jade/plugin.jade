@@ -1,21 +1,25 @@
 // UNCLASSIFIED
-//-
-	Render a skin when DEBE encounters dynamic view endpoints /DS.MODE where
-		&mode = MODE = brief | gridbrief | runbrief | pivbrief| run | plugin | view | pivot
-		&cols = [key.type.label, ...]
-		&page = page size of DS grid
-		&refresh = refresh time of associated job grid
-		&width = post width
-		&height = post height
+script.
+	alert('!{JSON.stringify(query)}');
 
 extends base
 append base_parms
-	case query.mode
+	case query.mode || ""
 		when "brief"
 		when "gridbrief"
 		when "runbrief"
 		when "pivbrief"
 			- tech = "reveal"
+		when ""
+			:markdown
+				Render a DEBE plugin or view at /DS.MODE where:
+
+					mode = MODE = brief | gridbrief | runbrief | pivbrief| run | plugin | view | pivot
+					cols = [key.type.label, ...]
+					page = page size of DS grid
+					refresh = refresh time of associated job grid
+					width = post width
+					height = post height
 		default
 			- tech = "extjs"
 
@@ -34,8 +38,7 @@ append site_parms
 			- view = "Nada"
 
 append site_body
-
-	- mode = query.mode
+	- mode = query.mode || ""
 	- ds = query.ds || "myplugin"
 	- pivcol = "tbd"
 	- dscols = query.cols || ""
@@ -51,6 +54,9 @@ append site_body
 	- more = parseInt(query.more) || 0
 
 	case mode
+		when ""
+			p= "no plugin specified"
+
 		when "plugin"
 		when "run"
 			#grid.Usecases(

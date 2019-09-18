@@ -2,11 +2,16 @@
 
 block layout_parms
 	- banner = "" // site banner
-	- start = "content" // div name to start content or "" to disable
+	- start = "content" // name of div id to start client content or "" to disable content
 	- highlight = ""	// code styling theme zenburn | ... or "" to disable
-	- capture = false // to add screen capture button
-	- math = false // enable mathjax plugin
-	- check = false // enable brower checking
+	- capture = false // switch to add screen capture button
+	- math = false // switch to add mathjax plugin
+	- prep = true // switch to prep brower 
+	- debug = false // switch to enable query debugger
+
+if debug
+	script.	// Debug script
+		alert('query=!{JSON.stringify(query)}');
 
 html(lang="en")
 	head
@@ -19,11 +24,13 @@ html(lang="en")
 		meta(name="viewport", content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no")
 
 		//-	Check browser compatibility. Requires javascript and JSON. Invalid browsers will crash or ignore startup scripts.
-		if check
+		if prep
 			title #{nick}-#{table}
+			// Flag javascript-disabled browsers
 			noscript
 				p Please enable Javascript and Cookies to access #{title}.
 
+			// Add  JSON to json-disabled browsers
 			if ! JSON.parse
 				script(src="/clients/json/json2.js")
 
@@ -37,10 +44,9 @@ html(lang="en")
 			// script(src="/uis/probe.js")
 
 			//-
-				Install socketio to communicate with clients.  This interface is establihed when the server does a require('socket.io'), 
-				ths createing end endpoint at urls.socketio (typically /socket.io/socket.io.js) on which the client can source -- via 
-				a <script src="/socket.io/socket.io.js"> tag -- its io() method.  Note: have been unable to get socket.io 2.x working
-				so reverting to socket.io 1.5.0.
+				Install socket.io to enable clients-to-client communications.  This interface is established when the server does a 
+				require('socket.io') to create an endpoint (typically at /socket.io/socket.io.js as defined by server).  The client can then 
+				source -- via a <script src="/socket.io/socket.io.js"> tag -- its io() method.  Note: socket.io 2.x failing so using socket.io 1.5.0.
 
 			script.
 				var io = null;
@@ -84,38 +90,39 @@ html(lang="en")
 		block layout_head
 
 body
-	if "help" in query
-		:markdown
-			Layout provides a foundational framework with parameters:
-
-				banner = site banner
-				start = div name to start content
-				highlight = code styling theme zenburn | ...
-				capture = switch to add screen capture button
-				math = switch to add mathjax plugin
-
-		block layout_help
+	//- The capture plugin allows clients to capture their web canvas.
+	if capture 
+		script(src="/clients/html2canvas/dist/html2canvas.min.js")
+		script(src="/clients/screen2canvas/capture.js")
 
 	else
-		//- The capture plugin allows clients to capture their web canvas.
-		if capture 
-			script(src="/clients/html2canvas/dist/html2canvas.min.js")
-			script(src="/clients/screen2canvas/capture.js")
+		script.
+			var 
+				html2canvas = null;
 
-		else
-			script.
-				var 
-					html2canvas = null;
+	if query.help
+		block layout_help
+		:markdown
+			Provides a skinning framework with parameters:
 
-		if (start)
-			#content.layout(
-				icons=icons,
-				start=start,
-				client=client,
-				source=table,
-				query=JSON.stringify(query),
-				title=banner)
+				banner = "" // site banner
+				start = "content" // div is to start client content or "" to disable content
+				highlight = ""	// code styling theme zenburn | ... or "" to disable
+				capture = false // switch to add screen capture button
+				math = false // switch to add mathjax plugin
+				prep = false // switch to prep brower 
+				debug = false // switch to enable query debugger
+				help = &help // display usage info
 
-				block layout_body
+	elseif start
+		#content.layout(
+			icons=icons,
+			start=start,
+			client=client,
+			source=table,
+			query=JSON.stringify(query),
+			title=banner)
 
+			block layout_body
+			
 //- UNCLASSIFIED
