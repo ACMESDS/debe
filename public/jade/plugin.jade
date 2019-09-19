@@ -1,7 +1,4 @@
 // UNCLASSIFIED
-script.
-	alert('!{JSON.stringify(query)}');
-
 extends base
 append base_parms
 	case query.mode || ""
@@ -56,7 +53,6 @@ append site_body
 	case mode
 		when ""
 			p= "no plugin specified"
-
 		when "plugin"
 		when "run"
 			#grid.Usecases(

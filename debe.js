@@ -73,7 +73,7 @@ var
 	ENUM = require("enum");
 
 const { Copy,Each,Log,isObject,isString,isFunction,isError,isArray } = ENUM;
-const { sqlThread, getFile, getSite, thread } = TOTEM;
+const { sqlThread, getFile, getSite } = TOTEM;
 const { getVoxels } = GEO;
 
 function Trace(msg,sql) {
@@ -501,7 +501,7 @@ catch (err) {
 			GEO.config({	// voxelizing geo surfaces
 				//source: "",
 				taskPlugin: null,
-				thread: DEBE.thread,
+				thread: sqlThread,
 				getSite: DEBE.getSite
 			});
 
@@ -522,7 +522,7 @@ catch (err) {
 					$NLP: READ,
 					$GEO: GEO,
 					$TASK: DEBE.runTask,
-					$SQL: DEBE.thread,
+					$SQL: sqlThread,
 					$JIMP: $.JIMP,
 					$NEO: DEBE.neodb ? DEBE.neodb.cypher : null
 				}, $ )
@@ -1392,7 +1392,6 @@ mv '${msg}'_files index_files ;
 		stat: function (recs,req,res) { // dataset.stat provide info
 			var 
 				table = req.table,
-				group = req.group,
 				uses = [
 					"db", "xml", "csv", "txt", "schema", "view", "tree", "flat", "delta", "nav", "html", "json",
 					"view","pivot","site","spivot","brief","gridbrief","pivbrief","run","plugin","runbrief",
@@ -1402,7 +1401,7 @@ mv '${msg}'_files index_files ;
 				uses[n] = use.tag( "/"+table+"."+use );
 			});
 			
-			req.sql.query("DESCRIBE ??.??", [group,table], function (err, stats) {
+			req.sql.query("DESCRIBE app.??", [table], function (err, stats) {
 				
 				if (err)
 					res(err);
@@ -1525,7 +1524,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						name: rec.name || "?"+n, // keys name
 						phash: Parent, 		// parent hash name
 						locked:rec.locked,			// lock state
-						volumeid: rec.group,
+						volumeid: "app", // rec.group,
 						dirs: 1 			// place inside tree too
 					});
 				});
@@ -1541,7 +1540,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 						hash: rec.NodeID,		// hash name
 						name: rec.name || "?"+n,			// keys name
 						phash: Parent,		// parent hash name
-						volumeid: rec.group,
+						volumeid: "app", // rec.group
 						locked:rec.locked			// lock state
 					});	
 				});
@@ -2340,7 +2339,7 @@ Totem (req,res)-endpoint to add req.query keys to plugin req.table.
 				type = (val=="doc") ? "mediumtext" : `varchar(${val.length})` ;
 			}
 			
-		sql.query("ALTER TABLE ??.?? ADD ?? "+type, [req.group,ds,key]);
+		sql.query("ALTER TABLE app.?? ADD ?? "+type, [ds,key]);
 		
 	});
 }
@@ -2363,7 +2362,7 @@ Totem (req,res)-endpoint to remove req.query keys from plugin req.table.
 	
 	Each(query, function (key, val) {
 			
-		sql.query("ALTER TABLE ??.?? DROP ?? ", [req.group,ds,key]);
+		sql.query("ALTER TABLE app.?? DROP ?? ", [ds,key]);
 		
 	});
 }
@@ -2463,7 +2462,6 @@ Totem (req,res)-endpoint to execute plugin req.table using usecase req.query.ID 
 		sql = req.sql,
 		client = req.client,
 		profile = req.profile,
-		group = req.group,
 		table = req.table,
 		profile = req.profile,
 		query = req.query,
@@ -2816,7 +2814,7 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 							GEO.ingestList( sql, evs, file.ID, file.Class, aoi => {
 								Log("INGESTED",aoi);
 
-								DEBE.thread( sql => {	// run plugins that were linked to this ingest
+								sqlThread( sql => {	// run plugins that were linked to this ingest
 									exeAutorun(sql,"", `.${ctx.Host}.${ctx.Name}` );
 									sql.release();
 								});
@@ -3144,11 +3142,11 @@ Totem (req,res)-endpoint to send notice to outsource jobs to agents.
 	else
 	if ( thread = query.save ) {
 		var 
-			sqlThread = thread.split("."),
-			sqlThread = {
-				case: sqlThread.pop(),
-				plugin: sqlThread.pop(),
-				client: sqlThread.pop()
+			Thread = thread.split("."),
+			Thread = {
+				case: Thread.pop(),
+				plugin: Thread.pop(),
+				client: Thread.pop()
 			};
 		
 		sql.forFirst("agent", "SELECT * FROM openv.agents WHERE ? LIMIT 1", {queue: thread}, function (agent) {
@@ -3157,7 +3155,7 @@ Totem (req,res)-endpoint to send notice to outsource jobs to agents.
 				sql.query("DELETE FROM openv.agents WHERE ?", {ID: agent.ID});
 				
 				if ( evs = JSON.parse(agent.script) )
-					FLEX.getContext(sql, "app."+sqlThread.plugin, {ID: sqlThread.case}, ctx => {
+					FLEX.getContext(sql, "app."+Thread.plugin, {ID: Thread.case}, ctx => {
 						ctx.Save = evs;
 						res( saveContext( sql, ctx ) );
 					});
@@ -3322,7 +3320,7 @@ Totem (req,res)-endpoint to send emergency message to all clients then halt tote
 		var
 			fetchBlog = function( rec, cb ) {
 				
-				Log("blogging", rec);
+				Log("blogging rec");
 				if ( md = rec[key] + "" ) 
 					md.Xblog(req, ds.tag("?", { 	// tag ds with source record selector
 						name: ( (rec.Pipe||"").startsWith("{") ) 
@@ -3815,9 +3813,9 @@ function sharePlugin(req,res) {  //< share plugin attribute / license plugin cod
 			jade: "txt"
 		};
 
-	sql.query( "SELECT * FROM ??.engines WHERE least(?,1) LIMIT 1", [ req.group, { Name: req.table } ], (err, engs) => {
+	sql.query( "SELECT * FROM app.engines WHERE least(?,1) LIMIT 1", { Name: req.table }, (err, engs) => {
 		if ( eng = engs[0] ) 
-			FLEX.pluginAttribute( sql, attr, partner, endService, proxy, eng, (attrib) => {
+			FLEX.pluginAttribute( sql, attr, partner, endService, proxy, eng, attrib => {
 				req.type = types[req.type] || "txt";
 				
 				if (attrib) 
@@ -4605,7 +4603,7 @@ Totem (req,res)-endpoint to render req.table using its associated jade engine.
 		var 
 			blockidx = 0;
 		
-		Copy(blogContext, ctx);
+		Copy(DEBE.blogContext, ctx);
 		
 		this.Xescape( [], (blocks,html) => // escape code blocks
 		html.Xbreaks( html => // force new lines
