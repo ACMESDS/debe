@@ -43,7 +43,7 @@ var
 	WINDOWS = process.platform == 'win32',		//< Is Windows platform
 
 	// totem bindings required before others due to dependent module issues
-	READ = require("reader"),
+	READ = require("reader"),		// partial config of NLP now to avoid string prototype collisions
 	FLEX = require("flex"),
 	
 	// NodeJS modules
@@ -487,6 +487,14 @@ catch (err) {
 			});
 			JAX.start();
 			
+			sqlThread( sql => {
+				Trace("TRAIN NLPs");
+				sql.query('SELECT * FROM app.nlprules WHERE Enabled', (err,rules) => {
+					READ.train( rules );
+				});
+				sql.release();
+			});
+			
 			FLEX({ 		// table emulation
 				thread: sqlThread,
 				//emitter: DEBE.IO ? DEBE.IO.sockets.emit : null,
@@ -528,8 +536,15 @@ catch (err) {
 				}, $ )
 			});
 
-			DEBE.neodb = ENV.NEO4J ? new NEO.GraphDatabase(ENV.NEO4J) : null;
-
+			DEBE.neodb = new NEO.GraphDatabase(ENV.NEO4J);
+			
+			DEBE.neodb.cypher({	// test connection
+				query: "MATCH (n)"
+			}, err => {					
+				Trace( err ? "NEODB DISCONNECTED" : "NEODB CONNECTED" );
+				if (err) DEBE.neodb = null;
+			});
+				
 			DEBE.onStartup();
 
 			if ( jades = DEBE.paths.jades & "" )
@@ -4007,6 +4022,7 @@ function pipeDoc(sql, job, cb) { // pipe nlp docs with callback cb(doc,job) || c
 			docs = doc.replace(/\n/g,"").match( /[^\.!\?]+[\.!\?]+/g ) || [],
 			scored = 0;
 
+		Log("score", docs, methods);
 		docs.forEach( doc => {
 			if (doc) {
 				freqs.addDocument(doc);									
@@ -4037,7 +4053,7 @@ function pipeDoc(sql, job, cb) { // pipe nlp docs with callback cb(doc,job) || c
 	var
 		path = job.path,
 		nlps = READ.nlps,
-		methods = [nlps.max],
+		methods = [nlps.mix],
 		metrics = {
 			// dag: new ANLP.EdgeWeightedDigraph(),
 			freqs: READ.docFreqs,
