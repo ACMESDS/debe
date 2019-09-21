@@ -87,7 +87,9 @@ You will typically want to redirect the following to your project
 
 Simply require, configure and start DEBE:
 
-	var DEBE = require("debe").config({
+	var DEBE = require("debe");
+	
+	DEBE.config({
 		key: value, 						// set key
 		"key.key": value, 					// indexed set
 		"key.key.": value					// indexed append
@@ -100,7 +102,7 @@ the [ENUM copy()](https://github.com/acmesds/enum) conventions.
 
 ### D1 - Encypted with a database
 
-	var DEBE = require("../debe").config({
+	DEBE.config({
 		name: ENV.SERVICE_NAME,
 		mysql: {
 			host: ENV.MYSQL_HOST,
@@ -118,7 +120,7 @@ the [ENUM copy()](https://github.com/acmesds/enum) conventions.
 
 ### D2 - D1 plus an endpoint
 
-	var DEBE = require("../debe").config({
+	DEBE.config({
 		mysql: {
 			host: ENV.MYSQL_HOST,
 			user: ENV.MYSQL_USER,

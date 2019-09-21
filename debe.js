@@ -495,7 +495,7 @@ catch (err) {
 				sql.release();
 			});
 			
-			FLEX({ 		// table emulation
+			FLEX.config({ 		// table emulation
 				thread: sqlThread,
 				//emitter: DEBE.IO ? DEBE.IO.sockets.emit : null,
 				//skinner: JADE,
@@ -5013,7 +5013,7 @@ switch ( process.argv[2] ) { // unit tests
 		/**
 		@method D1
 		*/
-		var D1 = DEBE({
+		DEBE.config({
 			onFile: {
 				"./uploads/": function (sql, name, path) {  // watch changes to a file				
 
@@ -5089,7 +5089,6 @@ assessments from our worldwide reporting system, please contact ${poc}.
 				} */
 			}
 		}, err => {
-
 			Trace( err || 
 `Yowzers - this does everything but eat!  An encrypted service, a database, a jade UI for clients,
 usecase-engine plugins, file-upload watchers, and watch dogs that monitor system resources (jobs, files, 
@@ -5102,7 +5101,7 @@ clients, users, system health, etc).`
 		/**
 		@method D1
 		*/
-		var D2 = DEBE({
+		DEBE.config({
 			riddles: 10,
 			"byTable.": {
 				wfs: function (req,res) {
@@ -5122,7 +5121,7 @@ clients, users, system health, etc).`
 		/**
 		@method D3
 		*/
-		var D3 = DEBE({
+		DEBE.config({
 		}, err => {
 			Trace( err || "Stateful network flow manger started" );
 		});
@@ -5142,7 +5141,7 @@ clients, users, system health, etc).`
 			});
 		}
 			
-		var D4 = DEBE({
+		DEBE.config({
 		}, err => {
 			DEBE.sqlThread( sql => {
 				var recs = 0, now = new Date();
