@@ -149,123 +149,7 @@ Copy({
 		issues: "openv.issues"  */
 	},
 
-	blogContext: {
-		
-		d: docify,
-		doc: docify,
-		
-		digits: 2,  // precision to show values in [JSON || #DOC || TEX] OP= [JSON || #DOC || TEX] expansions
-		
-		":=" : (lhs,rhs,ctx) => ctx.toEqn( "", lhs, rhs, ctx), 		// inline TeX
-		
-		/*
-		"|=" : (lhs,rhs,ctx) => ctx.toEqn("a", lhs,rhs,ctx),		// Ascii Match
-		";=" : (lhs,rhs,ctx) => ctx.toEqn("n", lhs,rhs,ctx),		// break TeX
-		">=": (lhs,rhs,ctx) => ctx.toTag(lhs,rhs,ctx),			// [post](url) 
-		"<=": (lhs,rhs,ctx) => {												// add context value or generator
-			
-			if ( rhs.split(",").length > 1) {
-				eval(`
-try {
-	ctx[lhs] = (lhs,rhs,ctx) => ctx.toTag( ${rhs} );
-}
-catch (err) {
-} `);
-			}
-			
-			else
-				ctx[lhs] = rhs.parseEMAC( ctx );
-			
-			return ""; 
-		},  */
-		
-		toEqn: (pre,lhs,rhs,ctx) => {		// expand [JSON || #DOC || TEX] OP= [JSON || #DOC || TEX] 
-
-			function toTeX(val)  {
-				var digits = ctx.digits;
-
-				if (val)
-					switch (val.constructor.name) {
-						case "Number": return val.toFixed(digits);
-
-						case "String": 
-							//Log("tex str", val);
-							return val;	
-
-						case "Array": 
-							var tex = []; 
-							val.forEach( function (rec) {
-								if (rec)
-									if (rec.forEach) {
-										rec.forEach( function (val,idx) {
-											rec[idx] = toTeX(val);
-										});
-										tex.push( rec.join(" & ") );
-									}
-									else
-										tex.push( toTeX(rec) );
-								else
-									tex.push( (rec == 0) ? "0" : "\\emptyset" );
-							});	
-							//Log("tex list", tex);
-							return  "\\left[ \\begin{matrix} " + tex.join("\\\\") + " \\end{matrix} \\right]";
-
-						case "Date": return val+"";
-
-						case "Object": 
-							var rtns = [];
-							for (var key in val) 
-								rtns.push( "{" + toTeX(val[key]) + "}_{" + key + "}" );
-
-							return rtns.join(" , ");
-
-						default: 
-							return JSON.stringify(val);
-					}
-
-				else 
-					return (val == 0) ? "0" : "\\emptyset";
-			}
-		
-			function toDoc (arg) {
-				switch ( arg.charAt(0) ) {
-					case "#":
-						return ("${doc(" + arg.substr(1) + ")}" ).parseEMAC(ctx).parseJSON( "?" );
-						
-					case "[":
-					case "{":
-						return arg.parseJSON({});
-						
-					default:
-						var keys = arg.split(",");
-						return (keys.length>1) ? keys : arg;
-				}
-			}
-			
-			return pre + "$$ " + toTeX( lhs.parseJSON(toDoc) ) + " = " + toTeX( rhs.parseJSON(toDoc) ) + " $$";
-		},
-			
-		toTag: (lhs,rhs,ctx) => {
-			var
-				lKeys = lhs.split(","),
-				rKeys = rhs.split(","),
-				base = lKeys[0] + "$.",
-				skin = rKeys[0],
-				args = (rKeys[3] || "").replace(/;/g,","),
-				opts = {
-					w: rKeys[1],
-					h: rKeys[2],
-					x: lKeys[1] ? base + lKeys[1] : "",
-					y: lKeys[2] ? base + lKeys[2] : "",
-					r: lKeys[3] ? base + lKeys[3] : ""
-				};
-
-			for (var key in opts) if ( !opts[key] ) delete opts[key];
-
-			//Log( base, view, "[post](/" + (skin+".view").tag("?",opts)+args + ")" );
-			return "[post](/" + `${skin}.view`.tag("?",opts)+args + ")";
-		}
-	},
+	blogContext: BLOG,
 		
 	//init: Initialize,
 		
@@ -2150,20 +2034,6 @@ Chapter 2
 		res(DEBE.errors.badOffice);
 }
 
-function docify( obj , idx ) {
-	var doc = {};
-
-	if ( keys = idx ? idx.split(",") : null ) 
-		keys.forEach( key => { 
-			if ( key in obj ) doc[key] = obj[key];
-		});
-
-	else
-		doc = obj;
-
-	return (JSON.stringify(doc) || "").replace(/ /g,"").replace(/_/g,"").replace(/^/g,"");
-}
-		
 function exeAutorun(sql,name,path) {
 
 	Log("autorun", path);
