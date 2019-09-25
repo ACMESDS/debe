@@ -32,7 +32,7 @@ The following context keys are accepted:
 		var nlp = ctx.Save_NLP = ctx.$$;
 		res(ctx);
 
-		Log("doc nlp=", nlp ? true : false );
+		//Log("doc nlp=", nlp ? true : false );
 		if (nlp)
 			$SQL( sql => {
 				sql.query("UPDATE app.docs SET ? WHERE ?", [{
