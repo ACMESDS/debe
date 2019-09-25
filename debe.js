@@ -73,7 +73,7 @@ var
 	ENUM = require("enum");
 
 const { Copy,Each,Log,isObject,isString,isFunction,isError,isArray } = ENUM;
-const { sqlThread, getFile, getSite } = TOTEM;
+const { sqlThread, uploadFile, getFile, getSite } = TOTEM;
 const { getVoxels } = GEO;
 
 function Trace(msg,sql) {
@@ -527,7 +527,7 @@ catch (err) {
 					// MAIL: FLEX.sendMail,
 					//RAN: require("randpr"),
 					$: $,
-					$NLP: READ,
+					$NLP: READ.score,
 					$GEO: GEO,
 					$TASK: DEBE.runTask,
 					$SQL: sqlThread,
@@ -2819,11 +2819,11 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 							});
 
 						Trace("EXPORT "+fileName);
-						DEBE.uploadFile( "", srcStream, `./stores/${fileName}` );
+						uploadFile( "", srcStream, `./stores/${fileName}` );
 					}
 
 					if ( ctx.Ingest )  // ingest remaining events
-						DEBE.getFile( client, fileName, file => {
+						getFile( client, fileName, file => {
 							sql.query("DELETE FROM app.events WHERE ?", {fileID: file.ID});
 
 							GEO.ingestList( sql, evs, file.ID, file.Class, aoi => {
@@ -4001,87 +4001,22 @@ function pipeJson(sql, job, cb) { // pipe json data with callback cb(json,job) |
 }
 
 function pipeDoc(sql, job, cb) { // pipe nlp docs with callback cb(doc,job) || cb(null)
-	function sumScores(metrics) {
-		var 
-			entities = metrics.entities,
-			count = metrics.count,
-			scores = metrics.scores,
-			ids = metrics.ids,
-			topics = metrics.topics;
-			//dag = metrics.dag;
-
-		scores.forEach( score => {
-			metrics.sentiment += score.sentiment;
-			metrics.relevance += score.relevance;
-			metrics.agreement += score.agreement;
-		}); 
-	}
-
-	function scoreDoc( doc, cb ) {	// callback cb(metrics)
-		var 
-			docs = doc.replace(/\n/g,"").match( /[^\.!\?]+[\.!\?]+/g ) || [],
-			scored = 0;
-
-		Log("score", docs, methods);
-		docs.forEach( doc => {
-			if (doc) {
-				freqs.addDocument(doc);									
-				methods.forEach( nlp => nlp( doc , metrics, score => {
-					scores.push( score );
-					if ( ++scored == docs.length ) {
-						["DTO", "DTO cash"].forEach( word => {
-							freqs.tfidfs( word, (n,freq) => {
-								if ( score = scores[n] ) score.relevance += freq;
-							});
-						});
-
-						sumScores( metrics );	
-						cb( metrics );
-					}
-
-					else
-					if (scored > docs.length) // no dcos
-						cb( metrics );
-				}) );
-			}
-
-			else 
-				scored++;
-		});
-	}
-
 	var
 		path = job.path,
-		nlps = READ.nlps,
-		methods = [nlps.mix],
-		metrics = {
-			// dag: new ANLP.EdgeWeightedDigraph(),
-			freqs: READ.docFreqs,
-			entity: {
-				topics: new READ.docTrie(false),
-				actors: new READ.docTrie(false)
-			},					
-			ids: {
-				topics: 0,
-				actors: 0
-			},
-			topics: {},
-			actors: {},
-			sentiment: 0,
-			relevance: 0,
-			agreement: 0,
-			scores: [],
-			level: 0
-		},
-		scores = metrics.scores,
-		freqs = metrics.freqs;
+		ctx = job.ctx,
+		scoreDoc = READ.score,
+		use = ctx.Method ? READ.nlps[ctx.Method] : null;
 
-	if ( path.startsWith("/") )	// doc at specified file path
+	//Log("use",  ctx.Method, use );
+	if ( path.startsWith("/") )	// supervise doc at specified file path
 		READ.readFile( "."+path, rec => {
 			if (rec) 
 				if ( rec.doc ) 
-					scoreDoc( rec.doc, metrics => cb({$:rec.doc, $$:metrics}) );
-
+					if ( use )
+						scoreDoc( rec.doc, [use], metrics => cb({$:rec.doc, $$:metrics}) );
+					else
+						cb({$:rec.doc});
+			
 				else 
 					Log(">pipe skipped empty doc");
 
@@ -4090,140 +4025,11 @@ function pipeDoc(sql, job, cb) { // pipe nlp docs with callback cb(doc,job) || c
 		});
 
 	else // doc is the path
-		scoreDoc( path, metrics => cb({$:path, $$:metrics}) );
+		if (use)
+			scoreDoc( path, [use], metrics => cb({$:path, $$:metrics}) );
+		else
+			cb({$:rec.doc});
 }
-
-/*
-pipeDoc: function(sql,job,cb) { // pipe nlp docs with callback cb(doc,job) || cb(null)
-	function sumScores(metrics) {
-		var 
-			entities = metrics.entities,
-			count = metrics.count,
-			scores = metrics.scores,
-			ids = metrics.ids,
-			topics = metrics.topics;
-			//dag = metrics.dag;
-
-		scores.forEach( score => {
-			metrics.sentiment += score.sentiment;
-			metrics.relevance += score.relevance;
-			metrics.agreement += score.agreement;
-		}); 
-	}
-
-	var
-		nlps = READ.nlps,
-		methods = [nlps.max],
-		metrics = {
-			// dag: new ANLP.EdgeWeightedDigraph(),
-			freqs: READ.docFreqs,
-			entity: {
-				topics: new READ.docTrie(false),
-				actors: new READ.docTrie(false)
-			},					
-			ids: {
-				topics: 0,
-				actors: 0
-			},
-			topics: {},
-			actors: {},
-			sentiment: 0,
-			relevance: 0,
-			agreement: 0,
-			scores: [],
-			level: 0
-		},
-		scores = metrics.scores,
-		freqs = metrics.freqs;
-
-	sql.insertJob( job, job => { 
-		function getDoc( job, cb ) {
-
-			function readFile(path,cb) {	// read file at path with callback cb( {docs, metrics} )
-
-				function scoreDoc( doc, cb ) {
-					var 
-						docs = doc.replace(/\n/g,"").match( /[^\.!\?]+[\.!\?]+/g ) || [],
-						scored = 0;
-
-					docs.forEach( doc => {
-						if (doc) {
-							freqs.addDocument(doc);									
-							methods.forEach( nlp => nlp( doc , metrics, score => {
-								scores.push( score );
-								if ( ++scored == docs.length ) {
-									["DTO", "DTO cash"].forEach( word => {
-										freqs.tfidfs( word, (n,freq) => {
-											if ( score = scores[n] ) score.relevance += freq;
-										});
-									});
-
-									sumScores( metrics );	
-									cb( {Doc: doc, Metrics: metrics} );
-								}
-
-								else
-								if (scored > docs.length) // no dcos
-									cb( {Doc: doc, Metrics: metrics} );
-							}) );
-						}
-
-						else 
-							scored++;
-					});
-				}
-
-				if ( path.startsWith("/") )	// doc at specified file path
-					READ.readFile( "."+path, rec => {
-						if (rec) 
-							if ( rec.doc ) scoreDoc( rec.doc, cb );
-
-							else 
-								Log("pipe ignored empty doc");
-
-						else
-							Log("pipe read all docs");
-					});
-
-				else // doc is the path
-					scoreDoc( path, cb );
-			}
-
-			var
-				path = job.path,
-				ctx = job.ctx,
-				query = job.query,
-				data = {},
-				firstKey = "";
-
-			for (var key in query)  // first key is special scripting-with-callback key
-				if ( !firstKey ) {
-					firstKey = key;
-
-					`read( path, Doc => Doc ? cb( ${query[key]} ) : cb( null ) )`
-					.parseJS( Copy(ctx, { // define parse context
-						read: readFile,
-						path: path,
-						cb: doc => {
-							if (doc) { // read worked
-								data[firstKey] = doc;
-								query[firstKey] = firstKey;
-								cb( doc, job );
-							}
-
-							else	// read failed
-								cb( null );
-						}
-					}) );
-				}  
-
-			if ( !firstKey ) readFile(path, doc => cb( doc, job ) );
-		}
-
-		getDoc( job, (doc, job) => cb( doc, job ) );
-	});
-},
-*/
 
 function pipeDB(sql, job, cb) {  // pipe database source with callback cb(rec,job) || cb(null)
 	var parts = job.path.substr(1).split(".");

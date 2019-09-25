@@ -1014,7 +1014,7 @@ append site_body
 					
 			#fit.js
 				:markdown
-					# examples
+					# Stateful vs Stateless engines
 					
 					This [stateless js-engine](/jsdemo1.run):
 
@@ -1105,7 +1105,7 @@ append site_body
 							"fo": {x:11, y:21} 
 						}
 
-					defines **fi**, **fo** in its context, as [demonstrated here](/demo3.js).
+					defines input/output ports **fi** / **fo** as [demonstrated here](/demo3.js).
 					
 					Subsequent requests at the step/POST endpoint with **port** = "fi" or "fo" will call the
 					function with the current **tau** workflow events and the **parm** set to the 
@@ -1113,14 +1113,15 @@ append site_body
 
 					# Library and plugin access
 					
-					js-plugins may directly access various libraries -- via
-					[$ matrix manipulator](https://sc.appdev.proj.coe.ic.gov://acmesds/man), 
-					[$GEO chipper](https://sc.appdev.proj.coe.ic.gov://acmesds/geohack), 
-					[$NLP language parser](https://sc.appdev.proj.coe.ic.gov://acmesds/reader),
-					[$TASK task sharding](https://sc.appdev.proj.coe.ic.gov://acmesds/totem),
-					[$SQL mysql threader](https://sc.appdev.proj.coe.ic.gov://acmesds/totem),
-					[$JIMP image manipulator](https://sc.appdev.proj.coe.ic.gov://acmesds/man), 
-					[$NEO neo4j cypher](https://sc.appdev.proj.coe.ic.gov://acmesds/debe) -- as well as to other plugins via $.plugin(ctx,cb).
+					js-plugins may access the
+					[matrix manipulator](https://sc.appdev.proj.coe.ic.gov://acmesds/man) $( "script", ctx => {} ), 
+					[image chipper](https://sc.appdev.proj.coe.ic.gov://acmesds/geohack) $GEO, 
+					[language parser](https://sc.appdev.proj.coe.ic.gov://acmesds/reader) $NLP( "doc", methods, metrics => {} ) ,
+					[task sharding](https://sc.appdev.proj.coe.ic.gov://acmesds/totem) $TASK( { keys ... } , $ => {}, msg => {} ),  
+					[db connector](https://sc.appdev.proj.coe.ic.gov://acmesds/totem) $SQL( sql => {} ),
+					[image manipulator](https://sc.appdev.proj.coe.ic.gov://acmesds/man) $JIMP, 
+					[neo4j cypher](https://sc.appdev.proj.coe.ic.gov://acmesds/debe), $NEO({query:"...", params:{...}}, (err,results) => {} ),   
+					as well as [other plugins](/tbd) $.plugin(ctx, ctx => {} ).
 					
 	#accordion.Machines
 		:markdown
