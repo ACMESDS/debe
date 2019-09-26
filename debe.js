@@ -1808,21 +1808,20 @@ could/should be revised to support more generic peer-to-peer bySOAP interfaces.
 		var rtn = [];
 		
 		this.forEach( ( label, index ) => {
-			
-			var link = refs[index] || label.toLowerCase();
-			
-			switch (link) {
-				case "*":
-					rtn.push( label );
-					break;
-				
-				default:
-					if ( ! link.startsWith("/") ) {
-						link = "/" + link;
-						if ( ! link.startsWith(".") ) link += ".view";
+			if ( label ) 
+				if ( link = refs[index] || label.toLowerCase() )
+					switch (link) {
+						case "*":
+							rtn.push( label );
+							break;
+
+						default:
+							if ( ! link.startsWith("/") ) {
+								link = "/" + link;
+								if ( ! link.startsWith(".") ) link += ".view";
+							}
+							rtn.push( label.link( link ) );
 					}
-					rtn.push( label.link( link ) );
-			}
 		});
 			
 		return rtn.join(" || ");
