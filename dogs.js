@@ -503,36 +503,42 @@ Further information about this file is available ${paths.moreinfo}. `;
 			});
 	}),
 
+	/*
 	dogGraph: Copy({
-		cycle: 100
+		cycle: 0
 	}, function (dog) {
 			var actors = 0, nodes = 0;
-			Log("update graph");
+			Log("neo update"); return;
+		
 			if ( neodb = TOTEM.neodb ) 						
 				dog.thread( sql => {
 					sql.query( "SELECT * FROM app.nlpactors" )
 					.on("result", actor => {
 						actors++;
+						var q = `CREATE (n:${actor.Type} $props) RETURN n`;
+						Log("dog add", q);
 						neodb.cypher({
-							query: "CREATE (a:Actor {Name:{name}, ID:{id}})",
+							query: q,
 							params: {
-								name: actor.Name,
-								id: actor.ID
+								props: {
+									name: actor.Name,
+									email: "tbd",
+									tele: "tbd"
+								} 
+								//type: actor.Type
 							}
-						}, err => {	
-							Log("add actor", err);
+						}, (err,recs) => {	
+							Log("neo actor", err, JSON.stringify(recs) );
+							
 							if (++nodes >= actors) // all actors have been created so connect them
 								sql.query( "SELECT * FROM app.nlpedges" )
 								.on("result", edge => {
-									//Log(edge);
+									//Log("dog edge",edge);
+									var q =	`MATCH (a:${edge.sourceType}),(b:${edge.targetType}) WHERE a.name = '${edge.Source}' AND b.name = '${edge.Target}' CREATE (a)-[r:DRUGS]->(b) RETURN a,b,r`;
+									Log(q);
 									neodb.cypher({
-										query: `MATCH (a:Actor),(b:Actor) WHERE a.Name = {source} AND b.Name = {target} CREATE (a)-[r:${edge.Link}]->(b)`,
-										params: {
-											source: edge.Source,
-											target: edge.Target,
-											weight: edge.Weight
-										}
-									}, err => Log("add edge", err) );
+										query: q
+									}, (err,recs) => Log("neo edge", err, JSON.stringify(recs) ) );
 								})
 								.on("end", () => {
 									sql.query( "DELETE FROM app.nlpedges" );
@@ -545,37 +551,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 
 					sql.release();
 				});
-				/*
-				Each( metrics.ids.actors, (actor,idx) => {	// create nodes
-					//Log("neo add",actor,idx);
-					neodb.cypher({
-						query: "CREATE (a:Actor { Name: {name}, ID: {id} } )",
-						params: {
-							name: actor,
-							id: idx
-						}
-					}, (err,results) => {
-						Log("neo node", err, results);
-					});
-				});
-
-				metrics.dag.adj.forEach( bag => {	// create edges
-					bag.dictionary.forEach( edge => {
-						Log(edge);
-						neodb.cypher({
-							query: "MATCH (a:Actor),(b:Actor) WHERE a.ID = {srcID} AND b.ID = {endID} CREATE (a)-[r:RELATED]->(b) RETURN r",
-							params: {
-								srcID: edge.start,
-								endID: edge.end,
-								weight: edge.weight
-							}
-						}, (err,results) => {
-							Log("neo edge", err, results);
-						});
-					});
-				});												
-				*/
-	}),
+	}),  */
 
 	dogClients: Copy({
 		//cycle: 100000,

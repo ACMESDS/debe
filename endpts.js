@@ -1,8 +1,9 @@
 /**
 @class DEBE.EndPoints
-service maintenance endpoints
+Service endpoints endpt(req,res)
 */
 var		// nodejs
+	ENV = process.env,
 	STREAM = require("stream"), 		//< pipe streaming
 	CP = require("child_process"), 		//< Child process threads
 	CRYPTO = require("crypto"), 	//< to hash names
@@ -20,17 +21,56 @@ function Trace(msg,sql) {	// execution tracing
 }
 
 const { Copy,Each,Log,isObject,isString,isFunction,isError,isArray } = ENUM;
-const { sqlThread, uploadFile, getSite } = TOTEM;
+const { sqlThread, uploadFile, getSite, errors, site } = TOTEM;
 const { ingestList } = GEO;
 
 module.exports = {
+	sysGraph: function (req,res) {
+		const { query, sql, table, type } = req;
+		var nodes = [], links = [];
+		
+		if ( neodb = TOTEM.neodb )
+			neodb.cypher({
+				query: "MATCH (n) RETURN n",
+				params: query
+			}, (err,recs) => {
+				//Log(JSON.stringify(recs));
+				recs.forEach( rec =>  nodes.push({
+					id: rec.n._id, 
+					name: rec.n.properties.name,
+					group: rec.n.labels[0]
+				}) );
+				
+				neodb.cypher({
+					query: "MATCH (a)-[r]->(b) RETURN r"
+				}, (err,recs) => {
+					
+					//Log(err,"recs", recs.length);
+					//Log(JSON.stringify(recs));
+					recs.forEach( rec => links.push({
+						source: rec.r._fromId,
+						target: rec.r._toId,
+						value: 23
+					}) );
+					
+					res({
+						nodes: nodes,
+						links: links
+					});
+				});
+			});
+		
+		else
+			res( errors.noGraph );
+	},
+	
 	icoFavicon: function (req,res) {   // extjs trap
 		res("No icons here"); 
 	},
 
-	sendCert: function (req,res) { // create/return public-private certs
+	getCert: function (req,res) { // create/return public-private certs
 	/**
-	@method sendCert
+	@method getCert
 	Totem (req,res)-endpoint to create/return public-private certs
 	@param {Object} req Totem request
 	@param {Function} res Totem response
@@ -48,7 +88,7 @@ module.exports = {
 				err => {
 
 				if (err) 
-					res( TOTEM.errors.certFailed );
+					res( errors.certFailed );
 
 				else {	
 					var 
@@ -114,7 +154,7 @@ module.exports = {
 
 	},
 
-	extendPlugin: function (req,res) {
+	extendPlugin: function (req,res) {	//< add usecase keys to plugin
 	/**
 	@private
 	@method extendPlugin
@@ -122,15 +162,11 @@ module.exports = {
 	@param {Object} req http request
 	@param {Function} res Totem response callback
 	*/
+		const { query, sql, table, type } = req;
 
-		var
-			sql = req.sql,
-			ds = req.table,
-			query = req.query;
+		res("extending");
 
-		res("ok");
-
-		Each(query, function (key, val) {
+		Each(query, (key, val) => {
 			var type = "varchar(32)";
 
 			if ( parseFloat(val) ) type = "float";
@@ -145,12 +181,12 @@ module.exports = {
 					type = (val=="doc") ? "mediumtext" : `varchar(${val.length})` ;
 				}
 
-			sql.query("ALTER TABLE app.?? ADD ?? "+type, [ds,key]);
+			sql.query("ALTER TABLE app.?? ADD ?? "+type, [table,key]);
 
 		});
 	},
 
-	retractPlugin: function (req,res) {
+	retractPlugin: function (req,res) {	//< remove usecase keys from plugin
 	/**
 	@private
 	@method retractPlugin
@@ -158,22 +194,373 @@ module.exports = {
 	@param {Object} req http request
 	@param {Function} res Totem response callback
 	*/
+		const { query, sql, table, type } = req;
 
-		var
-			sql = req.sql,
-			ds = req.table,
-			query = req.query;
+		res("retracting");
 
-		res("ok");
-
-		Each(query, function (key, val) {
-
-			sql.query("ALTER TABLE app.?? DROP ?? ", [ds,key]);
-
+		Each(query, (key, val) => {
+			sql.query("ALTER TABLE app.?? DROP ?? ", [table,key]);
 		});
 	},
 
-	exePlugin: function (req,res) {
+	usagePlugin: function (req,res) {
+		const { query, sql, table, type } = req;
+		sql.query(
+			"SELECT Name, Type, JIRA, RAS, Task "
+			+ "FROM app.engines LEFT JOIN openv.milestones ON milestones.Plugin=engines.Name "
+			+ "WHERE ? LIMIT 1",
+			[{Name: table}], (err,engs) => {
+
+			if ( eng = engs[0] )
+				res([
+					`/${eng.Name}.use`.tag("a",{href: `/${eng.Name}.use`}),
+					`/${eng.Name}.run`.tag("a",{href: `/${eng.Name}.run`}),
+					`/${eng.Name}.view`.tag("a",{href: `/${eng.Name}.view`}),
+					`/${eng.Name}.tou`.tag("a",{href: `/${eng.Name}.tou`}),
+					`/${eng.Name}.status`.tag("a",{href: `/${eng.Name}.status`}),
+					`/${eng.Name}.pub`.tag("a",{href: `/${eng.Name}.pub`}),
+					`/${eng.Name}.${eng.Type}`.tag("a",{href: `/${eng.Name}.${eng.Type}`}),
+					`/briefs.view?options=${eng.Name}`.tag("a",{href: `/briefs.view?options=${eng.Name}`}),
+					(eng.JIRA||"").tag("a",{href:ENV.JIRA}),
+					(eng.RAS||"").tag("a",{href:ENV.RAS}),
+					(eng.Task||"").tag("a",{href:"/milestones.view"})
+				].join(" | ") );
+			
+			else
+				res( errors.noEngine );
+		});
+		
+	},
+	
+	usersPlugin: function (req,res) {
+		const { query, sql, table, type } = req;
+
+		res( site.pocs.overlord.split(";") );
+	},
+	
+	exportPlugin: function (req,res) {
+		const { query, sql, table, type } = req;
+		var
+			name = table;
+		
+		res( "exporting" );
+		CP.exec(
+			`mysqldump -u$MYSQL_USER -p$MYSQL_PASS -h$MYSQL_HOST --skip-add-drop-table app ${name} >./stores/${name}.sql`,
+			(err,out) => Trace( `EXPORTED ${name} `+ (err||"ok") ) );							
+	},
+
+	importPlugin: function (req,res) {
+		const { query, sql, table, type } = req;
+		var
+			name = table;
+	
+		res( "importing" );
+		CP.exec(
+			`mysql -u$MYSQL_USER -p$MYSQL_PASS -h$MYSQL_HOST --force app < ./stores/${name}.sql`,
+			(err,out) => Trace( `IMPORTED ${name} `+ (err||"ok") ) );							
+	},
+
+	docPlugin: function (req,res) {
+		const { query, sql, table, type } = req;
+		
+		getEngine( sql, table, eng => {
+			if ( eng )
+				if ( eng.ToU )
+					eng.ToU.Xfetch( res );
+
+				else 
+					res( null );
+			
+			else 
+				res( errors.noEngine );
+		});
+	},
+	
+	publishPlugin: function (req,res) {
+		const { query, sql, table, type } = req;
+		var
+			name = table;
+
+		getEngine( sql, table, eng => {
+			if ( eng ) {
+				res( "publishing" );
+				FLEX.publishPlugin(sql, "./public/"+eng.Type+"/"+eng.Name, eng.Name, eng.Type, false);
+			}
+			
+			else
+				res( errors.noEngine );
+		});
+	},
+	
+	statusPlugin: function (req,res) {
+		const { query, sql, table, type } = req;
+		var
+			name = table,
+			product = table + "." + type,
+			fetchUsers = function (rec, cb) {	// callback with endservice users
+				getSite(rec._EndService, null, info => { 
+					//Log("status users", info);
+					cb( (info.toLowerCase().parseJSON() || [] ).join(";") ) ;
+				});
+			},
+			fetchMods = function (rec, cb) {	// callback with endservice moderators
+				sql.query(
+					"SELECT group_concat( DISTINCT _Partner SEPARATOR ';' ) AS _Mods FROM app.releases WHERE ? LIMIT 1",
+					{ _Product: rec.Name+".html" },
+					(err, mods) => { 
+
+						//Log("status mods", err, mods);
+						if ( mod = mods[0] || { _Mods: "" } )
+							cb( mod._Mods || "" );
+
+					});
+			};
+
+		getProductKeys( product, keys => {
+			var urls = keys.urls;
+
+			sql.query(
+				"SELECT Ver, Comment, _Published, _Product, _License, _EndService, _EndServiceID, 'none' AS _Users, "
+				+ " 'fail' AS _Status, _Fails, "
+				+ "group_concat( DISTINCT _Partner SEPARATOR ';' ) AS _Partners, sum(_Copies) AS _Copies "
+				+ "FROM app.releases WHERE ? GROUP BY _EndServiceID, _License ORDER BY _Published",
+
+				[ {_Product: product}], (err,recs) => {
+
+					//Log("status", err, q.sql);
+
+					if ( recs.length )
+						recs.serialize( fetchUsers, (rec,users) => {  // retain user stats
+							if (rec) {
+								if ( users )
+									rec._Users = users.mailify( "users", {subject: name+" request"});
+
+								else 
+									sql.query("UPDATE app.releases SET ? WHERE ?", [ {_Fails: ++rec._Fails}, {ID: rec.ID}] );
+
+								var 
+									url = URL.parse(rec._EndService),
+									host = url.host.split(".")[0];
+
+								rec._License = rec._License.tag("a",{href:urls.totem+`/releases.html?_EndServiceID=${rec._EndServiceID}`});
+								rec._Product = rec._Product.tag("a", {href:urls.run});
+								rec._Status = "pass";
+								rec._Partners = rec._Partners.mailify( "partners", {subject: name+" request"});
+								rec._EndService = host.tag("a",{href:rec._EndService});
+								delete rec._EndServiceID;
+							}
+
+							else
+								recs.serialize( fetchMods, (rec,mods) => {  // retain moderator stats
+									if (rec) 
+										rec._Mods = mods.mailify( "moderators", {subject: name+" request"});
+
+									else 
+										res( recs.gridify() );
+								});
+						});
+
+					else
+						res( "no transitions found" );
+			});
+		});
+	},
+	
+	matchPlugin: function (req,res) {
+		const { query, sql, table, type } = req;
+		var
+			name = table,
+			product = table + "." + type,
+			suits = [];
+
+		getProductKeys( product, keys => {
+			var urls = keys.urls;
+			
+			sql.query(
+				"SELECT Name,Path FROM app.lookups WHERE ?",
+				{Ref: name}, (err,recs) => {
+
+				recs.forEach( rec => {
+					suits.push( rec.Name.tag( `${urls.transfer}${rec.Path}/${name}` ));
+				});
+
+				/*
+				// Extend list of suitors with already  etc
+				sql.query(
+					"SELECT endService FROM app.releases GROUP BY endServiceID", 
+					[],  (err,recs) => {
+
+					recs.forEach( rec => {
+						if ( !sites[rec.endService] ) {
+							var 
+								url = URL.parse(rec.endService),
+								name = (url.host||"none").split(".")[0];
+
+							rtns.push( `<a href="${urls.transfer}${rec.endService}">${name}</a>` );
+						}
+					});
+
+					rtns.push( `<a href="${urls.loopback}">loopback test</a>` );
+
+					if (proxy)
+						rtns.push( `<a href="${urls.proxy}">other</a>` );
+
+					//rtns.push( `<a href="${site.urls.worker}/lookups.view?Ref=${product}">add</a>` );
+
+					cb( rtns.join(", ") );
+				}); */
+				suits.push( "loopback".tag( urls.loopback ) );
+				suits.push( "other".tag( urls.tou ) );
+
+				//suits.push( `<a href="${urls.totem}/lookups.view?Ref=${product}">suitors</a>` );
+
+				res( suits.join(", ") );
+			});	
+		});
+	},
+
+	touPlugin: function (req,res) {
+		const { query, sql, table, type } = req;
+		
+		getEngine( sql, table, eng => {
+			if ( eng )
+				( eng.ToU || "ToU undefined" )
+					.Xfetch( html => html.Xparms( name, html => res(html) ));
+			
+			else
+				res( errors.noEngine );
+		});
+	},
+		
+	trackPlugin: function (req,res) {
+		const { query, sql, table, type } = req;
+		var 
+			name = table,
+			product = name + "." + type;
+		
+		sql.query(
+			"SELECT _License,_EndService FROM app.releases WHERE ? LIMIT 1", 
+			{_Product: product}, (err,pubs) => {
+
+			res( err || pubs );
+		});
+	},
+
+	getPlugin: function (req,res) {
+		const { query, sql, table, type, client } = req;
+		var 
+			name = table,
+			attr = type,
+			product = name + "." + type,
+			partner = client,
+			endService = query.endservice+"",
+			proxy = query.proxy,
+			types = {
+				pub: "txt",
+				users: "json",
+				md: "txt",
+				toumd: "txt",
+				status: "html",
+				suitors: "txt",
+				publist: "txt",
+				tou: "html",
+				js: "txt",
+				py: "txt",
+				me: "txt",
+				m: "txt",
+				jade: "txt"
+			};
+		
+		getEngine( sql, name, eng => {
+			if ( eng ) 
+				switch (type) {
+					case "js":
+					case "py":
+					case "me":
+					case "m":
+						sql.query(
+							"SELECT * FROM app.releases WHERE least(?,1) ORDER BY _Published DESC LIMIT 1", {
+								_Partner: endPartner+".forever",
+								_EndServiceID: FLEX.serviceID( endService ),
+								_Product: product
+						}, (err, pubs) => {
+
+							function addTerms(code, type, pub, cb) {
+								var 
+									prefix = {
+										js: "// ",
+										py: "# ",
+										matlab: "% ",
+										jade: "// "
+									},
+									pre = "\n"+(prefix[type] || ">>");
+
+								FS.readFile("./public/md/tou.txt", "utf8", (err, terms) => {
+									if (err) 
+										cb( errors.noLicense );
+
+									else
+										cb( pre + terms.parseEMAC( Copy({
+											"urls.service": pub._EndService,
+											license: pub._License,
+											published: pub._Published,
+											partner: pub._Partner
+										}, keys, ".")).replace(/\n/g,pre) + "\n" + code);
+								});
+							}
+
+							// May rework this to use eng.Code by priming the Code in the publish phase
+							FS.readFile( `./public/${type}/${name}.d/source`, "utf8", (err, srcCode) => {
+								if (!err) eng.Code = srcCode;
+
+								if ( pub = pubs[0] )	// already released so simply distribute
+									addTerms( eng.Code, type, pub, res );
+
+								else	// not yet released so ...
+								if ( FLEX.licenseOnDownload ) { // license required to distribute
+									if ( endService )	// specified so try to distribute
+										if ( eng.Minified )	// compiled so ok to distribute
+											FLEX.licenseCode( sql, eng.Minified, {
+												_Partner: endPartner,
+												_EndService: endService,
+												_Published: new Date(),
+												_Product: product,
+												Path: "/"+product
+											}, pub => {
+												if (pub) // distribute licensed version
+													addTerms( eng.Code, type, pub, res );
+
+												else	// failed
+													res( null );
+											});
+
+										else
+											res( null );
+
+									else
+										res( null );
+								}
+
+								else	// no license required
+									res( eng.Code );
+							});
+						});
+						break;
+
+					case "jade":
+						res( (eng.Type == "jade") ? eng.Code : null );
+						break;
+
+					default:
+						res( errors.noEngine );
+				}
+			
+			else
+				res( errors.noEngine );
+		});
+	},
+
+	exePlugin: function (req,res) {	//< execute plugin in specified usecase context
 	/**
 	@private
 	@method exePlugin
@@ -181,7 +568,7 @@ module.exports = {
 	@param {Object} req http request
 	@param {Function} res Totem response callback
 	*/	
-		function pipePlugin( get, sql, job, cb ) { // prime plugin with query and run in context ctx
+		function pipePlugin( get, sql, job, cb ) { //< prime plugin with query and run in context ctx
 
 			function pipe(get, sql, job, cb) {
 				var 
@@ -300,7 +687,7 @@ module.exports = {
 				//Log("run ctx", ctx);
 
 				if ( !ctx)
-					res( TOTEM.errors.noContext );
+					res( errors.noContext );
 
 				else
 				if ( isError(ctx) )
@@ -465,18 +852,18 @@ module.exports = {
 			ATOM.select(req, res);
 
 		else
-			res(TOTEM.errors.noUsecase);
+			res(errors.noUsecase);
 
 	},
 
+	/*
 	probePlugin: function(req,res) {  //< share plugin attribute / license plugin code
+		const { query, sql, table, type, client } = req;
 
 		var 
-			errors = TOTEM.errors,
-			sql = req.sql,
-			query = req.query,
-			attr = req.type,
-			partner = req.client,
+			name = table,
+			attr = type,
+			partner = client,
 			endService = query.endservice+"",
 			proxy = query.proxy,		
 			types = {
@@ -495,10 +882,10 @@ module.exports = {
 				jade: "txt"
 			};
 
-		sql.query( "SELECT * FROM app.engines WHERE least(?,1) LIMIT 1", { Name: req.table }, (err, engs) => {
-			if ( eng = engs[0] ) 
+		getEngine( sql, name, eng => {
+			if ( eng ) 
 				FLEX.pluginAttribute( sql, attr, partner, endService, proxy, eng, attrib => {
-					req.type = types[req.type] || "txt";
+					//req.type = types[req.type] || "txt";
 
 					if (attrib) 
 						res(attrib);
@@ -520,11 +907,11 @@ module.exports = {
 									if ( pub = pubs[0] ) {
 										res( `Publishing ${eng.Name}` );
 
-										/*
+										/ *
 										var 
 											parts = pub.Ver.split("."),
 											ver = pub.Ver = parts.concat(parseInt(parts.pop()) + 1).join(".");
-										*/
+										* /
 
 										FLEX.publishPlugin( req, eng.Name, eng.Type, true );
 									}
@@ -542,10 +929,9 @@ module.exports = {
 			else
 				res( errors.noEngine );
 		});
-
-	},
+	},  */
 	
-	sendDoc: function (req, res) {
+	getDoc: function (req, res) {
 		var
 			site = TOTEM.site,
 			master = "http://localhost:8080", //site.urls.master,	
@@ -580,11 +966,10 @@ module.exports = {
 		var
 			query = req.query,
 			delay = 10,
-			pocs = TOTEM.site.pocs || {},
 			msg = query.msg = `System updating in ${delay} seconds`;
 
-		if ( req.client == pocs.admin ) {
-			Log(req.client, TOTEM.site.pocs);
+		if ( req.client == site.pocs.admin ) {
+			Log(req.client, TOTEM.site.site.pocs);
 
 			sysAlert(req,res);
 
@@ -595,7 +980,7 @@ module.exports = {
 		}
 
 		else
-			res("This endpoint reserved for " + "system admin".tag( "mailto:" + pocs.admin ) );
+			res("This endpoint reserved for " + "system admin".tag( "mailto:" + site.pocs.admin ) );
 	},
 
 	sysIngest: function(req,res) {
@@ -780,18 +1165,18 @@ module.exports = {
 						});
 
 					else
-						res( TOTEM.errors.badAgent );
+						res( errors.badAgent );
 				}
 
 				else
-					res( TOTEM.errors.badAgent );
+					res( errors.badAgent );
 
 			});
 
 		}
 
 		else
-			res( TOTEM.errors.badAgent );
+			res( errors.badAgent );
 
 	},
 
@@ -804,10 +1189,9 @@ module.exports = {
 	*/
 		var 
 			query = req.query,
-			pocs = TOTEM.site.pocs || {},
 			msg = query.msg;
 
-		if ( req.client == pocs.admin ) {
+		if ( req.client == site.pocs.admin ) {
 			if (IO = TOTEM.IO)
 				IO.sockets.emit("alert",{msg: msg || "system alert", to: "all", from: TOTEM.site.title});
 
@@ -816,7 +1200,7 @@ module.exports = {
 		}
 
 		else 
-			res("This endpoint reserved for " + "system admin".tag( "mailto:" + pocs.admin ) );
+			res("This endpoint reserved for " + "system admin".tag( "mailto:" + site.pocs.admin ) );
 	},
 
 	sysStop: function(req,res) {
@@ -846,62 +1230,116 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 	function saveNLP(sql, nlp) {	// save NLP context to plugin usecase
 		//Log("NLP save>>>>>>>>>>>>>>", nlp);
 		var 
+			neodb = TOTEM.neodb,
 			actors = nlp.actors,
 			topics = nlp.topics, 
 			greedy = false;
 
-		Each( actors, (actor,info) => {
-			sql.query(
-				"INSERT INTO app.nlpactors SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1",
-				{ Name: actor, Type: info.type }, err => Log("save actor", err) );
-		});
+		Each( actors, (actor,act,cb) => {
+			//Log(actor,act);
+			if (cb) // add actor
+				neodb.cypher({
+					query: `MERGE (n:${act.type} {name:$name}) ON CREATE SET n = $props`,
+					params: {
+						name: actor,
+						props: {
+							name: actor,
+							email: "tbd",
+							tele: "tbd",
+							created: new Date()
+						}
+					}
+				}, err => { Trace( err || "add actor" ); cb(); } );
+			
+			else	// all actors added so add edges
+			if ( greedy )		// make all possible edges
+				Each(actors, (source,src) => {
+					Each(actors, (target,tar) => {
+						if ( source != target )
+							Each( topics, (topic,info) => {
+								if ( topic != "dnc" ) 
+									neodb.cypher({
+										query: `MATCH (a:${src.type} {name:$src}),(b:${tar.type} {name:$tar}) MERGE (a)-[r:${topic}]-(b) ON CREATE SET r.created = timestamp() `,
+										params: {
+											src: source,
+											tar: target
+										}
+									}, err => Trace( err || "add edge") );
+									
+									/*
+									sql.query(
+										"INSERT INTO app.nlpedges SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1, Weight=Weight+?",
+										[{
+											Source: source,
+											Target: target,
+											Link: topic,
+											Weight: info.weight,
+											Task: "drugs",		//< needs to be fixed to refer to host usecase prefix
+											Hits: 1
+										}, info.weight], err => Log("save edge", err) ); */
+							});
+					});
+				});
 
-		if ( greedy )
-			Each(actors, source => {
-				Each(actors, target => {
-					if ( source != target )
-						Each( topics, (topic,info) => {
-							if ( topic != "dnc" ) 
+			else {	// make only required edges
+				var
+					keys = Object.keys(topics),
+					keys = keys.sort( (a,b) => topics[b].weight - topics[a].weight ),
+					topic = keys[0] || "dnc",
+					info = topics[topic];
+
+				//Log("nlpedges", keys, topic, info );
+
+				if ( topic != "dnc" ) 
+					Each(actors, (source, src) => {
+						Each(actors, (target, tar) => {
+							if ( source != target )
+								neodb.cypher({
+									query: `MATCH (a:${src.type} {name:$src}),(b:${tar.type} {name:$tar}) MERGE (a)-[r:${topic}]-(b) ON CREATE SET r.created = timestamp() `,
+									params: {
+										src: source,
+										tar: target
+									}
+								}, err => Trace( err || "add edge") );
+								/*
 								sql.query(
 									"INSERT INTO app.nlpedges SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1, Weight=Weight+?",
 									[{
+										sourceType: srcInfo.type,
+										targetType: tarInfo.type,
 										Source: source,
 										Target: target,
-										Link: topic,
+										Topic: topic,
 										Weight: info.weight,
 										Task: "drugs",		//< needs to be fixed to refer to host usecase prefix
 										Hits: 1
-									}, info.weight], err => Log("save edge", err) );
+									}, info.weight], err => Log("save edge", err) ); */
 						});
-				});
-			});
-
-		else {
-			var
-				keys = Object.keys(topics),
-				keys = keys.sort( (a,b) => topics[b].weight - topics[a].weight ),
-				topic = keys[0] || "dnc",
-				info = topics[topic];
-
-			//Log("nlpedges", keys, topic, info );
-
-			if ( topic != "dnc" ) 
-				Each(actors, source => {
-					Each(actors, target => {
-						if ( source != target )
-							sql.query(
-								"INSERT INTO app.nlpedges SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1, Weight=Weight+?",
-								[{
-									Source: source,
-									Target: target,
-									Link: topic,
-									Weight: info.weight,
-									Task: "drugs",		//< needs to be fixed to refer to host usecase prefix
-									Hits: 1
-								}, info.weight], err => Log("save edge", err) );
 					});
-				});
-		}
+			}
+		});
+		
+		/*
+		Each( actors, (actor,act) => {
+			Log(actor,act);
+			neodb.cypher({
+				query: `MERGE (n:${act.type} {name:$name}) ON CREATE SET n = $props`,
+				params: {
+					name: actor,
+					props: {
+						name: actor,
+						email: "tbd",
+						tele: "tbd",
+						created: new Date()
+					}
+				}
+			}, err => Trace( err || "added actor" ) );				
+			/ *
+			sql.query(
+				"INSERT INTO app.nlpactors SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1",
+				{ Name: actor, Type: info.type }, err => Log("save actor", err) );
+				* /
+		}); */
 	}
 		
 	var
@@ -966,4 +1404,15 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 	else
 		return null;
 	
+}
+
+function getEngine( sql, name, cb ) {
+	sql.query( 
+		"SELECT * FROM app.engines WHERE least(?,1) LIMIT 1", { Name: name }, (err, engs) => {
+		cb( engs[0] || null );
+	});	
+}
+
+function getProductKeys( product, cb ) {
+	cb( FLEX.productKeys(product) );
 }

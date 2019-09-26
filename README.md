@@ -36,22 +36,18 @@ render PLUGIN:
  
 	view | run | plugin | pivot | site | spivot | brief | gridbrief | pivbrief | runbrief
 
-execute, extend or retract PLUGIN:
+probe PLUGIN:
 
-	exe | add | sub
+	exe | tou | md | status | suitors | usage | EVENTS
 
-probe PLUGIN attributes:
+manage PLUGIN:
 
-	tou | md | pub | status | suitors
-	
-license PLUGIN code:
+	import | export | publish | addkey | subkey
+
+license PLUGIN:
 
 	js | py | m | me | jade | ...
-	
-or return PLUGIN events:
 
-	CASENAME
-	
 DEBE provides the following COMMANDs:
 
 	agent | alert | ingest | riddle | task | ping

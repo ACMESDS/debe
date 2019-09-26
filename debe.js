@@ -80,7 +80,12 @@ var
 const { Copy,Each,Log,isObject,isString,isFunction,isError,isArray } = ENUM;
 const { sqlThread, getFile, getSite } = TOTEM;
 const { pipeStream, pipeImage, pipeJson, pipeDoc, pipeDB, pipeAOI } = PIPE;
-const { sendDoc, exePlugin, retractPlugin, extendPlugin, probePlugin, sysRestart, sysIngest, sysDecode, sysAgent, sysAlert, sysStop } = END;
+const { 
+	getDoc,
+	exportPlugin, importPlugin, statusPlugin, usersPlugin, suitorsPlugin, usagePlugin, getPlugin, 
+	exePlugin, retractPlugin, extendPlugin, docPlugin,
+	matchPlugin, touPlugin, trackPlugin, publishPlugin,
+	sysGraph, sysRestart, sysIngest, sysDecode, sysAgent, sysAlert, sysStop } = END;
 const { renderSkin } = SKIN;
 
 function Trace(msg,sql) {
@@ -163,6 +168,7 @@ Copy({
 		var
 			site = DEBE.site,
 			pocs = site.pocs,
+			clearGraphDB = false,			
 			sendMail = FLEX.sendMail;
 		
 		sqlThread( sql => {
@@ -181,8 +187,10 @@ Copy({
 			});	
 		
 			// clear graph database
-			sql.query("DELETE FROM nlpactors");
-			sql.query("DELETE FROM nlpedges");
+			if (clearGraphDB) {
+				sql.query("DELETE FROM app.nlpactors");
+				sql.query("DELETE FROM app.nlpedges");
+			}
 			
 			sql.release();
 		});
@@ -211,9 +219,12 @@ Copy({
 					}
 				});
 
-			neodb.cypher({
-				query: "MATCH (n) DETACH DELETE n"
-			}, err => Trace( err || "CLEAR GRAPH DB" ) );  
+			if (clearGraphDB) // clear db on startup
+				neodb.cypher({
+					query: "MATCH (n) DETACH DELETE n"
+				}, err => {
+					Trace( err || "CLEAR GRAPH DB" );
+				});  
 		}			
 	},
 		
@@ -363,7 +374,7 @@ Copy({
 
 			["select", "delete", "insert", "update", "execute"].forEach( crud => {
 				var x = DEBE.byActionTable[crud] = FLEX[crud];
-				Log(">>>init", crud, x ? true : false);
+				//Log(">>>init", crud, x ? true : false);
 			});
 
 			if (cb) cb();	
@@ -422,18 +433,22 @@ Copy({
 				}, $ )
 			});
 
-			DEBE.neodb = new NEO.GraphDatabase(ENV.NEO4J);
-			
-			DEBE.neodb.cypher({	// test connection
-				query: "MATCH (n)"
-			}, err => {					
-				Trace( err ? "NEODB DISCONNECTED" : "NEODB CONNECTED" );
-				if (err) DEBE.neodb = null;
-			});
-				
-			DEBE.onStartup();
+			DEBE.neodb = ENV.NEO4J ? new NEO.GraphDatabase(ENV.NEO4J) : null;
 
-			if ( jades = DEBE.paths.jades & "" )
+			if ( neodb = DEBE.neodb )
+				neodb.cypher({	// test connection
+					query: "MATCH (n) RETURN n"
+				}, err => {
+					Trace( err ? "NEODB DISCONNECTED" : "NEODB CONNECTED" );
+					if (err) DEBE.neodb = null;
+					
+					DEBE.onStartup();					
+				});
+				
+			else
+				DEBE.onStartup();
+			
+			if ( jades = DEBE.paths.jades && "" )
 				DEBE.getIndex( jades, files => {  // publish new engines
 					var ignore = {".": true, "_": true};
 					files.forEach( (file) => {
@@ -969,6 +984,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 
 	"byTable.": {	//< routers for endpoints at /TABLE
+		anet: sysGraph,
 		agent: sysAgent,
 		//help: sysHelp,
 		alert: sysAlert,
@@ -988,30 +1004,13 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	
 	"byType.": { //< routers for endpoint types at /DATASET.TYPE
 		// file attributes
-		//code: probePlugin,
-		//jade: probePlugin,	
+		//code: getPlugin,
+		//jade: getPlugin,	
 		
 		// doc generators
-		xpdf: sendDoc,
-		xjpg: sendDoc,
-		xgif: sendDoc,
-		
-		// plugin attributes
-		md: probePlugin,
-		tou: probePlugin,
-		status: probePlugin,
-		suitors: probePlugin,
-		pub: probePlugin,
-		users: probePlugin,
-		state: probePlugin,
-		js: probePlugin,
-		py: probePlugin,
-		m: probePlugin,
-		me: probePlugin,
-		jade: probePlugin,
-		get: probePlugin,
-		export: probePlugin,
-		import: probePlugin,
+		xpdf: getDoc,
+		xjpg: getDoc,
+		xgif: getDoc,
 		
 		// skins
 		view: renderSkin,
@@ -1026,8 +1025,44 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		pivbrief: renderSkin,
 		
 		// plugins
+		status: statusPlugin,
+		stat: statusPlugin,
+		
+		suitors: matchPlugin,
+		match: matchPlugin,
+		
+		users: usersPlugin,
+		
+		track: trackPlugin,
+		licence: trackPlugin,
+		release: trackPlugin,
+		
+		pub: publishPlugin,
+		publish: publishPlugin,
+		
+		js: getPlugin,
+		py: getPlugin,
+		m: getPlugin,
+		me: getPlugin,
+		jade: getPlugin,
+		
+		export: exportPlugin,
+		import: importPlugin,
+		
+		doc: docPlugin,
+		md: docPlugin,
+		toumd: docPlugin,
+		
+		use: usagePlugin,
+		usage: usagePlugin,
+		help: usagePlugin,
+		
 		exe: exePlugin,
+		
+		addkey: extendPlugin,
 		add: extendPlugin,
+		
+		subkey: retractPlugin,
 		sub: retractPlugin
 	},
 
@@ -1149,6 +1184,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		noPartner: new Error( "endservice missing or did not respond with transition partner" ),
 		noAttribute: new Error( "undefined engine attribute" ),
 		noEngine: new Error( "no such engine" ),
+		noGraph: new Error( "graph db unavailable" ),
 		badAgent: new Error("bad agent request"),
 		noIngest: new Error("invalid/missing ingest dataset"),
 		badSkin: new Error("skin contains invalid jade"),
@@ -1207,8 +1243,10 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 				py: "text/plain",
 				ma: "text/plain",
 				tou: "text/html",
-				db: "application/json"
-			}			
+				db: "application/json",
+				pub: "",
+				doc: ""
+			}
 		},
 		
 		skin: {
@@ -1457,7 +1495,7 @@ could/should be revised to support more generic peer-to-peer bySOAP interfaces.
 		var
 			fetchBlog = function( rec, cb ) {
 				
-				Log("blogging rec");
+				//Log("blogging rec");
 				if ( md = rec[key] + "" ) 
 					md.Xblog(req, ds.tag("?", { 	// tag ds with source record selector
 						name: ( (rec.Pipe||"").startsWith("{") ) 
@@ -1470,10 +1508,10 @@ could/should be revised to support more generic peer-to-peer bySOAP interfaces.
 								"<br>",
 								site.title.tag( `${url}/fan.view?src=info&w=4000&h=600` ),
 								"schema".tag( `${url}/fan.view?src=${ds}&name=${rec.Name}&w=4000&h=600` ),
-								"run".tag( `${url}/${ds}.exe?Name=${rec.Name}` ),
-								"edit".tag( `${url}/${ds}.view` ),
-								"publish".tag( `${url}/${ds}.pub` ),
-								"tou".tag( `${url}/${ds}.tou` )
+								"run".tag( `${url}${ds}.exe?Name=${rec.Name}` ),
+								"edit".tag( `${url}${ds}.view` ),
+								"publish".tag( `${url}${ds}.pub` ),
+								"tou".tag( `${url}${ds}.tou` )
 							].join(" ")
 					 ) );
 				

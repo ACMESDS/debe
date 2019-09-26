@@ -99,5 +99,35 @@ The following context keys are accepted:
 			res( new Error("invalid nlp method") );
 	}
 	*/
+		/*
+		Each( metrics.ids.actors, (actor,idx) => {	// create nodes
+			//Log("neo add",actor,idx);
+			neodb.cypher({
+				query: "CREATE (a:Actor { Name: {name}, ID: {id} } )",
+				params: {
+					name: actor,
+					id: idx
+				}
+			}, (err,results) => {
+				Log("neo node", err, results);
+			});
+		});
+
+		metrics.dag.adj.forEach( bag => {	// create edges
+			bag.dictionary.forEach( edge => {
+				Log(edge);
+				neodb.cypher({
+					query: "MATCH (a:Actor),(b:Actor) WHERE a.ID = {srcID} AND b.ID = {endID} CREATE (a)-[r:RELATED]->(b) RETURN r",
+					params: {
+						srcID: edge.start,
+						endID: edge.end,
+						weight: edge.weight
+					}
+				}, (err,results) => {
+					Log("neo edge", err, results);
+				});
+			});
+		});												
+		*/	
 	}
 }
