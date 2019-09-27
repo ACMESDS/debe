@@ -92,7 +92,7 @@ module.exports = {
 			Render Jade file at path this to res( err || html ) in a new context created for this request.  
 			**/
 
-				Copy({
+				Copy({		// keys to plugin.jade
 					mode: req.type,
 					page: query.page,
 					dims: query.dims || "100%,100%",
@@ -105,9 +105,11 @@ module.exports = {
 					cols = [],
 					drops = { id:1, odbcstamp: 1};
 
-				switch (fields.constructor) {
-					case Array:
-						fields.forEach( (field,n) => {
+				Log(">>>>>>>>>>>>>>cons", fields.constructor.name );
+				
+				switch (fields.constructor.name) {
+					case "Array":
+						fields.forEach( field => {
 							var 
 								key = field.Field, 
 								type = field.Type.split("(")[0];
@@ -134,19 +136,19 @@ module.exports = {
 						});
 						break;
 
-					case String:
+					case "String":
 						fields.split(",").forEach( field => {
 							if ( field != "ID") cols.push( field );
 						});	
 						break;
 
-					case Object:
 					default:
 						Each(fields, field => {
 							if (field != "ID") cols.push( field );
 						});	
 				}
 
+				//Log(">>>>>>>>>>>>>>> cols", cols);
 				query.cols = cols.groupify();
 				/*if ( query.mode == "gbrief" ) // better to add this to site.context.plugin
 					sql.query("SELECT * FROM ??.??", [req.group, query.ds], function (err,recs) {
@@ -165,13 +167,15 @@ module.exports = {
 
 				else	*/
 
+				Log( "render", paths.jades+"plugin.jade", query);
+				
 				renderFile( paths.jades+"plugin.jade", ctx );
 			}		
 
 			function renderTable( ds, ctx ) {
 			/**
 			@private
-			@method renderPlugin
+			@method renderTable
 			Render table at path this to res( err || html ) in a new context created for this request.  
 			**/			
 				sql.query( 

@@ -20,7 +20,7 @@ function Trace(msg,sql) {	// execution tracing
 	"S>".trace(msg,sql);
 }
 
-const { Copy,Each,Log,isObject,isString,isFunction,isError,isArray } = ENUM;
+const { Copy,Each,Log,isString,isFunction,isError,isArray } = ENUM;
 const { sqlThread, uploadFile, getSite, errors, site } = TOTEM;
 const { ingestList } = GEO;
 

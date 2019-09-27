@@ -77,7 +77,7 @@ var
 	GEO = require("geohack"),
 	ENUM = require("enum");
 
-const { Copy,Each,Log,isObject,isString,isFunction,isError,isArray } = ENUM;
+const { Copy,Each,Log,isKeyed,isString,isFunction,isError,isArray } = ENUM;
 const { sqlThread, getFile, getSite } = TOTEM;
 const { pipeStream, pipeImage, pipeJson, pipeDoc, pipeDB, pipeAOI } = PIPE;
 const { 
@@ -1584,9 +1584,9 @@ could/should be revised to support more generic peer-to-peer bySOAP interfaces.
 	function schemafy(src) {
 		function nodeify(store, path, cb) {
 
-			//Log("isobj", isObject(store), store.constructor.name );
+			//Log("isobj", isKeyed(store), store.constructor.name );
 			
-			if ( isObject(store) ) // at an object node
+			if ( isKeyed(store) ) // at an object node
 				if ( path ) {
 					var 
 						nodes = [];
@@ -1642,7 +1642,7 @@ could/should be revised to support more generic peer-to-peer bySOAP interfaces.
 				}
 
 			else	// at an array node
-			if ( isArray(store) ) {  // && isObject( store0 = store[0] )
+			if ( isArray(store) ) { 
 				var 
 					N = store.length,
 					nodeName = "[" + N + "]",
@@ -1756,7 +1756,8 @@ could/should be revised to support more generic peer-to-peer bySOAP interfaces.
 			rtn = [];
 		
 		Each(src, (key, list) => {
-			if ( typeof list == "string" ) 
+			var list = src[key];
+			if ( isString(list) )
 				rtn.push( list );
 			
 			else
@@ -1789,7 +1790,7 @@ could/should be revised to support more generic peer-to-peer bySOAP interfaces.
 	
 	*/
 		var src = {};
-		this.forEach( (key) => {
+		this.forEach( key => {
 			src[key] = key;
 		}); 
 		
