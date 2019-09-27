@@ -105,8 +105,6 @@ module.exports = {
 					cols = [],
 					drops = { id:1, odbcstamp: 1};
 
-				Log(">>>>>>>>>>>>>>cons", fields.constructor.name );
-				
 				switch (fields.constructor.name) {
 					case "Array":
 						fields.forEach( field => {
@@ -148,7 +146,6 @@ module.exports = {
 						});	
 				}
 
-				//Log(">>>>>>>>>>>>>>> cols", cols);
 				query.cols = cols.groupify();
 				/*if ( query.mode == "gbrief" ) // better to add this to site.context.plugin
 					sql.query("SELECT * FROM ??.??", [req.group, query.ds], function (err,recs) {
@@ -167,8 +164,6 @@ module.exports = {
 
 				else	*/
 
-				Log( "render", paths.jades+"plugin.jade", query);
-				
 				renderFile( paths.jades+"plugin.jade", ctx );
 			}		
 

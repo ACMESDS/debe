@@ -34,7 +34,7 @@ append base_head
 		var opts = {
 			ds: 
 				"!{query.src}"
-					? "!{query.src}"
+					? "!{query.ds}" || "!{query.src}"
 					:  "/stores/graph2.json",
 			dims: {
 				margin: {top: 10, right: 10, bottom: 10, left: 10},
@@ -136,9 +136,7 @@ append base_body
 				); 
 
 			var lables = nodesvg.append("text")
-				.text( d => d.name );
-				//.attr('x', d => d.x )
-				//.attr('y', d => d.y );
+				.text( d => d.name || d.id );
 
 			// Let's list the force we wanna apply on the network
 		
