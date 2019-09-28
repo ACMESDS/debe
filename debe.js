@@ -114,44 +114,35 @@ Copy({
 		"": pipeDB,
 		aoi: pipeAOI
 	},
-		
+	
 	reroute: {  //< sql.acces routes to provide secure access to db
-		"app.engines": function (ctx) { // protect engines that are not registered to requesting client
+		"engines": ctx => { // protect engines 
 			//Log("<<<", ctx);
 			if ( DEBE.site.pocs.overlord.indexOf(ctx.client.toLowerCase()) >= 0 ) // allow access
-				if ( false ) { // via licensed copy
+				if ( false ) { // access via licensed copy
 					ctx.index["Nrel:"] = "count(releases._License)";
 					ctx.index[ctx.from+".*:"] = "";
 					ctx.join = `LEFT JOIN ${ctx.db}.releases ON (releases._Product = concat(engines.name,'.',engines.type)) AND releases._Partner='${ctx.client}'`;
 					ctx.where["releases.id:"] = "";
 					return "app.engines";
-					//Log(">>>", ctx);
 				}
 				
-				else 
+				else // direct access
 					return "app.engines";
 				
-			else
+			else	// block access
 				return "block.engines";
 		},
 		
-		"openv.masters": "block.masters"
-		/*
-		syslogs: "openv.syslogs",
-		masters: "block.masters",
-		roles: "openv.roles",
-		aspreqts: "openv.aspreqts",
-		ispreqts: "openv.ispreqts",
-		swreqts: "openv.swreqts",
-		hwreqts: "openv.hwreqts",
-		tta: "openv.tta",
-		trades: "openv.trades",
-		milestones: "openv.milestones",
-		sessions: "openv.sessions",
-		journal: "openv.journal",
-		hawks: "openv.hawks",
-		attrs: "openv.attrs",
-		issues: "openv.issues"  */
+		"masters": ctx => "block.masters",
+		
+		"faqs": ctx => {
+			if ( set = ctx.set ) {
+				set._By = ctx.client;
+				set._Dirty = true;
+			}
+			return "openv.faqs";
+		}
 	},
 
 	blogContext: BLOG,

@@ -2955,7 +2955,7 @@ WIDGET.prototype.menuTools = function () {
 									function (info) {
 										//alert( JSON.stringify(info) );
 										Status(info.msg,Rec);
-										if (info.success) Rec.setId(info.data.insertId);
+										if (info.success) Rec.setId(info.insertId);
 								});
 									
 								/*
@@ -2990,7 +2990,7 @@ WIDGET.prototype.menuTools = function () {
 										Data.Store.sync({
 											success: function (batch) {
 												var info = batch.proxy.getReader().rawData;
-												newRec.setId(info.data.insertId); 
+												newRec.setId(info.insertId); 
 												// Set NodeID so that the new node is positioned at end of pivots
 												// newRec.set("NodeID","0>"+Data.pivots.replace(/,/g,">"));  //##
 												// Set NodeID to end of pivots
@@ -3018,7 +3018,7 @@ WIDGET.prototype.menuTools = function () {
 										Store.sync({
 											success: function (batch) {
 												var info = batch.proxy.getReader().rawData;
-												if (info.data.insertId) tmpRec.setId(info.data.insertId);
+												if (info.insertId) tmpRec.setId(info.insertId);
 												Status(STATUS.OK || info.msg);
 											},
 											failure: function (batch) {
@@ -3044,7 +3044,7 @@ WIDGET.prototype.menuTools = function () {
 								Store.sync({
 									success: function (batch) {   
 										var info = batch.proxy.getReader().rawData;
-										tmpRec.setId(info.data.insertId);
+										tmpRec.setId(info.insertId);
 										Status(STATUS.OK || info.msg);
 									},
 									failure: function (batch) {
