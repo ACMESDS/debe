@@ -2,7 +2,7 @@
 extends layout
 append layout_help
 	:markdown
-		Extends the base framework to provide a site skinning framework with parameters:
+		site level skinning framework with parameters:
 
 			options dropdown skinning options {key: menuItem, ...} 
 			dock = folder docking style left | right | top | bottom
@@ -52,144 +52,145 @@ append base_body
 	- goto = query.goto || ""
 	- browsers = {Ok: ["supported","Chrome","Firefox","Opera","Safari"],Bad: ["unsupported","IE","Netscape","Traveler","TheWorld","Maxthon"] }
 
-	case view
-		when "Min"
-			#border(
-				class=dataset,
-				crush,
-				head="Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
-				LikeUs="/likeus.db",
-				Manage="/files.view",
-				title=titlebar)
+	if !query.help
+		case view
+			when "Min"
+				#border(
+					class=dataset,
+					crush,
+					head="Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
+					LikeUs="/likeus.db",
+					Manage="/files.view",
+					title=titlebar)
 
-				block site_help
+					block site_help
 
-				#fit(center)
-					block site_body
+					#fit(center)
+						block site_body
 
-				#fit(west,crush)
-					#grid.xx(path="/sessions.db",cols="Client,Joined.d,Message")
+					#fit(west,crush)
+						#grid.xx(path="/sessions.db",cols="Client,Joined.d,Message")
 
-				#fit(north,crush)
-					:markdown
-						Built on [#{nick}](/briefs.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/prm/) [blog](tbd) [ARTIFACTS](/treefan.view?src=info&w=100&h=600) By:#{credits}
+					#fit(north,crush)
+						:markdown
+							Built on [#{nick}](/briefs.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/prm/) [blog](tbd) [ARTIFACTS](/treefan.view?src=info&w=100&h=600) By:#{credits}
 
-		when "Basic"
-			#folder(center,dock=dock)
-				block site_body
-
-		when "Insert"
-			#border(class=dataset,head="Options,Help",crush)
-
-				block site_help
-
+			when "Basic"
 				#folder(center,dock=dock)
 					block site_body
 
-		when "Typical"
-			#border(
-				class=dataset,
-				crush,
-				head="Info(Tasks,Plugins,Links),Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
-				LikeUs="/likeus.db",
-				Manage="/files.view",
-				title=titlebar)
+			when "Insert"
+				#border(class=dataset,head="Options,Help",crush)
 
-				block site_help
-				#post.Brief(path="/briefs.view?options=#{dataset}",dims="600,300")
+					block site_help
 
-				#folder(center,dock=dock)
-					block site_body
+					#folder(center,dock=dock)
+						block site_body
 
-				#fit(north,crush)
-					:markdown
-						Built on [#{nick}](/briefs.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
+			when "Typical"
+				#border(
+					class=dataset,
+					crush,
+					head="Info(Tasks,Plugins,Links),Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
+					LikeUs="/likeus.db",
+					Manage="/files.view",
+					title=titlebar)
 
-		when "Home"
-			#border(
-				class=dataset,
-				title=titlebar,
-				crush,
-				head="Health,Users,Themes,Capture,Links,Options,Likeus,Help",
-				LikeUs="/likeus.db" )
+					block site_help
+					#post.Brief(path="/briefs.view?options=#{dataset}",dims="600,300")
 
-				block site_help
-				#post.Brief(path="/briefs.view?options=#{dataset}",dims="600,300")
+					#folder(center,dock=dock)
+						block site_body
 
-				#fit(center)
-					block site_body
+					#fit(north,crush)
+						:markdown
+							Built on [#{nick}](/briefs.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
 
-				#fit(north,crush)
-					:markdown
-						Built on [#{nick}](/briefs.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
+			when "Home"
+				#border(
+					class=dataset,
+					title=titlebar,
+					crush,
+					head="Health,Users,Themes,Capture,Links,Options,Likeus,Help",
+					LikeUs="/likeus.db" )
 
-		when "Nada"
-			block site_body
+					block site_help
+					#post.Brief(path="/briefs.view?options=#{dataset}",dims="600,300")
 
-		when "Monster"
-			#border(
-				class=dataset,
-				title=titlebar,
-				crush,
-				head="More(Health,Users,Links,Themes),Uploads,$uploads,Stores,$stores,Views,Options,LikeUs,Help",
-				LikeUs="/likeus.db")
+					#fit(center)
+						block site_body
 
-				block site_help
-				#post.Brief(path="/briefs.view?options=#{dataset}",dims="600,300")
+					#fit(north,crush)
+						:markdown
+							Built on [#{nick}](/briefs.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
 
-				//
-					#pivot.Helpful.Links(
-					west,crush,dims="200,600",
-					path="/sidebars.db",
-					cols="Pivot(NodeID,Topic),Special")
-
-				#fit(center)
-					block site_body
-
-				#fit(north,crush)
-					ishtml
-						each brow in browsers.Ok
-							img(src=icons+"/browsers/"+brow+".ico",width=16,height=16)
-						each brow in browsers.Bad
-							img(src=icons+"/browsers/"+brow+".ico",width=16,height=16)
-
-		when "Kiss"
-			#fit
+			when "Nada"
 				block site_body
 
-		when "Search"
-			#border(
-				class=dataset,
-				crush,
-				head="Comfort,Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,Likeus,Help",
-				LikeUs="/likeus.db",
-				Manage="/files.view",
-				title=titlebar)
+			when "Monster"
+				#border(
+					class=dataset,
+					title=titlebar,
+					crush,
+					head="More(Health,Users,Links,Themes),Uploads,$uploads,Stores,$stores,Views,Options,LikeUs,Help",
+					LikeUs="/likeus.db")
 
-				#grid.Search(
-					path="/catalog.db",center,crush,
-					head="Search,Execute,Print,Refresh",
-					page=100,
-					cols="Ref,Name,Link.h,Dated.d,Quality")
+					block site_help
+					#post.Brief(path="/briefs.view?options=#{dataset}",dims="600,300")
 
-				#fit(center)
+					//
+						#pivot.Helpful.Links(
+						west,crush,dims="200,600",
+						path="/sidebars.db",
+						cols="Pivot(NodeID,Topic),Special")
+
+					#fit(center)
+						block site_body
+
+					#fit(north,crush)
+						ishtml
+							each brow in browsers.Ok
+								img(src=icons+"/browsers/"+brow+".ico",width=16,height=16)
+							each brow in browsers.Bad
+								img(src=icons+"/browsers/"+brow+".ico",width=16,height=16)
+
+			when "Kiss"
+				#fit
 					block site_body
 
-		default
-			#border(
-				class=dataset,
-				title=titlebar,
-				crush,
-				head="System(Health,Users,Links,Plugins,Tasks),Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,LikeUs,Capture,Help",
-				LikeUs="/likeus.db",
-				Manage="/files.view")
+			when "Search"
+				#border(
+					class=dataset,
+					crush,
+					head="Comfort,Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,Likeus,Help",
+					LikeUs="/likeus.db",
+					Manage="/files.view",
+					title=titlebar)
 
-				block site_help
-				#post.Brief(path="/briefs.view?options=#{dataset}",dims="600,300")
+					#grid.Search(
+						path="/catalog.db",center,crush,
+						head="Search,Execute,Print,Refresh",
+						page=100,
+						cols="Ref,Name,Link.h,Dated.d,Quality")
 
-				#fit(center)
-					block site_body
+					#fit(center)
+						block site_body
 
-				#fit(north,crush)
-					:markdown
-						Built on [#{nick}](/briefs.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
+			default
+				#border(
+					class=dataset,
+					title=titlebar,
+					crush,
+					head="System(Health,Users,Links,Plugins,Tasks),Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,LikeUs,Capture,Help",
+					LikeUs="/likeus.db",
+					Manage="/files.view")
+
+					block site_help
+					#post.Brief(path="/briefs.view?options=#{dataset}",dims="600,300")
+
+					#fit(center)
+						block site_body
+
+					#fit(north,crush)
+						:markdown
+							Built on [#{nick}](/briefs.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}

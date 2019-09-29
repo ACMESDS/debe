@@ -1,9 +1,5 @@
 //- UNCLASSIFIED
-
 extends base
-append base_parms
-	- tech = "d3"
-
 append base_help
 	:markdown
 		Display d3 force graph:
@@ -16,6 +12,9 @@ append base_help
 			node,children,value,size,parent = key names
 
 		Graph nodes are sized to node.weight + length(node[CHILDREN]).
+
+append base_parms
+	- tech = "d3"
 
 append base_head
 	style.

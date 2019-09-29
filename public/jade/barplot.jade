@@ -1,9 +1,5 @@
 // UNCLASSIFIED 
-
 extends base
-append base_parms
-	- tech = "d3"
-
 append base_help
 	:markdown
 		 Produce d3 scatter plot:  
@@ -25,6 +21,9 @@ append base_help
 			extra = [[x,y], ... ] data to append to plots
 			details = show xy locations
 			chan = widget "min:max:step" on x,y channels
+
+append base_parms
+	- tech = "d3"
 
 append base_head
 	//-

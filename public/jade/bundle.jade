@@ -1,9 +1,6 @@
 //- UNCLASSIFIED
 
 extends base
-append base_parms
-	- tech = "d3"
-
 append base_help
 	:markdown
 		Display d3 circle-pack chart using parameters:
@@ -15,6 +12,9 @@ append base_help
 			h = drawing height
 			debug = level of debugging alerts
 			node,nodes,value,size,parent,doc = tree keys
+
+append base_parms
+	- tech = "d3"
 
 append base_head
 	style.

@@ -2,18 +2,31 @@
 
 block layout_parms
 	- banner = "" // site banner
-	- start = "content" // name of div id to start client content or "" to disable content
+	- start = "content" // name of div id to start client content
 	- highlight = ""	// code styling theme zenburn | ... or "" to disable
 	- capture = false // switch to add screen capture button
 	- math = false // switch to add mathjax plugin
 	- prep = true // switch to prep brower 
 	- debug = false // switch to enable query debugger
 
-if debug
-	script.
-		alert('query=!{JSON.stringify(query)}');
-
 html(lang="en")
+if query.help
+	:markdown
+		query: !{JSON.stringify(query)}  
+		
+		layout level skinning with parameters:
+
+			banner = "" // site banner
+			start = "content" // div is to start client content or "" to disable content
+			highlight = ""	// code styling theme zenburn | ... or "" to disable
+			capture = false // switch to add screen capture button
+			math = false // switch to add mathjax plugin
+			prep = false // switch to prep brower 
+			debug = false // switch to enable query debugger
+			help = &help // display usage info
+	block layout_help
+
+else
 	head
 		meta(http-equiv="Content-Type",content="text/html; charset=utf-8;")
 
@@ -89,40 +102,26 @@ html(lang="en")
 
 		block layout_head
 
-body
-	//- The capture plugin allows clients to capture their web canvas.
-	if capture 
-		script(src="/clients/html2canvas/dist/html2canvas.min.js")
-		script(src="/clients/screen2canvas/capture.js")
+	body
+		//- The capture plugin allows clients to capture their web canvas.
+		if capture 
+			script(src="/clients/html2canvas/dist/html2canvas.min.js")
+			script(src="/clients/screen2canvas/capture.js")
 
-	else
-		script.
-			var 
-				html2canvas = null;
+		else
+			script.
+				var 
+					html2canvas = null;
 
-	if query.help
-		block layout_help
-		:markdown
-			Provides a skinning framework with parameters:
+		if start
+			#content.layout(
+				icons=icons,
+				start=start,
+				client=client,
+				source=table,
+				query=JSON.stringify(query),
+				title=banner)
 
-				banner = "" // site banner
-				start = "content" // div is to start client content or "" to disable content
-				highlight = ""	// code styling theme zenburn | ... or "" to disable
-				capture = false // switch to add screen capture button
-				math = false // switch to add mathjax plugin
-				prep = false // switch to prep brower 
-				debug = false // switch to enable query debugger
-				help = &help // display usage info
-
-	else if start
-		#content.layout(
-			icons=icons,
-			start=start,
-			client=client,
-			source=table,
-			query=JSON.stringify(query),
-			title=banner)
-
-			block layout_body
+		block layout_body
 			
 //- UNCLASSIFIED

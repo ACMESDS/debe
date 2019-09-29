@@ -1,9 +1,5 @@
 //- UNCLASSIFIED
-
 extends base
-append base_parms
-	- tech = "d3"
-	
 append base_help
 	:markdown
 		Display cluster chart using parameters:
@@ -15,6 +11,9 @@ append base_help
 			debug = dump derived options
 			node,children,value,size,parent = key names
 
+append base_parms
+	- tech = "d3"
+	
 append base_head
 
 	style.

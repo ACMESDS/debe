@@ -1,12 +1,8 @@
 // UNCLASSIFIED 
-
 extends base
-append base_parms
-	- tech = "d3"
-
 append base_help
 	:markdown
-		 Produce d3 scatter plot:  
+		 Produce d3 plot with parameters:  
 
 			src = source dataset = [ {Name, x,y, ...}, ... ]
 			name = "filter" on dataset.Name
@@ -25,6 +21,9 @@ append base_help
 			extra = [[x,y], ... ] data to append to plots
 			details = show xy locations
 			chan = widget "min:max:step" on x,y channels
+
+append base_parms
+	- tech = "d3"
 
 append base_head
 
@@ -104,267 +103,268 @@ append base_head
 		const {isString,isArray,Fetch,Log} = BASE;
 
 append base_body
-	script.
-		Fetch( opts, (recs,svg) => {
-			var 
-				width = svg.attr("width"),
-				height = svg.attr("height"),			
-				margin = opts.dims.margin,
-				svg = svg.append("g")
-						.attr("transform", "translate(" + margin.left + "," + margin.top + ")"),
-				
-				body = d3.select("body"),
-				markerStyles = opts.marker || [],
-				markerDef = markerStyles[0],
-				lineStyles = opts.line || [],
-				lineDef = lineStyles[0],
-				xIndex = opts.index[0],
-				yIndex = opts.index[1];
-			
-			recs.forEach( rec => {
-				function xyplot(x,y,cb) {
+	if !query.help
+		script.
+			Fetch( opts, (recs,svg) => {
+				var 
+					width = svg.attr("width"),
+					height = svg.attr("height"),			
+					margin = opts.dims.margin,
+					svg = svg.append("g")
+							.attr("transform", "translate(" + margin.left + "," + margin.top + ")"),
 
-					function index(pair) {
-						if (xIndex) pair.x = xIndex.parseEval(pair.x);
-						if (yIndex) pair.y = yIndex.parseEval(pair.y);
-						return pair;
-					}
-					
-					var
-						x0 = x[0] || 0,
-						y0 = y[0] || 0,
-						Nx = x0.length || 0,
-						Ny = y0.length || 0,
-						mode = ((Nx <= 1) ? Nx : "n") + "x" + ((Ny <= 1) ? Ny : "n");
-							
-					Log(`switch [${Nx}x${Ny}]`);
-					
-					switch ( mode ) {
-						case "nxn":
-							for ( var n=0; n<Nx; n++ ) xyplot( x[n], y[n], cb );
-							return;
-							
-						case "nx1":		// cluster plot
-							var xy = [];
-							x.forEach( (xn,n) => {
-								xy.push( index({ x: xn[0], y: xn[1], f: y[n][0] }) );	// d3 assigns y to 1 of 10 fill categories
-							});	
-							break;
-							
-						case "nx0":		// cluster plot
-							var xy = [];
-							x.forEach( (xn,n) => {
-								xy.push( index({ x: xn[0], y: xn[1], f: y[n] }) );
-							});	
-							break;
-							
-						case "1x1": // regression plot
-							var xy = [];
-							x.forEach( (xn,n) => {
-								xy.push( index({ x: x[n][0], y: y[n][0], f: 0 }) );
-							});	
-							break;
-							
-						case "0x0": // regression plot
-							var xy = [];
-							xy.push( { x: x, y: y, f: 0 } );
-							break;
+					body = d3.select("body"),
+					markerStyles = opts.marker || [],
+					markerDef = markerStyles[0],
+					lineStyles = opts.line || [],
+					lineDef = lineStyles[0],
+					xIndex = opts.index[0],
+					yIndex = opts.index[1];
 
-						case "1x0": // regression plot
-							var xy = [];
-							x.forEach( (xn,n) => {
-								xy.push( index({ x: x[n][0], y: y[n], f: 0 }) );
-							});	
-							break;
+				recs.forEach( rec => {
+					function xyplot(x,y,cb) {
 
-						case "0x1": // regression plot
-							var xy = [];
-							x.forEach( (xn,n) => {
-								xy.push( index({ x: x[n], y: y[n][0], f: 0 }) );
-							});	
-							break;							
-					}
-					
-					if ( extra = opts.extra )	// append extra xy data
-						for (var N=extra.length, n=0; n<N; n++)
-							xy.push( {x: extra[n], y: extra[n] } ); 
+						function index(pair) {
+							if (xIndex) pair.x = xIndex.parseEval(pair.x);
+							if (yIndex) pair.y = yIndex.parseEval(pair.y);
+							return pair;
+						}
 
-					// Log( JSON.stringify(xy) );
+						var
+							x0 = x[0] || 0,
+							y0 = y[0] || 0,
+							Nx = x0.length || 0,
+							Ny = y0.length || 0,
+							mode = ((Nx <= 1) ? Nx : "n") + "x" + ((Ny <= 1) ? Ny : "n");
 
-					if ( !plots ) {  // setup axes on first source
-						/*
-						svg
-						.append('path')
-						.attr('d', line([[opts.min[0],opts.min[1]],[opts.max[0],opts.min[1]]]))
-						.attr('stroke', "black")
-						.attr('stroke-width', 2)
-						.attr('fill', 'none');
+						Log(`switch [${Nx}x${Ny}]`);
 
-						svg
-						.append('path')
-						.attr('d', line([[opts.min[0],opts.min[0]],[opts.min[0],opts.max[1]]]))
-						.attr('stroke', "black")
-						.attr('stroke-width', 2)
-						.attr('fill', 'none');
-						*/
-						/*
-						if (opts.ref.length) 
+						switch ( mode ) {
+							case "nxn":
+								for ( var n=0; n<Nx; n++ ) xyplot( x[n], y[n], cb );
+								return;
+
+							case "nx1":		// cluster plot
+								var xy = [];
+								x.forEach( (xn,n) => {
+									xy.push( index({ x: xn[0], y: xn[1], f: y[n][0] }) );	// d3 assigns y to 1 of 10 fill categories
+								});	
+								break;
+
+							case "nx0":		// cluster plot
+								var xy = [];
+								x.forEach( (xn,n) => {
+									xy.push( index({ x: xn[0], y: xn[1], f: y[n] }) );
+								});	
+								break;
+
+							case "1x1": // regression plot
+								var xy = [];
+								x.forEach( (xn,n) => {
+									xy.push( index({ x: x[n][0], y: y[n][0], f: 0 }) );
+								});	
+								break;
+
+							case "0x0": // regression plot
+								var xy = [];
+								xy.push( { x: x, y: y, f: 0 } );
+								break;
+
+							case "1x0": // regression plot
+								var xy = [];
+								x.forEach( (xn,n) => {
+									xy.push( index({ x: x[n][0], y: y[n], f: 0 }) );
+								});	
+								break;
+
+							case "0x1": // regression plot
+								var xy = [];
+								x.forEach( (xn,n) => {
+									xy.push( index({ x: x[n], y: y[n][0], f: 0 }) );
+								});	
+								break;							
+						}
+
+						if ( extra = opts.extra )	// append extra xy data
+							for (var N=extra.length, n=0; n<N; n++)
+								xy.push( {x: extra[n], y: extra[n] } ); 
+
+						// Log( JSON.stringify(xy) );
+
+						if ( !plots ) {  // setup axes on first source
+							/*
 							svg
 							.append('path')
-							.attr('d', line(opts.ref))
+							.attr('d', line([[opts.min[0],opts.min[1]],[opts.max[0],opts.min[1]]]))
 							.attr('stroke', "black")
 							.attr('stroke-width', 2)
 							.attr('fill', 'none');
 
-						if (opts.name) {   // add legend
-							var legend = svg
-							.selectAll(".legend")
-							.data(color.domain())
-							.enter()
-							.append("g")
-							.attr("class", "legend")
-							.attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
-
-							for (var m=0,M=opts.name.length; m<M; m++) {
+							svg
+							.append('path')
+							.attr('d', line([[opts.min[0],opts.min[0]],[opts.min[0],opts.max[1]]]))
+							.attr('stroke', "black")
+							.attr('stroke-width', 2)
+							.attr('fill', 'none');
+							*/
+							/*
+							if (opts.ref.length) 
 								svg
-								.append("rect")
-								.attr("x", width - 18)
-								.attr("width", 25)
-								.attr("height", 25)
-								.style("fill", opts.line[m] || "black");
-
-								svg
-								.append("text")
-								.attr("x", width - 24)
-								.attr("y", 9)
-								.attr("dy", ".35em")
-								.style("text-anchor", "end")
-								.text(opts.name[m]);
-							}
-						}*/
-					}
-
-					if ( style = markerStyles[plots] || markerDef ) {  // add markers
-						svg.append("g")
-								.selectAll( style )
-								.data(xy)
-								.enter()
-									.append( style )
-									.attr("class", "marker")
-									.attr("r", 3.5)
-									.attr("cx", d => xscale(d.x) )  
-									.attr("cy", d => yscale(d.y) )
-									.on("click", d => {
-										if (details = d[2] ) {
-											var isView = details.constructor == String;
-
-											var doc = window.open(
-												isView ? d[2] : "",
-												"_blank",
-												"left="+d.x+"px,"
-												+ "top="+d.y[plots]+"px,"
-												+ "width=50,height=50,location=0,menubar=0,status=0,titlebar=0,toolbar=0");
-
-											if ( !isView )
-												doc.document.write(JSON.stringify( details ));
-										}
-									})
-									.style("fill", d => color( d.f ) );
-					}
-
-					if ( style = lineStyles[plots] || lineDef ) if ( false ) { // add lines
-
-						var line = d3.line()
-								.x( d => xscale(d.x) )
-								.y( d => yscale(d.y) )
-								.interpolate('linear');
-
-						svg
 								.append('path')
-								.attr('d', line(xy))
-								.attr('stroke', style )
+								.attr('d', line(opts.ref))
+								.attr('stroke', "black")
 								.attr('stroke-width', 2)
 								.attr('fill', 'none');
-					}
 
-					if ( details = opts.details ) {  // add label details
-						svg.selectAll(".text")
-								.data(xy)
+							if (opts.name) {   // add legend
+								var legend = svg
+								.selectAll(".legend")
+								.data(color.domain())
 								.enter()
-										.append("text")
-										.text( d => details+":"+d.x.toFixed(2)+" , "+d.y.toFixed(2) )
-										.attr("x", d => xscale(d.x) )
-										.attr("y", d => yscale(d.y) )
-										.attr("dy", ".35em")
-										.attr("font-family", "sans-serif")
-										.attr("font-size", "11px")
-										.attr("fill", "red"); 
+								.append("g")
+								.attr("class", "legend")
+								.attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+								for (var m=0,M=opts.name.length; m<M; m++) {
+									svg
+									.append("rect")
+									.attr("x", width - 18)
+									.attr("width", 25)
+									.attr("height", 25)
+									.style("fill", opts.line[m] || "black");
+
+									svg
+									.append("text")
+									.attr("x", width - 24)
+									.attr("y", 9)
+									.attr("dy", ".35em")
+									.style("text-anchor", "end")
+									.text(opts.name[m]);
+								}
+							}*/
+						}
+
+						if ( style = markerStyles[plots] || markerDef ) {  // add markers
+							svg.append("g")
+									.selectAll( style )
+									.data(xy)
+									.enter()
+										.append( style )
+										.attr("class", "marker")
+										.attr("r", 3.5)
+										.attr("cx", d => xscale(d.x) )  
+										.attr("cy", d => yscale(d.y) )
+										.on("click", d => {
+											if (details = d[2] ) {
+												var isView = details.constructor == String;
+
+												var doc = window.open(
+													isView ? d[2] : "",
+													"_blank",
+													"left="+d.x+"px,"
+													+ "top="+d.y[plots]+"px,"
+													+ "width=50,height=50,location=0,menubar=0,status=0,titlebar=0,toolbar=0");
+
+												if ( !isView )
+													doc.document.write(JSON.stringify( details ));
+											}
+										})
+										.style("fill", d => color( d.f ) );
+						}
+
+						if ( style = lineStyles[plots] || lineDef ) if ( false ) { // add lines
+
+							var line = d3.line()
+									.x( d => xscale(d.x) )
+									.y( d => yscale(d.y) )
+									.interpolate('linear');
+
+							svg
+									.append('path')
+									.attr('d', line(xy))
+									.attr('stroke', style )
+									.attr('stroke-width', 2)
+									.attr('fill', 'none');
+						}
+
+						if ( details = opts.details ) {  // add label details
+							svg.selectAll(".text")
+									.data(xy)
+									.enter()
+											.append("text")
+											.text( d => details+":"+d.x.toFixed(2)+" , "+d.y.toFixed(2) )
+											.attr("x", d => xscale(d.x) )
+											.attr("y", d => yscale(d.y) )
+											.attr("dy", ".35em")
+											.attr("font-family", "sans-serif")
+											.attr("font-size", "11px")
+											.attr("fill", "red"); 
+						}
+
+						cb( ++plots );
 					}
 
-					cb( ++plots );
-				}
-			
-				if (opts.debug > 2) alert( "case: "+rec.case );
-				
-				var
-					x = rec.x || [],
-					y = rec.y || [],
-					min = opts.min,
-					max = opts.max,
-					plots = 0,
-					hard = min[0] ? { x: [parseFloat(min[0]), parseFloat(max[0])], y: [parseFloat(min[1]), parseFloat(max[1])] } : null;
+					if (opts.debug > 2) alert( "case: "+rec.case );
 
-				//d3.select("svg").remove();
-				
-				var
-					xscale = d3.scaleLinear()
-							.domain( hard ? hard.x : [0,1])
-							.range([0, width]),
+					var
+						x = rec.x || [],
+						y = rec.y || [],
+						min = opts.min,
+						max = opts.max,
+						plots = 0,
+						hard = min[0] ? { x: [parseFloat(min[0]), parseFloat(max[0])], y: [parseFloat(min[1]), parseFloat(max[1])] } : null;
 
-					yscale = d3.scaleLinear()
-							.domain( hard ? hard.y : [0,1])
-							.range([height, 0]),
+					//d3.select("svg").remove();
 
-					colors = 10,
-					color = d3.scaleOrdinal( d3.schemeCategory10 ),
-					
-				// need to fix this so when !hard scans over all x,y data to set domains
-				//		xscale.domain(d3.extent(xy, d => d.x )).nice();
-				//		yscale.domain(d3.extent(xy, d => d.y )).nice();
+					var
+						xscale = d3.scaleLinear()
+								.domain( hard ? hard.x : [0,1])
+								.range([0, width]),
 
-					xAxis = d3.axisBottom(xscale),
-					yAxis = d3.axisLeft(yscale);
-				
-				for (var n=0, N=parseInt(opts.grid[0] || "1"), del=height/N, off=(N==1) ? height/2 : 0; n<N; n++, off+=del) {
-					svg.append("g")
-							.attr("class", "x axis")
-							.attr("transform", "translate(0," + off + ")")
-							.call(xAxis)
-							.append("text")
-							.attr("class", "label")
-							.attr("x", width)
-							.attr("y", -45)
-							.attr("dy", "1em")
-							.style("text-anchor", "end")
-							.text( opts.label[0] );
-				}
+						yscale = d3.scaleLinear()
+								.domain( hard ? hard.y : [0,1])
+								.range([height, 0]),
 
-				for (var n=0, N=parseInt(opts.grid[1] || "1"), del=width/N, off=(N==1) ? width/2 : 0; n<N; n++, off+=del) {
-					svg.append("g")
-							.attr("class", "y axis")
-							.attr("transform", "translate(" + off + ",0)")
-							.call(yAxis)
-							.append("text")
-							.attr("class", "label")
-							.attr("transform", "rotate(-90)")
-							.attr("y", 20)
-							.attr("dy", "1em")
-							.style("text-anchor", "end")
-							.text( opts.label[1] );
-				}
-				
-				color.domain( d3.range(0,colors) );
-				
-				xyplot(x, y, plots => {} );
+						colors = 10,
+						color = d3.scaleOrdinal( d3.schemeCategory10 ),
+
+					// need to fix this so when !hard scans over all x,y data to set domains
+					//		xscale.domain(d3.extent(xy, d => d.x )).nice();
+					//		yscale.domain(d3.extent(xy, d => d.y )).nice();
+
+						xAxis = d3.axisBottom(xscale),
+						yAxis = d3.axisLeft(yscale);
+
+					for (var n=0, N=parseInt(opts.grid[0] || "1"), del=height/N, off=(N==1) ? height/2 : 0; n<N; n++, off+=del) {
+						svg.append("g")
+								.attr("class", "x axis")
+								.attr("transform", "translate(0," + off + ")")
+								.call(xAxis)
+								.append("text")
+								.attr("class", "label")
+								.attr("x", width)
+								.attr("y", -45)
+								.attr("dy", "1em")
+								.style("text-anchor", "end")
+								.text( opts.label[0] );
+					}
+
+					for (var n=0, N=parseInt(opts.grid[1] || "1"), del=width/N, off=(N==1) ? width/2 : 0; n<N; n++, off+=del) {
+						svg.append("g")
+								.attr("class", "y axis")
+								.attr("transform", "translate(" + off + ",0)")
+								.call(yAxis)
+								.append("text")
+								.attr("class", "label")
+								.attr("transform", "rotate(-90)")
+								.attr("y", 20)
+								.attr("dy", "1em")
+								.style("text-anchor", "end")
+								.text( opts.label[1] );
+					}
+
+					color.domain( d3.range(0,colors) );
+
+					xyplot(x, y, plots => {} );
+				});
 			});
-		});

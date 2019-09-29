@@ -95,7 +95,8 @@ module.exports = {
 				Copy({		// keys to plugin.jade
 					mode: req.type,
 					page: query.page,
-					dims: query.dims || "100%,100%",
+					refresh: query.refresh,
+					dims: query.dims,
 					ds: dsname
 				}, query);
 

@@ -2,7 +2,7 @@
 extends layout
 append layout_help
 	:markdown
-		Extends the layout framework to provide a tech-specific skinning framework with base parameters:
+		base level skinning with parameters:
 
 			// technology
 			tech = "nada"  // nada | extjs | jquery | dojo | reveal | voxel | scene | three | cesium | joint | d3 | flow | ...
@@ -35,6 +35,7 @@ append layout_help
 			map = ""
 			// doc
 			opens = true
+	block base_help
 
 append layout_parms
 	- banner = query.holdoff ? "" : banner	// site banner or "" to disable

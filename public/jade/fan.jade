@@ -1,9 +1,5 @@
 //- UNCLASSIFIED
-
 extends base
-append base_parms
-	- tech = "d3"
-	
 append base_help
 	:markdown
 		Display d3 tree-fan chart using parameters:
@@ -16,6 +12,9 @@ append base_help
 			debug = level of debugging alerts
 			node,children,value,size,parent,doc = tree keys
 
+append base_parms
+	- tech = "d3"
+	
 append base_head
 
 	style.

@@ -1,9 +1,6 @@
 //- UNCLASSIFIED
 
 extends base
-append base_parms
-	- tech = "d3"
-
 append base_help
 	:markdown
 		Display [d3 sun-burst](https://bl.ocks.org/denjn5/e1cdbbe586ac31747b4a304f8f86e
@@ -16,6 +13,9 @@ append base_help
 			h = drawing height
 			debug = level of debugging alerts
 			node,children,value,size,parent,doc = tree keys
+
+append base_parms
+	- tech = "d3"
 
 append base_head
 	style.
