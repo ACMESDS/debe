@@ -564,8 +564,7 @@ var BASE = {
 		if (anchor) {
 			var widget = new WIDGET(anchor);
 			
-			if (widget.content)
-				widget.content();
+			if (widget.content) widget.content();
 			
 			if (cb) cb( widget );
 		}
@@ -1061,6 +1060,7 @@ function WIDGET (Anchor) {
 	this.id = Anchor.id;
 	this.name = this.class = Anchor.getAttribute("class") || "";	
 		
+	//console.log("widget id.name=", this.id+"."+this.name);
 /**
  * @property {String}
  * Anchor DOM anchor ties to this data skin
@@ -1135,114 +1135,117 @@ function WIDGET (Anchor) {
 	
 //alert("Skinning "+this.name+" childs="+Anchor.childNodes);
 
-	// No! You cant use Each on childNodes - they are not really an Array
-	
-	if (Anchor.childNodes)
-	for (var n=0, N=Anchor.childNodes.length; n<N; n++) {
-		var childAnchor = Anchor.childNodes[n];
-		
-//alert("skin "+this.name+" at child "+n+"=" + childAnchor.nodeName);
-		
-		switch (childAnchor.nodeName) {
-			case "ISHTML":
-				HTML += childAnchor.innerHTML;
-				break;
-
-			case "DIV":
-			
-				var widget = new WIDGET(childAnchor),
-					route = widget[widget.id];
-				
-//alert("div id="+widget.id+" tit="+widget.title+" nam="+widget.name);
-
-				if ( route ) {
-//alert(`UIing ${widget.id}.${widget.name}`);
-					widget[widget.id]();  // JS gets confused if we use route() to call a prototype
-					if (widget.UI) UIs.push( widget.UI );
-				}
-				else
-				if (widget.default) {
-//alert(`Default UIing ${widget.id}.${widget.name}`);
-					widget.default(); 
-					if (widget.UI) UIs.push( widget.UI );
-				}
-				
-				else
-					alert(`${BASE.alert} no prototype for ${widget.id}.${widget.name}`);
-				
-				break;
-
-			case "SCRIPT":
-				break;
-				
-			case "#comment":
-			case "#text":
-				break;
-
-			/*
-			case "INLINE": 
-							
-				var	src = childAnchor.getAttribute("src") || "",
-					parts = src.split("?")[0].split("."),
-					//area = parts[0] || "uploads",
-					//name = parts[1] || "file",
-					type = parts[1] || "type",
-					w = childAnchor.getAttribute("w") || 600,   	// width
-					h = childAnchor.getAttribute("h") || 600,		// heigth
-					g = childAnchor.getAttribute("g") || "goto",	// goto label
-					a = childAnchor.getAttribute("a") || "Classif",	// file attribute
-					s = childAnchor.getAttribute("s") || "",		// css style
-					//src = `/${area}/${name}.${type}`,
-					classif = ""; //"".tag("iframe",{src: "/"+a+"/"+src,width:200,height:25,class:s,scrolling:"yes",frameborder:0});
-
-//alert(JSON.stringify(["inline",w,h,g,a,s,type,src]));
-
-				switch (type.toUpperCase()) {
-					case "JPG":
-					case "PNG":
-					case "ICO":
-
-						HTML = "".tag("img", { src:src, width:w, height:h }) 
-									+ classif
-									+ g.tag("a", { href:"/files.view?option="+src });
-						
+	var children = Anchor.childNodes;
+	//console.log("widget childs=", children);
+	if ( children )
+		for (var n=0, N=children.length; n<N; n++) {	// No! You cant use Each on childNodes - they are not really an Array
+			//console.log(`widget n=${n}`, children[n] ? true : false);
+			var childAnchor = children[n]; 
+			if ( childAnchor ) {
+				switch (childAnchor.nodeName) {
+					/*
+					case "ISHTML":
+						HTML += childAnchor.innerHTML;
 						break;
-						
-					case "DB":
-					
-						HTML = "no support".tag("iframe", { src:src, width:w, height:h  })
-									+ classif
-									+ g.tag("a", { href:"/project.view?g="+name });
-									
+					*/
+
+					case "DIV":
+
+						var 
+							widget = new WIDGET(childAnchor),
+							proto = widget[widget.id];
+
+		//console.log("div id.name="+widget.id+"."+widget.name, "title="+widget.title, "widget=",widget, "route=", proto);
+
+						if ( proto ) {
+		//console.log(`div route id.name=${widget.id}.${widget.name}`);
+							widget[widget.id]();  // JS gets "wrong this" if we use proto() directly, so call the "long way"
+							if (widget.UI) UIs.push( widget.UI );
+						}
+						else
+						if (widget.default) {		// widget has a default() method to initialize it
+		//console.log(`div default id.name=${widget.id}.${widget.name}`);
+							widget.default(); 
+							if (widget.UI) UIs.push( widget.UI );
+						}
+
+						else
+							alert(`${BASE.alert} no prototype for ${widget.id}.${widget.name}`);
+
 						break;
 
-					case "VIEW":
-
-						HTML = "no support".tag("iframe", { src:src+"?hold="+(childAnchor.getAttribute("hold")||0), width:w, height:h  })
-									+ classif
-									+ g.tag("a", { href:"/engines.view?name="+name });
+					case "SCRIPT":
 						break;
-						
+
+					case "#comment":
+					case "#text":
+						break;
+
+					/*
+					case "INLINE": 
+
+						var	src = childAnchor.getAttribute("src") || "",
+							parts = src.split("?")[0].split("."),
+							//area = parts[0] || "uploads",
+							//name = parts[1] || "file",
+							type = parts[1] || "type",
+							w = childAnchor.getAttribute("w") || 600,   	// width
+							h = childAnchor.getAttribute("h") || 600,		// heigth
+							g = childAnchor.getAttribute("g") || "goto",	// goto label
+							a = childAnchor.getAttribute("a") || "Classif",	// file attribute
+							s = childAnchor.getAttribute("s") || "",		// css style
+							//src = `/${area}/${name}.${type}`,
+							classif = ""; //"".tag("iframe",{src: "/"+a+"/"+src,width:200,height:25,class:s,scrolling:"yes",frameborder:0});
+
+		//alert(JSON.stringify(["inline",w,h,g,a,s,type,src]));
+
+						switch (type.toUpperCase()) {
+							case "JPG":
+							case "PNG":
+							case "ICO":
+
+								HTML = "".tag("img", { src:src, width:w, height:h }) 
+											+ classif
+											+ g.tag("a", { href:"/files.view?option="+src });
+
+								break;
+
+							case "DB":
+
+								HTML = "no support".tag("iframe", { src:src, width:w, height:h  })
+											+ classif
+											+ g.tag("a", { href:"/project.view?g="+name });
+
+								break;
+
+							case "VIEW":
+
+								HTML = "no support".tag("iframe", { src:src+"?hold="+(childAnchor.getAttribute("hold")||0), width:w, height:h  })
+											+ classif
+											+ g.tag("a", { href:"/engines.view?name="+name });
+								break;
+
+							default:
+
+								HTML = "".tag("iframe", { src: "/code"+src, width:w, height:h  })
+											+ classif
+											+ g.tag("a", { href:"/engines.view?name="+name, width:w, height:h });
+
+						}
+
+						childAnchor.innerHTML = HTML;
+
+						break;
+					*/
+
 					default:
-					
-						HTML = "".tag("iframe", { src: "/code"+src, width:w, height:h  })
-									+ classif
-									+ g.tag("a", { href:"/engines.view?name="+name, width:w, height:h });
-							
-				}
+						if (childAnchor.innerHTML) 
+							HTML += childAnchor.innerHTML.tag(childAnchor.nodeName,{});
+				};
 
-				childAnchor.innerHTML = HTML;
-				
-				break;
-			*/
-
-			default:
-				if (childAnchor.innerHTML) 
-					HTML += childAnchor.innerHTML.tag(childAnchor.nodeName,{});
-		};
-		
-		if (opts.NIXHTML) childAnchor.innerHTML = "";
-	}
+				if (opts.NIXHTML) childAnchor.innerHTML = "";
+			}
+		}
 
 	//alert(`DDing ${this.name}`);
 	this.Data = new DS(Anchor);

@@ -79,6 +79,7 @@ append layout_head
 	- theme = query.theme || "" // name of css theme
 	- holdoff = query.holdoff  || "" // name of loading-holdoff button or loading-holdoff "skin,skin, ..." accordion list
 
+	//- Include css for given tech
 	case tech
 		when "three"
 			include base_three
@@ -313,6 +314,11 @@ append layout_head
 					scope: this
 				});
 				*/
+
+	//- Insert common base tech
+	script(src="/uis/base.js")
+	script(src="/uis/#{tech}.js")
+
 	block base_head
 
 append layout_body
@@ -340,11 +346,6 @@ append layout_body
 
 				block base_body
 
-			when "flow"
-				script(src="/uis/base.js")
-				script(src="/uis/#{tech}.js")
-				block base_body
-
 			when "cesium"
 				iframe(src="#{hosts[host]}/geonode/cesium.html?src=#{source}",width="#{width}",height="#{height}")
 				block base_body
@@ -354,15 +355,6 @@ append layout_body
 					script(src="/clients/threejs/examples/js/effects/#{effect}.js")
 				block base_body
 
-			when "dojo"
-				block base_body
-
-			when "scene"
-				block base_body
-					
-			when "voxel"
-				block base_body
-					
 			when "reveal"
 				.reveal(style="width:100%;height:100%;")
 					// .progress // .control // .state-background // .pause-overlay
@@ -450,9 +442,9 @@ append layout_body
 					} );
 
 			when "d3"
-				block base_body
-
+			when "flow"
+			when "dojo"
+			when "scene"
+			when "voxel"
 			default
-				script(src="/uis/base.js")
-				script(src="/uis/#{tech}.js")
 				block base_body

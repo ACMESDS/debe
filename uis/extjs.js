@@ -720,6 +720,8 @@ function DS(anchor) {
 			case "data":
 			case "find":				// regular store
 
+				//console.log("grid store", name, path);
+				
 				var Store = This.Store = DBstore( name, path, Fields, {
 					autoLoad	: isResolved,
 					//autoSync	: false,  	// disabled forces use of update to sync changes
@@ -888,7 +890,8 @@ function DS(anchor) {
 		//create	= anchor.getAttribute("create") || "";
 
 	//alert(JSON.stringify([name,sorts]));
-		  
+	//console.log("ext create ds", name, path, page, dims, sorts);
+	
 	if (!path && !WIDGET.prototype[anchor.id]) path = this.path = "/"+anchor.id+".view";
 	
 /**
@@ -2328,6 +2331,7 @@ Ext.onReady( function () {
 		
 	}, function (widget) {
 		
+		//console.log("ext start ui=", widget.UI);
 		Ext.create('Ext.container.Viewport', {  
 			layout: "fit",
 			overflowY: "auto",
@@ -2339,6 +2343,7 @@ Ext.onReady( function () {
 					// the document becomes ready.
 
 					var body = window.document.getElementsByTagName("body");
+					//console.log("ext body=", body);
 					body[0].style.visibility = "visible";
 				}
 			}
@@ -3918,6 +3923,8 @@ WIDGET.prototype.content = function () {
  * Construct a content component for this widget from the supplied component UIs and HTML.  
  * Tab docking qualifiers can be [top,bottom].
 */
+	//console.log("ext create content", this.title, "uis=", this.UIs.length);
+	
 	this.UI = Ext.create('Ext.panel.Panel', {
 		layout: "border",
 		region: "center",

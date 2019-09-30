@@ -94,9 +94,9 @@ module.exports = {
 
 				Copy({		// keys to plugin.jade
 					mode: req.type,
-					page: query.page,
-					refresh: query.refresh,
-					dims: query.dims,
+					//page: query.page,
+					//refresh: query.refresh,
+					//dims: query.dims,
 					ds: dsname
 				}, query);
 
@@ -165,6 +165,7 @@ module.exports = {
 
 				else	*/
 
+				//Log( paths.jades+"plugin.jade", query);
 				renderFile( paths.jades+"plugin.jade", ctx );
 			}		
 

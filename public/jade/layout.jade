@@ -9,7 +9,6 @@ block layout_parms
 	- prep = true // switch to prep brower 
 	- debug = false // switch to enable query debugger
 
-html(lang="en")
 if query.help
 	:markdown
 		query: !{JSON.stringify(query)}  
@@ -27,6 +26,7 @@ if query.help
 	block layout_help
 
 else
+	html(lang="en")
 	head
 		meta(http-equiv="Content-Type",content="text/html; charset=utf-8;")
 
@@ -122,6 +122,6 @@ else
 				query=JSON.stringify(query),
 				title=banner)
 
-		block layout_body
-			
+				block layout_body
+
 //- UNCLASSIFIED

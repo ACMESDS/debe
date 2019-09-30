@@ -7,7 +7,7 @@ append layout_help
 			options dropdown skinning options {key: menuItem, ...} 
 			dock = folder docking style left | right | top | bottom
 			dims = maximum widget dimensions "width,height"
-			view = site style Home | Kiss | Engr | Min | Basic | Nada, ..
+			view = site style Home | Kiss | Engr | Min | Basic | Simple, ..
 			page = maximum grid rows
 			pulse = system health refresh rate in seconds
 			hosts = available hosts {use: "", ... } 
@@ -26,7 +26,7 @@ append base_parms
 		- parms = {} // legacy options
 		- dock = "top" // folder docking style left | right | top | bottom
 		- dims = "2048,1200" // width,height maximum widget dimensions 
-		- view = "Min" // site style Home | Kiss | Engr | Min | Basic | Nada, ..
+		- view = "Min" // site style Home | Kiss | Engr | Min | Basic | Simple, ..
 		- page = 50 // maximum grid rows
 		- pulse = 120 // system health refresh rate [seconds]
 		- hosts = {use:"aws", red:"http://localhost:1880", w3:"http://www.w3schools.com", geohub: "https://sigma0.ilabs.ic.gov", me: "localhost", win: "http://200.100.50.101", aws: "http://172.31.76.130"}
@@ -71,7 +71,7 @@ append base_body
 					#fit(west,crush)
 						#grid.xx(path="/sessions.db",cols="Client,Joined.d,Message")
 
-					#fit(north,crush)
+					#fit(south,crush)
 						:markdown
 							Built on [#{nick}](/briefs.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/prm/) [blog](tbd) [ARTIFACTS](/treefan.view?src=info&w=100&h=600) By:#{credits}
 
@@ -87,7 +87,7 @@ append base_body
 					#folder(center,dock=dock)
 						block site_body
 
-			when "Typical"
+			when "Tabbed"
 				#border(
 					class=dataset,
 					crush,
@@ -102,7 +102,7 @@ append base_body
 					#folder(center,dock=dock)
 						block site_body
 
-					#fit(north,crush)
+					#fit(south,crush)
 						:markdown
 							Built on [#{nick}](/briefs.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
 
@@ -124,7 +124,7 @@ append base_body
 						:markdown
 							Built on [#{nick}](/briefs.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
 
-			when "Nada"
+			when "Simple"
 				block site_body
 
 			when "Monster"
@@ -147,7 +147,7 @@ append base_body
 					#fit(center)
 						block site_body
 
-					#fit(north,crush)
+					#fit(south,crush)
 						ishtml
 							each brow in browsers.Ok
 								img(src=icons+"/browsers/"+brow+".ico",width=16,height=16)

@@ -1,49 +1,50 @@
 // UNCLASSIFIED
 extends base
+append base_help
+	:markdown
+		Render a DEBE plugin where:
+
+			mode = plugin view mode = brief | gridbrief | runbrief | pivbrief| run | plugin | view | pivot
+			ds = "/DATASET" dataset source
+			cols = dataset files/columns/keys = "key.type.label, ..."
+			// page = page size of DS grid
+			// refresh = refresh time of associated job grid
+
 append base_parms
-	case query.mode || ""
+	case query.mode
 		when "brief"
 		when "gridbrief"
 		when "runbrief"
 		when "pivbrief"
 			- tech = "reveal"
-		when ""
-			:markdown
-				Render a DEBE plugin or view at /DS.MODE where:
-
-					mode = MODE = brief | gridbrief | runbrief | pivbrief| run | plugin | view | pivot
-					cols = [key.type.label, ...]
-					page = page size of DS grid
-					refresh = refresh time of associated job grid
 		default
 			- tech = "extjs"
 
 extends site
 append site_parms
 	case query.mode
-		when "site"
-			- view = "Basic"
 		when "plugin"
 			- view = "Insert"
 			- options = { "more+":"", "more++":"", less:"" }
 		when "run"
-			- view = "Typical"
+			- view = "Tabbed"
 			- options = { "more+":"", "more++":"", less:"" }
+		when "view"
 		default
-			- view = "Nada"
+			- view = "Simple"
 
 append site_body
 	- mode = query.mode || ""
-	- ds = query.ds || "myplugin"
+	- ds = query.ds || "dsUndefined"
 	- pivcol = "tbd"
 	- dscols = query.cols || ""
 	- dspage = query.page || 20
 	- dsrefresh = query.refresh || ""
-	- dsdb = `/${ds}.db`
 	- dstitle = ds + " view"
-	- dsdims = (query.dims || "100%,100%").split(","),
+	- dsdims = dims.split(",")
 	- tasks = projs ? get( projs , {Plugin:ds}, "Task,Hours,Complete,FAQ1,FAQ2") : []
 	- more = parseInt(query.more) || 0
+	- dsdb = `/${ds}.db`
 
 	case mode
 		when ""
@@ -148,7 +149,7 @@ append site_body
 
 				else				
 					iframe(
-						src="/#{ds}.view?dims=#{dsdims}",
+						src="/#{ds}.view?dims=#{dims}",
 						width=dsdims[0],
 						height=dsdims[1] )
 
@@ -156,7 +157,7 @@ append site_body
 			section
 				h3.hd= dstitle
 				iframe(
-					src="/#{ds}.pivot?dims=#{dsdims}",
+					src="/#{ds}.pivot?dims=#{dims}",
 					width=dsdims[0],
 					height=dsdims[1] )
 
@@ -164,7 +165,7 @@ append site_body
 			section
 				h3.hd= dstitle				
 				iframe(
-					src="/#{ds}.run?dims=#{dsdims}",
+					src="/#{ds}.run?dims=#{dims}",
 					width=dsdims[0],
 					height=dsdims[1] )
 
@@ -177,12 +178,8 @@ append site_body
 				dims=dsdims,
 				page=dspage )
 
+		when "view"
 		default
-			#grid(
-				class=dstitle,
-				path=dsdb,
-				cols=dscols,
-				dims=dsdims,
-				page=dspage )
+			#grid( class=dstitle,path=dsdb,cols=dscols,dims=dsdims,page=dspage )
 
 // UNCLASSIFIED
