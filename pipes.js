@@ -111,6 +111,7 @@ module.exports = {
 		//Log("use",  ctx.Method, use );
 		if ( path.startsWith("/") )	// supervise doc at specified file path
 			READ.readFile( "."+path, rec => {
+				Log( rec );
 				if (rec) 
 					if ( rec.doc ) 
 						if ( use )

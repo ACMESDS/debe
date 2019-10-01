@@ -1228,15 +1228,16 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 */
 	
 	function saveNLP(sql, nlp) {	// save NLP context to plugin usecase
-		//Log("NLP save>>>>>>>>>>>>>>", nlp);
+		Log("NLP save>>>>>>>>>>>>>>", nlp, "db=", TOTEM.neodb);
 		var 
 			neodb = TOTEM.neodb,
 			actors = nlp.actors,
 			topics = nlp.topics, 
 			greedy = false;
 
+		if ( neodb )
 		Each( actors, (actor,act,cb) => {
-			//Log(actor,act);
+			Log(actor,act);
 			if (cb) // add actor
 				neodb.cypher({
 					query: `MERGE (n:${act.type} {name:$name}) ON CREATE SET n = $props`,

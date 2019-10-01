@@ -549,8 +549,8 @@ var BASE = {
 			BASE.socketio.emit("select", {
 				client: BASE.user.client,
 				message: "can I join please?",
-				ip: navigator.totem.ip,
-				location: navigator.totem.location
+				ip: "0.0.0.0", //navigator.totem.ip,
+				location: "somewhere"	// navigator.totem.location
 			});	
 		}
 
