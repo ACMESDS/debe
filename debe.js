@@ -1042,7 +1042,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		doc: docPlugin,
 		md: docPlugin,
-		toumd: docPlugin,
+		tou: docPlugin,
 		
 		use: usagePlugin,
 		usage: usagePlugin,

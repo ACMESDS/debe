@@ -102,7 +102,11 @@ append base_body
 					#folder(center,dock=dock)
 						block site_body
 
+					#fit(west,crush)
+						#grid.xx(path="/sessions.db",cols="Client,Joined.d,Message")
+
 					#fit(south,crush)
+						#post.Fan(path="/fan.view?src=info&w=4000&h=800",dims="2000,400")
 						:markdown
 							Built on [#{nick}](/briefs.view) [API](/api.view) [Skinning Guide](/skinguide.view) [PRM](/shares/doc/debe/index.html) [blog](tbd) [JIRA](tbd) By:#{credits}
 
