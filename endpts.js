@@ -1228,7 +1228,7 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 */
 	
 	function saveNLP(sql, nlp) {	// save NLP context to plugin usecase
-		Log("NLP save>>>>>>>>>>>>>>", nlp, "db=", TOTEM.neodb);
+		//Log("NLP save>>>>>>>>>>>>>>", nlp, "db=", TOTEM.neodb);
 		var 
 			neodb = TOTEM.neodb,
 			actors = nlp.actors,
