@@ -21,10 +21,15 @@ function Trace(msg,sql) {	// execution tracing
 }
 
 const { Copy,Each,Log,isString,isFunction,isError,isArray } = ENUM;
-const { sqlThread, uploadFile, getSite, errors, site } = TOTEM;
+const { sqlThread, uploadFile, getSite, errors, site, watchFile } = TOTEM;
 const { ingestList } = GEO;
 
 module.exports = {
+	autorun: {
+		set: setAutorun,
+		exe: exeAutorun
+	},
+	
 	sysGraph: function (req,res) {
 		const { query, sql, table, type } = req;
 		var nodes = [], links = [];
@@ -1416,4 +1421,38 @@ function getEngine( sql, name, cb ) {
 
 function getProductKeys( product, cb ) {
 	cb( FLEX.productKeys(product) );
+}
+
+function setAutorun(path) {
+	watchFile( "."+path, exeAutorun );
+}
+
+function exeAutorun(sql,name,path) {
+
+	Log("autorun", path);
+	sql.query( "SELECT * FROM app.files WHERE Name=?", path.substr(1) )
+	.on("result", (file) => {
+
+		var 
+			now = new Date(),
+			startOk = now >= file.PoP_Start || !file.PoP_Start,
+			endOk = now <= file.PoP_End || !file.PoP_End,
+			fileOk = startOk && endOk;
+
+		Log("autorun", startOk, endOk);
+
+		if ( fileOk )
+			sql.query( "SELECT Run FROM openv.watches WHERE File=?", path.substr(1) )
+			.on("result", (link) => {
+				var 
+					parts = link.Run.split("."),
+					pluginName = parts[0],
+					caseName = parts[1],
+					exePath = `/${pluginName}.exe?Name=${caseName}`;
+
+				Log("autorun", link,exePath);
+				getSite( exePath, null, rtn => Log("autorun", rtn) );
+			});
+	});
+
 }

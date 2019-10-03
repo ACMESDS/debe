@@ -154,10 +154,6 @@ Copy({
 	//plugins: $.libs,
 		
 	onStartup: function () {
-		function setAutorun(path) {
-			DEBE.watchFile( "."+path, exeAutorun );
-		}
-		
 		var
 			site = DEBE.site,
 			pocs = site.pocs,
@@ -176,13 +172,13 @@ Copy({
 			// reset file watchers
 			sql.query( "SELECT File FROM openv.watches WHERE substr(File,1,1) = '/' GROUP BY File", [] )
 			.on("result", link => {
-				setAutorun( link.File );
+				END.autorun.set( link.File );
 			});	
 		
 			// clear graph database
 			if (clearGraphDB) {
-				sql.query("DELETE FROM app.nlpactors");
-				sql.query("DELETE FROM app.nlpedges");
+				//sql.query("DELETE FROM app.nlpactors");
+				//sql.query("DELETE FROM app.nlpedges");
 			}
 			
 			sql.release();
@@ -2050,37 +2046,6 @@ Chapter 2
 	
 	else
 		res(DEBE.errors.badOffice);
-}
-
-function exeAutorun(sql,name,path) {
-
-	Log("autorun", path);
-	sql.query( "SELECT * FROM app.files WHERE Name=?", path.substr(1) )
-	.on("result", (file) => {
-
-		var 
-			getSite = DEBE.getSite,
-			now = new Date(),
-			startOk = now >= file.PoP_Start || !file.PoP_Start,
-			endOk = now <= file.PoP_End || !file.PoP_End,
-			fileOk = startOk && endOk;
-
-		Log("autorun", startOk, endOk);
-
-		if ( fileOk )
-			sql.query( "SELECT Run FROM openv.watches WHERE File=?", path.substr(1) )
-			.on("result", (link) => {
-				var 
-					parts = link.Run.split("."),
-					pluginName = parts[0],
-					caseName = parts[1],
-					exePath = `/${pluginName}.exe?Name=${caseName}`;
-
-				Log("autorun", link,exePath);
-				getSite( exePath, null, rtn => Log("autorun", rtn) );
-			});
-	});
-
 }
 
 function Trace(msg,sql) {	// execution tracing
