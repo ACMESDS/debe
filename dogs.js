@@ -13,7 +13,7 @@ var		// totem
 	ENUM = require("enum");
 
 function Trace(msg,sql) {	// execution tracing
-	"W>".trace(msg,sql);
+	"Ddog>".trace(msg,sql);
 }
 
 const { Log, Copy } = ENUM;

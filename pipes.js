@@ -39,7 +39,7 @@ var		// totem
 	$ = require("man");
 
 function Trace(msg,sql) {	// execution tracing
-	"P>".trace(msg,sql);
+	"Dpipe>".trace(msg,sql);
 }
 
 const {Log,Copy} = ENUM;

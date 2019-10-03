@@ -13,6 +13,10 @@ var		// totem
 const { Log, Copy } = ENUM;
 const { getSite } = TOTEM;
 
+function Trace(msg,sql) {	// execution tracing
+	"Dblog>".trace(msg,sql);
+}
+
 module.exports = {
 	d: docify,
 	doc: docify,
@@ -202,7 +206,7 @@ catch (err) {
 					return blocks[ blockidx++ ].tag("code",{}).tag("pre",{});
 				}) );
 			
-		}))))))));
+		})))))))));
 	},
 	
 	function Xbreaks( cb ) {
