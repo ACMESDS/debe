@@ -1155,7 +1155,7 @@ function WIDGET (Anchor) {
 							widget = new WIDGET(childAnchor),
 							proto = widget[widget.id];
 
-		//console.log("div id.name="+widget.id+"."+widget.name, "title="+widget.title, "widget=",widget, "route=", proto);
+		// console.log("div id.name="+widget.id+"."+widget.name, "title="+widget.title, "widget=",widget, "route=", proto);
 
 						if ( proto ) {
 		//console.log(`div route id.name=${widget.id}.${widget.name}`);
