@@ -382,6 +382,25 @@ catch (err) {
 		}); 
 	},
 	
+	function Xinclude( cb ) {  // expands [LINK](URL) tags then callsback cb( final html )
+		/*
+		*/
+		var 
+			key = "@tag",
+			html = this,
+			
+			fetchSite = function ( rec, cb ) {  // callback cb with expanded [](URL) markdown
+				Log("include", rec.arg1.replace(/\&amp;/g,"&"));
+				getSite( rec.arg1.replace(/\&amp;/g,"&"), null, cb );
+			},
+			
+			pattern =/\$\[([^>]*)\]/g;
+		
+		html.serialize( fetchSite, pattern, key, html => {    
+			cb(html);
+		}); 
+	},
+	
 	function Xscript( ctx, cb ) {  // expands scripting tags then callsback cb(vmctx, final markdown)
 		var 
 			script = "",

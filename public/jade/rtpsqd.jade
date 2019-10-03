@@ -1,0 +1,12 @@
+- title = "this is a test"
+- folder = "/shares/test"
+
+h1 Some section #{title}
+img(src="#{folder}.jpg")
+
+:markdown
+	This is a RTP doc
+
+each i in [1,2,3]
+	:markdown
+		[edit](/faqs.view) section #{i} here $[/faqs.html?Num:=Seq&Question:=Q&Answer:=A&Seq=#{i}.%]

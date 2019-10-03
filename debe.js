@@ -136,6 +136,8 @@ Copy({
 		
 		"masters": ctx => "block.masters",
 		
+		"rtpsecs": ctx => "openv.rtpsecs",
+		
 		"faqs": ctx => {
 			if ( set = ctx.set ) {
 				set._By = ctx.client;
@@ -1073,11 +1075,11 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	Each skin has its own {key: "SQL DB.TABLE" || "/URL?QUERY", ... } spec.
 	*/
 	primeSkin: { //< site context extenders
+		/*
 		rtp: {  // context keys for swag.view
 			projs: "select * from openv.milestones order by SeqNum,Num",
 			faqs: "select * from openv.faqs where least(?) order by SeqNum"
 		}
-		/*
 		swag: {  // context keys for swag.view
 			projs: "select * from openv.milestones"
 		},
