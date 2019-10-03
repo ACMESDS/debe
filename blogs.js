@@ -137,38 +137,37 @@ catch (err) {
 [  // string prototypes
 	
 	// string serializers 
-	function Xblog(req, ds, cache, ctx, rec, viaBrowser, cb) {
+	function Xblog(req, ds, cache, ctx, rec, cb) {
 	/**
 	@member String
-	Expands markdown of the form:
+	Expands markdown:
 		
-		[ TEXT ] ( PATH.TYPE ? w=WIDTH & h=HEIGHT & x=KEY$INDEX & y=KEY$INDEX ... )  
-		[ TEXT ] ( COLOR )  
-		[ TOPIC ] ( ? starts=DATE & ends=DATE )  
+		%{ PATH.TYPE ? w=WIDTH & h=HEIGHT & x=KEY$INDEX & y=KEY$INDEX ... }
+		~{ TOPIC ? starts=DATE & ends=DATE ... }
+		[ LINK ] ( URL )
 		$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$  
 		[JS || #JS || TeX] OP= [JS || #JS || TeX]  
 		$ { KEY } || $ { JS } || $ {doc( JS , "INDEX" )}  
 		KEY,X,Y >= SKIN,WIDTH,HEIGHT,OPTS  
 		KEY <= VALUE || OP <= EXPR(lhs),EXPR(rhs)  
 		
-	using the supplifed cache to get/put KEY values, as well as block-escaping:
-				
+	escapes blocks:
+	
 		HEADER:
 
 			BLOCK
 
-	and markdown scripting:
+	and defines scripts:
 
 		MARKDOWN
 		script:
 		MATLAB EMULATION SCRIPT
-		
+	
 	@param {Object} req Totem request
-	@param {String} ds default dataset in [post](URL) markdown
+	@param {String} ds default dataset for includes sourced from browser
 	@param {Object} cache hash for cacheing markdown variables
 	@param {Object} ctx hash holding markdown variables
 	@param {Obect} rec record hash for markdown variables
-	@param {Boolean} viaBrowser true to render markdown to browser
 	@param {Function} cb callback(markdown html)
 	*/
 		
@@ -193,9 +192,11 @@ catch (err) {
 		html.Xkeys( ctx, html => // expand js keys
 		html.Xgen(ctx, html => // expand generators
 		html.Xtex( html => // expand TeX
-		html.Xlink( req, ds, viaBrowser, html => { // expand links
+		html.Xtopic( req, html => 	// expand topic tracks
+		html.Xinclude( ds, html => 	// expand url/file includes
+		html.Xlink( html => { // expand links
 
-			if ( viaBrowser )
+			if ( ds )	// blogging via browser
 				html = 	html.replace(/href=(.*?)\>/g, (str,ref) => { // smart links to follow <a href=REF>A</a> links
 					var q = (ref.startsWith( "'" )) ? '"' : "'";
 					return `href=${q}javascript:navigator.follow(${ref},BASE.user.client,BASE.user.source)${q}>`;
@@ -206,7 +207,7 @@ catch (err) {
 					return blocks[ blockidx++ ].tag("code",{}).tag("pre",{});
 				}) );
 			
-		})))))))));
+		}))))))))));
 	},
 	
 	function Xbreaks( cb ) {
@@ -233,12 +234,37 @@ catch (err) {
 		cb(this);
 	},
 	
-	function Xlink( req, ds, viaBrowser, cb ) {  // expands [LINK](URL) tags then callsback cb( final html )
+	function Xlink( cb ) {  // expands [LINK](URL) tags then callsback cb( final html )
 		/*
 		req = http request or null to disable smart hash tags (content tracking)
 		ds = dataset?query default url path
 		viaBrowser = true to enable produce html compatible with browser
 		*/
+		var 
+			key = "@tag",
+			html = this,
+			fetch = function ( rec, cb ) {  // expand [LINK](URL) markdown				
+				var
+					url = rec.arg2,
+					opt = rec.arg1 || url ;
+
+				cb( opt.tag( url ) );
+			},
+			
+			pattern = /\[([^\[\]]*)\]\(([^\)]*)\)/g ;
+		
+		html.serialize( fetch, pattern, key, html => {    
+			cb(html);
+		}); 
+	}, 	
+
+	/*
+	function Xlink( req, ds, viaBrowser, cb ) {  // expands [LINK](URL) tags then callsback cb( final html )
+		/ *
+		req = http request or null to disable smart hash tags (content tracking)
+		ds = dataset?query default url path
+		viaBrowser = true to enable produce html compatible with browser
+		* /
 		var 
 			key = "@tag",
 			html = this,
@@ -358,22 +384,6 @@ catch (err) {
 							else
 								fetchSite(rec, cb);
 
-							/*
-							if ( color = colors[urlPath.toLowerCase()] )		// [ TEXT ]( COLOR )
-								cb( opt.tag("font",{color:color}) );
-							*/
-							/*
-							else		// [ TEXT ]( URL )
-							if ( (keys.starts ? now>=new Date(keys.starts) : true) && 
-								 (keys.ends ? now<=new Date(keys.ends) : true) ) {
-								rec.topic = opt;
-								fetchTrack( rec, cb );
-							}
-
-							else
-								cb( opt.tag( "/tags.view" ) );
-							*/
-							
 							break;
 					}
 				}
@@ -384,11 +394,106 @@ catch (err) {
 		html.serialize( fetchLink, pattern, key, html => {    
 			cb(html);
 		}); 
-	},
+	}, 
+	*/
 	
+	function Xtopic( req, cb ) {
+		var 
+			key = "@tag",
+			html = this,
+			fetch = function ( rec, cb ) {  // callback cb with expanded %%{TOPIC} markdown
+				var 
+					secret = "",
+					topic = rec.topic,
+					product = topic+".html";
+
+				if (req)		// content tracking enabled
+					if ( licenseCode = FLEX.licenseCode )
+						licenseCode( req.sql, html, {  // register this html with the client
+							_Partner: req.client,
+							_EndService: "",  // leave empty so lincersor wont validate by connecting to service
+							_Published: new Date(),
+							_Product: product,
+							Path: "/tag/"+product
+						}, (pub, sql) => {
+							if (pub) {
+								cb( `${rec.topic}=>${req.client}`.tag( "/tags.view" ) );
+								sql.query("INSERT INTO app.tags SET ? ON DUPLICATE KEY UPDATE Views=Views+1", {
+									Viewed: pub._Published,
+									Target: pub._Partner,
+									Topic: topic,
+									License: pub._License,
+									Message: "get view".tag( "/decode.html".tag("?",{Target:pub._Partner,License:pub._License,Topic:topic}))
+								});
+							}
+						});
+				
+					else
+						Trace( "NO CODE LICENSOR" );
+				
+				else	// content tracking disabled
+					cb( "" );
+			},
+			
+			pattern = /\~\{([^\}]*)\}/g;
+			
+		html.serialize( fetch, pattern, key, html => {    
+			cb(html);
+		}); 
+	},
+					  
+	function Xinclude( ds, cb ) {
+		var 
+			key = "@tag",
+			html = this,
+			
+			fetch = function ( rec, cb ) {  // callback cb with expanded [](URL) markdown
+				var
+					url = rec.arg1.replace(/\&amp;/g,"&"),
+					keys = {},
+					dsPath = ds.parseURL(keys,{},{},{}),
+					urlPath = url.parseURL(keys,{},{},{}),
+
+					w = keys.w || 200,
+					h = keys.h || 200,
+
+					urlName = dsPath,
+					urlType = "",
+					x = urlPath.replace(/(.*)\.(.*)/, (str,L,R) => {
+						urlName = L;
+						urlType = R;
+						return "#";
+					}),
+
+					srcPath = urlPath.tag( "?", Copy({src:dsPath}, keys) );
+
+				// Log("include", url, "ds=", ds, "src=", srcPath, "type=", urlType);
+				// Log("link", [dsPath, srcPath, urlPath], keys, [opt, url]);
+				switch (urlType) { 
+					case "jpg":  
+					case "png":
+						cb( "".tag("img", { src:`${url}?killcache=${new Date()}`, width:w, height:h }) );
+						break;
+
+					case "view": 
+					default:
+						if ( ds ) 
+							cb( "".tag("iframe", { src: srcPath, width:w, height:h }) );
+
+						else
+							getSite(url, null, cb);
+				}
+			},
+			
+			pattern = /\%\{([^\}]*)\}/g;
+		
+		html.serialize( fetch, pattern, key, html => {    
+			cb(html);
+		}); 
+	},
+
+	/*
 	function Xinclude( cb ) {  // expands [LINK](URL) tags then callsback cb( final html )
-		/*
-		*/
 		var 
 			key = "@tag",
 			html = this,
@@ -403,7 +508,7 @@ catch (err) {
 		html.serialize( fetchSite, pattern, key, html => {    
 			cb(html);
 		}); 
-	},
+	}, */
 	
 	function Xscript( ctx, cb ) {  // expands scripting tags then callsback cb(vmctx, final markdown)
 		var 
@@ -451,7 +556,7 @@ catch (err) {
 			key = "@tex",
 			html = this,
 			getSite = JAX.typeset,
-			fetchTeX = function ( rec, cb ) {	// callsback cb with expanded TeX tag
+			fetch = function ( rec, cb ) {	// callsback cb with expanded TeX tag
 				//Log("math",rec);
 				switch (rec.arg1) {
 					case "n":
@@ -490,7 +595,7 @@ catch (err) {
 			},
 			pattern = /(.?)\$\$([^\$]*)\$\$/g;
 			
-		html.serialize( fetchTeX, pattern, key, (html,fails) => { 
+		html.serialize( fetch, pattern, key, (html,fails) => { 
 			cb(html);
 		}); 
 	},
@@ -539,25 +644,25 @@ catch (err) {
 		var 
 			key = "@fetch",
 			//getSite = TOTEM.getSite,
-			fetchSite = function ( rec, cb ) {  // callsback cb with expanded fetch-tag 
+			fetch = function ( rec, cb ) {  // callsback cb with expanded fetch-tag 
 				//Log(">>>>Xfetch", rec.arg1);
 				getSite( rec.arg1, null, cb );
 			},
 			pattern = /<!---fetch ([^>]*)?--->/g;
 			
-		this.serialize( fetchSite, pattern, key, (html,fails) => cb(html) );
+		this.serialize( fetch, pattern, key, (html,fails) => cb(html) );
 	},
 
 	function Xsection( cb ) { // expand "##.... header" 
 		var
 			key = "@sec",
-			fetchSection = function (rec, cb) {
+			fetch = function (rec, cb) {
 				//Log(">>>header", rec.ID, rec.arg1, rec.arg0.length-rec.arg1.length-2 );
 				cb( rec.arg1.tag( "h"+(rec.arg0.length-rec.arg1.length-2), {} ) );
 			},
 			pattern = /^\#* (.*)\n/gm;
 		
-		this.serialize( fetchSection, pattern, key, (html,fails) => cb(html) );
+		this.serialize( fetch, pattern, key, (html,fails) => cb(html) );
 	}
 	
 	/*

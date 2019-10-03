@@ -2,9 +2,9 @@
 extends base
 append base_help
 	:markdown
-		Render a DEBE plugin where:
+		Render a DEBE notebook where:
 
-			mode = plugin view mode = brief | gridbrief | runbrief | pivbrief| run | plugin | view | pivot
+			mode = notebook view mode = brief | gridbrief | runbrief | pivbrief| run | notebook | view | pivot
 			ds = "/DATASET" dataset source
 			cols = dataset files/columns/keys = "key.type.label, ..."
 			// page = page size of DS grid
@@ -23,7 +23,8 @@ append base_parms
 extends site
 append site_parms
 	case query.mode
-		when "plugin"
+		when "note"
+		when "notebook"
 			- view = "Insert"
 			- options = { "more+":"", "more++":"", less:"" }
 		when "run"
@@ -48,14 +49,15 @@ append site_body
 
 	case mode
 		when ""
-			p= "no plugin specified"
-		when "plugin"
+			p= "no notebook specified"
+		when "note"
+		when "notebook"
 		when "run"
 			#grid.Usecases(wrap,path=dsdb,cols=dscols,menu="Agents",blogs="Description",dims=dsdims,hover="finished",page=dspage )
 
 				:markdown
-					Execute your *#{ds}* plugin from its [run](#{ds}.run), [usecase](#{ds}.view), or 
-					[plugin](#{ds}.plugin) view by selecting the desired usecase context and clicking *Execute*.  You 
+					Execute your *#{ds}* notebook from its [run](#{ds}.run), [usecase](#{ds}.view), or 
+					[notebook](#{ds}.notebook) view by selecting the desired usecase context and clicking *Execute*.  You 
 					may also execute *#{ds}* directly by [usecase Name](/#{ds}.exe?name=CASE) or 
 					by [usecase ID](#{ds}.exe?id=CASE).
 
@@ -72,17 +74,6 @@ append site_body
 					> *Save_STATE* aggregates events [ {at:"STATE", ...}, ... ]  
 					> *Save_rem* collects remaining unaggregated events  
 					> *Save_jpg* generates jpg from {at: "jpg": prime: "name", save: "name", index: [...], values: [...] } event  
-
-				Your plugin is placed into a supervised workflow using the *Pipe*:
-
-					"/DATASET.TYPE?KEY=VALUE || $.EXPRESSION ..."  
-					{ "$": "SCRIPT" }
-					{ "Pipe": "/DATASET.TYPE?..." ,  "KEY": [VALUE, ...] , ... }
-
-				The "/DATASET.TYPE" [source pipe](/api.view) selects the TYPE-specific workflow based on TYPE = json || [ jpg | png | nitf ] || stream || [ txt | doc | pdf | xls ] || aoi || db 
-				where $ references the TYPE-specific json data || GIMP image || event list || document text || db record.  The {KEY: [VALUE, ...]} [enumeration pipe](/api.view) 
-				generates usecases over permuted context KEYs.  The {$: "SCRIPT"} [scripting pipe](/api.view) utilizes the [matlab-like scripting](https://sc.appdev.proj.coe.ic.gov://acmesds/man) 
-				to post-process selected KEYs.
 
 				Plugin header colors reflect [project status](/projects.view): <font color="green">completed</font>, <font color="blue">policed</font>, <font color="orange">funded</font>, <font color="red">unfunded</font>.
 
@@ -107,7 +98,7 @@ append site_body
 				:markdown
 					sorts="Work,State"
 					refresh=refresh
-					Jobs created by this plugin are show here.  If the job originator exceeded their credits,
+					Jobs created by this notebook are show here.  If the job originator exceeded their credits,
 					the job is marked "unfunded"; otherwise the job is marked "funded".  If you would like to 
 					fund an unfended job, simply click its "(un)funded" link.  To decide if this is a wise purchase, 
 					click the "#{ds}" link to see the test case case being explored; additional project information,

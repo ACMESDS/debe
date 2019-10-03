@@ -1455,21 +1455,6 @@ could/should be revised to support more generic peer-to-peer bySOAP interfaces.
 		return this.splitify("_").joinify();
 	},
 	
-	/*
-	function clone() {
-	/ *
-	@member Array
-	@method clone
-	Return a cloned copy of this records
-	* /
-
-		var recs = this, copyRecs = [];
-		recs.forEach( rec => {  // clone ds recs
-			copyRecs.push( new Object(rec) );
-		});
-		return recs;
-	},  */
-
 	function blogify( req, key, ds, cb ) {
 	/*
 	@member Array
@@ -1494,7 +1479,7 @@ could/should be revised to support more generic peer-to-peer bySOAP interfaces.
 						name: ( (rec.Pipe||"").startsWith("{") ) 
 							? rec.Name + "-%"	// pipe defines a monte-carlo cross product so get them all
 							: rec.Name	// pipe defines a simple path
-					}), {}, {}, rec, true, html => cb( 
+					}), {}, {}, rec, html => cb( 
 						flags.kiss		
 							? html 	// keep if simple
 							: html + [	// add by-line
@@ -1504,7 +1489,9 @@ could/should be revised to support more generic peer-to-peer bySOAP interfaces.
 								"run".tag( `${url}${ds}.exe?Name=${rec.Name}` ),
 								"edit".tag( `${url}${ds}.view` ),
 								"publish".tag( `${url}${ds}.pub` ),
-								"tou".tag( `${url}${ds}.tou` )
+								"tou".tag( `${url}${ds}.tou` ),
+								(new Date().toDateString()) + "",
+								( req.client.match( /(.*)@(.*)/ ) || ["",req.client] )[1].tag( "email:" + req.client )
 							].join(" ")
 					 ) );
 				

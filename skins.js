@@ -77,7 +77,7 @@ module.exports = {
 			Render Jade file at path this to res( err || html ) in a new context created for this request.  
 			**/
 				try {
-					JADE.renderFile( file, ctx ).Xinclude( html => res(html) );
+					JADE.renderFile( file, ctx ).Xinclude( "", html => res(html) );
 				}
 				catch (err) {
 					Log("render err", err);

@@ -1,12 +1,14 @@
 - title = "this is a test"
-- folder = "/shares/test"
+- folder = "/shares/a1"
 
 h1 Some section #{title}
 img(src="#{folder}.jpg")
+%{/shares/a1.jpg?w=60&h=50}
+%{/barplot.view}
 
 :markdown
 	This is a RTP doc
 
 each i in [1,2,3]
 	:markdown
-		[edit](/faqs.view) section #{i} here $[/faqs.html?Num:=Seq&Question:=Q&Answer:=A&Seq=#{i}.%]
+		[edit](/faqs.view) section #{i} here %{/faqs.html?Num:=Seq&Question:=Q&Answer:=A&Seq=#{i}.%}
