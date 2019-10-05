@@ -21,7 +21,7 @@ function Trace(msg,sql) {	// execution tracing
 }
 
 const { Copy,Each,Log,isString,isFunction,isError,isArray } = ENUM;
-const { sqlThread, uploadFile, getSite, errors, site, watchFile } = TOTEM;
+const { sqlThread, uploadFile, probeSite, errors, site, watchFile } = TOTEM;
 const { ingestList } = GEO;
 
 module.exports = {
@@ -159,6 +159,13 @@ module.exports = {
 
 	},
 
+	resetPlugin: function (req,res) {
+		const { query, sql, table, type } = req;
+
+		res("resetting");
+		probeSite( "/"+table, null );
+	},
+	
 	extendPlugin: function (req,res) {	//< add usecase keys to plugin
 	/**
 	@private
@@ -303,7 +310,7 @@ module.exports = {
 			name = table,
 			product = table + "." + type,
 			fetchUsers = function (rec, cb) {	// callback with endservice users
-				getSite(rec._EndService, null, info => { 
+				probeSite(rec._EndService, info => { 
 					//Log("status users", info);
 					cb( (info.toLowerCase().parseJSON() || [] ).join(";") ) ;
 				});
@@ -799,8 +806,7 @@ module.exports = {
 							else { // usecase enumeration pipe
 								var 
 									runCtx = Copy(ctx, {}), 
-									jobs = [], inserts = 0,
-									getSite = TOTEM.getSite;
+									jobs = [], inserts = 0;
 
 								// purge DNC keys from the run context 
 								delete runCtx.ID;
@@ -830,7 +836,7 @@ module.exports = {
 											if ( ++inserts == jobs.length )  // run usecases after they are all created
 												jobs.forEach( job => {
 													if (job.Pipe)
-														getSite( `/${host}.exe?Name=${job.Name}`, null, info => {} );
+														probeSite( `/${host}.exe?Name=${job.Name}`, info => {} );
 												});
 										});
 									});
@@ -1001,7 +1007,7 @@ module.exports = {
 				if (url = opts.url)
 					switch (url.constructor.name) {
 						case "String":
-							getSite( url.tag("?", query), opts.put, data => {
+							probeSite( url.tag("?", query), data => {
 								if ( evs = data.parseJSON( [ ] ) ) 
 									cb( opts.get ? evs.get(opts.get) : evs );
 							});
@@ -1439,7 +1445,7 @@ function exeAutorun(sql,name,path) {
 			endOk = now <= file.PoP_End || !file.PoP_End,
 			fileOk = startOk && endOk;
 
-		Log("autorun", startOk, endOk);
+		// Log("autorun", startOk, endOk);
 
 		if ( fileOk )
 			sql.query( "SELECT Run FROM openv.watches WHERE File=?", path.substr(1) )
@@ -1450,8 +1456,8 @@ function exeAutorun(sql,name,path) {
 					caseName = parts[1],
 					exePath = `/${pluginName}.exe?Name=${caseName}`;
 
-				Log("autorun", link,exePath);
-				getSite( exePath, null, rtn => Log("autorun", rtn) );
+				//Log("autorun", link,exePath);
+				probeSite( exePath, msg => Trace("autorun "+msg) );
 			});
 	});
 

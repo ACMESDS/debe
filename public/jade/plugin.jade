@@ -36,6 +36,7 @@ append site_parms
 
 append site_body
 	- mode = query.mode || ""
+	- uses = query.uses || "none"
 	- ds = query.ds || "dsUndefined"
 	- pivcol = "tbd"
 	- dscols = query.cols || ""
@@ -56,12 +57,10 @@ append site_body
 			#grid.Usecases(wrap,path=dsdb,cols=dscols,menu="Agents",blogs="Description",dims=dsdims,hover="finished",page=dspage )
 
 				:markdown
-					Execute your *#{ds}* notebook from its [run](#{ds}.run), [usecase](#{ds}.view), or 
-					[notebook](#{ds}.notebook) view by selecting the desired usecase context and clicking *Execute*.  You 
-					may also execute *#{ds}* directly by [usecase Name](/#{ds}.exe?name=CASE) or 
-					by [usecase ID](#{ds}.exe?id=CASE).
+					Run your *#{ds}* notebook by selecting the desired usecase context and clicking *Execute*.  
+					You may also !{uses} your notebook.
 
-					Its usecase context may include the following optional ( add / remove ) keys:  
+					Your notebook's usecase context may include the following [optional keys](/api.view) ( add / remove ):  
 					> [+](/#{ds}.add?Export=false) [/-](/#{ds}.sub?Export) *Export* switch writes engine results into a file  
 					> [+](/#{ds}.add?Ingest=false) [/-](/#{ds}.sub?Ingest) *Ingest* switch ingests engine results into the database  
 					> [+](/#{ds}.add?Share=false) [/-](/#{ds}.sub?Share) *Share* switch returns engine results to the status area  
@@ -70,12 +69,11 @@ append site_body
 					> [+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) *Config* js-script defines usecase context  
 					> [+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) *Entry* json primes context on entry using { KEY: "SELECT ....", ...}  
 					> [+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) *Exit* json saves context on exit using { KEY: "UPDATE ....", ...}  
-					> [+](/#{ds}.add?Autorun=doc) [/-](/#{ds}.sub?Autorun) *Autorun* switch enables the autorun watchdog
 					> *Save_STATE* aggregates events [ {at:"STATE", ...}, ... ]  
 					> *Save_rem* collects remaining unaggregated events  
 					> *Save_jpg* generates jpg from {at: "jpg": prime: "name", save: "name", index: [...], values: [...] } event  
 
-				Plugin header colors reflect [project status](/projects.view): <font color="green">completed</font>, <font color="blue">policed</font>, <font color="orange">funded</font>, <font color="red">unfunded</font>.
+					Header colors reflect [notebook status](/projects.view): <font color="green">completed</font>, <font color="blue">policed</font>, <font color="orange">funded</font>, <font color="red">unfunded</font>.
 
 			#form.Engine(
 				path="/engines.db?Name=#{ds}",
@@ -108,27 +106,20 @@ append site_body
 			#post.ToU(path="/#{ds}.tou",dims="1800,600",wrap)
 
 			#grid.Files(
-				path="/files.db",
-				wrap,
+				path="/files.db", wrap,
 				cols="Name,Path,Ingest,Classif,PoP_Expires,PoP_Start,PoP_End,PoP_durationDays,PoP_advanceDays" )
 
 			if more>0
 				#grid.ContextKeys(
 					path="/keyedit.db?ds=#{ds}",
 					cols="Key,Type,Samples.x,Dist,Parms.x",
-					wrap,
-					page=dspage)
+					wrap, page=dspage)
 
 			if more>1
 				#post.Flow( path="/#{ds}_flow.view", dims="1800,600",wrap )
 
 		when "pivot"
-			#pivot(
-				class=dstitle,
-				path=dsdb,
-				pivots=pivcol,
-				cols=dscols,
-				page=dspage )
+			#pivot( class=dstitle, path=dsdb, pivots=pivcol, cols=dscols, page=dspage )
 
 		when "brief"
 		when "gridbrief"
@@ -139,38 +130,23 @@ append site_body
 					div!= gridify( query.data )
 
 				else				
-					iframe(
-						src="/#{ds}.view?dims=#{dims}",
-						width=dsdims[0],
-						height=dsdims[1] )
+					iframe( src="/#{ds}.view?dims=#{dims}", width=dsdims[0], height=dsdims[1] )
 
 		when "pivbrief"
 			section
 				h3.hd= dstitle
-				iframe(
-					src="/#{ds}.pivot?dims=#{dims}",
-					width=dsdims[0],
-					height=dsdims[1] )
+				iframe( src="/#{ds}.pivot?dims=#{dims}", width=dsdims[0], height=dsdims[1] )
 
 		when "runbrief"
 			section
 				h3.hd= dstitle				
-				iframe(
-					src="/#{ds}.run?dims=#{dims}",
-					width=dsdims[0],
-					height=dsdims[1] )
+				iframe( src="/#{ds}.run?dims=#{dims}", width=dsdims[0], height=dsdims[1] )
 
 		when "calc"
-			#grid(
-				class=dstitle,
-				path=dsdb,
-				calc=1,
-				cols="W*10",
-				dims=dsdims,
-				page=dspage )
+			#grid( class=dstitle, path=dsdb, calc=1, cols="W*10", page=dspage )
 
 		when "view"
 		default
-			#grid( class=dstitle,path=dsdb,cols=dscols,dims=dsdims,page=dspage )
+			#grid( class=dstitle, path=dsdb, cols=dscols, page=dspage )
 
 // UNCLASSIFIED

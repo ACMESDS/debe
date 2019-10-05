@@ -43,7 +43,7 @@ function Trace(msg,sql) {	// execution tracing
 }
 
 const {Log,Copy} = ENUM;
-const { sqlThread, uploadFile, getFile, getSite } = TOTEM;
+const { sqlThread, uploadFile, getFile, probeSite } = TOTEM;
 const { getVoxels } = GEO;
 
 module.exports = {
@@ -98,7 +98,7 @@ module.exports = {
 
 	pipeJson: function(sql, job, cb) { // pipe json data with callback cb(json,job) || cb(null)
 		//Log(">pipe json", job.path.tag("?", job.query) );
-		getSite( job.path.tag("?", job.query), null, info => cb( {$: info.parseJSON( null )} ) );
+		probeSite( job.path.tag("?", job.query), info => cb( {$: info.parseJSON( null )} ) );
 	},
 
 	pipeDoc: function(sql, job, cb) { // pipe nlp docs with callback cb(doc,job) || cb(null)		

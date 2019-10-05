@@ -13,7 +13,7 @@ function Trace(msg,sql) {	// execution tracing
 	"Dskin>".trace(msg,sql);
 }
 
-const {Log,Copy} = ENUM;
+const {Log,Copy,typeOf} = ENUM;
 
 module.exports = {
 	renderSkin: function (req,res) {
@@ -32,9 +32,10 @@ module.exports = {
 			error = TOTEM.errors,
 			primeSkin = TOTEM.primeSkin,
 			urls = site.urls,
-			routers = TOTEM.byActionTable.select,
+			//routers = TOTEM.byActionTable.select,
 			dsname = req.table,
 			ctx = Copy(site, {  //< default site context to render skin
+				typeOf: typeOf,
 				table: req.table,
 				dataset: req.table,
 				type: req.type,
@@ -80,24 +81,36 @@ module.exports = {
 					JADE.renderFile( file, ctx ).Xinclude( "", html => res(html) );
 				}
 				catch (err) {
-					Log("render err", err);
+					Trace(err+"");
 					res(  err );
 				}
 			}
 
-			function renderPlugin( fields, ctx ) { // render using plugin skin
+			function renderNotebook( name, type, fields, ctx ) { // render using plugin skin
 			/**
 			@private
-			@method renderPlugin
+			@method renderNotebook
 			Render Jade file at path this to res( err || html ) in a new context created for this request.  
 			**/
 
 				Copy({		// keys to plugin.jade
 					mode: req.type,
+					uses: type ? [
+						"run".tag( `${name}.run?Name=CASE` ),
+						"view".tag( `${name}.view` ),
+						"terms".tag( `${name}.tou` ),
+						"publish".tag( `${name}.pub` ),
+						"usage".tag( `${name}.use` ),
+						"download".tag( `${name}.${type}` ),
+						"brief".tag( `/briefs.view?options=${name}` ),
+						"reset".tag( `${name}.reset` )
+					].join(" || ") : [
+						"view".tag( `${name}.view` )
+					].join(" || "),
 					//page: query.page,
 					//refresh: query.refresh,
 					//dims: query.dims,
-					ds: dsname
+					ds: name
 				}, query);
 
 				//Log([query, req.search]);
@@ -169,22 +182,22 @@ module.exports = {
 				renderFile( paths.jades+"plugin.jade", ctx );
 			}		
 
-			function renderTable( ds, ctx ) {
+			function buildSchema( ds, type, ctx ) {
 			/**
 			@private
-			@method renderTable
+			@method buildSchema
 			Render table at path this to res( err || html ) in a new context created for this request.  
 			**/			
 				sql.query( 
 					"SHOW FULL COLUMNS FROM ??", 
 					sql.reroute( ds ), 
-					function (err,fields) {
+					(err,fields) => {
 
 					if (err) // render jade file
 						renderFile( paths.jades+ds+".jade", ctx );
 
-					else // render plugin
-						renderPlugin( fields, ctx );
+					else // render notebook
+						renderNotebook( ds, type, fields, ctx );
 				});	
 			}
 
@@ -202,28 +215,31 @@ module.exports = {
 				}
 			}
 
-			sql.forFirst("", paths.engine, { // Try a jade engine
-				Name: req.table,
-				Type: "jade",
+			sql.forFirst( "", paths.engine, { // Probe engine
+				Name: dsname,
 				Enabled: 1
 			}, eng => {
 
-				if (eng)  // render view with this jade engine
-					renderJade( eng.Code || "", ctx );
-
-				else
+				if (eng)  // render jade view or notebook
+					if ( eng.Type == "jade" )
+						renderJade( eng.Code || "", ctx );
+					
+					else
+						buildSchema( dsname, eng.Type, ctx );
+				
+				/* else
 				if ( route = routers[dsname] )   // render ds returned by an engine 
 					route(req, recs => { 
 						//Log({eng:recs, ds:req.table});
 						if (recs)
-							renderPlugin( recs[0] || {}, ctx );
+							renderNotebook( dsname, "", recs[0] || {}, ctx );
 
 						else
-							renderTable( dsname , ctx );
-					});	
+							buildSchema( dsname, ctx );
+					});	 */
 
 				else  // render a table
-					renderTable( dsname , ctx );
+					buildSchema( dsname, "", ctx );
 
 			});
 		});

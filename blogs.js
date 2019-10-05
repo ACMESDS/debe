@@ -11,7 +11,7 @@ var		// totem
 	ENUM = require("enum");
 
 const { Log, Copy } = ENUM;
-const { getSite } = TOTEM;
+const { probeSite } = TOTEM;
 
 function Trace(msg,sql) {	// execution tracing
 	"Dblog>".trace(msg,sql);
@@ -225,9 +225,7 @@ catch (err) {
 			},
 			pattern = /(.*)\:\n\n((\t.*\n)+)\n/gm ;
 		
-		html.serialize( fetchBlock, pattern, key, (html, fails) => {  
-			cb( blocks, html);
-		}); 		
+		html.serialize( fetchBlock, pattern, key, html => cb( blocks, html) ); 		
 	},
 	
 	function Xdummy(cb) {  // for debugging with callback(this)
@@ -253,150 +251,9 @@ catch (err) {
 			
 			pattern = /\[([^\[\]]*)\]\(([^\)]*)\)/g ;
 		
-		html.serialize( fetch, pattern, key, html => {    
-			cb(html);
-		}); 
+		html.serialize( fetch, pattern, key, html => cb(html) ); 
 	}, 	
 
-	/*
-	function Xlink( req, ds, viaBrowser, cb ) {  // expands [LINK](URL) tags then callsback cb( final html )
-		/ *
-		req = http request or null to disable smart hash tags (content tracking)
-		ds = dataset?query default url path
-		viaBrowser = true to enable produce html compatible with browser
-		* /
-		var 
-			key = "@tag",
-			html = this,
-			//getSite = TOTEM.getSite,
-			fetchTrack = function ( rec, cb) {  // callback cb with expanded [TOPIC]() markdown
-				var 
-					secret = "",
-					topic = rec.topic,
-					product = topic+".html";
-
-				if (req)		// content tracking enabled
-					if ( licenseCode = FLEX.licenseCode )
-						licenseCode( req.sql, html, {  // register this html with the client
-							_Partner: req.client,
-							_EndService: "",  // leave empty so lincersor wont validate by connecting to service
-							_Published: new Date(),
-							_Product: product,
-							Path: "/tag/"+product
-						}, (pub, sql) => {
-							if (pub) {
-								cb( `${rec.topic}=>${req.client}`.tag( "/tags.view" ) );
-								sql.query("INSERT INTO app.tags SET ? ON DUPLICATE KEY UPDATE Views=Views+1", {
-									Viewed: pub._Published,
-									Target: pub._Partner,
-									Topic: topic,
-									License: pub._License,
-									Message: "get view".tag( "/decode.html".tag("?",{Target:pub._Partner,License:pub._License,Topic:topic}))
-								});
-							}
-						});
-				
-					else
-						Trace( "NO CODE LICENSOR" );
-				
-				else	// content tracking disabled
-					cb( "" );
-			},
-			
-			fetchSite = function ( rec, cb ) {  // callback cb with expanded [](URL) markdown
-				//Log("solicit", rec, viaBrowser);
-				if (viaBrowser) 
-					cb( "".tag("iframe", {src:rec.arg3}) );
-				
-				else
-					getSite( rec.arg3, null, cb );
-			},
-			
-			fetchLink = function ( rec, cb ) {  // expand [LINK](URL) markdown
-				
-				var
-					op = rec.arg1,
-					opt = rec.arg2,
-					url = rec.arg3;
-
-				if (op) 	// OP [ LABEL] (URL )
-					cb( `${op}[${opt}](${url})` );
-				
-				else
-				if (opt)	//	[ LABEL ] ( URL )
-					cb( opt.tag( url ) );
-
-				else {	// [ ] ( URL )
-					var
-						colors = {
-							r: "red", 
-							b: "blue",
-							g: "green",
-							y: "yellow",
-							o: "orange",
-							k: "black",
-							red: "red",
-							blue: "blue",
-							green: "green",
-							yellow: "yellow",
-							orange: "orange",
-							black: "black"
-						},						
-						keys = {},
-						dsPath = ds.parseURL(keys,{},{},{}),
-						urlPath = url.parseURL(keys,{},{},{}),
-						
-						w = keys.w || 200,
-						h = keys.h || 200,
-						
-						now = new Date(),
-
-						x = urlPath.replace(/(.*)\.(.*)/, (str,L,R) => {
-							urlName = L;
-							urlType = R;
-							return "#";
-						}),
-						
-						srcPath = urlPath.tag( "?", Copy({src:dsPath}, keys) );
-
-					
-					// Log("link", [dsPath, srcPath, urlPath], keys, [opt, url]);
-
-					switch (urlType) {  //  [](PATH.TYPE?w=W&h=H)
-						case "jpg":  
-						case "png":
-							cb( "".tag("img", { src:`${url}?killcache=${new Date()}`, width:w, height:h }) );
-							break;
-
-						case "view": 
-							if ( viaBrowser ) 
-								cb( "".tag("iframe", { src: srcPath, width:w, height:h }) );
-							
-							else
-								cb( urlPath.tag( url ) );
-							
-							break;
-
-						default: 
-							if ( viaBrowser )
-								cb( "".tag("iframe", { src:srcPath, width:w, height:h }) );
-
-							else
-								fetchSite(rec, cb);
-
-							break;
-					}
-				}
-			},
-			
-			pattern = /(\!?)\[([^\[\]]*)\]\(([^\)]*)\)/g ;
-		
-		html.serialize( fetchLink, pattern, key, html => {    
-			cb(html);
-		}); 
-	}, 
-	*/
-	
 	function Xtopic( req, cb ) {
 		var 
 			key = "@tag",
@@ -437,9 +294,7 @@ catch (err) {
 			
 			pattern = /\~\{([^\}]*)\}/g;
 			
-		html.serialize( fetch, pattern, key, html => {    
-			cb(html);
-		}); 
+		html.serialize( fetch, pattern, key, html => cb(html) ); 
 	},
 					  
 	function Xinclude( ds, cb ) {
@@ -481,15 +336,13 @@ catch (err) {
 							cb( "".tag("iframe", { src: srcPath, width:w, height:h }) );
 
 						else
-							getSite(url, null, cb);
+							probeSite(url, cb);
 				}
 			},
 			
 			pattern = /\%\{([^\}]*)\}/g;
 		
-		html.serialize( fetch, pattern, key, html => {    
-			cb(html);
-		}); 
+		html.serialize( fetch, pattern, key, html => cb(html) ); 
 	},
 
 	/*
@@ -500,7 +353,7 @@ catch (err) {
 			
 			fetchSite = function ( rec, cb ) {  // callback cb with expanded [](URL) markdown
 				Log("include", rec.arg1.replace(/\&amp;/g,"&"));
-				getSite( rec.arg1.replace(/\&amp;/g,"&"), null, cb );
+				probeSite( rec.arg1.replace(/\&amp;/g,"&"), null, cb );
 			},
 			
 			pattern =/\$\[([^>]*)\]/g;
@@ -555,12 +408,11 @@ catch (err) {
 		var 
 			key = "@tex",
 			html = this,
-			getSite = JAX.typeset,
 			fetch = function ( rec, cb ) {	// callsback cb with expanded TeX tag
 				//Log("math",rec);
 				switch (rec.arg1) {
 					case "n":
-						getSite({
+						JAX.typeset({
 							math: rec.arg2,
 							format: "TeX",  
 							//html: true,
@@ -568,7 +420,7 @@ catch (err) {
 						}, d => cb( d.mml || "" ) );
 						break;
 					case "a":
-						getSite({
+						JAX.typeset({
 							math: rec.arg2,
 							format: "AsciiMath",
 							//html: true,
@@ -576,7 +428,7 @@ catch (err) {
 						}, d => cb( d.mml || "" ) );
 						break;
 					case "m":
-						getSite({
+						JAX.typeset({
 							math: rec.arg2,
 							format: "MathML", 
 							//html: true,
@@ -585,7 +437,7 @@ catch (err) {
 						break;
 					case " ":
 					default:
-						getSite({
+						JAX.typeset({
 							math: rec.arg2,
 							format: "inline-TeX",  
 							//html: true,
@@ -595,9 +447,7 @@ catch (err) {
 			},
 			pattern = /(.?)\$\$([^\$]*)\$\$/g;
 			
-		html.serialize( fetch, pattern, key, (html,fails) => { 
-			cb(html);
-		}); 
+		html.serialize( fetch, pattern, key, html => cb(html) ); 
 	},
 	
 	function Xparms(goto, cb) {		// expands <!---parms KEY=VAL&...---> tags then callbacks cb( final input-scripted html )
@@ -643,14 +493,13 @@ catch (err) {
 	function Xfetch( cb ) {  // expands <!---fetch URL---> tags then callsback cb( final url-fetched html )
 		var 
 			key = "@fetch",
-			//getSite = TOTEM.getSite,
 			fetch = function ( rec, cb ) {  // callsback cb with expanded fetch-tag 
 				//Log(">>>>Xfetch", rec.arg1);
-				getSite( rec.arg1, null, cb );
+				probeSite( rec.arg1, cb );
 			},
 			pattern = /<!---fetch ([^>]*)?--->/g;
 			
-		this.serialize( fetch, pattern, key, (html,fails) => cb(html) );
+		this.serialize( fetch, pattern, key, html => cb(html) );
 	},
 
 	function Xsection( cb ) { // expand "##.... header" 
@@ -662,7 +511,7 @@ catch (err) {
 			},
 			pattern = /^\#* (.*)\n/gm;
 		
-		this.serialize( fetch, pattern, key, (html,fails) => cb(html) );
+		this.serialize( fetch, pattern, key, html => cb(html) );
 	}
 	
 	/*

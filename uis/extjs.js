@@ -2334,8 +2334,9 @@ Ext.onReady( function () {
 		//console.log("ext start ui=", widget.UI);
 		Ext.create('Ext.container.Viewport', {  
 			layout: "fit",
-			overflowY: "auto",
+			overflowY: "scroll",
 			items: [widget.UI],
+			//autoScroll: true,
 			listeners: {
 				afterRender: function () {
 					// If the extjs default of keeping the body visible is
@@ -3928,8 +3929,8 @@ WIDGET.prototype.content = function () {
 	this.UI = Ext.create('Ext.panel.Panel', {
 		layout: "border",
 		region: "center",
-		overflowY: "auto",  // EXTJS bug - ignored?
 		html: this.HTML,
+		overflowY: "scroll",
 		items: this.title
 			? [ 
 				Ext.create('Ext.panel.Panel', { 		// header

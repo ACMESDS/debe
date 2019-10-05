@@ -1,4 +1,7 @@
 ﻿// UNCLASSIFIED 
+
+//>>>>>>>>>> blogs, skins, endpts ++ changed!!!!
+
 /**
 @class DEBE
 @requires child_process
@@ -52,7 +55,7 @@ var
 	STREAM = require("stream"), 		//< pipe streaming
 	FS = require("fs"), 				//< filesystem and uploads
 	OS = require("os"), 		//< system utilizations for watch dogs
-	URL = require("url"),		//< data getSite url parser
+	URL = require("url"),		//< url parser
 	CRYPTO = require("crypto"), 	//< to hash names
 	
 	// 3rd party modules
@@ -78,12 +81,12 @@ var
 	ENUM = require("enum");
 
 const { Copy,Each,Log,isKeyed,isString,isFunction,isError,isArray } = ENUM;
-const { sqlThread, getFile, getSite } = TOTEM;
+const { sqlThread, getFile, probeSite } = TOTEM;
 const { pipeStream, pipeImage, pipeJson, pipeDoc, pipeDB, pipeAOI } = PIPE;
 const { 
 	getDoc,
-	exportPlugin, importPlugin, statusPlugin, usersPlugin, suitorsPlugin, usagePlugin, getPlugin, 
-	exePlugin, retractPlugin, extendPlugin, docPlugin,
+	exePlugin, exportPlugin, importPlugin, statusPlugin, usersPlugin, suitorsPlugin, usagePlugin, getPlugin, 
+	retractPlugin, extendPlugin, docPlugin, resetPlugin,
 	matchPlugin, touPlugin, trackPlugin, publishPlugin,
 	sysGraph, sysRestart, sysIngest, sysDecode, sysAgent, sysAlert, sysStop } = END;
 const { renderSkin } = SKIN;
@@ -362,8 +365,13 @@ Copy({
 		 */
 
 			["select", "delete", "insert", "update", "execute"].forEach( crud => {
-				var x = DEBE.byActionTable[crud] = FLEX[crud];
-				//Log(">>>init", crud, x ? true : false);
+				DEBE.byAction[crud] = function (req,res) {
+					if ( route = FLEX[req.action][req.table] )
+						route( req, res );
+
+					else
+						res( null );
+				};
 			});
 
 			if (cb) cb();	
@@ -385,29 +393,29 @@ Copy({
 				thread: sqlThread,
 				//emitter: DEBE.IO ? DEBE.IO.sockets.emit : null,
 				//skinner: JADE,
-				getSite: DEBE.getSite,
-				getIndex: DEBE.getIndex,
-				createCert: DEBE.createCert,
-				diag: DEBE.diag,
-				site: DEBE.site						// Site parameters
+				probeSite: TOTEM.probeSite,
+				getIndex: TOTEM.getIndex,
+				createCert: TOTEM.createCert,
+				diag: TOTEM.diag,
+				site: TOTEM.site						// Site parameters
 			});
 
 			GEO.config({	// voxelizing geo surfaces
 				//source: "",
 				taskPlugin: null,
 				thread: sqlThread,
-				getSite: DEBE.getSite
+				probeSite: TOTEM.probeSite
 			});
 
 			$.config({		// matrix manipulator
 				thread: sqlThread,
-				runTask: DEBE.runTask,
-				getSite: DEBE.getSite
+				runTask: TOTEM.runTask,
+				probeSite: TOTEM.probeSite
 			});
 
 			ATOM.config({		// plugin manager
 				thread: sqlThread,
-				cores: DEBE.cores,
+				cores: TOTEM.cores,
 				//watchFile: DEBE.watchFile,
 				plugins: Copy({   // share selected FLEX and other modules with engines
 					// MAIL: FLEX.sendMail,
@@ -415,7 +423,7 @@ Copy({
 					$: $,
 					$NLP: READ.score,
 					$GEO: GEO,
-					$TASK: DEBE.runTask,
+					$TASK: TOTEM.runTask,
 					$SQL: sqlThread,
 					$JIMP: $.JIMP,
 					$NEO: DEBE.neodb ? DEBE.neodb.cypher : null
@@ -509,7 +517,7 @@ Copy({
 			}
 		},
 		
-		blog: function (recs,req,res) {  //< renders dataset records
+		blog: (recs,req,res) => {  //< renders dataset records
 			
 			if (key = req.flags.blog)
 				recs.blogify( req, key, "/"+req.table, res );
@@ -519,22 +527,25 @@ Copy({
 		
 	},
 											 
-	"reqTypes." : { //< endpoint types to convert dataset recs on specifed req-res thread
+	"byFilter." : { //< endpoint types to filter dataset recs on specifed req-res thread
 		
 		/*
-		view: function (recs,req,res) {  //< dataset.view returns rendered skin
+		view: (recs,req,res) => {  //< dataset.view returns rendered skin
 			res( recs );
 		},*/
-		
-		exe: function (recs,req,res) {
-			res( recs );
+		exe: (recs,req,res) => {
+			res( "running" );
+			recs.forEach( rec => {
+				req.query = {ID: rec.ID};
+				exePlugin(req, msg => Trace( `RUN ${req.table}.${rec.Name} ${msg}` ) );
+			});
 		},
 		
-		kml: function (recs,req,res) {  //< dataset.kml converts to kml
+		kml: (recs,req,res) => {  //< dataset.kml converts to kml
 			res( TOKML({}) );
 		},
 		
-		flat: function (recs,req,res) { //< dataset.flat flattens records
+		flat: (recs,req,res) => { //< dataset.flat flattens records
 			recs.forEach( (rec,n) => {
 				var rtns = new Array();
 				for (var key in rec) rtns.push( rec[key] );
@@ -543,7 +554,7 @@ Copy({
 			res( recs );
 		},
 		
-		txt: function (recs,req,res) { //< dataset.txt convert to text
+		txt: (recs,req,res) => { //< dataset.txt convert to text
 			var head = recs[0], cols = [], cr = String.fromCharCode(13), txt="", list = ",";
 
 			if (head) {
@@ -560,11 +571,11 @@ Copy({
 			res( txt );
 		},
 
-		json: function (recs,req,res) {
+		json: (recs,req,res) => {
 			res(recs);
 		},
 		
-		stat: function (recs,req,res) { // dataset.stat provide info
+		stat: (recs,req,res) => { // dataset.stat provide info
 			var 
 				table = req.table,
 				uses = [
@@ -595,17 +606,17 @@ Usage: ${uses.join(", ")}  `);
 			
 		},
 		
-		html: function (recs,req,res) { //< dataset.html converts to html
+		html: (recs,req,res) => { //< dataset.html converts to html
 			res( DEBE.site.gridify( recs ).tag("table", {border: "1"}) );
 		},
 
-		// MS office doc reqTypes
+		// MS office doc types
 		xdoc: genDoc,
 		xxls: genDoc,
 		xpps: genDoc,
 		xppt: genDoc,
 		
-		tree: function (recs,req,res) { //< dataset.tree treeifies records sorted with _sort=keys
+		tree: (recs,req,res) => { //< dataset.tree treeifies records sorted with _sort=keys
 			var 
 				flags = req.flags,
 				query = req.query;
@@ -621,7 +632,7 @@ Usage: ${uses.join(", ")}  `);
 				res( new Error("missing sorts=key,... flag") );
 		},
 		
-		schema: function (recs,req,res) { //< dataset.schema 
+		schema: (recs,req,res) => { //< dataset.schema 
 			var 
 				flags = req.flags,
 				query = req.query,
@@ -630,7 +641,7 @@ Usage: ${uses.join(", ")}  `);
 			res( recs.schemafy( src ) );
 		},
 		
-		delta: function (recs,req,res) { //< dataset.delta adds change records from last baseline
+		delta: (recs,req,res) => { //< dataset.delta adds change records from last baseline
 			var sql = req.sql;
 			var ctx = {
 				src: {
@@ -650,7 +661,7 @@ Usage: ${uses.join(", ")}  `);
 			});
 		},
 
-		nav: function (recs,req,res) {  //< dataset.nav to navigate records pivoted with _browse=keys
+		nav: (recs,req,res) => {  //< dataset.nav to navigate records pivoted with _browse=keys
 
 			/*
 			Log({
@@ -969,8 +980,9 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 
 	// endpoint routers
 		
+	/*
 	"byArea.": { //< routers for endpoints at /AREA/file ...
-	},
+	}, */
 
 	"byTable.": {	//< routers for endpoints at /TABLE
 		anet: sysGraph,
@@ -1046,7 +1058,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		usage: usagePlugin,
 		help: usagePlugin,
 		
-		exe: exePlugin,
+		reset: resetPlugin,
 		
 		addkey: extendPlugin,
 		add: extendPlugin,
@@ -1055,8 +1067,9 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		sub: retractPlugin
 	},
 
+	/*
 	"byActionTable.": {  //< routers for CRUD endpoints at /DATASET 
-	},
+	}, */
 	
 	// private parameters
 		
@@ -1188,7 +1201,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		badEntry: new Error("sim engines must be accessed at master url")
 	},
 	
-	"paths.": {  //< paths to things
+	"paths.": {  //< append paths to things
 		//default: "home.view",
 		gohome: "Totem".tag("/fan.view?src=info&w=1000&h=600")  + ": protecting the warfighter from bad data",
 		
@@ -1467,35 +1480,34 @@ could/should be revised to support more generic peer-to-peer bySOAP interfaces.
 			recs = this;
 
 		var
-			fetchBlog = function( rec, cb ) {
-				
-				//Log("blogging rec");
-				if ( md = rec[key] + "" ) 
+			fetchBlog = ( rec, cb ) => {
+				if ( md = rec[key] + "" ) {
 					md.Xblog(req, ds.tag("?", { 	// tag ds with source record selector
 						name: ( (rec.Pipe||"").startsWith("{") ) 
 							? rec.Name + "-%"	// pipe defines a monte-carlo cross product so get them all
 							: rec.Name	// pipe defines a simple path
 					}), {}, {}, rec, html => cb( 
-						flags.kiss		
+						flags.kiss
 							? html 	// keep if simple
 							: html + [	// add by-line
-								"<br>",
-								site.title.tag( `${url}/fan.view?src=info&w=4000&h=600` ),
-								"schema".tag( `${url}/fan.view?src=${ds}&name=${rec.Name}&w=4000&h=600` ),
-								"run".tag( `${url}${ds}.exe?Name=${rec.Name}` ),
-								"edit".tag( `${url}${ds}.view` ),
-								"publish".tag( `${url}${ds}.pub` ),
-								"tou".tag( `${url}${ds}.tou` ),
-								(new Date().toDateString()) + "",
-								( req.client.match( /(.*)@(.*)/ ) || ["",req.client] )[1].tag( "email:" + req.client )
-							].join(" ")
-					 ) );
+							"<br>",
+							site.title.tag( `${url}/fan.view?src=info&w=4000&h=600` ),
+							"schema".tag( `${url}/fan.view?src=${ds}&name=${rec.Name}&w=4000&h=600` ),
+							"run".tag( `${url}${ds}.exe?Name=${rec.Name}` ),
+							"edit".tag( `${url}${ds}.view` ),
+							"publish".tag( `${url}${ds}.pub` ),
+							"tou".tag( `${url}${ds}.tou` ),
+							(new Date().toDateString()) + "",
+							( req.client.match( /(.*)@(.*)/ ) || ["",req.client] )[1].tag( "email:" + req.client )
+						].join(" ")
+					) ); 
+				}
 				
 				else
-					cb(md);
+					cb( "empty" );
 			};
 
-		recs.serialize( fetchBlog, function (rec, blog)  {
+		recs.serialize( fetchBlog, (rec, blog) => {
 			if (rec) 
 				rec[key] = blog;
 
@@ -2048,10 +2060,6 @@ Chapter 2
 		res(DEBE.errors.badOffice);
 }
 
-function Trace(msg,sql) {	// execution tracing
-	"D>".trace(msg,sql);
-}
-
 /**
 @class DEBE.Unit_tests
 */
@@ -2159,7 +2167,7 @@ clients, users, system health, etc).`
 				wfs: function (req,res) {
 					res("here i go again");
 
-					TOTEM.getSite(ENV.WFS_TEST, function (data) {
+					TOTEM.probeSite(ENV.WFS_TEST, data => {
 						Log(data);
 					});
 				}

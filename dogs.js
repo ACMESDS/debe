@@ -17,7 +17,7 @@ function Trace(msg,sql) {	// execution tracing
 }
 
 const { Log, Copy } = ENUM;
-const { getSite } = TOTEM;
+const { probeSite } = TOTEM;
 
 module.exports = {  //< watch dogs cycle time in secs (zero to disable)
 	dogCatalog: Copy({
@@ -234,8 +234,7 @@ module.exports = {  //< watch dogs cycle time in secs (zero to disable)
 
 		var 
 			urls = TOTEM.site.urls,
-			get = dog.get,
-			getSite = TOTEM.getSite;
+			get = dog.get;
 
 		/*
 		dog.forEach(dog.trace, get.ungraded, [], function (file, sql) {
@@ -326,7 +325,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 					to = from.addDays(file.PoP_durationDays),
 					ingester = "/ingest";
 
-				getSite( ingester.tag("?", {	// fetch all events ingested by this /plugin.usecase or 
+				probeSite( ingester.tag("?", {	// fetch all events ingested by this /plugin.usecase or 
 					fileID: file.ID,
 					from: from.toLocaleDateString("en-US"),
 					to: to.toLocaleDateString("en-US"),
@@ -335,7 +334,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 					radius: GEO.ringRadius(ring),
 					ring: ring,
 					durationDays: file.PoP_durationDays
-				}), null, msg => {
+				}), msg => {
 					Log("INGEST", msg);
 				});
 
@@ -364,8 +363,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 	}, function dogJobs(dog) {
 		var
 			get = dog.get,
-			queues = TOTEM.queues,
-			getSite = TOTEM.getSite;
+			queues = TOTEM.queues;
 
 		if ( pigs = get.pigs )
 			dog.forEach(dog.trace, pigs, [], function (pigs) {
@@ -434,9 +432,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 					{ID:job.ID}
 				] );
 
-				getSite( job.Notes, null, function (rtn) {
-					Log("dog job run "+msg);
-				});
+				probeSite( job.Notes, msg => Trace("RUN "+msg) );
 			});
 	}),
 
