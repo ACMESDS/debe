@@ -159,13 +159,6 @@ module.exports = {
 
 	},
 
-	resetPlugin: function (req,res) {
-		const { query, sql, table, type } = req;
-
-		res("resetting");
-		probeSite( "/"+table, null );
-	},
-	
 	extendPlugin: function (req,res) {	//< add usecase keys to plugin
 	/**
 	@private
@@ -573,6 +566,18 @@ module.exports = {
 	},
 
 	simPlugin: function (req,res) {
+		const { query, sql, table, type, client } = req;
+		
+		var crud = {
+			reset: "delete",
+			step: "select"
+		};
+		
+		if ( route = crud[type] )
+			ATOM[route](req, ctx =>	res( ctx ? "ok" : "failed") );
+		
+		else
+			res( new Error("bad sim spec") );
 	},
 	
 	exePlugin: function (req,res) {	//< execute plugin in specified usecase context

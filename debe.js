@@ -87,7 +87,7 @@ const {
 	getDoc,
 	exePlugin, simPlugin,
 	exportPlugin, importPlugin, statusPlugin, usersPlugin, suitorsPlugin, usagePlugin, getPlugin, 
-	retractPlugin, extendPlugin, docPlugin, resetPlugin,
+	retractPlugin, extendPlugin, docPlugin, 
 	matchPlugin, touPlugin, trackPlugin, publishPlugin,
 	sysGraph, sysRestart, sysIngest, sysDecode, sysAgent, sysAlert, sysStop } = END;
 const { renderSkin } = SKIN;
@@ -1041,7 +1041,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		release: trackPlugin,
 		
 		exe: exePlugin,
-		sim: simPlugin,
 		pub: publishPlugin,
 		publish: publishPlugin,
 		
@@ -1062,7 +1061,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		usage: usagePlugin,
 		help: usagePlugin,
 		
-		reset: resetPlugin,
+		reset: simPlugin,
+		step: simPlugin,
 		
 		addkey: extendPlugin,
 		add: extendPlugin,
