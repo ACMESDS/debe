@@ -572,6 +572,9 @@ module.exports = {
 		});
 	},
 
+	simPlugin: function (req,res) {
+	},
+	
 	exePlugin: function (req,res) {	//< execute plugin in specified usecase context
 	/**
 	@private

@@ -85,7 +85,8 @@ const { sqlThread, getFile, probeSite } = TOTEM;
 const { pipeStream, pipeImage, pipeJson, pipeDoc, pipeDB, pipeAOI } = PIPE;
 const { 
 	getDoc,
-	exePlugin, exportPlugin, importPlugin, statusPlugin, usersPlugin, suitorsPlugin, usagePlugin, getPlugin, 
+	exePlugin, simPlugin,
+	exportPlugin, importPlugin, statusPlugin, usersPlugin, suitorsPlugin, usagePlugin, getPlugin, 
 	retractPlugin, extendPlugin, docPlugin, resetPlugin,
 	matchPlugin, touPlugin, trackPlugin, publishPlugin,
 	sysGraph, sysRestart, sysIngest, sysDecode, sysAgent, sysAlert, sysStop } = END;
@@ -533,13 +534,14 @@ Copy({
 		view: (recs,req,res) => {  //< dataset.view returns rendered skin
 			res( recs );
 		},*/
+		/*
 		exe: (recs,req,res) => {
 			res( "running" );
 			recs.forEach( rec => {
 				req.query = {ID: rec.ID};
 				exePlugin(req, msg => Trace( `RUN ${req.table}.${rec.Name} ${msg}` ) );
 			});
-		},
+		},*/
 		
 		kml: (recs,req,res) => {  //< dataset.kml converts to kml
 			res( TOKML({}) );
@@ -1038,6 +1040,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		licence: trackPlugin,
 		release: trackPlugin,
 		
+		exe: exePlugin,
+		sim: simPlugin,
 		pub: publishPlugin,
 		publish: publishPlugin,
 		
