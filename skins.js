@@ -161,6 +161,7 @@ module.exports = {
 				}
 
 				query.cols = cols.groupify();
+				//Log( ">>>>>>cols", query.cols );
 				/*if ( query.mode == "gbrief" ) // better to add this to site.context.plugin
 					sql.query("SELECT * FROM ??.??", [req.group, query.ds], function (err,recs) {
 						if (err)

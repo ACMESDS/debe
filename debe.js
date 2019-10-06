@@ -1514,7 +1514,6 @@ could/should be revised to support more generic peer-to-peer bySOAP interfaces.
 			else 
 				cb( recs );
 		});
-		
 	},
 		
 	function merge(Recs,idx) {
@@ -1743,8 +1742,9 @@ could/should be revised to support more generic peer-to-peer bySOAP interfaces.
 			src = this,
 			rtn = [];
 		
-		Each(src, (key, list) => {
+		Object.keys(src).forEach( key => {
 			var list = src[key];
+			
 			if ( isString(list) )
 				rtn.push( list );
 			

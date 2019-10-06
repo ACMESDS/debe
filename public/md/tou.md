@@ -2,7 +2,7 @@
 [my link](/junk.txt)
 
 # test2
-[](/plot.view?src=regress&name=test2&x=Save_ols$.cls[0].weights&y=Save_ols$.cls[0].weights&w=600&h=400)
+%{/barplot.view}
 
 # fetch test
 As of ${now} transition status done
@@ -14,7 +14,7 @@ urls: ${JSON.stringify( urls )}
 
 a link: [TEST](test test test)
 
-a  code block test:
+a code block test:
 
 	test1
 	test2

@@ -180,12 +180,12 @@ catch (err) {
 			}
 		}
 	
-		var 
-			blockidx = 0;
-		
 		Copy(TOTEM.blogContext, ctx);
 		
-		this.Xescape( [], (blocks,html) => // escape code blocks
+		var 
+			blockidx = 0;
+
+		this.Xescape( [], (html,blocks) => // escape code blocks
 		html.Xbreaks( html => // force new lines
 		html.Xsection( html => // expand section headers
 		html.Xscript( ctx, (ctx,html) => // expand scripts 
@@ -202,8 +202,8 @@ catch (err) {
 					return `href=${q}javascript:navigator.follow(${ref},BASE.user.client,BASE.user.source)${q}>`;
 				});
 
-			cb( html.replace(/@block/g, str => {  // backsub escaped blocks
-					//Log(`unblock[${blockidx}]`, blocks[ blockidx].tag("code",{}) );
+			cb( html.replace(/@block/g, str => {  	// backsub escaped blocks	
+					//Log(`unblock[${blockidx}]`, blocks[blockidx]);
 					return blocks[ blockidx++ ].tag("code",{}).tag("pre",{});
 				}) );
 			
@@ -217,7 +217,6 @@ catch (err) {
 	function Xescape( blocks, cb ) { // escapes code blocks then callsback cb(blocks, html)
 		var 
 			key = "@esc",
-			html = this,
 			fetchBlock = function ( rec, cb ) {	// callsback cb with block placeholder
 				//Log(`block[${blocks.length}] `, rec.arg1 );
 				blocks.push( rec.arg2 );
@@ -225,7 +224,7 @@ catch (err) {
 			},
 			pattern = /(.*)\:\n\n((\t.*\n)+)\n/gm ;
 		
-		html.serialize( fetchBlock, pattern, key, html => cb( blocks, html) ); 		
+		this.serialize( fetchBlock, pattern, key, html => cb( html, blocks) ); 		
 	},
 	
 	function Xdummy(cb) {  // for debugging with callback(this)
@@ -240,7 +239,6 @@ catch (err) {
 		*/
 		var 
 			key = "@tag",
-			html = this,
 			fetch = function ( rec, cb ) {  // expand [LINK](URL) markdown				
 				var
 					url = rec.arg2,
@@ -251,13 +249,12 @@ catch (err) {
 			
 			pattern = /\[([^\[\]]*)\]\(([^\)]*)\)/g ;
 		
-		html.serialize( fetch, pattern, key, html => cb(html) ); 
+		this.serialize( fetch, pattern, key, html => cb(html) ); 
 	}, 	
 
 	function Xtopic( req, cb ) {
 		var 
 			key = "@tag",
-			html = this,
 			fetch = function ( rec, cb ) {  // callback cb with expanded %%{TOPIC} markdown
 				var 
 					secret = "",
@@ -294,13 +291,12 @@ catch (err) {
 			
 			pattern = /\~\{([^\}]*)\}/g;
 			
-		html.serialize( fetch, pattern, key, html => cb(html) ); 
+		this.serialize( fetch, pattern, key, html => cb(html) ); 
 	},
 					  
 	function Xinclude( ds, cb ) {
 		var 
 			key = "@tag",
-			html = this,
 			
 			fetch = function ( rec, cb ) {  // callback cb with expanded [](URL) markdown
 				var
@@ -342,27 +338,9 @@ catch (err) {
 			
 			pattern = /\%\{([^\}]*)\}/g;
 		
-		html.serialize( fetch, pattern, key, html => cb(html) ); 
+		this.serialize( fetch, pattern, key, html => cb(html) ); 
 	},
 
-	/*
-	function Xinclude( cb ) {  // expands [LINK](URL) tags then callsback cb( final html )
-		var 
-			key = "@tag",
-			html = this,
-			
-			fetchSite = function ( rec, cb ) {  // callback cb with expanded [](URL) markdown
-				Log("include", rec.arg1.replace(/\&amp;/g,"&"));
-				probeSite( rec.arg1.replace(/\&amp;/g,"&"), null, cb );
-			},
-			
-			pattern =/\$\[([^>]*)\]/g;
-		
-		html.serialize( fetchSite, pattern, key, html => {    
-			cb(html);
-		}); 
-	}, */
-	
 	function Xscript( ctx, cb ) {  // expands scripting tags then callsback cb(vmctx, final markdown)
 		var 
 			script = "",
@@ -407,7 +385,6 @@ catch (err) {
 	function Xtex( cb ) {  // expands X$$ MATH $$ tags then callbacks cb( final html )
 		var 
 			key = "@tex",
-			html = this,
 			fetch = function ( rec, cb ) {	// callsback cb with expanded TeX tag
 				//Log("math",rec);
 				switch (rec.arg1) {
@@ -447,7 +424,7 @@ catch (err) {
 			},
 			pattern = /(.?)\$\$([^\$]*)\$\$/g;
 			
-		html.serialize( fetch, pattern, key, html => cb(html) ); 
+		this.serialize( fetch, pattern, key, html => cb(html) ); 
 	},
 	
 	function Xparms(goto, cb) {		// expands <!---parms KEY=VAL&...---> tags then callbacks cb( final input-scripted html )
