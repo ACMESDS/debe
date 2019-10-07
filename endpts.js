@@ -628,7 +628,7 @@ module.exports = {
 					if (ctx) {
 						req.query = ctx;   // let plugin mixin its own keys		
 						ATOM.select(req, ctx => {  // run plugin
-							//Log(">>atom", ctx);
+							//Log(">>pipe save=", ctx.Save );
 							if ( ctx )
 								if ( isError(ctx)  )
 									Log(`>pipe ${ctx.Host} ` + ctx);
@@ -757,7 +757,7 @@ module.exports = {
 									pipeJob = TOTEM.pipeJob[pipeType];
 								}
 
-								//Log(">pipe", pipePath, pipeName, pipeType);
+								Log(">pipe", pipePath, pipeName, pipeType);
 
 								var
 									isFlexed = FLEX.select[pipeName] ? true : false,
@@ -1367,7 +1367,7 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 		client = "guest",
 		fileName = `${ctx.Host}.${ctx.Name}.stream`;
 	
-	//Log("saving", evs);
+	//Log("saving", ctx.Save);
 
 	if ( Save = ctx.Save_NLP ) 
 		saveNLP(sql, Save);

@@ -1,15 +1,10 @@
 ﻿// UNCLASSIFIED 
 
-//>>>>>>>>>> blogs, skins, endpts ++ changed!!!!
-
 /**
 @class DEBE
 @requires child_process
-@requires cluster
-@requires child-process
 @requires fs
 @requires stream
-@requires os
 
 @requires i18n-abide
 @requires socket.io
@@ -51,12 +46,8 @@ var
 	
 	// NodeJS modules
 	CP = require("child_process"), 		//< Child process threads
-	CLUSTER = require("cluster"), 		//< Support for multiple cores
 	STREAM = require("stream"), 		//< pipe streaming
 	FS = require("fs"), 				//< filesystem and uploads
-	OS = require("os"), 		//< system utilizations for watch dogs
-	URL = require("url"),		//< url parser
-	CRYPTO = require("crypto"), 	//< to hash names
 	
 	// 3rd party modules
 	NEO = require("neo4j"),			// light-weight graph database
