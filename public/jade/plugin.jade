@@ -4,11 +4,9 @@ append base_help
 	:markdown
 		Render a DEBE notebook where:
 
-			mode = notebook view mode = brief | gridbrief | runbrief | pivbrief| run | notebook | view | pivot
+			mode = notebook type = brief | gridbrief | runbrief | pivbrief | run | notebook | view | pivot
 			ds = "/DATASET" dataset source
 			cols = dataset files/columns/keys = "key.type.label, ..."
-			// page = page size of DS grid
-			// refresh = refresh time of associated job grid
 
 append base_parms
 	case query.mode
@@ -58,6 +56,7 @@ append site_body
 
 				:markdown
 					Run your *#{ds}* notebook by selecting the desired usecase context and clicking *Execute*.  
+					
 					You may also !{uses} your notebook.
 
 					Your notebook's usecase context may include the following [optional keys](/api.view) ( add / remove ):  
@@ -73,6 +72,8 @@ append site_body
 					> *Save_rem* collects remaining unaggregated events  
 					> *Save_jpg* generates jpg from {at: "jpg": prime: "name", save: "name", index: [...], values: [...] } event  
 
+					Context keys can also be [grouped](/skinguide.view).  E.g. g1_a, g1_b, g1_g2_x, g1_g2_y, _roX, _roY.
+					
 					Header colors reflect [notebook status](/projects.view): <font color="green">completed</font>, <font color="blue">policed</font>, <font color="orange">funded</font>, <font color="red">unfunded</font>.
 
 			#form.Engine(
@@ -94,8 +95,6 @@ append site_body
 				page=dspage )
 
 				:markdown
-					sorts="Work,State"
-					refresh=refresh
 					Jobs created by this notebook are show here.  If the job originator exceeded their credits,
 					the job is marked "unfunded"; otherwise the job is marked "funded".  If you would like to 
 					fund an unfended job, simply click its "(un)funded" link.  To decide if this is a wise purchase, 
@@ -105,15 +104,12 @@ append site_body
 
 			#post.ToU(path="/#{ds}.tou",dims="1800,600",wrap)
 
-			#grid.Files(
+			#grid.Bricks(
 				path="/files.db", wrap,
 				cols="Name,Path,Ingest,Classif,PoP_Expires,PoP_Start,PoP_End,PoP_durationDays,PoP_advanceDays" )
 
 			if more>0
-				#grid.ContextKeys(
-					path="/keyedit.db?ds=#{ds}",
-					cols="Key,Type,Samples.x,Dist,Parms.x",
-					wrap, page=dspage)
+				#grid.ContextKeys(path="/keyedit.db?ds=#{ds}",cols="Key,Type,Samples.x,Dist,Parms.x",wrap, page=dspage)
 
 			if more>1
 				#post.Flow( path="/#{ds}_flow.view", dims="1800,600",wrap )
