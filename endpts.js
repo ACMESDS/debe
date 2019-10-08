@@ -790,7 +790,7 @@ module.exports = {
 									err = errors.badType;
 							}
 
-							else
+							else	// pipe is text doc
 								pipePlugin(pipeDoc, sql, job, (ctx,sql) => {   // place job in doc workflow
 									if (ctx)
 										saveContext(sql, ctx);
