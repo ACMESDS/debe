@@ -6,6 +6,7 @@ append base_help
 
 			mode = notebook type = brief | gridbrief | runbrief | pivbrief | run | notebook | view | pivot
 			ds = "/DATASET" dataset source
+			client = client viewing this notebook
 			cols = dataset files/columns/keys = "key.type.label, ..."
 
 append base_parms
@@ -25,6 +26,7 @@ append site_parms
 		when "notebook"
 			- view = "Insert"
 			- options = { "more+":"", "more++":"", less:"" }
+		when "proj"
 		when "run"
 			- view = "Tabbed"
 			- options = { "more+":"", "more++":"", less:"" }
@@ -35,13 +37,14 @@ append site_parms
 append site_body
 	- mode = query.mode || ""
 	- uses = query.uses || "none"
+	- client = query.client || "guest"
 	- ds = query.ds || "dsUndefined"
 	- pivcol = "tbd"
 	- dscols = query.cols || ""
-	- dspage = query.page || 20
+	- dspage = 20
 	- dsrefresh = query.refresh || ""
 	- dstitle = ds + " view"
-	- dsdims = dims.split(",")
+	- dsdims = [1200,800]
 	- tasks = projs ? get( projs , {Plugin:ds}, "Task,Hours,Complete,FAQ1,FAQ2") : []
 	- more = parseInt(query.more) || 0
 	- dsdb = `/${ds}.db`
@@ -52,7 +55,9 @@ append site_body
 		when "note"
 		when "notebook"
 		when "run"
-			#grid.Usecases(wrap,path=dsdb,cols=dscols,menu="Agents",blogs="Description",dims=dsdims,hover="finished",page=dspage )
+			#grid.Usecases(
+				path=dsdb,wrap,page=dspage,
+				cols=dscols,menu="Agents",blogs="Description",hover="finished" )
 
 				:markdown
 					Run your *#{ds}* notebook by selecting the desired usecase context and clicking *Execute*.  
@@ -68,10 +73,16 @@ append site_body
 					> [+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) *Config* js-script defines usecase context  
 					> [+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) *Entry* json primes context on entry using { KEY: "SELECT ....", ...}  
 					> [+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) *Exit* json saves context on exit using { KEY: "UPDATE ....", ...}  
+						  
+					During execution, your notebook context will automatically contain Pipe keys:
+					> *$* Dataset returned by your *Pipe*  
+					> *Thread* compute thread
+
+					and the notebook may itself add keys to retain usecase results:
 					> *Save_STATE* aggregates events [ {at:"STATE", ...}, ... ]  
 					> *Save_rem* collects remaining unaggregated events  
 					> *Save_jpg* generates jpg from {at: "jpg": prime: "name", save: "name", index: [...], values: [...] } event  
-
+						  
 					Context keys can also be [grouped](/skinguide.view).  E.g. g1_a, g1_b, g1_g2_x, g1_g2_y, _roX, _roY.
 					
 					Header colors reflect [notebook status](/projects.view): <font color="green">completed</font>, <font color="blue">policed</font>, <font color="orange">funded</font>, <font color="red">unfunded</font>.
@@ -87,12 +98,8 @@ append site_body
 					This engine remains invisible until it has been formally transitioned.
 
 			#grid.Jobs(
-				path="/queues.db?Name=#{ds}",
-				cols="Arrived.d,Departed.d,Client,Notes.x,QoS.n,Age.n,Funded.c,Finished.c,Priority.n,Work.n,State.n,Task.t,Signoffs(Flagged.c,Sign0.c,Sign1.c,Sign2.c,Sign3.c)",
-				wrap,
-				head="Print,Refresh,Execute,Help",
-				hover="policed",
-				page=dspage )
+				path="/queues.db?Name=#{ds}",wrap,page=dspage,head="Print,Refresh,Execute,Help",hover="policed" ,
+				cols="Arrived.d,Departed.d,Client,Notes.x,QoS.n,Age.n,Funded.c,Finished.c,Priority.n,Work.n,State.n,Task.t,Signoffs(Flagged.c,Sign0.c,Sign1.c,Sign2.c,Sign3.c)" )
 
 				:markdown
 					Jobs created by this notebook are show here.  If the job originator exceeded their credits,
@@ -105,17 +112,23 @@ append site_body
 			#post.ToU(path="/#{ds}.tou",dims="1800,600",wrap)
 
 			#grid.Bricks(
-				path="/files.db", wrap,
+				path="/files.db", wrap, page=dspage,
 				cols="Name,Path,Ingest,Classif,PoP_Expires,PoP_Start,PoP_End,PoP_durationDays,PoP_advanceDays" )
 
+			#grid.Logs( 
+				path= "/syslogs.db?Table=#{ds}&Client=#{client}", wrap, page=dspage,
+				cols="At.d,Module.t,Message.x,cpuUtil.n,memUtil.n" )
+
 			if more>0
-				#grid.ContextKeys(path="/keyedit.db?ds=#{ds}",cols="Key,Type,Samples.x,Dist,Parms.x",wrap, page=dspage)
+				#grid.ContextKeys(
+					path="/keyedit.db?ds=#{ds}",wrap, page=dspage,
+					cols="Key,Type,Samples.x,Dist,Parms.x")
 
 			if more>1
 				#post.Flow( path="/#{ds}_flow.view", dims="1800,600",wrap )
 
 		when "pivot"
-			#pivot( class=dstitle, path=dsdb, pivots=pivcol, cols=dscols, page=dspage )
+			#pivot( class=dstitle, path=dsdb, pivots=pivcol, cols=dscols )
 
 		when "brief"
 		when "gridbrief"
@@ -126,20 +139,25 @@ append site_body
 					div!= gridify( query.data )
 
 				else				
-					iframe( src="/#{ds}.view?dims=#{dims}", width=dsdims[0], height=dsdims[1] )
+					iframe( src="/#{ds}.view", width=dsdims[0], height=dsdims[1] )
 
 		when "pivbrief"
 			section
 				h3.hd= dstitle
-				iframe( src="/#{ds}.pivot?dims=#{dims}", width=dsdims[0], height=dsdims[1] )
+				iframe( src="/#{ds}.pivot", width=dsdims[0], height=dsdims[1] )
 
 		when "runbrief"
 			section
 				h3.hd= dstitle				
-				iframe( src="/#{ds}.run?dims=#{dims}", width=dsdims[0], height=dsdims[1] )
+				iframe( src="/#{ds}.run", width=dsdims[0], height=dsdims[1] )
 
 		when "calc"
 			#grid( class=dstitle, path=dsdb, calc=1, cols="W*10", page=dspage )
+
+		when "proj"
+			#grid( class=dstitle, path=dsdb, cols=dscols, page=dspage )
+			#post.ToU(path="/#{ds}.tou",dims="1800,600",wrap)
+			#post.RTP(path="/rtpsqd.view?task=#{ds}",dims="1800,600",wrap)
 
 		when "view"
 		default

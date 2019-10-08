@@ -16,8 +16,8 @@ var		// totem
 	GEO = require("geohack"),
 	ATOM = require("atomic");
 
-function Trace(msg,sql) {	// execution tracing
-	"S>".trace(msg,sql);
+function Trace(msg,req,fwd) {	// execution tracing
+	"endpt>".trace(msg,req,fwd);
 }
 
 const { Copy,Each,Log,isString,isFunction,isError,isArray } = ENUM;
@@ -251,7 +251,7 @@ module.exports = {
 		res( "exporting" );
 		CP.exec(
 			`mysqldump -u$MYSQL_USER -p$MYSQL_PASS -h$MYSQL_HOST --skip-add-drop-table app ${name} >./stores/${name}.sql`,
-			(err,out) => Trace( `EXPORTED ${name} `+ (err||"ok") ) );							
+			(err,out) => Trace( `EXPORTED ${name} `+ (err||"ok") ), req );							
 	},
 
 	importPlugin: function (req,res) {
@@ -262,7 +262,7 @@ module.exports = {
 		res( "importing" );
 		CP.exec(
 			`mysql -u$MYSQL_USER -p$MYSQL_PASS -h$MYSQL_HOST --force app < ./stores/${name}.sql`,
-			(err,out) => Trace( `IMPORTED ${name} `+ (err||"ok") ) );							
+			(err,out) => Trace( `IMPORTED ${name} `+ (err||"ok") ), req );							
 	},
 
 	docPlugin: function (req,res) {
@@ -588,27 +588,33 @@ module.exports = {
 	@param {Object} req http request
 	@param {Function} res Totem response callback
 	*/	
-		function pipePlugin( get, sql, job, cb ) { //< prime plugin with query and run in context ctx
+		function pipePlugin( sup, sql, job, cb ) { //< pipe job via supervisor 
 
-			function pipe(get, sql, job, cb) {
+			function pipe(sup, sql, job, cb) {
+				function log( ) {
+					var args = [];
+					for (var key in arguments) if ( key != "0" ) args.push( arguments[key] );
+					"pipe>".trace( arguments[0]+": "+JSON.stringify(args), req, Log );
+				}
+			
 				var 
 					ctx = job.ctx,
 					query = job.query;
 
-				Log(">pipe opened", job.path);
-				if ( get )
-					get(sql, job, data => {
+				log("opened", job.path);
+				if ( sup )	// using supervisor
+					sup(log, sql, job, data => {
 						if (data) {
 							Copy(data,ctx);
 							Each(query, (key,exp) => {
 								//Log(">pipe",key,exp);
 								data[key] = ctx[key] = isString(exp)
-									? exp.parseJS( ctx, err => Log(`>pipe skip ${key}=${exp}`) )
+									? exp.parseJS( ctx, err => log("bad key", `${key}=${exp}`) )
 									: exp;
 							});
 
 							cb( ctx, () => {
-								Log(">pipe closed");
+								log("closed");
 								for (key in data) delete ctx[key];
 							});
 						}
@@ -617,31 +623,31 @@ module.exports = {
 							cb(null);
 					});
 
-				else
+				else	// unsupervised
 					cb( ctx, () => {
-						Log(">pipe closed");
+						log("closed");
 					});
 			}
 
 			sql.insertJob( job, job => { 
-				pipe(get, sql, job, (ctx,close) => {
+				pipe( sup, sql, job, (ctx,close) => {
 					if (ctx) {
 						req.query = ctx;   // let plugin mixin its own keys		
 						ATOM.select(req, ctx => {  // run plugin
 							//Log(">>pipe save=", ctx.Save );
 							if ( ctx )
 								if ( isError(ctx)  )
-									Log(`>pipe ${ctx.Host} ` + ctx);
+									log("error", ctx);
 
 								else 
 									cb( ctx, sql );
 
-							if (close) close();
+							if (close) close();	// if plugin was placed into supervisor, then close it
 						});
 					}
 
 					else
-						Log(">pipe halted");
+						log("halted");
 				});
 			});
 		}
@@ -669,15 +675,11 @@ module.exports = {
 			}
 		}
 
+		const { sql, client, profile, table, query } = req;
+		
 		var
 			ok = "ok",
 			now = new Date(),
-			sql = req.sql,
-			client = req.client,
-			profile = req.profile,
-			table = req.table,
-			profile = req.profile,
-			query = req.query,
 			host = table;
 
 		if ( query.Name ) delete query.ID;
@@ -704,10 +706,10 @@ module.exports = {
 		if ("ID" in query || "Name" in query)  // execute plugin
 			FLEX.runPlugin(req, ctx => {  // run engine using requested usecase via the job regulator 
 
-				//Log("run ctx", ctx);
+				// Log("exe ctx", ctx);
 
-				if ( !ctx)
-					res( errors.noContext );
+				if ( !ctx) 
+					Trace( errors.noContext, req, res );
 
 				else
 				if ( isError(ctx) )
@@ -757,7 +759,7 @@ module.exports = {
 									pipeJob = TOTEM.pipeJob[pipeType];
 								}
 
-								Log(">pipe", pipePath, pipeName, pipeType);
+								//Log(">pipe", pipePath, pipeName, pipeType);
 
 								var
 									isFlexed = FLEX.select[pipeName] ? true : false,
@@ -781,11 +783,11 @@ module.exports = {
 											saveContext(sql, ctx);
 
 										else
-											Trace( new Error("pipe lost context") );
+											Trace( errors.lostContext, req );
 									});
 
 								else 
-									err = new Error("pipe bad type");
+									err = errors.badType;
 							}
 
 							else
@@ -794,7 +796,7 @@ module.exports = {
 										saveContext(sql, ctx);
 
 									else
-										Trace( new Error("pipe lost context") );
+										Trace( errors.lostContext, req );
 								});
 
 							break;
@@ -970,7 +972,7 @@ module.exports = {
 					url = `${master}/${name}.view`.tag("?", query),
 					res = (type != "pdf") ? "1920px" : "";
 
-				Trace("SCRAPE "+url);
+				Trace("SCRAPE "+url, req, Log);
 				CP.execFile( "node", ["phantomjs", "rasterize.js", url, docf, res], function (err,stdout) { 
 					if (err) Log(err,stdout);
 				});
@@ -993,7 +995,7 @@ module.exports = {
 			sysAlert(req,res);
 
 			setTimeout( function () {
-				Trace("RESTART ON " + now());
+				Trace("RESTART ON " + now(), req, Log);
 				process.exit();
 			}, delay*1e3);
 		}
@@ -1214,7 +1216,7 @@ module.exports = {
 			if (IO = TOTEM.IO)
 				IO.sockets.emit("alert",{msg: msg || "system alert", to: "all", from: TOTEM.site.title});
 
-			Trace("ALERTING "+msg);
+			Trace("ALERTING "+msg, req, Log);
 			res("Broadcasting alert");
 		}
 

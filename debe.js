@@ -83,8 +83,8 @@ const {
 	sysGraph, sysRestart, sysIngest, sysDecode, sysAgent, sysAlert, sysStop } = END;
 const { renderSkin } = SKIN;
 
-function Trace(msg,sql) {
-	"D>".trace(msg,sql);
+function Trace(msg,req,fwd) {
+	"D>".trace(msg,req,fwd);
 }
 
 var
@@ -132,6 +132,8 @@ Copy({
 		"masters": ctx => "block.masters",
 		
 		"rtpsecs": ctx => "openv.rtpsecs",
+		
+		"syslogs": ctx => "openv.syslogs",
 		
 		"faqs": ctx => {
 			if ( set = ctx.set ) {
@@ -482,7 +484,7 @@ Copy({
 					sql = req.sql,
 					cleanurl = req.url.replace(`_save=${req.flags.save}`,"");
 
-				Trace(`PUBLISH ${cleanurl} AT ${req.flags.save} FOR ${req.client}`, sql);
+				Trace(`PUBLISH ${cleanurl} AT ${req.flags.save} FOR ${req.client}`, req);sql
 				sql.query("INSERT INTO app.engines SET ?", {
 					Name: req.flags.save,
 					Enabled: 1,
@@ -573,7 +575,7 @@ Copy({
 				table = req.table,
 				uses = [
 					"db", "xml", "csv", "txt", "schema", "view", "tree", "flat", "delta", "nav", "html", "json",
-					"view","pivot","site","spivot","brief","gridbrief","pivbrief","run","plugin","runbrief",
+					"view","pivot","site","spivot","brief","gridbrief","pivbrief","run","plugin","runbrief","proj",
 					"exe", "stat"];
 
 			uses.forEach( (use,n) => {
@@ -1007,6 +1009,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		xgif: getDoc,
 		
 		// skins
+		proj: renderSkin,
 		view: renderSkin,
 		calc: renderSkin,
 		run: renderSkin,
@@ -1178,6 +1181,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					"API".tag( "/api.view" )
 				].join(" || ");
 		},
+		badType: new Error("bad type"),
+		lostContext: new Error("pipe lost context"),
 		noPartner: new Error( "endservice missing or did not respond with transition partner" ),
 		noAttribute: new Error( "undefined engine attribute" ),
 		noEngine: new Error( "no such engine" ),

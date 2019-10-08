@@ -9,8 +9,8 @@ var		// totem
 	TOTEM = require("totem"),
 	ENUM = require("enum");
 
-function Trace(msg,sql) {	// execution tracing
-	"Dskin>".trace(msg,sql);
+function Trace(msg,req,fwd) {	// execution tracing
+	"skin>".trace(msg,req,fwd);
 }
 
 const {Log,Copy,typeOf} = ENUM;
@@ -110,6 +110,7 @@ module.exports = {
 					//page: query.page,
 					//refresh: query.refresh,
 					//dims: query.dims,
+					client: req.client,
 					ds: name
 				}, query);
 

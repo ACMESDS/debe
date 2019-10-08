@@ -13,8 +13,8 @@ var		// totem
 const { Log, Copy } = ENUM;
 const { probeSite } = TOTEM;
 
-function Trace(msg,sql) {	// execution tracing
-	"Dblog>".trace(msg,sql);
+function Trace(msg,req,fwd) {	// execution tracing
+	"blog>".trace(msg,req,fwd);
 }
 
 module.exports = {
@@ -283,7 +283,7 @@ catch (err) {
 						});
 				
 					else
-						Trace( "NO CODE LICENSOR" );
+						Trace( "NO LICENSOR", req, Log );
 				
 				else	// content tracking disabled
 					cb( "" );
