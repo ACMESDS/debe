@@ -250,7 +250,7 @@ module.exports = {
 		
 		res( "exporting" );
 		CP.exec(
-			`mysqldump -u$MYSQL_USER -p$MYSQL_PASS -h$MYSQL_HOST --skip-add-drop-table app ${name} >./stores/${name}.sql`,
+			`mysqldump -u$MYSQL_USER -p$MYSQL_PASS -h$MYSQL_HOST --add-drop-table app ${name} >./stores/${name}.sql`,
 			(err,out) => Trace( `EXPORTED ${name} `+ (err||"ok") ), req );							
 	},
 
