@@ -101,6 +101,7 @@ module.exports = {
 						"terms".tag( `${name}.tou` ),
 						"publish".tag( `${name}.pub` ),
 						"usage".tag( `${name}.use` ),
+						"project".tag( `${name}.proj` ),
 						"download".tag( `${name}.${type}` ),
 						"brief".tag( `/briefs.view?options=${name}` ),
 						"reset".tag( `${name}.reset` )
