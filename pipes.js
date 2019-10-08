@@ -240,7 +240,7 @@ module.exports = {
 				CP.exec("", () => {  //<< fix: add script to copy and unzip from S3 buckets
 					Trace("RESTORING "+file.Name);
 					cb(file,job);
-					thread( sql => {
+					sqlThread( sql => {
 						sql.query("UPDATE app.files SET _State_Archived=false WHERE ?", {ID: file.ID});
 						sql.release();
 					});

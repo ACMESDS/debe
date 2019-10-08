@@ -44,6 +44,7 @@ append site_body
 	- dspage = 20
 	- dsrefresh = query.refresh || ""
 	- dstitle = ds + " view"
+	- dims = "100%,100%"
 	- dsdims = [1200,800]
 	- tasks = projs ? get( projs , {Plugin:ds}, "Task,Hours,Complete,FAQ1,FAQ2") : []
 	- more = parseInt(query.more) || 0
@@ -56,7 +57,7 @@ append site_body
 		when "notebook"
 		when "run"
 			#grid.Usecases(
-				path=dsdb,wrap,page=dspage,
+				path=dsdb,wrap,page=dspage,dims=dims,
 				cols=dscols,menu="Agents",blogs="Description",hover="finished" )
 
 				:markdown
@@ -98,7 +99,7 @@ append site_body
 					This engine remains invisible until it has been formally transitioned.
 
 			#grid.Jobs(
-				path="/queues.db?Name=#{ds}",wrap,page=dspage,head="Print,Refresh,Execute,Help",hover="policed" ,
+				path="/queues.db?Name=#{ds}",wrap,page=dspage,head="Print,Refresh,Execute,Help",hover="policed" , dims=dims,
 				cols="Arrived.d,Departed.d,Client,Notes.x,QoS.n,Age.n,Funded.c,Finished.c,Priority.n,Work.n,State.n,Task.t,Signoffs(Flagged.c,Sign0.c,Sign1.c,Sign2.c,Sign3.c)" )
 
 				:markdown
@@ -112,11 +113,11 @@ append site_body
 			#post.ToU(path="/#{ds}.tou",dims="1800,600",wrap)
 
 			#grid.Bricks(
-				path="/files.db", wrap, page=dspage,
+				path="/files.db", wrap, page=dspage, dims=dims,
 				cols="Name,Path,Ingest,Classif,PoP_Expires,PoP_Start,PoP_End,PoP_durationDays,PoP_advanceDays" )
 
 			#grid.Logs( 
-				path= "/syslogs.db?Table=#{ds}&Client=#{client}", wrap, page=dspage,
+				path= "/syslogs.db?Table=#{ds}&Client=#{client}", wrap, page=dspage, dims=dims,
 				cols="At.d,Module.t,Message.x,cpuUtil.n,memUtil.n" )
 
 			if more>0
@@ -161,6 +162,6 @@ append site_body
 
 		when "view"
 		default
-			#grid( class=dstitle, path=dsdb, cols=dscols, page=dspage )
+			#grid( class=dstitle, path=dsdb, cols=dscols, page=dspage,dims=dims )
 
 // UNCLASSIFIED

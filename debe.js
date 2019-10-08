@@ -93,6 +93,7 @@ var
 Copy({
 	pipeJob: {		//  pipe job by pipe path type
 		stream: pipeStream,
+		export: pipeStream,
 		nitf: pipeImage,
 		png: pipeImage,
 		jpg: pipeImage,

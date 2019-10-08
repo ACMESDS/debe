@@ -25,7 +25,7 @@ append base_parms
 		- options = null // dropdown skinning options
 		- parms = {} // legacy options
 		- dock = "top" // folder docking style left | right | top | bottom
-		- dims = "2048,1200" // width,height maximum widget dimensions 
+		- dims = "100%,100%" // width,height maximum widget dimensions 
 		- view = "Min" // site style Home | Kiss | Engr | Min | Basic | Simple, ..
 		- page = 50 // maximum grid rows
 		- pulse = 120 // system health refresh rate [seconds]
@@ -89,12 +89,10 @@ append base_body
 
 			when "Tabbed"
 				#border(
-					class=dataset,
-					crush,
+					class=dataset,crush,dims=dims,title=titlebar,
 					head="Info(Tasks,Plugins,Links),Prefs(Locales,Themes),Files(Manage,Uploads,$uploads,Stores,$stores),Options,LikeUs,Help",
 					LikeUs="/likeus.db",
-					Manage="/files.view",
-					title=titlebar)
+					Manage="/files.view" )
 
 					block site_help
 					#post.Brief(path="/briefs.view?options=#{dataset}",dims="600,300")
@@ -112,9 +110,7 @@ append base_body
 
 			when "Home"
 				#border(
-					class=dataset,
-					title=titlebar,
-					crush,
+					class=dataset,title=titlebar,crush,dims=dims,
 					head="Health,Users,Themes,Capture,Links,Options,Likeus,Help",
 					LikeUs="/likeus.db" )
 

@@ -590,13 +590,13 @@ module.exports = {
 	*/	
 		function pipePlugin( sup, sql, job, cb ) { //< pipe job via supervisor 
 
-			function pipe(sup, sql, job, cb) {
-				function log( ) {
-					var args = [];
-					for (var key in arguments) if ( key != "0" ) args.push( arguments[key] );
-					"pipe>".trace( arguments[0]+": "+JSON.stringify(args), req, Log );
-				}
+			function log( ) {
+				var args = [];
+				for (var key in arguments) if ( key != "0" ) args.push( arguments[key] );
+				"pipe>".trace( arguments[0]+": "+JSON.stringify(args), req, Log );
+			}
 			
+			function pipe(sup, sql, job, cb) {
 				var 
 					ctx = job.ctx,
 					query = job.query;
@@ -753,13 +753,20 @@ module.exports = {
 									[x,pipeName,pipeType] = pipePath.substr(1).match(/(.*)\.(.*)/) || ["", pipePath, "json"],
 									pipeJob = TOTEM.pipeJob[pipeType];
 
+								switch ( pipeType ) {
+									case "export": 	
+										job.path = pipePath = `/stores/${pipeName}.stream`;
+										break;
+								}
+										
+								/*
 								if ( !pipeJob ) {
 									pipePath = job.path = `/stores/${pipeType}.${pipeName}.stream`;
 									[x,pipeName,pipeType] = pipePath.substr(1).match(/(.*)\.(.*)/) || ["", pipePath, "json"],
 									pipeJob = TOTEM.pipeJob[pipeType];
-								}
+								} */
 
-								//Log(">pipe", pipePath, pipeName, pipeType);
+								Log(">pipe", pipePath, pipeName, pipeType);
 
 								var
 									isFlexed = FLEX.select[pipeName] ? true : false,
@@ -1367,7 +1374,7 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 	var
 		host = ctx.Host,
 		client = "guest",
-		fileName = `${ctx.Host}.${ctx.Name}.stream`;
+		fileName = `${ctx.Host}_${ctx.Name}.stream`;
 	
 	//Log("saving", ctx.Save);
 
