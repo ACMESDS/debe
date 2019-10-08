@@ -632,7 +632,7 @@ module.exports = {
 			sql.insertJob( job, job => { 
 				pipe( sup, sql, job, (ctx,close) => {
 					if (ctx) {
-						req.query = ctx;   // let plugin mixin its own keys		
+						req.query = Copy(ctx,{});   // pass neutral Object to engine run context		
 						ATOM.select(req, ctx => {  // run plugin
 							//Log(">>pipe save=", ctx.Save );
 							if ( ctx )
