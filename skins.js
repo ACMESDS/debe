@@ -96,7 +96,8 @@ module.exports = {
 				Copy({		// keys to plugin.jade
 					mode: req.type,
 					uses: type ? [
-						"run".tag( `${name}.run?Name=CASE` ),
+						"exe".tag( `${name}.exe?Name=CASE` ),
+						"run".tag( `${name}.run` ),
 						"view".tag( `${name}.view` ),
 						"terms".tag( `${name}.tou` ),
 						"publish".tag( `${name}.pub` ),
