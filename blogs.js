@@ -14,7 +14,7 @@ const { Log, Copy } = ENUM;
 const { probeSite } = TOTEM;
 
 function Trace(msg,req,fwd) {	// execution tracing
-	"blog>".trace(msg,req,fwd);
+	"blog".trace(msg,req,fwd);
 }
 
 module.exports = {

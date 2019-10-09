@@ -118,7 +118,7 @@ append site_body
 
 			#grid.Logs( 
 				path= "/syslogs.db?Table=#{ds}&Client=#{client}", wrap, page=dspage, dims=dims,
-				cols="At.d,Module.t,Message.x,cpuUtil.n,memUtil.n" )
+				cols="At.d,Module.t,Case.t,Message.x,cpuUtil.n,memUtil.n" )
 
 			if more>0
 				#grid.ContextKeys(

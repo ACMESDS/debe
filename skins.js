@@ -10,7 +10,7 @@ var		// totem
 	ENUM = require("enum");
 
 function Trace(msg,req,fwd) {	// execution tracing
-	"skin>".trace(msg,req,fwd);
+	"skin".trace(msg,req,fwd);
 }
 
 const {Log,Copy,typeOf} = ENUM;

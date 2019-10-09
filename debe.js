@@ -84,7 +84,7 @@ const {
 const { renderSkin } = SKIN;
 
 function Trace(msg,req,fwd) {
-	"D>".trace(msg,req,fwd);
+	"debe".trace(msg,req,fwd);
 }
 
 var

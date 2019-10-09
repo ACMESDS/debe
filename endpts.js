@@ -17,7 +17,7 @@ var		// totem
 	ATOM = require("atomic");
 
 function Trace(msg,req,fwd) {	// execution tracing
-	"endpt>".trace(msg,req,fwd);
+	"endpt".trace(msg,req,fwd);
 }
 
 const { Copy,Each,Log,isString,isFunction,isError,isArray } = ENUM;
@@ -863,7 +863,10 @@ module.exports = {
 							break;
 					}
 
-					res( err || ok );
+					if ( err) 
+						Trace(err, req, res);
+					else
+						res( ok );
 				}
 
 				else	// unpiped (e.g. event generation) engines never participate in a supervised workflow
