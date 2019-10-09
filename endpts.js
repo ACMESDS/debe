@@ -593,7 +593,7 @@ module.exports = {
 			function log( ) {
 				var args = [];
 				for (var key in arguments) if ( key != "0" ) args.push( arguments[key] );
-				"pipe>".trace( arguments[0]+": "+JSON.stringify(args), req, Log );
+				"pipe".trace( arguments[0]+": "+JSON.stringify(args), req, Log );
 			}
 			
 			function pipe(sup, sql, job, cb) {
@@ -772,7 +772,7 @@ module.exports = {
 									isFlexed = FLEX.select[pipeName] ? true : false,
 									isDB = pipeType == "db";
 
-								if ( !isFlexed && !isDB ) {  // setup plugin autorun only when pipe references a file
+								if ( !isFlexed && !isDB  && false) {  // setup plugin autorun only when pipe references a file
 									sql.query( "DELETE FROM openv.watches WHERE File != ? AND Run = ?", [pipePath, pipeRun] );
 
 									sql.query( "INSERT INTO openv.watches SET ?", {  // associate file with plugin
