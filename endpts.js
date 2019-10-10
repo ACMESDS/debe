@@ -20,7 +20,7 @@ function Trace(msg,req,fwd) {	// execution tracing
 	"endpt".trace(msg,req,fwd);
 }
 
-const { Copy,Each,Log,isString,isFunction,isError,isArray } = ENUM;
+const { Copy,Each,Log,isString,isFunction,isError,isArray,Serialize } = ENUM;
 const { sqlThread, uploadFile, probeSite, errors, site, watchFile } = TOTEM;
 const { ingestList } = GEO;
 
@@ -1267,9 +1267,9 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 			greedy = false;
 
 		if ( neodb )
-		Each( actors, (actor,act,cb) => {
+		Serialize( actors, (act, actor) => {
 			Log(actor,act);
-			if (cb) // add actor
+			if (act) // add actor
 				neodb.cypher({
 					query: `MERGE (n:${act.type} {name:$name}) ON CREATE SET n = $props`,
 					params: {
@@ -1325,7 +1325,8 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 				if ( topic != "dnc" ) 
 					Each(actors, (source, src) => {
 						Each(actors, (target, tar) => {
-							if ( source != target )
+							if ( source != target ) {
+								Log( source, target, `MATCH (a:${src.type} {name:$src}),(b:${tar.type} {name:$tar}) MERGE (a)-[r:${topic}]-(b) ON CREATE SET r.created = timestamp() ` );
 								neodb.cypher({
 									query: `MATCH (a:${src.type} {name:$src}),(b:${tar.type} {name:$tar}) MERGE (a)-[r:${topic}]-(b) ON CREATE SET r.created = timestamp() `,
 									params: {
@@ -1333,6 +1334,7 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 										tar: target
 									}
 								}, err => Trace( err || "add edge") );
+							}
 								/*
 								sql.query(
 									"INSERT INTO app.nlpedges SET ? ON DUPLICATE KEY UPDATE Hits=Hits+1, Weight=Weight+?",
