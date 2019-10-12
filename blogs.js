@@ -137,6 +137,10 @@ catch (err) {
 [  // string prototypes
 	
 	// string serializers 
+	function XblogSimple(ctx, cb) {
+		this.Xblog(null, "", {}, {}, ctx, cb);
+	},
+	
 	function Xblog(req, ds, cache, ctx, rec, cb) {
 	/**
 	@member String

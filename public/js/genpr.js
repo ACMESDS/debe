@@ -1,19 +1,32 @@
 module.exports = {  // generate a random process with specified parameters
-	_keys: {
-		emProbs: "json comment 'gaussian mixing parameters { dims: [D1, D2 , ...] weights: [W1, W2 , ...] }' ",
-		Symbols: "json comment '[S1, S2, ... ] state symbols or null to generate defaults' ",
+	modkeys: {
+		emProbs: `json comment '
+Gaussian mixing parameters:
+
+	{ dims: [D1, D2 , ...] weights: [W1, W2 , ...] }
+	{ mu: [ vector, ...], sigma: [ cov matrix, ...] }
+	{ mixes: N, oncov: [ C, ... ], offcov: [ C, ... ] }
+
+' `,
+		Symbols: "json comment '[S1, S2, ... ] state symbols (null defaults)' ",
 		Members: "int(11) default 100 comment 'number in process ensemble' ",
+		Nyquist: "float default 1 comment 'process over-sampling factor' ",
+		Steps: "int(11) default 0 comment 'number of process steps' ",
+		Batch: "int(11) default 0 comment 'supervisor batching size in steps (0 disables batching)' ",
 		
-		type_Markov: "json comment 'Markov process with KxK (K^2-K parameters) {TxPrs: [ [pr, ...], ...]} || {states: K, fr: {to: pr, ... } , ... \"fr,...\": \"to,...\" }' "	,
+		type_Markov: `json comment '
+Markov process with K^2-K parameters:
+
+	{TxPrs: [ [pr, ...], ...]}
+	{ states: K, fr: {to: pr, ... } , ... "fr, ..." : "to, ..." }
+
+' `,
 		type_Wiener: "json comment 'Wiener process with specified diffusion {walks}' ",
 		type_Bayes: "json comment 'Bayes-Dirchlet process with specified equilibrium probs [pr, ... ]' ",
 		type_Gauss: "json comment 'Gauss proccess with specified {mean,coints,dim,model,mineig}' ",
 		type_Gillespie: "json comment 'Gillespie-Dobbs process with specified number of {states}' ",
 		type_Ornstein: "json comment 'Ornstein-Ulenbeck process with specified {theta, a = sigma/sqrt(2 theta)}' ",
 	
-		Nyquist: "float default 1 comment 'process over-sampling factor' ",
-		Steps: "int(11) default 0 comment 'number of process steps' ",
-		Batch: "int(11) default 0 comment 'steps to next supervised learning' ",
 		Save_end: "json",
 		Save_batch: "json",
 		Save_config: "json",
@@ -137,7 +150,7 @@ module.exports = {  // generate a random process with specified parameters
 		
 		$.gen( opts, evs => {
 			ctx.Save = evs;
-			Log( evs.length ? evs.length*evs[0].length : "no", " events generated");
+			Log( evs.length ? evs.length: "no", "events generated");
 			res( ctx );
 		});
 

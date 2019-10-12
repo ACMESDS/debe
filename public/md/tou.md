@@ -2,15 +2,15 @@
 [my link](/junk.txt)
 
 # test2
-%{/barplot.view}
+% {/barplot.view}
 
 # fetch test
-As of ${now} transition status done
+As of $ {now} transition status done
 
-potential suitors include [](${urls.suitors}) thanks
+potential suitors include % {urls.suitors} thanks
 
 # test urls
-urls: ${JSON.stringify( urls )}
+urls: $ {JSON.stringify( urls )}
 
 a link: [TEST](test test test)
 
@@ -25,15 +25,15 @@ followed by another:
 	way cool !!
 	[should be ignored](/nogo.com)
 
-by: ${by}
+by: $ {by}
 
 # spoofed input
-${register} ${input({a:"test",b:"yay"})}
+$ {register} $ {input({a:"test",b:"yay"})}
 
-email test: ${request("click here/some test")}
+email test: $ {request("click here/some test")}
 
 query a,b,c: $ {a}, $ {b}, $ {c}
 
 # Lets make an interface
 
-Here ${interface()}
+Here $ {interface()}

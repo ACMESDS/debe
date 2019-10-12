@@ -250,8 +250,8 @@ module.exports = {
 		
 		res( "exporting" );
 		CP.exec(
-			`mysqldump -u$MYSQL_USER -p$MYSQL_PASS -h$MYSQL_HOST --add-drop-table app ${name} >./stores/${name}.sql`,
-			(err,out) => Trace( `EXPORTED ${name} `+ (err||"ok") ), req );							
+			`mysqldump -u$MYSQL_USER -p$MYSQL_PASS -h$MYSQL_HOST --add-drop-table app ${name} >./stores/${name}.nb`,
+			(err,out) => Trace( `EXPORTED ${name} `+ (err||"ok") ), req );	
 	},
 
 	importPlugin: function (req,res) {
@@ -261,7 +261,7 @@ module.exports = {
 	
 		res( "importing" );
 		CP.exec(
-			`mysql -u$MYSQL_USER -p$MYSQL_PASS -h$MYSQL_HOST --force app < ./stores/${name}.sql`,
+			`mysql -u$MYSQL_USER -p$MYSQL_PASS -h$MYSQL_HOST --force app < ./stores/${name}.nb`,
 			(err,out) => Trace( `IMPORTED ${name} `+ (err||"ok") ), req );							
 	},
 

@@ -384,7 +384,7 @@ var
 		EMPTY: "empty", 
 		FAULT: "fault", 
 		OK: "ok",
-		NOSELECT: "please select a record"
+		NOSELECT: "select a record"
 	},	
 		
 	SELECT_CELL = {},					// holds grid shift left-right context
@@ -1033,13 +1033,10 @@ function DS(anchor) {
 				fKey = fOpts[0],
 				fParm = PARMS[ fKey ] || {Type: calc ? "mediumtext" : "text", Label:fKey, Special:""},
 				fType = LOOKUPS.keys[ fKey ] ? "o" : fOpts[1] || fParm.Type || "text",
-				fDoc = unescape(fOpts[2] || "please follow link to document this field"), //.replace(/\$dot/g,"."),
+				fDoc = unescape(fOpts[2] || ""), 
 				fQual = fOpts[3] || "",
-				//fLabel = fOpts[2] || fParm.Label || fKey,
-				//fChange = HISTORY[path+"."+fKey] || {Moderators:""},
 				fTip = [
 					fKey.tag("a",{href:`/parms.view?parm=${fKey}`}) ,
-			//		fChange.Moderators,
 					"moderate".tag("a", {href:"/moderate.view"}),
 					fDoc
 					//fParm.Special || "" 
