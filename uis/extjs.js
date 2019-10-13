@@ -1013,7 +1013,6 @@ function DS(anchor) {
 							store.getRange().Each( function (n,rec) {
 								fCalc.push( rec.getData() );
 							});*/
-
 						return calc(cellVal.substr(1),cellMeta,Math, rec.getData()); //{r:rowIdx,c:colIdx},rec.getData(),fCalc);
 					
 					else 

@@ -12,19 +12,19 @@ append site_body
 	#fit.Intro
 
 		:markdown
-			#{title} provides a [cloud computing service](https://totem.west.ile.nga.ic.gov/api.view) for producing geoint products.
-			#{title} uses [TOTEM endpoints](https://github.com/acmesds/totem):
+			[#{title}](https://totem.west.ile.nga.ic.gov/api.view) provides a scalable service for producing and
+			evaluating geoint products.  #{title} uses [TOTEM endpoints](https://github.com/acmesds/totem):
 
-				POST /NODE ?? NODE ...
-				GET /NODE ?? NODE ...
-				PUT /NODE ?? NODE ...
-				DELETE /NODE ?? NODE ...
+				POST /NODE
+				GET /NODE 
+				PUT /NODE 
+				DELETE /NODE
 
-			to access its NODEs.  A NODE references a dataset, notebook, file or command:
+			to access its NODEs:
 
 				DATASET.TYPE ? QUERY
 				NOTEBOOK.TYPE ? QUERY
-				FILE.TYPE ? QUERY
+				AREA/PATH/FILE.TYPE ? QUERY
 				COMMAND.TYPE ? QUERY
 
 			where (see [API](https://totem.west.ile.nga.ic.gov/api.view) and 
@@ -57,12 +57,12 @@ append site_body
 
 				agent | alert | ingest | riddle | task | ping
 
-			for distributing jobs, alerting clients, inngesting data, validating sessions, sharding tasks, and 
-			testing connections.  In addition, #{title} establishes FILE areas: 
+			to distribute jobs, alert clients, ingest data, validate sessions, shard tasks, and 
+			test connections.  In addition, #{title} establishes file AREAs: 
 
-				stores | uploads | shares
+				stores | uploads | shares | west | east
 
-			for uploading, storing and serving files.
+			for supervised, unsupervised, and sharing of FILEs.
 
 	#accordion.Views
 
@@ -72,8 +72,9 @@ append site_body
 				Views are customizable [Jade skinning engines](/skinguide.view) that define a client's view, 
 				and are accessed at the following routes:
 
-					GET	/SKIN.view	Render SKIN from enabled engines or internal jade files
-					GET	/DATASET.view	Dynamically generate a skin for this DATASET
+					GET	/SKIN.view	Render SKIN from a jade engines or jade file
+					GET	/DATASET.view	Render a skin for this DATASET
+					GET	/NOTEBOOK.view	Render a skin for this NOTEBOOK
 
 		#fit.Queries
 			:markdown
@@ -97,23 +98,21 @@ append site_body
 			:markdown
 				File access is provided at the following endpoints:
 
-					GET	/AREA/FILE.TYPE?QUERY	Return FILE from AREA using query parameters
-					GET	/ATTR/FILE.TYPE?QUERY	Return ATTRribute of a FILE
+					GET	/AREA/PATH/FILE.TYPE?QUERY	Return FILE from AREA using query parameters
 					GET	/AREA/	Return list of files in this AREA
 
 				where AREA references a *#{title}* internal file store or a one of its virtual stores:
 
-					code	file pulled from the [engines db](/engine.view)
-					jade	file pulled from the [engines db](/engine.view) or (failing that) the jade file area
-					uploads	file pulled from delete-on-access area
-					stores	file pulled from long-term area
+					uploads	unsupervised file pulled from delete-on-access area
+					stores	supervised file pulled from long-term area
 					positives	file pulled from positive-proof area
 					negatives	file pulled from negative-proof area
-					cert	generates a PKI cert for the requested user
 					sim		reserved for simulation engines
 					chips	image chipping cache
 					tips	image tipping cache
 					shares 	spot to place skinning content
+					west ile west file system
+					east ile east file system
 					
 		#fit.Queries
 			:markdown
@@ -454,16 +453,16 @@ append site_body
 				> [+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) *Entry* json primes context on entry using { KEY: "SELECT ....", ...}  
 				> [+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) *Exit* json saves context on exit using { KEY: "UPDATE ....", ...}  
 
-				During execution, the Pipe will automatically add the keys:
+				as well as context-saving keys:
+				> *Save_STATE* aggregates streaming events [ {at:"STATE", ...}, ... ]  
+				> *Save_jpg* generates jpg from {at: "jpg": prime: "name", save: "name", index: [...], values: [...] } event  
+				> *Save* collects unaggregated streaming events  
+
+				During execution, the *Pipe* will automatically add the keys:
 				> *$* returned dataset (chips, events, docs, images, ....)
 				> *Thread* name of compute thread
 
-				and the notebook may itself add keys to retain usecase results:
-				> *Save_STATE* aggregates events [ {at:"STATE", ...}, ... ]  
-				> *Save_rem* collects remaining unaggregated events  
-				> *Save_jpg* generates jpg from {at: "jpg": prime: "name", save: "name", index: [...], values: [...] } event  
-
-				# Place a DATASET into a TYPE-specific supervised workflow using the Pipe:
+				Place a DATASET into a TYPE-specific supervised workflow using the *Pipe*:
 				
 					"/PATH/DATASET.TYPE?KEY=VALUE || $.JS ..."  
 					{ "$": "MATHJS" }
@@ -473,25 +472,13 @@ append site_body
 				where $ references the TYPE-specific json data || GIMP image || event list || document text || db record.  The { KEY: [VALUE, ...] } [enumeration pipe](/api.view) 
 				generates usecases over permuted context KEYs.  The $ json can be post-processed by a JS script or by a { $: "MATHJS" } [matlab-js scripting pipe](/api.view).
 				
-				## The { ... } enumeration pipe
+				## The enumeration pipe
 				
 				This enumeration pipe will generate and run all usecases defined by crossing the values of the specified context KEYs.  KEYs
-				not in the notebook context are dropped.  The Pipe.Pipe KEY, typically a simply "path", can also be another enumeration pipe.  
+				not in the notebook context are dropped.  The *Pipe.Pipe* KEY (typically a simple "path"), can also be another enumeration pipe.  
 				KEYs name "KEY.SUBKEY ..." can be used to set the SUBKEYs of a KEY json store.
 
-				## The { ... } scripting pipe
-
-				## The "/DATASET.json" pipe
-				
-				## The "/DATASET.jpg" pipe
-				
-				## The "/DATASET.stream" pipe
-
-				## The "/DATASET.db" pipe
-				
-				## The "/DATASET.txt" pipe
-				
-				## The "/DATASET.aoi" pipe
+				## The TYPE-aoi pipe
 				
 				The aoi-pipe sources events ingested by the specified use-CASE of the specified DATASET, and accepts QUERY keys:
 				
@@ -528,7 +515,7 @@ append site_body
 						
 				# *Description* may contain markdown:
 
-					%{ PATH.TYPE ? w=WIDTH & h=HEIGHT & x=KEY$INDEX & y=KEY$INDEX ... }
+					% { PATH.TYPE ? w=WIDTH & h=HEIGHT & x=KEY$INDEX & y=KEY$INDEX ... }
 					~{ TOPIC ? starts=DATE & ends=DATE ... }
 					[ LINK ] ( URL )
 					$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$  
@@ -551,11 +538,11 @@ append site_body
 					
 				to document notebook usecases.  For example:
 
-					%{/plot.view?src=regress&name=test1&w=600&h=400&x=Save_train$.x[$chan]&y=Save_train$.y[$chan]&min=0,0&max=255,255}
+					% {/plot.view?src=regress&name=test1&w=600&h=400&x=Save_train$.x[$chan]&y=Save_train$.y[$chan]&min=0,0&max=255,255}
 					[go home](home.view?w=500&h=100)
 					[go here grasshopper](https://here.gov/test.txt)
-					%{/shares/a1.jpg}
-					%{force.view?w=100&h=100&src=/queues?_pivots=class}
+					% {/shares/a1.jpg}
+					% {force.view?w=100&h=100&src=/queues?_pivots=class}
 					$$ \alpha = 1 + \beta $$ impressive 'eh
 
 				will embed: (1) a [d3 plot](/plot.view) of the x,y data from regress usecase "test1" using the chan widget, (2) 
@@ -1126,15 +1113,12 @@ append site_body
 
 	#accordion.Commands
 		:markdown
-			The following commands maintain **#{title}**:
+			The following command endpoints maintain **#{title}**:
 
 				GET /ping 		# check client-server connectivity
 				GET /alert 		# broadcast alert &msg to all clients
 				GET /riddle		# validate client when antibot protection configured
 				GET /task 		# shard task to workers and nodes
-				GET /help 		# request help from a poc
 				GET /ingest		# start source ingest 
-				GET /config 	# show system configuration
-				GET /service/algorithm/NOTEBOOK # Execute NOTEBOOK with SOAP/XML parameters
 
 //- UNCLASSIFIED

@@ -1,71 +1,71 @@
 /**
 @class DEBE
 	[SourceForge](https://sourceforge.net) 
-	[github](https://github.com/acmesds/debe) 
+	[github](http://sc.appdev.proj.coe/acmesds/debe) 
 	[geointapps](https://git.geointapps.org/acmesds/debe)
 	[gitlab](https://gitlab.west.nga.ic.gov/acmesds/debe)
 	
 # DEBE
 
-DEBE provides a [cloud computing service](https://totem.west.ile.nga.ic.gov/api.view) for producing geoint products.
-DEBE uses [TOTEM endpoints](https://github.com/acmesds/totem):
+[DEBE](https://totem.west.ile.nga.ic.gov/api.view) provides a scalable service 
+for producing and evaluating geoint products.  DEBE provides [TOTEM endpoints](http://sc.appdev.proj.coe/acmesds/totem):
 
-	POST /NODE ?? NODE ...
-	GET /NODE ?? NODE ...
-	PUT /NODE ?? NODE ...
-	DELETE /NODE ?? NODE ...
+	POST /NODE 
+	GET /NODE 
+	PUT /NODE 
+	DELETE /NODE 
 
-to access its NODEs.  A NODE references a dataset, plugin, file or command:
+to access its NODEs:
 
 	DATASET.TYPE ? QUERY
-	PLUGIN.TYPE ? QUERY
-	FILE.TYPE ? QUERY
+	NOTEBOOK.TYPE ? QUERY
+	AREA/PATH/FILE.TYPE ? QUERY
 	COMMAND.TYPE ? QUERY
 
 where (see [API](https://totem.west.ile.nga.ic.gov/api.view) and 
 [skinning guide](https://totem.west.ile.nga.ic.gov/skinguide.view)) TYPE 
-will convert DATASET:
+will either convert DATASET:
 
 	db | xml | csv | txt | flat | kml | html | json
 
 inspect DATASET:
 
-	tree | schema | nav | stat | delta
+	tree | schema | nav | delta
 
-render PLUGIN:
+render NOTEBOOK:
  
 	view | run | plugin | pivot | site | spivot | brief | gridbrief | pivbrief | runbrief
 
-probe PLUGIN:
+probe NOTEBOOK:
 
-	exe | tou | md | status | suitors | usage | EVENTS
+	exe | tou | md | status | suitors | usage | reset | EVENTS
 
-manage PLUGIN:
+manage NOTEBOOK:
 
 	import | export | publish | addkey | subkey
 
-license PLUGIN:
+license NOTEBOOK:
 
 	js | py | m | me | jade | ...
 
-DEBE provides the following COMMANDs:
+DEBE also provides the following COMMAND endpoints:
 
 	agent | alert | ingest | riddle | task | ping
 	
-for distributing jobs, alerting clients, inngesting data, validating sessions, sharding tasks, and 
-testing connections.  In addition, DEBE esablishes FILE areas: 
+to distribute jobs, alert clients, ingest data, validate sessions, spread tasks, and 
+test connections.  In addition, DEBE establishes several file AREAs: 
 
-	stores | uploads | shares
+	stores | uploads | shares | west | east | jades
 
-for uploading, storing and serving files.
+for supervised/unsupervised FILE sharing.
 
 ## Installation
 
-Clone [DEBE web service](https://github.com/acmesds/debe) into your PROJECT/debe folder.  
-Clone [FLEX database extender](https://github.com/acmesds/flex) into your PROJECT/flex folder.  
-Clone [CHIPPER earth-focused data segmenter](https://github.com/acmesds/chipper) into your PROJECT/chipper folder.  
-Clone [ATOMIC engine plugin](https://github.com/acmesds/engine) into your PROJECT/atomic folder.  
-Clone [TOTEM base web service](https://github.com/acmesds/totem) into your PROJECT/totem folder.
+Clone [DEBE web service](http://sc.appdev.proj.coe/acmesds/debe) into your PROJECT/debe folder.  
+Clone [FLEX database extender](http://sc.appdev.proj.coe/acmesds/flex) into your PROJECT/flex folder.  
+Clone [CHIPPER earth-focused data segmenter](http://sc.appdev.proj.coe/acmesds/chipper) into your PROJECT/chipper folder.  
+Clone [ATOMIC engine plugin](http://sc.appdev.proj.coe/acmesds/engine) into your PROJECT/atomic folder.  
+Clone [TOTEM base web service](http://sc.appdev.proj.coe/acmesds/totem) into your PROJECT/totem folder.
 
 You will typically want to redirect the following to your project
 
@@ -73,7 +73,7 @@ You will typically want to redirect the following to your project
 	ln -s PROJECT/totem/certs certs					# truststore folder for name.pfx certs 
 	ln -s PROJECT/JPGS captcha 	 				# folder for captcha digits
 
-### Manage 
+### Start 
 
 	npm run [ edit || start ]			# Configure environment
 	npm test [ ? || D1 || D2 || ... ]		# Unit test
@@ -89,12 +89,12 @@ Simply require, configure and start DEBE:
 		key: value, 						// set key
 		"key.key": value, 					// indexed set
 		"key.key.": value					// indexed append
-	}, function (err) {
+	}, err =>  {
 		console.log( err ? "something evil is lurking" : "look mom - Im running!");
 	});
 
 where [its configuration keys](https://totem.west.ile.nga.ic.gov/shares/prm/debe/index.html) follow 
-the [ENUM copy()](https://github.com/acmesds/enum) conventions.
+the [ENUM deep copy conventions](http://sc.appdev.proj.coe/acmesds/enum).
 
 ### D1 - Encypted with a database
 
@@ -110,7 +110,7 @@ the [ENUM copy()](https://github.com/acmesds/enum) conventions.
 			}
 		}
 
-	}, function (err) {
+	}, err =>  {
 		Trace( err || "Yowzers - An encrypted DEBE service with a database watching files in uploads area" );
 	});
 
@@ -132,7 +132,7 @@ the [ENUM copy()](https://github.com/acmesds/enum) conventions.
 			}
 
 		}
-	}, function (err) {
+	}, err =>  {
 		Trace( "This bad boy in an encrypted service with a database and has an /wfs endpoint" );
 	});
 		

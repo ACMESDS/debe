@@ -91,7 +91,7 @@ var
 	DEBE = module.exports = TOTEM;
 
 Copy({
-	pipeJob: {		//  pipe job by pipe path type
+	pipeJob: {		//<  pipe job to supervisor by pipe type
 		stream: pipeStream,
 		export: pipeStream,
 		nitf: pipeImage,
@@ -111,7 +111,7 @@ Copy({
 		aoi: pipeAOI
 	},
 	
-	reroute: {  //< sql.acces routes to provide secure access to db
+	reroute: {  //< sql table routers for providing secure access
 		"engines": ctx => { // protect engines 
 			//Log("<<<", ctx);
 			if ( DEBE.site.pocs.overlord.indexOf(ctx.client.toLowerCase()) >= 0 ) // allow access
@@ -145,13 +145,9 @@ Copy({
 		}
 	},
 
-	blogContext: BLOG,
+	blogContext: BLOG,		//< blogging / skinning context
 		
-	//init: Initialize,
-		
-	//plugins: $.libs,
-		
-	onStartup: function () {
+	onStartup: function () {	//< runs when server starts
 		var
 			site = DEBE.site,
 			pocs = site.pocs,
@@ -215,7 +211,7 @@ Copy({
 		}			
 	},
 		
-	onUpdate: function (sql,ds,body) { // update change journal 
+	onUpdate: function (sql,ds,body) { //< runs when dataset changed
 		sql.hawk({Dataset:ds, Field:""});  // journal entry for the record itself
 		if (false)   // journal entry for each record key being changed
 			for (var key in body) { 		
@@ -224,7 +220,7 @@ Copy({
 			}
 	},
 	
-	initialize: function () {
+	initialize: function () {	//< initialize and configure
 	/**
 	@method Initialize
 	@member DEBE
@@ -411,10 +407,7 @@ Copy({
 			ATOM.config({		// plugin manager
 				thread: sqlThread,
 				cores: TOTEM.cores,
-				//watchFile: DEBE.watchFile,
 				plugins: Copy({   // share selected FLEX and other modules with engines
-					// MAIL: FLEX.sendMail,
-					//RAN: require("randpr"),
 					$: $,
 					$NLP: READ.score,
 					$GEO: GEO,
@@ -440,7 +433,7 @@ Copy({
 			else
 				DEBE.onStartup();
 			
-			if ( jades = DEBE.paths.jades && "" )
+			if ( jades = DEBE.paths.jades && false )
 				DEBE.getIndex( jades, files => {  // publish new engines
 					var ignore = {".": true, "_": true};
 					files.forEach( (file) => {
@@ -465,17 +458,13 @@ Copy({
 
 		}); }); }); 
 	},
-	
-	// watchdog configuration
 		
-	dogs: DOG,
+	dogs: DOG,		// watchdogs
 	
 	diag: {  //< reserved for self diag parms
 		status: "", 
 		counts: {State: ""}
 	},
-
-	// request configuration
 
 	"reqFlags." : {  //< endpoint request flags
 		
@@ -522,20 +511,9 @@ Copy({
 		
 	},
 											 
-	"byFilter." : { //< endpoint types to filter dataset recs on specifed req-res thread
+	// router cofiguration
 		
-		/*
-		view: (recs,req,res) => {  //< dataset.view returns rendered skin
-			res( recs );
-		},*/
-		/*
-		exe: (recs,req,res) => {
-			res( "running" );
-			recs.forEach( rec => {
-				req.query = {ID: rec.ID};
-				exePlugin(req, msg => Trace( `RUN ${req.table}.${rec.Name} ${msg}` ) );
-			});
-		},*/
+	"byFilter." : { //< endpoint types to filter dataset recs on specifed req-res thread
 		
 		kml: (recs,req,res) => {  //< dataset.kml converts to kml
 			res( TOKML({}) );
@@ -571,6 +549,7 @@ Copy({
 			res(recs);
 		},
 		
+		/*
 		stat: (recs,req,res) => { // dataset.stat provide info
 			var 
 				table = req.table,
@@ -600,7 +579,7 @@ Usage: ${uses.join(", ")}  `);
 				}
 			});
 			
-		},
+		}, */
 		
 		html: (recs,req,res) => { //< dataset.html converts to html
 			res( DEBE.site.gridify( recs ).tag("table", {border: "1"}) );
@@ -974,11 +953,9 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 	},
 
-	// endpoint routers
-		
-	/*
 	"byArea.": { //< routers for endpoints at /AREA/file ...
-	}, */
+		jades: TOTEM.requestFile
+	},
 
 	"byTable.": {	//< routers for endpoints at /TABLE
 		anet: sysGraph,
@@ -1000,10 +977,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	},
 	
 	"byType.": { //< routers for endpoint types at /DATASET.TYPE
-		// file attributes
-		//code: getPlugin,
-		//jade: getPlugin,	
-		
 		// doc generators
 		xpdf: getDoc,
 		xjpg: getDoc,
@@ -1066,10 +1039,6 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		sub: retractPlugin
 	},
 
-	/*
-	"byActionTable.": {  //< routers for CRUD endpoints at /DATASET 
-	}, */
-	
 	// private parameters
 		
 	admitRule: { 	//< admitRule all clients by default 	
@@ -1207,8 +1176,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		gohome: "Totem".tag("/fan.view?src=info&w=1000&h=600")  + ": protecting the warfighter from bad data",
 		
 		engine: "SELECT * FROM app.engines WHERE least(?,1) LIMIT 1",
-		jades: "./public/jade/",		// path to default view skins
-		jadeRef: "./public/jade/ref.jade",	// jade reference path for includes, exports, appends
+		jades: "./jades/",		// path to default view skins
+		jadeRef: "./jades/ref.jade",	// jade reference path for includes, exports, appends
 		
 		mime: {
 			/*

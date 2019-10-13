@@ -75,15 +75,15 @@ append site_body
 					> [+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) *Entry* json primes context on entry using { KEY: "SELECT ....", ...}  
 					> [+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) *Exit* json saves context on exit using { KEY: "UPDATE ....", ...}  
 						  
-					During execution, your Pipe will automatically add the keys:
+					as well as context-saving keys:
+					> *Save_STATE* aggregates streaming events [ {at:"STATE", ...}, ... ]  
+					> *Save_jpg* generates jpg from {at: "jpg": prime: "name", save: "name", index: [...], values: [...] } event  
+					> *Save* collects unaggregated streaming events  
+
+					During execution, the *Pipe* will automatically add the keys:
 					> *$* returned dataset (chips, events, docs, images, ....)
 					> *Thread* name of compute thread
 
-					and your notebook may itself add keys to retain usecase results:
-					> *Save_STATE* aggregates events [ {at:"STATE", ...}, ... ]  
-					> *Save_rem* collects remaining unaggregated events  
-					> *Save_jpg* generates jpg from {at: "jpg": prime: "name", save: "name", index: [...], values: [...] } event  
-						  
 					Context keys can also be [grouped](/skinguide.view).  E.g. g1_a, g1_b, g1_g2_x, g1_g2_y, _roX, _roY.
 					
 					Header colors reflect [notebook status](/projects.view): <font color="green">completed</font>, <font color="blue">policed</font>, <font color="orange">funded</font>, <font color="red">unfunded</font>.
