@@ -5,7 +5,7 @@ Gaussian mixing parameters:
 
 	{ dims: [D1, D2 , ...] weights: [W1, W2 , ...] }
 	{ mu: [ vector, ...], sigma: [ cov matrix, ...] }
-	{ mixes: N, oncov: [ C, ... ], offcov: [ C, ... ] }
+	{ mixes: N, oncov: [ X1, ... ], offcov: [ X1, ... ], snr: X }
 
 ' `,
 		Symbols: "json comment '[S1, S2, ... ] state symbols (null defaults)' ",

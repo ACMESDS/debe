@@ -242,7 +242,6 @@ module.exports = {
 					cb(file,job);
 					sqlThread( sql => {
 						sql.query("UPDATE app.files SET _State_Archived=false WHERE ?", {ID: file.ID});
-						sql.release();
 					});
 				});
 			}										

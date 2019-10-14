@@ -174,8 +174,6 @@ Copy({
 				//sql.query("DELETE FROM app.nlpactors");
 				//sql.query("DELETE FROM app.nlpedges");
 			}
-			
-			sql.release();
 		});
 		
 		if (neodb = DEBE.neodb) {
@@ -377,11 +375,10 @@ Copy({
 				sql.query('SELECT * FROM app.nlprules WHERE Enabled', (err,rules) => {
 					READ.train( rules );
 				});
-				sql.release();
 			});
 			
 			FLEX.config({ 		// table emulation
-				thread: sqlThread,
+				sqlThread: sqlThread,
 				//emitter: DEBE.IO ? DEBE.IO.sockets.emit : null,
 				//skinner: JADE,
 				probeSite: TOTEM.probeSite,
@@ -394,18 +391,18 @@ Copy({
 			GEO.config({	// voxelizing geo surfaces
 				//source: "",
 				taskPlugin: null,
-				thread: sqlThread,
+				sqlThread: sqlThread,
 				probeSite: TOTEM.probeSite
 			});
 
 			$.config({		// matrix manipulator
-				thread: sqlThread,
+				sqlThread: sqlThread,
 				runTask: TOTEM.runTask,
 				probeSite: TOTEM.probeSite
 			});
 
 			ATOM.config({		// plugin manager
-				thread: sqlThread,
+				sqlThread: sqlThread,
 				cores: TOTEM.cores,
 				plugins: Copy({   // share selected FLEX and other modules with engines
 					$: $,
@@ -452,8 +449,6 @@ Copy({
 								//Trace(err);
 							}
 					});
-
-					sql.release();
 				});
 
 		}); }); }); 
@@ -1104,7 +1099,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 			return recs.replace(subs);
 		},
 		
-		jsonify: function(recs) {  //< jsonize dataset
+		json: function(recs) {  //< jsonize dataset
 		/**
 		@method json
 		Jsonize records.
@@ -2101,8 +2096,6 @@ assessments from our worldwide reporting system, please contact ${poc}.
 									});
 
 								}
-
-								sql.release();
 							});
 						}
 					});
@@ -2164,10 +2157,8 @@ clients, users, system health, etc).`
 				if (rec) 
 					cb(rec,sql);
 				
-				else {
+				else 
 					sql.endBulk();
-					sql.release();
-				}
 			});
 		}
 			

@@ -161,8 +161,6 @@ module.exports = {  //< watch dogs cycle time in secs (zero to disable)
 						to: pocs.admin,
 						body: `Please add more disk space to ${dog.site.nick} or ` + "shed load".tag(dog.site.urls.worker+"/queues.view")
 					}, sql );
-
-				sql.release();
 			});
 			});
 			});
@@ -420,8 +418,6 @@ Further information about this file is available ${paths.moreinfo}. `;
 
 						});
 					});
-					sql.release();
-
 				});	
 			});
 
@@ -491,8 +487,6 @@ Further information about this file is available ${paths.moreinfo}. `;
 						if ( rtn[n] > 5*dog[n] ) rtn.State = "critical";
 						else
 						if ( rtn[n] > dog[n] ) rtn.State = "warning";
-
-					sql.release();
 				});
 				});
 				});
@@ -544,8 +538,6 @@ Further information about this file is available ${paths.moreinfo}. `;
 					.on("end", () => {
 						sql.query( "DELETE FROM app.nlpactors" );
 					});
-
-					sql.release();
 				});
 	}),  */
 
@@ -688,8 +680,6 @@ mv '${msg}'_files index_files ;
 					}
 				});
 			});
-
-			sql.release();
 		});
 	}),
 
