@@ -2,10 +2,12 @@
 @class DEBE.Skinning
 */
 
-var		// 3rd party
-	JADE = require('jade');				//< using jade as the skinner	
+var		
+	// nodejs
+	FS = require("fs"),
+	JADE = require('jade'),			//< using jade as the skinner	
 
-var		// totem
+	// totem
 	TOTEM = require("totem"),
 	ENUM = require("enum");
 
@@ -77,11 +79,18 @@ module.exports = {
 			@method renderFile
 			Render Jade file at path this to res( err || html ) in a new context created for this request.  
 			**/
+				
 				try {
-					JADE.renderFile( file, ctx ).Xinclude( "", html => res(html) );
+					FS.readFile( file, "utf-8", (err,jade) => {
+						if (err) 
+							res( err );
+					
+						else
+							renderJade( jade, ctx );
+					})
 				}
 				catch (err) {
-					Trace(err+"");
+					Log(err);
 					res(  err );
 				}
 			}
@@ -211,12 +220,7 @@ module.exports = {
 			@method renderJade
 			Render Jade string this to res( err || html ) in a new context created for this request. 
 			**/
-				try {
-					res( JADE.compile(jade, ctx) (ctx) );
-				}
-				catch (err) {
-					res( err );
-				}
+				jade.Xskin(ctx, (html, err) => res( err || html ) );
 			}
 
 			sql.forFirst( "", paths.engine, { // Probe engine

@@ -8,7 +8,8 @@ var		// 3rd party
 var		// totem
 	TOTEM = require("totem"),
 	FLEX = require("flex"),	
-	ENUM = require("enum");
+	ENUM = require("enum"),
+	JADE = require('jade');				//< using jade as the skinner	
 
 const { Log, Copy } = ENUM;
 const { probeSite } = TOTEM;
@@ -136,7 +137,16 @@ catch (err) {
 
 [  // string prototypes
 	
-	// string serializers 
+	function Xskin( ctx, cb ) {
+		try {
+			(JADE.compile(this, ctx) (ctx)).Xinclude( "", html => cb(html) );
+		}
+		catch (err) {
+			Log("xjade", err);
+			cb( err+"" );
+		}
+	},
+	
 	function XblogSimple(ctx, cb) {
 		this.Xblog(null, "", {}, {}, ctx, cb);
 	},
@@ -342,7 +352,11 @@ catch (err) {
 			
 			pattern = /\%\{([^\}]*)\}/g;
 		
-		this.serialize( fetch, pattern, key, html => cb(html) ); 
+		//Log("Xinc=", this);
+		this.serialize( fetch, pattern, key, html => {
+			//Log("Xinc rtn>>>>", html);
+			cb(html);
+		}); 
 	},
 
 	function Xscript( ctx, cb ) {  // expands scripting tags then callsback cb(vmctx, final markdown)
@@ -495,29 +509,6 @@ catch (err) {
 		this.serialize( fetch, pattern, key, html => cb(html) );
 	}
 	
-	/*
-	function Xskin( ctx, proxy, cb ) { // return a skin via a proxy site
-
-		var 
-			url = URL.parse(proxy || ""),
-			host = proxy ? url.host.split(".")[0] : null,
-			md = this, 
-			header = proxy 
-				? `img(src="/shares/images/${host}.jpg", width="100%", height="15%")`
-				: "p",
-			jade = ":markdown\n\t" + md.replace(/^\n* /,"").replace(/\n/g,"\n\t");
-
-		ctx.filename = TOTEM.paths.jadeRef;
-		
-		try {
-			cb( JADE.compile(jade, ctx) (ctx) );
-		}
-		catch (err) {
-			// Log(err);
-			cb( err+"" );
-		}
-	} */
-	// //proxy ? this : this.replace(/\ * \ *Owner\ * \ */g,`**Owner** (${req.client})`),
 ].Extend(String);
 
 function docify( obj , idx ) {

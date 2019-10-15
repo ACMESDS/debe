@@ -270,11 +270,13 @@ module.exports = {
 		
 		getEngine( sql, table, eng => {
 			if ( eng )
+				res( eng.ToU || "No Terms-Of-Use defined" );
+				/*
 				if ( eng.ToU )
 					eng.ToU.Xfetch( res );
 
 				else 
-					res( null );
+					res( null ); */
 			
 			else 
 				res( errors.noEngine );
