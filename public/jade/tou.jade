@@ -1,0 +1,42 @@
+- alabel = "click here for contents"
+:markdown
+	# test1
+	[#{alabel}](/junk.txt)
+
+	# attach a barplot
+	%{/barplot.view}
+
+	# fetch test
+	As of #{now} transition status done
+
+	potential suitors include % {urls.suitors} thanks
+
+	# test urls
+	all urls: #{JSON.stringify( urls )}
+
+	a code block test:
+
+		test1
+		test2
+
+	followed by another:
+
+		wow
+		way cool !!
+		[should be ignored](/nogo.com)
+
+	by: #{by}
+
+	# spoofed input
+	!{register()}
+
+	email test: !{request(reqs.help)}
+
+	query a,b,c: #{a}, #{b}, #{c}
+
+	# Lets make an interface
+
+	Here !{interface()}
+	
+	and a shortcut to url contents: #{_suitors} vs. #{urls.suitors}
+	
