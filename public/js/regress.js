@@ -144,13 +144,13 @@ The following context keys are accepted:
 		function trainer(x,y,x0,cb) {
 			
 			function saver( cls, x, y, x0, cb ) {
-				if ( keep ) {
+				if ( Keep ) {
 					var 
-						idx = x.shuffle(keep, true),
+						idx = x.shuffle(Keep, true),
 						x = x.indexor(idx),
 						y = y ? y.indexor(idx) : null;
 
-					Log("keep", keep, idx.length, x.length);
+					Log("Keep", Keep, idx.length, x.length);
 					
 					if ( x0 = x0 || x ) 
 						$( `y0 = ${use}_predict(cls, x0, solve)`, {
@@ -180,14 +180,14 @@ The following context keys are accepted:
 
 					/*
 					$( 
-						`u = shuffle(x,y,keep);  y0 = isDefined(x0) ? ${use}_predict(cls, x0) : null; `,
+						`u = shuffle(x,y,Keep);  y0 = isDefined(x0) ? ${use}_predict(cls, x0) : null; `,
 
 						Copy( ctx, {	// revise $ context
 							x: x,
 							y: y,
 							x0: x0,
 							cls: cls,
-							keep: keep
+							Keep: Keep
 						}),
 
 						ctx => cb({		// return $ results
@@ -291,27 +291,33 @@ The following context keys are accepted:
 				at: "jpg", 
 				input: multi.input, 
 				save: savePath,
-				index: n0,
+				//index: n0,
+				index: y0,
 				values: saveValues
 			});
 			res(ctx);
 		}
 		
-		//Log("!!!!regress", ctx);
+		const {Keep,Method,Stats,Host,Name} = ctx;
+		
+		/*
 		var
 			stats = ctx.Stats,
 			x = ctx.x || null,
 			y = ctx.y || null,
 			xy = ctx.xy || null,
-			multi = ctx.multi || null,
 			x0 = ctx.x0 || null,
 			n0 = ctx.n0 || null,
+			multi = ctx.multi || null,
 			unsup = ctx.unsup || null,
-			keep = ctx.Keep,
+			Keep = ctx.Keep,
+			*/
+		var
+			[x,y,x0,y0] = ctx.xy || [ctx.x, ctx.y, ctx.x0, ctx.y0],
 			save = ctx.Save = [],
-			savePath = `/shares/${ctx.Host}_${ctx.Name}.jpg`,
+			savePath = `/shares/${Host}_${Name}.jpg`,
 			saveValues = [],
-			use = ctx.Method.toLowerCase(),
+			use = Method.toLowerCase(),
 			solveKey = use + "_",
 			loaders = {
 				svm: $.SVM.load, //$.SVM.restore,
@@ -334,16 +340,32 @@ The following context keys are accepted:
 		Log({
 			//y: y,
 			//x: x.length,
+			//xy: xy,
+			xy: ctx.xy,
+			x: x ? x.length : 0,
+			y: y ? y.length : 0,
+			x0: x0 ? x0.length : 0,
 			solve: solve,
-			keep: keep,
+			Keep: Keep,
 			use: use,
-			canTrain: ((x && y) || xy || multi || unsup) ? true : false,
-			canPredict: x ? true : false,
+			mode: ( x && y ) ? "sup learn" : x ? "unsup learn" : (x0 && y0) ? "image" : x0 ? "predict" : "nada",
+			//canTrain: ((x && y) || xy || multi || unsup) ? true : false,
+			//canPredict: x ? true : false,
 			loader: loader ? true : false,
 			model: model ? true : false
 		});
 
 		if ( loader )
+			if ( x && x0 && y0 )
+				trainers( x, y, x0, () => sender() );
+			
+			else
+			if ( x ) 
+				trainer( x, y, x0, info => sender(info) );
+		
+			if ( x0 ) 
+				predicter( x0, loader(model) );
+			/*
 			if ( x && y ) // in x,y single channel training mode 
 				trainer( x, y, x0, info => sender(info) );
 			
@@ -375,10 +397,10 @@ The following context keys are accepted:
 					
 			else
 				res( new Error("missing x||y||xy||multi||unsup to regressor") );
+		*/
 		
 		else
 			res( new Error("invalid regression method") );
-		
 	}
 
 }

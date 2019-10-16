@@ -604,8 +604,15 @@ module.exports = {
 							Copy(data,ctx);
 							Each(query, (key,exp) => {
 								//Log(">pipe",key,exp);
+								ctx.list = x => {
+									var mash = [];
+									console.log("list", x.length);
+									x.forEach( x => mash.push(x) );
+									return mash;
+								};
+
 								data[key] = ctx[key] = isString(exp)
-									? exp.parseJS( ctx, err => log("bad key", `${key}=${exp}`) )
+									? exp.parseJS( ctx, err => log("ignored", `${key}=${exp}`) )
 									: exp;
 							});
 
