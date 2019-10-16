@@ -3,9 +3,9 @@ module.exports = {  // generate a random process with specified parameters
 		emProbs: `json comment '
 Gaussian mixing parameters:
 
-	{ dims: [D1, D2 , ...] weights: [W1, W2 , ...] }
+	{ dims: [N1, N2 , ...] weights: [X1, X2 , ...] }
 	{ mu: [ vector, ...], sigma: [ cov matrix, ...] }
-	{ mixes: N, oncov: [ X1, ... ], offcov: [ X1, ... ], snr: X }
+	{ mixes: N, oncov: [ X1, ... ], offcov: [ X1, ... ], snr: X, dim: N, cone: DEG }
 
 ' `,
 		Symbols: "json comment '[S1, S2, ... ] state symbols (null defaults)' ",
