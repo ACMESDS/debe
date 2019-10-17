@@ -200,7 +200,7 @@ The following context keys are accepted:
 		
 		function saver(info,idx) {
 			save.push({ at: "train", chan: idx, x: info.sample.x0, y: info.sample.y0 });
-			Log("reg save", use, idx, "canExport?", info.cls.export ? true : false);
+			//Log("reg save", use, idx, "canExport?", info.cls.export ? true : false);
 			save.push({ at: use, chan: idx, cls: info.cls.export ? info.cls.export() : info.cls });
 			saveValues.push( info.sample.y0 );
 		}
