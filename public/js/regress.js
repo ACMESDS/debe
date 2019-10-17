@@ -110,9 +110,9 @@ The following context keys are accepted:
 						cls: cls
 					}, ctx => cb({		// return sampled and predicted data
 						sample: {
-							x: x,
-							y: y,
-							x0: x0,
+							//x: x,
+							//y: y,
+							x0: ctx.x0,
 							y0: ctx.y0
 						},
 						cls: cls
@@ -121,8 +121,8 @@ The following context keys are accepted:
 				else
 					cb({		// return sampled and predicted data
 						sample: {
-							x: x,
-							y: y,
+							//x: x,
+							//y: y,
 							x0: [],
 							y0: []
 						},
@@ -199,8 +199,8 @@ The following context keys are accepted:
 		}
 		
 		function saver(info,idx) {
-			save.push({ at: "train", chan: idx, x: info.sample.x, y: info.sample.y });
-			//Log("reg save", use, idx, info.cls.export ? true : false);
+			save.push({ at: "train", chan: idx, x: info.sample.x0, y: info.sample.y0 });
+			Log("reg save", use, idx, "canExport?", info.cls.export ? true : false);
 			save.push({ at: use, chan: idx, cls: info.cls.export ? info.cls.export() : info.cls });
 			saveValues.push( info.sample.y0 );
 		}
@@ -253,9 +253,13 @@ The following context keys are accepted:
 		Log({
 			//data: sc || mc,
 			solve: solve,
-			Keep: x0 ? x0.length : "none",
-			use: use,
-			mode: ( sc.x && sc.y ) ? "supervised learn" : sc.x ? "unsupervised learn" : multi ? "multichan train" : x0 ? "predict" : "ignore",
+			//x: x,
+			//x0: x0,
+			trainingset: x ? x.length : "none",
+			labelset: y ? y.length : "none",
+			using: use,
+			predicting: x0 ? x0.length : "none",
+			learning: ( sc.x && sc.y ) ? "supervised" : sc.x ? "unsupervised" : multi ? "multichan train" : "off",
 			loader: loader ? true : false,
 			model: model ? true : false
 		});
