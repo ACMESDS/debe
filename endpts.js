@@ -20,7 +20,7 @@ function Trace(msg,req,fwd) {	// execution tracing
 	"endpt".trace(msg,req,fwd);
 }
 
-const { Copy,Each,Log,isString,isFunction,isError,isArray,Serialize } = ENUM;
+const { Copy,Each,Log,isString,isFunction,isError,isArray,Stream } = ENUM;
 const { sqlThread, uploadFile, probeSite, errors, site, watchFile } = TOTEM;
 const { ingestList } = GEO;
 
@@ -1266,9 +1266,9 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 			greedy = false;
 
 		if ( neodb )
-		Serialize( actors, (act, actor) => {
+		Stream( actors, (act, actor, cb) => {
 			Log(actor,act);
-			if (act) // add actor
+			if (cb) // add actor
 				neodb.cypher({
 					query: `MERGE (n:${act.type} {name:$name}) ON CREATE SET n = $props`,
 					params: {
@@ -1280,7 +1280,7 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 							created: new Date()
 						}
 					}
-				}, err => { Trace( err || "add actor" ); cb(); } );
+				}, err => Trace( err || "add actor" ) );
 			
 			else	// all actors added so add edges
 			if ( greedy )		// make all possible edges
@@ -1325,7 +1325,7 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 					Each(actors, (source, src) => {
 						Each(actors, (target, tar) => {
 							if ( source != target ) {
-								Log( source, target, `MATCH (a:${src.type} {name:$src}),(b:${tar.type} {name:$tar}) MERGE (a)-[r:${topic}]-(b) ON CREATE SET r.created = timestamp() ` );
+								//Log( source, target, `MATCH (a:${src.type} {name:$src}),(b:${tar.type} {name:$tar}) MERGE (a)-[r:${topic}]-(b) ON CREATE SET r.created = timestamp() ` );
 								neodb.cypher({
 									query: `MATCH (a:${src.type} {name:$src}),(b:${tar.type} {name:$tar}) MERGE (a)-[r:${topic}]-(b) ON CREATE SET r.created = timestamp() `,
 									params: {
@@ -1427,7 +1427,6 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 
 								sqlThread( sql => {	// run plugins that were linked to this ingest
 									exeAutorun(sql,"", `.${ctx.Host}.${ctx.Name}` );
-									sql.release();
 								});
 							});
 						});

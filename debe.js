@@ -1003,7 +1003,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		
 		track: trackPlugin,
 		licence: trackPlugin,
-		release: trackPlugin,
+		//release: trackPlugin,
 		
 		exe: exePlugin,
 		pub: publishPlugin,
@@ -2102,16 +2102,6 @@ assessments from our worldwide reporting system, please contact ${poc}.
 						}
 					});
 				}
-				/*
-				"./public/js/": function (sql,name,ev) {
-					// run FLEX.publish on the engine
-					sql.release();
-				},
-
-				"./public/py/": function (sql,name,ev) {
-					// run FLEX.publish on the engine
-					sql.release();
-				} */
 			}
 		}, err => {
 			Trace( err || 

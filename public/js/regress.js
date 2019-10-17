@@ -55,6 +55,8 @@ tolerance: float>= [0] tolerance
 
 		hyper_qda: `json comment '
 mixes: int >=[1] Number of gaussian mixes
+nsigma: radius of labelling sphere in units of standard deviations
+solver: "MATHJS" script (mu,sigma) => keys.B, keys.b, SNR
 ' `,
 		
 		hyper_svm: `json comment '' `,

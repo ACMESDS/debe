@@ -1,5 +1,5 @@
 module.exports = {  // regressors
-	_keys: {
+	_modkeys: {
 		Pipe: `json comment '
 The following context keys are accepted:
 
@@ -46,8 +46,6 @@ The following context keys are accepted:
 					_agreement: nlp.agreement,
 					_weight: nlp.weight	
 				}, {Name: ctx.Name}], err => Log("doc save", err) );
-
-				sql.release();
 			});
 		
 		/*
