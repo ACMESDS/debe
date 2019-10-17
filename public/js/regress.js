@@ -3,7 +3,6 @@ module.exports = {  // regressors
 		Samples: "int(11) default 1 comment 'number of training samples taken at random from supplied dataset' ",
 		Channels: "int(11) default 1 comment 'number of training channels takens consecutively from supplied dataset' ",
 		Method: "varchar(16) default 'ols' comment 'regression technique to USE = lrm | svm | pls | knn	| ols | ...' ",
-		Keep: "int(11) default 0 comment 'number of regression pairs to retain after training' ",
 
 		hyper_lrm: `json comment '
 numSteps: int>=[1] number of steps in LRM solver
@@ -81,132 +80,54 @@ mixes: int >=[1] Number of gaussian mixes
 		Pipe: `json comment '
 The following context keys are accepted:
 
-	x = [...], y = [...]				// training mode
-	x = [...]							// predict mode
-	xy = { x: [...] , y: [...} } 		// training mode
-	multi = { x: [ [...]...], y: [ [...]...], x0: [ [...]...] } 	// multichannel training mode 
-	unsup = [...] 							// unsupervised training mode
+	x = [...]				// unsupervised training
+	y = [...]				// supervised training
+	x0 = [...]							// predicting
+	xy = { x: [...] , y: [...] } 		// supervised
+	xy0 || multi = { x: [ [...]...], y: [ [...]...], x0: [ [...]...], n0: [...] } 	// multichannel training mode 
 
 ' `,
 		
 		Description: "mediumtext"
 	},
 	
-	engine: function regress(ctx, res) {  
-	/* 
-	Train regressor and/or predict with a trained regressor where:
-
-		Method: regression technique to USE = lrm | svm | pls | knn	| ols | ...
-		Save_USE: training model for specified Method 
-		hyper_USE: solver parameter for specified Method 
-		Save_jpg: jpg generation parameters
-		Samples: number of training samples taken at random from supplied dataset
-		Channels: number of training channels takens consecutively from supplied dataset
-		Keep:  number of regression pairs to retain after training
-		
-	given x,y data presented as:
-	
-		x = [...], y = [...]				// training mode
-		x = [...]							// predict mode
-		xy = { x: [...] , y: [...} } 		// training mode
-		multi = { x: [ [...]...], y: [ [...]...], x0: [ [...]...] } 	// training mode multichannel
-		unsup = [...] 							// unsupervised training mode
-	*/
-		function train(x, y, cb) {  
-			
-			/*
-			Log({
-				train: use, 
-				xy_dims: [x.length, y ? y.length : 0],
-				solve: solve
-			});  */
-
-			if ( !y || (x.length == y.length) ) {
-				$( 
-					`cls = ${use}_train( x, y, solve ); `, 
-
-					{
-						x: x,
-						y: y,
-						solve: solve
-					},
-					
-				  	ctx => {  // regressor trained
-						cb( ctx.cls );
-					}
-				);
-			}
-			
-			else 
-				cb( null );
+	engine: function regress(ctx, res) {   //< Train regressor or make predictions with a trained regressor.
+		function train(x, y, cb) {  			
+			$( `cls = ${use}_train( x, y, solve ); `,  {  // train regressor
+					x: x || null,
+					y: y || null,
+					solve: solve
+				}, ctx => cb( ctx.cls ) );
 		}
 
 		function trainer(x,y,x0,cb) {
 			
 			function saver( cls, x, y, x0, cb ) {
-				if ( Keep ) {
-					var 
-						idx = x.shuffle(Keep, true),
-						x = x.indexor(idx),
-						y = y ? y.indexor(idx) : null;
-
-					Log("Keep", Keep, idx.length, x.length);
-					
-					if ( x0 = x0 || x ) 
-						$( `y0 = ${use}_predict(cls, x0, solve)`, {
-							solve: solve,
-							x0: x0, 
-							cls: cls
-						}, ctx => cb({		// return sampled and predicted data
-							sample: {
-								x: x,
-								y: y,
-								x0: x0,
-								y0: ctx.y0
-							},
-							cls: cls
-						}));
-					
-					else
-						cb({		// return sampled and predicted data
-							sample: {
-								x: x,
-								y: y,
-								x0: [],
-								y0: []
-							},
-							cls: cls
-						}); 
-
-					/*
-					$( 
-						`u = shuffle(x,y,Keep);  y0 = isDefined(x0) ? ${use}_predict(cls, x0) : null; `,
-
-						Copy( ctx, {	// revise $ context
+				if ( x0 ) 
+					$( `y0 = ${use}_predict(cls, x0, solve)`, {
+						solve: solve,
+						x0: x0, 
+						cls: cls
+					}, ctx => cb({		// return sampled and predicted data
+						sample: {
 							x: x,
 							y: y,
 							x0: x0,
-							cls: cls,
-							Keep: Keep
-						}),
-
-						ctx => cb({		// return $ results
-							sample: {
-								x: ctx.u.x._data,
-								y: ctx.u.y._data,
-								x0: ctx.x0,
-								y0: ctx.y0
-							},
-							cls: cls
-						})
-					); */
-				}
-
-				else 
-					cb({
-						sample: {},
+							y0: ctx.y0
+						},
 						cls: cls
-					});
+					}));
+				
+				else
+					cb({		// return sampled and predicted data
+						sample: {
+							x: x,
+							y: y,
+							x0: [],
+							y0: []
+						},
+						cls: cls
+					}); 
 			}
 			
 			train( x, y, cls => {
@@ -214,7 +135,7 @@ The following context keys are accepted:
 					saver( cls, x, y, x0, cb );
 
 				else
-					res( new Error("bad x/y training dims") );
+					res( new Error("training failed") );
 			});
 		}
 
@@ -292,28 +213,20 @@ The following context keys are accepted:
 				input: multi.input, 
 				save: savePath,
 				//index: n0,
-				index: y0,
+				index: multi.n0,
 				values: saveValues
 			});
 			res(ctx);
 		}
 		
-		const {Keep,Method,Stats,Host,Name} = ctx;
+		const { xy0, multi, x,y,xy,x0,Method,Stats,Host,Name} = ctx;
 		
-		/*
 		var
-			stats = ctx.Stats,
-			x = ctx.x || null,
-			y = ctx.y || null,
-			xy = ctx.xy || null,
-			x0 = ctx.x0 || null,
-			n0 = ctx.n0 || null,
-			multi = ctx.multi || null,
-			unsup = ctx.unsup || null,
-			Keep = ctx.Keep,
-			*/
-		var
-			[x,y,x0,y0] = ctx.xy || [ctx.x, ctx.y, ctx.x0, ctx.y0],
+			mc = xy0 || multi,
+			sc = {
+				x: xy ? xy[0] : x,
+				y: xy ? xy[1] : y
+			},
 			save = ctx.Save = [],
 			savePath = `/shares/${Host}_${Name}.jpg`,
 			saveValues = [],
@@ -338,66 +251,26 @@ The following context keys are accepted:
 			solve = ctx[ `hyper_${use}` ] || {};
 		
 		Log({
-			//y: y,
-			//x: x.length,
-			//xy: xy,
-			xy: ctx.xy,
-			x: x ? x.length : 0,
-			y: y ? y.length : 0,
-			x0: x0 ? x0.length : 0,
+			//data: sc || mc,
 			solve: solve,
-			Keep: Keep,
+			Keep: x0 ? x0.length : "none",
 			use: use,
-			mode: ( x && y ) ? "sup learn" : x ? "unsup learn" : (x0 && y0) ? "image" : x0 ? "predict" : "nada",
-			//canTrain: ((x && y) || xy || multi || unsup) ? true : false,
-			//canPredict: x ? true : false,
+			mode: ( sc.x && sc.y ) ? "supervised learn" : sc.x ? "unsupervised learn" : multi ? "multichan train" : x0 ? "predict" : "ignore",
 			loader: loader ? true : false,
 			model: model ? true : false
 		});
 
 		if ( loader )
-			if ( x && x0 && y0 )
-				trainers( x, y, x0, () => sender() );
-			
-			else
-			if ( x ) 
-				trainer( x, y, x0, info => sender(info) );
-		
-			if ( x0 ) 
-				predicter( x0, loader(model) );
-			/*
-			if ( x && y ) // in x,y single channel training mode 
-				trainer( x, y, x0, info => sender(info) );
-			
-			else
-			if ( xy )  // in xy singe channel training mode
-				trainer( xy.x, xy.y, x0, info => sender(info) );
-
-			else
-			if ( multi ) { // in xy multichannel training mode
-				n0 = multi.n0 || null;
+			if ( multi )	// multichannel learning
 				trainers( multi.x, multi.y, multi.x0, () => sender() );
-			}
-
-			else
-			if (unsup) // in unsupervised training mode
-				trainer( unsup, null, x0, info => sender(info) );
-
-			else
-			if ( x ) // in prediction mode
-				if ( model ) 
-					if ( model.length )	{	// multichannel predictions
-					}
+			
+			else	//  sup/unsup learning
+			if ( sc.x ) 
+				trainer( sc.x, sc.y, x0, info => sender(info) );
 		
-					else	// single channel predictions
-						predicter( x, loader(model) );
-										
-				else
-					res( new Error("regressor never trained") );
-					
 			else
-				res( new Error("missing x||y||xy||multi||unsup to regressor") );
-		*/
+			if ( x0 ) 	// predicting
+				predicter( x0, loader(model) );
 		
 		else
 			res( new Error("invalid regression method") );

@@ -586,10 +586,18 @@ module.exports = {
 	*/	
 		function pipePlugin( sup, sql, job, cb ) { //< pipe job via supervisor 
 
-			function log( ) {
+			function log( ) {	// log for the "".trace()
 				var args = [];
 				for (var key in arguments) if ( key != "0" ) args.push( arguments[key] );
 				"pipe".trace( arguments[0]+": "+JSON.stringify(args), req, Log );
+			}
+			
+			function makeList(args,debug) {
+				var mash = [];
+				//console.log("list", args.length);
+				args.forEach( arg => mash.push(arg) );
+				if ( debug ) log( debug, args );
+				return mash;
 			}
 			
 			function pipe(sup, sql, job, cb) {
@@ -604,12 +612,7 @@ module.exports = {
 							Copy(data,ctx);
 							Each(query, (key,exp) => {
 								//Log(">pipe",key,exp);
-								ctx.list = x => {
-									var mash = [];
-									console.log("list", x.length);
-									x.forEach( x => mash.push(x) );
-									return mash;
-								};
+								ctx.list = makeList;
 
 								data[key] = ctx[key] = isString(exp)
 									? exp.parseJS( ctx, err => log("ignored", `${key}=${exp}`) )
@@ -762,14 +765,7 @@ module.exports = {
 										break;
 								}
 										
-								/*
-								if ( !pipeJob ) {
-									pipePath = job.path = `/stores/${pipeType}.${pipeName}.stream`;
-									[x,pipeName,pipeType] = pipePath.substr(1).match(/(.*)\.(.*)/) || ["", pipePath, "json"],
-									pipeJob = TOTEM.pipeJob[pipeType];
-								} */
-
-								Log(">pipe", pipePath, pipeName, pipeType);
+								//Log(">pipe", pipePath, pipeName, pipeType);
 
 								var
 									isFlexed = FLEX.select[pipeName] ? true : false,
