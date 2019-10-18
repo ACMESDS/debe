@@ -140,6 +140,8 @@ catch (err) {
 	function Xskin( ctx, cb ) {
 		try {
 			(JADE.compile(this, ctx) (ctx)).Xinclude( "", html => cb(html) );
+			//this.Xkeys( ctx, jade => cb( JADE.compile( jade, ctx)(ctx) ) );
+			//this.Xkeys( ctx, jade => (JADE.compile( jade, ctx)(ctx)).Xinclude( "", html => cb(html) )  );
 		}
 		catch (err) {
 			Log("xjade", err);

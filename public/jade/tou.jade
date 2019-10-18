@@ -1,10 +1,10 @@
 - alabel = "click here for contents"
 :markdown
 	# test1
-	[#{alabel}](/junk.txt)
+	[#{alabel}](/junk.txt)  master=${urls.master}
 
 	# attach a barplot
-	%{/barplot.view}
+	%{/barplot.view} 
 
 	# fetch test
 	As of #{now} transition status done
@@ -40,3 +40,4 @@
 	
 	and a shortcut to url contents: #{_suitors} vs. #{urls.suitors}
 	
+
