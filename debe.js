@@ -145,7 +145,7 @@ Copy({
 		}
 	},
 
-	blogContext: BLOG,		//< blogging / skinning context
+	//blogContext: BLOG,		//< blogging / skinning context
 		
 	onStartup: function () {	//< runs when server starts
 		var

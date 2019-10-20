@@ -1,7 +1,8 @@
 - alabel = "click here for contents"
+- yal = "click me".tag("/hereigo.view")
 :markdown
-	# test1
-	[#{alabel}](/junk.txt)  master=${urls.master}
+	# links
+	[#{alabel}](/junk.txt)  !{yal} master=${urls.master} tada
 
 	# attach a barplot
 	%{/barplot.view} 
@@ -28,15 +29,15 @@
 	by: #{by}
 
 	# spoofed input
-	!{register()}
+	! {register()}
 
-	email test: !{request(reqs.help)}
+	email test: ! {request(reqs.help)}
 
 	query a,b,c: #{a}, #{b}, #{c}
 
 	# Lets make an interface
 
-	Here !{interface()}
+	Here is my interface !{interface()}
 	
 	and a shortcut to url contents: #{_suitors} vs. #{urls.suitors}
 	

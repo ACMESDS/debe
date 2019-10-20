@@ -1,20 +1,40 @@
 /**
 @class DEBE.EndPoints
 Service endpoints endpt(req,res)
+
+@requires stream
+@requires child_process
+@requires crypto
+@requires fs
+@requires uglify
+@requires html-minifier
+@requires man
+@requires totem
+@requires flex
+@requires geohack
+@requires atomic
 */
-var		// nodejs
+var		
+	// nodejs
 	ENV = process.env,
 	STREAM = require("stream"), 		//< pipe streaming
 	CP = require("child_process"), 		//< Child process threads
 	CRYPTO = require("crypto"), 	//< to hash names
 	FS = require("fs"); 				//< filesystem and uploads
 
-var		// totem
+	// 3rd party
+	JSMIN = require("../flex/node_modules/uglify-js"), 			// code minifier
+	HMIN = require("../flex/node_modules/html-minifier"), // html minifier
+		
+	// totem
+	$ = require("man"), 			// matrix minipulaor
 	TOTEM = require("totem"),
 	ENUM = require("enum"),
 	FLEX = require("flex"),
 	GEO = require("geohack"),
 	ATOM = require("atomic");
+
+const { skinContext } = require("./skins");
 
 function Trace(msg,req,fwd) {	// execution tracing
 	"endpt".trace(msg,req,fwd);
@@ -24,7 +44,52 @@ const { Copy,Each,Log,isString,isFunction,isError,isArray,Stream } = ENUM;
 const { sqlThread, uploadFile, probeSite, errors, site, watchFile } = TOTEM;
 const { ingestList } = GEO;
 
-module.exports = {
+const { licenseOnDownload, defaultDocs } = module.exports = {
+	defaultDocs: {	// default plugin docs (db key comments)
+		nodoc: "no documentation provided",
+
+		Export: "switch writes engine results [into a file](/api.view)",
+		Ingest: "switch ingests engine results [into the database](/api.view)",
+		Share: "switch returns engine results to the status area",
+		Pipe: `
+Places a DATASET into a TYPE-specific supervised workflow:
+
+	"/PATH/DATASET.TYPE?KEY=VALUE || $.JS ..."
+	{ "$": "MATHJS" }
+	{ "Pipe": "/PATH/DATASET.TYPE?..." ,  "KEY": [VALUE, ...] , ... }
+
+The "/PATH/DATASET.TYPE" [source pipe](/api.view) defines the workflow based on TYPE = json || jpg | png | nitf || stream | export  || txt | doc | pdf | xls  || aoi || db,
+where $ references the TYPE-specific json data || GIMP image || event list || document text || db record.  The { KEY: [VALUE, ...] } [enumeration pipe](/api.view) 
+generates usecases over permuted context KEYs.  The $ json can be post-processed by a JS script or by a { $: "MATHJS" } [matlab-js scripting pipe](/api.view).
+`, 
+
+		Description: `
+Document your usecase using markdown:
+
+	% { PATH.TYPE ? w=WIDTH & h=HEIGHT & x=KEY$INDEX & y=KEY$INDEX ... }
+	~{ TOPIC ? starts=DATE & ends=DATE ... }
+	\${ KEY } || \${ JS } || \${doc( JS , "INDEX" )}
+	[ LINK ] ( URL )
+	$$ inline TeX $$  ||  n$$ break TeX $$ || a$$ AsciiMath $$ || m$$ MathML $$
+	[JS || #JS || TeX] OP= [JS || #JS || TeX]
+	KEY,X,Y >= SKIN,WIDTH,HEIGHT,OPTS
+	KEY <= VALUE || OP <= EXPR(lhs),EXPR(rhs)
+
+`,
+
+		Config: "js-script defines a usecase context  ",
+		Save: "aggregates notebook results not captured in other Save_KEYs  ",
+		Entry: 'primes context KEYs on entry using { KEY: "SELECT ....", ...}  ',
+		Exit: 'saves context KEYs on exit using { KEY: "UPDATE ....", ...}  ',
+		Ring: "[[lat,lon], ...] in degs 4+ length vector defining an aoi",
+		
+		Save_end: "aggregates notebook results when stream finished",
+		Save_config: "aggregates notebook resuts when stream configured",
+		Save_batch: "aggregates notebook resuts when stream at batch points"
+	},
+	
+	licenseOnDownload: true,
+	
 	autorun: {
 		set: setAutorun,
 		exe: exeAutorun
@@ -278,6 +343,317 @@ module.exports = {
 	},
 	
 	publishPlugin: function (req,res) {
+		
+		function publish(sql, ctx, path, name, type) {  // publish product = name.type
+
+			function minifyCode( code, cb ) {  //< callback cb(minifiedCode, license)
+				//Log(">>>>min", code.length, type, name);
+				
+				switch (type) {
+					case "html":
+						cb( HMIN.minify(code.replace(/<br>/g,""), {
+							removeAttributeQuotes: true
+						}) );
+						break;
+
+					case "js":
+						var
+							e6Tmp = "./temps/e6/" + product,
+							e5Tmp = "./temps/e5/" + product;
+
+						FS.writeFile(e6Tmp, code, "utf8", err => {
+							CP.exec( `cd /local/babel/node_modules/; .bin/babel ${e6Tmp} -o ${e5Tmp} --presets es2015,latest`, (err,log) => {
+								try {
+									FS.readFile(e5Tmp, "utf8", (err,e5code) => {
+										if ( err ) 
+											cb( null );
+
+										else {
+											var min = JSMIN.minify( e5code );
+
+											if ( min.error ) 
+												cb( null );
+
+											else   
+												cb( min.code );
+										}
+									});
+								}
+								catch (err) {
+									cb( null );
+								}
+							});
+						});
+						break;						
+
+					case "py":
+						/*
+						minifying python is problematic as the pyminifier obvuscator has no option
+						to reseed; thus the pyminifier was modified to reseed its rv generator (see install
+						notes).
+						*/
+
+						var pyTmp = "./temps/py/" + product;
+
+						FS.writeFile(pyTmp, code.replace(/\t/g,"  ").replace(/^\n/gm,""), "utf8", err => {
+							CP.exec(`pyminifier -O ${pyTmp}`, (err,minCode) => {
+								//Log("pymin>>>>", err);
+
+								if (err)
+									cb(err);
+
+								else
+									cb( minCode );
+							});
+						});
+						break;
+
+					case "m":
+					case "me":
+						/*
+						Could use Matlab's pcode generator - but only avail within matlab
+								cd to MATLABROOT (avail w matlabroot cmd)
+								matlab -nosplash -r script.m
+								start matlab -nospash -nodesktop -minimize -r script.m -logfile tmp.log
+
+						but, if not on a matlab machine, we need to enqueue this matlab script from another machine via curl to totem
+
+						From a matlab machine, use mcc source, then use gcc (gcc -fpreprocessed -dD -E  -P source_code.c > source_code_comments_removed.c)
+						to remove comments - but you're back to enqueue.
+
+						Better option to use smop to convert matlab to python, then pyminify that.
+						*/
+
+						var 
+							mTmp = "./temps/matsrc/" + product,
+							pyTmp = "./temps/matout/" + product;
+
+						FS.writeFile(mTmp, code.replace(/\t/g,"  "), "utf8", err => {
+							CP.execFile("python", ["matlabtopython.py", "smop", mTmp, "-o", pyTmp], err => {	
+								//Log("matmin>>>>", err);
+
+								if (err)
+									cb( err );
+
+								else
+									FS.readFile( pyTmp, "utf8", (err,pyCode) => {
+										if (err) 
+											cb( err );
+
+										else
+											CP.exec(`pyminifier -O ${pyTmp}`, (err,minCode) => {
+												if (err)
+													cb(err);
+
+												else
+													cb( minCode );
+											});										
+									});									
+							});
+						});
+						break;
+
+					case "jade":
+						cb( code.replace(/\n/g," ").replace(/\t/g," ").replace(/  /g,"").replace(/, /g,",").replace(/\. /g,".") );
+						break;
+
+					case "":
+					default:
+						cb( code );
+				}
+			}
+		
+			function getter( opt ) {	
+				if (opt) 
+					if ( typeof opt == "function" )
+						switch (opt.name) {
+							case "engine":
+							case "tou":
+							case "inits":
+							case "wrap":
+								return opt({
+									path: path,
+									read: FS.readFileSync,
+									exec: CP.exec 
+								});
+							default:
+								return opt+"";
+						}
+					else
+						return opt;
+				else
+					return opt;
+			}
+
+			function genToU( mod, ctx, cb ) {
+				var tou = getter( mod.tou || mod.readme ) || FS.readFileSync("./jades/tou.jade", "utf8");
+
+				tou
+				.replace( /\r\n/g, "\n") // tou may have been sourced from a editor that saves \r\n vs \n
+				.Xskin( ctx, html => cb(mod,html) );
+			} 
+
+			function getComment( sql, cb ) {
+				var com = sql.replace( /(.*) comment '((.|\n)*)'/, (str,spec,doc) => { 
+					cb( spec, doc );
+					return "#";
+				});
+
+				if ( !com.startsWith("#") ) cb( sql, "" );			
+			}
+
+			try {
+				var	mod = require(process.cwd() + path.substr(1));
+			}
+			catch (err) {
+				Log("PUBLISH", name, err);
+				return;
+			}
+
+			var
+				modkeys = mod.mods || mod.modkeys || mod._mods,
+				addkeys = mod.adds || mod.addkeys || mod.keys,
+				prokeys = modkeys || addkeys || {},
+				product = name + "." + type;
+			
+			const { defaultDocs, dockeys, speckeys } = ctx;
+
+			// expand product key comments
+
+			Stream( prokeys, (def,key,cb) => {
+				if ( cb )	// define a doc for each and every key
+					getComment( def, (spec, doc) => {
+						var
+							com = defaultDocs[key] || "",
+							com = com + doc,
+							com = com || defaultDocs.nodoc,
+							com = com || "missing documentation";
+
+						com.XblogSimple( ctx, html => { 
+							//Log("gen", key,spec,html.substr(0,100));
+							speckeys[key] = spec;
+							dockeys[key] = html;
+							cb();
+						});
+					});
+
+				else // all keys expanded so ...
+					genToU(mod, ctx, (mod, tou) => {	// generate ToU in this blogctx
+						//Log(">>>>>>gen tou", tou.length);
+
+						if ( mod.clear || mod.reset )
+							sql.query("DROP TABLE app.??", name);
+
+						sql.query( 
+							`CREATE TABLE app.${name} (ID float unique auto_increment, Name varchar(32) unique key)` , 
+							[], err => {
+
+							var
+								modkeys = mod.mods || mod.modkeys || mod._mods,
+								addkeys = mod.adds || mod.addkeys || mod.keys;
+
+							if ( modkeys )
+								Each( modkeys, key => {
+									var 
+										keyId = sql.escapeId(key),
+										spec = speckeys[key],
+										doc = dockeys[key];
+
+									//Log("mod", key, dockeys[key].substr(0,100));
+									sql.query( `ALTER TABLE app.${name} MODIFY ${keyId} ${spec} comment ?`, [ doc ] );
+								});
+
+							else
+							if ( addkeys )
+								Each( addkeys, key => {
+									var 
+										keyId = sql.escapeId(key),
+										spec = speckeys[key],
+										doc = dockeys[doc];
+
+									sql.query( `ALTER TABLE app.${name} ADD ${keyId} ${spec} comment ?`, [ doc ] );
+								});
+
+							if ( inits = getter( mod.inits || mod.initial || mod.initialize ) )
+								inits.forEach( init => {
+									sql.query("INSERT INTO app.?? SET ?", init);
+								});
+
+							if  ( readme = mod.readme )
+								FS.writeFile( path+".md", readme, "utf8" );
+
+							if ( code = getter( mod.engine || mod.code) ) 
+								minifyCode( code, minCode => {
+									var 
+										from = type,
+										to = mod.to || from,
+										fromFile = path + "." + from,
+										toFile = path + "." + to,
+										jsCode = {},
+										rec = {
+											Code: code,
+											Minified: minCode,
+											Wrap: getter( mod.wrap ) || "",
+											ToU: tou,
+												// (getter( mod.tou || mod.readme ) || defs.tou).parseEMAC(subkeys),
+											State: JSON.stringify(mod.state || mod.context || mod.ctx || {})
+										};
+
+									Trace( `CONVERTING ${name} ${from}=>${to}` );
+
+									if ( from == to )  { // use code as-is
+										sql.query( 
+											"INSERT INTO app.engines SET ? ON DUPLICATE KEY UPDATE ?", [ 
+												Copy(rec, {
+													Name: name,
+													Type: type,
+													Enabled: 1
+												}), rec 
+											], err => Trace( err || `PUBLISHED ${name}` ) );
+
+										if (from == "js") {	// import js function into $man
+											jsCode[name] = mod.engine || mod.code;
+											$(jsCode);
+										}
+									}
+
+									else  // convert code to requested type
+										//CP.execFile("python", ["matlabtopython.py", "smop", fromFile, "-o", toFile], err => {
+										FS.writeFile( fromFile, code, "utf8", err => {
+											CP.exec( `sh ${from}to${to}.sh ${fromFile} ${toFile}`, (err, out) => {
+												if (!err) 
+													FS.readFile( toFile, "utf8", (err,code) => {
+														rec.Code = code;
+														if (!err)
+															sql.query( 
+																"INSERT INTO app.engines SET ? ON DUPLICATE KEY UPDATE ?", [ Copy(rec, {
+																	Name: name,
+																	Type: type,
+																	Enabled: 1
+																}), rec ] );
+													});									
+											});
+										});	
+								});
+
+							else
+								Trace( `NO CODE ${name}` );
+						});
+								
+						/*
+						sql.query(
+							"UPDATE app.?? SET ? WHERE least(?,1)", [
+								name, 
+								{Code: code, ToU: tou}}, 
+								{Name: name, Type: type}
+							], err => Trace( err || `PUBLISHED ${name}` ) );
+						*/
+
+						// CP.exec(`cd ${name}.d; sh publish.sh`);
+					});
+			});
+		}
+
 		const { query, sql, table, type } = req;
 		var
 			name = table;
@@ -285,7 +661,31 @@ module.exports = {
 		getEngine( sql, table, eng => {
 			if ( eng ) {
 				res( "publishing" );
-				FLEX.publishPlugin(sql, "./public/"+eng.Type+"/"+eng.Name, eng.Name, eng.Type, false);
+				
+				var 
+					product = `${eng.Name}.${eng.Type}`,
+					ctx = skinContext(product, {
+						speckeys: {},
+						dockeys: {},
+						interface: () => {
+							var 
+								ifs = [], 
+								speckeys = ctx.speckeys, 
+								dockeys = ctx.dockeys;
+
+							Each( speckeys, (key, def) => {
+								 ifs.push({ 
+									 Key: key, 
+									 Type: def, 
+									 Details: dockeys[key] || "no documentation available" 
+								 });
+							});
+							return ifs.gridify();
+						},						
+						defaultDocs:  defaultDocs
+					});
+				
+				publish(sql, ctx, "./public/"+eng.Type+"/"+eng.Name, eng.Name, eng.Type);
 			}
 			
 			else
@@ -315,55 +715,56 @@ module.exports = {
 							cb( mod._Mods || "" );
 
 					});
-			};
+			},
+			keys = skinContext(product),
+			urls = keys.urls;
 
-		getProductKeys( product, keys => {
-			var urls = keys.urls;
+//		getProductKeys( product, keys => {
+//		});
 
-			sql.query(
-				"SELECT Ver, Comment, _Published, _Product, _License, _EndService, _EndServiceID, 'none' AS _Users, "
-				+ " 'fail' AS _Status, _Fails, "
-				+ "group_concat( DISTINCT _Partner SEPARATOR ';' ) AS _Partners, sum(_Copies) AS _Copies "
-				+ "FROM app.releases WHERE ? GROUP BY _EndServiceID, _License ORDER BY _Published",
+		sql.query(
+			"SELECT Ver, Comment, _Published, _Product, _License, _EndService, _EndServiceID, 'none' AS _Users, "
+			+ " 'fail' AS _Status, _Fails, "
+			+ "group_concat( DISTINCT _Partner SEPARATOR ';' ) AS _Partners, sum(_Copies) AS _Copies "
+			+ "FROM app.releases WHERE ? GROUP BY _EndServiceID, _License ORDER BY _Published",
 
-				[ {_Product: product}], (err,recs) => {
+			[ {_Product: product}], (err,recs) => {
 
-					//Log("status", err, q.sql);
+				//Log("status", err, q.sql);
 
-					if ( recs.length )
-						recs.serialize( fetchUsers, (rec,users) => {  // retain user stats
-							if (rec) {
-								if ( users )
-									rec._Users = users.mailify( "users", {subject: name+" request"});
+				if ( recs.length )
+					recs.serialize( fetchUsers, (rec,users) => {  // retain user stats
+						if (rec) {
+							if ( users )
+								rec._Users = users.mailify( "users", {subject: name+" request"});
+
+							else 
+								sql.query("UPDATE app.releases SET ? WHERE ?", [ {_Fails: ++rec._Fails}, {ID: rec.ID}] );
+
+							var 
+								url = URL.parse(rec._EndService),
+								host = url.host.split(".")[0];
+
+							rec._License = rec._License.tag("a",{href:urls.totem+`/releases.html?_EndServiceID=${rec._EndServiceID}`});
+							rec._Product = rec._Product.tag("a", {href:urls.run});
+							rec._Status = "pass";
+							rec._Partners = rec._Partners.mailify( "partners", {subject: name+" request"});
+							rec._EndService = host.tag("a",{href:rec._EndService});
+							delete rec._EndServiceID;
+						}
+
+						else
+							recs.serialize( fetchMods, (rec,mods) => {  // retain moderator stats
+								if (rec) 
+									rec._Mods = mods.mailify( "moderators", {subject: name+" request"});
 
 								else 
-									sql.query("UPDATE app.releases SET ? WHERE ?", [ {_Fails: ++rec._Fails}, {ID: rec.ID}] );
+									res( recs.gridify() );
+							});
+					});
 
-								var 
-									url = URL.parse(rec._EndService),
-									host = url.host.split(".")[0];
-
-								rec._License = rec._License.tag("a",{href:urls.totem+`/releases.html?_EndServiceID=${rec._EndServiceID}`});
-								rec._Product = rec._Product.tag("a", {href:urls.run});
-								rec._Status = "pass";
-								rec._Partners = rec._Partners.mailify( "partners", {subject: name+" request"});
-								rec._EndService = host.tag("a",{href:rec._EndService});
-								delete rec._EndServiceID;
-							}
-
-							else
-								recs.serialize( fetchMods, (rec,mods) => {  // retain moderator stats
-									if (rec) 
-										rec._Mods = mods.mailify( "moderators", {subject: name+" request"});
-
-									else 
-										res( recs.gridify() );
-								});
-						});
-
-					else
-						res( "no transitions found" );
-			});
+				else
+					res( "no transitions found" );
 		});
 	},
 	
@@ -372,52 +773,53 @@ module.exports = {
 		var
 			name = table,
 			product = table + "." + type,
-			suits = [];
+			suits = [],
+			keys = skinContext(product),
+			urls = keys.urls;
 
-		getProductKeys( product, keys => {
-			var urls = keys.urls;
+		//getProductKeys( product, keys => {
+		//});
 			
+		sql.query(
+			"SELECT Name,Path FROM app.lookups WHERE ?",
+			{Ref: name}, (err,recs) => {
+
+			recs.forEach( rec => {
+				suits.push( rec.Name.tag( `${urls.transfer}${rec.Path}/${name}` ));
+			});
+
+			/*
+			// Extend list of suitors with already  etc
 			sql.query(
-				"SELECT Name,Path FROM app.lookups WHERE ?",
-				{Ref: name}, (err,recs) => {
+				"SELECT endService FROM app.releases GROUP BY endServiceID", 
+				[],  (err,recs) => {
 
 				recs.forEach( rec => {
-					suits.push( rec.Name.tag( `${urls.transfer}${rec.Path}/${name}` ));
+					if ( !sites[rec.endService] ) {
+						var 
+							url = URL.parse(rec.endService),
+							name = (url.host||"none").split(".")[0];
+
+						rtns.push( `<a href="${urls.transfer}${rec.endService}">${name}</a>` );
+					}
 				});
 
-				/*
-				// Extend list of suitors with already  etc
-				sql.query(
-					"SELECT endService FROM app.releases GROUP BY endServiceID", 
-					[],  (err,recs) => {
+				rtns.push( `<a href="${urls.loopback}">loopback test</a>` );
 
-					recs.forEach( rec => {
-						if ( !sites[rec.endService] ) {
-							var 
-								url = URL.parse(rec.endService),
-								name = (url.host||"none").split(".")[0];
+				if (proxy)
+					rtns.push( `<a href="${urls.proxy}">other</a>` );
 
-							rtns.push( `<a href="${urls.transfer}${rec.endService}">${name}</a>` );
-						}
-					});
+				//rtns.push( `<a href="${site.urls.worker}/lookups.view?Ref=${product}">add</a>` );
 
-					rtns.push( `<a href="${urls.loopback}">loopback test</a>` );
+				cb( rtns.join(", ") );
+			}); */
+			suits.push( "loopback".tag( urls.loopback ) );
+			suits.push( "other".tag( urls.tou ) );
 
-					if (proxy)
-						rtns.push( `<a href="${urls.proxy}">other</a>` );
+			//suits.push( `<a href="${urls.totem}/lookups.view?Ref=${product}">suitors</a>` );
 
-					//rtns.push( `<a href="${site.urls.worker}/lookups.view?Ref=${product}">add</a>` );
-
-					cb( rtns.join(", ") );
-				}); */
-				suits.push( "loopback".tag( urls.loopback ) );
-				suits.push( "other".tag( urls.tou ) );
-
-				//suits.push( `<a href="${urls.totem}/lookups.view?Ref=${product}">suitors</a>` );
-
-				res( suits.join(", ") );
-			});	
-		});
+			res( suits.join(", ") );
+		});	
 	},
 
 	touPlugin: function (req,res) {
@@ -448,13 +850,93 @@ module.exports = {
 	},
 
 	getPlugin: function (req,res) {
+		
+		/*
+		function license( code, cb ) {
+			licenseCode( sql, code, {
+					_Partner: "totem",
+					_EndService: ENV.SERVICE_MASTER_URL,
+					_Published: new Date(),
+					_Product: product,
+					Path: path
+				}, 
+				if (pub)
+					Trace(`LICENSED ${pub.Product} TO ${pub.EndUser}`);
+
+				else
+					Trace("FAILED LICENSE");
+			});
+		} */
+		
+		function licenseCode( sql, code, pub, cb ) {  //< callback cb(pub) or cb(null) on error
+
+			function returnLicense(pub) {
+
+				function genLicense(code, secret) {  //< callback cb(minifiedCode, license)
+					Log("gen license for", secret);
+					if (secret)
+						return CRY.createHmac("sha256", secret).update(code).digest("hex");
+
+					else
+						return null;
+				}
+
+				var
+					product = pub._Product,
+					endService = pub._EndService,
+					secret = product + "." + endService;
+
+				if ( license = genLicense( code, secret ) ) {
+					cb( Copy({
+						_License: license,
+						_EndServiceID: FLEX.serviceID( pub._EndService ),
+						_Copies: 1
+					}, pub),  sql );
+
+					sql.query( "INSERT INTO app.releases SET ? ON DUPLICATE KEY UPDATE _Copies=_Copies+1", pub );
+
+					sql.query( "INSERT INTO app.masters SET ? ON DUPLICATE KEY UPDATE ?", [{
+						Master: code,
+						License: license,
+						EndServiceID: pub._EndServiceID
+					}, {Master: code} ] );		
+				}
+
+				else 
+					cb( null );
+			}
+
+			Log("endserv lic code", pub);
+			if (endService = pub._EndService)  // an end-service specified so validate it
+				probeSite( endService, info => {  // check users provided by end-service
+					var 
+						valid = false, 
+						partner = pub._Partner.toLowerCase(),
+						users = info.parseJSON() || [] ;
+
+					users.forEach( user => { 
+						if (user.toLowerCase() == partner) valid = true;
+					});
+
+					if (valid) // signal valid
+						returnLicense(pub);
+
+					else	// signal invalid
+						cb( null  );
+				});	
+
+			else	// no end-service so no need to validate
+				returnLicense(pub);
+		}
+		
 		const { query, sql, table, type, client } = req;
+		
 		var 
 			name = table,
 			attr = type,
 			product = name + "." + type,
 			partner = client,
-			endService = query.endservice+"",
+			endService = query.endservice + "",
 			proxy = query.proxy,
 			types = {
 				pub: "txt",
@@ -518,10 +1000,10 @@ module.exports = {
 									addTerms( eng.Code, type, pub, res );
 
 								else	// not yet released so ...
-								if ( FLEX.licenseOnDownload ) { // license required to distribute
-									if ( endService )	// specified so try to distribute
-										if ( eng.Minified )	// compiled so ok to distribute
-											FLEX.licenseCode( sql, eng.Minified, {
+								if ( licenseOnDownload ) { // license required to distribute
+									if ( endService )	{ 	// specified so ok to distribute
+										if ( eng.Minified )	// was compiled so ok to distribute
+											licenseCode( sql, eng.Minified, {
 												_Partner: endPartner,
 												_EndService: endService,
 												_Published: new Date(),
@@ -537,6 +1019,7 @@ module.exports = {
 
 										else
 											res( null );
+									}
 
 									else
 										res( null );
@@ -1445,9 +1928,10 @@ function getEngine( sql, name, cb ) {
 	});	
 }
 
+/*
 function getProductKeys( product, cb ) {
 	cb( FLEX.productKeys(product) );
-}
+} */
 
 function setAutorun(path) {
 	watchFile( "."+path, exeAutorun );
