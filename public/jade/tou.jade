@@ -1,18 +1,24 @@
 extends layout
 append layout_body
 	- alabel = "click here for contents"
-	- alink = "go to master".tag(master)
+	- alink = "go to run".tag(run)
 	- mybar = "".tag("iframe",{src:"/barplot.view",width:800,height:300})
+	- barplot = "/barplot.view"
+	- insert = "edit || login".tag( " || ", "/goedit || /gologin" )
 	
 	:markdown
 		# links
-		[hardcode](/goheredude.org) [derived label #{alabel}](/junk.txt)  !{alink} rawlink=#{master} tada
+		[hardcode](/goheredude.org) [derived label #{alabel}](/junk.txt)  !{alink} rawlink=#{run} tada  [run me if you dare](/barplot.view) suitors=#{_suitors}
+		insert=!{insert}
 
 		# attach a barplot
+		%{/barplot.view}
+		
+		# embed a barplot
 		!{mybar}  
 		
-		# another way to attached
-		!{embed(imgtest,100,100)}
+		# another way to embed
+		!{embed(barplot,100,100)}
 
 		# fetch test
 		As of #{now} transition status done	potential suitors include % {suitors} thanks $$ \\alpha = \\sum_k^N A_k $$

@@ -806,8 +806,7 @@ code  {
 			name = table,
 			product = table + "." + type,
 			suits = [],
-			keys = skinContext(product),
-			urls = keys.urls;
+			keys = skinContext(product);
 
 		//getProductKeys( product, keys => {
 		//});
@@ -817,7 +816,7 @@ code  {
 			{Ref: name}, (err,recs) => {
 
 			recs.forEach( rec => {
-				suits.push( rec.Name.tag( `${urls.transfer}${rec.Path}/${name}` ));
+				suits.push( rec.Name.tag( `${keys.transfer}${rec.Path}/${name}` ));
 			});
 
 			/*
@@ -845,10 +844,10 @@ code  {
 
 				cb( rtns.join(", ") );
 			}); */
-			suits.push( "loopback".tag( urls.loopback ) );
-			suits.push( "other".tag( urls.tou ) );
+			suits.push( "loopback".tag( keys.loopback ) );
+			suits.push( "other".tag( keys.tou ) );
 
-			//suits.push( `<a href="${urls.totem}/lookups.view?Ref=${product}">suitors</a>` );
+			//suits.push( `<a href="${keys.totem}/lookups.view?Ref=${product}">suitors</a>` );
 
 			res( suits.join(", ") );
 		});	

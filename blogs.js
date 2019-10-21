@@ -190,9 +190,6 @@ catch (err) {
 	
 		Copy(TOTEM.blogContext, ctx);
 		
-		var 
-			blockidx = 0;
-
 		this.Xescape( [], (html,blocks) => // escape code blocks
 		html.Xbreaks( html => // force new lines
 		html.Xsection( html => // expand section headers
@@ -201,22 +198,11 @@ catch (err) {
 		html.Xgen(ctx, html => // expand generators
 		html.Xtex( html => // expand TeX
 		html.Xtopic( req, html => 	// expand topic tracks
-		html.Xinclude( ds, html => 	// expand url/file includes
-		html.Xlink( html => { // expand links
-
-			if ( ds )	// blogging via browser
-				html = 	html.replace(/href=(.*?)\>/g, (str,ref) => { // smart links to follow <a href=REF>A</a> links
-					var q = (ref.startsWith( "'" )) ? '"' : "'";
-					return `href=${q}javascript:navigator.follow(${ref},BASE.user.client,BASE.user.source)${q}>`;
-				});
-
-			cb( html.replace(/@block/g, str => {  	// backsub escaped blocks	
-					//Log(`unblock[${blockidx}]`, blocks[blockidx]);
-					return blocks[ blockidx++ ].tag("code",{}).tag("pre",{});
-				}) );
-			
-		}
-		))))))))));
+		html.Xlink( html => // expand links
+		html.Xinclude( ds, html => 	// expand url includes
+		html.Xfollow( ds, ctx, html => // spoof href links
+		html.Xbacksub( blocks, html => cb(html)
+		))))))))))));
 	},
 	
 	function Xbreaks( cb ) {
@@ -240,12 +226,13 @@ catch (err) {
 		cb(this);
 	},
 	
+	/*
 	function Xlink( cb ) {  // expands [LINK](URL) tags then callsback cb( final html )
-		/*
+		/ *
 		req = http request or null to disable smart hash tags (content tracking)
 		ds = dataset?query default url path
 		viaBrowser = true to enable produce html compatible with browser
-		*/
+		* /
 		var 
 			key = "@tag",
 			fetch = function ( rec, cb ) {  // expand [LINK](URL) markdown				
@@ -259,7 +246,7 @@ catch (err) {
 			pattern = /\[([^\[\]]*)\]\(([^\)]*)\)/g ;
 		
 		this.serialize( fetch, pattern, key, html => cb(html) ); 
-	}, 	
+	}, 	*/
 
 	function Xtopic( req, cb ) {
 		var 
@@ -302,7 +289,64 @@ catch (err) {
 			
 		this.serialize( fetch, pattern, key, html => cb(html) ); 
 	},
-					  
+	
+	/*
+	function Xinclude( ds, ctx, cb ) {
+		var 
+			key = "@tag",
+			
+			fetch = function ( rec, cb ) {  // callback cb with expanded [](URL) markdown
+				var
+					opt = rec.arg1,
+					url = (ctx[rec.arg2] || rec.arg2).replace(/\&amp;/g,"&"),
+					keys = {},
+					dsPath = ds.parseURL(keys,{},{},{}),
+					urlPath = url.parseURL(keys,{},{},{}),
+
+					w = keys.w || 200,
+					h = keys.h || 200,
+
+					urlName = dsPath,
+					urlType = "",
+					x = urlPath.replace(/(.*)\.(.*)/, (str,L,R) => {
+						urlName = L;
+						urlType = R;
+						return "#";
+					}),
+
+					srcPath = urlPath.tag( "?", Copy({src:dsPath}, keys) );
+
+				// Log("include", url, "ds=", ds, "src=", srcPath, "type=", urlType);
+				Log("link", [dsPath, srcPath, urlPath], keys, [opt, url]);
+				if ( opt )
+					cb( opt.tag("a", {href: url}) );
+				
+				else
+					switch (urlType) { 
+						case "jpg":  
+						case "png":
+							cb( "".tag("img", { src:`${url}?killcache=${new Date()}`, width:w, height:h }) );
+							break;
+
+						case "view": 
+						default:
+							if ( ds ) // markdown in browser so ds was provided
+								cb( "".tag("iframe", { src: srcPath, width:w, height:h }) );
+
+							else
+								probeSite(url, cb);
+					}
+			},
+			
+			pattern = /\[([^\[\]]*)\]\(([^\)]*)\)/g ;
+		
+		//Log("Xinc=", this);
+		this.serialize( fetch, pattern, key, html => {
+			//Log("Xinc rtn>>>>", html);
+			cb(html);
+		}); 
+	},   */
+	
 	function Xinclude( ds, cb ) {
 		var 
 			key = "@tag",
@@ -352,7 +396,30 @@ catch (err) {
 			//Log("Xinc rtn>>>>", html);
 			cb(html);
 		}); 
+	}, 
+
+	function Xfollow( ds, ctx, cb ) { // expand url/file includes
+		cb( this.replace( /href=['|"]([^'"]*)/g, (str,ref) => { // smart links to follow <a href=REF>A</a> links		// /href=(.*?)\>/g
+			//var q = (ref.startsWith( "'" )) ? '"' : "'";
+			var 
+				key = ctx[ref] || ref;
+
+			//Log(">>>>>>>>>>href", ref, key);
+			if ( ds )	// blogging via browser
+				return `href="javascript:navigator.follow(${key},BASE.user.client,BASE.user.source)">`;
+
+			else
+				return `href="${key}"`;
+		}) );
 	},
+
+	function Xbacksub( blocks, cb ) {
+		var blockidx = 0;
+		cb( html.replace(/@block/g, str => {  	// backsub escaped blocks	
+			//Log(`unblock[${blockidx}]`, blocks[blockidx]);
+			return blocks[ blockidx++ ].tag("code",{}).tag("pre",{});
+		}) );
+	},	
 
 	function Xscript( ctx, cb ) {  // expands scripting tags then callsback cb(vmctx, final markdown)
 		var 

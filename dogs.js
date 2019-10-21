@@ -127,7 +127,7 @@ module.exports = {  //< watch dogs cycle time in secs (zero to disable)
 			function jobs(cb) {
 				sql.query(get.jobs, (err, jobs) => {
 					cb({
-						total: jobs.Total
+						total: jobs.length
 					});
 				});
 			}

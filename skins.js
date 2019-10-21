@@ -23,7 +23,7 @@ function Trace(msg,req,fwd) {	// execution tracing
 	"skin".trace(msg,req,fwd);
 }
 
-const {Each,Log,Copy,typeOf} = ENUM;
+const {Each,Log,Copy,typeOf,isString} = ENUM;
 const {site, paths, error, primeSkin, probeSite } = TOTEM;
 
 const {skinContext, renderJade} = module.exports = {
@@ -45,7 +45,7 @@ const {skinContext, renderJade} = module.exports = {
 				
 				Name: name.toUpperCase(),
 				name: name,
-				by: ENV.BYLINE,
+				by: "NGA/R".tag( "https://research.nga.ic.gov" ),
 
 				embed: (url,w,h) => {
 					var
@@ -128,7 +128,9 @@ const {skinContext, renderJade} = module.exports = {
 				relinfo: envs.master + "/releases.html?nbook=" + nbook
 			}, ".");
 
-		//Each( urls, (key,url) => ctx["_"+key] = "%{" + url + "}" );	
+		Each( ctx, (key,url) => { 
+			if ( isString( url ) ) ctx["_"+key] = "%{" + url + "}" ;
+		});
 
 		return ctx;
 	},
@@ -140,10 +142,12 @@ const {skinContext, renderJade} = module.exports = {
 	Render Jade string this to res( err || html ) in a new context created for this request. 
 	**/
 		try {
-			cb( JADE.compile(jade, ctx) (ctx) );
-			//(JADE.compile(jade, ctx) (ctx)).Xinclude( "", html => cb(html) );
+			//cb( JADE.compile(jade, ctx) (ctx) );
+			(JADE.compile(jade, ctx) (ctx)).Xinclude( "", html => cb(html) );
+			//(JADE.compile(jade, ctx) (ctx)).Xinclude( "", html => html.Xfollow( "", ctx, html => cb(html) ) );
 			//jade.Xkeys( ctx, jade => cb( JADE.compile( jade, ctx)(ctx) ) );
 			//jade.Xkeys( ctx, jade => (JADE.compile( jade, ctx)(ctx)).Xinclude( "", html => cb(html) )  );
+			//jade.Xinclude( "", ctx, jade => cb( JADE.compile(jade, ctx) (ctx) ) );
 		}
 		catch (err) {
 			//Log("xjade", err);
