@@ -1,6 +1,10 @@
 /**
 @class DEBE.EndPoints
-Service endpoints endpt(req,res)
+Provides service endpoints 
+
+	ENDPOINT(req,res) 
+	
+for accessing datasets, engines, and notebooks (aka plugins) as documented in README.md.
 
 @requires stream
 @requires child_process
@@ -34,7 +38,7 @@ var
 	GEO = require("geohack"),
 	ATOM = require("atomic");
 
-const { skinContext } = require("./skins");
+const { skinContext, renderJade } = require("./skins");
 
 function Trace(msg,req,fwd) {	// execution tracing
 	"endpt".trace(msg,req,fwd);
@@ -336,7 +340,33 @@ Document your usecase using markdown:
 		getEngine( sql, table, eng => {
 			if ( eng )
 				res( eng.ToU || "No Terms-Of-Use defined" );
-			
+ /* `
+MathJax.Hub.Config({
+	extensions: ["tex2jax.js"],
+	jax: ["input/TeX","output/HTML-CSS"],
+	tex2jax: {inlineMath: [["$","$"],["\\(","\\)"]]}
+}); `.tag("script", {src: "/clients/mathjax/MathJax.js?config=default"})
+					
++ "".tag("link", { rel: 'stylesheet', href: '/clients/reveal/lib/css/zenburn.css' })
+
++ `
+code  {
+	font-family: consolas, courier, monospace;
+	font-size: 1em;
+	line-height: 1.2em;
+	white-space: pre;
+	background-color: #acf; 
+	color: #000; 
+	border: 1px solid #666;
+	-moz-border-radius: 0.5em;
+	-webkit-border-radius: 0.5em;
+	border-radius: 0.5em; 
+	padding: 25px;
+	margin: 1.2em 1em;
+	width: 100%;
+	float: left;
+}`.tag("style",{}) */
+
 			else 
 				res( errors.noEngine );
 		});
@@ -486,15 +516,17 @@ Document your usecase using markdown:
 			}
 
 			function genToU( mod, ctx, cb ) {
-				var tou = getter( mod.tou || mod.readme ) || FS.readFileSync("./jades/tou.jade", "utf8");
+				var tou = 
+					( getter( mod.tou || mod.readme ) || FS.readFileSync("./jades/tou.jade", "utf8") )
+					.replace( /\r\n/g, "\n") ;  // if sourced from a editor that saves \r\n vs \n
 
-				tou
-				.replace( /\r\n/g, "\n") // tou may have been sourced from a editor that saves \r\n vs \n
-				.Xskin( ctx, html => cb(mod,html) );
+				renderJade( tou, ctx, html => cb(mod,html) );
+				//tou.Xblog( ctx, html => cb(mod,html) );
 			} 
 
 			function getComment( sql, cb ) {
-				var com = sql.replace( /(.*) comment '((.|\n)*)'/, (str,spec,doc) => { 
+				var com = sql.replace( /(.*) comment '((.|\n|\t)*)'/, (str,spec,doc) => { 
+					//Log(">>>>>>>>>>>>>>spec", spec, doc);
 					cb( spec, doc );
 					return "#";
 				});
@@ -529,7 +561,7 @@ Document your usecase using markdown:
 							com = com || defaultDocs.nodoc,
 							com = com || "missing documentation";
 
-						com.XblogSimple( ctx, html => { 
+						com.Xblog( ctx, html => { 
 							//Log("gen", key,spec,html.substr(0,100));
 							speckeys[key] = spec;
 							dockeys[key] = html;
@@ -539,7 +571,7 @@ Document your usecase using markdown:
 
 				else // all keys expanded so ...
 					genToU(mod, ctx, (mod, tou) => {	// generate ToU in this blogctx
-						//Log(">>>>>>gen tou", tou.length);
+						Log(">>>>>>gen tou", tou.length);
 
 						if ( mod.clear || mod.reset )
 							sql.query("DROP TABLE app.??", name);
@@ -559,7 +591,7 @@ Document your usecase using markdown:
 										spec = speckeys[key],
 										doc = dockeys[key];
 
-									//Log("mod", key, dockeys[key].substr(0,100));
+									//Log(">>mod", key, dockeys[key].substr(0,100));
 									sql.query( `ALTER TABLE app.${name} MODIFY ${keyId} ${spec} comment ?`, [ doc ] );
 								});
 

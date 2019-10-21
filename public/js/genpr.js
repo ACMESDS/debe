@@ -3,30 +3,78 @@ module.exports = {  // generate a random process with specified parameters
 		emProbs: `json comment '
 Gaussian mixing parameters:
 
-	{ dims: [N1, N2 , ...] weights: [X1, X2 , ...] }
-	{ mu: [ vector, ...], sigma: [ cov matrix, ...] }
+	{ dims: [N1, N2 , ...] weights: [X1, X2 , ...] }	||
+	{ mu: [ vector, ...], sigma: [ cov matrix, ...] }	||
 	{ mixes: N, oncov: [ X1, ... ], offcov: [ X1, ... ], snr: X, dim: N, cone: DEG }
 
 ' `,
-		Symbols: "json comment '[S1, S2, ... ] state symbols (null defaults)' ",
-		Members: "int(11) default 100 comment 'number in process ensemble' ",
-		Nyquist: "float default 1 comment 'process over-sampling factor' ",
+		Symbols: "json comment '[S1, S2, ... ] state symbols (null defaults 0,+/-1, +/-2, ...)' ",
+		Members: "int(11) default 100 comment 'size of process ensemble' ",
+		Nyquist: "float default 1 comment 'process step over-sampling factor' ",
 		Steps: "int(11) default 0 comment 'number of process steps' ",
-		Batch: "int(11) default 0 comment 'supervisor batching size in steps (0 disables batching)' ",
+		Batch: "int(11) default 0 comment 'supervisor batching size in steps (0 disables)' ",
 		
 		type_Markov: `json comment '
-Markov process with K^2-K parameters:
+K-state process with specified transition probabilities:
 
-	{TxPrs: [ [pr, ...], ...]}
-	{ states: K, fr: {to: pr, ... } , ... "fr, ..." : "to, ..." }
+	TxPrs: [ [...], ....] the K^2 (K^2-K independent) transition probs 
+
+or:
+
+	states: K
+	TxPrs: { from: {to: pr, ... } , ... "from, ..." : "to, ..." }
+
+where from-to transition probabilities must satisfy $$ \\sum_k TxPrs_{n,k} = 1 $$.
+' `,
+		type_Wiener: `json comment '
+Stateless process with moving 2nd moment (but stationary in 1st increments) where:
+
+	walks: number of walks at each time step (0 disables)
 
 ' `,
-		type_Wiener: "json comment 'Wiener process with specified diffusion {walks}' ",
-		type_Bayes: "json comment 'Bayes-Dirchlet process with specified equilibrium probs [pr, ... ]' ",
-		type_Gauss: "json comment 'Gauss proccess with specified {mean,coints,dim,model,mineig}' ",
-		type_Gillespie: "json comment 'Gillespie-Dobbs process with specified number of {states}' ",
-		type_Ornstein: "json comment 'Ornstein-Ulenbeck process with specified {theta, a = sigma/sqrt(2 theta)}' ",
-	
+		
+		type_Bayes: `json comment '
+K-state process governed by a prescribed conditional independency network:
+
+	eqP: [pr, ...] the K equilibrium probabilities 
+	net: [ {var: probs, ...}, ... ] the conditional dependencies 
+
+or expressed as a DAG:
+
+	dag: { ... }
+
+' `,
+		
+		type_Gauss: `json comment '
+Correlated, stateless random process whose parameters:
+
+	values: [ ... ] pc eigen values  [unitless]
+	vectors: [ [... ], ...] pc eigen values	[sqrt Hz]
+	ref: reference eigenvalue 
+	dim: max pc dimension ( number of correlation intervals M )
+	mean: mean count in observation interval T
+
+are typically derived for a process with prescribed number of correlation intervals $$ M = T / T_c $$ or 
+$$ SNR = \\sqrt{ M / ( 1 + deltaC / M) } $$.
+' `,
+		
+		type_Gillespie: `json comment '
+Inhomogenious K-state process with:
+
+	states: number of states K
+
+where its $$ K^2 $$ transition probabilities are synthesized using the gillespie model.
+'`, 
+		
+	type_Ornstein: `json comment '
+Stateless Ornstein-Ulenbeck process with:
+
+	theta: value
+	a: value
+
+where $$ a = \\frac {\\sigma } { \\sqrt {2 \\theta} } $$.
+' `,
+
 		Save_end: "json",
 		Save_batch: "json",
 		Save_config: "json",

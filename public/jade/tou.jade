@@ -1,44 +1,46 @@
-- alabel = "click here for contents"
-- yal = "click me".tag("/hereigo.view")
-:markdown
-	# links
-	[#{alabel}](/junk.txt)  !{yal} master=${urls.master} tada
-
-	# attach a barplot
-	%{/barplot.view} 
-
-	# fetch test
-	As of #{now} transition status done
-
-	potential suitors include % {urls.suitors} thanks
-
-	# test urls
-	all urls: #{JSON.stringify( urls )}
-
-	a code block test:
-
-		test1
-		test2
-
-	followed by another:
-
-		wow
-		way cool !!
-		[should be ignored](/nogo.com)
-
-	by: #{by}
-
-	# spoofed input
-	! {register()}
-
-	email test: ! {request(reqs.help)}
-
-	query a,b,c: #{a}, #{b}, #{c}
-
-	# Lets make an interface
-
-	Here is my interface !{interface()}
+extends layout
+append layout_body
+	- alabel = "click here for contents"
+	- alink = "go to master".tag(master)
+	- mybar = "".tag("iframe",{src:"/barplot.view",width:800,height:300})
 	
-	and a shortcut to url contents: #{_suitors} vs. #{urls.suitors}
-	
+	:markdown
+		# links
+		[hardcode](/goheredude.org) [derived label #{alabel}](/junk.txt)  !{alink} rawlink=#{master} tada
 
+		# attach a barplot
+		!{mybar}  
+		
+		# another way to attached
+		!{embed(imgtest,100,100)}
+
+		# fetch test
+		As of #{now} transition status done	potential suitors include % {suitors} thanks $$ \\alpha = \\sum_k^N A_k $$
+		and dont forget \\( a = \\frac {\\sigma } { \\sqrt {2 \\theta} } \\) as well.
+
+	:markdown
+		a code block test:
+
+			test1
+			test2
+
+		followed by another:
+
+			wow
+			way cool !!
+			[should be ignored](/nogo.com)
+
+		by: #{by}
+
+		# spoofed input
+		! {register()}
+
+		email test: !{request(reqs.help)}
+
+		query a,b,c: #{a}, #{b}, #{c}
+
+		# Lets make an interface
+
+		Here is my interface !{interface()}
+
+		and a shortcut to url contents: #{_suitors} vs. #{suitors}

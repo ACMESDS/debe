@@ -2,6 +2,9 @@
 
 /**
 @class DEBE
+Provides notebooks, engines, site skinning and protection layers over the TOTEM web service
+as documented in README.md.
+
 @requires child_process
 @requires fs
 @requires stream
@@ -24,15 +27,6 @@
 @requires randpr
 @requires enum
 @requires reader
-
-Required env vars: none
-
-Required openv.datasets:
-	profiles, viewers, apps
-	
-Required app.datasets:
-	voxels, files, events, queues, engines, dblogs, quizes
-	
 */
 
 var 									
@@ -145,7 +139,7 @@ Copy({
 		}
 	},
 
-	//blogContext: BLOG,		//< blogging / skinning context
+	blogContext: BLOG,		//< blogging / skinning context
 		
 	onStartup: function () {	//< runs when server starts
 		var
@@ -1449,11 +1443,11 @@ could/should be revised to support more generic peer-to-peer bySOAP interfaces.
 		var
 			fetchBlog = ( rec, cb ) => {
 				if ( md = rec[key] + "" ) {
-					md.Xblog(req, ds.tag("?", { 	// tag ds with source record selector
+					md.Xblogify(req, ds.tag("?", { 	// tag ds with source record selector
 						name: ( (rec.Pipe||"").startsWith("{") ) 
 							? rec.Name + "-%"	// pipe defines a monte-carlo cross product so get them all
 							: rec.Name	// pipe defines a simple path
-					}), {}, {}, rec, html => cb( 
+					}), {}, rec, html => cb( 
 						flags.kiss
 							? html 	// keep if simple
 							: html + [	// add by-line

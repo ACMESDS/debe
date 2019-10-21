@@ -1,5 +1,11 @@
 /**
-@class DEBE.blogs
+@class DEBE.Blogs
+Provides serialized blogging methods as documented in README.md.
+
+@requires mathjax-node
+@requires totem
+@requires flex
+@requires enum
 */
 
 var		// 3rd party
@@ -8,8 +14,7 @@ var		// 3rd party
 var		// totem
 	TOTEM = require("totem"),
 	FLEX = require("flex"),	
-	ENUM = require("enum"),
-	JADE = require('jade');				//< using jade as the skinner	
+	ENUM = require("enum");
 
 const { Log, Copy } = ENUM;
 const { probeSite } = TOTEM;
@@ -137,24 +142,11 @@ catch (err) {
 
 [  // string prototypes
 	
-	function Xskin( ctx, cb ) {
-		try {
-			//cb( JADE.compile(this, ctx) (ctx) );
-			(JADE.compile(this, ctx) (ctx)).Xinclude( "", html => cb(html) );
-			//this.Xkeys( ctx, jade => cb( JADE.compile( jade, ctx)(ctx) ) );
-			//this.Xkeys( ctx, jade => (JADE.compile( jade, ctx)(ctx)).Xinclude( "", html => cb(html) )  );
-		}
-		catch (err) {
-			//Log("xjade", err);
-			cb( err+"" );
-		}
+	function Xblog(ctx, cb) {
+		this.Xblogify(null, "",  {}, ctx, cb);
 	},
 	
-	function XblogSimple(ctx, cb) {
-		this.Xblog(null, "", {}, {}, ctx, cb);
-	},
-	
-	function Xblog(req, ds, cache, ctx, rec, cb) {
+	function Xblogify(req, ds, ctx, rec, cb) {
 	/**
 	@member String
 	Expands markdown:
@@ -182,8 +174,7 @@ catch (err) {
 	
 	@param {Object} req Totem request
 	@param {String} ds default dataset for includes sourced from browser
-	@param {Object} cache hash for cacheing markdown variables
-	@param {Object} ctx hash holding markdown variables
+	@param {Object} ctx cache for markdown variables
 	@param {Obect} rec record hash for markdown variables
 	@param {Function} cb callback(markdown html)
 	*/
@@ -224,7 +215,8 @@ catch (err) {
 					return blocks[ blockidx++ ].tag("code",{}).tag("pre",{});
 				}) );
 			
-		}))))))))));
+		}
+		))))))))));
 	},
 	
 	function Xbreaks( cb ) {

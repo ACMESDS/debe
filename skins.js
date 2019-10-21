@@ -1,5 +1,11 @@
 /**
-@class DEBE.Skinning
+@class DEBE.Skins
+Provides notebook, dataset, and engine skinning endpoints as documented in README.md.
+
+@requires fs
+@requires jade
+@requires totem
+@requires enum
 */
 
 var		
@@ -20,25 +26,56 @@ function Trace(msg,req,fwd) {	// execution tracing
 const {Each,Log,Copy,typeOf} = ENUM;
 const {site, paths, error, primeSkin, probeSite } = TOTEM;
 
-const {skinContext, renderSkin} = module.exports = {
+const {skinContext, renderJade} = module.exports = {
 	skinContext: function (nbook, prime) {
 		var
 			parts = nbook.split("."),
 			name = parts[0] || "NoName",
 			type = parts[1] || "js",
-			paths = {  
+			envs = {  
 				master: ENV.SERVICE_MASTER_URL + "/" + name,
 				worker: ENV.SERVICE_WORKER_URL + "/" + name,
+				totem: ENV.SERVICE_MASTER_URL,
 				//nbook: ENV.SERVICE_WORKER_URL + "/" + name,
 				repo: ENV.PLUGIN_REPO
 			},
 			ctx = Copy( prime || {}, {
+				query: {},
+				filename: paths.jadeRef,
+				
 				Name: name.toUpperCase(),
 				name: name,
-				product: nbook,
-				notebook: nbook,
 				by: ENV.BYLINE,
 
+				embed: (url,w,h) => {
+					var
+						keys = {},
+						urlPath = url.parseURL(keys,{},{},{}),
+
+						w = keys.w || w || 400,
+						h = keys.h || h || 400,
+
+						urlName = urlPath,
+						urlType = "",
+						x = urlPath.replace(/(.*)\.(.*)/, (str,L,R) => {
+							urlName = L;
+							urlType = R;
+							return "#";
+						});
+
+					//Log("link", url, urlPath, keys);
+					switch (urlType) { 
+						case "jpg":  
+						case "png":
+							return "".tag("img", { src:`${url}?killcache=${new Date()}`, width:w, height:h });
+							break;
+
+						case "view": 
+						default:
+							return "".tag("iframe", { src: url, width:w, height:h });
+					}
+				},
+				
 				register: () => 
 					"<!---parms endservice=https://myservice/" + ctx.name + "--->" 
 					+ ctx.input({a:"aTest", b:"bTest"}),
@@ -54,22 +91,6 @@ const {skinContext, renderSkin} = module.exports = {
 				summary: "summary tbd",
 				//reqts: infokeys.envs[type] || "reqts tbd",
 				ver: "ver tbd",
-				/*
-				status: () => ctx.fetch( paths.master + ".status" ),
-				toumd: () => ctx.fetch( paths.master + ".toumd" ),
-				suitors: () => ctx.fetch( paths.master + ".suitors" ),
-				users: () => ctx.fetch( paths.master + ".users" ),
-				fetch: (url,tags) => {
-					//console.log(">>>>>", url);
-					return "<!---fetch " + url.tag("?", tags || {} ) + "--->";
-				},	
-				gridify: site.gridify,
-				tag: site.tag,
-				get: site.get,
-				match: site.match,
-				replace: site.replace,
-				pocs: site.pocs,
-				*/
 				reqs: {
 					info: "request for information/please provide some information",
 					help: "need help/please provde me some help on this notebook"
@@ -87,33 +108,49 @@ const {skinContext, renderSkin} = module.exports = {
 
 				interface: () => "publish notebook to define interface",
 				now: (new Date())+"",
-				urls: {
-					loopback:  paths.worker + "." + type +"?endservice=" + paths.worker +".users",
-					transfer: paths.worker + "." + type + "?endservice=",
-					//nbook: paths.worker,
-					status: paths.master + ".status",
-					md: paths.master + ".md",
-					suitors: paths.master + ".suitors",
-					run: paths.worker + ".run",
-					tou: paths.master + ".tou",
-					pub: paths.master + ".pub",
-					worker: paths.worker,
-					master: paths.master,
-					totem: ENV.SERVICE_WORKER_URL,
-					//Totem: paths.worker,
-					//totem: paths.master,  // generally want these set to the master on 8080 so that a curl to totem on 8080 can return stuff
-					repo: paths.repo + name,
-					repofiles: paths.repo + name + "/raw/master",
-					relinfo: paths.master + "/releases.html?nbook=" + nbook
-				}
-			}, "."),
-			urls = ctx.urls;
+				
+				loopback:  envs.worker + "." + type +"?endservice=" + envs.worker +".users",
+				transfer: envs.worker + "." + type + "?endservice=",
+				status: envs.master + ".status",
+				md: envs.master + ".md",
+				suitors: envs.master + ".suitors",
+				run: envs.master + ".run",
+				view: envs.master + ".view",
+				tou: envs.master + ".tou",
+				pub: envs.master + ".pub",
+				imgtest: envs.totem + "/shares/a1.jpg",
+				//worker: envs.worker,
+				//master: envs.master,
+				totem: envs.totem,
+				//totem: envs.master,  // generally want these set to the master on 8080 so that a curl to totem on 8080 can return stuff
+				repo: envs.repo + name,
+				repofiles: envs.repo + name + "/raw/master",
+				relinfo: envs.master + "/releases.html?nbook=" + nbook
+			}, ".");
 
-		Each( urls, (key,url) => ctx["_"+key] = "%{" + url + "}" );	
+		//Each( urls, (key,url) => ctx["_"+key] = "%{" + url + "}" );	
 
 		return ctx;
 	},
 	
+	renderJade: function ( jade, ctx, cb ) { 
+	/**
+	@private
+	@method renderJade
+	Render Jade string this to res( err || html ) in a new context created for this request. 
+	**/
+		try {
+			cb( JADE.compile(jade, ctx) (ctx) );
+			//(JADE.compile(jade, ctx) (ctx)).Xinclude( "", html => cb(html) );
+			//jade.Xkeys( ctx, jade => cb( JADE.compile( jade, ctx)(ctx) ) );
+			//jade.Xkeys( ctx, jade => (JADE.compile( jade, ctx)(ctx)).Xinclude( "", html => cb(html) )  );
+		}
+		catch (err) {
+			//Log("xjade", err);
+			cb( err+"" );
+		}
+	},
+		
 	renderSkin: function (req,res) {
 	/**
 	@method renderSkin
@@ -122,14 +159,11 @@ const {skinContext, renderSkin} = module.exports = {
 	@param {Object} req Totem request
 	@param {Function} res Totem response
 	*/
-		//Log("render", site);
-		
 		const { sql, query, table } = req;
 		const { urls } = site;
 		
 		var 
-			nb = query.notebook || query.nb,
-			//routers = TOTEM.byActionTable.select,
+			nb = query.notebook || query.nb || query.project || query.task,
 			dsname = table,
 			ctx = Copy( nb ? skinContext( nb ) : {}, Copy(site, {  //< default site context to render skin
 				typeOf: typeOf,
@@ -153,24 +187,11 @@ const {skinContext, renderSkin} = module.exports = {
 					disk: ((req.profile.useDisk / req.profile.maxDisk)*100).toFixed(0)
 				},*/
 				started: TOTEM.started,
-				filename: TOTEM.paths.jadeRef,  // jade compile requires
+				filename: paths.jadeRef,  // jade compile requires
 				url: req.url
 			}) );
 
-		//Log("render", ctx );
-		
-		/*
-		function dsContext(ds, cb) { // callback cb(ctx) with skinning context ctx
-
-			if ( extctx = primeSkin[ds] ) // if there is a ctx extender, render in ds context
-				sql.serialize( extctx, {Task: ds}, ctx, cb );
-
-			else  // render in default site context
-				cb( ctx );
-		}
-
-		dsContext(dsname, ctx => {  // get skinning context for this skin
-		}); */
+		//Log("skin>>>>> ctx=", ctx);
 		
 		function renderFile( file, ctx ) { 
 		/**
@@ -185,11 +206,10 @@ const {skinContext, renderSkin} = module.exports = {
 						res( err );
 
 					else
-						renderJade( jade, ctx );
+						renderJade( jade, ctx, html => res(html) );
 				})
 			}
 			catch (err) {
-				Log(err);
 				res(  err );
 			}
 		}
@@ -228,7 +248,7 @@ const {skinContext, renderSkin} = module.exports = {
 				cols = [],
 				drops = { id:1, odbcstamp: 1};
 
-			switch (fields.constructor.name) {
+			switch ( typeOf(fields) ) {
 				case "Array":
 					fields.forEach( field => {
 						var 
@@ -312,39 +332,17 @@ const {skinContext, renderSkin} = module.exports = {
 			});	
 		}
 
-		function renderJade( jade, ctx ) { 
-		/**
-		@private
-		@method renderJade
-		Render Jade string this to res( err || html ) in a new context created for this request. 
-		**/
-			jade.Xskin(ctx, (html, err) => res( err || html ) );
-		}
-
 		sql.forFirst( "", paths.engine, { // Probe engine
 			Name: dsname,
 			Enabled: 1
 		}, eng => {
 
-			//Log(eng);
-
 			if (eng)  // render jade view or notebook
 				if ( eng.Type == "jade" )
-					renderJade( eng.Code || "", ctx );
+					renderJade( eng.Code || "", ctx, html => res(html) );
 
 				else
 					buildSchema( dsname, eng.Type, ctx );
-
-			/* else
-			if ( route = routers[dsname] )   // render ds returned by an engine 
-				route(req, recs => { 
-					//Log({eng:recs, ds:req.table});
-					if (recs)
-						renderNotebook( dsname, "", recs[0] || {}, ctx );
-
-					else
-						buildSchema( dsname, ctx );
-				});	 */
 
 			else  // render a table
 				buildSchema( dsname, "", ctx );

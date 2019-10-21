@@ -5,7 +5,7 @@ block layout_parms
 	- start = "content" // name of div id to start client content
 	- highlight = ""	// code styling theme zenburn | ... or "" to disable
 	- capture = false // switch to add screen capture button
-	- math = false // switch to add mathjax plugin
+	- math = true // switch to add mathjax plugin
 	- prep = true // switch to prep brower 
 	- debug = false // switch to enable query debugger
 
@@ -19,7 +19,7 @@ if query.help
 			start = "content" // div is to start client content or "" to disable content
 			highlight = ""	// code styling theme zenburn | ... or "" to disable
 			capture = false // switch to add screen capture button
-			math = false // switch to add mathjax plugin
+			math = true // switch to add mathjax plugin
 			prep = false // switch to prep brower 
 			debug = false // switch to enable query debugger
 			help = &help // display usage info
@@ -75,7 +75,12 @@ else
 				MathJax.Hub.Config({
 					extensions: ["tex2jax.js"],
 					jax: ["input/TeX","output/HTML-CSS"],
-					tex2jax: {inlineMath: [["$","$"],["\\(","\\)"]]}
+					"HTML-CSS": { availableFonts: ["TeX"] },
+					tex2jax: {
+						processEscapes: true,
+						inlineMath: [  ["\\(","\\)"] ],  // ['$','$'],
+						displayMath: [ ['$$','$$'], ["\\[","\\]"] ]					
+					}
 				});
 
 		//- Code formatting

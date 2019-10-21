@@ -1,18 +1,22 @@
 /**
 @class DEBE.Pipes
+Provide stream, image, etc pipes
 
-Provide a (stream, image, etc) PIPE(sql,job,cb) for DEBE plugins.   Each PIPE will callback 
+	PIPE(log,sql,job,cb) 
+	
+to run DEBE notebooks.   Each PIPE callsback 
 
 	cb(data,job) 
 	
-with a data object suitable for the specific pipe.  The PIPE may optionally regulate the job using sql.insertJob.  If the PIPE needs to 
-save its data (e.g. when it supervising a workflow), it will callback 
+with a {$: ...} object suitable for the specific pipe.  The PIPE may optionally regulate the job 
+using sql.insertJob.  If the PIPE needs to save its data (e.g. when it supervising a workflow), it 
+callsback 
 
 		cb(data, job, (ctx,save) => { 
 			save( data, ctx );		// save its data under plugin context ctx
 		});
 
-The pipe job contains:
+The PIPE accepts a job containing:
 
 		qos: ms job regulation interval
 		priority: 0, 1, ... job prirority
@@ -25,6 +29,10 @@ The pipe job contains:
 		query: {...} query parms
 		path: "/dataset.type?..." pipe path
 		ctx: {...} plugin context keys
+		
+and a status logger:
+
+	log("status", arg1, arg2, ....)
 */
 var		// nodejs
 	CP = require("child_process"), 		//< Child process threads
