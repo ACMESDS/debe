@@ -900,14 +900,18 @@ code  {
 			});
 		} */
 		
+		function serviceID(url) {
+			return CRYPTO.createHmac("sha256", "").update(url || "").digest("hex");
+		}
+		
 		function licenseCode( sql, code, pub, cb ) {  //< callback cb(pub) or cb(null) on error
 
-			function returnLicense(pub) {
+			function validateLicense(pub, cb) {
 
 				function genLicense(code, secret) {  //< callback cb(minifiedCode, license)
-					Log("gen license for", secret);
+					Log("gen license", secret);
 					if (secret)
-						return CRY.createHmac("sha256", secret).update(code).digest("hex");
+						return CRYPTO.createHmac("sha256", secret).update(code).digest("hex");
 
 					else
 						return null;
@@ -921,9 +925,9 @@ code  {
 				if ( license = genLicense( code, secret ) ) {
 					cb( Copy({
 						_License: license,
-						_EndServiceID: FLEX.serviceID( pub._EndService ),
+						_EndServiceID: serviceID( pub._EndService ),
 						_Copies: 1
-					}, pub),  sql );
+					}, pub) );
 
 					sql.query( "INSERT INTO app.releases SET ? ON DUPLICATE KEY UPDATE _Copies=_Copies+1", pub );
 
@@ -941,6 +945,8 @@ code  {
 			Log("endserv lic code", pub);
 			if (endService = pub._EndService)  // an end-service specified so validate it
 				probeSite( endService, info => {  // check users provided by end-service
+					
+					Log("probe", info);
 					var 
 						valid = false, 
 						partner = pub._Partner.toLowerCase(),
@@ -950,15 +956,16 @@ code  {
 						if (user.toLowerCase() == partner) valid = true;
 					});
 
+					Log("valid", valid);
 					if (valid) // signal valid
-						returnLicense(pub);
+						validateLicense( pub,  cb );
 
 					else	// signal invalid
 						cb( null  );
 				});	
 
 			else	// no end-service so no need to validate
-				returnLicense(pub);
+				validateLicense(pub, cb);
 		}
 		
 		const { query, sql, table, type, client } = req;
@@ -967,9 +974,10 @@ code  {
 			name = table,
 			attr = type,
 			product = name + "." + type,
-			partner = client,
-			endService = query.endservice + "",
+			endPartner = client,
+			endService = query.endservice,
 			proxy = query.proxy,
+			keys = skinContext(product),
 			types = {
 				pub: "txt",
 				users: "json",
@@ -986,54 +994,58 @@ code  {
 				jade: "txt"
 			};
 		
-		getEngine( sql, name, eng => {
-			if ( eng ) 
-				switch (type) {
-					case "js":
-					case "py":
-					case "me":
-					case "m":
-						sql.query(
-							"SELECT * FROM app.releases WHERE least(?,1) ORDER BY _Published DESC LIMIT 1", {
-								_Partner: endPartner+".forever",
-								_EndServiceID: FLEX.serviceID( endService ),
-								_Product: product
-						}, (err, pubs) => {
+		Log( endPartner, endService );
+		
+		if ( endService )
+			getEngine( sql, name, eng => {
+				if ( eng ) 
+					switch (type) {
+						case "js":
+						case "py":
+						case "me":
+						case "m":
+							sql.query(
+								"SELECT * FROM app.releases WHERE least(?,1) ORDER BY _Published DESC LIMIT 1", {
+									_Partner: endPartner+".forever",
+									_EndServiceID: serviceID( endService ),
+									_Product: product
+							}, (err, pubs) => {
 
-							function addTerms(code, type, pub, cb) {
-								var 
-									prefix = {
-										js: "// ",
-										py: "# ",
-										matlab: "% ",
-										jade: "// "
-									},
-									pre = "\n"+(prefix[type] || ">>");
+								function addTerms(code, type, pub, cb) {
+									var 
+										prefix = {
+											js: "// ",
+											py: "# ",
+											matlab: "% ",
+											jade: "// "
+										},
+										pre = "\n"+(prefix[type] || ">>");
 
-								FS.readFile("./public/md/tou.txt", "utf8", (err, terms) => {
-									if (err) 
-										cb( errors.noLicense );
+									FS.readFile("./jades/tou.txt", "utf8", (err, terms) => {
+										if (err) 
+											cb( errors.noLicense );
 
-									else
-										cb( pre + terms.parseEMAC( Copy({
-											"urls.service": pub._EndService,
-											license: pub._License,
-											published: pub._Published,
-											partner: pub._Partner
-										}, keys, ".")).replace(/\n/g,pre) + "\n" + code);
-								});
-							}
+										else
+											cb( pre + terms.parseEMAC( Copy({
+												service: pub._EndService,
+												license: pub._License,
+												published: pub._Published,
+												partner: pub._Partner
+											}, keys)).replace(/\n/g,pre) + "\n" + code);
+									});
+								}
 
-							// May rework this to use eng.Code by priming the Code in the publish phase
-							FS.readFile( `./public/${type}/${name}.d/source`, "utf8", (err, srcCode) => {
-								if (!err) eng.Code = srcCode;
+								// May rework this to use eng.Code by priming the Code in the publish phase
+								FS.readFile( `./public/${type}/${name}.d/source`, "utf8", (err, srcCode) => {
+									if (!err) eng.Code = srcCode;
 
-								if ( pub = pubs[0] )	// already released so simply distribute
-									addTerms( eng.Code, type, pub, res );
+									//Log("code=", eng.Code);
+									
+									if ( pub = pubs[0] )	// already licensed so simply distribute
+										addTerms( eng.Code, type, pub, res );
 
-								else	// not yet released so ...
-								if ( licenseOnDownload ) { // license required to distribute
-									if ( endService )	{ 	// specified so ok to distribute
+									else	// not yet released so ...
+									if ( licenseOnDownload ) { // license required to distribute
 										if ( eng.Minified )	// was compiled so ok to distribute
 											licenseCode( sql, eng.Minified, {
 												_Partner: endPartner,
@@ -1042,38 +1054,39 @@ code  {
 												_Product: product,
 												Path: "/"+product
 											}, pub => {
+												
+												Log("pub lic=", pub);
 												if (pub) // distribute licensed version
 													addTerms( eng.Code, type, pub, res );
 
 												else	// failed
-													res( null );
+													res( errors.noLicense );
 											});
 
 										else
-											res( null );
+											res( errors.noLicense );
 									}
 
-									else
-										res( null );
-								}
-
-								else	// no license required
-									res( eng.Code );
+									else	// no license required
+										res( eng.Code );
+								});
 							});
-						});
-						break;
+							break;
 
-					case "jade":
-						res( (eng.Type == "jade") ? eng.Code : null );
-						break;
+						case "jade":
+							res( (eng.Type == "jade") ? eng.Code : null );
+							break;
 
-					default:
-						res( errors.noEngine );
-				}
-			
-			else
-				res( errors.noEngine );
-		});
+						default:
+							res( errors.noEngine );
+					}
+
+				else
+					res( errors.noEngine );
+			});
+		
+		else
+			res( errors.noPartner );
 	},
 
 	simPlugin: function (req,res) {

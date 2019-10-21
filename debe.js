@@ -1146,6 +1146,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		lostContext: new Error("pipe lost context"),
 		noPartner: new Error( "endservice missing or did not respond with transition partner" ),
 		noAttribute: new Error( "undefined engine attribute" ),
+		noLicense: new Error("license could not be created"),
 		noEngine: new Error( "no such engine" ),
 		noGraph: new Error( "graph db unavailable" ),
 		badAgent: new Error("bad agent request"),
