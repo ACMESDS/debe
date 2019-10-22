@@ -201,7 +201,7 @@ catch (err) {
 		html.Xlink( html => // expand links
 		html.Xinclude( ds, html => 	// expand url includes
 		html.Xfollow( ds, ctx, html => // spoof href links
-		html.Xbacksub( blocks, html => cb(html)
+		html.Xbacksub( blocks, html => cb(html) // backsub code blocks
 		))))))))))));
 	},
 	
@@ -226,13 +226,12 @@ catch (err) {
 		cb(this);
 	},
 	
-	/*
 	function Xlink( cb ) {  // expands [LINK](URL) tags then callsback cb( final html )
-		/ *
+		/*
 		req = http request or null to disable smart hash tags (content tracking)
 		ds = dataset?query default url path
 		viaBrowser = true to enable produce html compatible with browser
-		* /
+		*/
 		var 
 			key = "@tag",
 			fetch = function ( rec, cb ) {  // expand [LINK](URL) markdown				
@@ -246,7 +245,7 @@ catch (err) {
 			pattern = /\[([^\[\]]*)\]\(([^\)]*)\)/g ;
 		
 		this.serialize( fetch, pattern, key, html => cb(html) ); 
-	}, 	*/
+	}, 
 
 	function Xtopic( req, cb ) {
 		var 
@@ -415,7 +414,7 @@ catch (err) {
 
 	function Xbacksub( blocks, cb ) {
 		var blockidx = 0;
-		cb( html.replace(/@block/g, str => {  	// backsub escaped blocks	
+		cb( this.replace(/@block/g, str => {  	// backsub escaped blocks	
 			//Log(`unblock[${blockidx}]`, blocks[blockidx]);
 			return blocks[ blockidx++ ].tag("code",{}).tag("pre",{});
 		}) );

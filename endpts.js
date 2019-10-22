@@ -801,56 +801,62 @@ code  {
 	},
 	
 	matchPlugin: function (req,res) {
-		const { query, sql, table, type } = req;
-		var
-			name = table,
-			product = table + "." + type,
-			suits = [],
-			keys = skinContext(product);
-
-		//getProductKeys( product, keys => {
-		//});
+		const { query, sql, table } = req;
+		
+		sql.query("SELECT Type FROM app.engines WHERE ? LIMIT 1", {Name: table}, (err, engs) => {
 			
-		sql.query(
-			"SELECT Name,Path FROM app.lookups WHERE ?",
-			{Ref: name}, (err,recs) => {
+			if ( eng = engs[0] ) {
+				var
+					name = table,
+					product = table + "." + eng.Type,
+					suits = [],
+					keys = skinContext(product);
 
-			recs.forEach( rec => {
-				suits.push( rec.Name.tag( `${keys.transfer}${rec.Path}/${name}` ));
-			});
+				sql.query(
+					"SELECT Name,Path FROM app.lookups WHERE ? OR ?",
+					[{Ref: name}, {Ref:"notebooks"}], (err,recs) => {
 
-			/*
-			// Extend list of suitors with already  etc
-			sql.query(
-				"SELECT endService FROM app.releases GROUP BY endServiceID", 
-				[],  (err,recs) => {
+					recs.forEach( rec => {
+						suits.push( rec.Name.tag( `${keys.transfer}${rec.Path}/${name}` ));
+					});
 
-				recs.forEach( rec => {
-					if ( !sites[rec.endService] ) {
-						var 
-							url = URL.parse(rec.endService),
-							name = (url.host||"none").split(".")[0];
+					/*
+					// Extend list of suitors with already  etc
+					sql.query(
+						"SELECT endService FROM app.releases GROUP BY endServiceID", 
+						[],  (err,recs) => {
 
-						rtns.push( `<a href="${urls.transfer}${rec.endService}">${name}</a>` );
-					}
-				});
+						recs.forEach( rec => {
+							if ( !sites[rec.endService] ) {
+								var 
+									url = URL.parse(rec.endService),
+									name = (url.host||"none").split(".")[0];
 
-				rtns.push( `<a href="${urls.loopback}">loopback test</a>` );
+								rtns.push( `<a href="${urls.transfer}${rec.endService}">${name}</a>` );
+							}
+						});
 
-				if (proxy)
-					rtns.push( `<a href="${urls.proxy}">other</a>` );
+						rtns.push( `<a href="${urls.loopback}">loopback test</a>` );
 
-				//rtns.push( `<a href="${site.urls.worker}/lookups.view?Ref=${product}">add</a>` );
+						if (proxy)
+							rtns.push( `<a href="${urls.proxy}">other</a>` );
 
-				cb( rtns.join(", ") );
-			}); */
-			suits.push( "loopback".tag( keys.loopback ) );
-			suits.push( "other".tag( keys.tou ) );
+						//rtns.push( `<a href="${site.urls.worker}/lookups.view?Ref=${product}">add</a>` );
 
-			//suits.push( `<a href="${keys.totem}/lookups.view?Ref=${product}">suitors</a>` );
+						cb( rtns.join(", ") );
+					}); */
+					suits.push( "loopback".tag( keys.loopback ) );
+					suits.push( "other".tag( keys.tou ) );
 
-			res( suits.join(", ") );
-		});	
+					//suits.push( `<a href="${keys.totem}/lookups.view?Ref=${product}">suitors</a>` );
+
+					res( suits.join(", ") );
+				});	
+			}
+		
+			else
+				res( "" );
+		});
 	},
 
 	touPlugin: function (req,res) {

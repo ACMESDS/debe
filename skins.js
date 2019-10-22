@@ -32,6 +32,7 @@ const {skinContext, renderJade} = module.exports = {
 			parts = nbook.split("."),
 			name = parts[0] || "NoName",
 			type = parts[1] || "js",
+			Name = name.toUpperCase(),
 			envs = {  
 				master: ENV.SERVICE_MASTER_URL + "/" + name,
 				worker: ENV.SERVICE_WORKER_URL + "/" + name,
@@ -43,8 +44,9 @@ const {skinContext, renderJade} = module.exports = {
 				query: {},
 				filename: paths.jadeRef,
 				
-				Name: name.toUpperCase(),
+				Name: Name,
 				name: name,
+				type: type,
 				by: "NGA/R".tag( "https://research.nga.ic.gov" ),
 
 				embed: (url,w,h) => {
@@ -83,7 +85,7 @@ const {skinContext, renderJade} = module.exports = {
 				//input: tags => "<!---parms " + "".tag("&", tags || {}).substr(1) + "--->",
 
 				reqts: {   // defaults
-					js: "nodejs-8.9.x and [man-latest](https://sc.appdev.proj.coe.ic.gov://acmesds/man)",
+					js:  ["nodejs-8.9.x", "standard machine learning library".tag( "https://sc.appdev.proj.coe.ic.gov://acmesds/man" )].join(", "),
 					py: "anconda-4.9.1 (iPython 5.1.0 debugger), numpy 1.11.3, scipy 0.18.1, utm 0.4.2, Python 2.7.13",
 					m: "matlab R18, odbc, simulink, stateflow"
 				},
@@ -92,8 +94,9 @@ const {skinContext, renderJade} = module.exports = {
 				//reqts: infokeys.envs[type] || "reqts tbd",
 				ver: "ver tbd",
 				reqs: {
-					info: "request for information/please provide some information",
-					help: "need help/please provde me some help on this notebook"
+					distrib: `request to distribute ${Name}/Can you grant permission to distribute ${Name}?`,
+					info: `request for information on ${Name}/Can you provide further information on ${Name}`,
+					help: `need help on ${Name}/please provde me some help on notebook ${Name}`
 				},
 				request: req => {
 					var
