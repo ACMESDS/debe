@@ -10,6 +10,7 @@ for accessing datasets, engines, and notebooks (aka plugins) as documented in RE
 @requires child_process
 @requires crypto
 @requires fs
+@requires url
 @requires uglify
 @requires html-minifier
 @requires man
@@ -24,6 +25,7 @@ var
 	STREAM = require("stream"), 		//< pipe streaming
 	CP = require("child_process"), 		//< Child process threads
 	CRYPTO = require("crypto"), 	//< to hash names
+	URL = require("url"), 	//< url parsing
 	FS = require("fs"); 				//< filesystem and uploads
 
 	// 3rd party
@@ -38,7 +40,7 @@ var
 	GEO = require("geohack"),
 	ATOM = require("atomic");
 
-const { skinContext, renderJade } = require("./skins");
+const { bookContext, renderJade } = require("./skins");
 
 function Trace(msg,req,fwd) {	// execution tracing
 	"endpt".trace(msg,req,fwd);
@@ -319,7 +321,7 @@ Document your usecase using markdown:
 		
 		res( "exporting" );
 		CP.exec(
-			`mysqldump -u$MYSQL_USER -p$MYSQL_PASS -h$MYSQL_HOST --add-drop-table app ${name} >./stores/${name}.nb`,
+			`mysqldump -u$MYSQL_USER -p$MYSQL_PASS -h$MYSQL_HOST --add-drop-table app ${name} >./shares/${name}.nb`,
 			(err,out) => Trace( `EXPORTED ${name} `+ (err||"ok") ), req );	
 	},
 
@@ -330,7 +332,7 @@ Document your usecase using markdown:
 	
 		res( "importing" );
 		CP.exec(
-			`mysql -u$MYSQL_USER -p$MYSQL_PASS -h$MYSQL_HOST --force app < ./stores/${name}.nb`,
+			`mysql -u$MYSQL_USER -p$MYSQL_PASS -h$MYSQL_HOST --force app < ./shares/${name}.nb`,
 			(err,out) => Trace( `IMPORTED ${name} `+ (err||"ok") ), req );							
 	},
 
@@ -687,49 +689,48 @@ code  {
 		}
 
 		const { query, sql, table, type } = req;
-		var
-			name = table;
 
-		getEngine( sql, table, eng => {
-			if ( eng ) {
-				res( "publishing" );
-				
+		var ctx = {
+			name: table,
+			speckeys: {},
+			dockeys: {},
+			interface: () => {
 				var 
-					product = `${eng.Name}.${eng.Type}`,
-					ctx = skinContext(product, {
-						speckeys: {},
-						dockeys: {},
-						interface: () => {
-							var 
-								ifs = [], 
-								speckeys = ctx.speckeys, 
-								dockeys = ctx.dockeys;
+					ifs = [], 
+					speckeys = ctx.speckeys, 
+					dockeys = ctx.dockeys;
 
-							Each( speckeys, (key, def) => {
-								 ifs.push({ 
-									 Key: key, 
-									 Type: def, 
-									 Details: dockeys[key] || "no documentation available" 
-								 });
-							});
-							return ifs.gridify();
-						},						
-						defaultDocs:  defaultDocs
-					});
-				
-				publish(sql, ctx, "./public/"+eng.Type+"/"+eng.Name, eng.Name, eng.Type);
-			}
+				Each( speckeys, (key, def) => {
+					 ifs.push({ 
+						 Key: key, 
+						 Type: def, 
+						 Details: dockeys[key] || "no documentation available" 
+					 });
+				});
+				return ifs.gridify();
+			},						
+			defaultDocs:  defaultDocs
+		};
 			
-			else
-				res( errors.noEngine );
+		bookContext( sql, ctx, ctx => {
+
+			switch ( ctx.type ) {
+				case "jade":
+				case "file":
+					res( errors.noEngine );
+					break;
+					
+				default:
+					res( "publishing" );
+
+					publish(sql, ctx, `./public/${ctx.type}/${ctx.name}`, ctx.name, ctx.type);
+			}
 		});
 	},
 	
 	statusPlugin: function (req,res) {
 		const { query, sql, table, type } = req;
 		var
-			name = table,
-			product = table + "." + type,
 			fetchUsers = function (rec, cb) {	// callback with endservice users
 				probeSite(rec._EndService, info => { 
 					//Log("status users", info);
@@ -747,115 +748,114 @@ code  {
 							cb( mod._Mods || "" );
 
 					});
-			},
-			keys = skinContext(product),
-			urls = keys.urls;
+			};
+		
+		bookContext( sql, { name: table }, ctx => {
+			
+			var
+				name = ctx.name,
+				type = ctx.type,
+				product = name + "." + type;
+			
+			sql.query(
+				"SELECT Ver, Comment, _Published, _Product, _License, _EndService, _EndServiceID, 'none' AS _Users, "
+				+ " 'fail' AS _Status, _Fails, "
+				+ "group_concat( DISTINCT _Partner SEPARATOR ';' ) AS _Partners, sum(_Copies) AS _Copies "
+				+ "FROM app.releases WHERE ? GROUP BY _EndServiceID, _License ORDER BY _Published",
 
-//		getProductKeys( product, keys => {
-//		});
+				[ {_Product: product}], (err,recs) => {
 
-		sql.query(
-			"SELECT Ver, Comment, _Published, _Product, _License, _EndService, _EndServiceID, 'none' AS _Users, "
-			+ " 'fail' AS _Status, _Fails, "
-			+ "group_concat( DISTINCT _Partner SEPARATOR ';' ) AS _Partners, sum(_Copies) AS _Copies "
-			+ "FROM app.releases WHERE ? GROUP BY _EndServiceID, _License ORDER BY _Published",
+					//Log("status", err, q.sql);
 
-			[ {_Product: product}], (err,recs) => {
-
-				//Log("status", err, q.sql);
-
-				if ( recs.length )
-					recs.serialize( fetchUsers, (rec,users) => {  // retain user stats
-						if (rec) {
-							if ( users )
-								rec._Users = users.mailify( "users", {subject: name+" request"});
-
-							else 
-								sql.query("UPDATE app.releases SET ? WHERE ?", [ {_Fails: ++rec._Fails}, {ID: rec.ID}] );
-
-							var 
-								url = URL.parse(rec._EndService),
-								host = url.host.split(".")[0];
-
-							rec._License = rec._License.tag("a",{href:urls.totem+`/releases.html?_EndServiceID=${rec._EndServiceID}`});
-							rec._Product = rec._Product.tag("a", {href:urls.run});
-							rec._Status = "pass";
-							rec._Partners = rec._Partners.mailify( "partners", {subject: name+" request"});
-							rec._EndService = host.tag("a",{href:rec._EndService});
-							delete rec._EndServiceID;
-						}
-
-						else
-							recs.serialize( fetchMods, (rec,mods) => {  // retain moderator stats
-								if (rec) 
-									rec._Mods = mods.mailify( "moderators", {subject: name+" request"});
+					if ( recs.length )
+						recs.serialize( fetchUsers, (rec,users) => {  // retain user stats
+							if (rec) {
+								if ( users )
+									rec._Users = users.mailify( "users", {subject: name+" request"});
 
 								else 
-									res( recs.gridify() );
-							});
-					});
+									sql.query("UPDATE app.releases SET ? WHERE ?", [ {_Fails: ++rec._Fails}, {ID: rec.ID}] );
 
-				else
-					res( "no transitions found" );
+								var 
+									url = URL.parse(rec._EndService),
+									host = url.host.split(".")[0];
+
+								rec._License = rec._License.tag("a",{href:ctx.totem+`/releases.html?_EndServiceID=${rec._EndServiceID}`});
+								rec._Product = rec._Product.tag("a", {href:ctx.run});
+								rec._Status = "pass";
+								rec._Partners = rec._Partners.mailify( "partners", {subject: name+" request"});
+								rec._EndService = host.tag("a",{href:rec._EndService});
+								delete rec._EndServiceID;
+							}
+
+							else
+								recs.serialize( fetchMods, (rec,mods) => {  // retain moderator stats
+									if (rec) 
+										rec._Mods = mods.mailify( "moderators", {subject: name+" request"});
+
+									else 
+										res( recs.gridify() );
+								});
+						});
+
+					else
+						res( "no transitions found" );
+			});
+			
 		});
 	},
 	
 	matchPlugin: function (req,res) {
 		const { query, sql, table } = req;
 		
-		sql.query("SELECT Type FROM app.engines WHERE ? LIMIT 1", {Name: table}, (err, engs) => {
-			
-			if ( eng = engs[0] ) {
-				var
-					name = table,
-					product = table + "." + eng.Type,
-					suits = [],
-					keys = skinContext(product);
+		bookContext( sql, { name: table }, ctx => {
 
+			var
+				name = ctx.name,
+				type = ctx.type,
+				product = name + "." + type,
+				suits = [];
+
+			sql.query(
+				"SELECT Name,Path FROM app.lookups WHERE ? OR ?",
+				[{Ref: name}, {Ref:"notebooks"}], (err,recs) => {
+
+				recs.forEach( rec => {
+					suits.push( rec.Name.tag( `${ctx.transfer}${rec.Path}/${name}` ));
+				});
+
+				/*
+				// Extend list of suitors with already  etc
 				sql.query(
-					"SELECT Name,Path FROM app.lookups WHERE ? OR ?",
-					[{Ref: name}, {Ref:"notebooks"}], (err,recs) => {
+					"SELECT endService FROM app.releases GROUP BY endServiceID", 
+					[],  (err,recs) => {
 
 					recs.forEach( rec => {
-						suits.push( rec.Name.tag( `${keys.transfer}${rec.Path}/${name}` ));
+						if ( !sites[rec.endService] ) {
+							var 
+								url = URL.parse(rec.endService),
+								name = (url.host||"none").split(".")[0];
+
+							rtns.push( `<a href="${urls.transfer}${rec.endService}">${name}</a>` );
+						}
 					});
 
-					/*
-					// Extend list of suitors with already  etc
-					sql.query(
-						"SELECT endService FROM app.releases GROUP BY endServiceID", 
-						[],  (err,recs) => {
+					rtns.push( `<a href="${urls.loopback}">loopback test</a>` );
 
-						recs.forEach( rec => {
-							if ( !sites[rec.endService] ) {
-								var 
-									url = URL.parse(rec.endService),
-									name = (url.host||"none").split(".")[0];
+					if (proxy)
+						rtns.push( `<a href="${urls.proxy}">other</a>` );
 
-								rtns.push( `<a href="${urls.transfer}${rec.endService}">${name}</a>` );
-							}
-						});
+					//rtns.push( `<a href="${site.urls.worker}/lookups.view?Ref=${product}">add</a>` );
 
-						rtns.push( `<a href="${urls.loopback}">loopback test</a>` );
+					cb( rtns.join(", ") );
+				}); */
+				suits.push( "loopback".tag( ctx.loopback ) );
+				suits.push( "other".tag( ctx.tou ) );
 
-						if (proxy)
-							rtns.push( `<a href="${urls.proxy}">other</a>` );
+				//suits.push( `<a href="${ctx.totem}/lookups.view?Ref=${product}">suitors</a>` );
 
-						//rtns.push( `<a href="${site.urls.worker}/lookups.view?Ref=${product}">add</a>` );
-
-						cb( rtns.join(", ") );
-					}); */
-					suits.push( "loopback".tag( keys.loopback ) );
-					suits.push( "other".tag( keys.tou ) );
-
-					//suits.push( `<a href="${keys.totem}/lookups.view?Ref=${product}">suitors</a>` );
-
-					res( suits.join(", ") );
-				});	
-			}
-		
-			else
-				res( "" );
+				res( suits.join(", ") );
+			});	
 		});
 	},
 
@@ -947,11 +947,11 @@ code  {
 					cb( null );
 			}
 
-			Log("endserv lic code", pub);
+			Log(">>>>license code", pub);
 			if (endService = pub._EndService)  // an end-service specified so validate it
 				probeSite( endService, info => {  // check users provided by end-service
 					
-					Log("probe", info);
+					Log(">>>>probe", info);
 					var 
 						valid = false, 
 						partner = pub._Partner.toLowerCase(),
@@ -976,13 +976,9 @@ code  {
 		const { query, sql, table, type, client } = req;
 		
 		var 
-			name = table,
-			attr = type,
-			product = name + "." + type,
 			endPartner = client,
 			endService = query.endservice,
 			proxy = query.proxy,
-			keys = skinContext(product),
 			types = {
 				pub: "txt",
 				users: "json",
@@ -1001,97 +997,104 @@ code  {
 		
 		Log( endPartner, endService );
 		
-		if ( endService )
-			getEngine( sql, name, eng => {
-				if ( eng ) 
-					switch (type) {
-						case "js":
-						case "py":
-						case "me":
-						case "m":
-							sql.query(
-								"SELECT * FROM app.releases WHERE least(?,1) ORDER BY _Published DESC LIMIT 1", {
-									_Partner: endPartner+".forever",
-									_EndServiceID: serviceID( endService ),
-									_Product: product
-							}, (err, pubs) => {
+		bookContext( sql, { name: table }, ctx => {
+			
+			var 
+				name = ctx.name,
+				type = ctx.type,
+				product = name + "." + type;
 
-								function addTerms(code, type, pub, cb) {
-									var 
-										prefix = {
-											js: "// ",
-											py: "# ",
-											matlab: "% ",
-											jade: "// "
-										},
-										pre = "\n"+(prefix[type] || ">>");
+			if ( endService )
+				switch ( ctx.type) {
+					case "js":
+					case "py":
+					case "me":
+					case "m":
+						sql.query(
+							"SELECT * FROM app.releases WHERE least(?,1) ORDER BY _Published DESC LIMIT 1", {
+								_Partner: endPartner+".forever",
+								_EndServiceID: serviceID( endService ),
+								_Product: product
+						}, (err, pubs) => {
 
-									FS.readFile("./jades/tou.txt", "utf8", (err, terms) => {
-										if (err) 
-											cb( errors.noLicense );
+							function addTerms(code, type, pub, cb) {
+								var 
+									prefix = {
+										js: "// ",
+										py: "# ",
+										matlab: "% ",
+										jade: "// "
+									},
+									pre = "\n"+(prefix[type] || ">>");
 
-										else
-											cb( pre + terms.parseEMAC( Copy({
-												service: pub._EndService,
-												license: pub._License,
-												published: pub._Published,
-												partner: pub._Partner
-											}, keys)).replace(/\n/g,pre) + "\n" + code);
-									});
-								}
+								FS.readFile("./jades/tou.txt", "utf8", (err, terms) => {
+									if (err) 
+										cb( errors.noLicense );
 
-								// May rework this to use eng.Code by priming the Code in the publish phase
-								FS.readFile( `./public/${type}/${name}.d/source`, "utf8", (err, srcCode) => {
-									if (!err) eng.Code = srcCode;
-
-									//Log("code=", eng.Code);
-									
-									if ( pub = pubs[0] )	// already licensed so simply distribute
-										addTerms( eng.Code, type, pub, res );
-
-									else	// not yet released so ...
-									if ( licenseOnDownload ) { // license required to distribute
-										if ( eng.Minified )	// was compiled so ok to distribute
-											licenseCode( sql, eng.Minified, {
-												_Partner: endPartner,
-												_EndService: endService,
-												_Published: new Date(),
-												_Product: product,
-												Path: "/"+product
-											}, pub => {
-												
-												Log("pub lic=", pub);
-												if (pub) // distribute licensed version
-													addTerms( eng.Code, type, pub, res );
-
-												else	// failed
-													res( errors.noLicense );
-											});
-
-										else
-											res( errors.noLicense );
-									}
-
-									else	// no license required
-										res( eng.Code );
+									else
+										cb( pre + terms.parseEMAC( Copy({
+											service: pub._EndService,
+											license: pub._License,
+											published: pub._Published,
+											partner: pub._Partner
+										}, ctx)).replace(/\n/g,pre) + "\n" + code);
 								});
+							}
+
+							Log(">>>>release", name, type, err, pubs );
+							// May rework this to use eng.Code by priming the Code in the publish phase
+							sql.query( "SELECT Code,Minified FROM app.engines WHERE ? LIMIT 1", { Name: name }, (err,engs) => {
+								if ( eng = engs[0] )
+									FS.readFile( `./public/${type}/${name}.d/source`, "utf8", (err, srcCode) => {
+										if (!err) eng.Code = srcCode;
+
+										if ( pub = pubs[0] )	// already licensed so simply distribute
+											addTerms( eng.Code, type, pub, res );
+
+										else	// not yet released so ...
+										if ( licenseOnDownload ) { // license required to distribute
+											if ( eng.Minified )	// was compiled so ok to distribute
+												licenseCode( sql, eng.Minified, {
+													_Partner: endPartner,
+													_EndService: endService,
+													_Published: new Date(),
+													_Product: product,
+													Path: "/"+product
+												}, pub => {
+
+													Log(">>>>pub license", pub);
+													if (pub) // distribute licensed version
+														addTerms( eng.Code, type, pub, res );
+
+													else	// failed
+														res( errors.noLicense );
+												});
+
+											else
+												res( errors.noLicense );
+										}
+
+										else	// no license required
+											res( eng.Code );
+									});
+								
+								else
+									res( errors.noEngine );
 							});
-							break;
+						});
+						break;
 
-						case "jade":
-							res( (eng.Type == "jade") ? eng.Code : null );
-							break;
+					case "jade":
+						res( (eng.Type == "jade") ? eng.Code : null );
+						break;
 
-						default:
-							res( errors.noEngine );
-					}
+					default:
+						res( errors.noEngine );
+				}
 
-				else
-					res( errors.noEngine );
-			});
-		
-		else
-			res( errors.noPartner );
+			else
+				res( errors.noPartner );
+		});
 	},
 
 	simPlugin: function (req,res) {

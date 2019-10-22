@@ -24,9 +24,144 @@ function Trace(msg,req,fwd) {	// execution tracing
 }
 
 const {Each,Log,Copy,typeOf,isString} = ENUM;
-const {site, paths, error, primeSkin, probeSite } = TOTEM;
+const {site, paths, error, primeSkin, probeSite, getIndex } = TOTEM;
 
-const {skinContext, renderJade} = module.exports = {
+const {bookContext, renderJade} = module.exports = {
+	bookContext: function (sql, ctx, cb) {
+		
+		sql.query( "SELECT Type FROM app.engines WHERE ? LIMIT 1", {Name: ctx.name}, (err,engs) => {
+			if (eng = engs[0] ) 
+				ctx.type = eng.Type;
+			
+			else
+				ctx.type = "table";
+			
+			sql.query( "SHOW FULL COLUMNS FROM ??", sql.reroute( ctx.name ), (err,fields) => {
+				
+				function getFiles( ctx, cb ) {
+					getIndex( `./shares/${ctx.name}/`, files => cb(ctx, files) );
+				}
+					
+				var keys = ctx.keys = {};
+
+				//Log("showcols", ctx);
+				if ( err ) 
+					ctx.type = "file";
+				
+				else
+					fields.forEach( field => keys[field.File] = { type: field.Type, default: field.Default, comment: field.Comment} );
+
+				getFiles( ctx, (ctx,files) => {
+					//Log("getfiles", ctx);
+					var 
+						name = ctx.name,
+						type = ctx.type,
+						Name = name.toUpperCase(),
+						envs = {  
+							master: ENV.SERVICE_MASTER_URL + "/" + name,
+							worker: ENV.SERVICE_WORKER_URL + "/" + name,
+							totem: ENV.SERVICE_MASTER_URL,
+							//nbook: ENV.SERVICE_WORKER_URL + "/" + name,
+							repo: ENV.PLUGIN_REPO
+						},
+
+						ctx = Copy(site, Copy( ctx, {
+							filename: paths.jadeRef,
+							query: {},
+
+							Name: Name,
+							type: type,
+
+							files: files,
+							keys: keys,
+							fields: fields,
+							by: "NGA/R".tag( "https://research.nga.ic.gov" ),
+
+							embed: (url,w,h) => {
+								var
+									keys = {},
+									urlPath = url.parseURL(keys,{},{},{}),
+
+									w = keys.w || w || 400,
+									h = keys.h || h || 400,
+
+									urlName = urlPath,
+									urlType = "",
+									x = urlPath.replace(/(.*)\.(.*)/, (str,L,R) => {
+										urlName = L;
+										urlType = R;
+										return "#";
+									});
+
+								//Log("link", url, urlPath, keys);
+								switch (urlType) { 
+									case "jpg":  
+									case "png":
+										return "".tag("img", { src:`${url}?killcache=${new Date()}`, width:w, height:h });
+										break;
+
+									case "view": 
+									default:
+										return "".tag("iframe", { src: url, width:w, height:h });
+								}
+							},
+
+							register: () => 
+								"<!---parms endservice=https://myservice/" + ctx.name + "--->" 
+								+ ctx.input({a:"aTest", b:"bTest"}),
+
+							//input: tags => "<!---parms " + "".tag("&", tags || {}).substr(1) + "--->",
+
+							reqts: {   // defaults
+								js:  ["nodejs-8.9.x", "standard machine learning library".tag( "https://sc.appdev.proj.coe.ic.gov://acmesds/man" )].join(", "),
+								py: "anconda-4.9.1 (iPython 5.1.0 debugger), numpy 1.11.3, scipy 0.18.1, utm 0.4.2, Python 2.7.13",
+								m: "matlab R18, odbc, simulink, stateflow"
+							},
+
+							summary: "summary tbd",
+							//reqts: infokeys.envs[type] || "reqts tbd",
+							ver: "ver tbd",
+							reqs: {
+								distrib: "request to distribute ${Name}/Can you grant permission to distribute ${Name}?".replace(/"\${Name}"/g, Name),
+								info: "request for information on ${Name}/Can you provide further information on ${Name}?".replace(/"\${Name}"/g, Name),
+								help: "need help on ${Name}/Please provde me some help on notebook ${Name}".replace(/"\${Name}"/g, Name)
+							},
+							request: req => {
+								var
+									parts = (req || ctx.reqs.info || "request/need information").split("/"),
+									label = parts[0] || "request",
+									body = parts[1] || "request for information",
+									pocs = ctx.pocs || {};
+
+								//Log("pocs", pocs, label, body, name, req);
+								return (pocs.admin||"").mailify( label, {subject: name, body: body} );
+							},
+
+							interface: () => "publish notebook to define interface",
+							now: (new Date())+"",
+
+							loopback: envs.worker + "." + type +"?endservice=" + envs.worker +".users",
+							transfer: envs.worker + "." + type + "?endservice=",
+							status: envs.master + ".status",
+							md: envs.master + ".md",
+							suitors: envs.master + ".suitors",
+							run: envs.master + ".run",
+							view: envs.master + ".view",
+							tou: envs.master + ".tou",
+							pub: envs.master + ".pub",
+							totem: envs.totem,
+							repo: envs.repo + name,
+							repofiles: envs.repo + name + "/raw/master",
+							relinfo: envs.master + "/releases.html?nb=" + name
+						}));
+
+					cb(ctx);
+				});
+			});				
+		});		
+	},
+	
+	/*
 	skinContext: function (nbook, prime) {
 		var
 			parts = nbook.split("."),
@@ -136,7 +271,7 @@ const {skinContext, renderJade} = module.exports = {
 		});
 
 		return ctx;
-	},
+	}, */
 	
 	renderJade: function ( jade, ctx, cb ) { 
 	/**
@@ -170,13 +305,12 @@ const {skinContext, renderJade} = module.exports = {
 		const { urls } = site;
 		
 		var 
-			nb = query.notebook || query.nb || query.project || query.task,
-			dsname = table,
-			ctx = Copy( nb ? skinContext( nb ) : {}, Copy(site, {  //< default site context to render skin
+			ctx = {  //< default site context to render skin
+				name: query.notebook || query.nb || query.project || query.task || table,
 				typeOf: typeOf,
-				table: req.table,
-				dataset: req.table,
-				type: req.type,
+				table: table,
+				dataset: table,
+				//type: req.type,
 				//parts: req.parts,
 				action: req.action,
 				//org: req.org,
@@ -194,9 +328,9 @@ const {skinContext, renderJade} = module.exports = {
 					disk: ((req.profile.useDisk / req.profile.maxDisk)*100).toFixed(0)
 				},*/
 				started: TOTEM.started,
-				filename: paths.jadeRef,  // jade compile requires
+				//filename: paths.jadeRef,  // jade compile requires
 				url: req.url
-			}) );
+			};
 
 		//Log("skin>>>>> ctx=", ctx);
 		
@@ -221,12 +355,20 @@ const {skinContext, renderJade} = module.exports = {
 			}
 		}
 
-		function renderNotebook( name, type, fields, ctx ) { // render using plugin skin
+		function renderNotebook( skinner, ctx ) { // render using plugin skin
 		/**
 		@private
 		@method renderNotebook
 		Render Jade file at path this to res( err || html ) in a new context created for this request.  
 		**/
+
+			Log(skinner, ctx );
+			var
+				name = ctx.name,
+				type = ctx.type,
+				fields= ctx.fields,
+				cols = [],
+				drops = { id:1, odbcstamp: 1};
 
 			Copy({		// keys to plugin.jade
 				mode: req.type,
@@ -250,10 +392,6 @@ const {skinContext, renderJade} = module.exports = {
 				client: req.client,
 				ds: name
 			}, query);
-
-			var
-				cols = [],
-				drops = { id:1, odbcstamp: 1};
 
 			switch ( typeOf(fields) ) {
 				case "Array":
@@ -315,15 +453,16 @@ const {skinContext, renderJade} = module.exports = {
 			else	*/
 
 			//Log( paths.jades+"plugin.jade", query);
-			renderFile( paths.jades+"plugin.jade", ctx );
+			renderFile( skinner, ctx );
 		}		
 
+		/*
 		function buildSchema( ds, type, ctx ) {
-		/**
+		/ **
 		@private
 		@method buildSchema
 		Render table at path this to res( err || html ) in a new context created for this request.  
-		**/			
+		** /			
 			sql.query( 
 				"SHOW FULL COLUMNS FROM ??", 
 				sql.reroute( ds ), 
@@ -337,23 +476,37 @@ const {skinContext, renderJade} = module.exports = {
 				else // render notebook
 					renderNotebook( ds, type, fields, ctx );
 			});	
-		}
+		} */
 
-		sql.forFirst( "", paths.engine, { // Probe engine
-			Name: dsname,
-			Enabled: 1
-		}, eng => {
+		bookContext(sql, ctx, ctx => {
 
-			if (eng)  // render jade view or notebook
-				if ( eng.Type == "jade" )
-					renderJade( eng.Code || "", ctx, html => res(html) );
+			if (ctx)  // render skin
+				switch (ctx.type) {
+					case "jade":
+						sql.query( paths.engine, { // use skinning engine
+							Name: ctx.name,
+							Enabled: 1
+						}, (err,engs) => {
 
-				else
-					buildSchema( dsname, eng.Type, ctx );
+							if ( eng = engs[0] )
+								renderJade( eng.Code || "", ctx, html => res(html) );
 
-			else  // render a table
-				buildSchema( dsname, "", ctx );
-
+							else
+								res( errors.noEngine );
+						});
+						break;
+						
+					case "file":
+						renderFile( paths.jades + ctx.name + ".jade", ctx );
+						break;
+						
+					default:
+						Log(ctx);
+						renderNotebook( paths.jades + "plugin.jade", ctx );
+				}
+			
+			else
+				res( errors.noEngine );
 		});
 	}
 };
