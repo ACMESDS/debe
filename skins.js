@@ -26,8 +26,8 @@ function Trace(msg,req,fwd) {	// execution tracing
 const {Each,Log,Copy,typeOf,isString} = ENUM;
 const {site, paths, error, primeSkin, probeSite, getIndex } = TOTEM;
 
-const {bookContext, renderJade} = module.exports = {
-	bookContext: function (sql, ctx, cb) {
+const {skinContext, renderJade} = module.exports = {
+	skinContext: function (sql, ctx, cb) {
 		
 		sql.query( "SELECT Type FROM app.engines WHERE ? LIMIT 1", {Name: ctx.name}, (err,engs) => {
 			if (eng = engs[0] ) 
@@ -161,118 +161,6 @@ const {bookContext, renderJade} = module.exports = {
 		});		
 	},
 	
-	/*
-	skinContext: function (nbook, prime) {
-		var
-			parts = nbook.split("."),
-			name = parts[0] || "NoName",
-			type = parts[1] || "js",
-			Name = name.toUpperCase(),
-			envs = {  
-				master: ENV.SERVICE_MASTER_URL + "/" + name,
-				worker: ENV.SERVICE_WORKER_URL + "/" + name,
-				totem: ENV.SERVICE_MASTER_URL,
-				//nbook: ENV.SERVICE_WORKER_URL + "/" + name,
-				repo: ENV.PLUGIN_REPO
-			},
-			ctx = Copy( prime || {}, {
-				query: {},
-				filename: paths.jadeRef,
-				
-				Name: Name,
-				name: name,
-				type: type,
-				by: "NGA/R".tag( "https://research.nga.ic.gov" ),
-
-				embed: (url,w,h) => {
-					var
-						keys = {},
-						urlPath = url.parseURL(keys,{},{},{}),
-
-						w = keys.w || w || 400,
-						h = keys.h || h || 400,
-
-						urlName = urlPath,
-						urlType = "",
-						x = urlPath.replace(/(.*)\.(.*)/, (str,L,R) => {
-							urlName = L;
-							urlType = R;
-							return "#";
-						});
-
-					//Log("link", url, urlPath, keys);
-					switch (urlType) { 
-						case "jpg":  
-						case "png":
-							return "".tag("img", { src:`${url}?killcache=${new Date()}`, width:w, height:h });
-							break;
-
-						case "view": 
-						default:
-							return "".tag("iframe", { src: url, width:w, height:h });
-					}
-				},
-				
-				register: () => 
-					"<!---parms endservice=https://myservice/" + ctx.name + "--->" 
-					+ ctx.input({a:"aTest", b:"bTest"}),
-				
-				//input: tags => "<!---parms " + "".tag("&", tags || {}).substr(1) + "--->",
-
-				reqts: {   // defaults
-					js:  ["nodejs-8.9.x", "standard machine learning library".tag( "https://sc.appdev.proj.coe.ic.gov://acmesds/man" )].join(", "),
-					py: "anconda-4.9.1 (iPython 5.1.0 debugger), numpy 1.11.3, scipy 0.18.1, utm 0.4.2, Python 2.7.13",
-					m: "matlab R18, odbc, simulink, stateflow"
-				},
-				
-				summary: "summary tbd",
-				//reqts: infokeys.envs[type] || "reqts tbd",
-				ver: "ver tbd",
-				reqs: {
-					distrib: `request to distribute ${Name}/Can you grant permission to distribute ${Name}?`,
-					info: `request for information on ${Name}/Can you provide further information on ${Name}`,
-					help: `need help on ${Name}/please provde me some help on notebook ${Name}`
-				},
-				request: req => {
-					var
-						parts = (req || ctx.reqs.info || "request/need information").split("/"),
-						label = parts[0] || "request",
-						body = parts[1] || "request for information",
-						pocs = ctx.pocs || {};
-
-					//Log("pocs", pocs, label, body, name, req);
-					return (pocs.admin||"").mailify( label, {subject: name, body: body} );
-				},
-
-				interface: () => "publish notebook to define interface",
-				now: (new Date())+"",
-				
-				loopback:  envs.worker + "." + type +"?endservice=" + envs.worker +".users",
-				transfer: envs.worker + "." + type + "?endservice=",
-				status: envs.master + ".status",
-				md: envs.master + ".md",
-				suitors: envs.master + ".suitors",
-				run: envs.master + ".run",
-				view: envs.master + ".view",
-				tou: envs.master + ".tou",
-				pub: envs.master + ".pub",
-				imgtest: envs.totem + "/shares/a1.jpg",
-				//worker: envs.worker,
-				//master: envs.master,
-				totem: envs.totem,
-				//totem: envs.master,  // generally want these set to the master on 8080 so that a curl to totem on 8080 can return stuff
-				repo: envs.repo + name,
-				repofiles: envs.repo + name + "/raw/master",
-				relinfo: envs.master + "/releases.html?nbook=" + nbook
-			}, ".");
-
-		Each( ctx, (key,url) => { 
-			if ( isString( url ) ) ctx["_"+key] = "%{" + url + "}" ;
-		});
-
-		return ctx;
-	}, */
-	
 	renderJade: function ( jade, ctx, cb ) { 
 	/**
 	@private
@@ -362,7 +250,6 @@ const {bookContext, renderJade} = module.exports = {
 		Render Jade file at path this to res( err || html ) in a new context created for this request.  
 		**/
 
-			Log(skinner, ctx );
 			var
 				name = ctx.name,
 				type = ctx.type,
@@ -478,7 +365,7 @@ const {bookContext, renderJade} = module.exports = {
 			});	
 		} */
 
-		bookContext(sql, ctx, ctx => {
+		skinContext(sql, ctx, ctx => {
 
 			if (ctx)  // render skin
 				switch (ctx.type) {
@@ -501,7 +388,6 @@ const {bookContext, renderJade} = module.exports = {
 						break;
 						
 					default:
-						Log(ctx);
 						renderNotebook( paths.jades + "plugin.jade", ctx );
 				}
 			

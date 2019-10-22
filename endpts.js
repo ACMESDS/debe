@@ -40,7 +40,7 @@ var
 	GEO = require("geohack"),
 	ATOM = require("atomic");
 
-const { bookContext, renderJade } = require("./skins");
+const { skinContext, renderJade } = require("./skins");
 
 function Trace(msg,req,fwd) {	// execution tracing
 	"endpt".trace(msg,req,fwd);
@@ -712,7 +712,7 @@ code  {
 			defaultDocs:  defaultDocs
 		};
 			
-		bookContext( sql, ctx, ctx => {
+		skinContext( sql, ctx, ctx => {
 
 			switch ( ctx.type ) {
 				case "jade":
@@ -750,7 +750,7 @@ code  {
 					});
 			};
 		
-		bookContext( sql, { name: table }, ctx => {
+		skinContext( sql, { name: table }, ctx => {
 			
 			var
 				name = ctx.name,
@@ -808,7 +808,7 @@ code  {
 	matchPlugin: function (req,res) {
 		const { query, sql, table } = req;
 		
-		bookContext( sql, { name: table }, ctx => {
+		skinContext( sql, { name: table }, ctx => {
 
 			var
 				name = ctx.name,
@@ -997,7 +997,7 @@ code  {
 		
 		Log( endPartner, endService );
 		
-		bookContext( sql, { name: table }, ctx => {
+		skinContext( sql, { name: table }, ctx => {
 			
 			var 
 				name = ctx.name,
