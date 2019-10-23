@@ -29,6 +29,8 @@ const {site, paths, error, primeSkin, probeSite, getIndex } = TOTEM;
 const {skinContext, renderJade} = module.exports = {
 	skinContext: function (sql, ctx, cb) {
 		
+		ctx.live = ENV.SERVICE_MASTER_URL;
+		
 		sql.query( "SELECT Type FROM app.engines WHERE ? LIMIT 1", {Name: ctx.name}, (err,engs) => {
 			if (eng = engs[0] ) 
 				ctx.type = eng.Type;
@@ -45,7 +47,8 @@ const {skinContext, renderJade} = module.exports = {
 								image: [],
 								backup: [],
 								note: [],
-								artifact: []
+								artifact: [],
+								live: []
 							},
 							Batch = {
 								jpg: "image",
@@ -56,6 +59,7 @@ const {skinContext, renderJade} = module.exports = {
 								txt: "note",
 								doc: "note",
 								docx: "note",
+								html: "live",
 								"": "artifact",
 								default: "artifact"
 							};
@@ -97,7 +101,7 @@ const {skinContext, renderJade} = module.exports = {
 									case "lnk":
 										break;
 									default:
-										Files[ Batch[type] || Batch.default ].push( {
+										Files[ batch = Batch[type] || Batch.default ].push( {
 											id: id++,
 											num: num, 
 											title: title , 
@@ -105,7 +109,10 @@ const {skinContext, renderJade} = module.exports = {
 											type: type, 
 											name: file, 
 											qualifiers: parts.length, 
-											path: `./notebooks/${ctx.name}/${file}`, 
+											path: false // (batch=="live") 
+												? `${ctx.live}/notebooks/${ctx.name}/${file}`
+												: `./notebooks/${ctx.name}/${file}`, 
+											
 											link: title.tag( `./notebooks/${ctx.name}/${file}` ) 
 										} );
 								}
@@ -218,11 +225,13 @@ const {skinContext, renderJade} = module.exports = {
 							transfer: envs.worker + "." + type + "?endservice=",
 							status: envs.master + ".status",
 							md: envs.master + ".md",
+							archive: envs.master + ".archive",
 							suitors: envs.master + ".suitors",
 							run: envs.master + ".run",
 							view: envs.master + ".view",
 							tou: envs.master + ".tou",
 							brief: envs.totem + "/briefs.view?notebook=" + name,
+							content: envs.totem + "/notebooks/" + name,
 							rtp: envs.totem + "/rtpsqd.view?notebook=" + name,
 							pub: envs.master + ".pub",
 							totem: envs.totem,
@@ -351,6 +360,8 @@ const {skinContext, renderJade} = module.exports = {
 					"publish".tag( `${name}.pub` ),
 					"usage".tag( `${name}.use` ),
 					"project".tag( `${name}.proj` ),
+					"archive".tag( `${name}.archive` ),
+					"content".tag( `/notebooks/${name}` ),
 					"download".tag( `${name}.${type}` ),
 					"rtp".tag( `/rtpsqd.view?notebook=${name}` ),
 					"brief".tag( `/briefs.view?notebook=${name}` ),

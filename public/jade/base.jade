@@ -151,6 +151,7 @@ append layout_head
 			script(src="/clients/threejs/examples/js/libs/stats.min.js")
 
 		when "reveal"
+			script(src="/uis/base.js")
 			script(src='/clients/reveal/plugin/highlight/highlight.js')
 			script(src='/clients/reveal/lib/js/head.min.js')
 			script(src='/clients/reveal/js/reveal.min.js')
@@ -363,11 +364,11 @@ append layout_body
 
 				script(src="/uis/quiz.js")
 				script.
-					var quiz = {take:  false, slide: 0, doc: document, nav: navigator, rev: Reveal};
 					Reveal.initialize({
 						keyboard: {
-							112: function () {  // F1
-								takequiz(quiz);
+							112: function () {  // F1 for quiz
+								alert("quiz time!");
+								takequiz({ take:  true, slide: 0, doc: document, rev: Reveal, test: "#{name}.1.1" });
 							}
 						},
 

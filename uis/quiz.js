@@ -76,7 +76,7 @@ function takequiz(state) {
 		
 		function sendScore() { // notify proctor
 			//alert("ajax");
-			state.nav.ajax( 
+			BASE.Ajax( 
 				"GET", true, 
 				 `/proctor?lesson=${lesson}&score=${100*numCorrect/myQuestions.length}&pass=${pass}&modules=${mods}`,
 				function (rtn) {
@@ -120,16 +120,16 @@ function takequiz(state) {
 
 	}
 
+	console.log("state in", state);
 	var 
-		nav = state.nav,
 		rev = state.rev,
 		slide = rev.getCurrentSlide(),
 		ctrls = slide.getElementsByClassName("quiz");
 	
+	console.log(rev, slide, ctrls, ctrls.length, BASE.Ajax);
+	
 	if ( ctrls.length >= 3 ) {
 		var
-			quizes = nav.totem.quizes,
-			
 			quizContainer = ctrls[0], //doc.getElementById('quiz'),
 			submitButton = ctrls[1], //doc.getElementById('submit');
 			resultsContainer = ctrls[2], //doc.getElementById('results'),
@@ -151,11 +151,15 @@ function takequiz(state) {
 		else 
 			state.take = !state.take;
 		
+		console.log("state out", state);
+		
 		if ( state.take )  {
 			var 
 				myQuestions = [],
-				myQuiz = quizes[topic+"."+mod+"."+set];
+				myQuiz = Quizes[topic+"."+mod+"."+set] || Quizes["default.1.1"];
 
+			console.log(myQuiz);
+			
 			if (myQuiz) {
 				myQuiz.forEach( (quiz,n) => {
 					myQuestions.push({
@@ -191,9 +195,9 @@ function takequiz(state) {
 // Below should be modified as needed.  Entires should follow the topic.module.set convention. See
 // the /exquiz.view for usage example.
 
-navigator.totem.quizes = {  
+var quizes = {  
 	
-"swag.1.1": [
+"default.1.1": [
 {
 	Q: "Who is the strongest?",
 	S: {
@@ -222,7 +226,7 @@ navigator.totem.quizes = {
 }
 ], 
 
-"swag.1.2": [
+"default.1.2": [
 {
 	Q: "Who is the strongest?",
 	S: {
@@ -242,7 +246,7 @@ navigator.totem.quizes = {
 }
 ], 
 
-"swag.2.1": [
+"default.2.1": [
 {
 	Q: "the best " + "color?".tag("img",{src:"/shares/a1.jpg"}),
 	S: {

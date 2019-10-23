@@ -163,32 +163,69 @@ append site_body
 		default
 			#fit.Introduction		
 				:markdown
-					When a client requests a X.view, **#{nick}** renders (aks skins) this view using the [Jade](http://jade-lang.com/tutorial/) 
-					engine associated with X.  Jade produces html for the requesting client via Jade's js-compatible markdown.
-					**#{nick}** retrieves the Jade engine for X by first searching its [jade area](/jades/), then its
+					When a client requests SOME.view, **#{nick}** renders (aks skins) this view using the [Jade](http://jade-lang.com/tutorial/) 
+					engine associated with SOME.  Jade produces html for the requesting client via Jade's js-compatible markdown.
+					**#{nick}** retrieves the Jade engine for SOME by first searching its [jade area](/jades/), then its
 					[jade engines](/engines.view?type=jade). 
 
-					Skins are built on *framework* skins.  Frameworks provide a parms, a head, and a body block which are extended 
-					by a parent skin.  Any skin is free to become itself a framework by simplying defining its own parms, head, and body blocks.				
-					The [home skin](/jades/home.jade), for example, extends the [site framework](/jades/site.jade), which extends 
-					the [base framework](/jades/base.jade), which then extends the [layout framework](/jades/layout.jade).
-
-					Many views (for example the [D3 force](/force.jade)) simply employ the layout framework, and can 
-					accept query parameters themselves (for example, the [D3 plot](/plot.jade)).
-
-					A parent skin extends a framework skin following the **parms-head-body** pattern:
+					Skins are free to extend *framework* skins.  Framework FW.view provides a FW_parms, FW_head, and FW_body block which are extended 
+					by a parent skin.  Any skin is free to become itself a framework by simplying defining these blocks:
 
 						extends FRAMEWORK
 						append FRAMEWORK_head
-							CONTENT
+							JADE
 						append FRAMEWORK_parms
-							- VAR = JS
-							- VAR = JS
-							- VAR = JS
+							- KEY = JS
+							- KEY = JS
+							- KEY = JS
 						append FRAMEWORK_body
-							CONTENT
+							JADE
 
-					where CONTENT is more jade.
+					The [home skin](/jades/home.jade), for example, extends the [site framework](/jades/site.jade), which extends the [base framework](/jades/base.jade), 
+					which then extends the [layout framework](/jades/layout.jade).  Many views (for example the [D3 force](/force.jade)) simply employ the layout 
+					framework, and can accept query parameters themselves (for example, the [D3 plot](/plot.jade?help=1)).
+
+					Skinning KEYs are inserted using \\#{KEY} with or \\!{KEY} without html-escaping:
+
+					+	table	= request dataset, view, or engine (#{table})  
+					+ 	url = full url requested (#{url})
+					+	action	= request action (#{action})  
+					+	query	= request query (#{json(query)})
+					+	flags	= request flags (#{json(flags)})  
+					+	joined = time session started (#{json(joined)})
+
+					session-context keys:
+					+	client	= client's name (#{client})  
+					+	profile	= client's qos profile (#{json(profile)})  
+
+					site-context keys:
+					+ 	urls	= site urls (#{json(urls)})
+					+	db	= main database (#{db})  
+					+	pocs = poc by role hash (#{pocs})  
+					+	distro	= poc by role distribution hash (!{distro})  
+					+	info 	= system information (#{json(info)})  
+					+	title	= full site name (#{title})  
+					+	nick	= site nick name (#{nick})  
+					+	ver	= site version number (#{ver})  
+					+	released	= site release date (#{released})  
+					+	started = site started date (#{json(started)})  
+					+	port = site port number (#{port})  
+					+	classif = site classification attributes (#{classif})  
+					+	cores = number of worker threads (#{cores})  
+					+	lock	= session lock (#{json(options)})
+
+					various data manipulators:
+
+					+	get( list, {key:query,...} )
+					+	get( list, {key:query,...}, {key:rename,...} )
+					+	get( list, {key:query,...}, {key:rename,...}, {prefix: {recKey:{key:#replace, ...}, ...}, ...} )
+					+	get( dsname, {key:query,...}, function (data) {...} )
+					+	gridify( list,noheader )
+					+	json( list )
+					+ 	hover( title, jpgShares, htmlShares )
+					+ 	tag( text, el, {key:value,...} )
+
+				//- #exsite.Examples(dims="800,500")
 
 			#folder.Frameworks(dock="left")
 				#fit.layout
@@ -521,48 +558,3 @@ append site_body
 							## FREE/DELETE example
 
 							## READ/GET example
-
-			#fit.Context.Keys
-				:markdown
-					Context keys are inserted using \\#{KEY} or \\!{KEY} with or without html-escaping (current 
-					value).  There are request-context keys:  
-
-					+	table	= request dataset, view, or engine (#{table})  
-					+ 	url = full url requested (#{url})
-					+	action	= request action (#{action})  
-					+	query	= request query (#{json(query)})
-					+	flags	= request flags (#{json(flags)})  
-					+	joined = time session started (#{json(joined)})
-
-					session-context keys:
-					+	client	= client's name (#{client})  
-					+	profile	= client's qos profile (#{json(profile)})  
-
-					site-context keys:
-					+ 	urls	= site urls (#{json(urls)})
-					+	db	= main database (#{db})  
-					+	pocs = poc by role hash (#{pocs})  
-					+	distro	= poc by role distribution hash (!{distro})  
-					+	info 	= system information (#{json(info)})  
-					+	title	= full site name (#{title})  
-					+	nick	= site nick name (#{nick})  
-					+	ver	= site version number (#{ver})  
-					+	released	= site release date (#{released})  
-					+	started = site started date (#{json(started)})  
-					+	port = site port number (#{port})  
-					+	classif = site classification attributes (#{classif})  
-					+	cores = number of worker threads (#{cores})  
-					+	lock	= session lock (#{json(options)})
-
-					and various data manipulators:
-
-					+	get( list, {key:query,...} )
-					+	get( list, {key:query,...}, {key:rename,...} )
-					+	get( list, {key:query,...}, {key:rename,...}, {prefix: {recKey:{key:#replace, ...}, ...}, ...} )
-					+	get( dsname, {key:query,...}, function (data) {...} )
-					+	gridify( list,noheader )
-					+	json( list )
-					+ 	hover( title, jpgShares, htmlShares )
-					+ 	tag( text, el, {key:value,...} )
-
-				//- #exsite.Examples(dims="800,500")

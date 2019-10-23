@@ -78,14 +78,15 @@ header
 		a(href="file:///164.187.33.7/public/totem/#{name}", title="Open contents folder") Edit
 		|  ||
 		a(href="/#{name}.archive", title="Archive contents folder") Archive
-		|  || 
 		each val,key in more
 			a(href=val, title=help)= key
+		|  || 
+		a(href="/briefs.view?notebook=#{name}", title="Open in new window") Open
 		|  || 
 		a(href="/tutorial.view?print-pdf=1", title="Print this tutorial") Print
 		|  || 
 		a(href="#{Home}") Home
-		|  || O/utline S/ynopsis F/ullscreen B/lank
+		|  || O/utline S/ynopsis F/ullscreen B/lank F1/quiz
 
 	img.ir(src="/stash/header0.jpg",width="50%",height="5%")
 

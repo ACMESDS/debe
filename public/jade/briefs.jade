@@ -11,9 +11,9 @@ append base_body
 			section
 				iframe(src="/fan.view?src=info&w=4000&h=800",width=2000,height=800)
 
-		when "thresher"
-		when "tt"
-		when "airspace"
+		when "xthresher"
+		when "xtt"
+		when "xairspace"
 			section#intro
 				p.lg AirSpace
 				p.al https:/totem.west.ile.nga.ic.gov/briefs?notebook=airspace
@@ -405,6 +405,12 @@ append base_body
 						h2= `(${file.classif}) ${file.title}`
 						img(src=file.path)
 
+			section#embeds
+				each file in files.live
+					section
+						h2=  `(${file.classif}) ${file.title}`
+						iframe(src=file.path, width=1200, height=600)
+
 			section#notes
 				h2 notes
 				p!= gridify( get( files.note, {keys:{ a:"link"}} ), true )
@@ -412,10 +418,9 @@ append base_body
 			section#artifacts
 				h2 artifacts
 				p!= gridify( get( files.artifact, {keys:{ a:"link"}} ), true )
-				
+
 			section#backups
 				h2 backups
 				p!= gridify( get( files.backup, {keys:{ a:"link"}} ), true )
 				
-
 //- UNCLASSIFIED
