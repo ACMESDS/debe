@@ -68,9 +68,9 @@ const {skinContext, renderJade} = module.exports = {
 							var 
 								parts = file.split("_"),
 								num = 999,
-								classif = "U",
-								type = "",
-								title = file;
+								classif = [],
+								type = [],
+								title = [];
 							
 							if ( parts[0] ) {
 								parts.forEach( part => {
@@ -79,9 +79,9 @@ const {skinContext, renderJade} = module.exports = {
 										case "U":
 										case "TS":
 										case "C":
-										case "FOUP":
+										case "FOUO":
 										case "LIMDIS":
-											classif = part;
+											classif.push( part );
 											break;
 										default:
 											if ( n = parseFloat(part) )
@@ -89,13 +89,13 @@ const {skinContext, renderJade} = module.exports = {
 											
 											else {
 												var parts = part.split(".");
-												title = parts[0];
-												type = parts[1] || type;
+												title.push( parts[0] );
+												type.push( (parts[1] || "").toLowerCase() );
 											}
 									}
 								});
 								
-								switch (type.toLowerCase()) {
+								switch (type[0]) {
 									case "rdp":
 									case "url":
 									case "lnk":
@@ -104,16 +104,16 @@ const {skinContext, renderJade} = module.exports = {
 										Files[ batch = Batch[type] || Batch.default ].push( {
 											id: id++,
 											num: num, 
-											title: title , 
-											classif: classif, 
-											type: type, 
+											title: title.join(" "), 
+											classif: (classif.length>1) ? "(" + classif.join("//") + ")" : "", 
+											type: type[0] || "", 
 											name: file, 
 											qualifiers: parts.length, 
 											path: false // (batch=="live") 
 												? `${ctx.live}/notebooks/${ctx.name}/${file}`
 												: `./notebooks/${ctx.name}/${file}`, 
 											
-											link: title.tag( `./notebooks/${ctx.name}/${file}` ) 
+											link: title[0].tag( `./notebooks/${ctx.name}/${file}` ) 
 										} );
 								}
 							}

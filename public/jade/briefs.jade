@@ -402,13 +402,13 @@ append base_body
 			section#images
 				each file in files.image
 					section
-						h2= `(${file.classif}) ${file.title}`
+						h2= `${file.classif} ${file.title}`
 						img(src=file.path)
 
 			section#embeds
 				each file in files.live
 					section
-						h2=  `(${file.classif}) ${file.title}`
+						h2=  `${file.classif} ${file.title}`
 						iframe(src=file.path, width=1200, height=600)
 
 			section#notes
