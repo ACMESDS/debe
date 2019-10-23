@@ -945,7 +945,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	"byArea.": { //< routers for endpoints at /AREA/file ...
 		jades: TOTEM.requestFile,
 		west: TOTEM.requestFile,
-		east: TOTEM.requestFile
+		east: TOTEM.requestFile,
+		notebooks: TOTEM.requestFile
 	},
 
 	"byTable.": {	//< routers for endpoints at /TABLE

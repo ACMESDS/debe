@@ -75,7 +75,9 @@ style.
 
 header
 	p.rd.ar.sm #{classif} || #{client} || 
-		a(href="/edit.view?name=#{table}", title="Edit skin ?theme=black|white|leagure|beige|ski|night|serif|solarized|blood|moon") Edit
+		a(href="file:///164.187.33.7.public/totem/#{name}}", title="Open contents folder") Edit
+		|  ||
+		a(href="/#{name}.archive}", title="Archive contents folder") Archive
 		|  || 
 		each val,key in more
 			a(href=val, title=help)= key

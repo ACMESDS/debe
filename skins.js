@@ -39,7 +39,27 @@ const {skinContext, renderJade} = module.exports = {
 			sql.query( "SHOW FULL COLUMNS FROM ??", sql.reroute( ctx.name ), (err,fields) => {
 				function getFiles( ctx, cb ) {
 					getIndex( `./notebooks/${ctx.name}/`, files => {
-						var Files = [];
+						var 
+							id = 1,
+							Files = {
+								image: [],
+								backup: [],
+								note: [],
+								artifact: []
+							},
+							Batch = {
+								jpg: "image",
+								png: "image",
+								gif: "image",
+								ppt: "backup",
+								pptx: "backup",
+								txt: "note",
+								doc: "note",
+								docx: "note",
+								"": "artifact",
+								default: "artifact"
+							};
+						
 						files.forEach( file => {
 							var 
 								parts = file.split("_"),
@@ -60,7 +80,7 @@ const {skinContext, renderJade} = module.exports = {
 											classif = part;
 											break;
 										default:
-											if ( n = parseInt(part) )
+											if ( n = parseFloat(part) )
 												num = n;
 											
 											else {
@@ -71,10 +91,31 @@ const {skinContext, renderJade} = module.exports = {
 									}
 								});
 								
-								Files.push( {num: num, title: title , classif: classif, type: type, name: file, quals: parts.length, path: `./notebooks/${ctx.name}/${file}`, link: title.tag( `./notebooks/${ctx.name}/${file}` ) } );
+								switch (type.toLowerCase()) {
+									case "rdp":
+									case "url":
+									case "lnk":
+										break;
+									default:
+										Files[ Batch[type] || Batch.default ].push( {
+											id: id++,
+											num: num, 
+											title: title , 
+											classif: classif, 
+											type: type, 
+											name: file, 
+											qualifiers: parts.length, 
+											path: `./notebooks/${ctx.name}/${file}`, 
+											link: title.tag( `./notebooks/${ctx.name}/${file}` ) 
+										} );
+								}
 							}
 						});
-						cb(ctx, Files.sort( (a,b) => a.num-b.num ) );
+						
+						Each( Files, (batch,files) => Files[batch] = files.sort( (a,b) => a.num-b.num ) );
+						//Log(">>>>files", Files);
+						//Log(">>>>test", Files.image.get({ keys: {a: "link"}}) );
+						cb(ctx, Files );
 					});
 				}
 					

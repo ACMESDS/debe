@@ -304,12 +304,20 @@ append base_body
 			section
 				h3.hd
 				a(href="/briefs.view?notebook=totem") Totem
+				|  | 
 				a(href="/briefs.view?notebook=airspace") Airspace
+				|  | 
 				a(href="/briefs.view?notebook=regress") Regress
+				|  | 
 				a(href="/briefs.view?notebook=genpr") GenProc
+				|  | 
 				a(href="/briefs.view?notebook=swag") SWAG
+				|  | 
 				a(href="/briefs.view?notebook=itar") ITAR
-				a(href="/briefs.view?notebook=whaci") WHACI
+				|  | 
+				a(href="/briefs.view?notebook=whaci") WHaci
+				|  | 
+				a(href="/briefs.view?notebook=fats") FATs
 
 		when "unfunded"
 		when "ops"
@@ -377,23 +385,37 @@ append base_body
 						h1.hd= "< Deep Learning " + ex + ":4"
 						iframe(src="/layout.view?area=shares&inline=expc#{ex}.jpg&w=800&h=400")
 
+			section#tracking
+
 		when "whaci"
 		when "itar"
+		when "fats"
 		
 		default
+			- batch = {}
 			section
 				p.lg= name
 				p.al= "https:/totem.west.ile.nga.ic.gov/briefs?notebook="+name
 				p.al brian.d.james@nga.mil
 				p.al= now
 				
-			section
-				each file in files
+			section#images
+				each file in files.image
 					section
-						if file.type == "jpg"
-							h2= file.title
-							img(src=file.path)
-						else
-							a(href=file.path)= file.title
+						h2= `(${file.classif}) ${file.title}`
+						img(src=file.path)
+
+			section#notes
+				h2 notes
+				p!= gridify( get( files.note, {keys:{ a:"link"}} ), true )
+
+			section#artifacts
+				h2 artifacts
+				p!= gridify( get( files.artifact, {keys:{ a:"link"}} ), true )
+				
+			section#backups
+				h2 backups
+				p!= gridify( get( files.backup, {keys:{ a:"link"}} ), true )
+				
 
 //- UNCLASSIFIED
