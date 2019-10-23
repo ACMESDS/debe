@@ -37,14 +37,49 @@ const {skinContext, renderJade} = module.exports = {
 				ctx.type = "table";
 			
 			sql.query( "SHOW FULL COLUMNS FROM ??", sql.reroute( ctx.name ), (err,fields) => {
-				
 				function getFiles( ctx, cb ) {
-					getIndex( `./shares/${ctx.name}/`, files => cb(ctx, files) );
+					getIndex( `./notebooks/${ctx.name}/`, files => {
+						var Files = [];
+						files.forEach( file => {
+							var 
+								parts = file.split("_"),
+								num = 999,
+								classif = "U",
+								type = "",
+								title = file;
+							
+							if ( parts[0] ) {
+								parts.forEach( part => {
+									switch (part) {
+										case "S":
+										case "U":
+										case "TS":
+										case "C":
+										case "FOUP":
+										case "LIMDIS":
+											classif = part;
+											break;
+										default:
+											if ( n = parseInt(part) )
+												num = n;
+											
+											else {
+												var parts = part.split(".");
+												title = parts[0];
+												type = parts[1] || type;
+											}
+									}
+								});
+								
+								Files.push( {num: num, title: title , classif: classif, type: type, name: file, quals: parts.length, path: `./notebooks/${ctx.name}/${file}`, link: title.tag( `./notebooks/${ctx.name}/${file}` ) } );
+							}
+						});
+						cb(ctx, Files.sort( (a,b) => a.num-b.num ) );
+					});
 				}
 					
 				var keys = ctx.keys = {};
 
-				//Log("showcols", ctx);
 				if ( err ) 
 					ctx.type = "file";
 				
@@ -52,7 +87,6 @@ const {skinContext, renderJade} = module.exports = {
 					fields.forEach( field => keys[field.File] = { type: field.Type, default: field.Default, comment: field.Comment} );
 
 				getFiles( ctx, (ctx,files) => {
-					//Log("getfiles", ctx);
 					var 
 						name = ctx.name,
 						type = ctx.type,
@@ -119,12 +153,11 @@ const {skinContext, renderJade} = module.exports = {
 							},
 
 							summary: "summary tbd",
-							//reqts: infokeys.envs[type] || "reqts tbd",
 							ver: "ver tbd",
 							reqs: {
-								distrib: "request to distribute ${Name}/Can you grant permission to distribute ${Name}?".replace(/"\${Name}"/g, Name),
-								info: "request for information on ${Name}/Can you provide further information on ${Name}?".replace(/"\${Name}"/g, Name),
-								help: "need help on ${Name}/Please provde me some help on notebook ${Name}".replace(/"\${Name}"/g, Name)
+								distrib: "request to distribute NAME/Can you grant permission to distribute NAME?".replace(/NAME/g, Name),
+								info: "request for information on NAME/Can you provide further information on NAME?".replace(/NAME/g, Name),
+								help: "need help on NAME/Please provde me some help on notebook NAME".replace(/NAME/g, Name)
 							},
 							request: req => {
 								var
@@ -148,12 +181,22 @@ const {skinContext, renderJade} = module.exports = {
 							run: envs.master + ".run",
 							view: envs.master + ".view",
 							tou: envs.master + ".tou",
+							brief: envs.totem + "/briefs.view?notebook=" + name,
+							rtp: envs.totem + "/rtpsqd.view?notebook=" + name,
 							pub: envs.master + ".pub",
 							totem: envs.totem,
 							repo: envs.repo + name,
 							repofiles: envs.repo + name + "/raw/master",
 							relinfo: envs.master + "/releases.html?nb=" + name
 						}));
+
+						Each( ctx, (key,url) => {
+							if ( url )
+								if ( isString(url) ) {
+									ctx["_"+key] = `%{${url}}`;
+									ctx["_"+key.toUpperCase()] = key.toUpperCase().tag( url );
+								}
+						});
 
 					cb(ctx);
 				});
@@ -194,7 +237,7 @@ const {skinContext, renderJade} = module.exports = {
 		
 		var 
 			ctx = {  //< default site context to render skin
-				name: query.notebook || query.nb || query.project || query.task || table,
+				name: query.notebook || query.nb || query.project || query.task || query.option || table,
 				typeOf: typeOf,
 				table: table,
 				dataset: table,
@@ -268,7 +311,8 @@ const {skinContext, renderJade} = module.exports = {
 					"usage".tag( `${name}.use` ),
 					"project".tag( `${name}.proj` ),
 					"download".tag( `${name}.${type}` ),
-					"brief".tag( `/briefs.view?options=${name}` ),
+					"rtp".tag( `/rtpsqd.view?notebook=${name}` ),
+					"brief".tag( `/briefs.view?notebook=${name}` ),
 					"reset".tag( `${name}.reset` )
 				].join(" || ") : [
 					"view".tag( `${name}.view` )
@@ -343,53 +387,35 @@ const {skinContext, renderJade} = module.exports = {
 			renderFile( skinner, ctx );
 		}		
 
-		/*
-		function buildSchema( ds, type, ctx ) {
-		/ **
-		@private
-		@method buildSchema
-		Render table at path this to res( err || html ) in a new context created for this request.  
-		** /			
-			sql.query( 
-				"SHOW FULL COLUMNS FROM ??", 
-				sql.reroute( ds ), 
-				(err,fields) => {
-
-				//Log(err, fields);
-					
-				if (err) // render jade file
-					renderFile( paths.jades+ds+".jade", ctx );
-
-				else // render notebook
-					renderNotebook( ds, type, fields, ctx );
-			});	
-		} */
-
 		skinContext(sql, ctx, ctx => {
 
 			if (ctx)  // render skin
-				switch (ctx.type) {
-					case "jade":
-						sql.query( paths.engine, { // use skinning engine
-							Name: ctx.name,
-							Enabled: 1
-						}, (err,engs) => {
+				if ( ctx.name == ctx.table ) 	// not being spoofed				
+					switch (ctx.type) {
+						case "jade":
+							sql.query( paths.engine, { // use skinning engine
+								Name: ctx.name,
+								Enabled: 1
+							}, (err,engs) => {
 
-							if ( eng = engs[0] )
-								renderJade( eng.Code || "", ctx, html => res(html) );
+								if ( eng = engs[0] )
+									renderJade( eng.Code || "", ctx, html => res(html) );
 
-							else
-								res( errors.noEngine );
-						});
-						break;
-						
-					case "file":
-						renderFile( paths.jades + ctx.name + ".jade", ctx );
-						break;
-						
-					default:
-						renderNotebook( paths.jades + "plugin.jade", ctx );
-				}
+								else
+									res( errors.noEngine );
+							});
+							break;
+
+						case "file":
+							renderFile( paths.jades + ctx.name + ".jade", ctx );
+							break;
+
+						default:
+							renderNotebook( paths.jades + "plugin.jade", ctx );
+					}
+			
+				else	// being spoofed
+					renderFile( paths.jades + ctx.table + ".jade", ctx );
 			
 			else
 				res( errors.noEngine );

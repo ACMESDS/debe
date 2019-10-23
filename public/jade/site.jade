@@ -74,13 +74,14 @@ append base_body
 					#fit(south,crush)
 						:markdown
 							By #{credits} 
-							|| Built on [#{nick}](/briefs.view) 
-							|| [Browse](/fan.view?src=info&w=4000&h=800) 
+							|| Built on [#{nick}](/briefs.view?nb=totem) 
+							|| [Browse](/briefs.view?nb=browse) 
+							|| !{_RTP} 
 							|| [API](/api.view) 
 							|| [Skinning Guide](/skinguide.view) 
 							|| [PRM](/shares/prm/debe/index.html) 
 							|| [blog](http://intellipedia/swag) 
-							|| [JIRA](tbd) 							
+							|| [JIRA](https://usms.nga.ic.gov/jira)
 
 			when "Basic"
 				#folder(center,dock=dock)
@@ -102,7 +103,7 @@ append base_body
 					Manage="/files.view" )
 
 					block site_help
-					#post.Brief(path="/briefs.view?options=#{dataset}",dims="600,300")
+					#post.Brief(path="/briefs.view?notebook=#{dataset}",dims="600,300")
 
 					#folder(center,dock=dock)
 						block site_body
@@ -113,13 +114,14 @@ append base_body
 					#fit(north,crush)
 						:markdown
 							By #{credits} 
-							|| Built on [#{nick}](/briefs.view) 
-							|| [Browse](/fan.view?src=info&w=4000&h=800) 
+							|| Built on [#{nick}](/briefs.view?nb=totem) 
+							|| [Browse](/briefs.view?nb=browse) 
+							|| !{_RTP} 
 							|| [API](/api.view) 
 							|| [Skinning Guide](/skinguide.view) 
 							|| [PRM](/shares/prm/debe/index.html) 
 							|| [blog](http://intellipedia/swag) 
-							|| [JIRA](tbd) 							
+							|| [JIRA](https://usms.nga.ic.gov/jira)
 
 			when "Home"
 				#border(
@@ -128,7 +130,7 @@ append base_body
 					LikeUs="/likeus.db" )
 
 					block site_help
-					#post.Brief(path="/briefs.view?options=#{dataset}",dims="600,300")
+					#post.Brief(path="/briefs.view?notebook=#{dataset}",dims="600,300")
 
 					#fit(center)
 						block site_body
@@ -136,13 +138,14 @@ append base_body
 					#fit(north,crush)
 						:markdown
 							By #{credits} 
-							|| Built on [#{nick}](/briefs.view) 
-							|| [Browse](/fan.view?src=info&w=4000&h=800) 
+							|| Built on [#{nick}](/briefs.view?nb=totem) 
+							|| [Browse](/briefs.view?nb=browse) 
+							|| !{_RTP} 
 							|| [API](/api.view) 
 							|| [Skinning Guide](/skinguide.view) 
 							|| [PRM](/shares/prm/debe/index.html) 
 							|| [blog](http://intellipedia/swag) 
-							|| [JIRA](tbd) 							
+							|| [JIRA](https://usms.nga.ic.gov/jira)
 
 			when "Simple"
 				block site_body
@@ -156,7 +159,7 @@ append base_body
 					LikeUs="/likeus.db")
 
 					block site_help
-					#post.Brief(path="/briefs.view?options=#{dataset}",dims="600,300")
+					#post.Brief(path="/briefs.view?notebook=#{dataset}",dims="600,300")
 
 					//
 						#pivot.Helpful.Links(
@@ -206,7 +209,7 @@ append base_body
 					Manage="/files.view")
 
 					block site_help
-					#post.Brief(path="/briefs.view?options=#{dataset}",dims="600,300")
+					#post.Brief(path="/briefs.view?notebook=#{dataset}",dims="600,300")
 
 					#fit(center)
 						block site_body
@@ -214,10 +217,11 @@ append base_body
 					#fit(north,crush)
 						:markdown
 							By #{credits} 
-							|| Built on [#{nick}](/briefs.view) 
-							|| [Browse](/fan.view?src=info&w=4000&h=800) 
+							|| Built on [#{nick}](/briefs.view?nb=totem) 
+							|| [Browse](/briefs.view?nb=browse) 
+							|| !{_RTP} 
 							|| [API](/api.view) 
 							|| [Skinning Guide](/skinguide.view) 
 							|| [PRM](/shares/prm/debe/index.html) 
 							|| [blog](http://intellipedia/swag) 
-							|| [JIRA](tbd) 							
+							|| [JIRA](https://usms.nga.ic.gov/jira)
