@@ -683,19 +683,18 @@ mv '${msg}'_files index_files ;
 		});
 	}),
 
-	dogEngines: Copy({
-		//cycle: 600,
+	dogNotebooks: Copy({
+		cycle: 600,
 		get: {
-			"undefined": "",
+			hogs: "DELETE FROM openv.syslogs WHERE datediff(now(), At) >= ?",
 			buggy: ""
 		},
-		"undefined": 123,
+		olds: 1,	// days old
 		bugs: 10
-	}, function dogEngines(sql, dog) {
+	}, function dogNotebooks(sql, dog) {
 
-		if (dog.get.undefined)
-			dog.forEach(dog.trace, dog.get.undefined, [dog.undefined], function (client, sql) {
-			});
+		if (dog.get.hogs)
+			dog.forEach(dog.trace, dog.get.hogs, [dog.old], () => Trace("Squeezed Notebook logs") );
 	}),
 
 	dogUsers: Copy({
