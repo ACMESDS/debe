@@ -242,7 +242,7 @@ const {skinContext, renderJade} = module.exports = {
 							totem: envs.totem,
 							repo: envs.repo + name,
 							repofiles: envs.repo + name + "/raw/master",
-							jira: env.jira,
+							jira: envs.jira,
 							relinfo: envs.master + "/releases.html?nb=" + name
 						}));
 

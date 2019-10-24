@@ -93,7 +93,7 @@ module.exports = {  //< watch dogs cycle time in secs (zero to disable)
 
 		dog.thread( sql => {
 
-			function sqldb(cb) {
+			function db(cb) {
 				sql.query(get.sqlutil, {}, (err, stats) => {
 					cb({
 						running: stats[2].Value,
@@ -132,7 +132,7 @@ module.exports = {  //< watch dogs cycle time in secs (zero to disable)
 				});
 			}
 
-			sqldb( threads => {
+			db( threads => {
 			cpu( cpu => {
 			disk( disk => {
 			jobs( jobs => {
@@ -464,7 +464,8 @@ Further information about this file is available ${paths.moreinfo}. `;
 		});
 	}),
 
-	_dogSystem: Copy({  // legacy
+	/*
+	dogSystem: Copy({  // legacy
 		//cycle: 100,
 		get: {
 			engs: "SELECT count(ID) AS Count FROM app.engines WHERE Enabled",
@@ -491,7 +492,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 				});
 				});
 			});
-	}),
+	}), */
 
 	/*
 	dogGraph: Copy({
@@ -691,7 +692,7 @@ mv '${msg}'_files index_files ;
 		},
 		olds: 1,	// days old
 		bugs: 10
-	}, function dogNotebooks(sql, dog) {
+	}, function dogNotebooks(dog) {
 
 		if (dog.get.hogs)
 			dog.forEach(dog.trace, dog.get.hogs, [dog.old], () => Trace("Squeezed Notebook logs") );
