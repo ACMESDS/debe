@@ -366,8 +366,7 @@ append layout_body
 				script.
 					Reveal.initialize({
 						keyboard: {
-							112: function () {  // F1 for quiz
-								alert("quiz time!");
+							112: function () {  // F1 for quiz see jades/exquiz.jade for usage
 								takequiz({ take:  true, slide: 0, doc: document, rev: Reveal, test: "#{name}.1.1" });
 							}
 						},
@@ -376,7 +375,7 @@ append layout_body
 						controls: true,
 
 						// default slide delay
-						autoSlide:10000, 
+						autoSlide:10000, 	// milisecs
 						
 						// Display a presentation progress bar
 						progress: true,

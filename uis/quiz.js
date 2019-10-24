@@ -120,13 +120,13 @@ function takequiz(state) {
 
 	}
 
-	console.log("state in", state);
+	//console.log("state in", state);
 	var 
 		rev = state.rev,
 		slide = rev.getCurrentSlide(),
 		ctrls = slide.getElementsByClassName("quiz");
 	
-	console.log(rev, slide, ctrls, ctrls.length, BASE.Ajax);
+	//console.log(rev, slide, ctrls, ctrls.length, BASE.Ajax);
 	
 	if ( ctrls.length >= 3 ) {
 		var
@@ -151,14 +151,14 @@ function takequiz(state) {
 		else 
 			state.take = !state.take;
 		
-		console.log("state out", state);
+		//console.log("state out", state);
 		
 		if ( state.take )  {
 			var 
 				myQuestions = [],
-				myQuiz = Quizes[topic+"."+mod+"."+set] || Quizes["default.1.1"];
+				myQuiz = BASE.Quizes[topic+"."+mod+"."+set] || BASE.Quizes["default"];
 
-			console.log(myQuiz);
+			//console.log(myQuiz);
 			
 			if (myQuiz) {
 				myQuiz.forEach( (quiz,n) => {
@@ -195,38 +195,116 @@ function takequiz(state) {
 // Below should be modified as needed.  Entires should follow the topic.module.set convention. See
 // the /exquiz.view for usage example.
 
-var quizes = {  
+BASE.Quizes = {  
 	
-"default.1.1": [
-{
-	Q: "Who is the strongest?",
+"machines.1.1": [ {
+	Q: "Machine learning has been around?",
 	S: {
-		a: "Superman",
-		b: "The Terminator",
-		c: "Waluigi, obviously"
+		a: "since the dawn of the computer",
+		b: "for the last 10 years",
+		c: "for a million years"
+	},
+	A: "a"
+}],
+	
+"machines.1.2": [{
+	Q: "Who invented machine learning?",
+	S: {
+		a: "Google",
+		b: "Facebook",
+		c: "Amazon",
+		d: "IBM",
+		e: "a lot of smart people"
+	},
+	A: "e"
+}],
+	
+"machines.1.3": [{
+	Q: "Training a GPU consumes more than X (Y) times the power used in a car's (US persons') lifetime?",
+	S: {
+		a: "half (same)",
+		b: "tenth (half)",
+		c: "5 (20)",
+		d: "I dont care"
 	},
 	A: "c"
-}, 	{
-	Q: "What is the best site ever created?",
+}],
+	
+"machines.2.1": [{
+	Q: "half of the US GDP during the last 10 years was allocated to?",
 	S: {
-		a: "SitePoint",
-		b: "Simple Steps Code",
-		c: "Trick question; they're both the best"
-	},
-	A: "c"
-}, 	{
-	Q: "Where is Waldo really?",
-	S: {
-		a: "Antarctica",
-		b: "Exploring the Pacific Ocean",
-		c: "Sitting in a tree",
-		d: "Minding his own business, so stop asking"
+		a: "you",
+		b: "South African Swallows",
+		c: "interest on the debt",
+		d: "GPUs"
 	},
 	A: "d"
-}
-], 
+}],
+	
+"machines.2.2": [{
+	Q: "half of the US GDP during the last 10 years was allocated to?",
+	S: {
+		a: "you",
+		b: "South African Swallows",
+		c: "interest on the debt",
+		d: "GPUs"
+	},
+	A: "d"
+}],
+	
+"machines.2.3": [{
+	Q: "training a machine requires?",
+	S: {
+		a: "a model, data and power",
+		b: "labeled data and power",
+		c: "interest on the debt",
+		d: "jupyter notebooks"
+	},
+	A: "a"},  {
+	Q: "good models for machine learners include?",
+	S: {
+		a: "Cindy Crawford, David Gandy, Jelena Naura, Naomi Campbell",
+		b: "flat earth",
+		c: "global warming",
+		d: "Markov, Wiener, Ohrenstein, Gaussian, Bayes"
+	},
+	A: "d"
+}],
+	
+"machines.2.4": [{
+	Q: "good models for machine learners include?",
+	S: {
+		a: "Cindy Crawford, David Gandy, Jelena Naura, Naomi Campbell",
+		b: "flat earth",
+		c: "global warming",
+		d: "Markov, Wiener, Ohrenstein, Gaussian, Bayes"
+	},
+	A: "d"
+}], 
+	
+"machines.2.5": [{
+	Q: "which language do machie learners require?",
+	S: {
+		a: "python",
+		b: "matlab",
+		c: "c",
+		d: "mathematics"
+	},
+	A: "d"
+}], 
 
-"default.1.2": [
+"machines.2.6": [{
+	Q: "Googlers now refer to ancient gaussian mixing problems as?",
+	S: {
+		a: "supervised learning",
+		b: "EM, clustering, semisupervised learning",
+		c: "transfer learning",
+		d: "hypothesis boosting"
+	},
+	A: "d"
+}], 
+
+"default.3.1": [
 {
 	Q: "Who is the strongest?",
 	S: {
@@ -246,7 +324,7 @@ var quizes = {
 }
 ], 
 
-"default.2.1": [
+"default.3.2": [
 {
 	Q: "the best " + "color?".tag("img",{src:"/shares/a1.jpg"}),
 	S: {

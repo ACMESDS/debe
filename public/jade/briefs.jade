@@ -396,6 +396,11 @@ append base_body
 			section
 				p.lg= name
 				p.al= "https:/totem.west.ile.nga.ic.gov/briefs?notebook="+name
+				a(href=run) Notebook
+				|  | 
+				a(href=rtp) RTP
+				|  | 
+				a(href=jira) JIRA
 				p.al brian.d.james@nga.mil
 				p.al= now
 				
@@ -422,5 +427,14 @@ append base_body
 			section#backups
 				h2 backups
 				p!= gridify( get( files.backup, {keys:{ a:"link"}} ), true )
-				
+
+			- sets ={ 1: [1,2,3], 2: [1,2,3,4,5,6], 3: [] }
+			each mod in [1,2,3]
+				each set in sets[mod]
+					section(lesson="machines.#{mod}.#{set}", modules=3, pass=60)
+						h2= `Earn a Certificate (${mod}-${set})`
+						#quiz.quiz
+						button.quiz F1 Start|Submit|End
+						#results.quiz
+		
 //- UNCLASSIFIED

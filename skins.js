@@ -81,6 +81,10 @@ const {skinContext, renderJade} = module.exports = {
 										case "C":
 										case "FOUO":
 										case "LIMDIS":
+										case "NF":
+										case "ORCON":
+										case "FVEY":
+										case "NATO":
 											classif.push( part );
 											break;
 										default:
@@ -144,7 +148,8 @@ const {skinContext, renderJade} = module.exports = {
 							worker: ENV.SERVICE_WORKER_URL + "/" + name,
 							totem: ENV.SERVICE_MASTER_URL,
 							//nbook: ENV.SERVICE_WORKER_URL + "/" + name,
-							repo: ENV.PLUGIN_REPO
+							repo: ENV.PLUGIN_REPO,
+							jira: ENV.JIRA
 						},
 
 						ctx = Copy(site, Copy( ctx, {
@@ -237,6 +242,7 @@ const {skinContext, renderJade} = module.exports = {
 							totem: envs.totem,
 							repo: envs.repo + name,
 							repofiles: envs.repo + name + "/raw/master",
+							jira: env.jira,
 							relinfo: envs.master + "/releases.html?nb=" + name
 						}));
 
@@ -287,7 +293,7 @@ const {skinContext, renderJade} = module.exports = {
 		
 		var 
 			ctx = {  //< default site context to render skin
-				name: query.notebook || query.nb || query.project || query.task || query.option || table,
+				name: (query.notebook || query.nb || query.project || query.task || query.option || table).toLowerCase(),
 				typeOf: typeOf,
 				table: table,
 				dataset: table,
