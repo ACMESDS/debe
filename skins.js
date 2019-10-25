@@ -44,86 +44,116 @@ const {skinContext, renderJade} = module.exports = {
 						var 
 							id = 1,
 							Files = {
-								image: [],
-								backup: [],
-								note: [],
+								image: {},
 								artifact: [],
+								misc: [],
 								live: []
 							},
 							Batch = {
 								jpg: "image",
 								png: "image",
 								gif: "image",
-								ppt: "backup",
-								pptx: "backup",
-								txt: "note",
-								doc: "note",
-								docx: "note",
+								ppt: "artifact",
+								pptx: "artifact",
+								txt: "artifact",
+								doc: "artifact",
+								pdf: "artifact",
+								docx: "artifact",
 								html: "live",
-								"": "artifact",
-								default: "artifact"
+								default: "misc"
 							};
 						
 						files.forEach( file => {
 							var 
+								path = `./notebooks/${ctx.name}/${file}`,
 								parts = file.split("_"),
-								num = 999,
+								num = 0,
 								classif = [],
-								type = [],
-								title = [];
+								type = "",
+								title = [],
+								depth = 0;
 							
-							if ( parts[0] ) {
-								parts.forEach( part => {
-									switch (part) {
-										case "S":
-										case "U":
-										case "TS":
-										case "C":
-										case "FOUO":
-										case "LIMDIS":
-										case "NF":
-										case "ORCON":
-										case "FVEY":
-										case "NATO":
-											classif.push( part );
-											break;
-										default:
-											if ( n = parseFloat(part) )
-												num = n;
-											
-											else {
-												var parts = part.split(".");
-												title.push( parts[0] );
-												type.push( (parts[1] || "").toLowerCase() );
-											}
-									}
-								});
-								
-								switch (type[0]) {
-									case "rdp":
-									case "url":
-									case "lnk":
+							parts.forEach( (part,n) => {
+								switch (part) {
+									case "":
+										depth++;
+										break;
+									case "S":
+									case "U":
+									case "TS":
+									case "C":
+									case "FOUO":
+									case "LIMDIS":
+									case "NF":
+									case "ORCON":
+									case "FVEY":
+									case "NATO":
+										classif.push( part );
 										break;
 									default:
-										Files[ batch = Batch[type] || Batch.default ].push( {
+										if ( n = parseFloat(part) )
+											num = n;
+
+										else {
+											var parts = part.split(".");
+											title.push( parts[0] );
+											type = (parts[1] || "").toLowerCase();
+										}
+								}
+							});
+
+							switch ( type ) {
+								case "":
+								case "rdp":
+								case "url":		// discard
+									break; 
+								
+								case "lnk":		// re-path it then batch it
+									try {	
+										FS.readFileSync( path, "utf8" ).replace( /\&(.*)\+/, (pre,goto) => {
+											path = goto.replace(".\\", "/notebooks/"); // assume local link
+											//Log(">>>goto", path);
+										});
+									}
+									catch (err) { // keep as is
+									}
+
+								default:
+									var stack = null;
+									
+									switch ( batch = Batch[type] || Batch.default ) {
+										case "":		// discard
+											break;
+											
+										case "image":
+											if ( depth && num ) {
+												stack = Files.image[`set${depth}`];
+												if ( !stack ) stack = Files.image[`set${depth}`] = [];
+											}
+											break;
+																								
+										default:
+											stack = Files[ batch ];
+									}
+
+									if ( stack )
+										stack.push( {
 											id: id++,
 											num: num, 
 											title: title.join(" "), 
 											classif: (classif.length>1) ? "(" + classif.join("//") + ")" : "", 
-											type: type[0] || "", 
+											type: type, 
 											name: file, 
 											qualifiers: parts.length, 
-											path: false // (batch=="live") 
-												? `${ctx.live}/notebooks/${ctx.name}/${file}`
-												: `./notebooks/${ctx.name}/${file}`, 
-											
-											link: title[0].tag( `./notebooks/${ctx.name}/${file}` ) 
+											path: path, 
+											link: title[0].tag( path ) 
 										} );
+									
 								}
-							}
+								
 						});
 						
-						Each( Files, (batch,files) => Files[batch] = files.sort( (a,b) => a.num-b.num ) );
+						Each( Files.image, (set,files) => Files.image[set] = files.sort( (a,b) => a.num-b.num ) );
 						//Log(">>>>files", Files);
 						//Log(">>>>test", Files.image.get({ keys: {a: "link"}}) );
 						cb(ctx, Files );
@@ -138,123 +168,153 @@ const {skinContext, renderJade} = module.exports = {
 				else
 					fields.forEach( field => keys[field.File] = { type: field.Type, default: field.Default, comment: field.Comment} );
 
-				getFiles( ctx, (ctx,files) => {
-					var 
-						name = ctx.name,
-						type = ctx.type,
-						Name = name.toUpperCase(),
-						envs = {  
-							master: ENV.SERVICE_MASTER_URL + "/" + name,
-							worker: ENV.SERVICE_WORKER_URL + "/" + name,
-							totem: ENV.SERVICE_MASTER_URL,
-							//nbook: ENV.SERVICE_WORKER_URL + "/" + name,
-							repo: ENV.PLUGIN_REPO,
-							jira: ENV.JIRA
-						},
+				sql.query(
+					"SELECT * FROM openv.projects WHERE ? LIMIT 1", 
+					{Name: ctx.name}, (err,projs) => {
 
-						ctx = Copy(site, Copy( ctx, {
-							filename: paths.jadeRef,
-							query: {},
+					var proj = projs[0] || { JIRA: "tbd", Status: "tbd", Name: ctx.name, Title: ctx.name, Lead: "tbd" };
+						
+					sql.query(
+						"SELECT group_concat(RAS) AS RAS FROM openv.milestones WHERE ? AND RAS", 
+						{Project: ctx.name}, (err, vendors) => {
 
-							Name: Name,
-							type: type,
+						var vendor = vendors[0] || { RAS: "none" };
+							
+						proj.RAS = vendor.RAS || "none";
 
-							files: files,
-							keys: keys,
-							fields: fields,
-							by: "NGA/R".tag( "https://research.nga.ic.gov" ),
+						getFiles( ctx, (ctx,files) => {
+							var 
+								name = ctx.name,
+								type = ctx.type,
+								Name = name.toUpperCase(),
+								envs = {  
+									here: "/" + name,
+									master: ENV.SERVICE_MASTER_URL + "/" + name,
+									worker: ENV.SERVICE_WORKER_URL + "/" + name,
+									totem: ENV.SERVICE_MASTER_URL,
+									//nbook: ENV.SERVICE_WORKER_URL + "/" + name,
+									repo: ENV.NOTEBOOK_REPO || ENV.PLUGIN_REPO || "https:repo.tbd",
+									jira: ENV.JIRA || "https:jira.tbd",
+									ras: ENV.RAS || "https:ras.tbd" 
+								},
 
-							embed: (url,w,h) => {
-								var
-									keys = {},
-									urlPath = url.parseURL(keys,{},{},{}),
+								ctx = Copy(site, Copy( ctx, {
+									filename: paths.jadeRef,		// for jade
+									query: {},	// default
 
-									w = keys.w || w || 400,
-									h = keys.h || h || 400,
+									proj: proj,
+									Name: Name,
+									type: type,
 
-									urlName = urlPath,
-									urlType = "",
-									x = urlPath.replace(/(.*)\.(.*)/, (str,L,R) => {
-										urlName = L;
-										urlType = R;
-										return "#";
-									});
+									files: files,
+									keys: keys,
+									fields: fields,
+									by: "NGA/R".tag( "https://research.nga.ic.gov" ),
 
-								//Log("link", url, urlPath, keys);
-								switch (urlType) { 
-									case "jpg":  
-									case "png":
-										return "".tag("img", { src:`${url}?killcache=${new Date()}`, width:w, height:h });
-										break;
+									embed: (url,w,h) => {
+										var
+											keys = {},
+											urlPath = url.parseURL(keys,{},{},{}),
 
-									case "view": 
-									default:
-										return "".tag("iframe", { src: url, width:w, height:h });
-								}
-							},
+											w = keys.w || w || 400,
+											h = keys.h || h || 400,
 
-							register: () => 
-								"<!---parms endservice=https://myservice/" + ctx.name + "--->" 
-								+ ctx.input({a:"aTest", b:"bTest"}),
+											urlName = urlPath,
+											urlType = "",
+											x = urlPath.replace(/(.*)\.(.*)/, (str,L,R) => {
+												urlName = L;
+												urlType = R;
+												return "#";
+											});
 
-							//input: tags => "<!---parms " + "".tag("&", tags || {}).substr(1) + "--->",
+										//Log("link", url, urlPath, keys);
+										switch (urlType) { 
+											case "jpg":  
+											case "png":
+												return "".tag("img", { src:`${url}?killcache=${new Date()}`, width:w, height:h });
+												break;
 
-							reqts: {   // defaults
-								js:  ["nodejs-8.9.x", "standard machine learning library".tag( "https://sc.appdev.proj.coe.ic.gov://acmesds/man" )].join(", "),
-								py: "anconda-4.9.1 (iPython 5.1.0 debugger), numpy 1.11.3, scipy 0.18.1, utm 0.4.2, Python 2.7.13",
-								m: "matlab R18, odbc, simulink, stateflow"
-							},
+											case "view": 
+											default:
+												return "".tag("iframe", { src: url, width:w, height:h });
+										}
+									},
 
-							summary: "summary tbd",
-							ver: "ver tbd",
-							reqs: {
-								distrib: "request to distribute NAME/Can you grant permission to distribute NAME?".replace(/NAME/g, Name),
-								info: "request for information on NAME/Can you provide further information on NAME?".replace(/NAME/g, Name),
-								help: "need help on NAME/Please provde me some help on notebook NAME".replace(/NAME/g, Name)
-							},
-							request: req => {
-								var
-									parts = (req || ctx.reqs.info || "request/need information").split("/"),
-									label = parts[0] || "request",
-									body = parts[1] || "request for information",
-									pocs = ctx.pocs || {};
+									register: () => 
+										"<!---parms endservice=https://myservice/" + ctx.name + "--->" 
+										+ ctx.input({a:"aTest", b:"bTest"}),
 
-								//Log("pocs", pocs, label, body, name, req);
-								return (pocs.admin||"").mailify( label, {subject: name, body: body} );
-							},
+									//input: tags => "<!---parms " + "".tag("&", tags || {}).substr(1) + "--->",
 
-							interface: () => "publish notebook to define interface",
-							now: (new Date())+"",
+									reqts: {   // defaults
+										js:  ["nodejs-8.9.x", "standard machine learning library".tag( "https://sc.appdev.proj.coe.ic.gov://acmesds/man" )].join(", "),
+										py: "anconda-4.9.1 (iPython 5.1.0 debugger), numpy 1.11.3, scipy 0.18.1, utm 0.4.2, Python 2.7.13",
+										m: "matlab R18, odbc, simulink, stateflow"
+									},
 
-							loopback: envs.worker + "." + type +"?endservice=" + envs.worker +".users",
-							transfer: envs.worker + "." + type + "?endservice=",
-							status: envs.master + ".status",
-							md: envs.master + ".md",
-							archive: envs.master + ".archive",
-							suitors: envs.master + ".suitors",
-							run: envs.master + ".run",
-							view: envs.master + ".view",
-							tou: envs.master + ".tou",
-							brief: envs.totem + "/briefs.view?notebook=" + name,
-							content: envs.totem + "/notebooks/" + name,
-							rtp: envs.totem + "/rtpsqd.view?notebook=" + name,
-							pub: envs.master + ".pub",
-							totem: envs.totem,
-							repo: envs.repo + name,
-							repofiles: envs.repo + name + "/raw/master",
-							jira: envs.jira,
-							relinfo: envs.master + "/releases.html?nb=" + name
-						}));
+									summary: "summary tbd",
+									ver: "ver tbd",
+									reqs: {
+										distrib: "request to distribute NAME/Can you grant permission to distribute NAME?".replace(/NAME/g, Name),
+										info: "request for information on NAME/Can you provide further information on NAME?".replace(/NAME/g, Name),
+										help: "need help on NAME/Please provde me some help on notebook NAME".replace(/NAME/g, Name)
+									},
+									request: req => {
+										var
+											parts = (req || ctx.reqs.info || "request/need information").split("/"),
+											label = parts[0] || "request",
+											body = parts[1] || "request for information",
+											pocs = ctx.pocs || {};
 
-						Each( ctx, (key,url) => {
-							if ( url )
-								if ( isString(url) ) {
-									ctx["_"+key] = `%{${url}}`;
-									ctx["_"+key.toUpperCase()] = key.toUpperCase().tag( url );
-								}
+										//Log("pocs", pocs, label, body, name, req);
+										return (pocs.admin||"").mailify( label, {subject: name, body: body} );
+									},
+
+									interface: () => "publish notebook to define interface",
+									now: (new Date())+"",
+
+									loopback: envs.worker + "." + type +"?endservice=" + envs.worker +".users",
+									transfer: envs.worker + "." + type + "?endservice=",
+									totem: envs.totem,
+									
+									status: envs.here + ".status",
+									archive: envs.here + ".archive",
+									suitors: envs.here + ".suitors",
+									run: envs.here + ".run",
+									view: envs.here + ".view",
+									tou: envs.here + ".tou",
+									brief: "/briefs.view?notebook=" + name,
+									content: 
+										// windows ie
+										// "file://164.183.33.7/totem/notebooks/" + name,
+										// windows ff
+										// "file://///164.183.33.7/totem/notebooks/" + name,
+										// linux
+										"file://local/service/debe/notebooks/" + name,
+										
+									rtp: "/rtpsqd.view?notebook=" + name,
+									pub: envs.here + ".pub",
+									
+									jira: envs.jira + proj.JIRA,
+									ras: envs.ras + proj.RAS,
+
+									repo: envs.repo + name,
+									repofiles: envs.repo + name + "/raw/master",
+									relinfo: envs.master + "/releases.html?nb=" + name
+								}));
+
+								Each( ctx, (key,url) => {
+									if ( url )
+										if ( isString(url) ) {
+											ctx["_"+key] = `%{${url}}`;
+											ctx[key.toUpperCase()] = key.toUpperCase().tag( url );
+											ctx[key.charAt(0).toUpperCase()+key.substr(1)] = envs.totem+"/"+url;
+										}
+								});
+
+							cb(ctx);
 						});
-
-					cb(ctx);
+					});
 				});
 			});				
 		});		

@@ -225,7 +225,23 @@ append site_body
 					+ 	hover( title, jpgShares, htmlShares )
 					+ 	tag( text, el, {key:value,...} )
 
-				//- #exsite.Examples(dims="800,500")
+					and notebook keys ( where \\#{key}, _\\#{key}, \\#{KEY}, and \\#{Key} provides
+					url, include directive, link, and full url, respectively ):
+
+					+ name (#{name})
+					+ run (#{run})
+					+ view (#{view})
+					+ content (#{content})
+					+ rdp (#{rdp})
+					+ proj (#{JSON.stringify(proj)})
+					+ status (#{status})		
+					+ archive (#{archive})		
+					+ tou (#{tou})		
+					+ brief (#{brief})		
+					+ pub (#{pub})		
+					+ repo (#{repo})	
+					+ ras summary (#{ras})
+					+ jira summary (#{jira})
 
 			#folder.Frameworks(dock="left")
 				#fit.layout

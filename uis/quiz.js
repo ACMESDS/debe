@@ -283,7 +283,7 @@ BASE.Quizes = {
 }], 
 	
 "machines.2.5": [{
-	Q: "which language do machie learners require?",
+	Q: "which language do machine learners require?",
 	S: {
 		a: "python",
 		b: "matlab",
@@ -294,14 +294,44 @@ BASE.Quizes = {
 }], 
 
 "machines.2.6": [{
-	Q: "Googlers now refer to ancient gaussian mixing problems as?",
+	Q: "The Googlers now refer to the ancient gaussian mixing problem as?",
 	S: {
 		a: "supervised learning",
 		b: "EM, clustering, semisupervised learning",
 		c: "transfer learning",
 		d: "hypothesis boosting"
 	},
-	A: "d"
+	A: "b"
+}], 
+
+"machines.2.7": [{
+	Q: "How did US founders boost each hypothesis considered by our congress?",
+	S: {
+		a: "jerry mandering",
+		b: "majority voting",
+		c: "transfer learning"
+	},
+	A: "b"
+}], 
+
+"machines.2.8": [{
+	Q: "If we are innocent until proven guilty, how does a ROC start from a field of negatives?",
+	S: {
+		a: "too deep for me",
+		b: "pure luck",
+		c: "transfer learning"
+	},
+	A: "a"
+}], 
+
+"machines.2.9": [{
+	Q: "If I gave you a coin and you *knew* it was fair (trivial ROC), could you make money?",
+	S: {
+		a: "I sure hope so",
+		b: "no I need a ROC approaching nirvanna",
+		c: "only if the ROC uniformly grows"
+	},
+	A: "a"
 }], 
 
 "default.3.1": [

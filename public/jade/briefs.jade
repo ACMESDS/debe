@@ -392,23 +392,26 @@ append base_body
 		when "fats"
 		
 		default
-			- batch = {}
-			section
+			section#title
 				p.lg= name
-				p.al= "https:/totem.west.ile.nga.ic.gov/briefs?notebook="+name
+				p.lg= proj.Title
 				a(href=run) Notebook
 				|  | 
 				a(href=rtp) RTP
 				|  | 
-				a(href=jira) JIRA
-				p.al brian.d.james@nga.mil
+				a(href=jira)= "JIRA-"+proj.JIRA
+				|  | 
+				a(href=ras)= "RAS-"+proj.RAS
+				p.al= "https:/totem.west.ile.nga.ic.gov/briefs?notebook="+name
+				p.al= proj.Lead
 				p.al= now
-				
-			section#images
-				each file in files.image
-					section
-						h2= `${file.classif} ${file.title}`
-						img(src=file.path)
+
+			each set in files.image
+				section#images
+					each file in set
+						section
+							h2= `${file.classif} ${file.title}`
+							img.xx(src=file.path)
 
 			section#embeds
 				each file in files.live
@@ -416,25 +419,21 @@ append base_body
 						h2=  `${file.classif} ${file.title}`
 						iframe(src=file.path, width=1200, height=600)
 
-			section#notes
-				h2 notes
-				p!= gridify( get( files.note, {keys:{ a:"link"}} ), true )
-
 			section#artifacts
 				h2 artifacts
 				p!= gridify( get( files.artifact, {keys:{ a:"link"}} ), true )
 
-			section#backups
-				h2 backups
-				p!= gridify( get( files.backup, {keys:{ a:"link"}} ), true )
+			section#if
+				h2= `Current Interface (${run})`
+				iframe(src=run,width=1000,height=600)
 
-			- sets ={ 1: [1,2,3], 2: [1,2,3,4,5,6], 3: [] }
+			- sets ={ 1: [1,2,3], 2: [1,2,3,4,5,6,7,8,9], 3: [] }
 			each mod in [1,2,3]
 				each set in sets[mod]
-					section(lesson="machines.#{mod}.#{set}", modules=3, pass=60)
-						h2= `Earn a Certificate (${mod}-${set})`
+					section#quiz(lesson="machines.#{mod}.#{set}", modules=3, pass=60)
+						h2= `Test Your Knowledge (${mod}-${set})`
 						#quiz.quiz
-						button.quiz F1 Start|Submit|End
+						button.quiz F1 Start|Submit|Next
 						#results.quiz
-		
+
 //- UNCLASSIFIED

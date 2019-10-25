@@ -48,9 +48,7 @@ append base_body
 
 	#hold.Options(path=JSON.stringify(options||parms),cols="Name,Path")
 	
-	- titlebar = [nick, client, (profile.Credit*1e-3).toFixed(0)+"$ "+profile.QoS+"qos", "Issues", warning, "Login"].linkify(["requirements", "/home.view?option=chat", "*", "", "", "/login?pass=totem"])
-	- goto = query.goto || ""
-	- browsers = {Ok: ["supported","Chrome","Firefox","Opera","Safari"],Bad: ["unsupported","IE","Netscape","Traveler","TheWorld","Maxthon"] }
+	- titlebar = [nick, client, (profile.Credit*1e-3).toFixed(0)+"$ "+profile.QoS+"qos", "content"].linkify(["/briefs.view?notebook=totem", "/shares/winlogin.rdp?pass=totem", "*", content])
 
 	if !query.help
 		case view
@@ -76,12 +74,13 @@ append base_body
 							By #{credits} 
 							|| Built on [#{nick}](/briefs.view?nb=totem) 
 							|| [Browse](/briefs.view?nb=browse) 
-							|| !{_RTP} 
 							|| [API](/api.view) 
 							|| [Skinning Guide](/skinguide.view) 
 							|| [PRM](/shares/prm/debe/index.html) 
 							|| [blog](http://intellipedia/swag) 
-							|| [JIRA](https://usms.nga.ic.gov/jira)
+							|| !{RTP} 
+							|| !{JIRA}  
+							|| !{RAS}
 
 			when "Basic"
 				#folder(center,dock=dock)
@@ -114,14 +113,18 @@ append base_body
 					#fit(north,crush)
 						:markdown
 							By #{credits} 
-							|| Built on [#{nick}](/briefs.view?nb=totem) 
 							|| [Browse](/briefs.view?nb=browse) 
-							|| !{_RTP} 
 							|| [API](/api.view) 
 							|| [Skinning Guide](/skinguide.view) 
 							|| [PRM](/shares/prm/debe/index.html) 
 							|| [blog](http://intellipedia/swag) 
-							|| [JIRA](https://usms.nga.ic.gov/jira)
+							|| [restart](/restart) 
+							|| [email](/email.view) 
+							|| [issues](/issues.view) 
+							|| !{warning} 
+							|| !{RTP} 
+							|| !{JIRA} 
+							|| !{RAS}
 
 			when "Home"
 				#border(
@@ -140,12 +143,13 @@ append base_body
 							By #{credits} 
 							|| Built on [#{nick}](/briefs.view?nb=totem) 
 							|| [Browse](/briefs.view?nb=browse) 
-							|| !{_RTP} 
 							|| [API](/api.view) 
 							|| [Skinning Guide](/skinguide.view) 
 							|| [PRM](/shares/prm/debe/index.html) 
 							|| [blog](http://intellipedia/swag) 
-							|| [JIRA](https://usms.nga.ic.gov/jira)
+							|| !{RTP} 
+							|| !{JIRA}  
+							|| !{RAS}
 
 			when "Simple"
 				block site_body
@@ -172,9 +176,9 @@ append base_body
 
 					#fit(south,crush)
 						ishtml
-							each brow in browsers.Ok
+							each brow in ["supported","Chrome","Firefox","Opera","Safari"]
 								img(src=icons+"/browsers/"+brow+".ico",width=16,height=16)
-							each brow in browsers.Bad
+							each brow in ["unsupported","IE","Netscape","Traveler","TheWorld","Maxthon"]
 								img(src=icons+"/browsers/"+brow+".ico",width=16,height=16)
 
 			when "Kiss"
@@ -219,9 +223,10 @@ append base_body
 							By #{credits} 
 							|| Built on [#{nick}](/briefs.view?nb=totem) 
 							|| [Browse](/briefs.view?nb=browse) 
-							|| !{_RTP} 
 							|| [API](/api.view) 
 							|| [Skinning Guide](/skinguide.view) 
 							|| [PRM](/shares/prm/debe/index.html) 
 							|| [blog](http://intellipedia/swag) 
-							|| [JIRA](https://usms.nga.ic.gov/jira)
+							|| !{RTP} 
+							|| !{JIRA}  
+							|| !{RAS}

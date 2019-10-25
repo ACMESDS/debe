@@ -1143,6 +1143,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					"API".tag( "/api.view" )
 				].join(" || ");
 		},
+		noPermission: new Error( "You do not have permission to restart the service" ),
 		badType: new Error("bad type"),
 		lostContext: new Error("pipe lost context"),
 		noPartner: new Error( "endservice missing or did not respond with transition partner" ),
@@ -1166,7 +1167,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	
 	"paths.": {  //< append paths to things
 		//default: "home.view",
-		gohome: "Totem".tag("/fan.view?src=info&w=1000&h=600")  + ": protecting the warfighter from bad data",
+		gohome: "Totem".tag("/fan.view?src=info&w=1000&h=600")  + " is protecting the warfighter from bad data",
 		
 		engine: "SELECT * FROM app.engines WHERE least(?,1) LIMIT 1",
 		jades: "./jades/",		// path to default view skins

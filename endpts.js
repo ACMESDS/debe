@@ -50,7 +50,7 @@ const { Copy,Each,Log,isString,isFunction,isError,isArray,Stream } = ENUM;
 const { sqlThread, uploadFile, probeSite, errors, site, watchFile } = TOTEM;
 const { ingestList } = GEO;
 
-const { licenseOnDownload, defaultDocs } = module.exports = {
+const { sysAlert, licenseOnDownload, defaultDocs } = module.exports = {
 	defaultDocs: {	// default plugin docs (db key comments)
 		nodoc: "no documentation provided",
 
@@ -1532,21 +1532,21 @@ code  {
 		var
 			query = req.query,
 			delay = 10,
-			msg = query.msg = `System updating in ${delay} seconds`;
+			msg = query.msg = `System restarting in ${delay} seconds`;
 
-		if ( req.client == site.pocs.admin ) {
-			Log(req.client, TOTEM.site.site.pocs);
-
-			sysAlert(req,res);
+		if ( site.pocs.overlord.indexOf( req.client ) >= 0 ) {
+			res( "restarting" );
+			
+			sysAlert(req, msg => Log( msg ) );
 
 			setTimeout( function () {
-				Trace("RESTART ON " + now(), req, Log);
+				Trace("RESTART " + (new Date()), req, Log);
 				process.exit();
 			}, delay*1e3);
 		}
 
 		else
-			res("This endpoint reserved for " + "system admin".tag( "mailto:" + site.pocs.admin ) );
+			res( errors.noPermission );
 	},
 
 	sysIngest: function(req,res) {
@@ -1755,18 +1755,18 @@ code  {
 	*/
 		var 
 			query = req.query,
-			msg = query.msg;
+			msg = query.msg || "Restarting";
 
-		if ( req.client == site.pocs.admin ) {
+		if ( site.pocs.overlord.indexOf( req.client ) >= 0 ) {
 			if (IO = TOTEM.IO)
-				IO.sockets.emit("alert",{msg: msg || "system alert", to: "all", from: TOTEM.site.title});
+				IO.sockets.emit("alert",{msg: msg, to: "all", from: TOTEM.site.title});
 
-			Trace("ALERTING "+msg, req, Log);
-			res("Broadcasting alert");
+			Trace(msg, req, Log);
+			res("Alerting");
 		}
 
 		else 
-			res("This endpoint reserved for " + "system admin".tag( "mailto:" + site.pocs.admin ) );
+			res( errors.noPermission );
 	},
 
 	sysStop: function(req,res) {
