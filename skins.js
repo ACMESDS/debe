@@ -284,13 +284,13 @@ const {skinContext, renderJade} = module.exports = {
 									view: envs.here + ".view",
 									tou: envs.here + ".tou",
 									brief: "/briefs.view?notebook=" + name,
-									content: 
+									content: "/notebooks/" + name,
 										// windows ie
 										// "file://164.183.33.7/totem/notebooks/" + name,
 										// windows ff
 										// "file://///164.183.33.7/totem/notebooks/" + name,
 										// linux
-										"file://local/service/debe/notebooks/" + name,
+										//"file://local/service/debe/notebooks/" + name,
 										
 									rtp: "/rtpsqd.view?notebook=" + name,
 									pub: envs.here + ".pub",

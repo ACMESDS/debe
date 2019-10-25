@@ -187,14 +187,13 @@ append site_body
 
 					Skinning KEYs are inserted using \\#{KEY} with or \\!{KEY} without html-escaping:
 
+					session-context keys:
 					+	table	= request dataset, view, or engine (#{table})  
 					+ 	url = full url requested (#{url})
 					+	action	= request action (#{action})  
 					+	query	= request query (#{json(query)})
 					+	flags	= request flags (#{json(flags)})  
 					+	joined = time session started (#{json(joined)})
-
-					session-context keys:
 					+	client	= client's name (#{client})  
 					+	profile	= client's qos profile (#{json(profile)})  
 
@@ -214,7 +213,7 @@ append site_body
 					+	cores = number of worker threads (#{cores})  
 					+	lock	= session lock (#{json(options)})
 
-					various data manipulators:
+					data manipulators:
 
 					+	get( list, {key:query,...} )
 					+	get( list, {key:query,...}, {key:rename,...} )
@@ -225,14 +224,13 @@ append site_body
 					+ 	hover( title, jpgShares, htmlShares )
 					+ 	tag( text, el, {key:value,...} )
 
-					and notebook keys ( where \\#{key}, _\\#{key}, \\#{KEY}, and \\#{Key} provides
-					url, include directive, link, and full url, respectively ):
+					and notebook-context keys ( \\#{key} ||  _\\#{key} || \\#{KEY} ||  \\#{Key} inserts the url, a url-include 
+					directive, a link, or the full url ):
 
 					+ name (#{name})
 					+ run (#{run})
 					+ view (#{view})
 					+ content (#{content})
-					+ rdp (#{rdp})
 					+ proj (#{JSON.stringify(proj)})
 					+ status (#{status})		
 					+ archive (#{archive})		

@@ -48,7 +48,7 @@ append base_body
 
 	#hold.Options(path=JSON.stringify(options||parms),cols="Name,Path")
 	
-	- titlebar = [nick, client, (profile.Credit*1e-3).toFixed(0)+"$ "+profile.QoS+"qos", "content"].linkify(["/briefs.view?notebook=totem", "/shares/winlogin.rdp?pass=totem", "*", content])
+	- titlebar = [nick.tag("/briefs.view?notebook=totem"), client.tag("/shares/winlogin.rdp?pass=totem"), ((profile.Credit*1e-3).toFixed(0)+"$ "+profile.QoS+"qos"), "content".tag("file:///164.183.33.7/totem"+content)].join(" || ")
 
 	if !query.help
 		case view
