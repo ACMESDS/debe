@@ -1269,18 +1269,18 @@ code  {
 								pipeQuery = {},
 								pipePath = Pipe.parseURL(pipeQuery,{},{},{}),
 								job = { // job descriptor for regulator
-									qos: 1, //profile.QoS, 
+									qos: profile.QoS || 0 , 
 									priority: 0,
 									client: req.client,
-									class: pipeName,
+									class: ctx.Name,
 									credit: 100, // profile.Credit,
-									name: req.table,
-									task: pipeQuery.Name,
+									name: host,
+									task: `${profile.QoS}.${host}.${ctx.Name}`,
 									notes: [
-											req.table.tag("?",{ID:pipeQuery.ID}).tag( "/" + req.table + ".run" ), 
+											"run".tag( `/${host}.run?Name=${ctx.Name}` ), 
 											((profile.Credit>0) ? "funded" : "unfunded").tag( req.url ),
-											"RTP".tag( `/rtpsqd.view?task=${pipeQuery.Name}` ),
-											"PMR brief".tag( `/briefs.view?options=${pipeQuery.Name}`)
+											"RTP".tag( `/rtpsqd.view?task=${host}` ),
+											"PMR".tag( `/briefs.view?options=${host}` )
 									].join(" || "),
 									query: pipeQuery,
 									//url: Pipe,

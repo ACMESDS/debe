@@ -100,7 +100,7 @@ append site_body
 
 			#grid.Jobs(
 				path="/queues.db?Name=#{ds}",wrap,page=dspage,head="Print,Refresh,Execute,Help",hover="policed" , dims=dims,
-				cols="Arrived.d,Departed.d,Client,Notes.x,QoS.n,Age.n,Funded.c,Finished.c,Priority.n,Work.n,State.n,Task.t,Signoffs(Flagged.c,Sign0.c,Sign1.c,Sign2.c,Sign3.c)" )
+				cols="Arrived.d,Departed.d,Class,Client,Notes.x,QoS.n,Age.n,Funded.c,Finished.c,Priority.n,Work.n,State.n,Task.t,Signoffs(Flagged.c,Sign0.c,Sign1.c,Sign2.c,Sign3.c)" )
 
 				:markdown
 					Jobs created by this notebook are show here.  If the job originator exceeded their credits,
@@ -118,7 +118,7 @@ append site_body
 
 			#grid.Logs( 
 				path= "/syslogs.db?Table=#{ds}&Client=#{client}", wrap, page=dspage, dims=dims,
-				cols="At.d,Module.t,Case.t,Message.x,cpuUtil.p,memUtil.p" )
+				cols="At.d,Node.t,Module.t,Case.t,Message.x,cpuUtil.p,memUtil.p" )
 
 			if more>0
 				#grid.ContextKeys(
