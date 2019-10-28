@@ -72,7 +72,7 @@ module.exports = {  //< watch dogs cycle time in secs (zero to disable)
 	}),
 
 	dogSystem: Copy({
-		cycle: 10,
+		cycle: 600,
 		max: {
 			cpu: 0.8,
 			disk: 200
@@ -117,9 +117,14 @@ module.exports = {  //< watch dogs cycle time in secs (zero to disable)
 			function disk(cb) {
 				sql.query(get.diskutil, {}, (err, stats) => {						
 					var totGB = 0;
-					stats.forEach( (stat) => {
-						totGB += stat.GB;
-					});
+					if ( err ) // sometimes get raised. why ?
+						Log("Dog disk util", err);
+					
+					else
+						stats.forEach( stat => {
+							totGB += stat.GB;
+						});
+					
 					cb( totGB );
 				});
 			}

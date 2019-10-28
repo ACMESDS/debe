@@ -1171,7 +1171,9 @@ code  {
 					});
 			}
 
-			sql.insertJob( job, job => { 
+			//Log(">>>>> job into q", job);
+			sql.insertJob( job, (sql,job) => { 
+				//Log(">>>>job off q", job);
 				pipe( sup, sql, job, (ctx,close) => {
 					if (ctx) {
 						req.query = Copy(ctx,{});   // pass neutral Object to engine run context		
@@ -1288,6 +1290,8 @@ code  {
 									ctx: ctx
 								};
 
+							//Log(job);
+							
 							if ( pipePath.startsWith("/") ) {	// pipe file
 								var
 									pipeRun = `${ctx.Host}.${ctx.Name}`,
@@ -1301,7 +1305,7 @@ code  {
 										break;
 								}
 										
-								//Log(">pipe", pipePath, pipeName, pipeType);
+								//Log(">pipe", job.path, pipePath, pipeName, pipeType);
 
 								var
 									isFlexed = FLEX.select[pipeName] ? true : false,

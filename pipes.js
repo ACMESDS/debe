@@ -50,7 +50,7 @@ function Trace(msg,req,fwd) {	// execution tracing
 	"pipe".trace(msg,req,fwd);
 }
 
-const { Copy } = ENUM;
+const { Copy, Log } = ENUM;
 const { sqlThread, uploadFile, getFile, probeSite } = TOTEM;
 const { getVoxels } = GEO;
 
