@@ -277,6 +277,7 @@ const {skinContext, renderJade} = module.exports = {
 									transfer: envs.worker + "." + type + "?endservice=",
 									totem: envs.totem,
 									
+									download: envs.here + "." + type,
 									status: envs.here + ".status",
 									archive: envs.here + ".archive",
 									suitors: envs.here + ".suitors",

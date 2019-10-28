@@ -215,14 +215,18 @@ append site_body
 
 					data manipulators:
 
-					+	get( list, {key:query,...} )
-					+	get( list, {key:query,...}, {key:rename,...} )
-					+	get( list, {key:query,...}, {key:rename,...}, {prefix: {recKey:{key:#replace, ...}, ...}, ...} )
-					+	get( dsname, {key:query,...}, function (data) {...} )
-					+	gridify( list,noheader )
+					+	get( object list, { rekey : { new: "old",...}} )
+					+	get( object list, { where: { key: value, ... } } )
+					+	get( object list, { KEY_starts: "with", KEY_ends: "with", ...  } )
+					+	get( object list, { start: index, len: count } )
+					+	get( object list, { draw: count, mash: list || null } )
+					+	get( object list, [ index || "key", ... ] )
+					+	get( object list, index || "key" )
+					+	gridify( object list, noheader )
 					+	json( list )
 					+ 	hover( title, jpgShares, htmlShares )
 					+ 	tag( text, el, {key:value,...} )
+					+ 	tag( text, href )
 
 					and notebook-context keys ( \\#{key} ||  _\\#{key} || \\#{KEY} ||  \\#{Key} inserts the url, a url-include 
 					directive, a link, or the full url ):
@@ -232,12 +236,14 @@ append site_body
 					+ view (#{view})
 					+ content (#{content})
 					+ proj (#{JSON.stringify(proj)})
-					+ status (#{status})		
-					+ archive (#{archive})		
-					+ tou (#{tou})		
-					+ brief (#{brief})		
-					+ pub (#{pub})		
-					+ repo (#{repo})	
+					+ status (#{status})
+					+ archive (#{archive})
+					+ tou (#{tou})
+					+ download (#{download})
+					+ tou (#{tou})
+					+ brief (#{brief})
+					+ pub (#{pub})
+					+ repo (#{repo})
 					+ ras summary (#{ras})
 					+ jira summary (#{jira})
 

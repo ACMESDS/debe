@@ -91,24 +91,28 @@ append site_body
 			#form.Engine(
 				path="/engines.db?Name=#{ds}",
 				hover="pending",
-				head="select,insert,update,|,delete,|,refresh,login",
+				head="select,insert,update,|,delete,|,refresh,|,help",
 				login="/login?pass=",
 				cols="ID,Name,Type,Enabled.c,Program(Code.x,State.x.Context,Wrap.x)")
 
 				:markdown
-					This engine remains invisible until it has been formally transitioned.
+					Your notebook's [Engine](/api.view) remains invisible until it has been formally !{DOWNLOAD}ed
+					and thus associated with an end-service provider as described in your 
+					notebook's !{TOU} (Terms of Use).
 
 			#grid.Jobs(
 				path="/queues.db?Name=#{ds}",wrap,page=dspage,head="Print,Refresh,Execute,Help",hover="policed" , dims=dims,
 				cols="Arrived.d,Departed.d,Class,Client,Notes.x,QoS.n,Age.n,Funded.c,Finished.c,Priority.n,Work.n,State.n,Task.t,Signoffs(Flagged.c,Sign0.c,Sign1.c,Sign2.c,Sign3.c)" )
 
 				:markdown
-					Jobs created by this notebook are show here.  If the job originator exceeded their credits,
+					*Jobs* created by this notebook are show here.  If the job originator exceeded their credits,
 					the job is marked "unfunded"; otherwise the job is marked "funded".  If you would like to 
-					fund an unfended job, simply click its "(un)funded" link.  To decide if this is a wise purchase, 
-					click the "#{ds}" link to see the test case case being explored; additional project information,
-					if available, is attached as "RTP", "PMR" etc links.  Earning job credits is easy: simply 
-					upload your data using the Files | Uploads.
+					fund a job, simply click its "fund" link its Note.  To decide if this is a wise purchase, 
+					consider the test case case being explored in your notebook and the provided  "RTP", 
+					and "PMR" links.  Earning job credits is easy: simply upload your data using the 
+					Files | Uploads.  Please note further that your jobs are regulated by your current 
+					QoS level (0 || N = no || N seconds of delay between submittals).  *#{title}* will routinely
+					inspect and clean-up the queues.
 
 			#post.ToU(path="/#{ds}.tou",dims="1800,600",wrap)
 
@@ -116,9 +120,20 @@ append site_body
 				path="/files.db", wrap, page=dspage, dims=dims,
 				cols="Name,Path,Ingest,Classif,PoP_Expires,PoP_Start,PoP_End,PoP_durationDays,PoP_advanceDays" )
 
+				:markdown
+					*Bricks* allow you to attach a period-of-performance to your data pipes.  Certain 
+					data quality metrics are also accumulated by the pipe's supervisor, stored within
+					the brick, and credited to your profile.  *#{title}* will also routinely ingest and transparently 
+					archive and restore data bricks.
+
 			#grid.Logs( 
 				path= "/syslogs.db?Table=#{ds}&Client=#{client}", wrap, page=dspage, dims=dims,
 				cols="At.d,Node.t,Module.t,Case.t,Message.x,cpuUtil.p,memUtil.p" )
+				
+				:markdown
+					Certain *logs* are traced during pipe exeuction.  These logs are collected here.  Observe
+					that these logs may originate from different compute nodes in your cluster.
+					*#{title}* will routinely flush old logs.
 
 			if more>0
 				#grid.ContextKeys(

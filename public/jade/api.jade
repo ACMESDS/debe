@@ -470,7 +470,17 @@ append site_body
 
 				The "/PATH/DATASET.TYPE" [source pipe](/api.view) defines the workflow based on TYPE = json || jpg | png | nitf || stream | export  || txt | doc | pdf | xls  || aoi || db,
 				where $ references the TYPE-specific json data || GIMP image || event list || document text || db record.  The { KEY: [VALUE, ...] } [enumeration pipe](/api.view) 
-				generates usecases over permuted context KEYs.  The $ json can be post-processed by a JS script or by a { $: "MATHJS" } [matlab-js scripting pipe](/api.view).
+				generates usecases over permuted context KEYs.  The $ json returned can be JS-processed by:
+				
+					+	$.get( { rekey : { new: "old",...}} )
+					+	$.get( { where: { key: value, ... } } )
+					+	$.get( { KEY_starts: "with", KEY_ends: "with", ...  } )
+					+	$.get( { start: index, len: count } )
+					+	$.get( { draw: count, mash: list || null } )
+					+	$.get( [ index || "key", ... ] )
+					+	$.get( index || "key" )
+				
+				or by a { $: "MATHJS" } [matlab-js scripting pipe](/api.view).
 				
 				## The enumeration pipe
 				
