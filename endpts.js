@@ -1150,11 +1150,13 @@ code  {
 								//Log(">pipe",key,exp);
 								ctx.list = makeList;
 
-								data[key] = ctx[key] = isString(exp)
-									? exp.parseJS( ctx, err => log("ignored", `${key}=${exp}`) )
+								data[key] = isString(exp)
+									? (key+"="+exp).parseJS( ctx, err => log("ignored", `${key}=${exp}`) )
 									: exp;
 							});
 
+							//Log("pipe ctx", ctx);
+							
 							cb( ctx, () => {
 								log("closed");
 								for (key in data) delete ctx[key];
