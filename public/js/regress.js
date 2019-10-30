@@ -1,9 +1,15 @@
 module.exports = {  // regressors
-	modkeys: {
+	xmodkeys: {
+		
+		Cycle: `int(11) default 0`,
+		Hyper: `json`,
+		_Boost: `json`,
+		
 		Samples: "int(11) default 1 comment 'number of training samples taken at random from supplied dataset' ",
 		Channels: "int(11) default 1 comment 'number of training channels takens consecutively from supplied dataset' ",
 		Method: "varchar(16) default 'ols' comment 'regression technique to USE = lrm | svm | pls | knn	| ols | ...' ",
 
+		/*
 		hyper_lrm: `json comment '
 numSteps: int>=[1] number of steps in LRM solver
 learningRate: float >= [0] LRM learning rate
@@ -61,7 +67,8 @@ solver: MATHJS script (mu,sigma) => keys.B, keys.b, SNR
 		
 		hyper_svm: `json comment '' `,
 		hyper_raf: `json comment '' `,
-				
+		*/
+		
 		Save_raf: "json comment 'raf model' ",
 		Save_eln: "json comment 'eln model' ",
 		Save_brr: "json comment 'brr model' ",
@@ -250,10 +257,13 @@ The following context keys are accepted:
 			},
 			loader = loaders[use],
 			model = ctx[ `Save_${use}` ], 
-			solve = ctx[ `hyper_${use}` ] || {};
+			solve = ctx.Hyper[use] || {},
+			cycle = ctx.Cycle,
+			boost = ctx._Boost || {};
 		
 		Log({
 			//data: sc || mc,
+			boost: boost,
 			solve: solve,
 			//x: x,
 			//x0: x0,
@@ -267,6 +277,67 @@ The following context keys are accepted:
 		});
 
 		if ( loader )
+			if ( cycle ) // in boosting mode
+				$SQL( sql => {
+					if ( x ) {
+						var N = x.length, thresh = 1/N;
+						Copy({
+							points: N,
+							samples: ctx.Samples,
+							mixes: solve.mixes || 0,
+							base: "A",
+							thresh: thresh,
+							eps: [null],
+							alpha: [null], 
+							h: [null],
+							cycle: 1
+						}, boost);
+						
+						sql.beginBulk();
+						x.forEach( (x,n) => {
+							sql.query( "INSERT INTO app.points SET ?", {
+								x: JSON.stringify( x ),
+								y: null,
+								D: thresh,
+								idx: n+1,
+								docID: "tbd",
+								src: "tbd"
+							});
+						});
+						sql.endBulk();
+						
+						sql.query(
+							"UPDATE app.regress SET ? WHERE ?", 
+							[ {Boost: JSON.stringify(boost)}, {Name: ctx.Name} ] );
+					}
+					
+					else
+						$.boost( cycle, sql, boost, (x,keys) => {  // predict/learn hypothesis
+							if ( keys ) {	// predict
+							}
+
+							else { 	// learn
+								Log("boost trainging ", cycle, x.length);
+								trainer( x, null, null, info => {
+									var 
+										keys = boost.h[cycle] = [],
+										mix = info.cls.mix;
+									
+									//Log("mix=", mix);
+									
+									mix.forEach( mix => keys.push({ B: mix.keys.B, b: mix.keys.b }) );
+
+									Log("boost", boost.h[cycle]);
+									
+									sql.query(
+										"UPDATE app.regress SET ? WHERE ?", 
+										[ {_Boost: JSON.stringify(boost), Cycle: cycle+1}, {Name: ctx.Name} ], err => Log(err) );
+								});
+							}
+						});
+				});
+		
+			else
 			if ( multi )	// multichannel learning
 				trainers( multi.x, multi.y, multi.x0, () => sender() );
 			
