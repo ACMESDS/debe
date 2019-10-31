@@ -259,7 +259,7 @@ The following context keys are accepted:
 			model = ctx[ `Save_${use}` ], 
 			solve = ctx.Hyper[use] || {},
 			cycle = ctx.Cycle,
-			boost = ctx._Boost || {};
+			boost = ctx._Boost;
 		
 		Log({
 			//data: sc || mc,
@@ -279,39 +279,8 @@ The following context keys are accepted:
 		if ( loader )
 			if ( cycle ) // in boosting mode
 				$SQL( sql => {
-					if ( x ) {
-						var N = x.length, thresh = 1/N;
-						Copy({
-							points: N,
-							samples: ctx.Samples,
-							mixes: solve.mixes || 0,
-							labels: "HMLNABCDEFG",
-							thresh: thresh,
-							eps: [null],
-							alpha: [null], 
-							h: [null],
-							cycle: 1
-						}, boost);
-						
-						sql.beginBulk();
-						x.forEach( (x,n) => {
-							sql.query( "INSERT INTO app.points SET ?", {
-								x: JSON.stringify( x ),
-								y: null,
-								D: thresh,
-								idx: n+1,
-								docID: "tbd",
-								src: "tbd"
-							});
-						});
-						sql.endBulk();
-						
-						sql.query(
-							"UPDATE app.regress SET ? WHERE ?", 
-							[ {Boost: JSON.stringify(boost)}, {Name: ctx.Name} ] );
-					}
 					
-					else
+					function booster( boost ) {
 						$.boost( cycle, sql, boost, (x,keys) => {  // predict/learn hypothesis
 							if ( keys ) {	// predict
 							}
@@ -331,10 +300,46 @@ The following context keys are accepted:
 									
 									sql.query(
 										"UPDATE app.regress SET ? WHERE ?", 
-										[ {_Boost: JSON.stringify(boost), Cycle: cycle+1}, {Name: ctx.Name} ], err => Log(err) );
+										[ {_Boost: JSON.stringify(boost), Cycle: cycle+1, Pipe: JSON.stringify( "" )}, {Name: ctx.Name} ], err => Log(err) );
 								});
 							}
 						});
+					}
+
+					if ( x ) {	// prime the points dataset then boost
+						var N = x.length, D = 1/N, added = 0;
+						
+						sql.beginBulk();
+						x.forEach( (x,n) => {
+							sql.query( "INSERT INTO app.points SET ?", {
+								x: JSON.stringify( x ),
+								y: null,
+								D: D,
+								idx: n+1,
+								docID: "tbd",
+								src: "tbd"
+							}, err => {
+								
+								if ( ++added == N ) 
+									booster({
+										points: N,
+										samples: ctx.Samples,
+										mixes: solve.mixes || 0,
+										labels: "HMLNABCDEFG",
+										thresh: D * 0.9,
+										eps: [null],
+										alpha: [null], 
+										h: [null],
+										cycle: 1
+									});
+
+							});
+						});
+						sql.endBulk();
+					}
+					
+					else
+						booster( boost );
 				});
 		
 			else
