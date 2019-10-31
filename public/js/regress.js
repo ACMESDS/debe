@@ -285,7 +285,7 @@ The following context keys are accepted:
 							points: N,
 							samples: ctx.Samples,
 							mixes: solve.mixes || 0,
-							base: "A",
+							labels: "HMLNABCDEFG",
 							thresh: thresh,
 							eps: [null],
 							alpha: [null], 
@@ -327,7 +327,7 @@ The following context keys are accepted:
 									
 									mix.forEach( mix => keys.push({ B: mix.keys.B, b: mix.keys.b }) );
 
-									Log("boost", boost.h[cycle]);
+									Log("boost keys", boost.h[cycle]);
 									
 									sql.query(
 										"UPDATE app.regress SET ? WHERE ?", 
