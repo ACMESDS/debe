@@ -2,7 +2,7 @@
 @class DEBE.Pipes
 Provide stream, image, etc pipes
 
-	PIPE(log,sql,job,cb) 
+	PIPE(Trace,sql,job,cb) 
 	
 to run DEBE notebooks.   Each PIPE callsback 
 
@@ -32,7 +32,7 @@ The PIPE accepts a job containing:
 		
 and a status logger:
 
-	log("status", arg1, arg2, ....)
+	Trace("status", arg1, arg2, ....)
 */
 var		// nodejs
 	CP = require("child_process"), 		//< Child process threads
@@ -55,7 +55,10 @@ const { sqlThread, uploadFile, getFile, probeSite } = TOTEM;
 const { getVoxels } = GEO;
 
 module.exports = {
-	pipeStream: function (log, sql, job, cb) {
+	pipeStream: function (sql, job, cb) {
+		const {ctx} = job;
+		const {Trace} = ctx;
+		
 		FS.open( "."+job.path, "r", (err, fd) => {
 			if (err) 
 				cb(null);
@@ -83,7 +86,7 @@ module.exports = {
 
 				sink
 					.on("finish", () => {
-						log("streamed", evs.length);
+						Trace("streamed", evs.length);
 						cb( {$: evs} );
 					})
 					.on("error", err => cb(null) );
@@ -93,10 +96,13 @@ module.exports = {
 		});		
 	},
 
-	pipeImage: function(log, sql, job, cb) {
+	pipeImage: function(sql, job, cb) {
+		const {ctx} = job;
+		const {Trace} = ctx;
+		
 		$.JIMP.read( "."+ job.path )
 			.then( img => { 
-				log("image", img.bitmap.height, img.bitmap.width);
+				Trace("image", img.bitmap.height, img.bitmap.width);
 				img.readPath = path;
 				cb( {$:img} ); 
 				return img; 
@@ -104,22 +110,26 @@ module.exports = {
 			.catch( err => cb(null) );	
 	},
 
-	pipeJson: function(log, sql, job, cb) { // pipe json data with callback cb(json,job) || cb(null)
-		//log(">pipe json", job.path.tag("?", job.query) );
+	pipeJson: function(sql, job, cb) { // pipe json data with callback cb(json,job) || cb(null)
+		const {ctx} = job;
+		const {Trace} = ctx;
+		
+		//Trace(">pipe json", job.path.tag("?", job.query) );
 		probeSite( job.path.tag("?", job.query), info => cb({ $: info.parseJSON( null ) }) );
 	},
 
-	pipeDoc: function(log, sql, job, cb) { // pipe nlp docs with callback cb(doc,job) || cb(null)		
-		var
-			path = job.path,
-			ctx = job.ctx,
-			scoreDoc = READ.score,
-			use = ctx.Method ? READ.nlps[ctx.Method] : null;
+	pipeDoc: function(sql, job, cb) { // pipe nlp docs with callback cb(doc,job) || cb(null)		
+		const {ctx,path} = job;
+		const {Trace,Method} = ctx;
 
-		//log("use",  ctx.Method, use );
+		var
+			scoreDoc = READ.score,
+			use = Method ? READ.nlps[Method] : null;
+
+		//Trace("use",  ctx.Method, use );
 		if ( path.startsWith("/") )	// supervise doc at specified file path
 			READ.readFile( "."+path, rec => {
-				//log( rec );
+				//Trace( rec );
 				if (rec) 
 					if ( rec.doc ) 
 						if ( use )
@@ -128,21 +138,25 @@ module.exports = {
 							cb({$:rec.doc});
 
 					else 
-						log("skip empty doc");
+						Trace("skip empty doc");
 
 				else
-					log("all docs read");
+					Trace("all docs read");
 			});
 
 		else // doc is the path
 			if (use)
 				scoreDoc( path, [use], metrics => cb({$:path, $$:metrics}) );
+			
 			else
 				cb({$:rec.doc});
 	},
 
-	pipeDB: function(log, sql, job, cb) {  // pipe database source with callback cb(rec,job) || cb(null)
-		var parts = job.path.substr(1).split(".");
+	pipeDB: function(sql, job, cb) {  // pipe database source with callback cb(rec,job) || cb(null)
+		const {ctx,path} = job;
+		const {Trace} = ctx;
+		
+		var parts = path.substr(1).split(".");
 
 		sql.query( isEmpty(job.query)
 				? "SELECT * FROM app.??"
@@ -152,11 +166,13 @@ module.exports = {
 			.on( "error", err => cb(null) );
 	},
 
-	pipeAOI: function(log, sql, job, cb) {	// stream indexed events or chips through supervisor 
-		getFile( job.client, job.path, file => {
+	pipeAOI: function(sql, job, cb) {	// stream indexed events or chips through supervisor 
+		const {ctx,path,client} = job;
+		const {Trace} = ctx;
+		
+		getFile( client, path, file => {
 			function chipFile( file, job ) { 
-				//log( "chip file>>>", file );
-				var ctx = job.ctx;
+				//Trace( "chip file>>>", file );
 
 				ctx.File = file;
 				getVoxels(sql, job.query, file, meta => {  // process voxels over queried aoi
@@ -165,7 +181,7 @@ module.exports = {
 					sql.insertJob( job, job => {  // put voxel into job regulation queue
 						function getImage(chips, job, cb) {
 							chips.get( "wms", function image(img) {
-								//log("wms recover job", job.ctx.Method);
+								//Trace("wms recover job", job.ctx.Method);
 								cb(img, job);
 							});
 						}
@@ -177,11 +193,11 @@ module.exports = {
 							chips = meta.Chips,
 							evs = meta.Events;
 
-						//log(">>>chips", chips);
+						//Trace(">>>chips", chips);
 						if (chips)   // place chips into chip supervisor
 							getImage( chips, job, (img,job) => {
 								var ctx = job.ctx;
-								//log(">>>chip ctx", ctx);
+								//Trace(">>>chip ctx", ctx);
 								ctx.Image = img;
 								cb( [], job );
 							});
@@ -194,7 +210,7 @@ module.exports = {
 										var 
 											supervisor = this;
 
-										//log("learning ctx", ctx);
+										//Trace("learning ctx", ctx);
 
 										evs.get( "t", evs => {  // route events thru supervisor, run plugin, then save supervisor logs
 											Trace( evs 
@@ -228,7 +244,7 @@ module.exports = {
 									filter: function (str, ev) {  // filter output events
 										switch ( ev.at ) {
 											case "batch":
-												//log("filter", ev);
+												//Trace("filter", ev);
 											case "config":
 											case "end":
 												str.push(ev);

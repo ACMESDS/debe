@@ -1122,12 +1122,12 @@ code  {
 	*/	
 		function pipePlugin( sup, sql, job, cb ) { //< pipe job via supervisor 
 
+			/*
 			function log( ) {	// log for the "".trace()
 				var args = [];
 				for (var key in arguments) if ( key != "0" ) args.push( arguments[key] );
 				"pipe".trace( arguments[0]+": "+JSON.stringify(args), req, Log );
-			}
-			
+			} */
 			function makeList(args,debug) {
 				var mash = [];
 				//console.log("list", args.length);
@@ -1137,13 +1137,12 @@ code  {
 			}
 			
 			function pipe(sup, sql, job, cb) {
-				var 
-					ctx = job.ctx,
-					query = job.query;
-
-				log("opened", job.path);
+				const {ctx,query,path} = job;
+				const {Trace} = ctx;
+			
+				Trace("open", path);
 				if ( sup )	// using supervisor
-					sup(log, sql, job, data => {
+					sup(sql, job, data => {
 						if (data) {
 							Copy(data,ctx);
 							Each(query, (key,exp) => {
@@ -1151,14 +1150,14 @@ code  {
 								ctx.list = makeList;
 
 								data[key] = isString(exp)
-									? (key+"="+exp).parseJS( ctx, err => log("ignored", `${key}=${exp}`) )
+									? (key+"="+exp).parseJS( ctx, err => Trace("ignore", `${key}=${exp}`) )
 									: exp;
 							});
 
 							//Log("pipe ctx", ctx);
 							
 							cb( ctx, () => {
-								log("closed");
+								Trace("close");
 								for (key in data) delete ctx[key];
 							});
 						}
@@ -1169,7 +1168,7 @@ code  {
 
 				else	// unsupervised
 					cb( ctx, () => {
-						log("closed");
+						Trace("closed");
 					});
 			}
 
@@ -1183,7 +1182,7 @@ code  {
 							//Log(">>pipe save=", ctx.Save );
 							if ( ctx )
 								if ( isError(ctx)  )
-									log("error", ctx);
+									Trace("halt bad context", ctx);
 
 								else 
 									cb( ctx, sql );
@@ -1193,7 +1192,7 @@ code  {
 					}
 
 					else
-						log("halted - bad source");
+						Trace("halt no context");
 				});
 			});
 		}
@@ -1264,6 +1263,7 @@ code  {
 				else
 				if ( Pipe = ctx.Pipe )  { // intercept workflow pipe
 					ctx.Host = host;
+						
 					var err = null;
 
 					switch ( Pipe.constructor ) {
@@ -1408,8 +1408,9 @@ code  {
 							break;
 					}
 
-					if ( err) 
+					if ( err ) 
 						Trace(err, req, res);
+					
 					else
 						res( ok );
 				}

@@ -955,6 +955,7 @@ append site_body
 					in [stateful flows](/nodeflow.view), it can also be used in a stateless flow
 					by passing *port* (as demonstrated [here](/demo2.py?port=f1)).
 					
+
 			#fit.js
 				:markdown
 					# Stateful vs Stateless engines
@@ -974,7 +975,7 @@ append site_body
 							res(ctx);
 
 							if (debug)
-								$( "D=A*A'; E=D+D*3; disp(entry); ", ctx, (ctx) => {
+								$( "D=A*A'; E=D+D*3; disp(entry); ", ctx, ctx => {
 									Log( "D=", ctx.D, "E=", ctx.E);
 								});
 
@@ -999,7 +1000,7 @@ append site_body
 					This [stateless js-engine](/jsdemo2.exe?name=test):
 
 						function jsdemo2(ctx,res) {
-							$("a = inv(X' * X) * X' * y", ctx, (ctx) => {
+							$("a = inv(X' * X) * X' * y", ctx, ctx => {
 								Log(ctx);
 
 								var 
@@ -1019,7 +1020,7 @@ append site_body
 							"y": "SELECT FPR from Htest WHERE least(?,1)"
 						}
 
-					uses the mathjs MATH module to do regression analysis via an emulated Matlab machine.  Here, 
+					uses MATHJS -- a js-compatible Matlab emulator -- to do a regression analysis.  Here, 
 					the **Name**, **Used** and **M** parameters -- acquired from the URL and/or context query -- are 
 					used to retrieve data 
 					from the **Htest** dataset.  This data is then used to setup a regression companion 
@@ -1054,18 +1055,21 @@ append site_body
 					function with the current **tau** workflow events and the **parm** set to the 
 					corresponding "ports" hash.					
 
-					# Library and notebook access
+					# Library and Inter-notebook access
 					
-					js-notebooks may access the
-					[matrix manipulator](https://sc.appdev.proj.coe.ic.gov://acmesds/man) $( "script", ctx => {} ), 
-					[image chipper](https://sc.appdev.proj.coe.ic.gov://acmesds/geohack) $GEO, 
-					[language parser](https://sc.appdev.proj.coe.ic.gov://acmesds/reader) $NLP( "doc", methods, metrics => {} ) ,
-					[task sharding](https://sc.appdev.proj.coe.ic.gov://acmesds/totem) $TASK( { keys ... } , $ => {}, msg => {} ),  
-					[db connector](https://sc.appdev.proj.coe.ic.gov://acmesds/totem) $SQL( sql => {} ),
-					[image manipulator](https://sc.appdev.proj.coe.ic.gov://acmesds/man) $JIMP, 
-					[neo4j cypher](https://sc.appdev.proj.coe.ic.gov://acmesds/debe), $NEO({query:"...", params:{...}}, (err,results) => {} ),   
-					as well as [other notebooks](/tbd) $.notebook(ctx, ctx => {} ).
+					js-notebooks have access to libraries:
+					+ [matrix manipulator](https://sc.appdev.proj.coe.ic.gov://acmesds/man) $( "mathjs script", ctx => {} )
+					+ [image chipper](https://sc.appdev.proj.coe.ic.gov://acmesds/geohack) $GEO
+					+ [language parser](https://sc.appdev.proj.coe.ic.gov://acmesds/reader) $NLP( "doc", methods, metrics => {} )
+					+ [task sharding](https://sc.appdev.proj.coe.ic.gov://acmesds/totem) $TASK( { keys ... } , $ => {}, msg => {} )
+					+ [db connector](https://sc.appdev.proj.coe.ic.gov://acmesds/totem) $SQL( sql => {} )
+					+ [image manipulator](https://sc.appdev.proj.coe.ic.gov://acmesds/man) $JIMP
+					+ $trace( "message", ctx, sql )
+					+ [neo4j cypher](https://sc.appdev.proj.coe.ic.gov://acmesds/debe) $NEO({query:"...", params:{...}}, (err,results) => {} ) 
+
+					as well as to [other notebooks](/fan.view?src=info&w=4000&h=600) $.notebook(ctx, ctx => {} ).
 					
+	
 	#accordion.Machines
 		:markdown
 			All engines rely on a machine MAC = opencv | python | ... as implemented under

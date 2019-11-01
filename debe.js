@@ -402,6 +402,8 @@ Copy({
 					$: $,
 					$NLP: READ.score,
 					$GEO: GEO,
+					$LOG: () => {
+					},
 					$TASK: TOTEM.runTask,
 					$SQL: sqlThread,
 					$JIMP: $.JIMP,
