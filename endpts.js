@@ -60,7 +60,7 @@ const { sysAlert, licenseOnDownload, defaultDocs } = module.exports = {
 		Pipe: `
 Places a DATASET into a TYPE-specific supervised workflow:
 
-	"/PATH/DATASET.TYPE?KEY=VALUE || $.JS ..."
+	"/PATH/DATASET.TYPE ? KEY || [KEY,...] = $.JS & ... "
 	{ "$": "MATHJS" }
 	{ "Pipe": "/PATH/DATASET.TYPE?..." ,  "KEY": [VALUE, ...] , ... }
 
@@ -1193,7 +1193,7 @@ code  {
 					}
 
 					else
-						log("halted");
+						log("halted - bad source");
 				});
 			});
 		}
@@ -1339,6 +1339,7 @@ code  {
 							}
 
 							else	// pipe is text doc
+							if ( pipeDoc = TOTEM.pipJob.txt )
 								pipePlugin(pipeDoc, sql, job, (ctx,sql) => {   // place job in doc workflow
 									if (ctx)
 										saveContext(sql, ctx);
@@ -1347,6 +1348,9 @@ code  {
 										Trace( errors.lostContext, req );
 								});
 
+							else
+								err = errors.badType;
+							
 							break;
 
 						case Array:  // query contains event list

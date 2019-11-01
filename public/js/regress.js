@@ -1,8 +1,17 @@
+// note no funding in JIRA.  note negative west support.
+
 module.exports = {  // regressors
 	xmodkeys: {
 		
-		Cycle: `int(11) default 0`,
-		Hyper: `json`,
+		Cycle: `int(11) default 0 comment '
+Current boosting cycle: 0 disable boosting, 1 ingest x,y, initialize and boost, >1 boost
+'`,
+		Hyper: `json comment '
+Hyper parameters for specific Methods:
+
+	{ METHOD: { solve keys ... }, ... }
+
+`,
 		_Boost: `json`,
 		
 		Samples: "int(11) default 1 comment 'number of training samples taken at random from supplied dataset' ",
@@ -92,7 +101,6 @@ The following context keys are accepted:
 	x = [...]				// unsupervised training
 	y = [...]				// supervised training
 	x0 = [...]							// predicting
-	xy = { x: [...] , y: [...] } 		// supervised
 	xy0 || multi = { x: [ [...]...], y: [ [...]...], x0: [ [...]...], n0: [...] } 	// multichannel training mode 
 
 ' `,
@@ -101,12 +109,16 @@ The following context keys are accepted:
 	},
 	
 	engine: function regress(ctx, res) {   //< Train regressor or make predictions with a trained regressor.
-		function train(x, y, cb) {  			
-			$( `cls = ${use}_train( x, y, solve ); `,  {  // train regressor
-					x: x || null,
-					y: y || null,
-					solve: solve
-				}, ctx => cb( ctx.cls ) );
+		function train(x, y, cb) { 
+			if ( x.length )
+				$( `cls = ${use}_train( x, y, solve ); `,  {  // train regressor
+						x: x || null,
+						y: y || null,
+						solve: solve
+					}, ctx => cb( ctx.cls ) );
+			
+			else
+				cb( null );
 		}
 
 		function trainer(x,y,x0,cb) {
@@ -144,7 +156,7 @@ The following context keys are accepted:
 					saver( cls, x, y, x0, cb );
 
 				else
-					res( new Error("training failed") );
+					cb( null );
 			});
 		}
 
@@ -156,8 +168,10 @@ The following context keys are accepted:
 			//Log("channels", chans, y.length, x0.length);
 			for ( var chan = 0; chan<chans; chan++ ) 
 				trainer( x[chan], y[chan], x0[chan], info => {
-					saver(info,chan);
-					if ( ++done == chans ) cb();
+					if ( info ) {
+						saver(info,chan);
+						if ( ++done == chans ) cb();
+					}
 				});
 		}
 		
@@ -214,28 +228,29 @@ The following context keys are accepted:
 			saveValues.push( info.sample.y0 );
 		}
 
-		function sender(info) {
+		function respond(info) {
 			//Log("reg send", info);
-			if (info) saver(info,0);
-			if (multi) save.push({ 
-				at: "jpg", 
-				input: multi.input, 
-				save: savePath,
-				//index: n0,
-				index: multi.n0,
-				values: saveValues
-			});
-			res(ctx);
+			if ( info ) {
+				saver(info,0);
+				if (chans) save.push({ 
+					at: "jpg", 
+					input: chans.input, 
+					save: savePath,
+					//index: n0,
+					index: chans.n0,
+					values: saveValues
+				});
+				res(ctx);
+			}
+			
+			else
+				res( new Error("training failed") );
 		}
 		
-		const { xy0, multi, x,y,xy,x0,Method,Stats,Host,Name} = ctx;
+		const { xy0, multi, x,y,x0,Method,Stats,Host,Name} = ctx;
 		
 		var
-			mc = xy0 || multi,
-			sc = {
-				x: xy ? xy[0] : x,
-				y: xy ? xy[1] : y
-			},
+			chans = xy0 || multi,
 			save = ctx.Save = [],
 			savePath = `/shares/${Host}_${Name}.jpg`,
 			saveValues = [],
@@ -262,16 +277,13 @@ The following context keys are accepted:
 			boost = ctx._Boost;
 		
 		Log({
-			//data: sc || mc,
 			boost: boost,
 			solve: solve,
-			//x: x,
-			//x0: x0,
 			trainingset: x ? x.length : "none",
 			labelset: y ? y.length : "none",
 			using: use,
 			predicting: x0 ? x0.length : "none",
-			learning: ( sc.x && sc.y ) ? "supervised" : sc.x ? "unsupervised" : multi ? "multichan train" : "off",
+			learning: ( x && y ) ? "supervised" : x ? "unsupervised" : chans ? "multichan train" : "off",
 			loader: loader ? true : false,
 			model: model ? true : false
 		});
@@ -279,76 +291,121 @@ The following context keys are accepted:
 		if ( loader )
 			if ( cycle ) // in boosting mode
 				$SQL( sql => {
+
+					function logger(msg,ctx) {
+						Log(msg, ctx);
+					}
 					
-					function booster( boost ) {
-						$.boost( cycle, sql, boost, (x,keys) => {  // predict/learn hypothesis
-							if ( keys ) {	// predict
-							}
-
-							else { 	// learn
-								Log("boost trainging ", cycle, x.length);
-								trainer( x, null, null, info => {
-									var 
-										keys = boost.h[cycle] = [],
-										mix = info.cls.mix;
-									
-									//Log("mix=", mix);
-									
-									mix.forEach( mix => keys.push({ B: mix.keys.B, b: mix.keys.b }) );
-
-									Log("boost keys", boost.h[cycle]);
-									
-									sql.query(
-										"UPDATE app.regress SET ? WHERE ?", 
-										[ {_Boost: JSON.stringify(boost), Cycle: cycle+1, Pipe: JSON.stringify( "" )}, {Name: ctx.Name} ], err => Log(err) );
+					res("boosting");
+					
+					function booster( sql, boost ) {
+						const {labels, mixes} = boost;
+						
+						$.boost( cycle, sql, boost, logger, (x,keys) => {  // predict/learn hypothesis
+							var rtn = null;
+							
+							if ( keys ) {	// predict 
+								Log("boost predicting with", keys.length,"keys");
+								rtn = "";
+								var nsigma = keys.nsigma;
+								keys.forEach( (key,k) => {
+									const {y,r} = $( "y = B*x + b; r = sqrt( y' * y ); ", {B: key.B, b: key.b, x: x} );
+									if ( r < nsigma ) rtn += labels.charAt(k);		// +1 hypo
 								});
 							}
+
+							else
+							if ( x ) { 	// learn
+								//Log("boost learning", cycle, x.length);
+								rtn = boost.h[cycle] = [];
+								
+								trainer( x, null, null, info => {
+									if ( info ) {
+										var 
+											keys = rtn,
+											cls = info.cls;
+
+										keys.nsigma = cls.nsigma;
+										
+										cls.em.forEach( mix => keys.push({ 
+											B: $.clone(mix.key.B), 
+											b: $.clone(mix.key.b)
+										}) );
+										logger( "boosting", {t: cycle, keys: keys} );
+									}
+
+									else 
+										logger( "boosting", "no labelled data" );
+								});
+							}
+							
+							else { // save
+								logger( "boosting", { t: cycle, save: boost} );
+
+								sql.query(
+									"UPDATE app.regress SET ? WHERE ?", 
+									[{
+										_Boost: JSON.stringify(boost), 
+										Cycle: cycle+1, 
+										Pipe: JSON.stringify( "" )}, {Name: ctx.Name} ], 
+									err => Log(err) );
+							}
+							
+							return rtn;
 						});
 					}
 
-					if ( x ) {	// prime the points dataset then boost
-						var N = x.length, D = 1/N, added = 0;
+					if ( x && y ) {	// prime the points dataset then boost
+						var N = x.length, D = 1/N, added = 0, labels = "HMLNABCDEFG";
+						// "/genpr_test4D4M.export?[x,y]=$.get(['x','n'])"
 						
+						sql.query( "DELETE FROM app.points" );
 						sql.beginBulk();
-						x.forEach( (x,n) => {
-							sql.query( "INSERT INTO app.points SET ?", {
+						x.forEach( (x,n) => {  // prime points dataset with samples and labels
+							sql.query( "INSERT INTO app.points SET ?", {	// prime with this sample point
 								x: JSON.stringify( x ),
-								y: null,
+								y: labels.charAt( y[n] ),
 								D: D,
 								idx: n+1,
 								docID: "tbd",
 								src: "tbd"
-							}, err => {
+							}, err => {		// check if primed
 								
-								if ( ++added == N ) 
-									booster({
-										points: N,
-										samples: ctx.Samples,
-										mixes: solve.mixes || 0,
-										labels: "HMLNABCDEFG",
-										thresh: D * 0.9,
-										eps: [null],
-										alpha: [null], 
-										h: [null],
-										cycle: 1
+								if ( ++added == N ) 	// dataset primed so good to boost
+									$SQL( sql => {
+										booster( sql, {	// provide initial boost state (index 0 unused)
+											source: ctx.Pipe,
+											points: N,
+											samples: ctx.Samples,
+											mixes: solve.mixes || 0,
+											labels: labels,
+											thresh: D * 0.9,
+											eps: [null],
+											alpha: [null], 
+											h: [null]
+										});
 									});
-
+								
 							});
 						});
 						sql.endBulk();
 					}
 					
 					else
-						booster( boost );
+					if ( boost )
+						booster( sql, boost );
+					
+					else
+						logger("boosting", "need x,y data to prime booser");
 				});
 		
 			else
-			if ( multi )	// multichannel learning
-				trainers( multi.x, multi.y, multi.x0, () => sender() );
+			if ( chans )	// multichannel learning
+				trainers( chans.x, chans.y, chans.x0, () => respond() );
 			
 			else	//  sup/unsup learning
-			if ( sc.x ) 
-				trainer( sc.x, sc.y, x0, info => sender(info) );
+			if ( x ) 
+				trainer( x, y, x0, info => respond(info) );
 		
 			else
 			if ( x0 ) 	// predicting
