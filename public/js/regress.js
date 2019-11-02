@@ -247,7 +247,7 @@ The following context keys are accepted:
 				res( new Error("training failed") );
 		}
 		
-		const { xy0, multi, x,y,x0,Method,Stats,Host,Name} = ctx;
+		const { xy0, multi, x,y,x0,Method,Stats,Host,Name,Trace} = ctx;
 		
 		var
 			chans = xy0 || multi,
@@ -277,6 +277,7 @@ The following context keys are accepted:
 			boost = ctx._Boost;
 		
 		Log({
+			trace: Trace,
 			boost: boost,
 			solve: solve,
 			trainingset: x ? x.length : "none",
@@ -292,31 +293,28 @@ The following context keys are accepted:
 			if ( cycle ) // in boosting mode
 				$SQL( sql => {
 
-					function logger(msg,ctx) {
-						Log(msg, ctx);
-					}
-					
 					res("boosting");
 					
 					function booster( sql, boost ) {
 						const {labels, mixes} = boost;
+						var nsigma = solve.nsigma || 0;
 						
-						$.boost( cycle, sql, boost, logger, (x,keys) => {  // predict/learn hypothesis
+						$.boost( cycle, sql, boost, Trace, (x,keys) => {  // predict/learn hypothesis
 							var rtn = null;
 							
 							if ( keys ) {	// predict 
-								Log("boost predicting with", keys.length,"keys");
 								rtn = "";
-								var nsigma = keys.nsigma;
+								Trace("boost predict", {t: cycle, keys: keys.length, nsigma:nsigma});
 								keys.forEach( (key,k) => {
-									const {y,r} = $( "y = B*x + b; r = sqrt( y' * y ); ", {B: key.B, b: key.b, x: x} );
+									//Log(k,key,x);
+									const { r } = $( "y = B*x + b; r = sqrt( y' * y ); ", {B: key.B, b: key.b, x: x} );
 									if ( r < nsigma ) rtn += labels.charAt(k);		// +1 hypo
 								});
 							}
 
 							else
 							if ( x ) { 	// learn
-								//Log("boost learning", cycle, x.length);
+								Trace("boost learn", {t: cycle, points: x.length});
 								rtn = boost.h[cycle] = [];
 								
 								trainer( x, null, null, info => {
@@ -325,30 +323,27 @@ The following context keys are accepted:
 											keys = rtn,
 											cls = info.cls;
 
-										keys.nsigma = cls.nsigma;
-										
 										cls.em.forEach( mix => keys.push({ 
 											B: $.clone(mix.key.B), 
 											b: $.clone(mix.key.b)
 										}) );
-										logger( "boosting", {t: cycle, keys: keys} );
+										Trace( "boosting", {t: cycle, keys: keys.length} );
 									}
 
 									else 
-										logger( "boosting", "no labelled data" );
+										Trace( "boosting", "no labelled data" );
 								});
 							}
 							
 							else { // save
-								logger( "boosting", { t: cycle, save: boost} );
+								Trace( "boost save", { t: cycle, save: boost} );
 
 								sql.query(
 									"UPDATE app.regress SET ? WHERE ?", 
 									[{
 										_Boost: JSON.stringify(boost), 
 										Cycle: cycle+1, 
-										Pipe: JSON.stringify( "" )}, {Name: ctx.Name} ], 
-									err => Log(err) );
+										Pipe: JSON.stringify( "" )}, {Name: ctx.Name} ] );
 							}
 							
 							return rtn;
@@ -373,6 +368,7 @@ The following context keys are accepted:
 								
 								if ( ++added == N ) 	// dataset primed so good to boost
 									$SQL( sql => {
+										sql.endBulk();
 										booster( sql, {	// provide initial boost state (index 0 unused)
 											source: ctx.Pipe,
 											points: N,
@@ -396,7 +392,7 @@ The following context keys are accepted:
 						booster( sql, boost );
 					
 					else
-						logger("boosting", "need x,y data to prime booser");
+						Trace("boost halt", "need x,y data to prime booser");
 				});
 		
 			else
