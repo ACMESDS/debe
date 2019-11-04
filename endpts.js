@@ -1140,30 +1140,21 @@ code  {
 				const {ctx,query,path} = job;
 				const {Trace} = ctx;
 			
-				Log("open", path, sup ? "supervised" : "unsupervised");
+				Log(sup ? "supervised" : "unsupervised", "pipe", path);
+				
 				if ( sup )	// using supervisor
 					sup(sql, job, pipectx => {
 						if (pipectx) {  // supervisor started
-							//Copy(data,ctx);
 							Copy(ctx,pipectx);
 							pipectx.list = makeList;
-							Each(query, (key,exp) => {
-								//Log(">pipe",key,exp);
-
-								(key+"="+exp).parseJS( pipectx, err => Log("ignore", `${key}=${exp}`) );
-								/*
-								data[key] = isString(exp)
-									? (key+"="+exp).parseJS( ctx, err => Trace("ignore", `${key}=${exp}`) )
-									: exp;
-									*/
-							});
-
-							//Log("!!!!!!!!!!!!!!!!!!pipe ctx", pipectx);
 							
-							cb( pipectx, () => {
-								Log("close");
-								//for (key in data) delete ctx[key];
+							Each(query, (key,exp) => {		// add data-extraction keys to context
+								(key+"="+exp).parseJS( pipectx, err => Log("ignore", `${key}=${exp}`) );
 							});
+
+							cb( pipectx ); /*, () => {
+								Log("close");
+							});  */
 						}
 
 						else
@@ -1171,17 +1162,15 @@ code  {
 					});
 
 				else	// unsupervised
-					cb( ctx, () => {
+					cb( ctx ) /*, () => {
 						Log("closed");
-					});
+					});  */
 			}
 
-			//Log(">>>>> job into q", job);
 			sql.insertJob( job, (sql,job) => { 
-				//Log(">>>>job off q", job);
-				pipe( sup, sql, job, (ctx,close) => {
+				pipe( sup, sql, job, ctx => { 	// (ctx,close) => {
 					if (ctx) {
-						req.query = Copy(ctx,{});   // pass neutral Object to engine run context		
+						req.query = ctx;
 						ATOM.select(req, ctx => {  // run plugin
 							//Log(">>pipe save=", ctx.Save );
 							if ( ctx )
@@ -1191,7 +1180,7 @@ code  {
 								else 
 									cb( ctx, sql );
 
-							if (close) close();	// if plugin was placed into supervisor, then close it
+							//if (close) close();	// if plugin was placed into supervisor, then close it
 						});
 					}
 
