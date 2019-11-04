@@ -1140,25 +1140,29 @@ code  {
 				const {ctx,query,path} = job;
 				const {Trace} = ctx;
 			
-				Trace("open", path);
+				Log("open", path, sup ? "supervised" : "unsupervised");
 				if ( sup )	// using supervisor
-					sup(sql, job, data => {
-						if (data) {
-							Copy(data,ctx);
+					sup(sql, job, pipectx => {
+						if (pipectx) {  // supervisor started
+							//Copy(data,ctx);
+							Copy(ctx,pipectx);
+							pipectx.list = makeList;
 							Each(query, (key,exp) => {
 								//Log(">pipe",key,exp);
-								ctx.list = makeList;
 
+								(key+"="+exp).parseJS( pipectx, err => Log("ignore", `${key}=${exp}`) );
+								/*
 								data[key] = isString(exp)
 									? (key+"="+exp).parseJS( ctx, err => Trace("ignore", `${key}=${exp}`) )
 									: exp;
+									*/
 							});
 
-							//Log("pipe ctx", ctx);
+							//Log("!!!!!!!!!!!!!!!!!!pipe ctx", pipectx);
 							
-							cb( ctx, () => {
-								Trace("close");
-								for (key in data) delete ctx[key];
+							cb( pipectx, () => {
+								Log("close");
+								//for (key in data) delete ctx[key];
 							});
 						}
 
@@ -1168,7 +1172,7 @@ code  {
 
 				else	// unsupervised
 					cb( ctx, () => {
-						Trace("closed");
+						Log("closed");
 					});
 			}
 
@@ -1271,7 +1275,7 @@ code  {
 
 							var
 								pipeQuery = {},
-								pipePath = Pipe.parseURL(pipeQuery,{},{},{}),
+								pipePath = Pipe.parseURL(pipeQuery,{},{},{}).parseEMAC( ctx ) ,
 								job = { // job descriptor for regulator
 									qos: profile.QoS || 0 , 
 									priority: 0,
@@ -1292,8 +1296,6 @@ code  {
 									ctx: ctx
 								};
 
-							//Log(job);
-							
 							if ( pipePath.startsWith("/") ) {	// pipe file
 								var
 									pipeRun = `${ctx.Host}.${ctx.Name}`,
@@ -1339,7 +1341,7 @@ code  {
 							}
 
 							else	// pipe is text doc
-							if ( pipeDoc = TOTEM.pipJob.txt )
+							if ( pipeDoc = TOTEM.pipeJob.txt )
 								pipePlugin(pipeDoc, sql, job, (ctx,sql) => {   // place job in doc workflow
 									if (ctx)
 										saveContext(sql, ctx);

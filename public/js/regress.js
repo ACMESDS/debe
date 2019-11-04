@@ -263,21 +263,21 @@ The following context keys are accepted:
 				pls: $.PLS.load,
 				som: $.SOM.load,
 				nab: $.NAB.load,
-				raf: (model) => model,
-				dtr: (model) => model,
-				lda: (model) => model,
-				qda: (model) => model,
-				qda: (model) => model,
+				raf: model => model,
+				dtr: model => model,
+				lda: model => model,
+				qda: model => model,
+				qda: model => model,
 				ols: ctx.ols_degree ? $.SPR.load : $.MLR.load
 			},
 			loader = loaders[use],
 			model = ctx[ `Save_${use}` ], 
 			solve = ctx.Hyper[use] || {},
-			cycle = ctx.Cycle,
+			cycle = ctx.Cycle || 0,
 			boost = ctx._Boost;
 		
 		Log({
-			trace: Trace,
+			cycle: cycle,
 			boost: boost,
 			solve: solve,
 			trainingset: x ? x.length : "none",
@@ -289,124 +289,138 @@ The following context keys are accepted:
 			model: model ? true : false
 		});
 
-		if ( loader )
-			if ( cycle ) // in boosting mode
-				$SQL( sql => {
-
-					res("boosting");
-					
-					function booster( sql, boost ) {
-						const {labels, mixes} = boost;
-						var nsigma = solve.nsigma || 0;
-						
-						$.boost( cycle, sql, boost, Trace, (x,keys) => {  // predict/learn hypothesis
-							var rtn = null;
-							
-							if ( keys ) {	// predict 
-								rtn = "";
-								Trace("boost predict", {t: cycle, keys: keys.length, nsigma:nsigma});
-								keys.forEach( (key,k) => {
-									//Log(k,key,x);
-									const { r } = $( "y = B*x + b; r = sqrt( y' * y ); ", {B: key.B, b: key.b, x: x} );
-									if ( r < nsigma ) rtn += labels.charAt(k);		// +1 hypo
-								});
-							}
-
-							else
-							if ( x ) { 	// learn
-								Trace("boost learn", {t: cycle, points: x.length});
-								rtn = boost.h[cycle] = [];
-								
-								trainer( x, null, null, info => {
-									if ( info ) {
-										var 
-											keys = rtn,
-											cls = info.cls;
-
-										cls.em.forEach( mix => keys.push({ 
-											B: $.clone(mix.key.B), 
-											b: $.clone(mix.key.b)
-										}) );
-										Trace( "boosting", {t: cycle, keys: keys.length} );
-									}
-
-									else 
-										Trace( "boosting", "no labelled data" );
-								});
-							}
-							
-							else { // save
-								Trace( "boost save", { t: cycle, save: boost} );
-
-								sql.query(
-									"UPDATE app.regress SET ? WHERE ?", 
-									[{
-										_Boost: JSON.stringify(boost), 
-										Cycle: cycle+1, 
-										Pipe: JSON.stringify( "" )}, {Name: ctx.Name} ] );
-							}
-							
-							return rtn;
-						});
-					}
-
-					if ( x && y ) {	// prime the points dataset then boost
-						var N = x.length, D = 1/N, added = 0, labels = "HMLNABCDEFG";
-						// "/genpr_test4D4M.export?[x,y]=$.get(['x','n'])"
-						
-						sql.query( "DELETE FROM app.points" );
-						sql.beginBulk();
-						x.forEach( (x,n) => {  // prime points dataset with samples and labels
-							sql.query( "INSERT INTO app.points SET ?", {	// prime with this sample point
-								x: JSON.stringify( x ),
-								y: labels.charAt( y[n] ),
-								D: D,
-								idx: n+1,
-								docID: "tbd",
-								src: "tbd"
-							}, err => {		// check if primed
-								
-								if ( ++added == N ) 	// dataset primed so good to boost
-									$SQL( sql => {
-										sql.endBulk();
-										booster( sql, {	// provide initial boost state (index 0 unused)
-											source: ctx.Pipe,
-											points: N,
-											samples: ctx.Samples,
-											mixes: solve.mixes || 0,
-											labels: labels,
-											thresh: D * 0.9,
-											eps: [null],
-											alpha: [null], 
-											h: [null]
-										});
-									});
-								
-							});
-						});
-						sql.endBulk();
-					}
-					
-					else
-					if ( boost )
-						booster( sql, boost );
-					
-					else
-						Trace("boost halt", "need x,y data to prime booser");
-				});
+		Log("!!!!!!!!!!!!!!!ctx", ctx);
 		
-			else
-			if ( chans )	// multichannel learning
+		if ( loader )
+			if ( chans )	// multichannel learning mode
 				trainers( chans.x, chans.y, chans.x0, () => respond() );
-			
-			else	//  sup/unsup learning
+
+			else	
+			if ( cycle ) { // in boosting mode
+				res("boosting");
+
+				if ( x0 ) { // gen effective roc
+				}
+		
+				else // boost  
+					$SQL( sql => {
+						function booster( sql, boost ) {
+							const {labels, mixes} = boost;
+							var nsigma = solve.nsigma || 0;
+
+							$.boost( cycle, sql, boost, Trace, (x,keys) => {  // predict/learn hypothesis
+								
+								var rtn = null;
+								
+								if ( keys )
+									Trace( "boost test", {t: cycle, keys: keys.length, nsigma:nsigma});
+								else
+								if ( x )
+									Trace( "boost learn", {t: cycle, points: x.length});
+								else
+									Trace( "boost save", {t: cycle, save: boost} );
+								
+								if ( keys ) 	// test hypo 
+									return $( mixes, (k, H) => {
+										//Log(k,key,x);
+										const { r } = $( "y = B*x + b; r = sqrt( y' * y ); ", {B: keys[k].B, b: keys[k].b, x: x} );										
+										H[ k ] = ( r < nsigma ) ? +1 : -1;
+											// labels.charAt(k);		// +1 hypo
+									});
+
+								else
+								if ( x ) { 	// learn keys
+									//Log(">>>>>set h reg before", boost.h);
+									rtn = boost.h[cycle] = new Array();
+
+									//Log(">>>>>set h reg", boost.h);
+									
+									trainer( x, null, null, info => {
+										var keys = rtn;
+										//Log("info", info);
+										
+										if ( info ) 	// labelled data provided so stack keys
+											info.cls.em.forEach( (mix,k) => {
+												//Log("mix", k , mix.key);
+
+												keys.push({ 
+													B: $.clone(mix.key.B), 
+													b: $.clone(mix.key.b)
+												});
+											});
+									});
+						
+									//Log("rtn keys", rtn);
+									return rtn;
+								}
+
+								else { // save
+									sql.query(
+										"UPDATE app.regress SET ? WHERE ?", 
+										[{
+											_Boost: JSON.stringify(boost), 
+											Cycle: cycle+1, 
+											Pipe: JSON.stringify( "" )}, {Name: ctx.Name} ] );
+									
+									return null;								
+								}
+							});
+						}
+
+						if ( x && y ) {	// prime the points dataset then boost at cycle=1
+							var N = x.length, D = 1/N, added = 0, labels = "HMLNABCDEFG";
+							// "/genpr_test4D4M.export?[x,y]=$.get(['x','n'])"
+
+							sql.query( "DELETE FROM app.points" );
+							sql.beginBulk();
+							x.forEach( (x,n) => {  // prime points dataset with samples and labels
+								sql.query( "INSERT INTO app.points SET ?", {	// prime with this sample point
+									x: JSON.stringify( x ),
+									y: labels.charAt( y[n] ),
+									D: D,
+									idx: n+1,
+									docID: "tbd",
+									src: "tbd"
+								}, err => {		// check if primed
+
+									if ( ++added == N ) 	// dataset primed so good to boost
+										booster( sql, {	// provide initial boost state (index 0 unused)
+												source: ctx.Pipe,
+												points: N,
+												samples: ctx.Samples,
+												mixes: solve.mixes || 0,
+												labels: labels,
+												thresh: D * 0.9,
+												eps: [null],
+												alpha: [null], 
+												h: [null]
+											});
+
+								});
+							});
+							sql.endBulk();
+						}
+
+						else
+						if ( boost )	// boost this cycle
+							booster( sql, boost );
+
+						else
+							Trace("boost halt", "need x,y data to prime booser");
+					});
+			}
+
+			else	//  sup/unsup learning mode
 			if ( x ) 
 				trainer( x, y, x0, info => respond(info) );
 		
 			else
-			if ( x0 ) 	// predicting
+			if ( x0 ) 	// predicting/roc generating
 				predicter( x0, loader(model) );
 		
+			else
+				res( new Error("invalid regression mode") );
+
 		else
 			res( new Error("invalid regression method") );
 	}
