@@ -4,7 +4,7 @@ module.exports = {  // regressors
 	xmodkeys: {
 		
 		Cycle: `int(11) default 0 comment '
-Current boosting cycle: 0 disable boosting, 1 ingest x,y, initialize and boost, >1 boost
+Boosting level: 0 disables, 1 starts (ingest x-y points, initialize and boost), >1 continues boosting
 '`,
 		Hyper: `json comment '
 Hyper parameters for specific Methods:
@@ -96,12 +96,13 @@ solver: MATHJS script (mu,sigma) => keys.B, keys.b, SNR
 		Save_jpg:  "json comment 'remainder stash' ",
 		
 		Pipe: `json comment '
-The following context keys are accepted:
+The regression mode is determined by the following context keys:
 
-	x = [...]				// unsupervised training
-	y = [...]				// supervised training
-	x0 = [...]							// predicting
-	xy0 || multi = { x: [ [...]...], y: [ [...]...], x0: [ [...]...], n0: [...] } 	// multichannel training mode 
+	x = LIST				// unsupervised training mode
+	y = LIST				// supervised training mode
+	x0 = LIST				// predicting / roc mode
+	xy0 || multi = { x: [ LIST, ...], y: [ LIST, ...], x0: [ LIST, ...], n0: LIST } 	// multichannel training mode 
+	Cycle = int			// boosting level
 
 ' `,
 		
@@ -176,10 +177,7 @@ The following context keys are accepted:
 		}
 		
 		function predict(x, cls, cb) {
-			Log({
-				predict: use, 
-				dims: x.length
-			});
+			//Log({	predict: use, dims: x.length });
 
 			$(
 				`y = ${use}_predict( cls, x, solve );`, 
@@ -307,8 +305,11 @@ The following context keys are accepted:
 
 							function hypo(x,keys) {	// return K-vector of hypo tests
 								return $( keys.length, (k, H) => {		// enumerate thru all keys
-									const { r } = $( "y = B*x + b; r = sqrt( y' * y ); ", {B: keys[k].B, b: keys[k].b, x: x} );		// bring sample into decision sphere
-									H[ k ] = ( r < nsigma ) ? +1 : -1;		// test positive/negative hypo 
+									H[ k ] = 0;		// default if invalid key
+									if ( key = keys[k] ) {
+										const { r } = $( "y = B*x + b; r = sqrt( y' * y ); ", {B: key.B, b: key.b, x: x} );		// bring sample into decision sphere
+										H[ k ] = ( r < nsigma ) ? +1 : -1;		// test positive/negative hypo 
+									}
 								});
 							}
 							
@@ -333,11 +334,14 @@ The following context keys are accepted:
 											cls.em.forEach( (mix,k) => {
 												//Log("mix", k , mix.key);
 
-												if ( key = mix.key )
+												if ( key = mix.key )	// valid key provided
 													keys.push({ 
 														B: $.clone(key.B), 
 														b: $.clone(key.b)
 													});
+												
+												else	// invalid key
+													keys.push( null );
 											});
 								});
 
@@ -347,7 +351,7 @@ The following context keys are accepted:
 							else { // save
 								if ( xroc ) { // gen effective roc
 									var 
-										F = $( mixes, (k,F) => F[k] = 0 ),
+										F = $( mixes, (k,F) => F[k] = 0 ),		// reserve for boosted hypo
 										t = cycle,
 										hits = 0,
 										cols = 0,
@@ -355,27 +359,33 @@ The following context keys are accepted:
 										maxHits = N,
 										maxCols = N * mixes;
 
-									xroc.forEach( (x,m) => {
+									xroc.forEach( (x,m) => {		// enumerate x samples to build roc
 										for ( var n=1; n<=t; n++ ) {
-											var ctx = $( "F = F + alpha * H", { 
-												F: F,
-												alpha: alpha[n],
-												H: hypo( x, h[n] )
-											});
+											if ( h_n = h[n] ) // valid keys provided
+												var ctx = $( "F = F + alpha * H", { 
+													F: F,
+													alpha: alpha[n],
+													H: hypo( x, h_n )
+												});
+											
+											else
+												var ctx = null;
 										}
 
 										//Log("F=", ctx.F);
-										F.$( k => F[k] = sign( ctx.F[k] ) );
+										if ( ctx )
+											F.$( k => F[k] = sign( ctx.F[k] ) );
 
-										var I = 0;	// #agreements
+										var I = 0;	// indicator = #agreements
 										F.$( k => I += (F[k] > 0) ? 1 : 0 );
 
 										//Log(m, F, I);
-										if ( I )
-											if ( I == 1 )
-												hits++;
-											else
-												cols + I - 1;
+										if ( I == 1 )
+											hits++;
+										
+										else
+										if ( I > 1 )
+											cols += I - 1;
 									});
 
 									boost.hitRate = hits / maxHits;
@@ -388,7 +398,8 @@ The following context keys are accepted:
 									[{
 										_Boost: JSON.stringify(boost), 
 										Cycle: cycle+1, 
-										Pipe: JSON.stringify( "" )}, {Name: ctx.Name} ] );
+										Pipe: JSON.stringify( ( cycle == 1 ) ? "#" + ctx.Pipe : ctx.Pipe )
+									}, {Name: ctx.Name} ] , err => Log(err) );
 
 								return null;								
 							}
@@ -415,7 +426,6 @@ The following context keys are accepted:
 								if ( ++added == N ) 	// dataset primed so good to boost
 									booster( sql, {	// provide initial boost state (index 0 unused)
 										xroc: x0,
-										source: ctx.Pipe,
 										points: N,
 										samples: ctx.Samples,
 										mixes: solve.mixes || 0,
@@ -436,7 +446,7 @@ The following context keys are accepted:
 						booster( sql, boost );
 
 					else
-						Trace("boost halt", "need x,y data to prime booser");
+						Trace("boost halt", "need x,y data to prime booster");
 				});
 			}
 

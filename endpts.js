@@ -62,11 +62,12 @@ Places a DATASET into a TYPE-specific supervised workflow:
 
 	"/PATH/DATASET.TYPE ? KEY || [KEY,...] = $.JS & ... "
 	{ "$": "MATHJS" }
-	{ "Pipe": "/PATH/DATASET.TYPE?..." ,  "KEY": [VALUE, ...] , ... }
+	{ "Pipe": "/PATH/DATASET.TYPE?..." ,  "KEY": [VALUE, ...] , ... , "Every": "year || month || week || day || hour || minute" } }
 
-The "/PATH/DATASET.TYPE" [source pipe](/api.view) defines the workflow based on TYPE = json || jpg | png | nitf || stream | export  || txt | doc | pdf | xls  || aoi || db,
-where $ references the TYPE-specific json data || GIMP image || event list || document text || db record.  The { KEY: [VALUE, ...] } [enumeration pipe](/api.view) 
-generates usecases over permuted context KEYs.  The $ json can be post-processed by a JS script or by a { $: "MATHJS" } [matlab-js scripting pipe](/api.view).
+The "/PATH/DATASET.TYPE" [source data pipe](/api.view) places the TYPE-specific data $ = json || GIMP image || event list || document text || db record
+into a TYPE = json || jpg | png | nitf || stream | export  || txt | doc | pdf | xls  || aoi || db specific workflow.  The { KEY: [VALUE, ...] } [enumeration pipe](/api.view) 
+generates usecases over permuted context KEYs.  The $ json data can also be post-processed by 
+a [MATHJS script](/api.view).
 `, 
 
 		Description: `
@@ -1122,12 +1123,6 @@ code  {
 	*/	
 		function pipePlugin( sup, sql, job, cb ) { //< pipe job via supervisor 
 
-			/*
-			function log( ) {	// log for the "".trace()
-				var args = [];
-				for (var key in arguments) if ( key != "0" ) args.push( arguments[key] );
-				"pipe".trace( arguments[0]+": "+JSON.stringify(args), req, Log );
-			} */
 			function makeList(args,debug) {
 				var mash = [];
 				//console.log("list", args.length);
@@ -1152,9 +1147,7 @@ code  {
 								(key+"="+exp).parseJS( pipectx, err => Log("ignore", `${key}=${exp}`) );
 							});
 
-							cb( pipectx ); /*, () => {
-								Log("close");
-							});  */
+							cb( pipectx ); 
 						}
 
 						else
@@ -1162,13 +1155,11 @@ code  {
 					});
 
 				else	// unsupervised
-					cb( ctx ) /*, () => {
-						Log("closed");
-					});  */
+					cb( ctx ) 
 			}
 
 			sql.insertJob( job, (sql,job) => { 
-				pipe( sup, sql, job, ctx => { 	// (ctx,close) => {
+				pipe( sup, sql, job, ctx => { 	
 					if (ctx) {
 						req.query = ctx;
 						ATOM.select(req, ctx => {  // run plugin
@@ -1179,8 +1170,6 @@ code  {
 
 								else 
 									cb( ctx, sql );
-
-							//if (close) close();	// if plugin was placed into supervisor, then close it
 						});
 					}
 
@@ -1329,6 +1318,22 @@ code  {
 									err = errors.badType;
 							}
 
+							else
+							if ( pipePath.startsWith("#") ) { // dummied out - eg when boosting
+								pipePlugin( null, sql, job, (ctx,sql) => {	// unsupervised pipe
+									if (ctx)
+										saveContext(sql, ctx);
+
+									else
+										Trace( errors.lostContext, req );
+								});								
+							}
+							
+							else
+							if ( pipePath.startsWith("?") ) {	// keys only - reserved
+								err = errors.badType;
+							}
+							
 							else	// pipe is text doc
 							if ( pipeDoc = TOTEM.pipeJob.txt )
 								pipePlugin(pipeDoc, sql, job, (ctx,sql) => {   // place job in doc workflow
@@ -1353,13 +1358,14 @@ code  {
 
 						case Object:  
 							if (Pipe.$) { // $-scripting pipe
-								err = new Error("scripting pipe tbd");
+								err = new Error("scripting not yet implemented");
 							}
 
 							else { // usecase enumeration pipe
 								var 
 									runCtx = Copy(ctx, {}), 
-									jobs = [], inserts = 0;
+									jobs = [], inserts = 0,
+									every = Pipe.Every;
 
 								// purge DNC keys from the run context 
 								delete runCtx.ID;
