@@ -1209,8 +1209,6 @@ code  {
 			now = new Date(),
 			host = table;
 
-		if ( query.Name ) delete query.ID;
-
 		//Log("exe", query );
 		if ( days = parseInt(query.days||"0") +parseInt(query.hours||"0")/24 ) {
 			res("queueing polled job");
@@ -1230,7 +1228,7 @@ code  {
 		}
 
 		else
-		if ("ID" in query || "Name" in query)  // execute plugin
+		if ( query.name || query.Name )  // execute plugin
 			FLEX.runPlugin(req, ctx => {  // run engine using requested usecase via the job regulator 
 
 				// Log("exe ctx", ctx);

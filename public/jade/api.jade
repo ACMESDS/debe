@@ -437,9 +437,8 @@ append site_body
 			:markdown
 				A notebook -- a dataset-engine pair -- is accessed from the following endpoints:
 
-					GET /NOTEBOOK.exe?id=CASE 	Run NOTEBOOK in id-specified CASE context
 					GET /NOTEBOOK.exe?name=CASE 	Run NOTEBOOK in name-specified CASE context
-					GET /NOTEBOOK.exe?QUERY 	Run NOTEBOOK with QUERY context
+					GET /NOTEBOOK.exe?QUERY 	Run NOTEBOOK in specified QUERY context
 					GET /NOTEBOOK.view	View and run NOTEBOOK contexts
 					GET /NOTEBOOK.run		View, run, edit engine and manage NOTEBOOK
 
@@ -723,8 +722,7 @@ append site_body
 				stationarity in a workflow.
 
 				Please know that *#{title}* does not provide an interactive development environment; engines should be 
-				thoroughly debugged in their native development environment before being [inserted](/engines.view) 
-				into *#{title}*.  
+				thoroughly debugged before being [inserted](/engines.view) into *#{title}*.  
 
 		#fit.Queries
 			:markdown
