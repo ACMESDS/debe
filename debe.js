@@ -1227,7 +1227,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 	@member DEBE
 	Enable to give-away plugin services
 	*/
-	probono: false,  //< enable to run plugins unregulated
+	probono: true,  //< enable to run plugins unregulated
 		
 	//Function: Initialize,  //< added to ENUM callback stack
 
