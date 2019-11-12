@@ -1189,13 +1189,13 @@ code  {
 					values = forCtx[ key ];
 
 				if (values) 
-					if ( values.forEach )
+					if ( values.forEach )	// enumerate over array values
 						values.forEach( value => {
 							setCtx[ key ] = value;
 							crossParms( depth+1, keys, forCtx, setCtx, cb );
 						});
 
-					else {
+					else {	// set to specified value
 						setCtx[ key ] = values;
 						crossParms( depth+1, keys, forCtx, setCtx, cb );
 					}
@@ -1394,7 +1394,7 @@ code  {
 										sql.query( `INSERT INTO app.${host} SET ?`, job, err => {
 											if ( ++inserts == jobs.length )  // run usecases after they are all created
 												jobs.forEach( job => {
-													if (job.Pipe)
+													//if (job.Pipe)
 														probeSite( `/${host}.exe?Name=${job.Name}`, info => {} );
 												});
 										});
@@ -1430,81 +1430,6 @@ code  {
 
 	},
 
-	/*
-	probePlugin: function(req,res) {  //< share plugin attribute / license plugin code
-		const { query, sql, table, type, client } = req;
-
-		var 
-			name = table,
-			attr = type,
-			partner = client,
-			endService = query.endservice+"",
-			proxy = query.proxy,		
-			types = {
-				pub: "txt",
-				users: "json",
-				md: "txt",
-				toumd: "txt",
-				status: "html",
-				suitors: "txt",
-				publist: "txt",
-				tou: "html",
-				js: "txt",
-				py: "txt",
-				me: "txt",
-				m: "txt",
-				jade: "txt"
-			};
-
-		getEngine( sql, name, eng => {
-			if ( eng ) 
-				FLEX.pluginAttribute( sql, attr, partner, endService, proxy, eng, attrib => {
-					//req.type = types[req.type] || "txt";
-
-					if (attrib) 
-						res(attrib);
-
-					else
-						switch (attr) {
-							case "js":
-							case "py":
-							case "me":
-							case "m":
-								res( errors.noPartner );
-								break;
-
-							case "pub":
-								sql.query( 
-									"SELECT * FROM app.releases WHERE ? ORDER BY _Published DESC LIMIT 1", 
-									{_Product: eng.Name+"."+eng.Type}, (err,pubs) => {
-
-									if ( pub = pubs[0] ) {
-										res( `Publishing ${eng.Name}` );
-
-										/ *
-										var 
-											parts = pub.Ver.split("."),
-											ver = pub.Ver = parts.concat(parseInt(parts.pop()) + 1).join(".");
-										* /
-
-										FLEX.publishPlugin( req, eng.Name, eng.Type, true );
-									}
-
-									else
-										res( new Error(`no ${eng.Name} product`) );
-								});
-								break;
-
-							default:
-								res( eng[req.type] || errors.noAttribute );
-						}
-				});
-
-			else
-				res( errors.noEngine );
-		});
-	},  */
-	
 	getDoc: function (req, res) {
 		var
 			site = TOTEM.site,

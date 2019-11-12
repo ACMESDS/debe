@@ -14,6 +14,8 @@ Gaussian mixing parameters:
 		Steps: "int(11) default 0 comment 'number of process steps' ",
 		Batch: "int(11) default 0 comment 'supervisor batching size in steps (0 disables)' ",
 		
+		Pipe: `json comment 'Use the pipe to generate enumerated datasets ' `,
+		
 		type_Markov: `json comment '
 K-state process with specified transition probabilities:
 
@@ -99,23 +101,6 @@ where $$ a = \\frac {\\sigma } { \\sqrt {2 \\theta} } $$.
 			Batch    // supervised learning every batch steps (0 disables)
 	*/
 
-		/*
-		function randint(a) {
-			return floor((rand() - 0.5)*2*a);
-		}
-
-		function scalevec(x,a) {
-			for (var n=0;n<3; n++) x[n] *= a[n];
-			return x;
-		}
-
-		function offsetvec(x,y) {
-			for (var n=0; n<3; n++) x[n] += y[n];
-			return x;
-		}  */
-
-		//Log("genpr", ctx);
-		
 		var opts = { // supervisor config 
 			N: ctx.Members,  // ensemble size
 			symbols: ctx.Symbols,  // state symbols
