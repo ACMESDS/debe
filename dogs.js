@@ -357,6 +357,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 			//stuck: "UPDATE app.queues SET Departed=now(), Notes=concat(Notes, ' is ', link('billed', '/profile.view')), Age=Age + (now()-Arrived)/3600e3, Finished=1 WHERE least(Departed IS NULL,Done=Work)", 
 			outsourced: "SELECT * FROM app.queues WHERE Class='polled' AND Now() > Departed",
 			unmailed: "SELECT * FROM app.queues WHERE NOT Finished AND Class='email' "
+			// pending: "SELECT * FROM app.queues WHERE now()>Next"
 		},
 		max: {
 			pigs : 2,
@@ -368,12 +369,16 @@ Further information about this file is available ${paths.moreinfo}. `;
 			get = dog.get,
 			queues = TOTEM.queues;
 
+		if ( pending = get.pending )
+			dog.forEach(dog.trace, pending, [], (job, sql) => {
+			});
+		
 		if ( pigs = get.pigs )
-			dog.forEach(dog.trace, pigs, [], function (pigs) {
+			dog.forEach(dog.trace, pigs, [], (job, sql) => {
 			});
 
 		if ( unmailed = get.unmailed ) 
-			dog.forEach(dog.trace, unmailed, [], function (job, sql) {
+			dog.forEach(dog.trace, unmailed, [], (job, sql) => {
 				sql.query("UPDATE app.queues SET Finished=1 WHERE ?", {ID: job.ID});
 				sendMail({
 					to: job.Client,
@@ -383,7 +388,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 			});
 
 		if ( unbilled = get.unbilled )
-			dog.forEach(dog.trace, unbilled, [], function (job, sql) {
+			dog.forEach(dog.trace, unbilled, [], (job, sql) => {
 				//Trace(`BILLING ${job} FOR ${job.Client}`, sql);
 				sql.query( "UPDATE openv.profiles SET Charge=Charge+? WHERE ?", [ 
 					job.Done, {Client: job.Client} 
@@ -393,7 +398,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 			});
 
 		if ( unfunded = get.unfunded )
-			dog.forEach(dog.trace, unfunded, [dog.max.age], function (job, sql) {
+			dog.forEach(dog.trace, unfunded, [dog.max.age], (job, sql) => {
 				//Trace("KILLING ",job);
 				sql.query(
 					//"DELETE FROM app.queues WHERE ?", {ID:job.ID}
@@ -427,7 +432,7 @@ Further information about this file is available ${paths.moreinfo}. `;
 			});
 
 		if ( outsourced = get.outsourced )
-			dog.forEach( dog.trace, outsourced, [], function (job, sql) {
+			dog.forEach( dog.trace, outsourced, [], (job, sql) => {
 				sql.query(
 					"UPDATE app.queues SET ?,Age=Age+Work,Departed=Date_Add(Departed,interval Work day) WHERE ?", [
 					{ID:job.ID}
