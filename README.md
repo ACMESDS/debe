@@ -8,14 +8,14 @@
 # DEBE
 
 [DEBE](https://totem.west.ile.nga.ic.gov/api.view) provides a scalable service 
-for producing and evaluating geoint products.  DEBE provides [TOTEM endpoints](http://sc.appdev.proj.coe/acmesds/totem):
+for producing and evaluating geoint products.  DEBE extends [TOTEM endpoints](http://sc.appdev.proj.coe/acmesds/totem):
 
-	POST /NODE 
-	GET /NODE 
-	PUT /NODE 
-	DELETE /NODE 
+	POST / NODE ?? NODE ...
+	GET / NODE ?? NODE ...
+	PUT / NODE ?? NODE ...
+	DELETE / NODE ?? NODE ...
 
-to access its NODEs:
+to access dataset, notebook, file, and command NODEs:
 
 	DATASET.TYPE ? QUERY
 	NOTEBOOK.TYPE ? QUERY
