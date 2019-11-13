@@ -275,8 +275,7 @@ The regression mode is determined by the following context keys:
 			boost = ctx._Boost;
 		
 		Log({
-			cycle: cycle,
-			boost: boost,
+			boosting: cycle ? boost : false,
 			solve: solve,
 			trainingset: x ? x.length : "none",
 			labelset: y ? y.length : "none",

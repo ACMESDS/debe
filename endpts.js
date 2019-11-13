@@ -1253,7 +1253,7 @@ code  {
 								pipeQuery = {},
 								pipePath = Pipe.parseURL(pipeQuery,{},{},{}).parseEMAC( ctx ) ,
 								job = { // job descriptor for regulator
-									qos: profile.QoS || 0 , 
+									qos: 10, //profile.QoS || 0 , 
 									priority: 0,
 									limit: 3,
 									client: req.client,
