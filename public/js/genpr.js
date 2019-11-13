@@ -251,21 +251,6 @@ ornstein: {		# Stateless Ornstein-Ulenbeck process with:
 			}
 
 			function genProcess(opts, cb) {  // generate gaussian process
-				opts.filter = (str,ev,ran) => {
-					switch (ev.at) {
-						case "step":
-							if ( opts.emP ) {	// save gaussian mixing process
-								var mixes = ran.emP.gen.length;
-								ran.emP.obs.forEach( (ob,n) => str.push({ x: ob, n: n % mixes }) );
-							}
-							break;
-
-						case "jump":
-						case "config":
-							str.push( ev );
-					}
-				};
-
 				//Log("new ran", opts);
 				var ran = new $.RAN(opts);  // create a random process compute thread
 
@@ -332,12 +317,28 @@ ornstein: {		# Stateless Ornstein-Ulenbeck process with:
 				gauss: Type.gauss, // {mean, coints,dim,model,mineig}
 				bayes: Type.bayes, // equlib probs
 				ornstein: Type.ornstein,   // {theta,  a = sigma / sqrt(2*theta)}
+				mixing: Type.mixing, 	// gauss mixing mu,sigma || snr,cone,mixes,oncov,offcov
 				beta: Type.beta, // logistic beta params
 
 				dt: 1/(ctx.Nyquist||1), // oversampling factor
 				steps: ctx.Steps || 5, // process steps
-				emP: ctx.emProbs,  	// mixing/emission/observation parms
+				//emP: ctx.emProbs,  	// mixing/emission/observation parms
 				batch: ctx.Batch || 0,   // supervised learning every batch steps
+				filter: (str,ev,ran) => {
+					switch (ev.at) {
+						case "step":
+							if ( mixing = opts.mixing ) {	// save gaussian mixing process
+								var mixes = mixing.gen.length;
+								mixing.obs.forEach( (ob,n) => str.push({ x: ob, n: n % mixes }) );
+							}
+							break;
+
+						case "jump":
+						case "config":
+							str.push( ev );
+					}
+				}
+				/*
 				filter: function (str, ev) {  // filter output events
 					switch ( ev.at ) {
 						case "jump":
@@ -401,7 +402,7 @@ ornstein: {		# Stateless Ornstein-Ulenbeck process with:
 						default:
 							//str.push(ev);
 					}			
-				}  // event saver 
+				}  */
 			};
 		
 		gen( opts, evs => {

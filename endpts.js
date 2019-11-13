@@ -1255,6 +1255,7 @@ code  {
 								job = { // job descriptor for regulator
 									qos: profile.QoS || 0 , 
 									priority: 0,
+									limit: 3,
 									client: req.client,
 									class: ctx.Name,
 									credit: 100, // profile.Credit,
@@ -1267,7 +1268,6 @@ code  {
 											"PMR".tag( `/briefs.view?options=${host}` )
 									].join(" || "),
 									query: pipeQuery,
-									//url: Pipe,
 									path: pipePath,
 									ctx: ctx
 								};
