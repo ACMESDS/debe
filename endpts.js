@@ -1261,7 +1261,7 @@ code  {
 								run = ctx.Run || {},
 								pipePath = Pipe.parseURL(pipeQuery,{},{},{}).parseEMAC( ctx ) ,
 								job = { // job descriptor for regulator
-									qos: profile.QoS || every[ctx.Every] || 0 , 
+									qos: profile.QoS || every[ctx.Every] || ctx.Every || 0 , 
 									priority: 0,
 									start: run.start || null,
 									end: run.end || null,
