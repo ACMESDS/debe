@@ -1,5 +1,6 @@
+
 module.exports = {  // generate a random process with specified parameters
-	modkeys: {
+	xmodkeys: {
 		emProbs: `json comment '
 Gaussian mixing parameters:
 
@@ -61,14 +62,13 @@ ornstein: {		# Stateless Ornstein-Ulenbeck process with:
 	
 	engine: function genpr(ctx,res) {
 	/* 
-	Return random gaussian, markov, ornstein, bayes, gillespie, or weiner process [ {x,y,...}, ...] given ctx parameters:
+	Generate gaussian || markov || ornstein || bayes || gillespie || weiner || logistic process [ {x,y,...}, ...] given ctx parameters:
 	
 			Members  // ensemble size
 			Symbols  // state symbols
-			Type	 // wiener, markov, gauss, bayes, ornstein, beta parameters (see RANDPR)
+			Type	 // wiener, markov, gauss, bayes, ornstein, mixing, beta parameters (see RANDPR)
 			Nyquist // oversampling factor
 			Steps // process steps
-			emProbs 	// mixing/emission/observation parms
 			Batch    // supervised learning every batch steps (0 disables)
 	*/
 

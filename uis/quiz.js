@@ -261,12 +261,12 @@ BASE.Quizes = {
 		d: "jupyter notebooks"
 	},
 	A: "a"},  {
-	Q: "good models for machine learners include?",
+	Q: "useful machine learners models include?",
 	S: {
 		a: "Cindy Crawford, David Gandy, Jelena Naura, Naomi Campbell",
 		b: "flat earth",
 		c: "global warming",
-		d: "Markov, Wiener, Ohrenstein, Gaussian, Bayes"
+		d: "Markov, Wiener, Ornstein, Gaussian, Bayes"
 	},
 	A: "d"
 }],
@@ -305,7 +305,7 @@ BASE.Quizes = {
 }], 
 
 "machines.2.7": [{
-	Q: "How did US founders boost each hypothesis considered by our congress?",
+	Q: "How did US founders plan to boost the hypothesis from our congressional members?",
 	S: {
 		a: "jerry mandering",
 		b: "majority voting",

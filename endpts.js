@@ -46,7 +46,7 @@ function Trace(msg,req,fwd) {	// execution tracing
 	"endpt".trace(msg,req,fwd);
 }
 
-const { Copy,Each,Log,isString,isFunction,isError,isArray,Stream } = ENUM;
+const { Copy,Each,Log,isString,isFunction,isError,isArray,Stream,typeOf } = ENUM;
 const { sqlThread, uploadFile, probeSite, errors, site, watchFile } = TOTEM;
 const { ingestList } = GEO;
 
@@ -1862,15 +1862,15 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 		saveNLP(sql, Save);
 	
 	if ( Save = ctx.Save )
-		switch (Save.constructor.name) {
+		switch ( typeOf(Save) ) {
 			case "Error": 
 				return Save+"";
 
 			case "Object":  // keys in the plugin context are used to create the stash
 				Save.ID = ctx.ID;
 				Save.Host = ctx.Host;
-				return "".save( sql, Save, evs => {
-					//Log("save ctx done");
+				return [Save].save( sql, ctx, rem => {
+					//Log("save done",rem);
 				});
 				break;
 
