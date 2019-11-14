@@ -18,14 +18,15 @@ callsback
 
 The PIPE accepts a job containing:
 
-		qos: ms job regulation interval
-		priority: 0, 1, ... job prirority
-		client: "client name"
-		class: "name of pipe"
-		credit: >=0 remaining job credits
-		name: "name of plugin"
-		task: "plugin usecase"
-		notes: ".... notes"
+		qos: job timer in seconds || 0
+		priority: job prirority = 0,1,2, ... || 0
+		limit: max run date or cycles = 0,1,2 ... || 1 
+		client: "text" || "guest"
+		class: "text"
+		credit: remaining job credits = 0,1,2, ...
+		name: "text"
+		task: "text"
+		notes: "notes"
 		query: {...} query parms
 		path: "/dataset.type?..." pipe path
 		ctx: {...} plugin context keys

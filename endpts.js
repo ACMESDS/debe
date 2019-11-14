@@ -61,13 +61,12 @@ const { sysAlert, licenseOnDownload, defaultDocs } = module.exports = {
 Places a DATASET into a TYPE-specific supervised workflow:
 
 	"/PATH/DATASET.TYPE ? KEY || [KEY,...] = $.JS & ... "
-	{ "$": "MATHJS" }
-	{ "Pipe": "/PATH/DATASET.TYPE?..." ,  "KEY": [VALUE, ...] , ... , "Every": "year || month || week || day || hour || minute" } }
+	{ "$" : "MATHJS" }
+	{ "Pipe" : "/PATH/DATASET.TYPE?..." ,  "KEY" :  [VALUE, ...] , ... }
 
 The "/PATH/DATASET.TYPE" [source data pipe](/api.view) places the TYPE-specific data $ = json || GIMP image || event list || document text || db record
 into a TYPE = json || jpg | png | nitf || stream | export  || txt | doc | pdf | xls  || aoi || db specific workflow.  The { KEY: [VALUE, ...] } [enumeration pipe](/api.view) 
-generates usecases over permuted context KEYs.  The $ json data can also be post-processed by 
-a [MATHJS script](/api.view).
+generates usecases over permuted context KEYs.  The $ json data can also be post-processed by a [MATHJS script](/api.view).
 `, 
 
 		Description: `
@@ -84,7 +83,7 @@ Document your usecase using markdown:
 
 `,
 
-		Config: "js-script defines a usecase context  ",
+		Until: "run count or end date",
 		Save: "aggregates notebook results not captured in other Save_KEYs  ",
 		Entry: 'primes context KEYs on entry using { KEY: "SELECT ....", ...}  ',
 		Exit: 'saves context KEYs on exit using { KEY: "UPDATE ....", ...}  ',
@@ -1251,11 +1250,22 @@ code  {
 
 							var
 								pipeQuery = {},
+								every = {
+									minute: 60,
+									hour: 3600,
+									day: 86400,
+									week: 604800,
+									month: 2419200,
+									year: 31449600
+								},
+								run = ctx.Run || {},
 								pipePath = Pipe.parseURL(pipeQuery,{},{},{}).parseEMAC( ctx ) ,
 								job = { // job descriptor for regulator
-									qos: 10, //profile.QoS || 0 , 
+									qos: profile.QoS || every[ctx.Every] || 0 , 
 									priority: 0,
-									limit: 3,
+									start: run.start || null,
+									end: run.end || null,
+									until: run.until || null,
 									client: req.client,
 									class: ctx.Name,
 									credit: 100, // profile.Credit,
@@ -1362,8 +1372,7 @@ code  {
 							else { // usecase enumeration pipe
 								var 
 									runCtx = Copy(ctx, {}), 
-									jobs = [], inserts = 0,
-									every = Pipe.Every;
+									jobs = [], inserts = 0;
 
 								// purge DNC keys from the run context 
 								delete runCtx.ID;

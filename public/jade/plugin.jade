@@ -66,19 +66,19 @@ append site_body
 					You may also !{uses} your notebook.
 
 					Your notebook's usecase context may include the following [optional keys](/api.view) ( add / remove ):  
-					> [+](/#{ds}.add?Export=false) [/-](/#{ds}.sub?Export) *Export* switch writes notebook results into a file  
-					> [+](/#{ds}.add?Ingest=false) [/-](/#{ds}.sub?Ingest) *Ingest* switch ingests notebook results into the database  
-					> [+](/#{ds}.add?Share=false) [/-](/#{ds}.sub?Share) *Share* switch returns notebook results to the status area  
-					> [+](/#{ds}.add?Pipe=doc) [/-](/#{ds}.sub?Pipe) *Pipe* json supervised chips, events, docs, images to the notebook  
-					> [+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description) *Description* documents the usecase  
-					> [+](/#{ds}.add?Config=doc) [/-](/#{ds}.sub?Config) *Config* js-script defines usecase context  
-					> [+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) *Entry* json primes context on entry using { KEY: "SELECT ....", ...}  
-					> [+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) *Exit* json saves context on exit using { KEY: "UPDATE ....", ...}  
+					> [+](/#{ds}.add?Export=bool) [/-](/#{ds}.sub?Export) *Export* write notebook results into a file  
+					> [+](/#{ds}.add?Ingest=bool) [/-](/#{ds}.sub?Ingest) *Ingest* ingest notebook results into the database  
+					> [+](/#{ds}.add?Share=bool) [/-](/#{ds}.sub?Share) *Share* return notebook results to the status area  
+					> [+](/#{ds}.add?Pipe=doc) [/-](/#{ds}.sub?Pipe) *Pipe* run usecase in supervised or enumerated workflow  
+					> [+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description) *Description* document usecase  
+					> [+](/#{ds}.add?Run=doc) [/-](/#{ds}.sub?Run) *Run* parameters { until: COUNT, every: INTERVAL, start: DATE, end: DATE }  
+					> [+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) *Entry* prime context on entry { KEY: "SELECT ...." || VALUE, ...}  
+					> [+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) *Exit* save context on exit { KEY: "UPDATE ....", ...}  
 						  
 					as well as context-saving keys:
-					> *Save_STATE* aggregates streaming events [ {at:"STATE", ...}, ... ]  
-					> *Save_jpg* generates jpg from {at: "jpg": prime: "name", save: "name", index: [...], values: [...] } event  
-					> *Save* collects unaggregated streaming events  
+					> *Save_STATE* aggregate streaming events [ {at:"STATE", ...}, ... ]  
+					> *Save_jpg* generate jpg from {at: "jpg": prime: "name", save: "name", index: [...], values: [...] } event  
+					> *Save* collect unaggregated streaming events  
 
 					During execution, the *Pipe* will automatically add the context keys:
 					> *$* returned dataset (chips, events, docs, images, ....)  

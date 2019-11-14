@@ -14,6 +14,7 @@ Hyper parameters for specific Methods:
 `,
 		_Boost: `json`,
 		
+		Run: "json",
 		Samples: "int(11) default 1 comment 'number of training samples taken at random from supplied dataset' ",
 		Channels: "int(11) default 1 comment 'number of training channels takens consecutively from supplied dataset' ",
 		Method: "varchar(16) default 'ols' comment 'regression technique to USE = lrm | svm | pls | knn	| ols | ...' ",
