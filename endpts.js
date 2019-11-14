@@ -1250,7 +1250,7 @@ code  {
 
 							var
 								pipeQuery = {},
-								every = {
+								interval = {
 									minute: 60,
 									hour: 3600,
 									day: 86400,
@@ -1258,14 +1258,14 @@ code  {
 									month: 2419200,
 									year: 31449600
 								},
-								run = ctx.Run || {},
+								pipeRun = ctx.Run || {},
 								pipePath = Pipe.parseURL(pipeQuery,{},{},{}).parseEMAC( ctx ) ,
 								job = { // job descriptor for regulator
-									qos: profile.QoS || every[ctx.Every] || ctx.Every || 0 , 
+									qos: interval[pipeRun.every] || pipeRun.every || profile.QoS || 0 , 
 									priority: 0,
-									start: run.start || null,
-									end: run.end || null,
-									until: run.until || null,
+									start: pipeRun.start,
+									end: pipeRun.end,
+									until: pipeRun.until,
 									client: req.client,
 									class: ctx.Name,
 									credit: 100, // profile.Credit,

@@ -71,7 +71,7 @@ append site_body
 					> [+](/#{ds}.add?Share=bool) [/-](/#{ds}.sub?Share) *Share* return notebook results to the status area  
 					> [+](/#{ds}.add?Pipe=doc) [/-](/#{ds}.sub?Pipe) *Pipe* run usecase in supervised or enumerated workflow  
 					> [+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description) *Description* document usecase  
-					> [+](/#{ds}.add?Run=doc) [/-](/#{ds}.sub?Run) *Run* parameters { until: COUNT, every: INTERVAL, start: DATE, end: DATE }  
+					> [+](/#{ds}.add?Run=doc) [/-](/#{ds}.sub?Run) *Run* parameters { until: COUNT, every: "INTERVAL" || SECONDS, start: DATE, end: DATE }  
 					> [+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) *Entry* prime context on entry { KEY: "SELECT ...." || VALUE, ...}  
 					> [+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) *Exit* save context on exit { KEY: "UPDATE ....", ...}  
 						  
