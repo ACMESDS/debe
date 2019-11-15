@@ -1,16 +1,16 @@
 /**
 @class DEBE.Pipes
-Provide stream, image, etc pipes
+Provide stream, image, json, doc, db, aoi, etc pipes
 
 	PIPE(Trace,sql,job,cb) 
 	
-to run DEBE notebooks.   Each PIPE callsback 
+to run DEBE notebooks.   The PIPE will callback 
 
 	cb(data,job) 
 	
-with a {$: ...} object suitable for the specific pipe.  The PIPE may optionally regulate the job 
-using sql.insertJob.  If the PIPE needs to save its data (e.g. when it supervising a workflow), it 
-callsback 
+with a {$: ...} object suitable for the specific pipe, and may regulate the job using sql.insertJob.  
+If the PIPE needs to save state information (e.g. when it is supervising a workflow), it will
+callback 
 
 		cb(data, job, (ctx,save) => { 
 			save( data, ctx );		// save its data under plugin context ctx
@@ -20,7 +20,9 @@ The PIPE accepts a job containing:
 
 		qos: job timer in seconds || 0
 		priority: job prirority = 0,1,2, ... || 0
-		limit: max run date or cycles = 0,1,2 ... || 1 
+		start: starting date (null = n/a)
+		end: ending date (null = n/a)
+		until: max run cycles = 0,1,2 ... || 1 
 		client: "text" || "guest"
 		class: "text"
 		credit: remaining job credits = 0,1,2, ...
@@ -29,11 +31,7 @@ The PIPE accepts a job containing:
 		notes: "notes"
 		query: {...} query parms
 		path: "/dataset.type?..." pipe path
-		ctx: {...} plugin context keys
-		
-and a status logger:
-
-	Trace("status", arg1, arg2, ....)
+		ctx: {...} plugin/notebook context keys
 */
 var		// nodejs
 	CP = require("child_process"), 		//< Child process threads

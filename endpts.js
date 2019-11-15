@@ -47,7 +47,7 @@ function Trace(msg,req,fwd) {	// execution tracing
 }
 
 const { Copy,Each,Log,isString,isFunction,isError,isArray,Stream,typeOf } = ENUM;
-const { sqlThread, uploadFile, probeSite, errors, site, watchFile } = TOTEM;
+const { sqlThread, getIndex, uploadFile, probeSite, errors, site, watchFile, timeIntervals } = TOTEM;
 const { ingestList } = GEO;
 
 const { sysAlert, licenseOnDownload, defaultDocs } = module.exports = {
@@ -594,7 +594,7 @@ code  {
 										doc = dockeys[key];
 
 									//Log(">>mod", key, dockeys[key].substr(0,100));
-									sql.query( `ALTER TABLE app.${name} MODIFY ${keyId} ${spec} comment ?`, [ doc ] );
+									sql.query( `ALTER TABLE app.${name} MODIFY ${keyId} ${spec} comment ?`, [ doc || "" ] );
 								});
 
 							else
@@ -605,7 +605,8 @@ code  {
 										spec = speckeys[key],
 										doc = dockeys[doc];
 
-									sql.query( `ALTER TABLE app.${name} ADD ${keyId} ${spec} comment ?`, [ doc ] );
+									//Log("add", keyId, spec);
+									sql.query( `ALTER TABLE app.${name} ADD ${keyId} ${spec} comment ?`, [ doc || "" ] );
 								});
 
 							if ( inits = getter( mod.inits || mod.initial || mod.initialize ) )
@@ -715,13 +716,24 @@ code  {
 		skinContext( sql, ctx, ctx => {
 
 			switch ( ctx.type ) {
-				case "jade":
 				case "file":
-					res( errors.noEngine );
+					res( "publishing new notebook" );
+					["js","py","m"].forEach( type => {
+						getIndex( `./public/${type}`, files => {
+							files.forEach( file => {
+								if ( file == table+"."+type ) 
+									publish(sql, ctx, `./public/${type}/${table}`, table, type);									
+							});
+						});
+					});
+					break;
+					
+				case "jade":
+					res( errors.badEngine ); 
 					break;
 					
 				default:
-					res( "publishing" );
+					res( "publishing notebook" );
 
 					publish(sql, ctx, `./public/${ctx.type}/${ctx.name}`, ctx.name, ctx.type);
 			}
@@ -1250,18 +1262,10 @@ code  {
 
 							var
 								pipeQuery = {},
-								interval = {
-									minute: 60,
-									hour: 3600,
-									day: 86400,
-									week: 604800,
-									month: 2419200,
-									year: 31449600
-								},
 								pipeRun = ctx.Run || {},
 								pipePath = Pipe.parseURL(pipeQuery,{},{},{}).parseEMAC( ctx ) ,
 								job = { // job descriptor for regulator
-									qos: interval[pipeRun.every] || pipeRun.every || profile.QoS || 0 , 
+									qos: timeIntervals[pipeRun.every] || pipeRun.every || profile.QoS || 0 , 
 									priority: 0,
 									start: pipeRun.start,
 									end: pipeRun.end,

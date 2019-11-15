@@ -1150,6 +1150,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		noAttribute: new Error( "undefined engine attribute" ),
 		noLicense: new Error("license could not be created"),
 		noEngine: new Error( "no such engine" ),
+		badEngine: new Error( "improper engine" ),
 		noGraph: new Error( "graph db unavailable" ),
 		badAgent: new Error("bad agent request"),
 		noIngest: new Error("invalid/missing ingest dataset"),

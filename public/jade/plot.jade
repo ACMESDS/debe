@@ -135,50 +135,48 @@ append base_body
 							y0 = y[0] || 0,
 							Nx = x0.length || 0,
 							Ny = y0.length || 0,
-							mode = ((Nx <= 1) ? Nx : "n") + "x" + ((Ny <= 1) ? Ny : "n");
+							xy = [],
+							mode = ((Nx <= 1) ? Nx : "n") + "/" + ((Ny <= 1) ? Ny : "n");
 
-						Log(`switch [${Nx}x${Ny}]`, x, y);
+						Log(`plot ${mode} [${Nx}x${Ny}]`);
 
 						switch ( mode ) {
-							case "nxn":
+							case "n/n":		// series plot
 								for ( var n=0; n<Nx; n++ ) xyplot( x[n], y[n], cb );
 								return;
 
-							case "nx1":		// cluster plot
-								var xy = [];
+							case "n/1":		// cluster plot
 								x.forEach( (xn,n) => {
 									xy.push( index({ x: xn[0], y: xn[1], f: y[n][0] }) );	// d3 assigns y to 1 of 10 fill categories
 								});	
 								break;
 
-							case "nx0":		// cluster plot
-								var xy = [];
+							case "n/0":		// cluster plot
 								x.forEach( (xn,n) => {
 									xy.push( index({ x: xn[0], y: xn[1], f: y[n] }) );
 								});	
 								break;
 
-							case "1x1": // regression plot
-								var xy = [];
+							case "1/1": // scatter plot
 								x.forEach( (xn,n) => {
 									xy.push( index({ x: x[n][0], y: y[n][0], f: 0 }) );
 								});	
 								break;
 
-							case "0x0": // regression plot
-								var xy = [];
-								xy.push( { x: x, y: y, f: 0 } );
+							case "0/0": // scatter plot
+								//xy.push( { x: x, y: y, f: 0 } );
+								x.forEach( (xn,n) => {
+									xy.push( index( {x: x[n], y: y[n], f: 0} ) );
+								}); 
 								break;
 
-							case "1x0": // regression plot
-								var xy = [];
+							case "1/0": // scatter plot
 								x.forEach( (xn,n) => {
 									xy.push( index({ x: x[n][0], y: y[n], f: 0 }) );
 								});	
 								break;
 
-							case "0x1": // regression plot
-								var xy = [];
+							case "0/1": // scatter plot
 								x.forEach( (xn,n) => {
 									xy.push( index({ x: x[n], y: y[n][0], f: 0 }) );
 								});	
@@ -272,12 +270,12 @@ append base_body
 										.style("fill", d => color( d.f ) );
 						}
 
-						if ( style = lineStyles[plots] || lineDef ) if ( false ) { // add lines
+						if ( style = lineStyles[plots] || lineDef ) if ( true ) { // add lines
 
 							var line = d3.line()
 									.x( d => xscale(d.x) )
-									.y( d => yscale(d.y) )
-									.interpolate('linear');
+									.y( d => yscale(d.y) );
+									//.interpolate('linear');
 
 							svg
 									.append('path')
