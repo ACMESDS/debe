@@ -398,18 +398,21 @@ catch (err) {
 	}, 
 
 	function Xfollow( ds, ctx, cb ) { // expand url/file includes
-		cb( this.replace( /href=['|"]([^'"]*)/g, (str,ref) => { // smart links to follow <a href=REF>A</a> links		// /href=(.*?)\>/g
-			//var q = (ref.startsWith( "'" )) ? '"' : "'";
-			var 
-				key = ctx[ref] || ref;
+		if ( true ) 
+			cb (this );
+		else
+			cb( this.replace( /href=['|"]([^'"]*)/g, (str,ref) => { // smart links to follow <a href=REF>A</a> links		// /href=(.*?)\>/g
+				//var q = (ref.startsWith( "'" )) ? '"' : "'";
+				var 
+					key = ctx[ref] || ref;
 
-			//Log(">>>>>>>>>>href", ref, key);
-			if ( ds )	// blogging via browser
-				return `href="javascript:navigator.follow(${key},BASE.user.client,BASE.user.source)">`;
+				//Log(">>>>>>>>>>href", ref, key);
+				if ( ds )	// blogging via browser
+					return `href="javascript:navigator.follow(${key},BASE.user.client,BASE.user.source)">`;
 
-			else
-				return `href="${key}"`;
-		}) );
+				else
+					return `href="${key}"`;
+			}) );
 	},
 
 	function Xbacksub( blocks, cb ) {

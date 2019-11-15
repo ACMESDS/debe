@@ -246,7 +246,7 @@ The regression mode is determined by the following context keys:
 				res( new Error("training failed") );
 		}
 		
-		const { xy0, multi, x,y,x0,Method,Stats,Host,Name,Trace} = ctx;
+		const { xy0, multi, x,y,x0,Method,Stats,Host,Name,Hyper,Trace,Cycle,_Boost} = ctx;
 		
 		var
 			chans = xy0 || multi,
@@ -271,9 +271,10 @@ The regression mode is determined by the following context keys:
 			},
 			loader = loaders[use],
 			model = ctx[ `Save_${use}` ], 
-			solve = ctx.Hyper[use] || {},
-			cycle = ctx.Cycle || 0,
-			boost = ctx._Boost;
+			hyper = Hyper || {},
+			solve = hyper[use] || {},
+			cycle = Cycle || 0,
+			boost = _Boost || 0;
 		
 		Log({
 			boosting: cycle ? boost : false,
@@ -282,7 +283,7 @@ The regression mode is determined by the following context keys:
 			labelset: y ? y.length : "none",
 			using: use,
 			predicting: x0 ? x0.length : "none",
-			learning: ( x && y ) ? "supervised" : x ? "unsupervised" : chans ? "multichan train" : "off",
+			mode: ( x && y ) ? "supervised learning" : x ? "unsupervised learning" : chans ? "multichan learning" : x0 ? "predicting" : "unknown",
 			loader: loader ? true : false,
 			model: model ? true : false
 		});

@@ -13,6 +13,8 @@
  * 			Ext.Loader.setPath('Ext.ux', 'clients/extjs/plugins');
  * 		script(src="/clients/grids.js")
  * */
+const { Ajax, Log, Copy, Each, isString, isArray, isFunction, typeOf } = BASE;
+
 Ext.require([
 	// general
 	'Ext.toolbar.*',
@@ -55,8 +57,6 @@ Ext.require([
 	'Ext.util.Format',
 	'Ext.util.TaskManager'
 ]);
-
-const {Copy,Each,isString} = BASE;
 
 function DBstore( name, path, cols, opts ) {
 	

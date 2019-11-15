@@ -14,10 +14,11 @@ var BASE = {
 	
 	Log: console.log,
 	
+	typeOf: obj => obj.constructor.name,
 	isString: obj => obj.constructor.name == "String",
 	isNumber: obj => obj.constructor.name == "Number",
 	isArray: obj => obj.constructor.name == "Array",
-	isObject: obj => obj.constructor.name == "isObject",
+	isObject: obj => obj.constructor.name == "Object",
 	isDate: obj => obj.constructor.name == "Date",
 	isFunction: obj => obj.constructor.name == "Function",
 	isError: obj => obj.constructor.name == "Error",
@@ -153,161 +154,6 @@ var BASE = {
 			req.send(JSON.stringify(body));  	// end request
 		else
 			req.send();  // end request
-	},
-	
-	Fetch: function (opts, cb) {
-	/**
-	@method BASE.Fetch
-	Callback cb(recs, svg) with a d3 svg dom target, and the records recs = [rec, ...] that
-	were loaded from the source path 
-	
-		opts.ds = "/src?x:=STORE$.x[$KEY]&y:=STORE$.y[$KEY]..." 
-	
-	as updated by optional KEY dom-inputs:
-	
-		opts.KEY = [ ARG, ... ].TYPE   ||  function F( ... )
-		
-	where TYPE = range | list | select | ... specifies the type of dom input (with 
-	ARGs = [min,max,...] ), or it used F("make",key) to make the dom input and 
-	F("update",ds,val) to return an updated opts.ds source path given the input's 
-	present value.
-	
-	The global d3 must be available.
-	
-	@param {Object} opts source loading options {ds: "/path", ... }
-	@param {Function} cb callback(recs)
-	*/
-		const {Log, Ajax} = BASE;
-
-		function fetchData( path, opts ) {
-			/* 
-				Two problems with d3.json (cvs, etc): 
-					(1) Its version dependent.  v4+ use new promise structure. But worse
-					(2) d3.json() fails when fecthing on a https thread
-				Thus we use ajax instead.
-			*/
-			if (false) 	// use d3 to fetch
-				if ( d3.version.startsWith("3.") )	// older v3
-					d3.json( path, (err, recs) => {
-						if (err) 
-							alert( err+"" );
-
-						else {					
-							if (opts.debug>1) alert("recs"+JSON.stringify(recs));
-
-							if ( recs ) cb( isArray(recs) ? recs : [recs] , opts.svg );
-						}
-					});
-
-				else // newer v4+
-					d3.json( path ).then( recs => {
-						if (opts.debug>1) alert("recs"+JSON.stringify(recs));
-
-						if ( recs ) cb( isArray(recs) ? recs : [recs] , opts.svg );
-					});
-			
-			else 
-				Ajax("GET", true, path, recs => {
-					if (opts.debug>1) alert("recs"+recs);
-
-					if ( recs = JSON.parse(recs) ) cb( isArray(recs) ? recs : [recs] , opts.svg );
-				});
-		}
-		
-		if (d3) 
-			if ( BASE.isString(opts) ) 
-				fetchData( opts, {} );
-		
-			else {
-				if (opts.debug) alert( "opts: "+JSON.stringify(opts) ); 
-
-				d3.select("svg").remove();
-
-				var 
-					isFunction = BASE.isFunction,
-					body = d3.select("body"),
-					dims = opts.dims || { margin: null },
-					margin = dims.margin || {top: 20, right: 90, bottom: 30, left: 90},
-					svg = opts.svg = body.append("svg") 
-									.attr('width', (dims.width || 1200) - margin.left - margin.right )
-									.attr('height', (dims.height || 500) - margin.top - margin.bottom ),
-									//.append("g")
-									//	.attr("transform", dims.transform ? dims.transform.parseEMAC(dims) : ""),
-				
-									//.append("g")
-									//.attr("transform", "translate(" + opts.dims.margin.left + "," + opts.dims.margin.top + ")"),
-
-					widgets = opts.widgets || {},
-					def = "0:100:1".split(":");
-
-				var 
-					body = d3.select("body"),
-					url = opts.url || "",
-					family = (opts.family || "").split(",");
-
-				url.replace( /\/(.*).view[\?]?(.*)/, (str,view,query) => {
-					family.forEach( (fam,n) => family[n] = fam.tag( `/${fam}.view?${query}` ) );
-				});
-
-				"p".d3tag(body,	{ html: family.join(" || ")	} );
-
-				def.type = "range";
-
-				opts.ds.replace(/\$(\w+)/g, (str,key) => {
-					var 
-						id = "_"+key,
-						widget = widgets[key] || ( widgets[key] = def );
-
-					if ( !widget.created ) {
-						widget.created = true;
-
-						if ( isFunction(widget) ) 
-							var input = widget("make",key);
-
-						else
-							switch (widget.type) {
-								case "range":
-									var input = "input".d3tag(body, {type: "number", min: widget[0], max: widget[1], step: widget[2], value: widget[0], id:id} );
-									break;
-
-								case "select":
-									var input = "select".d3tag(body, { value: widget[0], id:id} );
-
-									widget.forEach( (arg,n) => input.insert("option").attr( "value", arg ).text( arg ) );
-									break;
-
-								case "list":
-									var input = "input".d3tag(body, {type: "text", value: widget[0], id:id} );
-									break;
-
-								default:
-									var input = null;
-							}
-
-						Log( `make widget ${key} id = ${id} type = ${widget.type}` );
-
-						if (input) input.on("change", () => {
-							//Log(input);
-							var 
-								el = input._groups[0][0], //v3 use input[0][0],		// dom is a major Kludge!
-								value = el.value,
-								id = el.id,
-								key = id.substr(1),
-								reg = new RegExp( `\\$${key}` , "g" ),
-								path = isFunction(widget) ? widget("update", opts.ds,value) : opts.ds.replace( reg, value );
-
-							//Log(input[0][0]);
-							Log(`adjust ${key}=${value} ${opts.ds} -> ${path}`);
-							fetchData( path, opts );
-						});
-					}
-				});
-
-				fetchData( opts.ds.replace(/\$\w+/g, "0"), opts );
-			}
-
-		else 
-			alert("BASE.d3json needs the d3");
 	},
 	
 	alert: "Skinning error: ",
@@ -681,7 +527,7 @@ Array.prototype.Extend = function (con) {
 			return JSON.parse(this);
 		}
 		catch (err) {
-			return def ? BASE.isFunction(def) ? def(this) : def : null;
+			return def ? isFunction(def) ? def(this) : def : null;
 		}
 	},
 
@@ -740,18 +586,24 @@ Array.prototype.Extend = function (con) {
 	},
 
 	function option () {
-		var
-			types = {
-				":" : "range",
-				"|" : "select",
-				"," : "list"
-			};
-		
 		if (this)
 			try {
 				return JSON.parse(this);
 			}
 			catch (err) {
+				var 
+					list = this.split(","),
+					rng = this.split(":");
+				
+				return (list.length>1) ? list : {min: parseFloat(rng[0] || 0), max: parseFloat(rng[1] || 10), step: parseFloat(rng[2] || 1) };
+				/*
+				var
+					types = {
+						":" : "range",
+						"|" : "select",
+						"," : "list"
+					};
+		
 				for (var tok in types) 
 					if ( args = this.split(tok) ) 
 						if ( args.length > 1 || tok == "," ) {
@@ -761,6 +613,7 @@ Array.prototype.Extend = function (con) {
 						}					
 					
 				return [this];
+				*/
 			} 
 					
 		else

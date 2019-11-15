@@ -5,17 +5,20 @@
  * The base client modules is used by Totem frameworks (grids, models, guides, etc) to support 
  * [Totem's content management](/skinguide.view)nc function. This module is typically used as follows:
  *
- * 		BASE.start( { options .... }, function cb(content widget) { ... } )
+ * 		BASE.start( { key: value options .... }, contentWidget => { ... } )
  * 
  * See the BASE.start() method for further information.
  * */
- 
-var BASE = {
+
+const { isString, isArray, isFunction, typeOf } = BASE = {
 	
+	Log: console.log,
+	
+	typeOf: obj => obj.constructor.name,
 	isString: obj => obj.constructor.name == "String",
 	isNumber: obj => obj.constructor.name == "Number",
 	isArray: obj => obj.constructor.name == "Array",
-	isObject: obj => obj.constructor.name == "isObject",
+	isObject: obj => obj.constructor.name == "Object",
 	isDate: obj => obj.constructor.name == "Date",
 	isFunction: obj => obj.constructor.name == "Function",
 	isError: obj => obj.constructor.name == "Error",
@@ -28,7 +31,7 @@ var BASE = {
 	Copy: (src,tar,deep) => {
 	/**
 	 @method copy
-	 @member ENUM
+	 @member BASE
 	 @param {Object} src source hash
 	 @param {Object} tar target hash
 	 @param {String} deep copy key 
@@ -118,7 +121,7 @@ var BASE = {
 	Each: (src,cb) => {
 	/**
 	 * @method each
-	 * @member ENUM
+	 * @member BASE
 	 * @param {Object} src source hash
 	 * @param {Function} cb callback (idx,val, isLast) returns true or false to terminate
 	 * 
@@ -134,101 +137,179 @@ var BASE = {
 		return keys.length==0;
 	},
 	
-	load: function (opts, cb) {		// callback cb(recs) with loaded recs from path opts.ds = "/src?x:=STORE$.x[$INPUT]&y:=STORE$.y[$INPUT]..." given global d3 env
-		function loader (recs) {
-			if (opts.debug) alert(opts.debug+"recs"+JSON.stringify(recs));
+	Ajax: function ( method, async, url, cb , body, kill ) {
+		var req = ((window.XMLHttpRequest)  			// get a request handle
+				? new XMLHttpRequest()
+				: new ActiveXObject("Microsoft.XMLHTTP"));
 
-			if ( recs ) cb(recs);
+		req.onreadystatechange = function() { 				// Set the callback
+			if (req.readyState==4 && req.status==200) 	// Service completed 
+				if (cb) 			// pass response to callback
+					if ( cb( req.responseText ) ) 	// test callback returned status
+						if (kill) kill();  // kill the document if cb returns true
+		};
+
+		req.open(method, url, async); // start request
+		if (body)
+			req.send(JSON.stringify(body));  	// end request
+		else
+			req.send();  // end request
+	},
+	
+	Fetch: function (opts, cb) {
+	/**
+	@method BASE.Fetch
+	Callback cb(recs, svg) with a d3 svg dom target, and the records recs = [rec, ...] that
+	were loaded from the source path 
+	
+		opts.ds = "/src?x:=STORE$.x[$KEY]&y:=STORE$.y[$KEY]..." 
+	
+	as updated by optional KEY dom-inputs:
+	
+		opts.KEY = [ ARG, ... ].TYPE   ||  function F( ... )
+		
+	where TYPE = range | list | select | ... specifies the type of dom input (with 
+	ARGs = [min,max,...] ), or it used F("make",key) to make the dom input and 
+	F("update",ds,val) to return an updated opts.ds source path given the input's 
+	present value.
+	
+	The global d3 must be available.
+	
+	@param {Object} opts source loading options {ds: "/path", ... }
+	@param {Function} cb callback(recs)
+	*/
+		const {Log, Ajax} = BASE;
+
+		function fetchData( path, opts ) {
+			/* 
+			There are problems with d3.json: 
+				(1) d3 became version dependent as  v4+ uses (sometime flakey) promise structure
+				(2) d3.json() fails when loading on a https thread
+			Thus we use ajax instead.
+			*/
+			if (false) 	{ // use d3 to fetch
+				if ( d3.version.startsWith("3.") )	// older v3
+					d3.json( path, (err, recs) => {
+						if (err) 
+							alert( err+"" );
+
+						else {					
+							if (opts.debug>1) alert("recs"+JSON.stringify(recs));
+
+							if ( recs ) cb( isArray(recs) ? recs : [recs] , opts.svg );
+						}
+					});
+
+				else // newer v4+
+					d3.json( path ).then( recs => {
+						if (opts.debug>1) alert("recs"+JSON.stringify(recs));
+
+						if ( recs ) cb( isArray(recs) ? recs : [recs] , opts.svg );
+					});
+			}
+			
+			else 
+				Ajax("GET", true, path, data => {
+					if (opts.debug>1) alert("data"+data);
+
+					if ( data = JSON.parse(data) ) cb( data , opts.svg );
+							//cb( isArray(recs) ? recs : [recs] , opts.svg );
+				});
 		}
 		
-		function d3tag (d3el, tag, attrs ) {
-			var el = d3el.append(tag);
-			
-			for (key in attrs) {
-				//alert("tag "+key+" " + attrs[key]);
-				switch (key) {
-					case "text":
-						el.text( attrs[key] ); 
-						break;
-					case "xstyle":
-						el.style( attrs[key]); 
-						break;
-					default:
-						el.attr(key, attrs[key]);
-				}
-			}
-			
-			return el;
-		}				
+		if (d3) 
+			if ( isString(opts) ) 
+				fetchData( opts, {} );
 		
-		if (opts.debug) alert( opts.debug+"opts: "+JSON.stringify(opts) ); 
+			else {
+				if (opts.debug) alert( "opts: "+JSON.stringify(opts) ); 
 
-		var 
-			view = d3.select("body"),
-			inputs = opts.inputs || {};
-		
-		//alert("body" + (body?true:false) );
-		
-		opts.ds.replace(/\$(\w+)/g, (str,key) => {
-			var 
-				id = "_"+key,				
-				args = inputs[key] || ( inputs[key] = ["0","255","1"] );
-			
-			if ( !args.created ) {
-				args.created = true;
-				isRange = false, //!Number.isNaN( parseFloat( args[0] ) ),
-				input = isRange 
-					? d3tag(view, "input", {type: "number", min: "0", max:"255", step:"1", value:"0", id:id} )
-					: d3tag(view, "select");
-			
-				if ( !isRange ) {
-					Log("dropdown", key, args);
-					args.forEach( (arg,n) => input.insert("option").attr( "value", arg ).text( arg ) );
-				}
+				d3.select("svg").remove();
 
-				Log( `new ${key} id = ${id}` );
-
-				/*
 				var 
-					label = d3tag(view, "label", {for: id, style: "display: inline-block; width: 240px; text-align: right", text: key }),
-					input = d3tag(view, "input", {type: "number", min: "0", max:"255", step:"1", value:"0", id:id} );
-				*/
-				/*
-				label
-					.insert( "span" ) 
-					.attr("id", id+"-value");  */
+					body = d3.select("body"),
+					dims = opts.dims || { margin: null },
+					margin = dims.margin || {top: 20, right: 90, bottom: 30, left: 90},
+					svg = opts.svg = body.append("svg") 
+									.attr('width', (dims.width || 1200) - margin.left - margin.right )
+									.attr('height', (dims.height || 500) - margin.top - margin.bottom ),
+									//.append("g")
+									//	.attr("transform", dims.transform ? dims.transform.parseEMAC(dims) : ""),
+				
+									//.append("g")
+									//.attr("transform", "translate(" + opts.dims.margin.left + "," + opts.dims.margin.top + ")"),
 
-				input.on("input", () => {
-					var 
-						el = input[0][0],		// dom is a major Kludge!
-						value = el.value,
-						id = el.id,
-						key = id.substr(1),
-						reg = new RegExp( `\\$${key}` , "g" ),
-						ds = opts.ds.replace( reg, value );
+					widgets = opts.widgets || {},
+					def = "0:100:1".split(":");
 
-					//Log(input[0][0]);
-					Log(`adjust ${key}=${value} ds=${opts.ds} -> ${ds}`);
-					d3.json( ds , loader );
+				var 
+					body = d3.select("body"),
+					url = opts.url || "",
+					family = (opts.family || "").split(",");
+
+				url.replace( /\/(.*).view[\?]?(.*)/, (str,view,query) => {
+					family.forEach( (fam,n) => family[n] = fam.tag( `/${fam}.view?${query}` ) );
 				});
+
+				"p".d3tag(body,	{ html: family.join(" || ")	} );
+
+				def.type = "range";
+
+				opts.ds.replace(/\$(\w+)/g, (str,key) => {
+					var 
+						id = "_"+key,
+						widget = widgets[key] || ( widgets[key] = def );
+
+					if ( !widget.created ) {
+						widget.created = true;
+
+						if ( isFunction(widget) ) 
+							var input = widget("make",key);
+
+						else
+							switch (widget.type) {
+								case "range":
+									var input = "input".d3tag(body, {type: "number", min: widget[0], max: widget[1], step: widget[2], value: widget[0], id:id} );
+									break;
+
+								case "select":
+									var input = "select".d3tag(body, { value: widget[0], id:id} );
+
+									widget.forEach( (arg,n) => input.insert("option").attr( "value", arg ).text( arg ) );
+									break;
+
+								case "list":
+									var input = "input".d3tag(body, {type: "text", value: widget[0], id:id} );
+									break;
+
+								default:
+									var input = null;
+							}
+
+						Log( `make widget ${key} id = ${id} type = ${widget.type}` );
+
+						if (input) input.on("change", () => {
+							//Log(input);
+							var 
+								el = input._groups[0][0], //v3 use input[0][0],		// dom is a major Kludge!
+								value = el.value,
+								id = el.id,
+								key = id.substr(1),
+								reg = new RegExp( `\\$${key}` , "g" ),
+								path = isFunction(widget) ? widget("update", opts.ds,value) : opts.ds.replace( reg, value );
+
+							//Log(input[0][0]);
+							Log(`adjust ${key}=${value} ${opts.ds} -> ${path}`);
+							fetchData( path, opts );
+						});
+					}
+				});
+
+				fetchData( opts.ds.replace(/\$\w+/g, "0"), opts );
 			}
-		});
-					
-		d3.json( opts.ds.replace(/\$\w+/g, "0") , loader); 
 
-		/*
-		else
-		if ( opts.pivots )
-			d3.json( `/${opts.ds}?_pivot=${opts.pivots}`, function (recs) {
-				if ( opts.data = recs )
-					cb( opts );
-			});
-
-		else
-			d3.json( `/${opts.ds}`, function (recs) {
-				if ( opts.data = recs )
-					cb( opts );
-			});*/
+		else 
+			alert("BASE.d3json needs the d3");
 	},
 	
 	alert: "Skinning error: ",
@@ -272,7 +353,7 @@ var BASE = {
 		//var file = files[0]; for (var n in file) alert(n+"="+file[n]);
 		//alert(JSON.stringify(Files));
 			
-			BASE.syncReq("POST", "/uploads.db", function (res) {
+			BASE.request( false, "POST", "/uploads.db", function (res) {
 				alert(res);
 			}, {
 				//name: file.name,
@@ -284,7 +365,7 @@ var BASE = {
 			});		
 	},
 	
-	syncReq: function( method, url, cb , body) {
+	request: function( async, method, url, cb , body) {
 
 		var req = ((window.XMLHttpRequest)  			// get a request handle
 				? new XMLHttpRequest()
@@ -300,7 +381,7 @@ var BASE = {
 			}
 		};
 		
-		req.open(method, url, false); // start request
+		req.open(method, url, async); 		// start request
 		if (body)
 			req.send(JSON.stringify(body));  							// end request
 		else
@@ -380,7 +461,7 @@ var BASE = {
 		
 		cb( req, function test(url) {  // provide callback this prompt tester
 
-			BASE.syncReq( "GET", url,  function (res) {
+			BASE.request( false, "GET", url,  function (res) {
 				
 				switch (res) {
 					case "pass":
@@ -448,8 +529,7 @@ var BASE = {
 		//if ( anchor.getAttribute("guard") != (opts.GUARD || "") )
 		//	return alert(`${BASE.alert} skin is password protected `+[anchor.getAttribute("guard"),opts.GUARD] );
 		
-		// Retain session parameters
-		
+		// Retain session parameters		
 
 		BASE.bodyAnchor = window.document.getElementsByTagName("body")[0];
 		BASE.parser.QUERY = anchor.getAttribute("query"); 
@@ -471,8 +551,8 @@ var BASE = {
 			BASE.socketio.emit("select", {
 				client: BASE.user.client,
 				message: "can I join please?",
-				ip: navigator.totem.ip,
-				location: navigator.totem.location
+				ip: "0.0.0.0", //navigator.totem.ip,
+				location: "somewhere"	// navigator.totem.location
 			});	
 		}
 
@@ -486,8 +566,7 @@ var BASE = {
 		if (anchor) {
 			var widget = new WIDGET(anchor);
 			
-			if (widget.content)
-				widget.content();
+			if (widget.content) widget.content();
 			
 			if (cb) cb( widget );
 		}
@@ -498,66 +577,22 @@ var BASE = {
 
 }
 
-String.prototype.parseURL = function (xx,pin) {
-
-	/**
-	 * @method Format
-	 * 
-	 * Format a string S containing ${X.key} tags.  The String wrapper for this
-	 * method extends X with optional plugins like X.F = {fn: function (X){}, ...}.
-	 * */
-	function Format(X,S) {
-
-		try {
-			var rtn = eval("`" + S + "`");
-			return rtn;
-		}
-		catch (err) {
-			return "[bad]";
-		}
-
-	}
-
-	var x = d = {};
-	function xs(n) {
-		if (n)
-			if ( x = xx[n] )
-				return x;
-			else
-				return x = xx[n] = xx.def || {};
-		else
-			return x;
-	}
-
-	function ds(n) {
-		if (n)
-			if ( d = xx[n] = DSLIST[n] ) 
-				return d;
-			else
-				return d = xx[n] = xx.def || {};
-		else
-			return d;
-	}
-	
-	if (pin) xx.pin = pin;
-	
-	return Format(xx,this);
+Array.prototype.Extend = function (con) {
+/**
+ * @method Extend
+ * @member ENUM
+ * Extend the opts prototype with specified methods, or, if no methods are provided, 
+ * extend this ENUM with the given opts.  Array, String, Date, and Object keys are 
+ * interpretted to extend their respective prototypes.  
+ * */
+	this.forEach( function (proto) {
+		//console.log("ext", proto.name, con);
+		con.prototype[proto.name] = proto;
+	});
 };
 
-String.prototype.parseJSON = function (def) {
-	try {
-		return JSON.parse(this);
-	}
-	catch (err) {
-		return def ? (def.constructor == Function) ? def(this) : def : null;
-	}
-}
-
-/**
-* @class Date
-*/
-
-Date.prototype.toJSON = function () {
+[ // extend Date
+	function toJSON () {
 /**
  * @method toJSON
  * Return MySQL compliant date string.
@@ -565,23 +600,202 @@ Date.prototype.toJSON = function () {
  */
 	return this.toISOString().split(".")[0];
 }
+].Extend(Date);
 
-/**
-* @class String
-*/
+[  // extend String
+	function d3tag (d3el, attrs ) {
+		var el = d3el.append(this);
 
-String.prototype.lisp = function lisp(parms,cb,endcb) {
-/**
- * @method lisp
- * Parse this string using the {@link LISP#String Parser}.
- *
- * @param {Function} cb Callback(token,args) returns an arg for the next args list
- * @return {Array} arg list returned by callback
- */
-	var ps = new LISP(this,parms,cb,endcb);
-	return ps.args;
-}
+		for (key in attrs) {
+			//alert("tag "+key+" " + attrs[key]);
+			switch (key) {
+				case "text":
+				case "html":
+					el[key]( attrs[key] ); 
+					break;
+				case "xstyle":  // seems to crash so x-ed out
+					el.style( attrs[key]); 
+					break;
+				default:
+					el.attr(key, attrs[key]);
+			}
+		}
 
+		return el;
+	},
+		
+	/*
+	String.prototype.parseURL = function (xx,pin) {
+
+		function Format(X,S) {
+
+			try {
+				var rtn = eval("`" + S + "`");
+				return rtn;
+			}
+			catch (err) {
+				return "[bad]";
+			}
+
+		}
+
+		var x = d = {};
+		function xs(n) {
+			if (n)
+				if ( x = xx[n] )
+					return x;
+				else
+					return x = xx[n] = xx.def || {};
+			else
+				return x;
+		}
+
+		function ds(n) {
+			if (n)
+				if ( d = xx[n] = DSLIST[n] ) 
+					return d;
+				else
+					return d = xx[n] = xx.def || {};
+			else
+				return d;
+		}
+
+		if (pin) xx.pin = pin;
+
+		return Format(xx,this);
+	}
+	*/
+	function parseURL( query ) {
+		var 
+			parts = this.split("?"),
+			path = parts[0] || "",
+			parms = (parts[1] || "").split("&");
+		
+		parms.forEach( parm => {
+			parm.replace( /(.*)(=)(.*)/g, (rem,lhs,op,rhs) => query[lhs] = rhs );
+		});
+		
+		return path;
+	},
+	
+	function parseJSON (def) {
+		try {
+			return JSON.parse(this);
+		}
+		catch (err) {
+			return def ? isFunction(def) ? def(this) : def : null;
+		}
+	},
+
+	function lisp(parms,cb,endcb) {
+	/**
+	 * @method lisp
+	 * Parse this string using the {@link LISP#String Parser}.
+	 *
+	 * @param {Function} cb Callback(token,args) returns an arg for the next args list
+	 * @return {Array} arg list returned by callback
+	 */
+		var ps = new LISP(this,parms,cb,endcb);
+		return ps.args;
+	},
+
+	function tag(el,at) {
+	/**
+	@member String
+	@method tag
+
+	Tag url (el = ? || &) or html (el = html tag) with specified attributes.
+
+	@param {String} el tag element = ? || & || html tag
+	@param {String} at tag attributes = {key: val, ...}
+	@return {String} tagged results
+	*/
+
+		if (!at) { at = {href: el}; el = "a"; }
+
+		if ( el == "?" || el == "&" ) {  // tag a url
+			var rtn = this;
+
+			BASE.Each(at, (key,val) => {
+				rtn += el + key + "=" + ( (typeof val == "string") ? val : JSON.stringify(val) ); 
+				el = "&";
+			});
+
+			return rtn;	
+		}
+
+		else {  // tag html
+			var rtn = "<"+el+" ";
+
+			BASE.Each( at, (key,val) => rtn += key + "='" + val + "' " );
+
+			switch (el) {
+				case "embed":
+				case "img":
+				case "link":
+				case "input":
+					return rtn+">" + this;
+				default:
+					return rtn+">" + this + "</"+el+">";
+			}
+		}
+	},
+
+	function option () {
+		if (this)
+			try {
+				return JSON.parse(this);
+			}
+			catch (err) {
+				var 
+					list = this.split(","),
+					rng = this.split(":");
+				
+				return (list.length>1) : list : {min: rng[0], max: rng[1], del: rng[2]};
+				/*
+				var
+					types = {
+						":" : "range",
+						"|" : "select",
+						"," : "list"
+					};
+		
+				for (var tok in types) 
+					if ( args = this.split(tok) ) 
+						if ( args.length > 1 || tok == "," ) {
+							args.type = types[tok];
+							//Log(tok, args);
+							return args;
+						}					
+					
+				return [this];
+				*/
+			} 
+					
+		else
+			return null;
+	},
+	
+	function parseEval($) {
+	/**
+	@member String
+	@method parseEval
+
+	Parse "$.KEY" || "$[INDEX]" expressions given $ hash.
+
+	@param {Object} $ source hash
+	*/
+		try {
+			return eval(this+"");
+		}
+		
+		catch (err) {
+			return err+"";
+		}
+	}
+].Extend(String);
+
+/*
 Array.prototype.get = function (idx, key) {
 	var keys = key.split(","), K = keys.length, rtns = [], recs = this, at = Object.keys(idx)[0], match = idx[at];
 
@@ -598,213 +812,43 @@ Array.prototype.get = function (idx, key) {
 			}
 		}
 }
-
-String.prototype.tag = function (el,at) {
-/**
-@method tag
-Tag url (el=?|&), list (el=;|,), or tag html using specified attributes.
-@param {String} el tag element
-@param {String} at tag attributes
-@return {String} tagged results
 */
+[ // extend Array
+	function Each (cb) {
+	/**
+	 * @method Each
+	 * Enumerate with callback
+	 * @param {Object} cb callback (index,value) returns true to terminate
+	*/
+		var N = this.length;
+		for (var n=0;n<N;n++) if (cb(n,this[n])) return true;
+		return false;
+	},
 
-	if (  el == "?" || el == "&" ) {  // tag a url or list
-		var rtn = this+el;
+	function hashify (rtn, key) { 
+	/**
+	* @method hashify
+	* @public
+	* Build map hash from data records.
+	* @param {Array} recs records to map
+	* @param {Object} rtn hash to return
+	* @param {String} idx index into record
+	*/
+		if (key) 
+			this.forEach( (rec) => {
+				rtn[rec[key]] = true;
+			});
 
-		for (var n in at) 
-			if ( val = at[n] )
-				switch ( val.constructor ) {
-					//case Array: rtn += at[n].join(",");	break;
-					case Array:
-					case Date:
-					case Object: rtn += JSON.stringify(at[n]); break;
-					default: rtn += n + "=" + val + "&";
-				}
-
-		return rtn;				
-	}
-
-	else {  // tag html
-		var rtn = "<"+el+" ";
-
-		for (var n in at) 
-			if ( val = at[n] )
-				rtn += n + "='" + val + "' ";
-
-		switch (el) {
-			case "embed":
-			case "img":
-			case "link":
-			case "input":
-				return rtn+">" + this;
-			default:
-				return rtn+">" + this + "</"+el+">";
-		}
-	}
-}
-
-String.prototype.option = function () {
-	try {
-		return JSON.parse(this);
-	}
-	catch (err) {
-		return (this == "none") ? null : this.length ? this.split(",") : null;
-	} 
-}
-
-/*
-String.prototype.indent = function (tag,at) {	
-	if (tag) 
-		if (at)
-			return tag + "(" + BASE.joinify(at) + ")" + "\n\t" + this.split("\n").join("\n\t");
 		else
-			return tag + "\n\t" + this.split("\n").join("\n\t");
-	else
-		return "\t" + this.split("\n").join("\n\t");
-}
-*/
+			this.forEach( (rec,n) => {
+				rtn[rec] = n+1;
+			});
 
-/*
-String.prototype.tag = function tag(el,at,eq) {
-/ **
-@method tag
-Tag url (el=?) or tag html (el=html tag) with specified attributes.
-@param {String} el tag element
-@param {String} at tag attributes
-@return {String} tagged results
-* /
-
-	if ( el == "?" || el == "&" ) {  // tag a url
-		var rtn = this+el;
-
-		for (var n in at) {
-			var val = at[n];
-			rtn += n + (eq||"=") + ((typeof val == "string") ? val : JSON.stringify(val)) + "&"; 
-		}
-
-		return rtn;	
+		return rtn;
 	}
+].Extend(Array);
 
-	else {  // tag html
-		var rtn = "<"+el+" ";
-
-		for (var n in at) {
-			var val = at[n];
-			rtn += n + "='" + val + "' ";
-		}
-
-		switch (el) {
-			case "embed":
-			case "img":
-			case "link":
-			case "input":
-				return rtn+">" + this;
-			default:
-				return rtn+">" + this + "</"+el+">";
-		}
-	}
-}
-*/
-
-/**
-* @class Array
-*/
-
-/*
-Array.prototype.hashify = function (val) {
-/ **
- * @method hashify
- * /
-	var rtn = new Object();
-	var N = this.length;
-
-	if (val)
-		for (n=0;n<N;n++) rtn[this[n][val]] = n;
-	else
-		for (n=0;n<N;n++) rtn[this[n]] = n;
-	
-	return rtn;
-}
-*/
-
-Array.prototype.Each = function (cb) {
-/**
- * @method Each
- * Enumerate with callback
- * @param {Object} cb callback (index,value) returns true to terminate
-*/
-	var N = this.length;
-	for (var n=0;n<N;n++) if (cb(n,this[n])) return true;
-	return false;
-}
-
-Array.prototype.hashify = function (rtn, key) { 
-/**
-* @method hashify
-* @public
-* Build map hash from data records.
-* @param {Array} recs records to map
-* @param {Object} rtn hash to return
-* @param {String} idx index into record
-*/
-	if (key) 
-		this.forEach( (rec) => {
-			rtn[rec[key]] = true;
-		});
-		
-	else
-		this.forEach( (rec,n) => {
-			rtn[rec] = n+1;
-		});
-	
-	return rtn;
-}
-
-/*
-function listify(hash,idxkey,valkey) {
-/ **
-* @method listify
-* @public
-* Build data records from a hash.
-* @param {String} idxkey index key name
-* @param {String} valkey value key name
-* @param {hash} input input key-value hash
-* @return {Array} output records
-* /
-	var list = [];
-	var n = 0;
-	
-	if (idxkey)
-		for (var idx in hash) {
-			rec = {ID:n++};
-			rec[idxkey] = idx;
-			rec[valkey] = hash[idx];
-			list.push( rec );
-		}
-	else
-		for (var idx in hash) 
-			list.push(idx);
-			
-	return list;
-}
-
-function joinify(hash, list, cb) {
-	var rtn = [];
-
-	for (var n in hash) 
-		if (n)
-			if (hash.hasOwnProperty(n)) 
-				rtn.push( cb ? cb(n,escape(hash[n])) : n + "=" + escape(hash[n]) );
-	
-	return rtn.join(list || ",");
-}
-*/
-
-/**
-@class LISP
-*/
-
-function LISP(text,parms,cb,fincb) {
+function LISP(text,parms,cb,fincb) {	// list processing
 /**
 @constructor
 Construct and execute the list processor against supplied text, returning an
@@ -853,7 +897,8 @@ with Name, the parm[Index], and the parms Name0-NameCount-1.
 	this.args = this.lisp(cb,fincb);
 }
 
-LISP.prototype.tokens = function (tok) { 
+[ // extend LISP
+	function tokens (tok) { 
 /**
 * @method tokens
 */
@@ -883,9 +928,9 @@ LISP.prototype.tokens = function (tok) {
 	}
 	
 	return toks;
-}
-
-LISP.prototype.lisp = function (cb,fincb) { 
+},
+	
+	function lisp (cb,fincb) { 
 /**
  * @method lisp
  * Parse this string from current position with callbacks on every token.
@@ -948,8 +993,10 @@ LISP.prototype.lisp = function (cb,fincb) {
 		
 	return args;
 }
+].Extend(LISP);
 
-HTMLDivElement.prototype.Each = function (cb) {
+[	// extend HTMLDivElement
+	function Each (cb) {
 	var nodes = this.childNodes;
 	
 	for (var n=0,N=nodes.length; n<N; n++) 
@@ -957,6 +1004,7 @@ HTMLDivElement.prototype.Each = function (cb) {
 		
 	return false;
 }
+].Extend( HTMLDivElement );
 
 function DS(anchor) {   // to be overridden by client
 }
@@ -1021,6 +1069,7 @@ function WIDGET (Anchor) {
 	this.id = Anchor.id;
 	this.name = this.class = Anchor.getAttribute("class") || "";	
 		
+	//console.log("widget id.name=", this.id+"."+this.name);
 /**
  * @property {String}
  * Anchor DOM anchor ties to this data skin
@@ -1095,114 +1144,117 @@ function WIDGET (Anchor) {
 	
 //alert("Skinning "+this.name+" childs="+Anchor.childNodes);
 
-	// No! You cant use Each on childNodes - they are not really an Array
-	
-	if (Anchor.childNodes)
-	for (var n=0, N=Anchor.childNodes.length; n<N; n++) {
-		var childAnchor = Anchor.childNodes[n];
-		
-//alert("skin "+this.name+" at child "+n+"=" + childAnchor.nodeName);
-		
-		switch (childAnchor.nodeName) {
-			case "ISHTML":
-				HTML += childAnchor.innerHTML;
-				break;
-
-			case "DIV":
-			
-				var widget = new WIDGET(childAnchor),
-					route = widget[widget.id];
-				
-//alert("div id="+widget.id+" tit="+widget.title+" nam="+widget.name);
-
-				if ( route ) {
-//alert(`UIing ${widget.id}.${widget.name}`);
-					widget[widget.id]();  // JS gets confused if we use route() to call a prototype
-					if (widget.UI) UIs.push( widget.UI );
-				}
-				else
-				if (widget.default) {
-//alert(`Default UIing ${widget.id}.${widget.name}`);
-					widget.default(); 
-					if (widget.UI) UIs.push( widget.UI );
-				}
-				
-				else
-					alert(`${BASE.alert} no prototype for ${widget.id}.${widget.name}`);
-				
-				break;
-
-			case "SCRIPT":
-				break;
-				
-			case "#comment":
-			case "#text":
-				break;
-
-			/*
-			case "INLINE": 
-							
-				var	src = childAnchor.getAttribute("src") || "",
-					parts = src.split("?")[0].split("."),
-					//area = parts[0] || "uploads",
-					//name = parts[1] || "file",
-					type = parts[1] || "type",
-					w = childAnchor.getAttribute("w") || 600,   	// width
-					h = childAnchor.getAttribute("h") || 600,		// heigth
-					g = childAnchor.getAttribute("g") || "goto",	// goto label
-					a = childAnchor.getAttribute("a") || "Classif",	// file attribute
-					s = childAnchor.getAttribute("s") || "",		// css style
-					//src = `/${area}/${name}.${type}`,
-					classif = ""; //"".tag("iframe",{src: "/"+a+"/"+src,width:200,height:25,class:s,scrolling:"yes",frameborder:0});
-
-//alert(JSON.stringify(["inline",w,h,g,a,s,type,src]));
-
-				switch (type.toUpperCase()) {
-					case "JPG":
-					case "PNG":
-					case "ICO":
-
-						HTML = "".tag("img", { src:src, width:w, height:h }) 
-									+ classif
-									+ g.tag("a", { href:"/files.view?option="+src });
-						
+	var children = Anchor.childNodes;
+	//console.log("widget childs=", children);
+	if ( children )
+		for (var n=0, N=children.length; n<N; n++) {	// No! You cant use Each on childNodes - they are not really an Array
+			//console.log(`widget n=${n}`, children[n] ? true : false);
+			var childAnchor = children[n]; 
+			if ( childAnchor ) {
+				switch (childAnchor.nodeName) {
+					/*
+					case "ISHTML":
+						HTML += childAnchor.innerHTML;
 						break;
-						
-					case "DB":
-					
-						HTML = "no support".tag("iframe", { src:src, width:w, height:h  })
-									+ classif
-									+ g.tag("a", { href:"/project.view?g="+name });
-									
+					*/
+
+					case "DIV":
+
+						var 
+							widget = new WIDGET(childAnchor),
+							proto = widget[widget.id];
+
+		// console.log("div id.name="+widget.id+"."+widget.name, "title="+widget.title, "widget=",widget, "route=", proto);
+
+						if ( proto ) {
+		//console.log(`div route id.name=${widget.id}.${widget.name}`);
+							widget[widget.id]();  // JS gets "wrong this" if we use proto() directly, so call the "long way"
+							if (widget.UI) UIs.push( widget.UI );
+						}
+						else
+						if (widget.default) {		// widget has a default() method to initialize it
+		//console.log(`div default id.name=${widget.id}.${widget.name}`);
+							widget.default(); 
+							if (widget.UI) UIs.push( widget.UI );
+						}
+
+						else
+							alert(`${BASE.alert} no prototype for ${widget.id}.${widget.name}`);
+
 						break;
 
-					case "VIEW":
-
-						HTML = "no support".tag("iframe", { src:src+"?hold="+(childAnchor.getAttribute("hold")||0), width:w, height:h  })
-									+ classif
-									+ g.tag("a", { href:"/engines.view?name="+name });
+					case "SCRIPT":
 						break;
-						
+
+					case "#comment":
+					case "#text":
+						break;
+
+					/*
+					case "INLINE": 
+
+						var	src = childAnchor.getAttribute("src") || "",
+							parts = src.split("?")[0].split("."),
+							//area = parts[0] || "uploads",
+							//name = parts[1] || "file",
+							type = parts[1] || "type",
+							w = childAnchor.getAttribute("w") || 600,   	// width
+							h = childAnchor.getAttribute("h") || 600,		// heigth
+							g = childAnchor.getAttribute("g") || "goto",	// goto label
+							a = childAnchor.getAttribute("a") || "Classif",	// file attribute
+							s = childAnchor.getAttribute("s") || "",		// css style
+							//src = `/${area}/${name}.${type}`,
+							classif = ""; //"".tag("iframe",{src: "/"+a+"/"+src,width:200,height:25,class:s,scrolling:"yes",frameborder:0});
+
+		//alert(JSON.stringify(["inline",w,h,g,a,s,type,src]));
+
+						switch (type.toUpperCase()) {
+							case "JPG":
+							case "PNG":
+							case "ICO":
+
+								HTML = "".tag("img", { src:src, width:w, height:h }) 
+											+ classif
+											+ g.tag("a", { href:"/files.view?option="+src });
+
+								break;
+
+							case "DB":
+
+								HTML = "no support".tag("iframe", { src:src, width:w, height:h  })
+											+ classif
+											+ g.tag("a", { href:"/project.view?g="+name });
+
+								break;
+
+							case "VIEW":
+
+								HTML = "no support".tag("iframe", { src:src+"?hold="+(childAnchor.getAttribute("hold")||0), width:w, height:h  })
+											+ classif
+											+ g.tag("a", { href:"/engines.view?name="+name });
+								break;
+
+							default:
+
+								HTML = "".tag("iframe", { src: "/code"+src, width:w, height:h  })
+											+ classif
+											+ g.tag("a", { href:"/engines.view?name="+name, width:w, height:h });
+
+						}
+
+						childAnchor.innerHTML = HTML;
+
+						break;
+					*/
+
 					default:
-					
-						HTML = "".tag("iframe", { src: "/code"+src, width:w, height:h  })
-									+ classif
-									+ g.tag("a", { href:"/engines.view?name="+name, width:w, height:h });
-							
-				}
+						if (childAnchor.innerHTML) 
+							HTML += childAnchor.innerHTML.tag(childAnchor.nodeName,{});
+				};
 
-				childAnchor.innerHTML = HTML;
-				
-				break;
-			*/
-
-			default:
-				if (childAnchor.innerHTML) 
-					HTML += childAnchor.innerHTML.tag(childAnchor.nodeName,{});
-		};
-		
-		if (opts.NIXHTML) childAnchor.innerHTML = "";
-	}
+				if (opts.NIXHTML) childAnchor.innerHTML = "";
+			}
+		}
 
 	//alert(`DDing ${this.name}`);
 	this.Data = new DS(Anchor);
@@ -1210,105 +1262,16 @@ function WIDGET (Anchor) {
 	this.HTML = HTML;
 }
 
-WIDGET.prototype.status = function (oper,msg) {
+[	// extend WIDGET
+	function status (oper,msg) {
 /**
 * @method status
 */
-	// Set dom.disable_window_status_change = false in FF about:config to get window.status to work
-	if (this.trace)
-		//window.status = oper+" "+this.name+" "+(msg||"");
-		console.log(oper+" "+this.name+" "+(msg||""));
-}
-
-/*
-function Copy(src,tar,cb) {
-/ **
- * @method Copy
- * @public
- * @param {Object} src source hash
- * @param {Object} tar target hash
- * @param {Function} cb callback(idx,val) returns true to drop
- * @return {Object} target hash
- * 
- * Shallow Copy of source hash under supervision of callback. 
- * /
-
-	if (cb) 
-		for (var key in src) 
-			tar[key] = cb( key, src[key] );
-	else 
-		for (var key in src) 
-			tar[key] = src[key];
-
-	return tar;
-}
-*/
-
-/*
-function Clone(src,cb) {
-	return Copy(src,{},cb);
-} */
-
-/*
-function Each(src,cb) {
-/ **
- * @method Each
- * @public
- * @param {Object} src source hash
- * @param {Function} cb callback (idx,val) returning true or false
- * 
- * Shallow enumeration over source hash until callback returns true.
- * * /
-	
-	if (src)
-	switch (src.constructor) {
-		case String:
-		
-			for (var n=0,N=src.length; n<N; n++) 
-				if (cb(n,src.charAt(n))) return true;
-				
-			return false;
-		
-		case Array:
-
-			for (var n=0,N = src.length;n<N;n++) 
-				if (cb(n,src[n])) return true;
-				
-			return false;
-		
-		case Object:
-
-			for (var n in src)  
-				if (cb(n,src[n])) return true;
-			
-			return false;
-
-		default:
-		
-			for (var n in src)  
-				if (src.hasOwnProperty(n)) 
-					if (cb(n,src[n])) return true;
-			
-			return false;
-			
+		// Set dom.disable_window_status_change = false in FF about:config to get window.status to work
+		if (this.trace)
+			//window.status = oper+" "+this.name+" "+(msg||"");
+			console.log(oper+" "+this.name+" "+(msg||""));
 	}
-}
-*/
-
-/*
-String.prototype.format = function (req,plugin) {
-	req.plugin = req.F = plugin || {};
-	return BASE.format(req,this);
-} */
-
-/*
-String.prototype.json = function (def) {
-	try {
-		return JSON.parse(this);
-	}
-	catch (err) {
-		return def;
-	}
-} */
+].Extend(WIDGET);
 
 // UNCLASSIFIED

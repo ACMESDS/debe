@@ -69,10 +69,10 @@ append base_head
 
 	script.
 		var 
+			merge = "??/beta?name=gen-0&x:=Save$[0].x&y:=Save$[0].y", //"!{query.merge}" ? "??!{query.merge}" : "",
 			opts = {  // define plot options
-				ds: 
-					"!{query.src}"
-						? "!{query.src}?name=#{query.name}&x:=#{query.x}&y:=#{query.y}&case:=name"
+				ds: "!{query.src}"
+						? "!{query.src}?name=#{query.name}&x:=#{query.x}&y:=#{query.y}&case:=name" + merge
 						:  "/regress?name=test2&x:=Save_train$.x[$chan]&y:=Save_train$.y[$chan]&case:=name",
 				dims: {
 					margin: {top: 5, right: 10, bottom: 5, left: 10},
@@ -86,7 +86,7 @@ append base_head
 				label: ( "#{query.label}" || "x,y" ).option(),
 				min: ("#{query.min}" || "0,0").split(","),
 				max: ("#{query.max}" || "1,1").split(","),
-				extra: "#{query.extra}".option(),
+				extra: null, //"#{query.extra}".option(),
 				details: "#{query.details}",
 				index: "#{query.index}".option(),
 				keys: ("#{query.keys}" || "x,y,details").option(),
@@ -100,28 +100,13 @@ append base_head
 			};
 
 		const {NODE, NODES, VALUE, SIZE, PARENT, DOC} = opts;
-		const {isString,isArray,Fetch,Log} = BASE;
+		//const {isString,isArray,Fetch,Log} = BASE;
 
 append base_body
 	if !query.help
 		script.
-			Fetch( opts, (recs,svg) => {
-				var 
-					width = svg.attr("width"),
-					height = svg.attr("height"),			
-					margin = opts.dims.margin,
-					svg = svg.append("g")
-							.attr("transform", "translate(" + margin.left + "," + margin.top + ")"),
-
-					body = d3.select("body"),
-					markerStyles = opts.marker || [],
-					markerDef = markerStyles[0],
-					lineStyles = opts.line || [],
-					lineDef = lineStyles[0],
-					xIndex = opts.index[0],
-					yIndex = opts.index[1];
-
-				recs.forEach( rec => {
+			Fetch( opts, (data,svg) => {
+				function recplot(rec,name) {
 					function xyplot(x,y,cb) {
 
 						function index(pair) {
@@ -131,14 +116,14 @@ append base_body
 						}
 
 						var
-							x0 = x[0] || 0,
-							y0 = y[0] || 0,
-							Nx = x0.length || 0,
-							Ny = y0.length || 0,
+							x0 = x.forEach ? x[0] || 0 : 0,
+							y0 = y.forEach ? y[0] || 0 : 0,
+							Nx = x0.forEach ? x0.length : 0,
+							Ny = y0.forEach ? y0.length : 0,
 							xy = [],
 							mode = ((Nx <= 1) ? Nx : "n") + "/" + ((Ny <= 1) ? Ny : "n");
 
-						Log(`plot ${mode} [${Nx}x${Ny}]`);
+						Log( `plot ${mode} [${Nx}x${Ny}]` );
 
 						switch ( mode ) {
 							case "n/n":		// series plot
@@ -164,10 +149,14 @@ append base_body
 								break;
 
 							case "0/0": // scatter plot
-								//xy.push( { x: x, y: y, f: 0 } );
-								x.forEach( (xn,n) => {
-									xy.push( index( {x: x[n], y: y[n], f: 0} ) );
-								}); 
+								if ( x.forEach )
+									x.forEach( (xn,n) => {
+										xy.push( index( {x: x[n], y: y[n], f: 0} ) );
+									}); 
+
+								else
+									xy.push( { x: x, y: y, f: 0 } );
+
 								break;
 
 							case "1/0": // scatter plot
@@ -187,7 +176,7 @@ append base_body
 							for (var N=extra.length, n=0; n<N; n++)
 								xy.push( {x: extra[n], y: extra[n] } ); 
 
-						// Log( JSON.stringify(xy) );
+						//Log( JSON.stringify(xy) );
 
 						if ( !plots ) {  // setup axes on first source
 							/*
@@ -270,7 +259,7 @@ append base_body
 										.style("fill", d => color( d.f ) );
 						}
 
-						if ( style = lineStyles[plots] || lineDef ) if ( true ) { // add lines
+						if ( style = lineStyles[plots] || lineDef ) if ( xy.length>1 ) { // add lines
 
 							var line = d3.line()
 									.x( d => xscale(d.x) )
@@ -302,7 +291,7 @@ append base_body
 						cb( ++plots );
 					}
 
-					if (opts.debug > 2) alert( "case: "+rec.case );
+					//if (opts.debug > 2) alert( "case: "+ name );
 
 					var
 						x = rec.x || [],
@@ -363,6 +352,30 @@ append base_body
 
 					color.domain( d3.range(0,colors) );
 
-					xyplot(x, y, plots => {} );
-				});
+					xyplot(x, y, plots => {} );					
+				}
+			
+				var 
+					width = svg.attr("width"),
+					height = svg.attr("height"),			
+					margin = opts.dims.margin,
+					svg = svg.append("g")
+							.attr("transform", "translate(" + margin.left + "," + margin.top + ")"),
+
+					body = d3.select("body"),
+					markerStyles = opts.marker || [],
+					markerDef = markerStyles[0],
+					lineStyles = opts.line || [],
+					lineDef = lineStyles[0],
+					xIndex = opts.index[0],
+					yIndex = opts.index[1];
+
+				if ( data.forEach ) 
+					data.forEach( (rec,n) => recplot(rec, n+"" ) );
+
+				else
+					for ( var key in data ) 
+						if ( recs = data[key] )
+							recs.forEach( (rec,n) => recplot( rec, key+n ) );
+			
 			});

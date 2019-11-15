@@ -14,10 +14,10 @@ module.exports = {
 	
 	engine: function beta(ctx, res) {  // Engine code.  If the engine 
 	/*
-	Generate beta function with specified alpha,beta ctx parameters.
+	Generate cummulative beta function with specified alpha,beta ctx parameters.
 	*/
 
-		var vmctx = $( "x = 0:1/N:1; y = beta(x,a,b);", {
+		var vmctx = $( "x = 1/N:1/N:1-1/N; y = cumbeta(x,a,b);", {
 			a: ctx.alpha,
 			b: ctx.beta,
 			N: ctx.N

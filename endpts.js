@@ -1190,9 +1190,11 @@ code  {
 			});
 		}
 
-		function crossParms( depth, keys, forCtx, setCtx, cb ){	// cross forCtx keys with callback cb(setCtx)
+		function crossParms( index, keys, forCtx, setCtx, cb ){	// cross forCtx keys with callback cb(setCtx)
+			var depth = index.length;
+			
 			if ( depth == keys.length ) 
-				cb( setCtx );
+				cb( setCtx, index );
 
 			else {
 				var 
@@ -1201,14 +1203,14 @@ code  {
 
 				if (values) 
 					if ( values.forEach )	// enumerate over array values
-						values.forEach( value => {
+						values.forEach( (value,i) => {
 							setCtx[ key ] = value;
-							crossParms( depth+1, keys, forCtx, setCtx, cb );
+							crossParms( index.concat(i), keys, forCtx, setCtx, cb );
 						});
 
 					else {	// set to specified value
 						setCtx[ key ] = values;
-						crossParms( depth+1, keys, forCtx, setCtx, cb );
+						crossParms( index.concat(0), keys, forCtx, setCtx, cb );
 					}
 			}
 		}
@@ -1388,9 +1390,12 @@ code  {
 								sql.getFields( `app.${host}`, {Type:"json"}, {}, jsons => {
 									sql.query( `DELETE FROM app.${host} WHERE Name LIKE '${ctx.Name}-%' ` );
 
-									crossParms( 0 , Object.keys(Pipe), Pipe, {}, setCtx => {	// enumerate keys to provide a setCtx key-context for each enumeration
-										//Log("set", setCtx);
-										var job = Copy(setCtx, Copy(runCtx, new Object({ Name: `${ctx.Name}-${jobs.length}` })), "." );	// define the job context
+									crossParms( [] , Object.keys(Pipe), Pipe, {}, (setCtx,idx) => {	// enumerate keys to provide a setCtx key-context for each enumeration
+										Log("set", setCtx, idx, ctx.Name, Pipe.Name);
+										var job = Copy(setCtx, Copy(runCtx, new Object({ 
+											Name: ( Pipe.Name || "${N}-${L}" ).parseEMAC({X: idx, L:jobs.length, N: ctx.Name})
+										})), "." );	// define the job context
+											
 										Each( job, (key,val) => {	// stringify json keys and drop those not in the plugin context
 											if ( !(key in ctx) ) delete job[key];		
 											else
