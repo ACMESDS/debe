@@ -61,28 +61,38 @@ append site_body
 				cols=dscols,menu="Agents",blogs="Description",hover="finished" )
 
 				:markdown
-					Run your *#{ds}* notebook by selecting the desired usecase context and clicking *Execute*.  
-					
-					You may also !{uses} your notebook.
+					Run your *#{ds}* notebook by selecting the desired usecase context and clicking *Execute*.  Your notebook
+					also supports:
+						!{uses}
 
-					Your notebook's usecase context may include the following [optional keys](/api.view) ( add / remove ):  
+					Your notebook''s usecase context may (add / remove) include reserved keys:  
 					> [+](/#{ds}.add?Export=bool) [/-](/#{ds}.sub?Export) *Export* write notebook results into a file  
 					> [+](/#{ds}.add?Ingest=bool) [/-](/#{ds}.sub?Ingest) *Ingest* ingest notebook results into the database  
 					> [+](/#{ds}.add?Share=bool) [/-](/#{ds}.sub?Share) *Share* return notebook results to the status area  
 					> [+](/#{ds}.add?Pipe=doc) [/-](/#{ds}.sub?Pipe) *Pipe* run usecase in supervised or enumerated workflow  
 					> [+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description) *Description* document usecase  
-					> [+](/#{ds}.add?Run=doc) [/-](/#{ds}.sub?Run) *Run* parameters { until: COUNT, every: "INTERVAL" || SECONDS, start: DATE, end: DATE }  
-					> [+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) *Entry* prime context on entry { KEY: "SELECT ...." || VALUE, ...}  
-					> [+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) *Exit* save context on exit { KEY: "UPDATE ....", ...}  
-						  
+					> [+](/#{ds}.add?Run=doc) [/-](/#{ds}.sub?Run) *Run* pipe period-of-performance parameters  
+					> [+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) *Entry* prime context on entry 
+					> [+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) *Exit* save context on exit 
+
 					as well as context-saving keys:
 					> *Save_STATE* aggregate streaming events [ {at:"STATE", ...}, ... ]  
 					> *Save_jpg* generate jpg from {at: "jpg": prime: "name", save: "name", index: [...], values: [...] } event  
 					> *Save* collect unaggregated streaming events  
 
-					During execution, the *Pipe* will automatically add the context keys:
-					> *$* returned dataset (chips, events, docs, images, ....)  
-					> *Thread* name of compute thread
+					Place a DATASET into a TYPE-specific workflow using a source, enumeration, or event *Pipe*:
+
+						"/DATASET.TYPE ? KEY || [KEY,...] = $.JS & ... "
+						{ "Pipe": *source Pipe*, "KEY" :  [VALUE, ...] || "${KEY} ..." , "$" : "MATHJS" , ... }
+						[ { ... }, .... ]
+
+					where:
+
+						$ = json || GIMP image || event list || document text || db
+						TYPE = json || jpg | png | nitf || stream | export  || txt | doc | pdf | xls  || aoi || db
+
+					An enumeration *Pipe* can extend its context by a [MATHJS script](/api.view).  A source *Pipe* can 
+					JS-adjust its $-data.
 
 					Context keys can also be [grouped](/skinguide.view): e.g. g1_a, g1_b, g1_g2_x, g1_g2_y, _roX, _roY.
 					

@@ -54,23 +54,31 @@ const { sysAlert, licenseOnDownload, defaultDocs } = module.exports = {
 	defaultDocs: {	// default plugin docs (db key comments)
 		nodoc: "no documentation provided",
 
-		Export: "switch writes engine results [into a file](/api.view)",
-		Ingest: "switch ingests engine results [into the database](/api.view)",
-		Share: "switch returns engine results to the status area",
+		Export: "Enable to write notebook results [into a file](/api.view)",
+		Ingest: "Enable to ingest notebook results [into the database](/api.view)",
+		Share: "Enable to return notebook results to the status area",
+		
+		Run: `
+Define *Pipe* period-of-performance parameters:
+
+{ "until": COUNT, "every": "INTERVAL" || SECONDS, "start": DATE, "end": DATE }  
+`,
+
 		Pipe: `
-Places a DATASET into a TYPE-specific supervised workflow:
+Place a DATASET into a TYPE-specific workflow using a source, enumeration, or event *Pipe*:
 
-	"/PATH/DATASET.TYPE ? KEY || [KEY,...] = $.JS & ... "
-	{ "$" : "MATHJS" }
-	{ "Pipe" : "/PATH/DATASET.TYPE?..." ,  "KEY" :  [VALUE, ...] , ... }
+	"/DATASET.TYPE ? KEY || [KEY,...] = $.JS & ... "
+	{ "Pipe": *source Pipe*, "KEY" :  [VALUE, ...] || "$ {KEY} ..." , "$" : "MATHJS" , ... }
+	[ { ... }, .... ]
 
-The "/PATH/DATASET.TYPE" [source data pipe](/api.view) places the TYPE-specific data $ = json || GIMP image || event list || document text || db record
-into a TYPE = json || jpg | png | nitf || stream | export  || txt | doc | pdf | xls  || aoi || db specific workflow.  The { KEY: [VALUE, ...] } [enumeration pipe](/api.view) 
-generates usecases over permuted context KEYs.  The $ json data can also be post-processed by a [MATHJS script](/api.view).
+[where](/api.view):
+
+	$ = json || GIMP image || event list || document text || db
+	TYPE = json || jpg | png | nitf || stream | export  || txt | doc | pdf | xls  || aoi || db
 `, 
 
 		Description: `
-Document your usecase using markdown:
+Document your notebook's usecase using [markdown](/api.view):
 
 	% { PATH.TYPE ? w=WIDTH & h=HEIGHT & x=KEY$INDEX & y=KEY$INDEX ... }
 	~{ TOPIC ? starts=DATE & ends=DATE ... }
@@ -83,12 +91,21 @@ Document your usecase using markdown:
 
 `,
 
-		Until: "run count or end date",
-		Save: "aggregates notebook results not captured in other Save_KEYs  ",
-		Entry: 'primes context KEYs on entry using { KEY: "SELECT ....", ...}  ',
-		Exit: 'saves context KEYs on exit using { KEY: "UPDATE ....", ...}  ',
+		Entry: `
+Prime your notebook's context KEYs on entry:
+
+	{ "KEY": "SELECT ...." || VALUE, ... }  
+`,
+
+		Exit: `
+Save your notebook's context KEYs on exit:
+
+	{ "KEY": "UPDATE ....", ... }
+`,
+
 		Ring: "[[lat,lon], ...] in degs 4+ length vector defining an aoi",
 		
+		Save: "aggregates notebook results not captured in other Save_KEYs  ",		
 		Save_end: "aggregates notebook results when stream finished",
 		Save_config: "aggregates notebook resuts when stream configured",
 		Save_batch: "aggregates notebook resuts when stream at batch points"
@@ -630,7 +647,7 @@ code  {
 											Minified: minCode,
 											Wrap: getter( mod.wrap ) || "",
 											ToU: tou,
-												// (getter( mod.tou || mod.readme ) || defs.tou).parseEMAC(subkeys),
+												// (getter( mod.tou || mod.readme ) || defs.tou).parse$(subkeys),
 											State: JSON.stringify(mod.state || mod.context || mod.ctx || {})
 										};
 
@@ -1044,7 +1061,7 @@ code  {
 										cb( errors.noLicense );
 
 									else
-										cb( pre + terms.parseEMAC( Copy({
+										cb( pre + terms.parse$( Copy({
 											service: pub._EndService,
 											license: pub._License,
 											published: pub._Published,
@@ -1190,11 +1207,9 @@ code  {
 			});
 		}
 
-		function crossParms( index, keys, forCtx, setCtx, cb ){	// cross forCtx keys with callback cb(setCtx)
-			var depth = index.length;
-			
+		function crossParms( depth, keys, forCtx, setCtx, idxCtx, cb ){	// cross forCtx keys with callback cb(setCtx)
 			if ( depth == keys.length ) 
-				cb( setCtx, index );
+				cb( setCtx, idxCtx );
 
 			else {
 				var 
@@ -1203,14 +1218,16 @@ code  {
 
 				if (values) 
 					if ( values.forEach )	// enumerate over array values
-						values.forEach( (value,i) => {
+						values.forEach( (value,idx) => {
 							setCtx[ key ] = value;
-							crossParms( index.concat(i), keys, forCtx, setCtx, cb );
+							idxCtx[ key ] = idx;
+							crossParms( depth+1, keys, forCtx, setCtx, idxCtx, cb );
 						});
 
 					else {	// set to specified value
 						setCtx[ key ] = values;
-						crossParms( index.concat(0), keys, forCtx, setCtx, cb );
+						idxCtx[ key ] = 0;
+						crossParms( depth+1, keys, forCtx, setCtx, idxCtx, cb );
 					}
 			}
 		}
@@ -1260,12 +1277,12 @@ code  {
 					var err = null;
 
 					switch ( Pipe.constructor ) {
-						case String: // query contains a source path
+						case String: // source pipe
 
 							var
 								pipeQuery = {},
 								pipeRun = ctx.Run || {},
-								pipePath = Pipe.parseURL(pipeQuery,{},{},{}).parseEMAC( ctx ) ,
+								pipePath = Pipe.parseURL(pipeQuery,{},{},{}).parse$( ctx ) ,
 								job = { // job descriptor for regulator
 									qos: timeIntervals[pipeRun.every] || pipeRun.every || profile.QoS || 0 , 
 									priority: 0,
@@ -1363,60 +1380,57 @@ code  {
 							
 							break;
 
-						case Array:  // query contains event list
+						case Array:  // event pipe
 							ctx.Events = Pipe;
 							pipePlugin( null, sql, job, (ctx,sql) => {
 								saveContext(sql, ctx);
 							});
 							break;
 
-						case Object:  
+						case Object:  // enumeration pipe
 							if (Pipe.$) { // $-scripting pipe
 								err = new Error("scripting not yet implemented");
 							}
 
-							else { // usecase enumeration pipe
-								var 
-									runCtx = Copy(ctx, {}), 
-									jobs = [], inserts = 0;
+							var 
+								runCtx = Copy(ctx, {}), 
+								jobs = [], inserts = 0;
 
-								// purge DNC keys from the run context 
-								delete runCtx.ID;
-								delete runCtx.Host;
-								delete runCtx.Name;
-								delete runCtx.Pipe;
-								for (var key in runCtx) if ( key.startsWith("Save_") ) delete runCtx[key];
+							// purge DNC keys from the run context 
+							delete runCtx.ID;
+							delete runCtx.Host;
+							delete runCtx.Name;
+							delete runCtx.Pipe;
+							for (var key in runCtx) if ( key.startsWith("Save_") ) delete runCtx[key];
 
-								sql.getFields( `app.${host}`, {Type:"json"}, {}, jsons => {
-									sql.query( `DELETE FROM app.${host} WHERE Name LIKE '${ctx.Name}-%' ` );
+							sql.getFields( `app.${host}`, {Type:"json"}, {}, jsons => {
+								sql.query( `DELETE FROM app.${host} WHERE Name LIKE '${ctx.Name}-%' ` );
 
-									crossParms( [] , Object.keys(Pipe), Pipe, {}, (setCtx,idx) => {	// enumerate keys to provide a setCtx key-context for each enumeration
-										Log("set", setCtx, idx, ctx.Name, Pipe.Name);
-										var job = Copy(setCtx, Copy(runCtx, new Object({ 
-											Name: ( Pipe.Name || "${N}-${L}" ).parseEMAC({X: idx, L:jobs.length, N: ctx.Name})
-										})), "." );	// define the job context
-											
-										Each( job, (key,val) => {	// stringify json keys and drop those not in the plugin context
-											if ( !(key in ctx) ) delete job[key];		
-											else
-											if ( key in jsons ) job[key] = val ? JSON.stringify(val ) : val;	
-										});
+								crossParms( 0 , Object.keys(Pipe), Pipe, {}, {}, (setCtx,idxCtx) => {	// enumerate keys to provide a setCtx key-context for each enumeration
+									//Log("set", setCtx, idxCtx, Pipe.Name);
+									setCtx.Name = ( Pipe.Name || "${N}-${L}" ).parse$({X: idxCtx, L:jobs.length, N: ctx.Name})
 
-										jobs.push( job );
-										//Log("set", setCtx, job );
+									var job = Copy(setCtx, Copy(runCtx, {}) );
+
+									Each( job, (key,val) => {	// stringify json keys and drop those not in the plugin context
+										if ( !(key in ctx) ) delete job[key];		
+										else
+										if ( key in jsons ) job[key] = val ? JSON.stringify(val ) : val;	
 									});
 
-									jobs.forEach( job => {
-										sql.query( `INSERT INTO app.${host} SET ?`, job, err => {
-											if ( ++inserts == jobs.length )  // run usecases after they are all created
-												jobs.forEach( job => {
-													//if (job.Pipe)
-														probeSite( `/${host}.exe?Name=${job.Name}`, info => {} );
-												});
-										});
+									jobs.push( job );
+								});
+
+								jobs.forEach( job => {
+									sql.query( `INSERT INTO app.${host} SET ?`, job, err => {
+										if ( ++inserts == jobs.length )  // run usecases after they are all created
+											jobs.forEach( job => {
+												//if (job.Pipe)
+													probeSite( `/${host}.exe?Name=${job.Name}`, info => {} );
+											});
 									});
 								});
-							}
+							});
 
 							break;
 					}

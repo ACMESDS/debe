@@ -4,15 +4,16 @@ function Fetch(opts, cb) {
 /**
 @method BASE.Fetch
 Callback cb(recs, svg) with a d3 svg dom target, and the records recs = [rec, ...] that
-were loaded from the source path 
+were loaded from the source path that, for example, contains $KEYs:
 
-	opts.ds = "/src?x:=STORE$.x[$KEY]&y:=STORE$.y[$KEY]..." 
+	opts.ds = "/src ? Name=$KEY & x:=STORE$.x[$KEY] & y:=STORE$.y[$KEY] ..." 
 
 as updated by optional KEY dom-inputs:
 
-	opts.KEY = [ ARG, ... ] || { RTN: SELECT, ... } || { min: VAL, max: VAL, step: VAL} ||  ( state, ds, val ) => path
+	opts.KEY = [ ARG, ... ] || { RTN: SELECT, ... } || { min: VAL, max: VAL, step: VAL} || callback
 
-to make a suitable dom input button. 
+where callback("make", key) => input makes a suitable dom input button, and callback("update", value) =>
+value updates the key value.
 
 @param {Object} opts source loading options {ds: "/path", ... }
 @param {Function} cb callback(recs)
@@ -97,9 +98,7 @@ to make a suitable dom input button.
 				id = "_"+key,
 				widget = widgets[key] || ( widgets[key] = def );
 
-			if ( !widget.created ) {
-				widget.created = true;
-
+			if ( !widget.input ) {
 				switch ( typeOf(widget) ) {
 					case "Function":
 						var input = widget("make",key);
@@ -126,19 +125,24 @@ to make a suitable dom input button.
 				}
 
 				Log( `make widget ${key} id = ${id}` );
-
-				if (input) input.on("change", () => {
-					//Log(input);
-					var 
-						el = input._groups[0][0], //v3 use input[0][0],		// dom is a major Kludge!
-						value = el.value,
-						id = el.id,
-						key = id.substr(1),
-						reg = new RegExp( `\\$${key}` , "g" ),
-						path = isFunction(widget) ? widget("update", opts.ds,value) : opts.ds.replace( reg, value );
+				
+				if ( widget.input = input ) input.on("change", () => {
+					var path = opts.ds;
+					Each(widgets, (key,widget) => {
+						if ( input = widget.input ) {	// process only keys that were used in the path
+							var 
+								el = input._groups[0][0], //  d3v3 uses input[0][0] because dom is a major kludge!
+								value = el.value,
+								id = el.id,
+								key = id.substr(1),
+								reg = new RegExp( `\\$${key}` , "g" );
+							
+							path = path.replace( reg, isFunction(widget) ? widget("update", value) : value );
+						}
+					});
 
 					//Log(input[0][0]);
-					Log(`adjust ${key}=${value} ${opts.ds} -> ${path}`);
+					Log(`ds => ${path}`);
 					fetchData( path, opts );
 				});
 			}

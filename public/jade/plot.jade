@@ -69,7 +69,7 @@ append base_head
 
 	script.
 		var 
-			merge = "??/beta?name=gen-0&x:=Save$[0].x&y:=Save$[0].y", //"!{query.merge}" ? "??!{query.merge}" : "",
+			merge = "??/beta?name=gen-$a-$b&x:=Save$[0].x&y:=Save$[0].y", //"!{query.merge}" ? "??!{query.merge}" : "",
 			opts = {  // define plot options
 				ds: "!{query.src}"
 						? "!{query.src}?name=#{query.name}&x:=#{query.x}&y:=#{query.y}&case:=name" + merge
@@ -95,7 +95,9 @@ append base_head
 				family: "plot,barplot",
 
 				widgets: {
-					chan: ("#{query.chan}" || "0:255:1").option()
+					chan: ("#{query.chan}" || "0:255").option(),
+					a: ("#{query.a}" || "0:20").option(),
+					b: ("#{query.b}" || "0:20").option()
 				}
 			};
 
