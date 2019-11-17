@@ -1,7 +1,7 @@
 // note no funding in JIRA.  note negative west support.
 
 module.exports = {  // regressors
-	xmodkeys: {
+	modkeys: {
 		
 		Cycle: `int(11) default 0 comment '
 Boosting level: 0 disables, 1 starts (ingest x-y points, initialize and boost), >1 continues boosting
@@ -11,7 +11,7 @@ Hyper parameters for specific Methods:
 
 	{ METHOD: { solve keys ... }, ... }
 
-`,
+'`,
 		_Boost: `json`,
 		
 		Run: "json",

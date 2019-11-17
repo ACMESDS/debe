@@ -1,6 +1,6 @@
 
 module.exports = {  // generate a random process with specified parameters
-	xmodkeys: {
+	modkeys: {
 		emProbs: `json comment '
 Gaussian mixing parameters:
 

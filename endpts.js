@@ -59,24 +59,27 @@ const { sysAlert, licenseOnDownload, defaultDocs } = module.exports = {
 		Share: "Enable to return notebook results to the status area",
 		
 		Run: `
-Define *Pipe* period-of-performance parameters:
+Define period-of-performance parameters:
 
 { "until": COUNT, "every": "INTERVAL" || SECONDS, "start": DATE, "end": DATE }  
 `,
 
+		Name: "Unique usecase name",
+		
 		Pipe: `
-Place a DATASET into a TYPE-specific workflow using a source, enumeration, or event *Pipe*:
+Place a DATASET into a TYPE-specific workflow using a source, enumeration, or event Pipe:
 
 	"/DATASET.TYPE ? KEY || [KEY,...] = $.JS & ... "
-	{ "Pipe": *source Pipe*, "KEY" :  [VALUE, ...] || "$ {KEY} ..." , "$" : "MATHJS" , ... }
+	{ "Pipe": "source Pipe", "KEY" :  [VALUE, ...] || "$ {KEY} ..." , "$" : "MATHJS" , ... }
 	[ { ... }, .... ]
 
 [where](/api.view):
 
 	$ = json || GIMP image || event list || document text || db
 	TYPE = json || jpg | png | nitf || stream | export  || txt | doc | pdf | xls  || aoi || db
-`, 
 
+`, 
+		
 		Description: `
 Document your notebook's usecase using [markdown](/api.view):
 
@@ -576,9 +579,9 @@ code  {
 					getComment( def, (spec, doc) => {
 						var
 							com = defaultDocs[key] || "",
-							com = com + doc,
-							com = com || defaultDocs.nodoc,
-							com = com || "missing documentation";
+							com = com + doc;
+							//com = com || defaultDocs.nodoc,
+							//com = com || "missing documentation";
 
 						com.Xblog( ctx, html => { 
 							//Log("gen", key,spec,html.substr(0,100));
@@ -596,7 +599,7 @@ code  {
 							sql.query("DROP TABLE app.??", name);
 
 						sql.query( 
-							`CREATE TABLE app.${name} (ID float unique auto_increment, Name varchar(32) unique key)` , 
+							`CREATE TABLE app.${name} (ID float unique auto_increment, Name varchar(32) unique key )` , 
 							[], err => {
 
 							var
@@ -611,7 +614,7 @@ code  {
 										doc = dockeys[key];
 
 									//Log(">>mod", key, dockeys[key].substr(0,100));
-									sql.query( `ALTER TABLE app.${name} MODIFY ${keyId} ${spec} comment ?`, [ doc || "" ] );
+									sql.query( `ALTER TABLE app.${name} MODIFY ${keyId} ${spec} comment ?`, [ doc || "" ], err => Log(err) );
 								});
 
 							else

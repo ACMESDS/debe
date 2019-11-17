@@ -1035,8 +1035,8 @@ function DS(anchor) {
 				fDoc = unescape(fOpts[2] || ""), 
 				fQual = fOpts[3] || "",
 				fTip = [
-					fKey.tag("a",{href:`/parms.view?parm=${fKey}`}) ,
-					"moderate".tag("a", {href:"/moderate.view"}),
+					//fKey.tag("a",{href:`/parms.view?parm=${fKey}`}) ,
+					//"moderate".tag("a", {href:"/moderate.view"}),
 					fDoc
 					//fParm.Special || "" 
 				].join(" || "),

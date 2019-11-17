@@ -1,5 +1,5 @@
 module.exports = {  
-	xkeys: {		// plugin context ctx keys are defined here
+	modkeys: {		// plugin context ctx keys are defined here
 		alpha: "float default 0 comment 'alpha parameter' ",
 		beta: "float default 0 comment 'beta parameter' ",
 		snr: "float default 0 comment 's/n value' ",
