@@ -69,7 +69,7 @@ append base_head
 
 	script.
 		var 
-			merge = "??/beta?name=gen-$a-$b&x:=Save$[0].x&y:=Save$[0].y&$save", //"!{query.merge}" ? "??!{query.merge}" : "",
+			merge = "??/beta?name=gen-$a-$b&x:=Save$[0].x&y:=Save$[0].y", //"!{query.merge}" ? "??!{query.merge}" : "",
 			opts = {  // define plot options
 				ds: "!{query.src}"
 						? "!{query.src}?name=#{query.name}&x:=#{query.x}&y:=#{query.y}&case:=name" + merge
@@ -98,27 +98,20 @@ append base_head
 					chan: ("#{query.chan}" || "0:255").option(),
 					a: ("#{query.a}" || "0:20").option(),
 					b: ("#{query.b}" || "0:20").option(),
-					save: function (state,val) {
-						if ( state == "make" )
-							return "input".d3tag( d3.select("body"), {type: "button", value: "save", id:val}).on("click", () => {
-								var 
-									a = document.getElementById("_a").value,
-									b = document.getElementById("_b").value,
-									name = `gen-${a}-${b}`,
-									beta = `/beta?Name=${name}`;
-								
-								//alert("a="+a+ "b="+b);
-								Ajax("put", true, beta, res => {
-									alert(res);
-								}, {
-									snr: 1,
-									gain: 1,
-									density: 1
-								});
-							});
-						
-						else 
-							return "";
+					save: () => {
+						var 
+							a = document.getElementById("_a").value,
+							b = document.getElementById("_b").value,
+							name = `gen-${a}-${b}`,
+							beta = `/beta?Name=${name}`;
+
+						Ajax("put", true, beta, res => {
+							alert(res);
+						}, {
+							snr: 1,
+							gain: 1,
+							density: 1
+						});
 					}
 				}
 			};

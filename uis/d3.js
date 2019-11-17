@@ -12,8 +12,7 @@ as updated by optional KEY dom-inputs:
 
 	opts.KEY = [ ARG, ... ] || { RTN: SELECT, ... } || { min: VAL, max: VAL, step: VAL} || callback
 
-where callback("make", id) => input makes a suitable dom input button, and callback("update", value) =>
-value updates the key value.
+where the callback() returns a value.
 
 @param {Object} opts source loading options {ds: "/path", ... }
 @param {Function} cb callback(recs)
@@ -89,11 +88,32 @@ value updates the key value.
 			family.forEach( (fam,n) => family[n] = fam.tag( `/${fam}.view?${query}` ) );
 		});
 
-		"p".d3tag(body,	{ html: family.join(" || ")	} );
+		"p".d3add(body,	{ html: family.join(" || ")	} );
 
 		def.type = "range";
 
 		opts.ds.replace(/\$(\w+)/g, (str,key) => {
+			
+			function onChange() {
+				var path = opts.ds;
+				Each(widgets, (key,widget) => {
+					if ( input = widget.input ) {	// process only keys that were used in the path
+						var 
+							el = input._groups[0][0], //  d3v3 uses input[0][0] because dom is a major kludge!
+							value = el.value,
+							id = el.id,
+							key = id.substr(1),
+							reg = new RegExp( `\\$${key}` , "g" );
+
+						path = path.replace( reg, isFunction(widget) ? widget("update", value) : value );
+					}
+				});
+
+				//Log(input[0][0]);
+				Log(`ds => ${path}`);
+				fetchData( path, opts );
+			}
+			
 			var 
 				id = "_"+key,
 				widget = widgets[key] || ( widgets[key] = def );
@@ -101,54 +121,57 @@ value updates the key value.
 			if ( !widget.input ) {
 				switch ( typeOf(widget) ) {
 					case "Function":
-						var input = widget("make",id);
+						widget.input = "input".d3add(body, {type: "button", value: "key", id:id} ).on("click", widget);
 						break;
 
 					case "Array":
-						var input = "input".d3tag(body, {type: "text", value: widget[0], id:id} );
+						widget.input = "input".d3add(body, {type: "text", value: widget[0], id:id} ).on("change", onChange);
 						break;
 
 					case "Object":
 						if ( "min" in widget )
-							var input = "input".d3tag(body, {type: "number", min: widget.min, max: widget.max, step: widget.step, value: widget.min, id:id} );
+							widget.input = "input".d3add(body, {type: "number", min: widget.min, max: widget.max, step: widget.step, value: widget.min, id:id} ).on("change", onChange);
 
 						else {
-							var input = "select".d3tag(body, { value: "", id:id} );
+							widget.input = "select".d3add(body, { value: "", id:id} ).on("change", onChange);
 
 							for ( var key in widget ) 
-								input.insert("option").attr( "value", key ).text( widget[key] );
+								widget.input.insert("option").attr( "value", key ).text( widget[key] );
 						}
 						break;
 
-					default:
-						var input = null;
 				}
 
 				Log( `make widget ${key} id = ${id}` );
-				
-				if ( widget.input = input ) input.on("change", () => {
-					var path = opts.ds;
-					Each(widgets, (key,widget) => {
-						if ( input = widget.input ) {	// process only keys that were used in the path
-							var 
-								el = input._groups[0][0], //  d3v3 uses input[0][0] because dom is a major kludge!
-								value = el.value,
-								id = el.id,
-								key = id.substr(1),
-								reg = new RegExp( `\\$${key}` , "g" );
-							
-							path = path.replace( reg, isFunction(widget) ? widget("update", value) : value );
-						}
-					});
-
-					//Log(input[0][0]);
-					Log(`ds => ${path}`);
-					fetchData( path, opts );
-				});
 			}
 		});
 
+		if ( save = widgets.save )
+		"input".d3add(body, {type: "button", value: "save", id: "_save"} ).on("click", save);
+		
 		fetchData( opts.ds.replace(/\$\w+/g, "0"), opts );
 	}
 }
 
+[
+	function d3add (d3el, attrs ) {
+		var el = d3el.append(this);
+
+		for (key in attrs) {
+			//alert("tag "+key+" " + attrs[key]);
+			switch (key) {
+				case "text":
+				case "html":
+					el[key]( attrs[key] ); 
+					break;
+				case "xstyle":  // seems to crash so x-ed out
+					el.style( attrs[key]); 
+					break;
+				default:
+					el.attr(key, attrs[key]);
+			}
+		}
+
+		return el;
+	}
+].Extend(String);

@@ -447,27 +447,6 @@ Array.prototype.Extend = function (con) {
 ].Extend(Date);
 
 [  // extend String
-	function d3tag (d3el, attrs ) {
-		var el = d3el.append(this);
-
-		for (key in attrs) {
-			//alert("tag "+key+" " + attrs[key]);
-			switch (key) {
-				case "text":
-				case "html":
-					el[key]( attrs[key] ); 
-					break;
-				case "xstyle":  // seems to crash so x-ed out
-					el.style( attrs[key]); 
-					break;
-				default:
-					el.attr(key, attrs[key]);
-			}
-		}
-
-		return el;
-	},
-		
 	function parseURL( query ) {
 		var 
 			parts = this.split("?"),

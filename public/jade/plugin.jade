@@ -61,15 +61,14 @@ append site_body
 				cols=dscols,menu="Agents",blogs="Description",hover="finished" )
 
 				:markdown
-					Run your *#{ds}* notebook by selecting the desired usecase context and clicking *Execute*.  Your notebook
-					also supports:
-						!{uses}
+					Run your *#{ds}* notebook by selecting the desired usecase context and clicking *Execute*.  You may
+					also !{uses} your notebook.
 
-					Your notebook''s usecase context may (add / remove) include reserved keys:  
+					Your notebook context may include reserved keys:  
 					> [+](/#{ds}.add?Export=bool) [/-](/#{ds}.sub?Export) *Export* write notebook results into a file  
 					> [+](/#{ds}.add?Ingest=bool) [/-](/#{ds}.sub?Ingest) *Ingest* ingest notebook results into the database  
 					> [+](/#{ds}.add?Share=bool) [/-](/#{ds}.sub?Share) *Share* return notebook results to the status area  
-					> [+](/#{ds}.add?Pipe=doc) [/-](/#{ds}.sub?Pipe) *Pipe* run usecase in supervised or enumerated workflow  
+					> [+](/#{ds}.add?Pipe=doc) [/-](/#{ds}.sub?Pipe) *Pipe* run usecase in source, enumerated or event workflow  
 					> [+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description) *Description* document usecase  
 					> [+](/#{ds}.add?Run=doc) [/-](/#{ds}.sub?Run) *Run* pipe period-of-performance parameters  
 					> [+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) *Entry* prime context on entry 
@@ -80,23 +79,8 @@ append site_body
 					> *Save_jpg* generate jpg from {at: "jpg": prime: "name", save: "name", index: [...], values: [...] } event  
 					> *Save* collect unaggregated streaming events  
 
-					Place a DATASET into a TYPE-specific workflow using a source, enumeration, or event *Pipe*:
-
-						"/DATASET.TYPE ? KEY || [KEY,...] = $.JS & ... "
-						{ "Pipe": *source Pipe*, "KEY" :  [VALUE, ...] || "${KEY} ..." , "$" : "MATHJS" , ... }
-						[ { ... }, .... ]
-
-					where:
-
-						$ = json || GIMP image || event list || document text || db
-						TYPE = json || jpg | png | nitf || stream | export  || txt | doc | pdf | xls  || aoi || db
-
-					An enumeration *Pipe* can extend its context by a [MATHJS script](/api.view).  A source *Pipe* can 
-					JS-adjust its $-data.
-
-					Context keys can also be [grouped](/skinguide.view): e.g. g1_a, g1_b, g1_g2_x, g1_g2_y, _roX, _roY.
-					
-					Header colors reflect [notebook status](/projects.view): <font color="green">completed</font>, <font color="blue">policed</font>, <font color="orange">funded</font>, <font color="red">unfunded</font>.
+					Context keys can also be [grouped](/skinguide.view): e.g. g1_a, g1_b, g1_g2_x, g1_g2_y, _roX, _roY.  Header
+					colors reflect [notebook status](/projects.view): <font color="green">completed</font>, <font color="blue">policed</font>, <font color="orange">funded</font>, <font color="red">unfunded</font>.
 
 			#form.Engine(
 				path="/engines.db?Name=#{ds}",

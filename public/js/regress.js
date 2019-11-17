@@ -1,7 +1,7 @@
 // note no funding in JIRA.  note negative west support.
 
 module.exports = {  // regressors
-	modkeys: {
+	xmodkeys: {
 		
 		Cycle: `int(11) default 0 comment '
 Boosting level: 0 disables, 1 starts (ingest x-y points, initialize and boost), >1 continues boosting
@@ -168,13 +168,16 @@ The regression mode is determined by the following context keys:
 				done = 0;
 
 			//Log("channels", chans, y.length, x0.length);
-			for ( var chan = 0; chan<chans; chan++ ) 
+			for ( var chan = 0; chan<chans; chan++ ) {
+				//Log("chan=", chan, chans);
 				trainer( x[chan], y[chan], x0[chan], info => {
 					if ( info ) {
+						Log("mcat", done, chans);
 						saver(info,chan);
 						if ( ++done == chans ) cb();
 					}
 				});
+			}
 		}
 		
 		function predict(x, cls, cb) {
@@ -228,10 +231,16 @@ The regression mode is determined by the following context keys:
 		}
 
 		function respond(info) {
-			//Log("reg send", info);
+			Log("reg send", info);
 			if ( info ) {
 				saver(info,0);
-				if (chans) save.push({ 
+				res(ctx);
+			}
+
+			else 
+			if ( chans ) {
+				Log("save", chans.input, savePath);
+				save.push({ 
 					at: "jpg", 
 					input: chans.input, 
 					save: savePath,
