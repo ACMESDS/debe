@@ -47,7 +47,7 @@ catch (err) {
 		}
 
 		else
-			ctx[lhs] = rhs.parseEMAC( ctx );
+			ctx[lhs] = rhs.parse$( ctx );
 
 		return ""; 
 	},  */
@@ -103,7 +103,7 @@ catch (err) {
 		function toDoc (arg) {
 			switch ( arg.charAt(0) ) {
 				case "#":
-					return ("${doc(" + arg.substr(1) + ")}" ).parseEMAC(ctx).parseJSON( "?" );
+					return ("${doc(" + arg.substr(1) + ")}" ).parse$(ctx).parseJSON( "?" );
 
 				case "[":
 				case "{":
@@ -447,7 +447,7 @@ catch (err) {
 	},
 		
 	function Xkeys( ctx, cb ) {  // expand js keys ${script} || ${keys}
-		cb( this.parseEMAC(ctx) );
+		cb( this.parse$(ctx) );
 	},
 	
 	function Xgen( ctx, cb ) {  // expands LHS OP= RHS tags

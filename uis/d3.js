@@ -12,7 +12,7 @@ as updated by optional KEY dom-inputs:
 
 	opts.KEY = [ ARG, ... ] || { RTN: SELECT, ... } || { min: VAL, max: VAL, step: VAL} || callback
 
-where callback("make", key) => input makes a suitable dom input button, and callback("update", value) =>
+where callback("make", id) => input makes a suitable dom input button, and callback("update", value) =>
 value updates the key value.
 
 @param {Object} opts source loading options {ds: "/path", ... }
@@ -101,7 +101,7 @@ value updates the key value.
 			if ( !widget.input ) {
 				switch ( typeOf(widget) ) {
 					case "Function":
-						var input = widget("make",key);
+						var input = widget("make",id);
 						break;
 
 					case "Array":

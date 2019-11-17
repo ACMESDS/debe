@@ -468,47 +468,6 @@ Array.prototype.Extend = function (con) {
 		return el;
 	},
 		
-	/*
-	String.prototype.parseURL = function (xx,pin) {
-
-		function Format(X,S) {
-
-			try {
-				var rtn = eval("`" + S + "`");
-				return rtn;
-			}
-			catch (err) {
-				return "[bad]";
-			}
-
-		}
-
-		var x = d = {};
-		function xs(n) {
-			if (n)
-				if ( x = xx[n] )
-					return x;
-				else
-					return x = xx[n] = xx.def || {};
-			else
-				return x;
-		}
-
-		function ds(n) {
-			if (n)
-				if ( d = xx[n] = DSLIST[n] ) 
-					return d;
-				else
-					return d = xx[n] = xx.def || {};
-			else
-				return d;
-		}
-
-		if (pin) xx.pin = pin;
-
-		return Format(xx,this);
-	}
-	*/
 	function parseURL( query ) {
 		var 
 			parts = this.split("?"),
@@ -595,25 +554,9 @@ Array.prototype.Extend = function (con) {
 					list = this.split(","),
 					rng = this.split(":");
 				
-				return (list.length>1) ? list : {min: parseFloat(rng[0] || 0), max: parseFloat(rng[1] || 10), step: parseFloat(rng[2] || 1) };
-				/*
-				var
-					types = {
-						":" : "range",
-						"|" : "select",
-						"," : "list"
-					};
-		
-				for (var tok in types) 
-					if ( args = this.split(tok) ) 
-						if ( args.length > 1 || tok == "," ) {
-							args.type = types[tok];
-							//Log(tok, args);
-							return args;
-						}					
-					
-				return [this];
-				*/
+				return rng[1] 
+					? {min: parseFloat(rng[0] || 0), max: parseFloat(rng[1] || 10), step: parseFloat(rng[2] || 1) }
+					: list ;
 			} 
 					
 		else
