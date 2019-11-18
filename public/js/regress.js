@@ -276,7 +276,8 @@ The regression mode is determined by the following context keys:
 				lda: model => model,
 				qda: model => model,
 				qda: model => model,
-				ols: ctx.ols_degree ? $.SPR.load : $.MLR.load
+				ols: ctx.ols_degree ? $.SPR.load : $.MLR.load,
+				beta: $.MLR.load
 			},
 			loader = loaders[use],
 			model = ctx[ `Save_${use}` ], 
