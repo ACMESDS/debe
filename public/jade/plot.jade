@@ -69,10 +69,13 @@ append base_head
 
 	script.
 		var 
-			merge = "??/beta?name=gen-$a-$b&x:=Save$[0].x&y:=Save$[0].y", //"!{query.merge}" ? "??!{query.merge}" : "",
+			merges = {
+				beta: "/beta?name=gen-$a-$b&x:=Save$[0].x&y:=Save$[0].y"
+			},
+			merge = merges[ "!{query.merge}" ],
 			opts = {  // define plot options
 				ds: "!{query.src}"
-						? "!{query.src}?name=#{query.name}&x:=#{query.x}&y:=#{query.y}&case:=name" + merge
+						? "!{query.src}?name=#{query.name}&x:=#{query.x}&y:=#{query.y}&case:=name"+ (merge ? "??"+merge : "" )
 						:  "/regress?name=test2&x:=Save_train$.x[$chan]&y:=Save_train$.y[$chan]&case:=name",
 				dims: {
 					margin: {top: 5, right: 10, bottom: 5, left: 10},
@@ -98,7 +101,8 @@ append base_head
 					chan: ("#{query.chan}" || "0:255").option(),
 					a: ("#{query.a}" || "0:20").option(),
 					b: ("#{query.b}" || "0:20").option(),
-					save: () => {
+					save: merge 
+						? () => {
 						var 
 							a = document.getElementById("_a").value,
 							b = document.getElementById("_b").value,
@@ -113,6 +117,8 @@ append base_head
 							density: 1
 						});
 					}
+					
+						: null
 				}
 			};
 

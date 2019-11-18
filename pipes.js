@@ -155,26 +155,11 @@ module.exports = {
 		const {ctx,path} = job;
 		const {Trace} = ctx;
 		
-		//var parts = ctx.Pipe; //path.substr(1).split(".");
 		Log(ctx.Pipe);
 		probeSite( ctx.Pipe, info => {
 			Log("info=", info);
 			cb({$: JSON.parse(info).data} );
 		});
-		/*
-		var a = sql.query( isEmpty(job.query)
-				? "SELECT * FROM app.??"
-				: "SELECT * FROM app.?? WHERE least(?,1)", [parts[0], job.query], (err,recs) => {
-			Log(err, recs);
-			cb({$: recs});
-		}); */
-
-		/*
-			.on( "result", rec => cb( {Rec: rec} ) )
-			.on( "error", err => cb(null) );
-		*/
-		
-		//Log("pipedb", a.sql);
 	},
 
 	pipeAOI: function(sql, job, cb) {	// stream indexed events or chips through supervisor 

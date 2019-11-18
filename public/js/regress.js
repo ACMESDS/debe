@@ -231,7 +231,7 @@ The regression mode is determined by the following context keys:
 		}
 
 		function respond(info) {
-			Log("reg send", info);
+			//Log("reg send", info);
 			if ( info ) {
 				saver(info,0);
 				res(ctx);
@@ -239,7 +239,7 @@ The regression mode is determined by the following context keys:
 
 			else 
 			if ( chans ) {
-				Log("save", chans.input, savePath);
+				//Log("save", chans.input, savePath);
 				save.push({ 
 					at: "jpg", 
 					input: chans.input, 
@@ -469,8 +469,16 @@ The regression mode is determined by the following context keys:
 			if ( x0 ) 	// predicting/roc generating
 				predicter( x0, loader(model) );
 		
-			else
-				res( new Error("invalid regression mode") );
+			else {
+				var
+					X = ctx.$.get('x'),
+					Y = ctx.$.get('y');
+				
+				Log(X,Y);
+				
+				trainer( X, Y, null, info => respond(info) );
+				//res( new Error("invalid regression mode") );
+			}
 
 		else
 			res( new Error("invalid regression method") );

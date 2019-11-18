@@ -1315,7 +1315,7 @@ code  {
 									[x,pipeName,pipeType] = pipePath.substr(1).match(/(.*)\.(.*)/) || ["", pipePath, "json"],
 									pipeJob = TOTEM.pipeJob[pipeType];
 
-								switch ( pipeType ) {
+								switch ( pipeType ) {	// redirect path based on type
 									case "export": 	
 										job.path = pipePath = `/stores/${pipeName}.stream`;
 										break;
@@ -1413,7 +1413,7 @@ code  {
 									//Log("set", setCtx, idxCtx, Pipe.Name);
 									setCtx.Name = ( Pipe.Name || "${N}-${L}" ).parse$({X: idxCtx, L:jobs.length, N: ctx.Name})
 
-									var job = Copy(setCtx, Copy(runCtx, {}) );
+									var job = Copy(setCtx, Copy(runCtx, {}), "." );
 
 									Each( job, (key,val) => {	// stringify json keys and drop those not in the plugin context
 										if ( !(key in ctx) ) delete job[key];		
