@@ -457,7 +457,7 @@ The regression mode is determined by the following context keys:
 						booster( sql, boost );
 
 					else
-						Trace("boost halt", "need x,y data to prime booster");
+						Trace("boost halted", "no x,y data provided to prime");
 				});
 			}
 
@@ -472,7 +472,7 @@ The regression mode is determined by the following context keys:
 			else {
 				var
 					X = ctx.$.get('x'),
-					Y = ctx.$.get('y');
+					Y = ctx.$.get(['y', 'n']);
 				
 				Log(X,Y);
 				
