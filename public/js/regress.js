@@ -289,10 +289,10 @@ The regression mode is determined by the following context keys:
 		Log({
 			boosting: cycle ? boost : false,
 			solve: solve,
-			trainingset: x ? x.length : "none",
-			labelset: y ? y.length : "none",
+			trainSet: x ? x.length : "none",
+			labelSet: y ? y.length : "none",
 			using: use,
-			predicting: x0 ? x0.length : "none",
+			predictSet: x0 ? x0.length : "none",
 			mode: ( x && y ) ? "supervised learning" : x ? "unsupervised learning" : chans ? "multichan learning" : x0 ? "predicting" : "unknown",
 			loader: loader ? true : false,
 			model: model ? true : false
@@ -303,7 +303,7 @@ The regression mode is determined by the following context keys:
 				trainers( chans.x, chans.y, chans.x0, () => respond() );
 
 			else	
-			if ( cycle ) { // in boosting mode
+			if ( cycle ) { // boosting mode
 				res("boosting");
 
 				$SQL( sql => {
@@ -430,8 +430,8 @@ The regression mode is determined by the following context keys:
 								y: labels.charAt( y[n] ),
 								D: D,
 								idx: n+1,
-								docID: "tbd",
-								src: "tbd"
+								docID: "doc"+n,
+								srcID: 0
 							}, err => {		// check if primed
 
 								if ( ++added == N ) 	// dataset primed so good to boost
@@ -461,20 +461,20 @@ The regression mode is determined by the following context keys:
 				});
 			}
 
-			else	//  sup/unsup learning mode
-			if ( x ) 
+			else	
+			if ( x ) 	//  sup/unsup learning mode
 				trainer( x, y, x0, info => respond(info) );
 		
 			else
-			if ( x0 ) 	// predicting/roc generating
+			if ( x0 ) 	// predicting/roc mode
 				predicter( x0, loader(model) );
 		
-			else {
+			else {	// adhoc supervised earning mode
 				var
 					X = ctx.$.get('x'),
 					Y = ctx.$.get(['y', 'n']);
 				
-				Log(X,Y);
+				//Log(X,Y);
 				
 				trainer( X, Y, null, info => respond(info) );
 				//res( new Error("invalid regression mode") );
