@@ -1409,7 +1409,6 @@ code  {
 							sql.getFields( `app.${host}`, {Type:"json"}, {}, jsons => {
 								sql.query( `DELETE FROM app.${host} WHERE Name LIKE '${ctx.Name}-%' ` );
 
-								// 0.5, 1, 1.1, 1.5, 2, 2.1, 2.5, 3, 3.1, 3.5, 4, 5, 6, 7, 8, 9
 								crossParms( 0 , Object.keys(Pipe), Pipe, {}, {}, (setCtx,idxCtx) => {	// enumerate keys to provide a setCtx key-context for each enumeration
 									//Log("set", setCtx, idxCtx, Pipe.Name);
 									var 
@@ -1419,19 +1418,17 @@ code  {
 									job.Name = ( Pipe.Name || "${N}-${L}" ).parse$( sub );
 
 									Each( job, (key,val) => {	// stringify json keys and drop those not in the plugin context
-										//Log(key,val);
 										if ( !(key in ctx) ) {
 											sub[key] = val;
 											delete job[key];
 										}
 										else
 										if ( val )
-											if ( key in jsons ) job[key] = JSON.stringify(val );	
+											if ( key in jsons ) 
+												job[key] = JSON.stringify(val );	
 											else
-											if ( isString(val) )  {
-												Log(key,val,sub);
+											if ( isString(val) )  
 												job[key] = val.parse$( sub );
-											}
 									});
 
 									jobs.push( job );
