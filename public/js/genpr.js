@@ -330,7 +330,7 @@ ornstein: {		# Stateless Ornstein-Ulenbeck process with:
 							if ( mixing = opts.mixing ) {	// save gaussian mixing process
 								var mixes = mixing.gen.length;
 								mixing.obs.forEach( (ob,n) => {
-									if ( ran.s<2 && n < 10 ) Log(ran.s,n,n % mixes,ob, ran.mixing.gen[n % mixes].getMean(), ran.mixing.gen[n % mixes].getCov() );
+									//if ( ran.s<2 && n < 10 ) Log(ran.s,n,n % mixes,ob, ran.mixing.gen[n % mixes].getMean(), ran.mixing.gen[n % mixes].getCov() );
 									str.push({ x: ob, n: n % mixes });
 								});
 							}
