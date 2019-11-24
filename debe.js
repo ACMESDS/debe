@@ -67,7 +67,7 @@ var
 
 const { Copy,Each,Log,isKeyed,isString,isFunction,isError,isArray } = ENUM;
 const { sqlThread, getFile, probeSite } = TOTEM;
-const { pipeStream, pipeImage, pipeJson, pipeDoc, pipeDB, pipeAOI } = PIPE;
+const { pipeStream, pipeImage, pipeJson, pipeDoc, pipeBook, pipeAOI } = PIPE;
 const { 
 	getDoc,
 	exePlugin, simPlugin,
@@ -85,7 +85,7 @@ var
 	DEBE = module.exports = TOTEM;
 
 Copy({
-	pipeJob: {		//<  pipe job to supervisor by pipe type
+	pipeSuper: {		//<  pipe supervisor by pipe type
 		stream: pipeStream,
 		export: pipeStream,
 		nitf: pipeImage,
@@ -100,8 +100,9 @@ Copy({
 		ods: pipeDoc,
 		pdf: pipeDoc,
 		xml: pipeDoc,
-		db: pipeDB,
-		"": pipeDB,
+		nb: pipeBook,
+		db: pipeBook,
+		"": pipeBook,
 		aoi: pipeAOI
 	},
 	

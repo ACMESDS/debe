@@ -151,13 +151,12 @@ module.exports = {
 				cb({$:rec.doc});
 	},
 
-	pipeDB: function(sql, job, cb) {  // pipe database source with callback cb(rec,job) || cb(null)
+	pipeBook: function(sql, job, cb) {  // pipe database source with callback cb(rec,job) || cb(null)
 		const {ctx,path} = job;
 		const {Trace} = ctx;
 		
-		Log(ctx.Pipe);
-		probeSite( ctx.Pipe, info => {
-			Log("info=", info);
+		probeSite( job.path, info => {
+			//Log(">>>info", info);
 			cb({$: JSON.parse(info).data} );
 		});
 	},

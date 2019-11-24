@@ -33,20 +33,20 @@ var
 	HMIN = require("../flex/node_modules/html-minifier"), // html minifier
 		
 	// totem
-	$ = require("man"), 			// matrix minipulaor
+	$ = require("man"), 
 	TOTEM = require("totem"),
 	ENUM = require("enum"),
 	FLEX = require("flex"),
 	GEO = require("geohack"),
-	ATOM = require("atomic");
-
-const { skinContext, renderJade } = require("./skins");
+	ATOM = require("atomic"),
+	SKINS = require("./skins");
 
 function Trace(msg,req,fwd) {	// execution tracing
 	"endpt".trace(msg,req,fwd);
 }
 
 const { Copy,Each,Log,isString,isFunction,isError,isArray,Stream,typeOf } = ENUM;
+const { skinContext, renderJade } = SKINS;
 const { sqlThread, getIndex, uploadFile, probeSite, errors, site, watchFile, timeIntervals } = TOTEM;
 const { ingestList } = GEO;
 
@@ -75,8 +75,8 @@ Place a DATASET into a TYPE-specific workflow using a source, enumeration, or ev
 
 [where](/api.view):
 
-	$ = json || GIMP image || event list || document text || db
-	TYPE = json || jpg | png | nitf || stream | export  || txt | doc | pdf | xls  || aoi || db
+	$ = json || GIMP image || event list || document text || chip stream || notebook record
+	TYPE = json || [jpg | png | nitf] || [stream | export]  || [txt | doc | pdf | xls]  || aoi || nb
 
 `, 
 		
@@ -1285,7 +1285,7 @@ code  {
 							var
 								pipeQuery = {},
 								pipeRun = ctx.Run || {},
-								pipePath = Pipe.parseURL(pipeQuery,{},{},{}).parse$( ctx ) ,
+								pipePath = Pipe.parseURL(pipeQuery,{},{},{}),
 								job = { // job descriptor for regulator
 									qos: timeIntervals[pipeRun.every] || pipeRun.every || profile.QoS || 0 , 
 									priority: 0,
@@ -1308,48 +1308,48 @@ code  {
 									ctx: ctx
 								};
 
+							//Log(">pipe", job.path, pipePath, pipeQuery);
 							if ( pipePath.startsWith("/") ) {	// pipe file
 								var
-									pipeRun = `${ctx.Host}.${ctx.Name}`,
-
 									[x,pipeName,pipeType] = pipePath.substr(1).match(/(.*)\.(.*)/) || ["", pipePath, "json"],
-									pipeJob = TOTEM.pipeJob[pipeType];
+									pipeSuper = TOTEM.pipeSuper[pipeType],
+									pipeWatch = `${ctx.Host}.${ctx.Name}`;
 
 								switch ( pipeType ) {	// redirect path based on type
+									case "nb":
+									case "db":
+										job.path = Pipe.parse$(ctx);
+										job.query = {};
+										break;
+									
 									case "export": 	
-										job.path = pipePath = `/stores/${pipeName}.stream`;
+										job.path = `/stores/${pipeName}.stream`;
+										break;
+										
+									default:
+										if ( !FLEX.select[pipeName] && false) {  // setup plugin autorun only when pipe references a file
+											sql.query( "DELETE FROM openv.watches WHERE File != ? AND Run = ?", [pipePath, pipeWatch] );
+
+											sql.query( "INSERT INTO openv.watches SET ?", {  // associate file with plugin
+												File: pipePath,
+												Run: pipeWatch
+											}, (err,info) => {
+												if ( !err )
+													setAutorun( pipePath );
+											});
+										}
 										break;
 								}
-										
-								//Log(">pipe", job.path, pipePath, pipeName, pipeType);
 
-								var
-									isFlexed = FLEX.select[pipeName] ? true : false,
-									isDB = pipeType == "db";
+								//Log(">pipe", pipeName, pipeType);
 
-								if ( !isFlexed && !isDB  && false) {  // setup plugin autorun only when pipe references a file
-									sql.query( "DELETE FROM openv.watches WHERE File != ? AND Run = ?", [pipePath, pipeRun] );
+								pipePlugin( pipeSuper, sql, job, (ctx,sql) => {
+									if (ctx)
+										saveContext(sql, ctx);
 
-									sql.query( "INSERT INTO openv.watches SET ?", {  // associate file with plugin
-										File: pipePath,
-										Run: pipeRun
-									}, (err,info) => {
-										if ( !err )
-											setAutorun( pipePath );
-									});
-								}
-
-								if ( pipeJob = TOTEM.pipeJob[pipeType] )	// derive workflow from pipe type
-									pipePlugin( pipeJob, sql, job, (ctx,sql) => {
-										if (ctx)
-											saveContext(sql, ctx);
-
-										else
-											Trace( errors.lostContext, req );
-									});
-
-								else 
-									err = errors.badType;
+									else
+										Trace( errors.lostContext, req );
+								});
 							}
 
 							else
@@ -1369,7 +1369,7 @@ code  {
 							}
 							
 							else	// pipe is text doc
-							if ( pipeDoc = TOTEM.pipeJob.txt )
+							if ( pipeDoc = TOTEM.pipeSuper.txt )
 								pipePlugin(pipeDoc, sql, job, (ctx,sql) => {   // place job in doc workflow
 									if (ctx)
 										saveContext(sql, ctx);

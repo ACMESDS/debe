@@ -44,7 +44,6 @@ const {skinContext, renderJade} = module.exports = {
 						var 
 							id = 1,
 							Files = {
-								numbered: {},
 								image: {},
 								artifact: [],
 								misc: [],
@@ -125,49 +124,24 @@ const {skinContext, renderJade} = module.exports = {
 
 								default:
 									
-									if ( num )
-										Batch.numbered.push( {
-											id: id,
-											num: num, 
-											title: title.join(" "), 
-											classif: (classif.length>1) ? "(" + classif.join("//") + ")" : "", 
-											type: type, 
-											name: file, 
-											qualifiers: parts.length, 
-											path: path, 
-											link: title[0].tag( path ) 
-										} );
+									var 
+										set = `set${depth}`,
+										stack = ( depth && num ) 
+												? Files.image[set] || ( Files.image[set] = [] )
+												: Files[ Batch[type] || Batch.default ];
 									
-									var stack = null;
-									
-									switch ( batch = Batch[type] || Batch.default ) {
-										case "":		// discard
-											break;
-											
-										case "image":
-											if ( depth && num ) {
-												stack = Files.image[`set${depth}`];
-												if ( !stack ) stack = Files.image[`set${depth}`] = [];
-											}
-											break;
-																								
-										default:
-											stack = Files[ batch ];
-									}
+									stack.push( {
+										id: id,
+										num: num, 
+										title: title.join(" "), 
+										classif: (classif.length>1) ? "(" + classif.join("//") + ")" : "", 
+										type: type, 
+										name: file, 
+										qualifiers: parts.length, 
+										path: path, 
+										link: title[0].tag( path ) 
+									} );
 
-									if ( stack )
-										stack.push( {
-											id: id++,
-											num: num, 
-											title: title.join(" "), 
-											classif: (classif.length>1) ? "(" + classif.join("//") + ")" : "", 
-											type: type, 
-											name: file, 
-											qualifiers: parts.length, 
-											path: path, 
-											link: title[0].tag( path ) 
-										} );
-									
 								}
 								
 						});
