@@ -65,7 +65,7 @@ var
 	GEO = require("geohack"),
 	ENUM = require("enum");
 
-const { Copy,Each,Log,isKeyed,isString,isFunction,isError,isArray } = ENUM;
+const { Copy,Each,Log,isKeyed,isString,isFunction,isError,isArray,typeOf } = ENUM;
 const { sqlThread, getFile, probeSite } = TOTEM;
 const { pipeStream, pipeImage, pipeJson, pipeDoc, pipeBook, pipeAOI } = PIPE;
 const { 
@@ -492,11 +492,29 @@ Copy({
 		},
 		
 		blog: (recs,req,res) => {  //< renders dataset records
-			
-			if (key = req.flags.blog)
-				recs.blogify( req, key, "/"+req.table, res );
+			const { flags, table } = req;
+			if (key = flags.blog)
+				recs.blogify( req, key, "/"+table, res );
 			else
 				res(recs);
+		},
+		
+		calc: (recs,req,res) => {
+			const { flags } = req;
+			Log(">>>ctx calc", flags.calc);
+			var 
+				ctx = {},
+				rec = recs[0] || {};
+			
+			Each(rec, key => ctx[key] = recs.get(key) );
+			
+			const { calc } = $( "calc="+flags.calc, ctx );
+			
+			if ( calc )
+				if ( typeOf(calc) == "Object" )
+					Each(calc, (key,val) => calc[key] = $.list(val) );
+			
+			res( calc );
 		}
 		
 	},
