@@ -44,7 +44,8 @@ const {skinContext, renderJade} = module.exports = {
 						var 
 							id = 1,
 							Files = {
-								image: {},
+								slide: {},
+								image: [],
 								artifact: [],
 								misc: [],
 								live: []
@@ -127,9 +128,10 @@ const {skinContext, renderJade} = module.exports = {
 									var 
 										set = `set${depth}`,
 										stack = ( depth && num ) 
-												? Files.image[set] || ( Files.image[set] = [] )
+												? Files.slide[set] || ( Files.slide[set] = [] )
 												: Files[ Batch[type] || Batch.default ];
 									
+									//Log(title, type, depth, num, set, stack.constructor);
 									stack.push( {
 										id: id,
 										num: num, 
@@ -146,7 +148,7 @@ const {skinContext, renderJade} = module.exports = {
 								
 						});
 						
-						Each( Files.image, (set,files) => Files.image[set] = files.sort( (a,b) => a.num-b.num ) );
+						Each( Files.slide, (set,files) => Files.slide[set] = files.sort( (a,b) => a.num-b.num ) );
 						//Log(">>>>files", Files);
 						//Log(">>>>test", Files.image.get({ keys: {a: "link"}}) );
 						cb(ctx, Files );
