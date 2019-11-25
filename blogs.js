@@ -226,7 +226,7 @@ catch (err) {
 		cb(this);
 	},
 	
-	function Xlink( cb ) {  // expands [LINK](URL) tags then callsback cb( final html )
+	function Xlink( cb ) {  // callback with [LINK](URL) markdown
 		/*
 		req = http request or null to disable smart hash tags (content tracking)
 		ds = dataset?query default url path
@@ -234,7 +234,7 @@ catch (err) {
 		*/
 		var 
 			key = "@tag",
-			fetch = function ( rec, cb ) {  // expand [LINK](URL) markdown				
+			fetch = function ( rec, cb ) {  // expand markdown
 				var
 					url = rec.arg2,
 					opt = rec.arg1 || url ;
@@ -247,10 +247,10 @@ catch (err) {
 		this.serialize( fetch, pattern, key, html => cb(html) ); 
 	}, 
 
-	function Xtopic( req, cb ) {
+	function Xtopic( req, cb ) {	// callback with ~{TOPIC} markdown
 		var 
 			key = "@tag",
-			fetch = function ( rec, cb ) {  // callback cb with expanded %%{TOPIC} markdown
+			fetch = function ( rec, cb ) {  // expanded markdown
 				var 
 					secret = "",
 					topic = rec.topic,
@@ -346,11 +346,11 @@ catch (err) {
 		}); 
 	},   */
 	
-	function Xinclude( ds, cb ) {
+	function Xinclude( ds, cb ) {	// callback with %{URL} markdown
 		var 
 			key = "@tag",
 			
-			fetch = function ( rec, cb ) {  // callback cb with expanded [](URL) markdown
+			fetch = function ( rec, cb ) {  // expand markdown
 				var
 					url = rec.arg1.replace(/\&amp;/g,"&"),
 					keys = {},
@@ -370,8 +370,7 @@ catch (err) {
 
 					srcPath = urlPath.tag( "?", Copy({src:dsPath}, keys) );
 
-				// Log("include", url, "ds=", ds, "src=", srcPath, "type=", urlType);
-				// Log("link", [dsPath, srcPath, urlPath], keys, [opt, url]);
+				//Log("include", {url: url, ds: ds,src: srcPath, type: urlType,keys: keys	});
 				switch (urlType) { 
 					case "jpg":  
 					case "png":
@@ -397,11 +396,11 @@ catch (err) {
 		}); 
 	}, 
 
-	function Xfollow( ds, ctx, cb ) { // expand url/file includes
+	function Xfollow( ds, ctx, cb ) { // callback with expanded <a href=REF>A</a> links
 		if ( true ) 
 			cb (this );
 		else
-			cb( this.replace( /href=['|"]([^'"]*)/g, (str,ref) => { // smart links to follow <a href=REF>A</a> links		// /href=(.*?)\>/g
+			cb( this.replace( /href=['|"]([^'"]*)/g, (str,ref) => { // smart links to follow
 				//var q = (ref.startsWith( "'" )) ? '"' : "'";
 				var 
 					key = ctx[ref] || ref;
@@ -415,9 +414,9 @@ catch (err) {
 			}) );
 	},
 
-	function Xbacksub( blocks, cb ) {
+	function Xbacksub( blocks, cb ) {	// backsub escaped blocks	
 		var blockidx = 0;
-		cb( this.replace(/@block/g, str => {  	// backsub escaped blocks	
+		cb( this.replace(/@block/g, str => {  	
 			//Log(`unblock[${blockidx}]`, blocks[blockidx]);
 			return blocks[ blockidx++ ].tag("code",{}).tag("pre",{});
 		}) );
@@ -453,7 +452,7 @@ catch (err) {
 	function Xgen( ctx, cb ) {  // expands LHS OP= RHS tags
 
 		var 
-			pattern = /(\S*) := (\S*)/g;  // defines LHS OP= RHS tag
+			pattern = /(\S*) := (\S*)/g;  
 		
 		cb( this.replace(pattern, (str,lhs,rhs) => {
 			//Log([":=", lhs, rhs]);
@@ -464,7 +463,7 @@ catch (err) {
 		}) );
 	},
 	
-	function Xtex( cb ) {  // expands X$$ MATH $$ tags then callbacks cb( final html )
+	function Xtex( cb ) {  // callback with expanded X$$ MATH $$ 
 		var 
 			key = "@tex",
 			fetch = function ( rec, cb ) {	// callsback cb with expanded TeX tag

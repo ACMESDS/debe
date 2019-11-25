@@ -58,25 +58,23 @@ const { sysAlert, licenseOnDownload, defaultDocs } = module.exports = {
 		Ingest: "Enable to ingest notebook results [into the database](/api.view)",
 		Share: "Enable to return notebook results to the status area",
 		
-		Run: `
-Define period-of-performance parameters:
-
-{ "until": COUNT, "every": "INTERVAL" || SECONDS, "start": DATE, "end": DATE }  
-`,
-
 		Name: "Unique usecase name",
 		
 		Pipe: `
-Place a DATASET into a TYPE-specific workflow using a source, enumeration, or event Pipe:
+Place a DATASET into a TYPE-specific workflow using a source, document, enumeration, or event Pipe:
 
 	"/DATASET.TYPE ? KEY || [KEY,...] = $.JS & ... "
+	"DOCUMENT"
 	{ "Pipe": "source Pipe", "KEY" :  [VALUE, ...] || "$ {KEY} ..." , "$" : "MATHJS" , ... }
 	[ { ... }, .... ]
 
-[where](/api.view):
+[where](/api.view) $ contains json, GIMP image, event list, document text, chip stream, or notebook record given:
 
-	$ = json || GIMP image || event list || document text || chip stream || notebook record
 	TYPE = json || [jpg | png | nitf] || [stream | export]  || [txt | doc | pdf | xls]  || aoi || nb
+
+Reserved job KEYs:
+
+	start=DATE, end=DATE, until=COUNT, every="INTERVAL" || SECONDS, nosuper=JS, norun=JS
 
 `, 
 		
@@ -1282,68 +1280,66 @@ code  {
 					switch ( Pipe.constructor ) {
 						case String: // source pipe
 
-							var
-								pipeQuery = {},
-								pipeRun = ctx.Run || {},
-								pipePath = Pipe.parseURL(pipeQuery,{},{},{}),
-								job = { // job descriptor for regulator
-									qos: timeIntervals[pipeRun.every] || pipeRun.every || profile.QoS || 0 , 
-									priority: 0,
-									start: pipeRun.start,
-									end: pipeRun.end,
-									until: pipeRun.until,
-									client: req.client,
-									class: ctx.Name,
-									credit: 100, // profile.Credit,
-									name: host,
-									task: `${profile.QoS}.${host}.${ctx.Name}`,
-									notes: [
-											"run".tag( `/${host}.run?Name=${ctx.Name}` ), 
-											((profile.Credit>0) ? "funded" : "unfunded").tag( req.url ),
-											"RTP".tag( `/rtpsqd.view?task=${host}` ),
-											"PMR".tag( `/briefs.view?options=${host}` )
-									].join(" || "),
-									query: pipeQuery,
-									path: pipePath,
-									ctx: ctx
-								};
-
-							//Log(">pipe", job.path, pipePath, pipeQuery);
-							if ( pipePath.startsWith("/") ) {	// pipe file
+							if ( Pipe.startsWith("/") ) {	// pipe file
 								var
-									[x,pipeName,pipeType] = pipePath.substr(1).match(/(.*)\.(.*)/) || ["", pipePath, "json"],
-									pipeSuper = TOTEM.pipeSuper[pipeType],
-									pipeWatch = `${ctx.Host}.${ctx.Name}`;
+									parms = {},
+									path = Pipe.parse$(ctx),
+									ds = path.parseURL(parms,{},{},{}),
+									[x,dsName,dsType] = ds.substr(1).match(/(.*)\.(.*)/) || ["", ds, "json"],
+									nosuper = "Cycle>2",
+									sup = nosuper.parseJS(ctx) ? null : TOTEM.pipeSuper[dsType],
+									watch = `${ctx.Host}.${ctx.Name}`,
+									job = { // job descriptor for regulator
+										qos: timeIntervals[parms.every] || parms.every || profile.QoS || 0 , 
+										priority: 0,
+										start: parms.start,
+										end: parms.end,
+										until: parms.until,
+										client: req.client,
+										class: ctx.Name,
+										credit: 100, // profile.Credit,
+										name: host,
+										task: `${profile.QoS}.${host}.${ctx.Name}`,
+										notes: [
+												"run".tag( `/${host}.run?Name=${ctx.Name}` ), 
+												((profile.Credit>0) ? "funded" : "unfunded").tag( req.url ),
+												"RTP".tag( `/rtpsqd.view?task=${host}` ),
+												"PMR".tag( `/briefs.view?options=${host}` )
+										].join(" || "),
+										query: parms,
+										path: ds,
+										ctx: ctx
+									};
 
-								switch ( pipeType ) {	// redirect path based on type
+								switch ( dsType ) {	// adjust job based on type
 									case "nb":
 									case "db":
-										job.path = Pipe.parse$(ctx);
+										job.path = path;
 										job.query = {};
 										break;
 									
-									case "export": 	
-										job.path = `/stores/${pipeName}.stream`;
+									case "export": 										
+										job.path = `/stores/${dsName}.stream`;
 										break;
 										
 									default:
-										if ( !FLEX.select[pipeName] && false) {  // setup plugin autorun only when pipe references a file
-											sql.query( "DELETE FROM openv.watches WHERE File != ? AND Run = ?", [pipePath, pipeWatch] );
+										if ( !FLEX.select[dsName] && false) {  // setup plugin autorun only when pipe references a file
+											sql.query( "DELETE FROM openv.watches WHERE File != ? AND Run = ?", [ds, watch] );
 
 											sql.query( "INSERT INTO openv.watches SET ?", {  // associate file with plugin
-												File: pipePath,
-												Run: pipeWatch
+												File: ds,
+												Run: watch
 											}, (err,info) => {
 												if ( !err )
-													setAutorun( pipePath );
+													setAutorun( ds );
 											});
 										}
 										break;
 								}
 
-								//Log(">pipe", pipeName, pipeType);
+								Log(">pipe", path, dsName, dsType, parms );
 
-								pipePlugin( pipeSuper, sql, job, (ctx,sql) => {
+								pipePlugin( sup, sql, job, (ctx,sql) => {
 									if (ctx)
 										saveContext(sql, ctx);
 
@@ -1352,33 +1348,38 @@ code  {
 								});
 							}
 
-							else
-							if ( pipePath.startsWith("#") ) { // dummied out - eg when boosting
-								pipePlugin( null, sql, job, (ctx,sql) => {	// unsupervised pipe
-									if (ctx)
-										saveContext(sql, ctx);
-
-									else
-										Trace( errors.lostContext, req );
-								});								
-							}
-							
-							else
-							if ( pipePath.startsWith("?") ) {	// keys only - reserved
-								err = errors.badType;
-							}
-							
-							else	// pipe is text doc
-							if ( pipeDoc = TOTEM.pipeSuper.txt )
-								pipePlugin(pipeDoc, sql, job, (ctx,sql) => {   // place job in doc workflow
+							else	
+							if ( sup = TOTEM.pipeSuper.txt ) {	// pipe text doc
+								var
+									job = { // job descriptor for regulator
+										qos: profile.QoS || 0 , 
+										priority: 0,
+										client: req.client,
+										class: ctx.Name,
+										credit: 100, // profile.Credit,
+										name: host,
+										task: `${profile.QoS}.${host}.${ctx.Name}`,
+										notes: [
+												"run".tag( `/${host}.run?Name=${ctx.Name}` ), 
+												((profile.Credit>0) ? "funded" : "unfunded").tag( req.url ),
+												"RTP".tag( `/rtpsqd.view?task=${host}` ),
+												"PMR".tag( `/briefs.view?options=${host}` )
+										].join(" || "),
+										query: null,
+										path: Pipe,
+										ctx: ctx
+									};
+								
+								pipePlugin(sup, sql, job, (ctx,sql) => {   // place job in doc workflow
 									if (ctx)
 										saveContext(sql, ctx);
 
 									else
 										Trace( errors.lostContext, req );
 								});
+							}
 
-							else
+							else	// error
 								err = errors.badType;
 							
 							break;

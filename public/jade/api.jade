@@ -448,7 +448,6 @@ append site_body
 				> [+](/#{ds}.add?Share=bool) [/-](/#{ds}.sub?Share) *Share* return notebook results to the status area  
 				> [+](/#{ds}.add?Pipe=doc) [/-](/#{ds}.sub?Pipe) *Pipe* run usecase in supervised or enumerated workflow  
 				> [+](/#{ds}.add?Description=doc) [/-](/#{ds}.sub?Description) *Description* document usecase  
-				> [+](/#{ds}.add?Run=doc) [/-](/#{ds}.sub?Run) *Run* pipe period-of-performance parameters  
 				> [+](/#{ds}.add?Entry=doc) [/-](/#{ds}.sub?Entry) *Entry* prime context on entry 
 				> [+](/#{ds}.add?Exit=doc) [/-](/#{ds}.sub?Exit) *Exit* save context on exit 
 
@@ -457,19 +456,23 @@ append site_body
 				> *Save_jpg* generate jpg from {at: "jpg": prime: "name", save: "name", index: [...], values: [...] } event  
 				> *Save* collect unaggregated streaming events  
 
-				Place a DATASET into a TYPE-specific workflow using a source, enumeration, or event *Pipe*:
+				Place a DATASET into a TYPE-specific workflow using a source, document, enumeration, or event *Pipe*:
 
 					"/DATASET.TYPE ? KEY || [KEY,...] = $.JS & ... "
-					{ "Pipe": *source Pipe*, "KEY" :  [VALUE, ...] || "${KEY} ..." , "$" : "MATHJS" , ... }
+					"DOCUMENT"
+					{ "Pipe": "source Pipe", "KEY" :  [VALUE, ...] || "${KEY} ..." , "$" : "MATHJS" , ... }
 					[ { ... }, .... ]
 
-				where:
+				where $ contains json, GIMP image, event list, document text, chip stream, or notebook record given:
 
-					$ = json || GIMP image || event list || document text || db
-					TYPE = json || jpg | png | nitf || stream | export  || txt | doc | pdf | xls  || aoi || db
+					TYPE = json || [jpg | png | nitf] || [stream | export]  || [txt | doc | pdf | xls]  || aoi || nb
+
+				Reserved job KEYs:
+
+					start=DATE, end=DATE, until=COUNT, every="INTERVAL" || SECONDS, nosuper=JS, norun=JS
 
 				An enumeration *Pipe* can extend its context by a [MATHJS script](/api.view).  A source *Pipe* can 
-				JS-adjust its $-data:
+				JS-adjust its $-data using:
 
 					+	$.get( { rekey : { new: "old",...}} )
 					+	$.get( { where: { key: value, ... } } )

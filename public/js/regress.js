@@ -314,10 +314,10 @@ The regression mode is determined by the following context keys:
 
 						$.boost( cycle, sql, boost, Trace, (x,keys) => {  // predict/learn hypothesis
 
-							function hypo(x,keys) {	// return K-vector of hypo tests
+							function hypo(x,keys) {	// hypo[k] = +/-1 if x inside/outside nsigma sphere with keys[k]
 								return $( keys.length, (k, H) => {		// enumerate thru all keys
 									H[ k ] = 0;		// default if invalid key
-									if ( key = keys[k] ) {
+									if ( key = keys[k] ) {  // key valid so ...
 										const { r } = $( "y = B*x + b; r = sqrt( y' * y ); ", {B: key.B, b: key.b, x: x} );		// bring sample into decision sphere
 										H[ k ] = ( r < nsigma ) ? +1 : -1;		// test positive/negative hypo 
 									}
@@ -332,15 +332,15 @@ The regression mode is determined by the following context keys:
 							else
 								Trace( "boost save", {t: cycle, alpha: boost.alpha} );
 
-							if ( keys ) 	// test hypo 
+							if ( keys ) 	// test hypo using keys
 								return hypo(x,keys);
 
 							else
-							if ( x ) { 	// learn keys
+							if ( x ) { 	// learn hypo keys
 								var keys = boost.h[cycle] = [];
 
 								trainer( x, null, null, info => {
-									if ( info ) 	// labelled data provided so stack keys
+									if ( info ) 	// data provided so stack learned keys
 										if ( cls = info.cls )
 											cls.em.forEach( (mix,k) => {
 												//Log("mix", k , mix.key);
@@ -359,7 +359,7 @@ The regression mode is determined by the following context keys:
 								return keys;
 							}
 
-							else { // save
+							else { // save boosted roc
 								if ( xroc ) { // gen effective roc
 									var 
 										F = $( mixes, (k,F) => F[k] = 0 ),		// reserve for boosted hypo
@@ -408,8 +408,8 @@ The regression mode is determined by the following context keys:
 									"UPDATE app.regress SET ? WHERE ?", 
 									[{
 										_Boost: JSON.stringify(boost), 
-										Cycle: cycle+1, 
-										Pipe: JSON.stringify( ( cycle == 1 ) ? "#" + ctx.Pipe : ctx.Pipe )
+										Cycle: cycle+1
+										//Pipe: JSON.stringify( ( cycle == 1 ) ? "#" + ctx.Pipe : ctx.Pipe )
 									}, {Name: ctx.Name} ] , err => Log(err) );
 
 								return null;								
@@ -469,7 +469,7 @@ The regression mode is determined by the following context keys:
 			if ( x0 ) 	// predicting/roc mode
 				predicter( x0, loader(model) );
 		
-			else {	// adhoc supervised earning mode
+			else {	// adhoc supervised learning mode
 				var
 					X = ctx.$.get('x'),
 					Y = ctx.$.get(['y', 'n']);
