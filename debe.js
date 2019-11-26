@@ -349,13 +349,15 @@ Copy({
 		 */
 
 			["select", "delete", "insert", "update", "execute"].forEach( crud => {
+				/*
 				DEBE.byAction[crud] = function (req,res) {
 					if ( route = FLEX[req.action][req.table] )
 						route( req, res );
 
 					else
 						res( null );
-				};
+				};*/
+				DEBE.byAction[crud] = FLEX[crud];
 			});
 
 			if (cb) cb();	
@@ -514,6 +516,7 @@ Copy({
 				if ( typeOf(calc) == "Object" )
 					Each(calc, (key,val) => calc[key] = $.list(val) );
 			
+			//Log(">>>>ctx", calc );
 			res( $.squeeze(calc) );
 		}
 		
