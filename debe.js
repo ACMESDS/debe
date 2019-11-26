@@ -514,7 +514,7 @@ Copy({
 				if ( typeOf(calc) == "Object" )
 					Each(calc, (key,val) => calc[key] = $.list(val) );
 			
-			res( calc );
+			res( $.squeeze(calc) );
 		}
 		
 	},
@@ -1468,8 +1468,8 @@ could/should be revised to support more generic peer-to-peer bySOAP interfaces.
 			fetchBlog = ( rec, cb ) => {
 				if ( md = rec[key] + "" ) {
 					md.Xblogify(req, ds.tag("?", { 	// tag ds with source record selector
-						name: ( (rec.Pipe||"").startsWith("{") ) 
-							? rec.Name + "-%"	// pipe defines a monte-carlo cross product so get them all
+						name: (rec.Pipe||"").startsWith("{")
+							? rec.Name + "-%"	// pipe defines a monte-carlo so request them all
 							: rec.Name	// pipe defines a simple path
 					}), {}, rec, html => cb( 
 						flags.kiss

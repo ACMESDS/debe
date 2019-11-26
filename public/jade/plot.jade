@@ -4,10 +4,9 @@ append base_help
 	:markdown
 		 Produce d3 plot with parameters:  
 
-			src = source dataset = [ {Name, x,y, ...}, ... ]
-			name = "filter" on dataset.Name
-			x = x-source = key || store$key
-			y = y-source = key || store$key
+			src = source dataset provides [ x,y ] data
+			x = source key || jsonkey
+			y = source key || json$key
 			w = drawing width
 			h = drawing height
 			debug = level send debugging alerts
@@ -70,14 +69,17 @@ append base_head
 	script.
 		var 
 			merges = {
-				beta: "/beta?name=gen-$a-$b&x:=Save$[0].x&y:=Save$[0].y"
+				//beta: "/beta?name=gen-$a-$b&x:=Save$[0].x&y:=Save$[0].y"
+				beta: "/beta?name=gen-$a-$b&xy:=Save$[0].x,[0].y&_calc=xy"
 			},
 			merge = "!{query.merge}",
 			merge = merges[ merge ] || merge,
 			opts = {  // define plot options
 				ds: "!{query.src}"
-						? "!{query.src}?name=#{query.name}&x:=#{query.x}&y:=#{query.y}&case:=name"+ (merge ? "??"+merge : "" )
-						:  "/regress?name=test2&x:=Save_train$.x[$chan]&y:=Save_train$.y[$chan]&case:=name",
+							? "!{query.x}"
+								? "!{query.src}&x:=#{query.x}&y:=#{query.y}&_calc=[x,y]"+ (merge ? "??"+merge : "" )
+								:  "!{query.src}"+ (merge ? "??"+merge : "" )
+							:  "/regress?name=test2&x:=Save_train$.x[$chan]&y:=Save_train$.y[$chan]&case:=name",
 				dims: {
 					margin: {top: 5, right: 10, bottom: 5, left: 10},
 					width: parseInt("#{query.w}") || 1200,
@@ -130,15 +132,17 @@ append base_body
 	if !query.help
 		script.
 			Fetch( opts, (data,svg) => {
-				function recplot(rec,name) {
+				function plotData(rec,name) {
 					function xyplot(x,y,cb) {
 
+						/*
 						function index(pair) {
 							if (xIndex) pair.x = xIndex.parseEval(pair.x);
 							if (yIndex) pair.y = yIndex.parseEval(pair.y);
 							return pair;
 						}
-
+						*/
+						
 						var
 							x0 = x.forEach ? x[0] || 0 : 0,
 							y0 = y.forEach ? y[0] || 0 : 0,
@@ -156,26 +160,26 @@ append base_body
 
 							case "n/1":		// cluster plot
 								x.forEach( (xn,n) => {
-									xy.push( index({ x: xn[0], y: xn[1], f: y[n][0] }) );	// d3 assigns y to 1 of 10 fill categories
+									xy.push( { x: xn[0], y: xn[1], f: y[n][0] } );	// d3 assigns y to 1 of 10 fill categories
 								});	
 								break;
 
 							case "n/0":		// cluster plot
 								x.forEach( (xn,n) => {
-									xy.push( index({ x: xn[0], y: xn[1], f: y[n] }) );
+									xy.push( { x: xn[0], y: xn[1], f: y[n] } );
 								});	
 								break;
 
 							case "1/1": // scatter plot
 								x.forEach( (xn,n) => {
-									xy.push( index({ x: x[n][0], y: y[n][0], f: 0 }) );
+									xy.push( { x: x[n][0], y: y[n][0], f: 0 } );
 								});	
 								break;
 
 							case "0/0": // scatter plot
 								if ( x.forEach )
 									x.forEach( (xn,n) => {
-										xy.push( index( {x: x[n], y: y[n], f: 0} ) );
+										xy.push( {x: x[n], y: y[n], f: 0} );
 									}); 
 
 								else
@@ -185,13 +189,13 @@ append base_body
 
 							case "1/0": // scatter plot
 								x.forEach( (xn,n) => {
-									xy.push( index({ x: x[n][0], y: y[n], f: 0 }) );
+									xy.push( { x: x[n][0], y: y[n], f: 0 } );
 								});	
 								break;
 
 							case "0/1": // scatter plot
 								x.forEach( (xn,n) => {
-									xy.push( index({ x: x[n], y: y[n][0], f: 0 }) );
+									xy.push( { x: x[n], y: y[n][0], f: 0 } );
 								});	
 								break;							
 						}
@@ -318,8 +322,8 @@ append base_body
 					//if (opts.debug > 2) alert( "case: "+ name );
 
 					var
-						x = rec.x || [],
-						y = rec.y || [],
+						//x = rec.x || [],
+						//y = rec.y || [],
 						min = opts.min,
 						max = opts.max,
 						plots = 0,
@@ -376,7 +380,25 @@ append base_body
 
 					color.domain( d3.range(0,colors) );
 
-					xyplot(x, y, plots => {} );					
+					if ( rec.forEach ) {
+						var [x,y] = rec;
+						
+						Log(name, x,y);
+						if ( y )
+							xyplot(x, y, plots => {} );
+						
+						else
+						if ( x.forEach )
+							x.forEach( (rec,n) => plotData( rec, name+"/"+n ) );
+						
+						else
+							for ( var key in x ) 
+								plotData( x[key], name+"/"+key );
+					}
+					
+					else 
+						for ( var key in rec ) 
+							plotData( rec[key], name+"/"+key );
 				}
 			
 				var 
@@ -394,12 +416,5 @@ append base_body
 					xIndex = opts.index[0],
 					yIndex = opts.index[1];
 
-				if ( data.forEach ) 
-					data.forEach( (rec,n) => recplot(rec, n+"" ) );
-
-				else
-					for ( var key in data ) 
-						if ( recs = data[key] )
-							recs.forEach( (rec,n) => recplot( rec, key+n ) );
-			
+				plotData( data, "" );			
 			});

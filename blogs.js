@@ -354,23 +354,26 @@ catch (err) {
 				var
 					url = rec.arg1.replace(/\&amp;/g,"&"),
 					keys = {},
-					dsPath = ds.parseURL(keys,{},{},{}),
+					//dsPath = ds.parseURL(keys,{},{},{}),
 					urlPath = url.parseURL(keys,{},{},{}),
 
 					w = keys.w || 200,
 					h = keys.h || 200,
 
+					[x,urlName,urlType] = urlPath.match( /(.*)\.(.*)/ ) || [ "", "tbd", "" ],
+					/*
 					urlName = dsPath,
 					urlType = "",
 					x = urlPath.replace(/(.*)\.(.*)/, (str,L,R) => {
 						urlName = L;
 						urlType = R;
 						return "#";
-					}),
+					}), */
 
-					srcPath = urlPath.tag( "?", Copy({src:dsPath}, keys) );
+					srcPath = urlPath.tag( "?", keys ).tag( "&", {src:ds});
+						// urlPath.tag( "?", Copy({src:dsPath}, keys) );
 
-				//Log("include", {url: url, ds: ds,src: srcPath, type: urlType,keys: keys	});
+				Log("include", {url: url, ds: ds,src: srcPath, type: urlType,keys: keys	});
 				switch (urlType) { 
 					case "jpg":  
 					case "png":
