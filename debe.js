@@ -340,23 +340,15 @@ Copy({
 
 		}
 
-		function initSQL(cb) {
+		function initIFS(cb) {
 		/**
-		 * @method initSQL
+		 * @method initIFS
 		 * @private
 		 * @member DEBE
 		 * Initialize the FLEX and ATOM interfaces
 		 */
 
 			["select", "delete", "insert", "update", "execute"].forEach( crud => {
-				/*
-				DEBE.byAction[crud] = function (req,res) {
-					if ( route = FLEX[req.action][req.table] )
-						route( req, res );
-
-					else
-						res( null );
-				};*/
 				DEBE.byAction[crud] = FLEX[crud];
 			});
 
@@ -365,7 +357,7 @@ Copy({
 
 		initENV( function () {  // init the global environment
 		initSES( function () {	// init session handelling
-		initSQL( function () {	// init the sql interface
+		initIFS( function () {	// init interfaces
 
 			sqlThread( sql => {
 				Trace("TRAIN NLPs");
