@@ -318,7 +318,7 @@ const {skinContext, renderJade} = module.exports = {
 			sql.query( "SHOW FULL COLUMNS FROM ??", sql.reroute( ctx.name ), (err,fields) => {
 				if ( err ) 	{
 					ctx.type = "file";	// signal for file check
-					cb(ctx);
+					returnContext([]);
 				}
 				
 				else

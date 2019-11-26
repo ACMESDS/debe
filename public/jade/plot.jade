@@ -72,7 +72,8 @@ append base_head
 			merges = {
 				beta: "/beta?name=gen-$a-$b&x:=Save$[0].x&y:=Save$[0].y"
 			},
-			merge = merges[ "!{query.merge}" ],
+			merge = "!{query.merge}",
+			merge = merges[ merge ] || merge,
 			opts = {  // define plot options
 				ds: "!{query.src}"
 						? "!{query.src}?name=#{query.name}&x:=#{query.x}&y:=#{query.y}&case:=name"+ (merge ? "??"+merge : "" )
