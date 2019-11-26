@@ -1173,6 +1173,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		noGraph: new Error( "graph db unavailable" ),
 		badAgent: new Error("bad agent request"),
 		noIngest: new Error("invalid/missing ingest dataset"),
+		noSkin: new Error("no such skin"),
 		badSkin: new Error("skin contains invalid jade"),
 		badDataset: new Error("dataset does not exist"),
 		noCode: new Error("engine has no code file"),
