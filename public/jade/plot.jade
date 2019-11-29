@@ -80,7 +80,7 @@ append base_head
 						? "!{query.src}&x:=#{query.x}&y:=#{query.y}&_calc=[x,y]"+ (merge ? "??"+merge : "" )
 						:  "!{query.ds}"
 								? "!{query.ds}"+ (merge ? "??"+merge : "" )
-								:  "/regress?name=test2&x:=Save_train$.x[$chan]&y:=Save_train$.y[$chan]&case:=name",
+								:  "/regress&x=Save_train$.x[$chan]&y=Save_train$.y[$chan]?name=test2",
 				dims: {
 					margin: {top: 5, right: 10, bottom: 5, left: 10},
 					width: parseInt("#{query.w}") || 1200,

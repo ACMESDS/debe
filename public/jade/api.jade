@@ -22,43 +22,33 @@ append site_body
 
 			to access dataset, notebook, file, and command NODEs:
 
-				DATASET.TYPE ? QUERY
-				NOTEBOOK.TYPE ? QUERY
-				AREA/PATH/FILE.TYPE ? QUERY
-				COMMAND.TYPE ? QUERY
+				DATASET.TYPE & INDEX & ... ? QUERY & ...
+				NOTEBOOK.TYPE & INDEX & ... ? QUERY & ...
+				FILE.TYPE & INDEX & ... ? QUERY & ...
+				COMMAND.TYPE & INDEX & ... ? QUERY & ...
 
-			where (see [API](https://totem.west.ile.nga.ic.gov/api.view) and 
-			[skinning guide](https://totem.west.ile.nga.ic.gov/skinguide.view)) TYPE 
-			will either convert DATASET:
+			where TYPE can [skin](https://totem.west.ile.nga.ic.gov/skinguide.view), convert, or
+			inspect a DATASET:
 
-				db | xml | csv | txt | flat | kml | html | json
-
-			inspect DATASET:
-
+				db
+				xml | csv | txt | flat | kml | html | json
 				tree | schema | nav | stat | delta
 
-			render NOTEBOOK:
+			render, probe, manage, or license NOTEBOOK:
 
 				view | run | pivot | site | spivot | brief | gridbrief | pivbrief | runbrief | proj
-
-			probe NOTEBOOK:
-
 				exe | tou | md | status | suitors | usage | EVENTS
-
-			manage NOTEBOOK:
-
 				import | export | publish | addkey | subkey
-
-			license NOTEBOOK:
-
 				js | py | m | me | jade | ...
 
-			#{title} provides the following COMMANDs:
+			#{title} provides the following COMMAND nodes:
 
 				agent | alert | ingest | riddle | task | ping
 
 			to distribute jobs, alert clients, ingest data, validate sessions, shard tasks, and 
-			test connections.  In addition, #{title} establishes file AREAs: 
+			test connections.  
+			
+			#{title} also provides FILE = AREA/.../name nodes at AREAs:
 
 				stores | uploads | shares | west | east
 
@@ -302,38 +292,46 @@ append site_body
 					POST	/DATASET.TYPE	Insert body parameters into DATASET
 					DELETE	/DATASET.TYPE	Delete from DATASET 
 
+		#fit.Indicies
+			:markdown
+				An INDEX can be:
+				> TAKEKEY   
+				> SKIPKEY%   
+				> ASKEY = VALUE || $KEY || JSON$KEY,...
+
 		#fit.Queries
 			:markdown
+				A QUERY can be
 				Relational:
-				> KEY = VALUE || $KEY || JSON$KEY,... || PATTERN  
-				> KEY != VALUE || $KEY || JSON$KEY,... || PATTERN  
+				> KEY = VALUE || $KEY || JSON$KEY,...  
+				> KEY != VALUE || $KEY || JSON$KEY,...  
 				> KEY <= VALUE || $KEY || JSON$KEY,...  
 				> KEY >= VALUE || $KEY || JSON$KEY,...  
 				> KEY < VALUE || $KEY || JSON$KEY,...  
 				> KEY > VALUE || $KEY || JSON$KEY,...  
 
 				Matching:
+				> KEY = PATTERN  
+				> KEY != PATTERN  
 				> KEY :nlp: PATTERN  
 				> KEY :exp: PATTERN  
 				> KEY :bin: PATTERN  
 
-				Sampling:
+				Indexing:
 				> ASKEY := VALUE || $KEY || JSON$KEY,...
 
-				Grouping, Sorting, Indexing:
+				Grouping and Sorting:
 				> _pivot = KEY,KEY,... pivot records on KEYs with NodeID = "ID,ID,..." groups  
 				> _browse = KEY,KEY,... browse records on KEYs with NodeID = "name/name/ ..."  
 				> _group = KEY,KEY,... group records on KEYs  
 				> _sort	= KEY,KEY,... || [{property:KEY,sort:DIRECT}, ...] sort records on KEYs  
-				> _index = KEY,KEY,... select only KEY named fields  
-				> _except = KEY,KEY,... select fields except those named like KEYs  
+				> _nav = open | tree | rename | size ,root/A/B/... folder navigation  
+				> _calc = MATHJS restructure and process returned records
 
 				Misc:
-				> _nav = open | tree | rename | size ,root/A/B/... folder navigation  
 				> _lock	= enable record locking  
 				> _view = name of view to correlate with dataset  
 				> _blog	= KEY blog markdown in record KEY
-				> _calc = MATHJS restructure and process returned records
 
 				Filtering:
 				> _limit = number of records to return  
@@ -430,6 +428,7 @@ append site_body
 				+	[broadcast messages](/sockets.execute) to [connected users](/sockets.db)  
 				+	[import milestones](/milestone.execute) from internal spreadsheet
 				
+
 	#accordion.Notebooks
 		#fit.Endpoints
 			:markdown
@@ -703,6 +702,7 @@ append site_body
 
 		#fit.Examples
 		
+
 	#accordion.Engines
 
 		#fit.Endpoints
