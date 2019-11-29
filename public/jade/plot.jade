@@ -4,9 +4,10 @@ append base_help
 	:markdown
 		 Produce d3 plot with parameters:  
 
-			src = source dataset provides [ x,y ] data
+			src = /ds?query source-x-y spec to provide [ [x1,...] ,[y1,...] ] data
 			x = source key || jsonkey
 			y = source key || json$key
+			ds = /ds?query overrides src
 			w = drawing width
 			h = drawing height
 			debug = level send debugging alerts
@@ -76,10 +77,10 @@ append base_head
 			merge = merges[ merge ] || merge,
 			opts = {  // define plot options
 				ds: "!{query.src}"
-							? "!{query.x}"
-								? "!{query.src}&x:=#{query.x}&y:=#{query.y}&_calc=[x,y]"+ (merge ? "??"+merge : "" )
-								:  "!{query.src}"+ (merge ? "??"+merge : "" )
-							:  "/regress?name=test2&x:=Save_train$.x[$chan]&y:=Save_train$.y[$chan]&case:=name",
+						? "!{query.src}&x:=#{query.x}&y:=#{query.y}&_calc=[x,y]"+ (merge ? "??"+merge : "" )
+						:  "!{query.ds}"
+								? "!{query.ds}"+ (merge ? "??"+merge : "" )
+								:  "/regress?name=test2&x:=Save_train$.x[$chan]&y:=Save_train$.y[$chan]&case:=name",
 				dims: {
 					margin: {top: 5, right: 10, bottom: 5, left: 10},
 					width: parseInt("#{query.w}") || 1200,
