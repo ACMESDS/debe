@@ -95,10 +95,16 @@ module.exports = {  //< watch dogs cycle time in secs (zero to disable)
 
 			function db(cb) {
 				sql.query(get.sqlutil, {}, (err, stats) => {
-					cb({
-						running: stats[2].Value,
-						connected: stats[1].Value
-					});
+					Log("dog sys db ", err);
+					cb( err 
+					   ? {
+							running: 0,
+							connected: 0
+						}
+						: {
+							running: stats[2].Value,
+							connected: stats[1].Value
+						});
 				});
 			}
 
