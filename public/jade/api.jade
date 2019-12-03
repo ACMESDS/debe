@@ -313,9 +313,9 @@ append site_body
 				Matching:
 				> KEY = PATTERN  
 				> KEY != PATTERN  
-				> KEY :nlp: PATTERN  
-				> KEY :exp: PATTERN  
-				> KEY :bin: PATTERN  
+				> KEY !nlp= PATTERN  
+				> KEY !exp= PATTERN  
+				> KEY !bin= PATTERN  
 
 				Indexing:
 				> ASKEY := VALUE || $KEY || JSON$KEY,...
