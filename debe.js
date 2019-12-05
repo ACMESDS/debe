@@ -1157,6 +1157,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 					"API".tag( "/api.view" )
 				].join(" || ");
 		},
+		noWorker: new Error("service busy"),
 		noPermission: new Error( "You do not have permission to restart the service" ),
 		badType: new Error("bad type"),
 		lostContext: new Error("pipe lost context"),

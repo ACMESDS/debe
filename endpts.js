@@ -305,6 +305,10 @@ Save your notebook's context KEYs on exit:
 			+ "WHERE ? LIMIT 1",
 			[{Name: table}], (err,engs) => {
 
+			if ( err ) 
+				res( errors.noWorker );
+				
+			else
 			if ( eng = engs[0] )
 				res([
 					`/${eng.Name}.use`.tag("a",{href: `/${eng.Name}.use`}),
@@ -1150,7 +1154,7 @@ code  {
 	@param {Object} req http request
 	@param {Function} res Totem response callback
 	*/	
-		function pipePlugin( sup, sql, job, cb ) { //< pipe job via supervisor 
+		function pipeNotebook( sup, sql, job, cb ) { //< pipe job via supervisor 
 
 			function makeList(args,debug) {
 				var mash = [];
@@ -1188,23 +1192,27 @@ code  {
 			}
 
 			sql.insertJob( job, (sql,job) => { 
-				pipe( sup, sql, job, ctx => { 	
-					if (ctx) {
-						req.query = ctx;
-						ATOM.select(req, ctx => {  // run plugin
-							//Log(">>pipe save=", ctx.Save );
-							if ( ctx )
-								if ( isError(ctx)  )
-									Trace("halt bad context", ctx);
+				if ( sql )
+					pipe( sup, sql, job, ctx => { 	
+						if (ctx) {
+							req.query = ctx;
+							ATOM.select(req, ctx => {  // run plugin
+								//Log(">>pipe save=", ctx.Save );
+								if ( ctx )
+									if ( isError(ctx)  )
+										Trace("halt bad context", ctx);
 
-								else 
-									cb( ctx, sql );
-						});
-					}
+									else 
+										cb( ctx, sql );
+							});
+						}
 
-					else
-						Trace("halt no context");
-				});
+						else
+							Trace("notebook halted - no context");
+					});
+				
+				else
+					Trace("notebook halted - no regulator");
 			});
 		}
 
@@ -1339,7 +1347,7 @@ code  {
 
 								Log(">pipe", path, dsName, dsType, parms );
 
-								pipePlugin( sup, sql, job, (ctx,sql) => {
+								pipeNotebook( sup, sql, job, (ctx,sql) => {
 									if (ctx)
 										saveContext(sql, ctx);
 
@@ -1370,7 +1378,7 @@ code  {
 										ctx: ctx
 									};
 								
-								pipePlugin(sup, sql, job, (ctx,sql) => {   // place job in doc workflow
+								pipeNotebook(sup, sql, job, (ctx,sql) => {   // place job in doc workflow
 									if (ctx)
 										saveContext(sql, ctx);
 
@@ -1386,7 +1394,7 @@ code  {
 
 						case Array:  // event pipe
 							ctx.Events = Pipe;
-							pipePlugin( null, sql, job, (ctx,sql) => {
+							pipeNotebook( null, sql, job, (ctx,sql) => {
 								saveContext(sql, ctx);
 							});
 							break;
@@ -1696,7 +1704,7 @@ code  {
 					client: Thread.pop()
 				};
 
-			sql.forFirst("agent", "SELECT * FROM openv.agents WHERE ? LIMIT 1", {queue: thread}, function (agent) {
+			sql.forFirst("agent", "SELECT * FROM openv.agents WHERE ? LIMIT 1", {queue: thread}, agent => {
 
 				if (agent) {
 					sql.query("DELETE FROM openv.agents WHERE ?", {ID: agent.ID});
@@ -1954,7 +1962,7 @@ aggreagate data using [ev, ...].stashify( "at", "Save_", ctx ) where events ev =
 function getEngine( sql, name, cb ) {
 	sql.query( 
 		"SELECT * FROM app.engines WHERE least(?,1) LIMIT 1", { Name: name }, (err, engs) => {
-		cb( engs[0] || null );
+		cb( err ? null : engs[0] || null );
 	});	
 }
 
@@ -1971,7 +1979,7 @@ function exeAutorun(sql,name,path) {
 
 	Log("autorun", path);
 	sql.query( "SELECT * FROM app.files WHERE Name=?", path.substr(1) )
-	.on("result", (file) => {
+	.on("result", file => {
 
 		var 
 			now = new Date(),
