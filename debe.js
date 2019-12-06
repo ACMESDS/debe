@@ -362,7 +362,10 @@ Copy({
 			sqlThread( sql => {
 				Trace("TRAIN NLPs");
 				sql.query('SELECT * FROM app.nlprules WHERE Enabled', (err,rules) => {
-					READ.train( rules );
+					if (err) 
+						Trace( errors.noWorker );
+					else
+						READ.train( rules );
 				});
 			});
 			
