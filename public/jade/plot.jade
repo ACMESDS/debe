@@ -152,7 +152,7 @@ append base_body
 							xy = [],
 							mode = ((Nx <= 1) ? Nx : "n") + "/" + ((Ny <= 1) ? Ny : "n");
 
-						Log( `plot ${mode} [${Nx}x${Ny}]` );
+						Log( `plot ${mode} [${Nx}x${Ny}] Nplot=${plots}` );
 
 						switch ( mode ) {
 							case "n/n":		// series plot
@@ -327,7 +327,7 @@ append base_body
 						//y = rec.y || [],
 						min = opts.min,
 						max = opts.max,
-						plots = 0,
+						//plots = 0,
 						hard = min[0] ? { x: [parseFloat(min[0]), parseFloat(max[0])], y: [parseFloat(min[1]), parseFloat(max[1])] } : null;
 
 					//d3.select("svg").remove();
@@ -406,6 +406,7 @@ append base_body
 					width = svg.attr("width"),
 					height = svg.attr("height"),			
 					margin = opts.dims.margin,
+					plots = 0,
 					svg = svg.append("g")
 							.attr("transform", "translate(" + margin.left + "," + margin.top + ")"),
 
