@@ -77,7 +77,7 @@ where the callback() returns a value.
 							//.attr("transform", "translate(" + opts.dims.margin.left + "," + opts.dims.margin.top + ")"),
 
 			widgets = opts.widgets || {},
-			def = "0:100:1".split(":");
+			inputs = {};
 
 		var 
 			body = d3.select("body"),
@@ -90,14 +90,12 @@ where the callback() returns a value.
 
 		"p".d3add(body,	{ html: family.join(" || ")	} );
 
-		def.type = "range";
-
 		opts.ds.replace(/\$(\w+)/g, (str,key) => {
 			
 			function onChange() {
 				var path = opts.ds;
-				Each(widgets, (key,widget) => {
-					if ( input = widget.input ) {	// process only keys that were used in the path
+				Each(widgets, (key,widget) => {	// scan thru all defined widgets
+					if ( input = inputs[key] ) {	// process only used widgets
 						var 
 							el = input._groups[0][0], //  d3v3 uses input[0][0] because dom is a major kludge!
 							value = el.value,
@@ -109,41 +107,51 @@ where the callback() returns a value.
 					}
 				});
 
-				//Log(input[0][0]);
 				Log(`ds => ${path}`);
 				fetchData( path, opts );
 			}
 			
 			var 
 				id = "_"+key,
-				widget = widgets[key] || ( widgets[key] = def );
+				widget = widgets[key],
+				input = inputs[key];
 
-			if ( !widget.input ) {
-				switch ( typeOf(widget) ) {
-					case "Function":
-						widget.input = "input".d3add(body, {type: "button", value: "key", id:id} ).on("click", widget);
-						break;
+			if ( widget ) 
+				if ( !input ) {
+					switch ( typeOf(widget) ) {
+						case "Function":
+							input = "input".d3add(body, {type: "button", value: "key", id:id} ).on("click", widget);
+							break;
 
-					case "Array":
-						widget.input = "input".d3add(body, {type: "text", value: widget[0], id:id} ).on("change", onChange);
-						break;
+						case "Array":
+							input = "input".d3add(body, {type: "text", value: widget[0], id:id} ).on("change", onChange);
+							break;
 
-					case "Object":
-						if ( "min" in widget )
-							widget.input = "input".d3add(body, {type: "number", min: widget.min, max: widget.max, step: widget.step, value: widget.min, id:id} ).on("change", onChange);
+						case "Object":
+							if ( "min" in widget)
+								input = "input".d3add(body, {type: "number", min: widget.min, max: widget.max, step: widget.step, value: widget.min, id:id} ).on("change", onChange);
 
-						else {
-							widget.input = "select".d3add(body, { value: "", id:id} ).on("change", onChange);
+							else {
+								input = "select".d3add(body, { value: "", id:id} ).on("change", onChange);
 
-							for ( var key in widget ) 
-								widget.input.insert("option").attr( "value", key ).text( widget[key] );
-						}
-						break;
+								for ( var key in widget ) 
+									input.insert("option").attr( "value", key ).text( widget[key] );
+							}
+							break;
 
+						case "Number":
+							input = "input".d3add(body, {type: "number", value: widget, id:id} ).on("change", onChange);
+							break;
+
+						case "String":
+							input = "input".d3add(body, {type: "text", value: widget, id:id} ).on("change", onChange);
+							break;
+
+					}
+
+					inputs[key] = input;
+					//Log( `make widget ${key} id = ${id}` );
 				}
-
-				Log( `make widget ${key} id = ${id}` );
-			}
 		});
 
 		if ( save = widgets.save )

@@ -12,20 +12,22 @@ module.exports = {
 		Description: "mediumtext"	// ctx.Description documents usecase 		
 	},
 	
-	engine: function beta(ctx, res) {  // Engine code.  If the engine 
-	/*
-	Generate cummulative beta function with specified alpha,beta ctx parameters.
-	*/
+	engine: function beta(ctx, res) {  // Return cummulative beta at N points given alpha,beta ctx parameters.
 
-		var vmctx = $( "x = 1/N:1/N:1-1/N; y = cumbeta(x,a,b);", {
-			a: ctx.alpha,
-			b: ctx.beta,
-			N: ctx.N
+		const {alpha, beta, N } = ctx;
+		
+		$( "x = 1/N:1/N:1-1/N; y = cumbeta(x,a,b);", {
+			a: alpha || 1,
+			b: beta || 1,
+			N: N || 10
 		}, vmctx => {
-			//console.log( vmctx );
-			ctx.Save = { x: vmctx.x, y: vmctx.y };
-			res(ctx);
+			if ( vmctx ) {
+				ctx.Save = { x: vmctx.x, y: vmctx.y };
+				res(ctx);
+			}
+			
+			else
+				res( null );
 		});	
-
 	}
 }

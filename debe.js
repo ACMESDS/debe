@@ -505,14 +505,18 @@ Copy({
 			
 			Each(rec, key => ctx[key] = recs.get(key) );
 			
-			const { calc } = $( "calc="+flags.calc, ctx );
+			const { calc } = $( "calc="+flags.calc, ctx ) || {calc: null };
 			
-			if ( calc )
+			if ( calc ) {
 				if ( typeOf(calc) == "Object" )
 					Each(calc, (key,val) => calc[key] = $.list(val) );
 			
-			//Log(">>>>ctx", calc );
-			res( $.squeeze(calc) );
+				//Log(">>>>ctx", calc );
+				res( $.squeeze(calc) );
+			}
+			
+			else
+				res( null );
 		}
 		
 	},

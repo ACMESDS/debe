@@ -45,7 +45,7 @@ function Trace(msg,req,fwd) {	// execution tracing
 	"endpt".trace(msg,req,fwd);
 }
 
-const { Copy,Each,Log,isString,isFunction,isError,isArray,Stream,typeOf } = ENUM;
+const { Copy,Each,Log,isString,isFunction,isError,isArray,Stream,typeOf,isEmpty } = ENUM;
 const { skinContext, renderJade } = SKINS;
 const { sqlThread, getIndex, uploadFile, probeSite, errors, site, watchFile, timeIntervals } = TOTEM;
 const { ingestList } = GEO;
@@ -1474,8 +1474,33 @@ code  {
 			engine(req,res);
 
 		else
-		if (TOTEM.probono)  // execute unregulated engine using query as usecase
-			ATOM.select(req, res);
+		if (TOTEM.probono)   // execute unregulated engine using query as usecase
+			ATOM.select(req, ctx => {	// index ctx json stores, if requested
+				if ( isEmpty(req.index) )	// no indexing
+					res( ctx );
+				
+				else {	// indexing 
+					var ctxRtn = {};
+					Each( req.index, (rtnKey,ctxKey) => {
+						var
+							[x,lhs,rhs] = ctxKey.match( /(.*?)\$(.*)/ ) || [ ];
+
+						if ( x ) {
+							var 
+								store = {$: [ ctx[lhs] ]},
+								rtn = ctxRtn[rtnKey] = [];
+
+							//Log("arg=", store, "key=", ctxKey);
+							rhs.split(",").forEach( ctxKey => rtn.push( ("$"+ctxKey).parseJS( store, err => null ) ) );
+						}
+
+						else 
+							ctxRtn[rtnKey] = ctxKey.parseJS( ctx );
+
+					});
+					res(ctxRtn);
+				}
+			});
 
 		else
 			res(errors.noUsecase);

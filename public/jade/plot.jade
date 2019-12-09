@@ -71,7 +71,8 @@ append base_head
 		var 
 			merges = {
 				//beta: "/beta?name=gen-$a-$b&x:=Save$[0].x&y:=Save$[0].y"
-				beta: "/beta?name=gen-$a-$b&xy:=Save$[0].x,[0].y&_calc=xy"
+				//beta: "/beta?name=gen-$a-$b&xy:=Save$[0].x,[0].y&_calc=xy"
+				beta: "/beta.exe?alpha=$a&beta=$b&N=20&xy:=Save$[0].x,[0].y"
 			},
 			merge = "!{query.merge}",
 			merge = merges[ merge ] || merge,
@@ -103,25 +104,26 @@ append base_head
 
 				widgets: {
 					chan: ("#{query.chan}" || "0:255").option(),
-					a: ("#{query.a}" || "0:20").option(),
-					b: ("#{query.b}" || "0:20").option(),
+					a: ("#{query.a}" || "0.5").option(),
+					b: ("#{query.b}" || "0.5").option(),
 					save: merge 
 						? () => {
-						var 
-							a = document.getElementById("_a").value,
-							b = document.getElementById("_b").value,
-							name = `gen-${a}-${b}`,
-							beta = `/beta?Name=${name}`;
+								alert("reserved");
+								return;
+								var 
+									a = document.getElementById("_a").value,
+									b = document.getElementById("_b").value,
+									name = `gen-${a}-${b}`,
+									beta = `/beta?Name=${name}`;
 
-						Ajax("put", true, beta, res => {
-							alert(res);
-						}, {
-							snr: 1,
-							gain: 1,
-							density: 1
-						});
-					}
-					
+								Ajax("put", true, beta, res => {
+									alert(res);
+								}, {
+									snr: 1,
+									gain: 1,
+									density: 1
+								});
+							}
 						: null
 				}
 			};
