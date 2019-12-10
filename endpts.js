@@ -1487,7 +1487,7 @@ code  {
 
 						if ( x ) {
 							var 
-								store = {$: [ ctx[lhs] ]},
+								store = {$: ctx[lhs] },
 								rtn = ctxRtn[rtnKey] = [];
 
 							//Log("arg=", store, "key=", ctxKey);
@@ -1495,7 +1495,7 @@ code  {
 						}
 
 						else 
-							ctxRtn[rtnKey] = ctxKey.parseJS( ctx );
+							ctxRtn[rtnKey] = ctxKey.parseJS( ctx ); 
 
 					});
 					res(ctxRtn);
