@@ -728,7 +728,17 @@ function DS(anchor) {
 					//buffered	: false, 	// used with paging and verticalScroller but EXTJS BUG
 					pageSize	: page,  	// used with paging and verticalScroller
 					remoteFilter: true,
-					remoteSort	: true	// enable remote sorting
+					remoteSort	: true,	// enable remote sorting
+					
+					listeners: {
+						load: function (store) {
+							var 
+								raw = store.getProxy().reader.rawData;
+							
+							console.log(raw);
+						}
+					}
+					
 				});
 				
 					/*Ext.create('Ext.data.Store', {
@@ -1399,6 +1409,7 @@ function DS(anchor) {
 								return cellVal;
 						}*/
 						//renderer 	: fCalc ? calcRender : null
+						
 						listeners	: fListen   // EXTJS widget gets confused when embedded in grid
 					};	
 
