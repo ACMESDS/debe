@@ -498,12 +498,15 @@ Copy({
 		
 		calc: (recs,req,res) => {
 			const { flags } = req;
-			Log(">>>ctx calc", flags.calc);
+			Log(">>>ctx calc", flags.calc,flags.store);
 			var 
 				ctx = {},
-				rec = recs[0] || {};
+				rec = recs[0] || {},
+				store = flags.store ? rec[flags.store].toString().parseJSON() || [] : recs,
+				ref = store[0] || {};
 			
-			Each(rec, key => ctx[key] = recs.get(key) );
+			//Log("ref", ref );
+			Each(ref, key => ctx[key] = store.get(key) );
 			
 			const { calc } = $( "calc="+flags.calc, ctx ) || {calc: null };
 			
