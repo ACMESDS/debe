@@ -498,24 +498,23 @@ Copy({
 		
 		calc: (recs,req,res) => {
 			const { flags } = req;
-			Log(">>>ctx calc", flags.calc,flags.store);
 			var 
-				ctx = {},
-				rec = recs[0] || {},
-				store = flags.store ? rec[flags.store].toString().parseJSON() || [] : recs,
-				ref = store[0] || {};
-			
-			//Log("ref", ref );
-			Each(ref, key => ctx[key] = store.get(key) );
+				recs = recs.parseJSON(),
+				ctx = { 
+					mathjs: true,
+					$: recs,
+					$$: recs[0] || {}
+				};
 			
 			const { calc } = $( "calc="+flags.calc, ctx ) || {calc: null };
 			
+			Log(">>>ctx calc", flags.calc );
 			if ( calc ) {
 				if ( typeOf(calc) == "Object" )
 					Each(calc, (key,val) => calc[key] = $.list(val) );
 			
 				//Log(">>>>ctx", calc );
-				res( $.squeeze(calc) );
+				res( calc );
 			}
 			
 			else
@@ -527,6 +526,28 @@ Copy({
 	// router cofiguration
 		
 	"byFilter." : { //< endpoint types to filter dataset recs on specifed req-res thread
+		
+		db: (recs, req, res) => {	
+			req.sql.query("select found_rows()")
+			.on('result', stat => {		// records sourced from sql				
+				res({ 
+					success: true,
+					msg: "ok",
+					count: stat["found_rows()"] || 0,
+					data: recs
+				});
+			})
+			.on("error", () => {  		// records sourced from virtual table
+				res({ 
+					success: false,
+					msg: "busy",
+					count: 0,
+					data: []
+				});
+			});
+		},
+		
+		exe: TOTEM.byFilter.json,
 		
 		kml: (recs,req,res) => {  //< dataset.kml converts to kml
 			res( TOKML({}) );
@@ -558,10 +579,6 @@ Copy({
 			res( txt );
 		},
 
-		json: (recs,req,res) => {
-			res(recs);
-		},
-		
 		/*
 		stat: (recs,req,res) => { // dataset.stat provide info
 			var 
