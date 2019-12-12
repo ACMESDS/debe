@@ -500,18 +500,20 @@ Copy({
 			const { flags } = req;
 			var 
 				recs = recs.parseJSON(),
+				rec = Copy( recs[0] || {}, {}),
 				ctx = { 
-					mathjs: true,
+					//mathjs: true,
 					$: recs,
-					$$: recs[0] || {}
+					$0: rec,
+					$$: rec.Save || []
 				};
 			
 			const { calc } = $( "calc="+flags.calc, ctx ) || {calc: null };
 			
-			Log(">>>ctx calc", flags.calc );
+			Log(">>>ctx calc", flags.cal );
 			if ( calc ) {
 				if ( typeOf(calc) == "Object" )
-					Each(calc, (key,val) => calc[key] = $.list(val) );
+					Each(calc, (key,val) => calc[key] = $.toList(val) );
 			
 				//Log(">>>>ctx", calc );
 				res( calc );
