@@ -74,11 +74,13 @@ append base_head
 				//beta: "/beta?name=gen-$a-$b&xy:=Save$[0].x,[0].y&_calc=xy"
 				beta: "/beta.exe?alpha=$a&beta=$b&N=20&xy:=Save$[0].x,[0].y"
 			},
-			merge = "!{query.merge}",
-			merge = merges[ merge ] || merge,
+			calcs = {
+			},
+			merge = merges[ "!{query.merge}" ] || "!{query.merge}",
+			calc = calcs[ "!{query.calc}" ] || "!{query.calc}" || "[x,y]",
 			opts = {  // define plot options
 				ds: "!{query.src}"
-						? "!{query.src}&x:=#{query.x}&y:=#{query.y}&_calc=[x,y]"+ (merge ? "??"+merge : "" )
+						? "!{query.src}&x:=#{query.x}&y:=#{query.y}&_calc=" + calc + (merge ? "??"+merge : "" )
 						:  "!{query.ds}"
 								? "!{query.ds}"+ (merge ? "??"+merge : "" )
 								:  "/regress&x=Save_train$.x[$chan]&y=Save_train$.y[$chan]?name=test2",

@@ -499,35 +499,70 @@ Copy({
 		calc: (recs,req,res) => {
 			const { flags } = req;
 			var 
-				recs = recs.parseJSON(),
-				rec = Copy( recs[0] || {}, {}),
+				recs = recs.unpack(),
+				rec = recs[0] || {},
 				ctx = { 
-					//mathjs: true,
 					$: recs,
-					$0: rec,
-					$$: rec.Save || []
+					$$: rec,
+					$$$: rec.Save || [],
+					x: rec.x || [],
+					y: rec.y || [],
+					scale: (x,a) => {
+						var 
+							X = x._data || x,
+							A = a._data || a,
+							K = A.length,
+							N = X.length;
+						
+						return $.toMatrix( $(N, (n,v) => {
+							v[n] = $( K, (k,u) => u[k] = X[n][k] * A[k] );
+						}) );
+					},
+					get: function ( x, idx ) {
+						var 
+							args = Object.keys(arguments).slice(1),
+							N = args.length,
+							X = x._data || x;
+
+						if ( idx )
+							if ( N > 1 ) 
+								return $( N, (n,R) => R[n] = X.get( arguments[args[n]] ) );
+
+							else
+							if ( isArray(X) ) 
+								return $.toMatrix( X.get(idx) );
+
+							else
+								return X[idx];
+						
+						else
+							return x;
+					}
 				};
 			
-			const { calc } = $( "calc="+flags.calc, ctx ) || {calc: null };
-			
-			Log(">>>ctx calc", flags.cal );
-			if ( calc ) {
-				if ( typeOf(calc) == "Object" )
-					Each(calc, (key,val) => calc[key] = $.toList(val) );
-			
-				//Log(">>>>ctx", calc );
-				res( calc );
-			}
-			
-			else
-				res( null );
+			$( "calc="+flags.calc, ctx, ctx => {
+
+				if ( ctx ) 
+					if ( calc = ctx.calc ) {
+						if ( typeOf(calc) == "Object" )
+							Each(calc, (key,val) => calc[key] = $.toList(val) );
+
+						res( calc );
+					}
+
+					else
+						res( null );
+				
+				else
+					res( null );
+			});
 		}
 		
 	},
 											 
 	// router cofiguration
 		
-	"byFilter." : { //< endpoint types to filter dataset recs on specifed req-res thread
+	"filterRecords." : { //< endpoint types to filter dataset recs on specifed req-res thread
 		
 		db: (recs, req, res) => {	
 			req.sql.query("select found_rows()")
@@ -548,8 +583,6 @@ Copy({
 				});
 			});
 		},
-		
-		exe: TOTEM.byFilter.json,
 		
 		kml: (recs,req,res) => {  //< dataset.kml converts to kml
 			res( TOKML({}) );
