@@ -70,19 +70,26 @@ append base_head
 	script.
 		var 
 			merges = {
+				default: "",
 				//beta: "/beta?name=gen-$a-$b&x:=Save$[0].x&y:=Save$[0].y"
 				//beta: "/beta?name=gen-$a-$b&xy:=Save$[0].x,[0].y&_calc=xy"
-				beta: "/beta.exe?alpha=$a&beta=$b&N=20&xy:=Save$[0].x,[0].y"
+				beta: "??/beta.exe?alpha=$a&beta=$b&N=20&xy:=Save$[0].x,[0].y"
 			},
 			calcs = {
+				default: "&_$=[x,y]",
+				cost: [
+					"&_$[0].y=list(yr,{",
+					 "BKL:queue/150e3,PRO:proc/100e3,LAB:lab/150e3,ACQ:acq/50e6,CYC:cycles/50,NRE:nre/450e3",
+					 "})"
+				].join("")
 			},
-			merge = merges[ "!{query.merge}" ] || "!{query.merge}",
-			calc = calcs[ "!{query.calc}" ] || "!{query.calc}" || "[x,y]",
+			merge = merges[ "!{query.merge}" ] || "!{query.merge}" || merges.default,
+			calc = calcs[ "!{query.calc}" ] || "!{query.calc}" || calcs.default,
 			opts = {  // define plot options
 				ds: "!{query.src}"
-						? "!{query.src}&x:=#{query.x}&y:=#{query.y}&_calc=" + calc + (merge ? "??"+merge : "" )
+						? "!{query.src}&x:=#{query.x}&y:=#{query.y}" + calc + merge
 						:  "!{query.ds}"
-								? "!{query.ds}"+ (merge ? "??"+merge : "" )
+								? "!{query.ds}"+ merge
 								:  "/regress&x=Save_train$.x[$chan]&y=Save_train$.y[$chan]?name=test2",
 				dims: {
 					margin: {top: 5, right: 10, bottom: 5, left: 10},
@@ -390,7 +397,12 @@ append base_body
 						
 						//Log(name, x,y);
 						if ( y )
-							xyplot(x, y, plots => {} );
+							if ( y.forEach )
+								xyplot(x, y, plots => {} );
+						
+							else
+								for (var key in y )
+									xyplot(x, y[key], plots => {} );
 						
 						else
 						if ( x.forEach )

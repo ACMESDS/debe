@@ -496,12 +496,55 @@ Copy({
 				res(recs);
 		},
 		
+		$: (recs,req,res) => {
+			const { flags } = req;
+			
+			recs.unpack();
+			Each( flags, (flag,script) => {
+				
+				function indexStore() {
+					var 
+						ctx = { 
+							$: store,
+							nomap: true,
+							list: function () {
+								var 
+									args = Object.keys(arguments),
+									rtn = [];
+
+								args.forEach( arg => rtn.push( $.toList(arguments[arg] )) );
+								return rtn;	
+							}
+						},
+						ref = store[0] || {};
+
+					Each(ref, (key,val) => ctx[key] = store.get(key) );
+					//Log("getctx", store, script);
+					if ( script ) $( "$="+script, ctx );
+					return $.toList(ctx.$);					
+				}
+				
+				if ( flag.startsWith("$") ) {
+					var 
+						store = flag.parseJS({$: recs}) || 0;
+					
+					Log("$>>>>>>", flag, script, typeOf(store) );
+					if ( isArray(store) )
+						res( indexStore() );
+					
+					else
+						res( store );
+				}
+			});
+		},
+		
 		calc: (recs,req,res) => {
 			const { flags } = req;
 			var 
 				recs = recs.unpack(),
 				rec = recs[0] || {},
 				ctx = { 
+					//nomap: true,
 					$: recs,
 					$$: rec,
 					$$$: rec.Save || [],
@@ -518,6 +561,14 @@ Copy({
 							v[n] = $( K, (k,u) => u[k] = X[n][k] * A[k] );
 						}) );
 					},
+					cat: function () {
+						var 
+							args = Object.keys(arguments),
+							rtn = [];
+						
+						args.forEach( arg => rtn.push( $.toList(arguments[arg] )) );
+						return rtn;	
+					},
 					get: function ( x, idx ) {
 						var 
 							args = Object.keys(arguments).slice(1),
@@ -530,7 +581,7 @@ Copy({
 
 							else
 							if ( isArray(X) ) 
-								return $.toMatrix( X.get(idx) );
+								return X.get(idx);
 
 							else
 								return X[idx];
@@ -541,7 +592,6 @@ Copy({
 				};
 			
 			$( "calc="+flags.calc, ctx, ctx => {
-
 				if ( ctx ) 
 					if ( calc = ctx.calc ) {
 						if ( typeOf(calc) == "Object" )
@@ -1161,7 +1211,7 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		},
 		
 		get: function(recs, js) { 
-			return recs.get(js);
+			return recs.$(js);
 		},
 		
 		match: function (recs,where,get) {
