@@ -6,8 +6,8 @@ append base_help
 
 			src = source dataset = [ {Name, x,y, ...}, ... ]
 			name = "filter" on dataset.Name
-			x = x-source = key || store$key
-			y = y-source = key || store$key
+			x = x-source key
+			y = y-source key
 			w = drawing width
 			h = drawing height
 			debug = level send debugging alerts
@@ -17,8 +17,6 @@ append base_help
 			label = X,Y labels
 			min = X,Y axis minimums
 			max = X,Y axis maximums
-			index = X,Y indexors = $key
-			extra = [[x,y], ... ] data to append to plots
 			details = show xy locations
 			chan = widget "min:max:step" on x,y channels
 
@@ -100,7 +98,7 @@ append base_head
 			};
 
 		const {NODE, NODES, VALUE, SIZE, PARENT, DOC} = opts;
-		const {isString,isArray,Fetch,Log} = BASE;
+		//const {isString,isArray,Fetch,Log} = BASE;
 
 append base_body
 	script.
@@ -173,7 +171,7 @@ append base_body
 			// controls
 			var
 				body = d3.select("body"),
-				input = "select".d3tag(body, { value: "stacked", id:"_layout"} );
+				input = "select".d3add(body, { value: "stacked", id:"_layout"} );
 
 			["stacked", "grouped"]
 			.forEach( (arg,n) => input.insert("option").attr( "value", arg ).text( arg ) );

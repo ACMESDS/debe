@@ -523,20 +523,28 @@ Array.prototype.Extend = function (con) {
 		}
 	},
 
-	function option () {
-		if (this)
-			try {
-				return JSON.parse(this);
+	function option (mods) {
+		if ( arg = this+"" )
+			if ( mods ) {
+				var modifier = "";
+				arg.split(",").forEach( mod => modifier += mods[mod] || "" );
+				//console.log("mod--->", modifier);
+				return modifier;
 			}
-			catch (err) {
-				var 
-					list = this.split(","),
-					rng = this.split(":");
-				
-				return rng[1] 
-					? {min: parseFloat(rng[0] || 0), max: parseFloat(rng[1] || 10), step: parseFloat(rng[2] || 1) }
-					: list ;
-			} 
+
+			else 
+				try {
+					return JSON.parse(arg);
+				}
+				catch (err) {
+					var 
+						list = arg.split(","),
+						rng = arg.split(":");
+
+					return rng[1] 
+						? {min: parseFloat(rng[0] || 0), max: parseFloat(rng[1] || 10), step: parseFloat(rng[2] || 1) }
+						: list ;
+				} 
 					
 		else
 			return null;

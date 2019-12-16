@@ -5,8 +5,9 @@ append base_help
 		 Produce d3 plot with parameters:  
 
 			src = /ds?query source-x-y spec to provide [ [x1,...] ,[y1,...] ] data
-			x = source key || jsonkey
-			y = source key || json$key
+			x = source key
+			y = source key
+			mods = KEY,... src modifiers
 			ds = /ds?query overrides src
 			w = drawing width
 			h = drawing height
@@ -17,8 +18,6 @@ append base_help
 			label = X,Y labels
 			min = X,Y axis minimums
 			max = X,Y axis maximums
-			index = X,Y indexors = $key
-			extra = [[x,y], ... ] data to append to plots
 			details = show xy locations
 			chan = widget "min:max:step" on x,y channels
 
@@ -69,27 +68,21 @@ append base_head
 
 	script.
 		var 
-			merges = {
-				default: "",
+			modifier = ("!{query.mods}" || "").option({
 				//beta: "/beta?name=gen-$a-$b&x:=Save$[0].x&y:=Save$[0].y"
 				//beta: "/beta?name=gen-$a-$b&xy:=Save$[0].x,[0].y&_calc=xy"
-				beta: "??/beta.exe?alpha=$a&beta=$b&N=20&xy:=Save$[0].x,[0].y"
-			},
-			calcs = {
-				default: "&_$=[x,y]",
+				beta: "&_$=[x,y]??/beta.exe?alpha=^a&beta=^b&N=20&_$.Save=list(x,y)",
 				cost: [
 					"&_$[0].y=list(yr,{",
 					 "BKL:queue/150e3,PRO:proc/100e3,LAB:lab/150e3,ACQ:acq/50e6,CYC:cycles/50,NRE:nre/450e3",
 					 "})"
 				].join("")
-			},
-			merge = merges[ "!{query.merge}" ] || "!{query.merge}" || merges.default,
-			calc = calcs[ "!{query.calc}" ] || "!{query.calc}" || calcs.default,
+			}) || "&_$=[x,y]", 
 			opts = {  // define plot options
 				ds: "!{query.src}"
-						? "!{query.src}&x:=#{query.x}&y:=#{query.y}" + calc + merge
+						? "!{query.src}&x:=#{query.x}&y:=#{query.y}" + modifier
 						:  "!{query.ds}"
-								? "!{query.ds}"+ merge
+								? "!{query.ds}" + modifier
 								:  "/regress&x=Save_train$.x[$chan]&y=Save_train$.y[$chan]?name=test2",
 				dims: {
 					margin: {top: 5, right: 10, bottom: 5, left: 10},
@@ -103,10 +96,10 @@ append base_head
 				label: ( "#{query.label}" || "x,y" ).option(),
 				min: ("#{query.min}" || "0,0").split(","),
 				max: ("#{query.max}" || "1,1").split(","),
-				extra: null, //"#{query.extra}".option(),
+				//extra: null, //"#{query.extra}".option(),
 				details: "#{query.details}",
-				index: "#{query.index}".option(),
-				keys: ("#{query.keys}" || "x,y,details").option(),
+				//index: "#{query.index}".option(),
+				//keys: ("#{query.keys}" || "x,y,details").option(),
 
 				url: "#{url}",
 				family: "plot,barplot",
@@ -115,7 +108,7 @@ append base_head
 					chan: ("#{query.chan}" || "0:255").option(),
 					a: ("#{query.a}" || "0.5").option(),
 					b: ("#{query.b}" || "0.5").option(),
-					save: merge 
+					xxsave: false 
 						? () => {
 								alert("reserved");
 								return;
@@ -430,9 +423,9 @@ append base_body
 					markerStyles = opts.marker || [],
 					markerDef = markerStyles[0],
 					lineStyles = opts.line || [],
-					lineDef = lineStyles[0],
-					xIndex = opts.index[0],
-					yIndex = opts.index[1];
+					lineDef = lineStyles[0];
+					//xIndex = opts.index[0],
+					//yIndex = opts.index[1];
 
 				plotData( data, "" );			
 			});

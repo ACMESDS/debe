@@ -3,12 +3,12 @@ const { Ajax, Log, Copy, Each, isString, isArray, isFunction, typeOf } = BASE;
 function Fetch(opts, cb) {
 /**
 @method BASE.Fetch
-Callback cb(recs, svg) with a d3 svg dom target, and the records recs = [rec, ...] that
-were loaded from the source path that, for example, contains $KEYs:
+Callback cb(recs, svg) with a d3 svg dom target, and the records recs = [rec, ...] as
+loaded from the source path containing optional @KEYs.  For example
 
-	opts.ds = "/src ? Name=$KEY & x:=STORE$.x[$KEY] & y:=STORE$.y[$KEY] ..." 
+	opts.ds = "/src ? Name=^KEY & x:=STORE$.x[^KEY] & y:=STORE$.y[^KEY] ..." 
 
-as updated by optional KEY dom-inputs:
+where the KEYs are specified as:
 
 	opts.KEY = [ ARG, ... ] || { RTN: SELECT, ... } || { min: VAL, max: VAL, step: VAL} || callback
 
@@ -90,7 +90,7 @@ where the callback() returns a value.
 
 		"p".d3add(body,	{ html: family.join(" || ")	} );
 
-		opts.ds.replace(/\$(\w+)/g, (str,key) => {
+		var path = opts.ds.replace(/\^(\w+)/g, (str,key) => {
 			
 			function onChange() {
 				var path = opts.ds;
@@ -101,7 +101,7 @@ where the callback() returns a value.
 							value = el.value,
 							id = el.id,
 							key = id.substr(1),
-							reg = new RegExp( `\\$${key}` , "g" );
+							reg = new RegExp( `\\^${key}` , "g" );
 
 						path = path.replace( reg, isFunction(widget) ? widget("update", value) : value );
 					}
@@ -152,12 +152,14 @@ where the callback() returns a value.
 					inputs[key] = input;
 					//Log( `make widget ${key} id = ${id}` );
 				}
+			
+			return input._groups[0][0].value;
 		});
 
 		if ( save = widgets.save )
 		"input".d3add(body, {type: "button", value: "save", id: "_save"} ).on("click", save);
 		
-		fetchData( opts.ds.replace(/\$\w+/g, "0"), opts );
+		fetchData( path, opts );
 	}
 }
 

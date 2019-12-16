@@ -65,7 +65,7 @@ var
 	GEO = require("geohack"),
 	ENUM = require("enum");
 
-const { Copy,Each,Log,isKeyed,isString,isFunction,isError,isArray,typeOf } = ENUM;
+const { Copy,Each,Log,isKeyed,isString,isFunction,isError,isArray,isObject,typeOf } = ENUM;
 const { sqlThread, getFile, probeSite } = TOTEM;
 const { pipeStream, pipeImage, pipeJson, pipeDoc, pipeBook, pipeAOI } = PIPE;
 const { 
@@ -498,14 +498,28 @@ Copy({
 		
 		$: (recs,req,res) => {
 			const { flags } = req;
+			var rtn = recs;
 			
-			recs.unpack();
 			Each( flags, (flag,script) => {
 				
-				function indexStore() {
+				function indexArray(ctx) {
+					Each( store[0] || {} , (key,val) => ctx[key] = store.get(key) );
+					//Log("getctx", store, script);
+					if ( script ) $( "$="+script, ctx );
+					return $.toList(ctx.$);					
+				}
+				
+				function indexObject(ctx) {
+					Each( store, (key,val) => ctx[key] = store[key] );
+					//Log("getctx", store, script);
+					if ( script ) $( "$="+script, ctx );
+					return $.toList(ctx.$);					
+				}
+				
+				if ( flag.startsWith("$") ) {
 					var 
 						ctx = { 
-							$: store,
+							$: flag.parseJS({$: recs}) || 0,
 							nomap: true,
 							list: function () {
 								var 
@@ -516,28 +530,25 @@ Copy({
 								return rtn;	
 							}
 						},
-						ref = store[0] || {};
-
-					Each(ref, (key,val) => ctx[key] = store.get(key) );
-					//Log("getctx", store, script);
-					if ( script ) $( "$="+script, ctx );
-					return $.toList(ctx.$);					
-				}
-				
-				if ( flag.startsWith("$") ) {
-					var 
-						store = flag.parseJS({$: recs}) || 0;
+						store = ctx.$;
 					
 					Log("$>>>>>>", flag, script, typeOf(store) );
 					if ( isArray(store) )
-						res( indexStore() );
+						rtn = indexArray(ctx);
 					
 					else
-						res( store );
+					if ( isObject(store) )
+						rtn = indexObject(ctx);
+					
+					else
+						rtn = store;
 				}
 			});
-		},
+			
+			res( rtn );
+		}
 		
+		/*
 		calc: (recs,req,res) => {
 			const { flags } = req;
 			var 
@@ -606,7 +617,7 @@ Copy({
 				else
 					res( null );
 			});
-		}
+		} */
 		
 	},
 											 

@@ -233,7 +233,7 @@ catch (err) {
 		viaBrowser = true to enable produce html compatible with browser
 		*/
 		var 
-			key = "@tag",
+			key = "@lin",
 			fetch = function ( rec, cb ) {  // expand markdown
 				var
 					url = rec.arg2,
@@ -241,15 +241,15 @@ catch (err) {
 
 				cb( opt.tag( url ) );
 			},
-			
 			pattern = /\[([^\[\]]*)\]\(([^\)]*)\)/g ;
 		
+		//Log("Xlink", this.match(pattern));
 		this.serialize( fetch, pattern, key, html => cb(html) ); 
 	}, 
 
 	function Xtopic( req, cb ) {	// callback with ~{TOPIC} markdown
 		var 
-			key = "@tag",
+			key = "@top",
 			fetch = function ( rec, cb ) {  // expanded markdown
 				var 
 					secret = "",
@@ -282,75 +282,18 @@ catch (err) {
 				
 				else	// content tracking disabled
 					cb( "" );
-			},
-			
-			pattern = /\~\{([^\}]*)\}/g;
+			},	
+			pattern =  /\~\{(.*)\}/g;  // /\~\{([^\}]*)\}/g;
 			
 		this.serialize( fetch, pattern, key, html => cb(html) ); 
 	},
 	
-	/*
-	function Xinclude( ds, ctx, cb ) {
-		var 
-			key = "@tag",
-			
-			fetch = function ( rec, cb ) {  // callback cb with expanded [](URL) markdown
-				var
-					opt = rec.arg1,
-					url = (ctx[rec.arg2] || rec.arg2).replace(/\&amp;/g,"&"),
-					keys = {},
-					dsPath = ds.parseURL(keys,{},{},{}),
-					urlPath = url.parseURL(keys,{},{},{}),
-
-					w = keys.w || 200,
-					h = keys.h || 200,
-
-					urlName = dsPath,
-					urlType = "",
-					x = urlPath.replace(/(.*)\.(.*)/, (str,L,R) => {
-						urlName = L;
-						urlType = R;
-						return "#";
-					}),
-
-					srcPath = urlPath.tag( "?", Copy({src:dsPath}, keys) );
-
-				// Log("include", url, "ds=", ds, "src=", srcPath, "type=", urlType);
-				Log("link", [dsPath, srcPath, urlPath], keys, [opt, url]);
-				if ( opt )
-					cb( opt.tag("a", {href: url}) );
-				
-				else
-					switch (urlType) { 
-						case "jpg":  
-						case "png":
-							cb( "".tag("img", { src:`${url}?killcache=${new Date()}`, width:w, height:h }) );
-							break;
-
-						case "view": 
-						default:
-							if ( ds ) // markdown in browser so ds was provided
-								cb( "".tag("iframe", { src: srcPath, width:w, height:h }) );
-
-							else
-								probeSite(url, cb);
-					}
-			},
-			
-			pattern = /\[([^\[\]]*)\]\(([^\)]*)\)/g ;
-		
-		//Log("Xinc=", this);
-		this.serialize( fetch, pattern, key, html => {
-			//Log("Xinc rtn>>>>", html);
-			cb(html);
-		}); 
-	},   */
-	
 	function Xinclude( ds, cb ) {	// callback with %{URL} markdown
 		var 
-			key = "@tag",
+			key = "@inc",
 			
 			fetch = function ( rec, cb ) {  // expand markdown
+				//Log(rec);
 				var
 					url = rec.arg1.replace(/\&amp;/g,"&"),
 					keys = {},
@@ -390,9 +333,11 @@ catch (err) {
 				}
 			},
 			
-			pattern = /\%\{([^\}]*)\}/g;
+			pattern = /\%\%\{(.*)\}/g;  //   /\%\{([^\}]*)\}/g;
 		
-		//Log("Xinc=", this);
+		// Log("Xinc=", this);
+		Log("Xinclude", this.match( pattern ) );
+		
 		this.serialize( fetch, pattern, key, html => {
 			//Log("Xinc rtn>>>>", html);
 			cb(html);
@@ -448,7 +393,7 @@ catch (err) {
 			cb(ctx, run);
 	},
 		
-	function Xkeys( ctx, cb ) {  // expand js keys ${script} || ${keys}
+	function Xkeys( ctx, cb ) {  // expand ${js} 
 		cb( this.parse$(ctx) );
 	},
 	

@@ -728,8 +728,9 @@ function DS(anchor) {
 					//buffered	: false, 	// used with paging and verticalScroller but EXTJS BUG
 					pageSize	: page,  	// used with paging and verticalScroller
 					remoteFilter: true,
-					remoteSort	: true,	// enable remote sorting
+					remoteSort	: true	// enable remote sorting
 					
+					/*
 					listeners: {
 						load: function (store) {
 							var 
@@ -737,7 +738,7 @@ function DS(anchor) {
 							
 							console.log(raw);
 						}
-					}
+					} */
 					
 				});
 				

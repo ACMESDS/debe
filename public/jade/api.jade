@@ -317,8 +317,8 @@ append site_body
 				> KEY !exp= PATTERN  
 				> KEY !bin= PATTERN  
 
-				Indexing:
-				> ASKEY := VALUE || $KEY || JSON$KEY,...
+				Indexing and extraction from json STORE:
+				> ASKEY := KEY || STORE$KEY, $[KEY || *].KEY, $.KEY, ...
 
 				Grouping and Sorting:
 				> _pivot = KEY,KEY,... pivot records on KEYs with NodeID = "ID,ID,..." groups  
@@ -326,7 +326,7 @@ append site_body
 				> _group = KEY,KEY,... group records on KEYs  
 				> _sort	= KEY,KEY,... || [{property:KEY,sort:DIRECT}, ...] sort records on KEYs  
 				> _nav = open | tree | rename | size ,root/A/B/... folder navigation  
-				> _calc = MATHJS restructure and process returned records
+				> _$STORE = MATHJS restructure json STORE using MATHJS script
 
 				Misc:
 				> _lock	= enable record locking  
@@ -338,15 +338,6 @@ append site_body
 				> _offset = record position to start returning records  
 				> _score = minimum search score required  
 				> _filters = [{property:KEY,value:PATTERN}, ...]
-
-				Legacy:
-				> _queue = KEY for queuing record state   
-				> _geo = KEY,KEY,... add geojson geometry KEYs to the records  
-				> _json	= KEY,KEY,... json parse selected KEYs and index with KEY=IDX.IDX...  
-				> _page	= page number (reserved)  
-				> _mark	= KEY,KEY,... markdown these KEYs   
-				> _jade	= KEY,KEY,... jadeify these KEYs (experimental - use _kjade)  
-				> _kjade = KEY,KEY,... jadeify these KEYs (to be retired)
 
 		#fit.Examples
 			:markdown
