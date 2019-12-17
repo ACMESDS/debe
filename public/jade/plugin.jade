@@ -124,9 +124,8 @@ append site_body
 				cols="At.d,Node.t,Module.t,Case.t,Message.x,cpuUtil.p,memUtil.p" )
 				
 				:markdown
-					Certain *logs* are traced during pipe exeuction.  These logs are collected here.  Observe
-					that these logs may originate from different compute nodes in your cluster.
-					*#{title}* will routinely flush old logs.
+					Notebook *logs* are traced during pipe exeuction and are captured here.  These logs may originate from 
+					different compute nodes in the cluster.  *#{title}* will routinely flush old logs.
 
 			if more>0
 				#grid.ContextKeys(

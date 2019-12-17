@@ -1221,8 +1221,8 @@ Trace(`NAVIGATE Recs=${recs.length} Parent=${Parent} Nodes=${Nodes} Folder=${Fol
 		info: {
 		},
 		
-		get: function(recs, js) { 
-			return recs.$(js);
+		get: function(recs, idx) { 
+			return recs.get(idx);
 		},
 		
 		match: function (recs,where,get) {

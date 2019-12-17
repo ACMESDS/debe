@@ -26,7 +26,9 @@ function Trace(msg,req,fwd) {	// execution tracing
 const {Each,Log,Copy,typeOf,isString} = ENUM;
 const {site, paths, errors, primeSkin, probeSite, getIndex } = TOTEM;
 
-const {skinContext, renderJade} = module.exports = {
+const {skinContext, renderJade,scanJade} = module.exports = {
+	scanJade: false,	// enable to allow jade skins to embed %{...} markdown
+	
 	skinContext: function (sql, ctx, cb) {
 		
 		ctx.live = ENV.SERVICE_MASTER_URL;
@@ -39,7 +41,7 @@ const {skinContext, renderJade} = module.exports = {
 						var 
 							id = 1,
 							Files = {
-								slide: {},
+								deck: {},
 								image: [],
 								artifact: [],
 								misc: [],
@@ -123,7 +125,7 @@ const {skinContext, renderJade} = module.exports = {
 									var 
 										set = `set${depth}`,
 										stack = ( depth && num ) 
-												? Files.slide[set] || ( Files.slide[set] = [] )
+												? Files.deck[set] || ( Files.deck[set] = [] )
 												: Files[ Batch[type] || Batch.default ];
 									
 									//Log(title, type, depth, num, set, stack.constructor);
@@ -131,10 +133,10 @@ const {skinContext, renderJade} = module.exports = {
 										id: id,
 										num: num, 
 										title: title.join(" "), 
-										classif: (classif.length>1) ? "(" + classif.join("//") + ")" : "", 
+										classif: ("(" + classif.join("//") + ")").replace("()","(U)"),
 										type: type, 
 										name: file, 
-										qualifiers: parts.length, 
+										parts: parts.length-1, 
 										path: path, 
 										link: title[0].tag( path ) 
 									} );
@@ -143,9 +145,7 @@ const {skinContext, renderJade} = module.exports = {
 								
 						});
 						
-						Each( Files.slide, (set,files) => Files.slide[set] = files.sort( (a,b) => a.num-b.num ) );
-						//Log(">>>>files", Files);
-						//Log(">>>>test", Files.image.get({ keys: {a: "link"}}) );
+						Each( Files.deck, (set,files) => Files.deck[set] = files.sort( (a,b) => a.num-b.num ) );
 						cb(ctx, Files );
 					});
 				}
@@ -163,7 +163,7 @@ const {skinContext, renderJade} = module.exports = {
 					{Name: ctx.name}, (err,projs) => {
 
 					var proj = projs[0] || { JIRA: "tbd", Status: "tbd", Name: ctx.name, Title: ctx.name, Lead: "tbd" };
-						
+					
 					sql.query(
 						"SELECT group_concat(RAS) AS RAS FROM openv.milestones WHERE ? AND RAS", 
 						{Project: ctx.name}, (err, vendors) => {
@@ -187,7 +187,6 @@ const {skinContext, renderJade} = module.exports = {
 									jira: ENV.JIRA || "https:jira.tbd",
 									ras: ENV.RAS || "https:ras.tbd" 
 								},
-
 								ctx = Copy(site, Copy( ctx, {
 									filename: paths.jadeRef,		// for jade
 									query: {},	// default
@@ -294,14 +293,14 @@ const {skinContext, renderJade} = module.exports = {
 									relinfo: envs.master + "/releases.html?nb=" + name
 								}));
 
-								Each( ctx, (key,url) => {
-									if ( url )
-										if ( isString(url) ) {
-											ctx["_"+key] = `%{${url}}`;
-											ctx[key.toUpperCase()] = key.toUpperCase().tag( url );
-											ctx[key.charAt(0).toUpperCase()+key.substr(1)] = envs.totem+"/"+url;
-										}
-								});
+							Each( ctx, (key,url) => {
+								if ( url )
+									if ( isString(url) ) {
+										ctx["_"+key] = `%{${url}}`;
+										ctx[key.toUpperCase()] = key.toUpperCase().tag( url );
+										ctx[key.charAt(0).toUpperCase()+key.substr(1)] = envs.totem+"/"+url;
+									}
+							});
 
 							cb(ctx);
 						});
@@ -334,15 +333,18 @@ const {skinContext, renderJade} = module.exports = {
 	Render Jade string this to res( err || html ) in a new context created for this request. 
 	**/
 		try {
-			//cb( JADE.compile(jade, ctx) (ctx) );
-			(JADE.compile(jade, ctx) (ctx)).Xinclude( "", html => cb(html) );
-			//(JADE.compile(jade, ctx) (ctx)).Xinclude( "", html => html.Xfollow( "", ctx, html => cb(html) ) );
-			//jade.Xkeys( ctx, jade => cb( JADE.compile( jade, ctx)(ctx) ) );
-			//jade.Xkeys( ctx, jade => (JADE.compile( jade, ctx)(ctx)).Xinclude( "", html => cb(html) )  );
-			//jade.Xinclude( "", ctx, jade => cb( JADE.compile(jade, ctx) (ctx) ) );
+			if ( scanJade )
+				(JADE.compile(jade, ctx) (ctx)).Xinclude( "", html => cb(html) );
+				//(JADE.compile(jade, ctx) (ctx)).Xinclude( "", html => html.Xfollow( "", ctx, html => cb(html) ) );
+				//jade.Xkeys( ctx, jade => cb( JADE.compile( jade, ctx)(ctx) ) );
+				//jade.Xkeys( ctx, jade => (JADE.compile( jade, ctx)(ctx)).Xinclude( "", html => cb(html) )  );
+				//jade.Xinclude( "", ctx, jade => cb( JADE.compile(jade, ctx) (ctx) ) );
+			
+			else
+				cb( JADE.compile(jade, ctx) (ctx) );			
 		}
 		catch (err) {
-			//Log("xjade", err);
+			//Log("render jade", err);
 			cb( err+"" );
 		}
 	},

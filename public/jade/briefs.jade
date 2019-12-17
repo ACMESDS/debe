@@ -18,7 +18,7 @@ append base_body
 				p.lg AirSpace
 				p.al https:/totem.west.ile.nga.ic.gov/briefs?notebook=airspace
 				p.al brian.d.james@nga.mil
-				
+
 			section#results
 				each file in files
 					section
@@ -27,7 +27,7 @@ append base_body
 							img(src=file.path)
 						else
 							a(href=file.path)= file.title
-		
+
 		when "totem"
 			section#intro
 
@@ -406,9 +406,9 @@ append base_body
 				p.al= proj.Lead
 				p.al= now
 
-			each set in files.image
-				section#images
-					each file in set
+			each deck in files.deck
+				section#deck
+					each file in deck
 						section
 							h2= `${file.classif} ${file.title}`
 							img.xx(src=file.path)
@@ -424,7 +424,7 @@ append base_body
 				p!= gridify( get( files.artifact, {keys:{ a:"link"}} ), true )
 
 			section#if
-				h2= `Current Interface (${run})`
+				h2= `${run} Interface`
 				iframe(src=run,width=1000,height=600)
 
 			- sets ={ 1: [1,2,3], 2: [1,2,3,4,5,6,7,8,9], 3: [] }
