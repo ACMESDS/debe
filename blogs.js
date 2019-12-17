@@ -323,7 +323,7 @@ catch (err) {
 				}
 			},
 			
-			pattern = /\%\%\{(.*)\}/g;  //   /\%\{([^\}]*)\}/g;
+			pattern = /\%\{(.*)\}/g;  //   /\%\{([^\}]*)\}/g;
 		
 		//Log("Xinclude", this.match( pattern ) );
 		
