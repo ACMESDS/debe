@@ -1594,16 +1594,16 @@ could/should be revised to support more generic peer-to-peer bySOAP interfaces.
 						flags.kiss
 							? html 	// keep if simple
 							: html + [	// add by-line
-							"<br>",
-							site.title.tag( `${url}/fan.view?src=info&w=4000&h=600` ),
-							"schema".tag( `${url}/fan.view?src=${ds}&name=${rec.Name}&w=4000&h=600` ),
-							"run".tag( `${url}${ds}.exe?Name=${rec.Name}` ),
-							"edit".tag( `${url}${ds}.view` ),
-							"publish".tag( `${url}${ds}.pub` ),
-							"tou".tag( `${url}${ds}.tou` ),
-							(new Date().toDateString()) + "",
-							( req.client.match( /(.*)@(.*)/ ) || ["",req.client] )[1].tag( "email:" + req.client )
-						].join(" ")
+								"<br>",
+								site.title.tag( `${url}/fan.view?src=info&w=4000&h=600` ),
+								"schema".tag( `${url}/fan.view?src=${ds}&name=${rec.Name}&w=4000&h=600` ),
+								"run".tag( `${url}${ds}.exe?Name=${rec.Name}` ),
+								"edit".tag( `${url}${ds}.view` ),
+								"publish".tag( `${url}${ds}.pub` ),
+								"tou".tag( `${url}${ds}.tou` ),
+								(new Date().toDateString()) + "",
+								( req.client.match( /(.*)\@(.*)/ ) || ["",req.client] )[1].tag( "email:" + req.client )
+							].join(" ")
 					) ); 
 				}
 				

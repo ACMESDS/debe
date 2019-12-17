@@ -219,6 +219,7 @@ catch (err) {
 			},
 			pattern = /(.*)\:\n\n((\t.*\n)+)\n/gm ;
 		
+		//Log("Xescape", this.match( pattern ) );
 		this.serialize( fetchBlock, pattern, key, html => cb( html, blocks) ); 		
 	},
 	
@@ -243,7 +244,7 @@ catch (err) {
 			},
 			pattern = /\[([^\[\]]*)\]\(([^\)]*)\)/g ;
 		
-		//Log("Xlink", this.match(pattern));
+		// Log("Xlink", this.match(pattern));
 		this.serialize( fetch, pattern, key, html => cb(html) ); 
 	}, 
 
@@ -293,30 +294,19 @@ catch (err) {
 			key = "@inc",
 			
 			fetch = function ( rec, cb ) {  // expand markdown
-				//Log(rec);
 				var
 					url = rec.arg1.replace(/\&amp;/g,"&"),
 					keys = {},
-					//dsPath = ds.parseURL(keys,{},{},{}),
 					urlPath = url.parseURL(keys,{},{},{}),
 
 					w = keys.w || 200,
 					h = keys.h || 200,
 
 					[x,urlName,urlType] = urlPath.match( /(.*)\.(.*)/ ) || [ "", "tbd", "" ],
-					/*
-					urlName = dsPath,
-					urlType = "",
-					x = urlPath.replace(/(.*)\.(.*)/, (str,L,R) => {
-						urlName = L;
-						urlType = R;
-						return "#";
-					}), */
 
 					srcPath = urlPath.tag( "?", keys ).tag( "&", {src:ds});
-						// urlPath.tag( "?", Copy({src:dsPath}, keys) );
 
-				Log("include", {url: url, ds: ds,src: srcPath, type: urlType,keys: keys	});
+				//Log("include", {url: url, ds: ds,src: srcPath, type: urlType,keys: keys	});
 				switch (urlType) { 
 					case "jpg":  
 					case "png":
@@ -335,8 +325,7 @@ catch (err) {
 			
 			pattern = /\%\%\{(.*)\}/g;  //   /\%\{([^\}]*)\}/g;
 		
-		// Log("Xinc=", this);
-		Log("Xinclude", this.match( pattern ) );
+		//Log("Xinclude", this.match( pattern ) );
 		
 		this.serialize( fetch, pattern, key, html => {
 			//Log("Xinc rtn>>>>", html);
@@ -517,6 +506,7 @@ catch (err) {
 			},
 			pattern = /^\#* (.*)\n/gm;
 		
+		//Log("Xsection", this.match( pattern ) );
 		this.serialize( fetch, pattern, key, html => cb(html) );
 	}
 	

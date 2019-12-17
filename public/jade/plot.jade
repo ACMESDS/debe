@@ -67,7 +67,7 @@ append base_head
 		.text {}
 
 	script.
-		var 
+		var
 			modifier = ("!{query.mods}" || "").option({
 				//beta: "/beta?name=gen-$a-$b&x:=Save$[0].x&y:=Save$[0].y"
 				//beta: "/beta?name=gen-$a-$b&xy:=Save$[0].x,[0].y&_calc=xy"
@@ -83,7 +83,7 @@ append base_head
 						? "!{query.src}&x:=#{query.x}&y:=#{query.y}" + modifier
 						:  "!{query.ds}"
 								? "!{query.ds}" + modifier
-								:  "/regress&x=Save_train$.x[$chan]&y=Save_train$.y[$chan]?name=test2",
+								:  "/regress&x=Save_train$.x[^chan]&y=Save_train$.y[^chan]?name=test2",
 				dims: {
 					margin: {top: 5, right: 10, bottom: 5, left: 10},
 					width: parseInt("#{query.w}") || 1200,
